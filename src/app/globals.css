@@ -1,26 +1,62 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-heebo);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  font-family: var(--font-heebo), system-ui, sans-serif;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background:
+    radial-gradient(1200px 600px at 100% -10%, rgba(254, 215, 170, 0.35), transparent 60%),
+    radial-gradient(900px 500px at -10% 10%, rgba(253, 230, 138, 0.25), transparent 60%),
+    linear-gradient(180deg, #fffaf5 0%, #fef6ed 100%);
+  background-attachment: fixed;
+  color: #44403c;
+}
+
+.card-soft {
+  background: #ffffff;
+  border-radius: 1.5rem;
+  box-shadow:
+    0 1px 2px rgba(120, 65, 20, 0.04),
+    0 4px 20px rgba(194, 110, 40, 0.06);
+  border: 1px solid rgba(255, 237, 213, 0.8);
+}
+
+.input-warm {
+  width: 100%;
+  background: #fffdf9;
+  border: 1.5px solid #fde4c9;
+  border-radius: 0.9rem;
+  padding: 0.55rem 0.85rem;
+  font-size: 0.9rem;
+  outline: none;
+  transition: all 0.15s ease;
+}
+.input-warm:focus {
+  border-color: #f97316;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(251, 146, 60, 0.15);
+}
+
+@media print {
+  body {
+    background: white !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .receipt-view {
+    box-shadow: none !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  @page {
+    size: A4;
+    margin: 15mm;
+  }
 }
