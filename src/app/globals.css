@@ -1,11 +1,11 @@
 @import "tailwindcss";
 
 @theme inline {
-  --font-sans: var(--font-heebo);
+  --font-sans: "Heebo", system-ui, sans-serif;
 }
 
 html {
-  font-family: var(--font-heebo), system-ui, sans-serif;
+  font-family: "Heebo", system-ui, sans-serif;
 }
 
 body {
