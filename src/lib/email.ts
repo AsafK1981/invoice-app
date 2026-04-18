@@ -4,6 +4,7 @@ export interface SendReceiptEmailArgs {
   receiptNumber: number;
   total: number;
   businessName: string;
+  documentId?: string;
 }
 
 export interface SendEmailResult {

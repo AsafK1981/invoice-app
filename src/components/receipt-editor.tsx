@@ -157,6 +157,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
           receiptNumber: docNumber,
           total,
           businessName: business.name,
+          documentId: doc.id,
         });
         if (!result.ok) {
           setToast({ kind: "error", text: `המסמך נשמר אבל שליחת המייל נכשלה: ${result.error}` });

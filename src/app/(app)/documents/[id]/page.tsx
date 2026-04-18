@@ -71,6 +71,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
         receiptNumber: doc.number,
         total: doc.total,
         businessName: business.name,
+        documentId: doc.id,
       });
       if (res.ok) {
         setToast({

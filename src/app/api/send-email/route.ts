@@ -6,7 +6,12 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { to, clientName, receiptNumber, total, businessName, subject } = body;
+    const { to, clientName, receiptNumber, total, businessName, subject, documentId } = body;
+
+    const baseUrl = process.env.NEXT_PUBLIC_VERCEL_URL
+      ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`
+      : process.env.NEXT_PUBLIC_APP_URL || "https://invoice-app-ochre-five.vercel.app";
+    const viewUrl = `${baseUrl}/view/${documentId}`;
 
     if (!to || !clientName || !receiptNumber) {
       return NextResponse.json(
@@ -35,8 +40,14 @@ export async function POST(req: NextRequest) {
               מצורף מסמך מספר <strong>#${receiptNumber}</strong> על סך <strong>₪${total.toLocaleString()}</strong>.
             </p>
             <p style="margin: 0; font-size: 14px; color: #78716c;">
-              לצפייה במסמך המלא, לחץ על הקישור למטה.
+              לצפייה במסמך המלא והדפסה/הורדה כ-PDF, לחץ על הכפתור למטה.
             </p>
+          </div>
+
+          <div style="text-align: center; margin-bottom: 24px;">
+            <a href="${viewUrl}" style="display: inline-block; background: linear-gradient(135deg, #f97316, #e11d48); color: white; text-decoration: none; padding: 14px 32px; border-radius: 12px; font-size: 16px; font-weight: bold;">
+              צפה במסמך ←
+            </a>
           </div>
 
           <div style="text-align: center; margin-bottom: 24px;">
