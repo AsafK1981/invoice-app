@@ -1,0 +1,67 @@
+import { NextRequest, NextResponse } from "next/server";
+import { Resend } from "resend";
+
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const { to, clientName, receiptNumber, total, businessName, subject } = body;
+
+    if (!to || !clientName || !receiptNumber) {
+      return NextResponse.json(
+        { ok: false, error: "Missing required fields" },
+        { status: 400 }
+      );
+    }
+
+    const emailSubject = subject || `${businessName} - מסמך #${receiptNumber}`;
+
+    const { data, error } = await resend.emails.send({
+      from: `${businessName} <onboarding@resend.dev>`,
+      to: [to],
+      subject: emailSubject,
+      html: `
+        <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #f97316, #e11d48); padding: 24px; border-radius: 16px; color: white; text-align: center; margin-bottom: 24px;">
+            <h1 style="margin: 0; font-size: 24px;">${businessName}</h1>
+          </div>
+
+          <div style="background: #fffaf5; border: 1px solid #fed7aa; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+            <p style="margin: 0 0 12px 0; font-size: 16px; color: #44403c;">
+              שלום ${clientName},
+            </p>
+            <p style="margin: 0 0 16px 0; font-size: 16px; color: #44403c;">
+              מצורף מסמך מספר <strong>#${receiptNumber}</strong> על סך <strong>₪${total.toLocaleString()}</strong>.
+            </p>
+            <p style="margin: 0; font-size: 14px; color: #78716c;">
+              לצפייה במסמך המלא, לחץ על הקישור למטה.
+            </p>
+          </div>
+
+          <div style="text-align: center; margin-bottom: 24px;">
+            <p style="font-size: 13px; color: #a8a29e;">
+              מסמך זה נשלח אוטומטית מ${businessName}
+            </p>
+          </div>
+        </div>
+      `,
+    });
+
+    if (error) {
+      console.error("Resend error:", error);
+      return NextResponse.json(
+        { ok: false, error: error.message },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ ok: true, messageId: data?.id, mocked: false });
+  } catch (err) {
+    console.error("Send email error:", err);
+    return NextResponse.json(
+      { ok: false, error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
