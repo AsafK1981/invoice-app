@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import {
   ArrowRight,
   Printer,
-  Send,
   Trash2,
   AlertCircle,
   CheckCircle2,
@@ -90,6 +89,10 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
 
   async function handleDelete() {
     if (!doc) return;
+    if (doc.status !== "draft") {
+      alert("לא ניתן למחוק מסמך שנשלח או שולם. ניתן להפיק חשבונית זיכוי במקום.");
+      return;
+    }
     if (confirm(`למחוק את מסמך #${doc.number}?`)) {
       await deleteDocument(doc.id);
       router.push("/documents");

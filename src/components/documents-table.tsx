@@ -194,16 +194,25 @@ export function DocumentsTable({ documents, limit }: Props) {
                     {formatCurrency(d.total)}
                   </td>
                   <td className="px-2 py-3 text-center">
-                    <button
-                      onClick={async (e) => {
-                        e.stopPropagation();
-                        if (confirm(`למחוק את מסמך #${d.number}?`)) await deleteDocument(d.id);
-                      }}
-                      className="text-stone-300 hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-50 transition-colors"
-                      title="מחק"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    {d.status === "draft" ? (
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          if (confirm(`למחוק את מסמך #${d.number}?`)) await deleteDocument(d.id);
+                        }}
+                        className="text-stone-300 hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-50 transition-colors"
+                        title="מחק"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    ) : (
+                      <span
+                        className="text-stone-200 p-1.5 inline-block cursor-not-allowed"
+                        title="לא ניתן למחוק מסמך שנשלח או שולם"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </span>
+                    )}
                   </td>
                 </tr>
               );

@@ -346,7 +346,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
               onChange={(e) => setSendEmail(e.target.checked)}
               className="w-4 h-4 accent-orange-500"
             />
-            <span className="text-stone-700">שלח את הקבלה אוטומטית במייל ללקוח כשאני לוחץ שמור</span>
+            <span className="text-stone-700">שלח את ה{docLabel} אוטומטית במייל ללקוח כשאני לוחץ שמור</span>
           </label>
           {sendEmail && (
             <Field label="אימייל הלקוח">
@@ -407,7 +407,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
               ) : (
                 <>
                   <Save className="w-4 h-4" />
-                  שמור והפק קבלה
+                  שמור והפק {docLabel}
                 </>
               )}
             </button>

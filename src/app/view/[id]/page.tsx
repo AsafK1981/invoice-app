@@ -1,7 +1,7 @@
 "use client";
 
 import { use, useEffect, useState } from "react";
-import { Printer, Download } from "lucide-react";
+import { Printer } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { ReceiptView } from "@/components/receipt-view";
 import type { Business, Client, InvoiceDocument, DocumentItem } from "@/lib/types";

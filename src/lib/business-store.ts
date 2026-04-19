@@ -4,14 +4,18 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "./supabase";
 import type { Business } from "./types";
 
+const CHANGE_EVENT = "invoice-app:business-changed";
+
+const defaultBusiness: Business = {
+  id: "",
+  name: "העסק שלי",
+  businessType: "exempt",
+  taxId: "",
+  address: "",
+};
+
 export function useBusiness() {
-  const [business, setBusiness] = useState<Business>({
-    id: "",
-    name: "העסק שלי",
-    businessType: "exempt",
-    taxId: "",
-    address: "",
-  });
+  const [business, setBusiness] = useState<Business>(defaultBusiness);
   const [ready, setReady] = useState(false);
 
   const fetch = useCallback(async () => {
@@ -20,28 +24,35 @@ export function useBusiness() {
       .select("*")
       .limit(1)
       .single();
-    if (data) {
-      setBusiness({
-        id: data.id,
-        name: data.name,
-        businessType: data.business_type,
-        taxId: data.tax_id,
-        address: data.address,
-        phone: data.phone ?? undefined,
-        email: data.email ?? undefined,
-        logoUrl: data.logo_url ?? undefined,
-      });
-      setReady(true);
-    }
+    setBusiness(
+      data
+        ? {
+            id: data.id,
+            name: data.name,
+            businessType: data.business_type,
+            taxId: data.tax_id,
+            address: data.address,
+            phone: data.phone ?? undefined,
+            email: data.email ?? undefined,
+            logoUrl: data.logo_url ?? undefined,
+          }
+        : defaultBusiness
+    );
+    setReady(true);
   }, []);
 
-  useEffect(() => { fetch(); }, [fetch]);
+  useEffect(() => {
+    fetch();
+    const handler = () => fetch();
+    window.addEventListener(CHANGE_EVENT, handler);
+    return () => window.removeEventListener(CHANGE_EVENT, handler);
+  }, [fetch]);
 
   return { business, ready, refetch: fetch };
 }
 
 export async function saveBusiness(business: Business) {
-  await supabase
+  const { error } = await supabase
     .from("businesses")
     .update({
       name: business.name,
@@ -53,11 +64,6 @@ export async function saveBusiness(business: Business) {
       logo_url: business.logoUrl || null,
     })
     .eq("id", business.id);
-  window.dispatchEvent(new Event("invoice-app:business-changed"));
+  if (error) throw new Error(error.message);
+  window.dispatchEvent(new Event(CHANGE_EVENT));
 }
-
-export function loadBusiness(): Business {
-  return { id: "", name: "העסק שלי", businessType: "exempt", taxId: "", address: "" };
-}
-
-export function resetBusiness() {}

@@ -110,7 +110,7 @@ export async function saveDocument(doc: InvoiceDocument) {
   const bid = getBusinessId();
   if (!bid) return;
 
-  await supabase.from("documents").insert({
+  const { error: docError } = await supabase.from("documents").insert({
     id: doc.id,
     business_id: bid,
     type: doc.type,
@@ -126,9 +126,10 @@ export async function saveDocument(doc: InvoiceDocument) {
     payment_method: doc.paymentMethod || null,
     notes: doc.notes || null,
   });
+  if (docError) throw new Error("שגיאה בשמירת המסמך: " + docError.message);
 
   if (doc.items.length > 0) {
-    await supabase.from("document_items").insert(
+    const { error: itemsError } = await supabase.from("document_items").insert(
       doc.items.map((item, idx) => ({
         id: item.id,
         document_id: doc.id,
@@ -140,6 +141,7 @@ export async function saveDocument(doc: InvoiceDocument) {
         sort_order: idx,
       }))
     );
+    if (itemsError) throw new Error("שגיאה בשמירת פריטי המסמך: " + itemsError.message);
   }
 
   window.dispatchEvent(new Event(CHANGE_EVENT));
