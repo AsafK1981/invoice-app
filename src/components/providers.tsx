@@ -17,12 +17,15 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center mx-auto shadow-lg animate-pulse">
-            <Sparkles className="w-8 h-8 text-white" />
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-amber-50">
+        <div className="text-center space-y-5 animate-fade-in">
+          <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center mx-auto shadow-xl shadow-orange-200/50 btn-glow">
+            <Sparkles className="w-9 h-9 text-white animate-pulse" />
           </div>
-          <p className="text-stone-700 font-medium">טוען את המערכת...</p>
+          <div>
+            <p className="text-stone-800 font-bold text-lg">חשבוניות</p>
+            <p className="text-stone-500 text-sm mt-1">טוען את המערכת...</p>
+          </div>
         </div>
       </div>
     );

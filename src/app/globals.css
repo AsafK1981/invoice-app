@@ -6,16 +6,20 @@
 
 html {
   font-family: "Heebo", system-ui, sans-serif;
+  scroll-behavior: smooth;
 }
 
 body {
   background:
+    url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23f97316' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"),
     radial-gradient(1200px 600px at 100% -10%, rgba(254, 215, 170, 0.35), transparent 60%),
     radial-gradient(900px 500px at -10% 10%, rgba(253, 230, 138, 0.25), transparent 60%),
     linear-gradient(180deg, #fffaf5 0%, #fef6ed 100%);
   background-attachment: fixed;
   color: #44403c;
 }
+
+/* ========== CARDS ========== */
 
 .card-soft {
   background: #ffffff;
@@ -24,7 +28,10 @@ body {
     0 1px 2px rgba(120, 65, 20, 0.04),
     0 4px 20px rgba(194, 110, 40, 0.06);
   border: 1px solid rgba(255, 237, 213, 0.8);
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
 }
+
+/* ========== INPUTS ========== */
 
 .input-warm {
   width: 100%;
@@ -34,13 +41,131 @@ body {
   padding: 0.55rem 0.85rem;
   font-size: 0.9rem;
   outline: none;
-  transition: all 0.15s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .input-warm:focus {
   border-color: #f97316;
   background: #ffffff;
   box-shadow: 0 0 0 3px rgba(251, 146, 60, 0.15);
+  transform: translateY(-1px);
 }
+.input-warm:hover:not(:focus) {
+  border-color: #fdba74;
+}
+
+/* ========== ANIMATIONS ========== */
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes countUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease both;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.4s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.stagger-1 { animation-delay: 0.05s; }
+.stagger-2 { animation-delay: 0.1s; }
+.stagger-3 { animation-delay: 0.15s; }
+.stagger-4 { animation-delay: 0.2s; }
+.stagger-5 { animation-delay: 0.25s; }
+.stagger-6 { animation-delay: 0.3s; }
+
+/* ========== BUTTON EFFECTS ========== */
+
+.btn-glow {
+  position: relative;
+  overflow: hidden;
+}
+.btn-glow::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 3s infinite;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* ========== SCROLLBAR ========== */
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(251, 146, 60, 0.2);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(251, 146, 60, 0.4);
+}
+
+/* ========== TABLE ROW HOVER ========== */
+
+tr {
+  transition: background-color 0.15s ease;
+}
+
+/* ========== PRINT ========== */
 
 @media print {
   body {
@@ -58,5 +183,8 @@ body {
   @page {
     size: A4;
     margin: 15mm;
+  }
+  * {
+    animation: none !important;
   }
 }

@@ -37,10 +37,10 @@ export function Modal({ open, onClose, title, subtitle, icon: Icon, children, fo
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
-        className="absolute inset-0 bg-stone-900/40 backdrop-blur-sm"
+        className="absolute inset-0 bg-stone-900/40 backdrop-blur-sm animate-fade-in"
         onClick={onClose}
       />
-      <div className={`card-soft relative w-full ${widthClass} max-h-[90vh] flex flex-col overflow-hidden`}>
+      <div className={`card-soft relative w-full ${widthClass} max-h-[90vh] flex flex-col overflow-hidden animate-scale-in`}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-orange-100 bg-gradient-to-l from-orange-50 to-amber-50">
           <div className="flex items-center gap-3">
             {Icon && (
