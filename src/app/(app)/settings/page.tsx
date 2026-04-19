@@ -46,7 +46,10 @@ export default function SettingsPage() {
     const bid = getBusinessId();
     if (!bid) return;
 
-    await supabase.from("document_items").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+    const { data: docIds } = await supabase.from("documents").select("id").eq("business_id", bid);
+    if (docIds && docIds.length > 0) {
+      await supabase.from("document_items").delete().in("document_id", docIds.map(d => d.id));
+    }
     await supabase.from("documents").delete().eq("business_id", bid);
     await supabase.from("expenses").delete().eq("business_id", bid);
     await supabase.from("clients").delete().eq("business_id", bid);

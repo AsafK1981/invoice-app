@@ -1,3 +1,5 @@
+import { supabase } from "./supabase";
+
 export interface SendReceiptEmailArgs {
   to: string;
   clientName: string;
@@ -20,9 +22,18 @@ export async function sendReceiptEmail(args: SendReceiptEmailArgs): Promise<Send
   }
 
   try {
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+    if (!token) {
+      return { ok: false, error: "לא מחובר - התחבר מחדש", mocked: false };
+    }
+
     const res = await fetch("/api/send-email", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
       body: JSON.stringify(args),
     });
 
@@ -33,7 +44,7 @@ export async function sendReceiptEmail(args: SendReceiptEmailArgs): Promise<Send
       error: data.error,
       mocked: data.mocked ?? false,
     };
-  } catch (err) {
+  } catch {
     return {
       ok: false,
       error: "שגיאה בשליחת המייל - נסה שוב",

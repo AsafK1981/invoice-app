@@ -1,8 +1,9 @@
 "use client";
 
 import { createContext, useContext } from "react";
-import { useBusinessInit } from "@/lib/business-init";
 import { Sparkles } from "lucide-react";
+import { useBusinessInit } from "@/lib/business-init";
+import { useRequireAuth } from "@/lib/auth";
 
 const BusinessContext = createContext<string | null>(null);
 
@@ -13,9 +14,10 @@ export function useBusinessId(): string {
 }
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
-  const { businessId, loading } = useBusinessInit();
+  const { user, loading: authLoading } = useRequireAuth();
+  const { businessId, loading: bizLoading } = useBusinessInit();
 
-  if (loading) {
+  if (authLoading || bizLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-amber-50">
         <div className="text-center space-y-5 animate-fade-in">
@@ -30,6 +32,8 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
       </div>
     );
   }
+
+  if (!user) return null;
 
   return (
     <BusinessContext.Provider value={businessId}>

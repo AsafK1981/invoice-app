@@ -53,11 +53,6 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   const isQuote = documentType === "quote";
   const docLabel = DOCUMENT_TYPE_LABELS[documentType];
 
-  const [docNumber, setDocNumber] = useState<number>(0);
-  useEffect(() => {
-    getNextNumber(documentType).then(setDocNumber);
-  }, [documentType]);
-
   const [clientId, setClientId] = useState<string>("");
   const [date, setDate] = useState<string>(today);
   const [subject, setSubject] = useState<string>("");
@@ -122,10 +117,12 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
     setToast(null);
 
     try {
+      const allocatedNumber = await getNextNumber(documentType);
+
       const doc: InvoiceDocument = {
         id: crypto.randomUUID(),
         type: documentType,
-        number: docNumber,
+        number: allocatedNumber,
         date,
         clientId: selectedClient.id,
         clientName: selectedClient.name,
@@ -154,7 +151,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
         const result = await sendReceiptEmail({
           to: emailTo,
           clientName: selectedClient.name,
-          receiptNumber: docNumber,
+          receiptNumber: allocatedNumber,
           total,
           businessName: business.name,
           documentId: doc.id,
@@ -166,13 +163,13 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
         setToast({
           kind: "success",
           text: result.mocked
-            ? `${docLabel} #${docNumber} נשמרה. מייל מדומה נשלח ל-${emailTo}. פותח תצוגה...`
-            : `${docLabel} #${docNumber} נשמרה ונשלחה ל-${emailTo}. פותח תצוגה...`,
+            ? `${docLabel} #${allocatedNumber} נשמרה. מייל מדומה נשלח ל-${emailTo}. פותח תצוגה...`
+            : `${docLabel} #${allocatedNumber} נשמרה ונשלחה ל-${emailTo}. פותח תצוגה...`,
         });
       } else {
         setToast({
           kind: "success",
-          text: `${docLabel} #${docNumber} נשמרה. פותח תצוגה...`,
+          text: `${docLabel} #${allocatedNumber} נשמרה. פותח תצוגה...`,
         });
       }
 
@@ -382,7 +379,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
           </h3>
           <div className="space-y-2 text-sm">
             <SummaryRow label="עסק" value={business.name} />
-            <SummaryRow label={`מספר ${docLabel}`} value={`#${docNumber}`} />
+            <SummaryRow label={`מספר ${docLabel}`} value="אוטומטי בשמירה" />
             <SummaryRow label="תאריך" value={date} />
             <SummaryRow label="לקוח" value={selectedClient?.name || "—"} />
             <SummaryRow label="מספר פריטים" value={String(items.length)} />

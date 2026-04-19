@@ -1,0 +1,160 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Sparkles, Mail, Lock, LogIn, UserPlus } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+
+export default function LoginPage() {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [mode, setMode] = useState<"login" | "signup">("login");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+
+    if (mode === "signup") {
+      const { error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+      if (signUpError) {
+        setError(signUpError.message);
+      } else {
+        setSuccess("נשלח מייל אישור. בדוק את תיבת המייל שלך ולחץ על הקישור.");
+      }
+    } else {
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (signInError) {
+        setError(
+          signInError.message === "Invalid login credentials"
+            ? "אימייל או סיסמה שגויים"
+            : signInError.message
+        );
+      } else {
+        router.push("/dashboard");
+        router.refresh();
+      }
+    }
+    setLoading(false);
+  }
+
+  return (
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-orange-50 to-amber-50">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8 animate-fade-in-up">
+          <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center mx-auto shadow-xl shadow-orange-200/50 btn-glow">
+            <Sparkles className="w-8 h-8 text-white" />
+          </div>
+          <h1 className="text-2xl font-bold text-stone-900 mt-4">חשבוניות</h1>
+          <p className="text-sm text-stone-600 mt-1">
+            {mode === "login" ? "התחבר לחשבון שלך" : "צור חשבון חדש"}
+          </p>
+        </div>
+
+        <div className="card-soft p-8 animate-fade-in-up stagger-2">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="text-xs font-semibold text-stone-700 mb-1 block">אימייל</label>
+              <div className="relative">
+                <Mail className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-stone-400" />
+                <input
+                  type="email"
+                  dir="ltr"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  required
+                  className="input-warm pr-10"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-stone-700 mb-1 block">סיסמה</label>
+              <div className="relative">
+                <Lock className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-stone-400" />
+                <input
+                  type="password"
+                  dir="ltr"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  minLength={6}
+                  className="input-warm pr-10"
+                />
+              </div>
+            </div>
+
+            {error && (
+              <div className="text-sm text-rose-700 bg-rose-50 border border-rose-200 p-3 rounded-xl">
+                {error}
+              </div>
+            )}
+
+            {success && (
+              <div className="text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 p-3 rounded-xl">
+                {success}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full btn-glow inline-flex items-center justify-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white py-3 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200/60 disabled:opacity-60 disabled:cursor-not-allowed transition-all"
+            >
+              {loading ? (
+                "..."
+              ) : mode === "login" ? (
+                <>
+                  <LogIn className="w-4 h-4" />
+                  התחבר
+                </>
+              ) : (
+                <>
+                  <UserPlus className="w-4 h-4" />
+                  צור חשבון
+                </>
+              )}
+            </button>
+          </form>
+
+          <div className="mt-5 text-center text-sm text-stone-600">
+            {mode === "login" ? (
+              <>
+                אין לך חשבון?{" "}
+                <button
+                  onClick={() => { setMode("signup"); setError(null); setSuccess(null); }}
+                  className="text-orange-600 font-semibold hover:underline"
+                >
+                  הרשם
+                </button>
+              </>
+            ) : (
+              <>
+                יש לך חשבון?{" "}
+                <button
+                  onClick={() => { setMode("login"); setError(null); setSuccess(null); }}
+                  className="text-orange-600 font-semibold hover:underline"
+                >
+                  התחבר
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
