@@ -120,7 +120,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full btn-glow inline-flex items-center justify-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white py-3 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200/60 disabled:opacity-60 disabled:cursor-not-allowed transition-all"
+              className="w-full btn-glow inline-flex items-center justify-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white py-3 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200/60 hover:-translate-y-0.5 active:translate-y-0 active:shadow-md cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none transition-all duration-200"
             >
               {loading ? (
                 "..."
@@ -155,7 +155,7 @@ export default function LoginPage() {
                 options: { redirectTo: `${window.location.origin}/dashboard` },
               });
             }}
-            className="w-full inline-flex items-center justify-center gap-3 bg-white border-2 border-stone-200 text-stone-800 py-3 rounded-2xl text-sm font-semibold hover:bg-stone-50 hover:border-stone-300 transition-all"
+            className="w-full inline-flex items-center justify-center gap-3 bg-white border-2 border-stone-200 text-stone-800 py-3 rounded-2xl text-sm font-semibold hover:bg-stone-50 hover:border-stone-300 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-md cursor-pointer transition-all duration-200"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
