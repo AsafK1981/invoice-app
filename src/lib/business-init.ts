@@ -5,6 +5,7 @@ import { supabase } from "./supabase";
 import type { Business } from "./types";
 
 const BUSINESS_ID_KEY = "invoice-app-business-id";
+const BUSINESS_READY_EVENT = "invoice-app:business-ready";
 
 const defaultBusiness: Omit<Business, "id"> = {
   name: "העסק שלי",
@@ -23,6 +24,7 @@ export function useBusinessInit() {
     initBusiness().then((id) => {
       setBusinessId(id);
       setLoading(false);
+      window.dispatchEvent(new Event(BUSINESS_READY_EVENT));
     });
   }, []);
 
@@ -30,6 +32,8 @@ export function useBusinessInit() {
 }
 
 async function initBusiness(): Promise<string> {
+  if (typeof window === "undefined") return "";
+
   const cached = localStorage.getItem(BUSINESS_ID_KEY);
 
   if (cached) {
@@ -70,5 +74,14 @@ async function initBusiness(): Promise<string> {
 }
 
 export function getBusinessId(): string | null {
+  if (typeof window === "undefined") return null;
   return localStorage.getItem(BUSINESS_ID_KEY);
+}
+
+export function onBusinessReady(callback: () => void) {
+  if (getBusinessId()) {
+    callback();
+  } else {
+    window.addEventListener(BUSINESS_READY_EVENT, callback, { once: true });
+  }
 }

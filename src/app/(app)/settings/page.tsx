@@ -127,17 +127,16 @@ export default function SettingsPage() {
             <AlertTriangle className="w-4 h-4 text-rose-500" />
           </div>
           <div className="flex-1">
-            <h3 className="font-bold text-stone-900">ניקוי נתוני דמו</h3>
+            <h3 className="font-bold text-stone-900">מחיקת כל הנתונים</h3>
             <p className="text-sm text-stone-700 mt-1">
-              האפליקציה נטענה עם לקוחות, מוצרים, מסמכים והוצאות לדוגמה. כשתהיה מוכן להתחיל עם
-              הנתונים האמיתיים שלך, לחץ על הכפתור הזה כדי לנקות הכל.
+              פעולה זו תמחק את כל הלקוחות, המוצרים, המסמכים וההוצאות לצמיתות. השתמש בזהירות.
             </p>
             <button
               onClick={clearAllData}
               className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border-2 border-rose-200 text-rose-700 hover:bg-rose-50"
             >
               <Trash2 className="w-4 h-4" />
-              נקה את כל נתוני הדמו
+              מחק את כל הנתונים
             </button>
           </div>
         </div>

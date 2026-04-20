@@ -3,11 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Calendar,
-  User,
   FileText as FileTextIcon,
-  CreditCard,
-  Plus,
   Trash2,
   Package,
   StickyNote,
@@ -412,7 +408,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
               )}
             </button>
             <p className="text-xs text-stone-600 text-center pt-1">
-              לאחר השמירה תועבר לתצוגת הקבלה עם כפתור הדפסה/PDF
+              לאחר השמירה תועבר לתצוגת המסמך עם כפתור הדפסה/PDF
             </p>
           </div>
           {!canSave && (

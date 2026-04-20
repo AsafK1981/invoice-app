@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "./supabase";
-import { getBusinessId } from "./business-init";
+import { getBusinessId, onBusinessReady } from "./business-init";
 import type { Client } from "./types";
 
 const CHANGE_EVENT = "invoice-app:clients-changed";
@@ -37,7 +37,7 @@ export function useClients() {
   }, []);
 
   useEffect(() => {
-    fetch();
+    onBusinessReady(() => fetch());
     const handler = () => fetch();
     window.addEventListener(CHANGE_EVENT, handler);
     return () => window.removeEventListener(CHANGE_EVENT, handler);
@@ -89,6 +89,4 @@ export const clientStore = {
     window.dispatchEvent(new Event(CHANGE_EVENT));
   },
 
-  load() { return []; },
-  reset() {},
 };

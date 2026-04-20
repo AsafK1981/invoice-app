@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "./supabase";
-import { getBusinessId } from "./business-init";
+import { getBusinessId, onBusinessReady } from "./business-init";
 import type { DocumentType, InvoiceDocument, DocumentItem } from "./types";
 
 const CHANGE_EVENT = "invoice-app:documents-changed";
@@ -76,7 +76,7 @@ export function useDocuments() {
   }, []);
 
   useEffect(() => {
-    fetch();
+    onBusinessReady(() => fetch());
     const handler = () => fetch();
     window.addEventListener(CHANGE_EVENT, handler);
     return () => window.removeEventListener(CHANGE_EVENT, handler);
@@ -153,12 +153,3 @@ export async function deleteDocument(id: string) {
   window.dispatchEvent(new Event(CHANGE_EVENT));
 }
 
-export function findDocument(id: string): InvoiceDocument | null {
-  return null;
-}
-
-export function resetDocuments() {}
-
-export function loadDocuments(): InvoiceDocument[] {
-  return [];
-}
