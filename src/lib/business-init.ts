@@ -34,6 +34,9 @@ export function useBusinessInit() {
 async function initBusiness(): Promise<string> {
   if (typeof window === "undefined") return "";
 
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return "";
+
   const cached = localStorage.getItem(BUSINESS_ID_KEY);
 
   if (cached) {
@@ -41,6 +44,7 @@ async function initBusiness(): Promise<string> {
       .from("businesses")
       .select("id")
       .eq("id", cached)
+      .eq("user_id", user.id)
       .single();
     if (data) return cached;
   }
@@ -48,6 +52,7 @@ async function initBusiness(): Promise<string> {
   const { data: existing } = await supabase
     .from("businesses")
     .select("id")
+    .eq("user_id", user.id)
     .limit(1)
     .single();
 
@@ -63,6 +68,7 @@ async function initBusiness(): Promise<string> {
       business_type: defaultBusiness.businessType,
       tax_id: defaultBusiness.taxId,
       address: defaultBusiness.address,
+      user_id: user.id,
     })
     .select("id")
     .single();
