@@ -42,7 +42,7 @@ export function Sidebar() {
             <Sparkles className="w-5 h-5 text-white" />
           </div>
           <div className="min-w-0">
-            <h1 className="text-lg font-bold text-stone-900">חשבוניות</h1>
+            <h1 className="text-sm font-bold text-stone-900 leading-tight">MySuperFriendly<br/>InvoiceApp</h1>
             <p className="text-xs text-stone-600 truncate">{business.name}</p>
           </div>
         </div>

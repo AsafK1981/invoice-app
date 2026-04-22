@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "מערכת חשבוניות",
-  description: "ניהול חשבוניות וקבלות לעסק",
+  title: "MySuperFriendlyInvoiceApp",
+  description: "The super friendly way to manage invoices and receipts",
 };
 
 export default function RootLayout({

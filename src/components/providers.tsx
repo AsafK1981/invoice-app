@@ -25,7 +25,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
             <Sparkles className="w-9 h-9 text-white animate-pulse" />
           </div>
           <div>
-            <p className="text-stone-800 font-bold text-lg">חשבוניות</p>
+            <p className="text-stone-800 font-bold text-lg">MySuperFriendlyInvoiceApp</p>
             <p className="text-stone-500 text-sm mt-1">טוען את המערכת...</p>
           </div>
         </div>
