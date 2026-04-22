@@ -38,9 +38,19 @@ export function Sidebar() {
     <>
       <div className="px-6 py-6 border-b border-orange-100/60">
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-orange-400 to-rose-400 flex items-center justify-center shadow-lg shadow-orange-200/50 btn-glow">
-            <Sparkles className="w-5 h-5 text-white" />
-          </div>
+          {business.logoUrl ? (
+            <div className="w-11 h-11 rounded-2xl bg-white shadow-lg shadow-orange-200/50 overflow-hidden flex items-center justify-center border border-orange-100">
+              <img
+                src={business.logoUrl}
+                alt={business.name}
+                className="w-full h-full object-contain"
+              />
+            </div>
+          ) : (
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-orange-400 to-rose-400 flex items-center justify-center shadow-lg shadow-orange-200/50 btn-glow">
+              <Sparkles className="w-5 h-5 text-white" />
+            </div>
+          )}
           <div className="min-w-0">
             <h1 className="text-sm font-bold text-stone-900 leading-tight">MySuperFriendly<br/>InvoiceApp</h1>
             <p className="text-xs text-stone-600 truncate">{business.name}</p>

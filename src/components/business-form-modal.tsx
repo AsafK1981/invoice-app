@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Building2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Building2, Upload, X, Image as ImageIcon } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 import { FormField } from "@/components/ui/form-field";
 import { saveBusiness } from "@/lib/business-store";
+import { supabase } from "@/lib/supabase";
 import type { Business } from "@/lib/types";
 
 interface Props {
@@ -15,13 +16,61 @@ interface Props {
 
 export function BusinessFormModal({ open, onClose, business }: Props) {
   const [form, setForm] = useState(business);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (open) setForm(business);
+    if (open) {
+      setForm(business);
+      setUploadError(null);
+    }
   }, [open, business]);
 
   function update<K extends keyof Business>(key: K, value: Business[K]) {
     setForm((f) => ({ ...f, [key]: value }));
+  }
+
+  async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      setUploadError("הקובץ גדול מדי (מקסימום 2MB)");
+      return;
+    }
+    if (!file.type.startsWith("image/")) {
+      setUploadError("יש להעלות קובץ תמונה בלבד");
+      return;
+    }
+
+    setUploading(true);
+    setUploadError(null);
+
+    const fileExt = file.name.split(".").pop();
+    const fileName = `${business.id}-${Date.now()}.${fileExt}`;
+
+    const { error: uploadErr } = await supabase.storage
+      .from("business-logos")
+      .upload(fileName, file, { upsert: true });
+
+    if (uploadErr) {
+      setUploadError(`שגיאה בהעלאה: ${uploadErr.message}`);
+      setUploading(false);
+      return;
+    }
+
+    const { data: urlData } = supabase.storage
+      .from("business-logos")
+      .getPublicUrl(fileName);
+
+    update("logoUrl", urlData.publicUrl);
+    setUploading(false);
+  }
+
+  function removeLogo() {
+    update("logoUrl", undefined);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
   async function handleSubmit() {
@@ -57,7 +106,7 @@ export function BusinessFormModal({ open, onClose, business }: Props) {
           </button>
           <button
             onClick={handleSubmit}
-            disabled={!canSubmit}
+            disabled={!canSubmit || uploading}
             className="px-5 py-2 rounded-xl text-sm font-semibold bg-gradient-to-l from-orange-500 to-rose-500 text-white hover:shadow-md hover:shadow-orange-200 disabled:from-stone-300 disabled:to-stone-300 disabled:shadow-none"
           >
             שמור שינויים
@@ -66,6 +115,49 @@ export function BusinessFormModal({ open, onClose, business }: Props) {
       }
     >
       <div className="space-y-4">
+        <FormField label="לוגו העסק" hint="יופיע על כל מסמך שמופק. מומלץ PNG עם רקע שקוף, עד 2MB">
+          <div className="flex items-start gap-4">
+            <div className="w-24 h-24 rounded-2xl border-2 border-dashed border-orange-200 flex items-center justify-center overflow-hidden bg-white flex-shrink-0">
+              {form.logoUrl ? (
+                <img src={form.logoUrl} alt="Logo" className="w-full h-full object-contain" />
+              ) : (
+                <ImageIcon className="w-8 h-8 text-orange-300" />
+              )}
+            </div>
+            <div className="flex-1 space-y-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleLogoUpload}
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border-2 border-orange-200 text-stone-800 hover:bg-orange-50 disabled:opacity-50"
+              >
+                <Upload className="w-4 h-4" />
+                {uploading ? "מעלה..." : form.logoUrl ? "החלף לוגו" : "העלה לוגו"}
+              </button>
+              {form.logoUrl && (
+                <button
+                  type="button"
+                  onClick={removeLogo}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-rose-700 hover:bg-rose-50 mr-2"
+                >
+                  <X className="w-4 h-4" />
+                  הסר
+                </button>
+              )}
+              {uploadError && (
+                <p className="text-xs text-rose-600">{uploadError}</p>
+              )}
+            </div>
+          </div>
+        </FormField>
+
         <FormField label="שם העסק" required>
           <input
             type="text"

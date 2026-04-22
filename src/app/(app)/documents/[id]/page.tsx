@@ -71,6 +71,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
         total: doc.total,
         businessName: business.name,
         documentId: doc.id,
+        logoUrl: business.logoUrl,
       });
       if (res.ok) {
         setToast({

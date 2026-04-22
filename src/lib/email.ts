@@ -7,6 +7,7 @@ export interface SendReceiptEmailArgs {
   total: number;
   businessName: string;
   documentId?: string;
+  logoUrl?: string;
 }
 
 export interface SendEmailResult {

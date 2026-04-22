@@ -3,7 +3,12 @@
     "allow": [
       "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000/dashboard)",
       "Bash(curl -s -o /dev/null -w \"dash:%{http_code} docs:%{http_code} receipt:%{http_code}\\\\n\" http://localhost:3000/dashboard http://localhost:3000/documents http://localhost:3000/documents/new/receipt)",
-      "Bash(curl -s -o /dev/null -w \"detail: %{http_code}\\\\n\" http://localhost:3000/documents/d1)"
+      "Bash(curl -s -o /dev/null -w \"detail: %{http_code}\\\\n\" http://localhost:3000/documents/d1)",
+      "Bash(npx tsc *)",
+      "Bash(npx next *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)"
     ]
   }
 }

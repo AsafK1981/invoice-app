@@ -24,23 +24,32 @@ const businessTypeLabels = {
 export function ReceiptView({ business, client, document: doc }: Props) {
   return (
     <div className="receipt-view mx-auto max-w-[210mm] bg-white p-12 shadow-lg print:shadow-none print:p-8">
-      <div className="flex items-start justify-between pb-6 border-b-2 border-orange-400">
-        <div>
-          <h1 className="text-3xl font-bold text-stone-900">{business.name}</h1>
-          <p className="text-sm text-stone-700 mt-1">
-            {businessTypeLabels[business.businessType]} · {business.taxId}
-          </p>
-          <p className="text-sm text-stone-700 mt-1">{business.address}</p>
-          {business.phone && (
-            <p className="text-sm text-stone-700" dir="ltr">
-              {business.phone}
-            </p>
+      <div className="flex items-start justify-between pb-6 border-b-2 border-orange-400 gap-6">
+        <div className="flex items-start gap-4">
+          {business.logoUrl && (
+            <img
+              src={business.logoUrl}
+              alt={business.name}
+              className="w-20 h-20 object-contain flex-shrink-0"
+            />
           )}
-          {business.email && (
-            <p className="text-sm text-stone-700" dir="ltr">
-              {business.email}
+          <div>
+            <h1 className="text-3xl font-bold text-stone-900">{business.name}</h1>
+            <p className="text-sm text-stone-700 mt-1">
+              {businessTypeLabels[business.businessType]} · {business.taxId}
             </p>
-          )}
+            <p className="text-sm text-stone-700 mt-1">{business.address}</p>
+            {business.phone && (
+              <p className="text-sm text-stone-700" dir="ltr">
+                {business.phone}
+              </p>
+            )}
+            {business.email && (
+              <p className="text-sm text-stone-700" dir="ltr">
+                {business.email}
+              </p>
+            )}
+          </div>
         </div>
         <div className="text-left">
           <div className="inline-block px-4 py-2 bg-gradient-to-br from-emerald-500 to-teal-600 text-white rounded-2xl font-bold text-lg print:bg-emerald-600">
