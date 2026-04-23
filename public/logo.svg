@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fb923c"/>
+      <stop offset="100%" stop-color="#f43f5e"/>
+    </linearGradient>
+    <linearGradient id="paperGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#fffaf5"/>
+    </linearGradient>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
+      <feOffset dx="0" dy="2" result="offsetblur"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.15"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Rounded background square -->
+  <rect x="10" y="10" width="180" height="180" rx="44" fill="url(#bgGrad)"/>
+
+  <!-- Receipt paper with zigzag bottom -->
+  <g filter="url(#softShadow)">
+    <path d="M 58 44
+             L 142 44
+             Q 150 44 150 52
+             L 150 140
+             L 142 134
+             L 134 140
+             L 126 134
+             L 118 140
+             L 110 134
+             L 102 140
+             L 94 134
+             L 86 140
+             L 78 134
+             L 70 140
+             L 62 134
+             L 58 138
+             Z"
+          fill="url(#paperGrad)"/>
+  </g>
+
+  <!-- Receipt lines -->
+  <rect x="70" y="64" width="60" height="4" rx="2" fill="#fdba74"/>
+  <rect x="70" y="76" width="45" height="3" rx="1.5" fill="#fed7aa"/>
+  <rect x="70" y="86" width="50" height="3" rx="1.5" fill="#fed7aa"/>
+  <rect x="70" y="96" width="40" height="3" rx="1.5" fill="#fed7aa"/>
+
+  <!-- Smile -->
+  <path d="M 82 114 Q 104 126 126 114"
+        stroke="#f97316"
+        stroke-width="4"
+        stroke-linecap="round"
+        fill="none"/>
+
+  <!-- Eyes -->
+  <circle cx="85" cy="108" r="2.5" fill="#f97316"/>
+  <circle cx="123" cy="108" r="2.5" fill="#f97316"/>
+
+  <!-- Sparkle accent -->
+  <g transform="translate(155, 55)" opacity="0.9">
+    <path d="M 0 -8 L 2 -2 L 8 0 L 2 2 L 0 8 L -2 2 L -8 0 L -2 -2 Z" fill="#fef3c7"/>
+  </g>
+  <g transform="translate(42, 160)" opacity="0.7">
+    <path d="M 0 -5 L 1.5 -1.5 L 5 0 L 1.5 1.5 L 0 5 L -1.5 1.5 L -5 0 L -1.5 -1.5 Z" fill="#fef3c7"/>
+  </g>
+</svg>
