@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useClients, clientStore } from "@/lib/client-store";
 import { formatDate } from "@/lib/format";
+import { parseEmails } from "@/lib/emails";
 import { ClientFormModal } from "@/components/client-form-modal";
 import { CsvImportModal } from "@/components/csv-import-modal";
 import { exportClients } from "@/lib/csv-export";
@@ -139,12 +140,28 @@ export default function ClientsPage() {
                     <span dir="ltr">{c.phone}</span>
                   </div>
                 )}
-                {c.email && (
-                  <div className="flex items-center gap-2 text-stone-800 truncate">
-                    <Mail className="w-3.5 h-3.5 text-stone-500 flex-shrink-0" />
-                    <span dir="ltr" className="truncate">{c.email}</span>
-                  </div>
-                )}
+                {c.email && (() => {
+                  const list = parseEmails(c.email);
+                  if (list.length === 0) return null;
+                  return (
+                    <div className="flex items-start gap-2 text-stone-800">
+                      <Mail className="w-3.5 h-3.5 text-stone-500 flex-shrink-0 mt-0.5" />
+                      <div className="flex flex-wrap gap-1 min-w-0">
+                        {list.map((e, i) => (
+                          <span
+                            key={i}
+                            dir="ltr"
+                            className="truncate max-w-full"
+                            title={e}
+                          >
+                            {e}
+                            {i < list.length - 1 && <span className="text-stone-400 mx-1">·</span>}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
                 {c.address && (
                   <div className="flex items-center gap-2 text-stone-800 truncate">
                     <MapPin className="w-3.5 h-3.5 text-stone-500 flex-shrink-0" />

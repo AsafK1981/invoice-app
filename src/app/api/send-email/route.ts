@@ -45,9 +45,21 @@ export async function POST(req: NextRequest) {
 
     const emailSubject = subject || `${businessName} - מסמך #${receiptNumber}`;
 
+    const recipients = String(to)
+      .split(/[,;\n]+/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    if (recipients.length === 0) {
+      return NextResponse.json(
+        { ok: false, error: "לא נמצאו נמענים" },
+        { status: 400 }
+      );
+    }
+
     const { data, error } = await resend.emails.send({
       from: `${escapeHtml(businessName)} <onboarding@resend.dev>`,
-      to: [to],
+      to: recipients,
       subject: emailSubject,
       html: `
         <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">

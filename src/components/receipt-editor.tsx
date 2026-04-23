@@ -17,6 +17,7 @@ import {
 import { formatCurrency } from "@/lib/format";
 import { sendReceiptEmail } from "@/lib/email";
 import { getNextNumber, saveDocument } from "@/lib/document-store";
+import { parseEmails, joinEmails, isValidEmail } from "@/lib/emails";
 import {
   type Business,
   type Client,
@@ -71,6 +72,10 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
     if (!emailOverridden) setEmailTo(selectedClient?.email || "");
   }, [selectedClient, emailOverridden]);
 
+  const emailRecipients = useMemo(() => parseEmails(emailTo), [emailTo]);
+  const allEmailsValid =
+    emailRecipients.length > 0 && emailRecipients.every(isValidEmail);
+
   useEffect(() => {
     if (!toast) return;
     const t = setTimeout(() => setToast(null), 5000);
@@ -105,7 +110,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   const canSave =
     !!clientId &&
     items.every((i) => i.description.trim() && i.quantity > 0 && i.unitPrice >= 0) &&
-    (!sendEmail || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTo));
+    (!sendEmail || allEmailsValid);
 
   async function handleSave() {
     if (!canSave || !selectedClient) return;
@@ -145,7 +150,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
 
       if (sendEmail) {
         const result = await sendReceiptEmail({
-          to: emailTo,
+          to: joinEmails(emailRecipients),
           clientName: selectedClient.name,
           receiptNumber: allocatedNumber,
           total,
@@ -346,18 +351,37 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
             <span className="text-stone-700">שלח את ה{docLabel} אוטומטית במייל ללקוח כשאני לוחץ שמור</span>
           </label>
           {sendEmail && (
-            <Field label="אימייל הלקוח">
+            <Field label="נמענים">
               <input
-                type="email"
+                type="text"
                 dir="ltr"
                 value={emailTo}
                 onChange={(e) => {
                   setEmailTo(e.target.value);
                   setEmailOverridden(true);
                 }}
-                placeholder="client@example.com"
+                placeholder="email1@example.com, email2@example.com"
                 className="input-warm"
               />
+              <div className="flex items-center justify-between mt-1">
+                <p className="text-xs text-stone-600">
+                  {emailRecipients.length > 0
+                    ? `יישלח ל-${emailRecipients.length} נמענים. הפרד אימיילים בפסיק.`
+                    : "הפרד כמה אימיילים בפסיק"}
+                </p>
+                {emailTo && emailOverridden && selectedClient?.email && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEmailTo(selectedClient.email || "");
+                      setEmailOverridden(false);
+                    }}
+                    className="text-xs text-orange-600 hover:underline"
+                  >
+                    שחזר מהלקוח
+                  </button>
+                )}
+              </div>
               {selectedClient && !selectedClient.email && (
                 <p className="text-xs text-amber-700 mt-1">
                   ללקוח זה אין אימייל שמור - מלא ידנית או ערוך את פרטי הלקוח
