@@ -1,0 +1,26 @@
+{
+  "name": "MySuperFriendlyInvoiceApp",
+  "short_name": "Invoices",
+  "description": "The super friendly way to manage invoices and receipts",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#fffaf5",
+  "theme_color": "#f97316",
+  "orientation": "portrait",
+  "lang": "he",
+  "dir": "rtl",
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

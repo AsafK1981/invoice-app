@@ -4,6 +4,17 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "MySuperFriendlyInvoiceApp",
   description: "The super friendly way to manage invoices and receipts",
+  manifest: "/manifest.json",
+  themeColor: "#f97316",
+  icons: {
+    icon: "/logo.svg",
+    apple: "/logo.svg",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "MyInvoice",
+  },
 };
 
 export default function RootLayout({

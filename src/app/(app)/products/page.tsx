@@ -1,15 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { Package, Plus, Tag, Pencil, Trash2 } from "lucide-react";
+import { Package, Plus, Tag, Pencil, Trash2, Upload } from "lucide-react";
 import { useProducts, productStore } from "@/lib/product-store";
 import { formatCurrency } from "@/lib/format";
 import { ProductFormModal } from "@/components/product-form-modal";
+import { CsvImportModal } from "@/components/csv-import-modal";
 import type { Product } from "@/lib/types";
 
 export default function ProductsPage() {
   const { items: products } = useProducts();
   const [modalOpen, setModalOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
 
   function openNew() {
@@ -40,13 +42,22 @@ export default function ProductsPage() {
             {products.length} פריטים בקטלוג
           </p>
         </div>
-        <button
-          onClick={openNew}
-          className="inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-5 py-3 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200 transition-all"
-        >
-          <Plus className="w-4 h-4" />
-          פריט חדש
-        </button>
+        <div className="flex gap-2 flex-wrap">
+          <button
+            onClick={() => setImportOpen(true)}
+            className="inline-flex items-center gap-2 bg-white border-2 border-orange-200 text-stone-800 px-4 py-2.5 rounded-2xl text-sm font-semibold hover:bg-orange-50"
+          >
+            <Upload className="w-4 h-4" />
+            ייבוא
+          </button>
+          <button
+            onClick={openNew}
+            className="inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-5 py-3 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200 transition-all"
+          >
+            <Plus className="w-4 h-4" />
+            פריט חדש
+          </button>
+        </div>
       </div>
 
       {products.length === 0 ? (
@@ -116,6 +127,12 @@ export default function ProductsPage() {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         product={editing}
+      />
+
+      <CsvImportModal
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        entityType="products"
       />
     </div>
   );

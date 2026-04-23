@@ -1,9 +1,10 @@
 "use client";
 
-import { TrendingUp, TrendingDown, PiggyBank, CalendarDays } from "lucide-react";
+import { TrendingUp, TrendingDown, PiggyBank, CalendarDays, Download } from "lucide-react";
 import { useDocuments } from "@/lib/document-store";
 import { useExpenses } from "@/lib/expense-store";
 import { formatCurrency } from "@/lib/format";
+import { exportDocuments, exportExpenses } from "@/lib/csv-export";
 
 export default function ReportsPage() {
   const { documents } = useDocuments();
@@ -55,14 +56,34 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-stone-900 flex items-center gap-3">
-          <span className="w-11 h-11 rounded-2xl bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center shadow-sm">
-            <TrendingUp className="w-5 h-5 text-white" />
-          </span>
-          דו״חות
-        </h1>
-        <p className="text-sm text-stone-700 mt-2 mr-14">סיכום פיננסי לפי תקופה</p>
+      <div className="flex items-start justify-between flex-wrap gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-stone-900 flex items-center gap-3">
+            <span className="w-11 h-11 rounded-2xl bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center shadow-sm">
+              <TrendingUp className="w-5 h-5 text-white" />
+            </span>
+            דו״חות
+          </h1>
+          <p className="text-sm text-stone-700 mt-2 mr-14">סיכום פיננסי לפי תקופה</p>
+        </div>
+        <div className="flex gap-2 flex-wrap">
+          <button
+            onClick={() => exportDocuments(documents)}
+            disabled={documents.length === 0}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border-2 border-orange-200 text-stone-800 hover:bg-orange-50 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Download className="w-4 h-4" />
+            ייצוא מסמכים (CSV)
+          </button>
+          <button
+            onClick={() => exportExpenses(expenses)}
+            disabled={expenses.length === 0}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border-2 border-orange-200 text-stone-800 hover:bg-orange-50 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Download className="w-4 h-4" />
+            ייצוא הוצאות (CSV)
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

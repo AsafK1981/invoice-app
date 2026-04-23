@@ -11,15 +11,20 @@ import {
   Trash2,
   StickyNote,
   MapPin,
+  Upload,
+  Download,
 } from "lucide-react";
 import { useClients, clientStore } from "@/lib/client-store";
 import { formatDate } from "@/lib/format";
 import { ClientFormModal } from "@/components/client-form-modal";
+import { CsvImportModal } from "@/components/csv-import-modal";
+import { exportClients } from "@/lib/csv-export";
 import type { Client } from "@/lib/types";
 
 export default function ClientsPage() {
   const { items: clients } = useClients();
   const [modalOpen, setModalOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [editing, setEditing] = useState<Client | null>(null);
 
   function openNew() {
@@ -48,13 +53,32 @@ export default function ClientsPage() {
           </h1>
           <p className="text-sm text-stone-700 mt-2 mr-14">{clients.length} לקוחות בספר</p>
         </div>
-        <button
-          onClick={openNew}
-          className="inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-5 py-3 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200 transition-all"
-        >
-          <UserPlus className="w-4 h-4" />
-          לקוח חדש
-        </button>
+        <div className="flex gap-2 flex-wrap">
+          <button
+            onClick={() => exportClients(clients)}
+            disabled={clients.length === 0}
+            className="inline-flex items-center gap-2 bg-white border-2 border-orange-200 text-stone-800 px-4 py-2.5 rounded-2xl text-sm font-semibold hover:bg-orange-50 disabled:opacity-40"
+            title="ייצוא לקוחות ל-CSV"
+          >
+            <Download className="w-4 h-4" />
+            ייצוא
+          </button>
+          <button
+            onClick={() => setImportOpen(true)}
+            className="inline-flex items-center gap-2 bg-white border-2 border-orange-200 text-stone-800 px-4 py-2.5 rounded-2xl text-sm font-semibold hover:bg-orange-50"
+            title="ייבוא מקובץ CSV"
+          >
+            <Upload className="w-4 h-4" />
+            ייבוא
+          </button>
+          <button
+            onClick={openNew}
+            className="inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-5 py-3 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200 transition-all"
+          >
+            <UserPlus className="w-4 h-4" />
+            לקוח חדש
+          </button>
+        </div>
       </div>
 
       {clients.length === 0 ? (
@@ -147,6 +171,12 @@ export default function ClientsPage() {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         client={editing}
+      />
+
+      <CsvImportModal
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        entityType="clients"
       />
     </div>
   );

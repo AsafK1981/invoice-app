@@ -14,6 +14,7 @@ import { useDocuments } from "@/lib/document-store";
 import { useExpenses } from "@/lib/expense-store";
 import { formatCurrency } from "@/lib/format";
 import { DocumentsTable } from "@/components/documents-table";
+import { DashboardChart } from "@/components/dashboard-chart";
 
 export default function DashboardPage() {
   const { documents, ready } = useDocuments();
@@ -113,7 +114,15 @@ export default function DashboardPage() {
         })}
       </div>
 
-      <div className="card-soft overflow-hidden animate-fade-in-up stagger-5">
+      <div className="card-soft p-6 animate-fade-in-up stagger-5">
+        <h2 className="font-semibold text-stone-900 mb-4 flex items-center gap-2">
+          <TrendingUp className="w-5 h-5 text-orange-500" />
+          הכנסות והוצאות - 6 חודשים אחרונים
+        </h2>
+        <DashboardChart documents={documents} expenses={expenses} />
+      </div>
+
+      <div className="card-soft overflow-hidden animate-fade-in-up stagger-6">
         <div className="flex items-center justify-between px-6 py-4 border-b border-orange-100">
           <h2 className="font-semibold text-stone-900 flex items-center gap-2">
             <span className="text-2xl">📋</span>
