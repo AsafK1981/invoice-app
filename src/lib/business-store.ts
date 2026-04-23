@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "./supabase";
+import { getBusinessId } from "./business-init";
 import type { Business } from "./types";
 
 const CHANGE_EVENT = "invoice-app:business-changed";
@@ -19,11 +20,11 @@ export function useBusiness() {
   const [ready, setReady] = useState(false);
 
   const fetch = useCallback(async () => {
-    const { data } = await supabase
-      .from("businesses")
-      .select("*")
-      .limit(1)
-      .single();
+    const bid = getBusinessId();
+    let query = supabase.from("businesses").select("*");
+    if (bid) query = query.eq("id", bid);
+    const { data } = await query.limit(1).maybeSingle();
+
     setBusiness(
       data
         ? {
@@ -51,8 +52,8 @@ export function useBusiness() {
   return { business, ready, refetch: fetch };
 }
 
-export async function saveBusiness(business: Business) {
-  const { error } = await supabase
+export async function saveBusiness(business: Business): Promise<void> {
+  const { data, error } = await supabase
     .from("businesses")
     .update({
       name: business.name,
@@ -63,7 +64,14 @@ export async function saveBusiness(business: Business) {
       email: business.email || null,
       logo_url: business.logoUrl || null,
     })
-    .eq("id", business.id);
+    .eq("id", business.id)
+    .select();
+
   if (error) throw new Error(error.message);
+  if (!data || data.length === 0) {
+    throw new Error(
+      "השמירה לא בוצעה - ייתכן שאין לך הרשאה לעדכן את העסק הזה. רענן את הדף ונסה שוב."
+    );
+  }
   window.dispatchEvent(new Event(CHANGE_EVENT));
 }

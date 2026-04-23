@@ -18,12 +18,15 @@ export function BusinessFormModal({ open, onClose, business }: Props) {
   const [form, setForm] = useState(business);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (open) {
       setForm(business);
       setUploadError(null);
+      setSaveError(null);
     }
   }, [open, business]);
 
@@ -75,15 +78,23 @@ export function BusinessFormModal({ open, onClose, business }: Props) {
 
   async function handleSubmit() {
     if (!form.name.trim() || !form.taxId.trim()) return;
-    await saveBusiness({
-      ...form,
-      name: form.name.trim(),
-      taxId: form.taxId.trim(),
-      address: form.address.trim(),
-      phone: form.phone?.trim() || undefined,
-      email: form.email?.trim() || undefined,
-    });
-    onClose();
+    setSaveError(null);
+    setSaving(true);
+    try {
+      await saveBusiness({
+        ...form,
+        name: form.name.trim(),
+        taxId: form.taxId.trim(),
+        address: form.address.trim(),
+        phone: form.phone?.trim() || undefined,
+        email: form.email?.trim() || undefined,
+      });
+      onClose();
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "שגיאה בשמירה");
+    } finally {
+      setSaving(false);
+    }
   }
 
   const canSubmit = form.name.trim().length > 0 && form.taxId.trim().length > 0;
@@ -106,15 +117,21 @@ export function BusinessFormModal({ open, onClose, business }: Props) {
           </button>
           <button
             onClick={handleSubmit}
-            disabled={!canSubmit || uploading}
+            disabled={!canSubmit || uploading || saving}
             className="px-5 py-2 rounded-xl text-sm font-semibold bg-gradient-to-l from-orange-500 to-rose-500 text-white hover:shadow-md hover:shadow-orange-200 disabled:from-stone-300 disabled:to-stone-300 disabled:shadow-none"
           >
-            שמור שינויים
+            {saving ? "שומר..." : "שמור שינויים"}
           </button>
         </>
       }
     >
       <div className="space-y-4">
+        {saveError && (
+          <div className="text-sm text-rose-700 bg-rose-50 border border-rose-200 p-3 rounded-xl">
+            {saveError}
+          </div>
+        )}
+
         <FormField label="לוגו העסק" hint="יופיע על כל מסמך שמופק. מומלץ PNG עם רקע שקוף, עד 2MB">
           <div className="flex items-start gap-4">
             <div className="w-24 h-24 rounded-2xl border-2 border-dashed border-orange-200 flex items-center justify-center overflow-hidden bg-white flex-shrink-0">

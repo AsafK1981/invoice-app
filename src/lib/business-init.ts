@@ -45,7 +45,7 @@ async function initBusiness(): Promise<string> {
       .select("id")
       .eq("id", cached)
       .eq("user_id", user.id)
-      .single();
+      .maybeSingle();
     if (data) return cached;
   }
 
@@ -53,8 +53,9 @@ async function initBusiness(): Promise<string> {
     .from("businesses")
     .select("id")
     .eq("user_id", user.id)
+    .order("created_at", { ascending: true })
     .limit(1)
-    .single();
+    .maybeSingle();
 
   if (existing) {
     localStorage.setItem(BUSINESS_ID_KEY, existing.id);
