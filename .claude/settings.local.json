@@ -11,7 +11,10 @@
       "Bash(git push *)",
       "Bash(npm install *)",
       "Bash(node scripts/insert-tim-teddy.mjs)",
-      "Bash(node scripts/update-tim-teddy-emails.mjs)"
+      "Bash(node scripts/update-tim-teddy-emails.mjs)",
+      "Bash(node scripts/import-invoice4u-data.mjs)",
+      "Bash(where vercel *)",
+      "Bash(npm list *)"
     ]
   }
 }
