@@ -14,7 +14,8 @@
       "Bash(node scripts/update-tim-teddy-emails.mjs)",
       "Bash(node scripts/import-invoice4u-data.mjs)",
       "Bash(where vercel *)",
-      "Bash(npm list *)"
+      "Bash(npm list *)",
+      "Bash(node scripts/test-gmail.mjs)"
     ]
   }
 }
