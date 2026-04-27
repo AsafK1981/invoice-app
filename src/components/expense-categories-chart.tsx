@@ -44,7 +44,7 @@ export function ExpenseCategoriesChart({ expenses }: Props) {
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
-      <div className="h-44 relative">
+      <div className="relative" style={{ width: "100%", height: 176 }}>
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie

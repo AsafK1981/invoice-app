@@ -1,11 +1,10 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "MySuperFriendlyInvoiceApp",
   description: "The super friendly way to manage invoices and receipts",
   manifest: "/manifest.json",
-  themeColor: "#f97316",
   icons: {
     icon: "/logo.svg",
     apple: "/logo.svg",
@@ -15,6 +14,10 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: "MyInvoice",
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#f97316",
 };
 
 export default function RootLayout({

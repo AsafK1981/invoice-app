@@ -63,7 +63,7 @@ export function DashboardChart({ documents, expenses }: Props) {
   }
 
   return (
-    <div className="h-72">
+    <div style={{ width: "100%", height: 288 }}>
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#fed7aa" />
