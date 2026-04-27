@@ -1,6 +1,7 @@
 "use client";
 
-import { createContext, useContext } from "react";
+import { createContext, useContext, useEffect } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { Sparkles } from "lucide-react";
 import { useBusinessInit } from "@/lib/business-init";
 import { useRequireAuth } from "@/lib/auth";
@@ -14,8 +15,19 @@ export function useBusinessId(): string {
 }
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const pathname = usePathname();
   const { user, loading: authLoading } = useRequireAuth();
   const { businessId, loading: bizLoading } = useBusinessInit();
+
+  useEffect(() => {
+    if (!user) return;
+    const onboarded = user.user_metadata?.onboarded === true;
+    const onOnboarding = pathname === "/onboarding";
+    if (!onboarded && !onOnboarding) {
+      router.replace("/onboarding");
+    }
+  }, [user, pathname, router]);
 
   if (authLoading || bizLoading) {
     return (

@@ -16,7 +16,8 @@
       "Bash(where vercel *)",
       "Bash(npm list *)",
       "Bash(node scripts/test-gmail.mjs)",
-      "Bash(node scripts/add-vat-and-tax-fields.mjs)"
+      "Bash(node scripts/add-vat-and-tax-fields.mjs)",
+      "Bash(node scripts/mark-onboarded.mjs)"
     ]
   }
 }

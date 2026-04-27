@@ -8,8 +8,8 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-const GMAIL_USER = process.env.GMAIL_USER;
-const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD;
+const FALLBACK_GMAIL_USER = process.env.GMAIL_USER;
+const FALLBACK_GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD;
 
 function escapeHtml(str: string): string {
   return String(str)
@@ -102,21 +102,26 @@ export async function POST(req: NextRequest) {
     const emailSubject = subject || `${businessName} - מסמך #${receiptNumber}`;
     const html = buildHtml({ businessName, clientName, receiptNumber, total, viewUrl, logoUrl });
 
+    // Pick Gmail credentials: prefer the user's own, fall back to global env vars
+    const userGmailUser = (user.user_metadata?.gmail_user as string) || FALLBACK_GMAIL_USER;
+    const userGmailPassword =
+      (user.user_metadata?.gmail_app_password as string) || FALLBACK_GMAIL_APP_PASSWORD;
+
     // Use Gmail SMTP if configured, else fall back to Resend
-    if (GMAIL_USER && GMAIL_APP_PASSWORD) {
+    if (userGmailUser && userGmailPassword) {
       try {
         const transporter = nodemailer.createTransport({
           host: "smtp.gmail.com",
           port: 465,
           secure: true,
           auth: {
-            user: GMAIL_USER,
-            pass: GMAIL_APP_PASSWORD,
+            user: userGmailUser,
+            pass: userGmailPassword,
           },
         });
 
         const info = await transporter.sendMail({
-          from: `${businessName} <${GMAIL_USER}>`,
+          from: `${businessName} <${userGmailUser}>`,
           to: recipients.join(", "),
           subject: emailSubject,
           html,

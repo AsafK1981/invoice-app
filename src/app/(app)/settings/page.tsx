@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useBusiness } from "@/lib/business-store";
 import { BusinessFormModal } from "@/components/business-form-modal";
+import { EmailSettingsModal } from "@/components/email-settings-modal";
 import { supabase } from "@/lib/supabase";
 import { getBusinessId } from "@/lib/business-init";
 
@@ -28,6 +29,7 @@ const businessTypeLabels = {
 export default function SettingsPage() {
   const { business } = useBusiness();
   const [editOpen, setEditOpen] = useState(false);
+  const [emailOpen, setEmailOpen] = useState(false);
 
   const fields = [
     { icon: Building2, label: "שם העסק", value: business.name },
@@ -108,6 +110,25 @@ export default function SettingsPage() {
         </div>
       </div>
 
+      <div className="card-soft p-6">
+        <div className="flex items-center justify-between pb-4 border-b border-orange-100 mb-4">
+          <h2 className="font-semibold text-stone-900 flex items-center gap-2">
+            <Mail className="w-4 h-4 text-orange-500" />
+            הגדרות אימייל
+          </h2>
+          <button
+            onClick={() => setEmailOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-semibold text-orange-700 hover:bg-orange-50"
+          >
+            <Pencil className="w-3.5 h-3.5" />
+            הגדר
+          </button>
+        </div>
+        <p className="text-sm text-stone-700">
+          חבר את חשבון ה-Gmail שלך כדי שמסמכים יישלחו ישירות ממך ולא מכתובת ניטרלית של המערכת.
+        </p>
+      </div>
+
       <div className="card-soft p-4 bg-gradient-to-br from-orange-50 to-amber-50 border-orange-200">
         <div className="flex items-start gap-3">
           <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center flex-shrink-0 shadow-sm">
@@ -115,8 +136,7 @@ export default function SettingsPage() {
           </div>
           <div className="text-sm text-stone-800">
             <strong className="block mb-1 text-stone-900">בהמשך:</strong>
-            העלאת לוגו, התקנת תעודת חתימה דיגיטלית, וחיבור API של חשבונית ישראל (למעבר לעוסק
-            מורשה).
+            התקנת תעודת חתימה דיגיטלית, וחיבור API של חשבונית ישראל (למעבר לעוסק מורשה).
           </div>
         </div>
       </div>
@@ -147,6 +167,8 @@ export default function SettingsPage() {
         onClose={() => setEditOpen(false)}
         business={business}
       />
+
+      <EmailSettingsModal open={emailOpen} onClose={() => setEmailOpen(false)} />
     </div>
   );
 }
