@@ -1,7 +1,14 @@
+"use client";
+
 import Link from "next/link";
 import { ArrowRight, ReceiptText, FileText, FileCheck, FileMinus, Lock } from "lucide-react";
+import { useBusiness } from "@/lib/business-store";
+import { canIssueTaxInvoices } from "@/lib/vat";
 
 export default function NewDocumentPage() {
+  const { business } = useBusiness();
+  const canTaxInvoice = canIssueTaxInvoices(business);
+
   const cards = [
     {
       title: "קבלה",
@@ -21,19 +28,25 @@ export default function NewDocumentPage() {
     },
     {
       title: "חשבונית מס",
-      desc: "זמין רק לעוסק מורשה",
+      desc: canTaxInvoice
+        ? "חשבונית מס - כולל מע״מ"
+        : "זמין רק לעוסק מורשה",
       icon: FileCheck,
+      href: canTaxInvoice ? "/documents/new/tax-invoice" : undefined,
       gradient: "from-sky-400 to-blue-500",
       bgGradient: "from-sky-50 to-blue-50",
-      disabledReason: "זמין כשתעבור לעוסק מורשה",
+      disabledReason: canTaxInvoice ? undefined : "שנה את סוג העוסק להגדרות לעוסק מורשה",
     },
     {
       title: "חשבונית זיכוי",
-      desc: "זמין רק לעוסק מורשה",
+      desc: canTaxInvoice
+        ? "ביטול/החזר על חשבונית מס שהונפקה"
+        : "זמין רק לעוסק מורשה",
       icon: FileMinus,
+      href: canTaxInvoice ? "/documents/new/credit-note" : undefined,
       gradient: "from-rose-400 to-pink-500",
       bgGradient: "from-rose-50 to-pink-50",
-      disabledReason: "זמין כשתעבור לעוסק מורשה",
+      disabledReason: canTaxInvoice ? undefined : "שנה את סוג העוסק להגדרות לעוסק מורשה",
     },
   ];
 

@@ -122,9 +122,9 @@ export function ReceiptView({ business, client, document: doc }: Props) {
             <span>סכום ביניים</span>
             <span>{formatCurrency(doc.subtotal)}</span>
           </div>
-          {doc.vat > 0 && (
+          {Math.abs(doc.vat) > 0 && (
             <div className="flex justify-between text-sm text-stone-700">
-              <span>מע״מ</span>
+              <span>מע״מ ({doc.subtotal !== 0 ? Math.round((doc.vat / doc.subtotal) * 100) : 0}%)</span>
               <span>{formatCurrency(doc.vat)}</span>
             </div>
           )}

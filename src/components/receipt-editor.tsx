@@ -18,6 +18,7 @@ import { formatCurrency } from "@/lib/format";
 import { sendReceiptEmail } from "@/lib/email";
 import { getNextNumber, saveDocument } from "@/lib/document-store";
 import { parseEmails, joinEmails, isValidEmail } from "@/lib/emails";
+import { getVatRate, calculateVat } from "@/lib/vat";
 import {
   type Business,
   type Client,
@@ -66,7 +67,12 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   const [toast, setToast] = useState<{ kind: "success" | "error"; text: string } | null>(null);
 
   const selectedClient = clients.find((c) => c.id === clientId);
-  const total = useMemo(() => items.reduce((sum, i) => sum + i.quantity * i.unitPrice, 0), [items]);
+  const subtotal = useMemo(() => items.reduce((sum, i) => sum + i.quantity * i.unitPrice, 0), [items]);
+  const vatRate = getVatRate(business);
+  const isCreditNote = documentType === "credit_note";
+  const sign = isCreditNote ? -1 : 1;
+  const vat = useMemo(() => calculateVat(subtotal, vatRate), [subtotal, vatRate]);
+  const total = subtotal + vat;
 
   useEffect(() => {
     if (!emailOverridden) setEmailTo(selectedClient?.email || "");
@@ -133,13 +139,13 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
           id: i.id,
           productId: i.productId,
           description: i.description,
-          quantity: i.quantity,
+          quantity: sign * i.quantity,
           unitPrice: i.unitPrice,
-          total: i.quantity * i.unitPrice,
+          total: sign * i.quantity * i.unitPrice,
         })),
-        subtotal: total,
-        vat: 0,
-        total,
+        subtotal: sign * subtotal,
+        vat: sign * vat,
+        total: sign * total,
         paymentMethod: isQuote ? undefined : paymentMethod,
         notes: isQuote && validUntil
           ? `${notes.trim() ? notes.trim() + "\n" : ""}הצעה בתוקף עד: ${validUntil}`
@@ -405,8 +411,16 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
             <SummaryRow label="לקוח" value={selectedClient?.name || "—"} />
             <SummaryRow label="מספר פריטים" value={String(items.length)} />
             <div className="border-t border-orange-200 my-3" />
+            {vatRate > 0 && (
+              <>
+                <SummaryRow label="סכום ביניים" value={formatCurrency(subtotal)} />
+                <SummaryRow label={`מע״מ (${vatRate}%)`} value={formatCurrency(vat)} />
+              </>
+            )}
             <div className="flex justify-between items-baseline">
-              <span className="text-stone-800 font-semibold">{isQuote ? "סה״כ הצעה" : "סה״כ לתשלום"}</span>
+              <span className="text-stone-800 font-semibold">
+                {isQuote ? "סה״כ הצעה" : isCreditNote ? "סה״כ זיכוי" : "סה״כ לתשלום"}
+              </span>
               <span className="text-3xl font-bold bg-gradient-to-l from-orange-500 to-rose-500 bg-clip-text text-transparent">
                 {formatCurrency(total)}
               </span>

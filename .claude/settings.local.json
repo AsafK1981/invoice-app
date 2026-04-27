@@ -15,7 +15,8 @@
       "Bash(node scripts/import-invoice4u-data.mjs)",
       "Bash(where vercel *)",
       "Bash(npm list *)",
-      "Bash(node scripts/test-gmail.mjs)"
+      "Bash(node scripts/test-gmail.mjs)",
+      "Bash(node scripts/add-vat-and-tax-fields.mjs)"
     ]
   }
 }
