@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 import {
   FileText as FileTextIcon,
   Trash2,
@@ -47,6 +48,9 @@ interface Props {
 
 export function ReceiptEditor({ business, clients, products, documentType = "receipt" }: Props) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const fromDocId = searchParams.get("from");
+  const isConvert = searchParams.get("convert") === "1";
   const today = new Date().toISOString().slice(0, 10);
   const isQuote = documentType === "quote";
   const docLabel = DOCUMENT_TYPE_LABELS[documentType];
@@ -77,6 +81,44 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   useEffect(() => {
     if (!emailOverridden) setEmailTo(selectedClient?.email || "");
   }, [selectedClient, emailOverridden]);
+
+  useEffect(() => {
+    if (!fromDocId) return;
+    (async () => {
+      const { data: srcDoc } = await supabase
+        .from("documents")
+        .select("*")
+        .eq("id", fromDocId)
+        .maybeSingle();
+      if (!srcDoc) return;
+      const { data: srcItems } = await supabase
+        .from("document_items")
+        .select("*")
+        .eq("document_id", fromDocId)
+        .order("sort_order");
+
+      setClientId(srcDoc.client_id || "");
+      if (isConvert) {
+        const noteText = `הומר מהצעת מחיר #${srcDoc.number}`;
+        setSubject(srcDoc.subject || "");
+        setNotes(srcDoc.notes ? `${srcDoc.notes}\n${noteText}` : noteText);
+      } else {
+        setSubject(srcDoc.subject || "");
+        setNotes(srcDoc.notes || "");
+      }
+      if (srcItems && srcItems.length > 0) {
+        setItems(
+          srcItems.map((row: { id: string; product_id: string | null; description: string; quantity: number; unit_price: number }) => ({
+            id: crypto.randomUUID(),
+            productId: row.product_id || undefined,
+            description: row.description,
+            quantity: Math.abs(Number(row.quantity)) || 1,
+            unitPrice: Number(row.unit_price) || 0,
+          }))
+        );
+      }
+    })();
+  }, [fromDocId, isConvert]);
 
   const emailRecipients = useMemo(() => parseEmails(emailTo), [emailTo]);
   const allEmailsValid =

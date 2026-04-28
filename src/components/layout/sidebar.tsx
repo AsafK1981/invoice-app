@@ -17,6 +17,7 @@ import {
   X,
   User,
   CreditCard,
+  RefreshCw,
 } from "lucide-react";
 import { useBusiness } from "@/lib/business-store";
 import { signOut } from "@/lib/auth";
@@ -28,6 +29,7 @@ const navItems = [
   { href: "/clients", label: "לקוחות", icon: Users },
   { href: "/products", label: "מוצרים ושירותים", icon: Package },
   { href: "/expenses", label: "הוצאות", icon: Wallet },
+  { href: "/recurring", label: "חיובים חוזרים", icon: RefreshCw },
   { href: "/reports", label: "דו״חות", icon: TrendingUp },
   { href: "/billing", label: "חיוב ומסלולים", icon: CreditCard },
   { href: "/settings", label: "הגדרות", icon: Settings },

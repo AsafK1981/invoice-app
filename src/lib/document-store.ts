@@ -153,3 +153,12 @@ export async function deleteDocument(id: string) {
   window.dispatchEvent(new Event(CHANGE_EVENT));
 }
 
+export async function updateDocumentStatus(id: string, status: InvoiceDocument["status"]) {
+  const { error } = await supabase
+    .from("documents")
+    .update({ status })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+  window.dispatchEvent(new Event(CHANGE_EVENT));
+}
+

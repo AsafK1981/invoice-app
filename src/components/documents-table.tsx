@@ -184,11 +184,26 @@ export function DocumentsTable({ documents, limit }: Props) {
                   <td className="px-6 py-3 text-sm text-stone-700">{d.subject || "—"}</td>
                   <td className="px-6 py-3 text-sm text-stone-600">{formatDate(d.date)}</td>
                   <td className="px-6 py-3 text-sm">
-                    <span
-                      className={`inline-block px-2.5 py-1 rounded-full text-xs font-medium ${STATUS_THEMES[d.status]}`}
-                    >
-                      {DOCUMENT_STATUS_LABELS[d.status]}
-                    </span>
+                    <div className="flex flex-col gap-1">
+                      <span
+                        className={`inline-block px-2.5 py-1 rounded-full text-xs font-medium ${STATUS_THEMES[d.status]} self-start`}
+                      >
+                        {DOCUMENT_STATUS_LABELS[d.status]}
+                      </span>
+                      {d.status === "sent" && d.type !== "receipt" && d.type !== "tax_invoice_receipt" && (() => {
+                        const days = Math.floor(
+                          (Date.now() - new Date(d.date).getTime()) / (1000 * 60 * 60 * 24)
+                        );
+                        if (days >= 7) {
+                          return (
+                            <span className="text-xs text-amber-700 font-medium">
+                              {days} ימים ללא תשלום
+                            </span>
+                          );
+                        }
+                        return null;
+                      })()}
+                    </div>
                   </td>
                   <td className="px-6 py-3 text-sm font-bold text-left text-stone-900">
                     {formatCurrency(d.total)}
