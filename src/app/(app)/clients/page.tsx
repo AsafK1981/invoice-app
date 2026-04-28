@@ -104,7 +104,7 @@ export default function ClientsPage() {
               key={c.id}
               className="card-soft p-5 hover:shadow-md hover:-translate-y-0.5 transition-all group relative"
             >
-              <div className="absolute top-3 left-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="absolute top-3 left-3 flex gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                 <button
                   onClick={() => openEdit(c)}
                   className="w-8 h-8 rounded-xl bg-white hover:bg-orange-50 text-stone-600 hover:text-orange-600 flex items-center justify-center shadow-sm border border-orange-100"

@@ -1,9 +1,26 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
+const SITE_URL = "https://invoice-app-ochre-five.vercel.app";
+
 export const metadata: Metadata = {
-  title: "MySuperFriendlyInvoiceApp",
-  description: "The super friendly way to manage invoices and receipts",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "MySuperFriendlyInvoiceApp - חשבוניות וקבלות בלי כאב ראש",
+    template: "%s | MySuperFriendlyInvoiceApp",
+  },
+  description:
+    "אפליקציית חשבוניות חינמית לעצמאיים בישראל. הפק קבלות, חשבונות עסקה וחשבוניות מס במהירות. שליחה במייל, ניהול לקוחות, דשבורד עם גרפים. עברית מלאה.",
+  keywords: [
+    "חשבוניות",
+    "קבלות",
+    "עוסק פטור",
+    "עוסק מורשה",
+    "חשבונית מס",
+    "חשבון עסקה",
+    "חשבוניות אונליין",
+    "ניהול עסק",
+  ],
   manifest: "/manifest.json",
   icons: {
     icon: "/logo.svg",
@@ -13,6 +30,29 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: "default",
     title: "MyInvoice",
+  },
+  openGraph: {
+    type: "website",
+    locale: "he_IL",
+    url: SITE_URL,
+    siteName: "MySuperFriendlyInvoiceApp",
+    title: "MySuperFriendlyInvoiceApp - חשבוניות וקבלות בלי כאב ראש",
+    description:
+      "אפליקציית חשבוניות חינמית לעצמאיים בישראל. עברית מלאה, ניהול לקוחות, שליחה במייל, דשבורד עם גרפים.",
+    images: [
+      {
+        url: "/logo.svg",
+        width: 512,
+        height: 512,
+        alt: "MySuperFriendlyInvoiceApp",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary",
+    title: "MySuperFriendlyInvoiceApp - חשבוניות וקבלות בלי כאב ראש",
+    description: "אפליקציית חשבוניות חינמית לעצמאיים בישראל",
+    images: ["/logo.svg"],
   },
 };
 

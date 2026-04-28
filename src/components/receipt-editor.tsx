@@ -176,7 +176,10 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
         clientId: selectedClient.id,
         clientName: selectedClient.name,
         subject: subject.trim() || undefined,
-        status: isQuote ? "sent" : "paid",
+        status:
+          documentType === "receipt" || documentType === "tax_invoice_receipt"
+            ? "paid"
+            : "sent",
         items: items.map((i) => ({
           id: i.id,
           productId: i.productId,

@@ -63,7 +63,13 @@ export function AccountSettingsModal({ open, onClose }: Props) {
     }
     setSaving(true);
     try {
-      const res = await fetch("/api/delete-account", { method: "POST" });
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) throw new Error("לא מחובר - התחבר מחדש");
+      const res = await fetch("/api/delete-account", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error || "שגיאה במחיקת החשבון");

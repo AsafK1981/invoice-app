@@ -120,8 +120,10 @@ export async function POST(req: NextRequest) {
           },
         });
 
+        // Sanitize for SMTP From header (no HTML, no quotes, no commas)
+        const fromName = String(businessName || "").replace(/[",;<>\r\n]/g, " ").trim() || "Invoices";
         const info = await transporter.sendMail({
-          from: `${businessName} <${userGmailUser}>`,
+          from: `"${fromName}" <${userGmailUser}>`,
           to: recipients.join(", "),
           subject: emailSubject,
           html,
@@ -140,8 +142,9 @@ export async function POST(req: NextRequest) {
     }
 
     // Fallback: Resend
+    const fromName = String(businessName || "").replace(/[",;<>\r\n]/g, " ").trim() || "Invoices";
     const { data, error } = await resend.emails.send({
-      from: `${escapeHtml(businessName)} <onboarding@resend.dev>`,
+      from: `${fromName} <onboarding@resend.dev>`,
       to: recipients,
       subject: emailSubject,
       html,

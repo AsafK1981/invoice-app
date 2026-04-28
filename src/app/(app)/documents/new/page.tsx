@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, ReceiptText, FileText, FileCheck, FileMinus, Lock } from "lucide-react";
+import { ArrowRight, ReceiptText, FileText, FileCheck, FileMinus, FileSpreadsheet, Lock } from "lucide-react";
 import { useBusiness } from "@/lib/business-store";
 import { canIssueTaxInvoices } from "@/lib/vat";
 
@@ -35,6 +35,17 @@ export default function NewDocumentPage() {
       href: canTaxInvoice ? "/documents/new/tax-invoice" : undefined,
       gradient: "from-sky-400 to-blue-500",
       bgGradient: "from-sky-50 to-blue-50",
+      disabledReason: canTaxInvoice ? undefined : "שנה את סוג העוסק להגדרות לעוסק מורשה",
+    },
+    {
+      title: "חשבונית מס/קבלה",
+      desc: canTaxInvoice
+        ? "חשבונית מס + קבלה במסמך אחד"
+        : "זמין רק לעוסק מורשה",
+      icon: FileSpreadsheet,
+      href: canTaxInvoice ? "/documents/new/tax-invoice-receipt" : undefined,
+      gradient: "from-violet-400 to-purple-500",
+      bgGradient: "from-violet-50 to-purple-50",
       disabledReason: canTaxInvoice ? undefined : "שנה את סוג העוסק להגדרות לעוסק מורשה",
     },
     {

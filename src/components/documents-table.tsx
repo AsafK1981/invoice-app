@@ -140,7 +140,8 @@ export function DocumentsTable({ documents, limit }: Props) {
         </div>
       </div>
 
-      <table className="w-full">
+      <div className="overflow-x-auto">
+      <table className="w-full min-w-[720px]">
         <thead className="text-xs text-stone-700 bg-white">
           <tr>
             <th className="text-right px-6 py-3 font-semibold">מספר</th>
@@ -235,6 +236,7 @@ export function DocumentsTable({ documents, limit }: Props) {
           )}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }

@@ -83,8 +83,8 @@ export default function LandingPage() {
   ];
 
   const pricingPoints = [
-    "ללא הגבלה על מספר חשבוניות",
-    "ללא הגבלה על מספר לקוחות",
+    "כל הפיצ'רים ללא הגבלה",
+    "ללא מגבלה על מספר חשבוניות או לקוחות",
     "PDF להדפסה והורדה",
     "שליחה במייל ללקוח",
     "גיבוי ענן אוטומטי",
@@ -243,12 +243,17 @@ export default function LandingPage() {
               © 2026 MySuperFriendlyInvoiceApp
             </span>
           </div>
-          <Link
-            href="/login"
-            className="text-sm text-orange-600 hover:text-orange-700 font-semibold"
-          >
-            התחבר →
-          </Link>
+          <div className="flex items-center gap-4 text-sm">
+            <Link href="/privacy" className="text-stone-600 hover:text-orange-700">
+              מדיניות פרטיות
+            </Link>
+            <Link href="/terms" className="text-stone-600 hover:text-orange-700">
+              תנאי שימוש
+            </Link>
+            <Link href="/login" className="text-orange-600 hover:text-orange-700 font-semibold">
+              התחבר →
+            </Link>
+          </div>
         </div>
       </footer>
     </div>

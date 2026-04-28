@@ -78,10 +78,10 @@ export function ClientFormModal({ open, onClose, client }: Props) {
     onClose();
   }
 
-  const canSubmit = form.name.trim().length > 0;
   const invalidEmailCount = emails.filter(
     (e) => e.trim() && !isValidEmail(e.trim()),
   ).length;
+  const canSubmit = form.name.trim().length > 0 && invalidEmailCount === 0;
 
   return (
     <Modal

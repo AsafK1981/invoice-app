@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { parseEmails, isValidEmail } from "./emails";
 
 export interface SendReceiptEmailArgs {
   to: string;
@@ -18,7 +19,8 @@ export interface SendEmailResult {
 }
 
 export async function sendReceiptEmail(args: SendReceiptEmailArgs): Promise<SendEmailResult> {
-  if (!args.to || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(args.to)) {
+  const recipients = parseEmails(args.to);
+  if (recipients.length === 0 || !recipients.every(isValidEmail)) {
     return { ok: false, error: "כתובת אימייל לא תקינה", mocked: false };
   }
 

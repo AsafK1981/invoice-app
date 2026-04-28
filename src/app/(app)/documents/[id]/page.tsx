@@ -330,6 +330,8 @@ function docTypeToRoute(type: string): string {
       return "quote";
     case "tax_invoice":
       return "tax-invoice";
+    case "tax_invoice_receipt":
+      return "tax-invoice";
     case "credit_note":
       return "credit-note";
     default:

@@ -17,7 +17,8 @@
       "Bash(npm list *)",
       "Bash(node scripts/test-gmail.mjs)",
       "Bash(node scripts/add-vat-and-tax-fields.mjs)",
-      "Bash(node scripts/mark-onboarded.mjs)"
+      "Bash(node scripts/mark-onboarded.mjs)",
+      "Read(//c/Users/asafk/projects/invoke-app/src/app/\\(app\\)/billing/**)"
     ]
   }
 }
