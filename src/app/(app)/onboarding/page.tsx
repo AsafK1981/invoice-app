@@ -96,11 +96,10 @@ export default function OnboardingPage() {
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-2xl">
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-3">
+          <div className="mb-3">
             <p className="text-xs font-semibold text-stone-700">
               שלב <span className="text-orange-600">{currentStepNumber}</span> מתוך {totalSteps}
             </p>
-            <p className="text-xs font-semibold text-stone-900">{stepLabels[stepIndex]}</p>
           </div>
           <div className="h-2 bg-orange-100 rounded-full overflow-hidden">
             <div
@@ -143,7 +142,7 @@ export default function OnboardingPage() {
               <p className="text-stone-700 mt-3 max-w-md mx-auto">
                 בוא נכין את החשבון שלך ב-3 שלבים מהירים. זה ייקח פחות מדקה.
               </p>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-8">
+              <div className="flex flex-col items-center gap-4 mt-8">
                 <button
                   onClick={() => setStep("business")}
                   className="btn-glow inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-6 py-3.5 rounded-2xl text-base font-semibold cursor-pointer hover:shadow-lg hover:shadow-orange-200/60 hover:-translate-y-0.5 active:translate-y-0 active:shadow-md transition-all duration-200"
@@ -153,9 +152,9 @@ export default function OnboardingPage() {
                 </button>
                 <button
                   onClick={finish}
-                  className="inline-flex items-center gap-2 bg-white border-2 border-orange-200 text-stone-800 px-6 py-3.5 rounded-2xl text-base font-semibold cursor-pointer hover:bg-orange-50 hover:border-orange-300 hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:shadow-sm transition-all duration-200"
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-stone-600 hover:text-orange-700 underline decoration-stone-300 hover:decoration-orange-500 underline-offset-4 cursor-pointer transition-colors"
                 >
-                  <SkipForward className="w-4 h-4" />
+                  <SkipForward className="w-3.5 h-3.5" />
                   דלג ישר לאפליקציה
                 </button>
               </div>
