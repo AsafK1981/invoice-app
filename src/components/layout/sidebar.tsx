@@ -15,9 +15,11 @@ import {
   LogOut,
   Menu,
   X,
+  User,
 } from "lucide-react";
 import { useBusiness } from "@/lib/business-store";
 import { signOut } from "@/lib/auth";
+import { AccountSettingsModal } from "@/components/account-settings-modal";
 
 const navItems = [
   { href: "/dashboard", label: "דשבורד", icon: LayoutDashboard },
@@ -33,6 +35,7 @@ export function Sidebar() {
   const pathname = usePathname();
   const { business } = useBusiness();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
 
   const sidebarContent = (
     <>
@@ -93,7 +96,17 @@ export function Sidebar() {
           );
         })}
       </nav>
-      <div className="p-3 border-t border-orange-100/60">
+      <div className="p-3 border-t border-orange-100/60 space-y-1">
+        <button
+          onClick={() => {
+            setAccountOpen(true);
+            setMobileOpen(false);
+          }}
+          className="flex items-center gap-2 w-full px-3 py-2 rounded-xl text-sm text-stone-700 hover:bg-orange-50 hover:text-orange-700 transition-colors"
+        >
+          <User className="w-4 h-4" />
+          חשבון משתמש
+        </button>
         <button
           onClick={() => signOut()}
           className="flex items-center gap-2 w-full px-3 py-2 rounded-xl text-sm text-stone-600 hover:bg-rose-50 hover:text-rose-700 transition-colors"
@@ -144,6 +157,8 @@ export function Sidebar() {
       <aside className="hidden lg:flex w-64 bg-white/80 backdrop-blur-xl border-l border-orange-100/60 flex-col animate-slide-in-right">
         {sidebarContent}
       </aside>
+
+      <AccountSettingsModal open={accountOpen} onClose={() => setAccountOpen(false)} />
     </>
   );
 }
