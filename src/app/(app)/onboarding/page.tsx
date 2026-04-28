@@ -87,21 +87,50 @@ export default function OnboardingPage() {
   }
 
   const stepIndex = ["welcome", "business", "client", "done"].indexOf(step);
+  const stepLabels = ["ברוכים הבאים", "פרטי העסק", "לקוח ראשון", "סיום"];
+  const totalSteps = stepLabels.length;
+  const currentStepNumber = stepIndex + 1;
+  const progressPercent = ((stepIndex + 1) / totalSteps) * 100;
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-2xl">
-        <div className="flex items-center justify-center gap-2 mb-8">
-          {["welcome", "business", "client", "done"].map((s, idx) => (
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-semibold text-stone-700">
+              שלב <span className="text-orange-600">{currentStepNumber}</span> מתוך {totalSteps}
+            </p>
+            <p className="text-xs font-semibold text-stone-900">{stepLabels[stepIndex]}</p>
+          </div>
+          <div className="h-2 bg-orange-100 rounded-full overflow-hidden">
             <div
-              key={s}
-              className={`h-1.5 rounded-full transition-all duration-300 ${
-                idx <= stepIndex
-                  ? "w-12 bg-gradient-to-l from-orange-500 to-rose-500"
-                  : "w-8 bg-orange-100"
-              }`}
+              className="h-full bg-gradient-to-l from-orange-500 to-rose-500 rounded-full transition-all duration-500"
+              style={{ width: `${progressPercent}%` }}
             />
-          ))}
+          </div>
+          <div className="flex items-center justify-between mt-2">
+            {stepLabels.map((label, idx) => (
+              <div
+                key={label}
+                className={`flex items-center gap-1.5 text-xs ${
+                  idx <= stepIndex ? "text-orange-700 font-semibold" : "text-stone-400"
+                }`}
+              >
+                <div
+                  className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${
+                    idx < stepIndex
+                      ? "bg-gradient-to-br from-orange-500 to-rose-500 text-white"
+                      : idx === stepIndex
+                      ? "bg-gradient-to-br from-orange-500 to-rose-500 text-white ring-4 ring-orange-200"
+                      : "bg-orange-100 text-stone-500"
+                  }`}
+                >
+                  {idx < stepIndex ? "✓" : idx + 1}
+                </div>
+                <span className="hidden sm:inline">{label}</span>
+              </div>
+            ))}
+          </div>
         </div>
 
         <div className="card-soft p-8 sm:p-10 animate-fade-in-up">
@@ -114,19 +143,22 @@ export default function OnboardingPage() {
               <p className="text-stone-700 mt-3 max-w-md mx-auto">
                 בוא נכין את החשבון שלך ב-3 שלבים מהירים. זה ייקח פחות מדקה.
               </p>
-              <button
-                onClick={() => setStep("business")}
-                className="btn-glow inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-6 py-3.5 rounded-2xl text-base font-semibold hover:shadow-lg hover:shadow-orange-200/60 hover:-translate-y-0.5 transition-all mt-8"
-              >
-                בוא נתחיל
-                <ArrowLeft className="w-4 h-4" />
-              </button>
-              <button
-                onClick={finish}
-                className="block mx-auto mt-4 text-sm text-stone-500 hover:text-stone-700"
-              >
-                דלג והכנס ישר לאפליקציה
-              </button>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-8">
+                <button
+                  onClick={() => setStep("business")}
+                  className="btn-glow inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-6 py-3.5 rounded-2xl text-base font-semibold cursor-pointer hover:shadow-lg hover:shadow-orange-200/60 hover:-translate-y-0.5 active:translate-y-0 active:shadow-md transition-all duration-200"
+                >
+                  בוא נתחיל
+                  <ArrowLeft className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={finish}
+                  className="inline-flex items-center gap-2 bg-white border-2 border-orange-200 text-stone-800 px-6 py-3.5 rounded-2xl text-base font-semibold cursor-pointer hover:bg-orange-50 hover:border-orange-300 hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:shadow-sm transition-all duration-200"
+                >
+                  <SkipForward className="w-4 h-4" />
+                  דלג ישר לאפליקציה
+                </button>
+              </div>
             </div>
           )}
 
