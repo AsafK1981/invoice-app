@@ -124,7 +124,12 @@ export default function DashboardPage() {
     {
       label: "הצעות פתוחות",
       value: String(stats.openQuotes.length),
-      sub: stats.openQuotesValue > 0 ? formatCurrency(stats.openQuotesValue) : "אין",
+      sub:
+        stats.openQuotes.length === 0
+          ? "אין"
+          : stats.openQuotesValue > 0
+          ? formatCurrency(stats.openQuotesValue)
+          : `${stats.openQuotes.length} ${stats.openQuotes.length === 1 ? "הצעה" : "הצעות"}`,
       icon: FileQuestion,
       color: "text-amber-600",
       bg: "bg-amber-50 border-amber-200",

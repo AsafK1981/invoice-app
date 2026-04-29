@@ -18,7 +18,10 @@
       "Bash(node scripts/test-gmail.mjs)",
       "Bash(node scripts/add-vat-and-tax-fields.mjs)",
       "Bash(node scripts/mark-onboarded.mjs)",
-      "Read(//c/Users/asafk/projects/invoke-app/src/app/\\(app\\)/billing/**)"
+      "Read(//c/Users/asafk/projects/invoke-app/src/app/\\(app\\)/billing/**)",
+      "Bash(node scripts/check-open-quotes.mjs)",
+      "Bash(node scripts/check-open-quotes-by-user.mjs)",
+      "Bash(node scripts/delete-empty-quote.mjs)"
     ]
   }
 }
