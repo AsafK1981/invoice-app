@@ -26,7 +26,9 @@
       "Bash(node scripts/update-supabase-auth.mjs)",
       "Edit(~/.claude/skills/auditing-saas-before-sharing/**)",
       "Bash(node -e ' *)",
-      "Bash(node scripts/update-email-templates.mjs)"
+      "Bash(node scripts/update-email-templates.mjs)",
+      "Bash(node scripts/inspect-tables.mjs)",
+      "Bash(node scripts/run-sql.mjs \"SELECT column_name, data_type, is_nullable FROM information_schema.columns WHERE table_schema='public' AND table_name='documents' ORDER BY ordinal_position;\")"
     ],
     "additionalDirectories": [
       "c:\\Users\\asafk\\.claude\\skills"

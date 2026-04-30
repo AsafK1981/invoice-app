@@ -14,12 +14,16 @@ import {
   AlertCircle,
   Sparkles,
   Save,
+  UserPlus,
+  Eye,
+  EyeOff,
+  Percent,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
 import { sendReceiptEmail } from "@/lib/email";
 import { getNextNumber, saveDocument } from "@/lib/document-store";
 import { parseEmails, joinEmails, isValidEmail } from "@/lib/emails";
-import { getVatRate, calculateVat } from "@/lib/vat";
+import { getVatRate } from "@/lib/vat";
 import {
   type Business,
   type Client,
@@ -30,6 +34,7 @@ import {
   PAYMENT_METHOD_LABELS,
   DOCUMENT_TYPE_LABELS,
 } from "@/lib/types";
+import { DocumentPreview, type PreviewClient } from "./document-preview";
 
 interface EditorItem {
   id: string;
@@ -39,11 +44,44 @@ interface EditorItem {
   unitPrice: number;
 }
 
+type VatMode = "exclusive" | "inclusive";
+
 interface Props {
   business: Business;
   clients: Client[];
   products: Product[];
   documentType?: DocumentType;
+}
+
+function round2(n: number) {
+  return Math.round(n * 100) / 100;
+}
+
+function computeAmounts(items: EditorItem[], vatRate: number, vatMode: VatMode) {
+  if (vatRate === 0) {
+    const subtotal = items.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
+    return { subtotal: round2(subtotal), vat: 0, total: round2(subtotal), netUnitPriceFactor: 1 };
+  }
+  if (vatMode === "inclusive") {
+    const factor = 1 / (1 + vatRate / 100);
+    const totalGross = items.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
+    const subtotal = totalGross * factor;
+    const vat = totalGross - subtotal;
+    return {
+      subtotal: round2(subtotal),
+      vat: round2(vat),
+      total: round2(totalGross),
+      netUnitPriceFactor: factor,
+    };
+  }
+  const subtotal = items.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
+  const vat = subtotal * (vatRate / 100);
+  return {
+    subtotal: round2(subtotal),
+    vat: round2(vat),
+    total: round2(subtotal + vat),
+    netUnitPriceFactor: 1,
+  };
 }
 
 export function ReceiptEditor({ business, clients, products, documentType = "receipt" }: Props) {
@@ -55,7 +93,16 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   const isQuote = documentType === "quote";
   const docLabel = DOCUMENT_TYPE_LABELS[documentType];
 
+  const vatRate = getVatRate(business);
+  const isCreditNote = documentType === "credit_note";
+  const sign = isCreditNote ? -1 : 1;
+
+  const [adhocMode, setAdhocMode] = useState<boolean>(false);
   const [clientId, setClientId] = useState<string>("");
+  const [adhocName, setAdhocName] = useState<string>("");
+  const [adhocTaxId, setAdhocTaxId] = useState<string>("");
+  const [adhocEmail, setAdhocEmail] = useState<string>("");
+
   const [date, setDate] = useState<string>(today);
   const [subject, setSubject] = useState<string>("");
   const [validUntil, setValidUntil] = useState<string>("");
@@ -64,23 +111,48 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   const [items, setItems] = useState<EditorItem[]>([
     { id: crypto.randomUUID(), description: "", quantity: 1, unitPrice: 0 },
   ]);
+  const [vatMode, setVatMode] = useState<VatMode>("exclusive");
+
   const [sendEmail, setSendEmail] = useState<boolean>(true);
   const [emailTo, setEmailTo] = useState<string>("");
   const [emailOverridden, setEmailOverridden] = useState<boolean>(false);
+  const [showPreviewMobile, setShowPreviewMobile] = useState<boolean>(false);
   const [saving, setSaving] = useState<boolean>(false);
   const [toast, setToast] = useState<{ kind: "success" | "error"; text: string } | null>(null);
 
   const selectedClient = clients.find((c) => c.id === clientId);
-  const subtotal = useMemo(() => items.reduce((sum, i) => sum + i.quantity * i.unitPrice, 0), [items]);
-  const vatRate = getVatRate(business);
-  const isCreditNote = documentType === "credit_note";
-  const sign = isCreditNote ? -1 : 1;
-  const vat = useMemo(() => calculateVat(subtotal, vatRate), [subtotal, vatRate]);
-  const total = subtotal + vat;
+  const previewClient: PreviewClient | null = adhocMode
+    ? adhocName.trim()
+      ? {
+          name: adhocName.trim(),
+          taxId: adhocTaxId.trim() || undefined,
+          email: adhocEmail.trim() || undefined,
+        }
+      : null
+    : selectedClient
+    ? {
+        name: selectedClient.name,
+        taxId: selectedClient.taxId,
+        address: selectedClient.address,
+        phone: selectedClient.phone,
+        email: selectedClient.email,
+      }
+    : null;
+
+  const amounts = useMemo(
+    () => computeAmounts(items, vatRate, vatMode),
+    [items, vatRate, vatMode]
+  );
+  const { subtotal, vat, total, netUnitPriceFactor } = amounts;
 
   useEffect(() => {
-    if (!emailOverridden) setEmailTo(selectedClient?.email || "");
-  }, [selectedClient, emailOverridden]);
+    if (emailOverridden) return;
+    if (adhocMode) {
+      setEmailTo(adhocEmail);
+    } else {
+      setEmailTo(selectedClient?.email || "");
+    }
+  }, [selectedClient, emailOverridden, adhocMode, adhocEmail]);
 
   useEffect(() => {
     if (!fromDocId) return;
@@ -97,7 +169,13 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
         .eq("document_id", fromDocId)
         .order("sort_order");
 
-      setClientId(srcDoc.client_id || "");
+      if (srcDoc.client_id) {
+        setClientId(srcDoc.client_id);
+        setAdhocMode(false);
+      } else if (srcDoc.client_name) {
+        setAdhocMode(true);
+        setAdhocName(srcDoc.client_name);
+      }
       if (isConvert) {
         const noteText = `הומר מהצעת מחיר #${srcDoc.number}`;
         setSubject(srcDoc.subject || "");
@@ -155,42 +233,54 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
     setItems((curr) => (curr.length > 1 ? curr.filter((i) => i.id !== id) : curr));
   }
 
+  const clientReady = adhocMode ? adhocName.trim().length > 0 : !!clientId;
   const canSave =
-    !!clientId &&
+    clientReady &&
     items.every((i) => i.description.trim() && i.quantity > 0 && i.unitPrice >= 0) &&
     (!sendEmail || allEmailsValid);
 
+  function buildClientName(): string {
+    if (adhocMode) return adhocName.trim();
+    return selectedClient?.name || "";
+  }
+
   async function handleSave() {
-    if (!canSave || !selectedClient) return;
+    if (!canSave) return;
     setSaving(true);
     setToast(null);
 
     try {
       const allocatedNumber = await getNextNumber(documentType);
+      const clientName = buildClientName();
+
+      const persistItems = items.map((i) => {
+        const netUnitPrice = round2(i.unitPrice * netUnitPriceFactor);
+        return {
+          id: i.id,
+          productId: i.productId,
+          description: i.description,
+          quantity: sign * i.quantity,
+          unitPrice: netUnitPrice,
+          total: round2(sign * i.quantity * netUnitPrice),
+        };
+      });
 
       const doc: InvoiceDocument = {
         id: crypto.randomUUID(),
         type: documentType,
         number: allocatedNumber,
         date,
-        clientId: selectedClient.id,
-        clientName: selectedClient.name,
+        clientId: adhocMode ? "" : selectedClient?.id || "",
+        clientName,
         subject: subject.trim() || undefined,
         status:
           documentType === "receipt" || documentType === "tax_invoice_receipt"
             ? "paid"
             : "sent",
-        items: items.map((i) => ({
-          id: i.id,
-          productId: i.productId,
-          description: i.description,
-          quantity: sign * i.quantity,
-          unitPrice: i.unitPrice,
-          total: sign * i.quantity * i.unitPrice,
-        })),
-        subtotal: sign * subtotal,
-        vat: sign * vat,
-        total: sign * total,
+        items: persistItems,
+        subtotal: round2(sign * subtotal),
+        vat: round2(sign * vat),
+        total: round2(sign * total),
         paymentMethod: isQuote ? undefined : paymentMethod,
         notes: isQuote && validUntil
           ? `${notes.trim() ? notes.trim() + "\n" : ""}הצעה בתוקף עד: ${validUntil}`
@@ -202,7 +292,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
       if (sendEmail) {
         const result = await sendReceiptEmail({
           to: joinEmails(emailRecipients),
-          clientName: selectedClient.name,
+          clientName,
           receiptNumber: allocatedNumber,
           total,
           businessName: business.name,
@@ -232,24 +322,93 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
     }
   }
 
+  const previewItems = items.map((i) => {
+    const unitPrice = round2(i.unitPrice * netUnitPriceFactor);
+    return {
+      id: i.id,
+      productId: i.productId,
+      description: i.description,
+      quantity: i.quantity,
+      unitPrice,
+      total: round2(i.quantity * unitPrice),
+    };
+  });
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <div className="lg:col-span-2 space-y-6">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="lg:col-span-7 space-y-6">
         <Section title="פרטי המסמך" icon={FileTextIcon}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field label="לקוח" required>
-              <select
-                value={clientId}
-                onChange={(e) => setClientId(e.target.value)}
-                className="input-warm"
-              >
-                <option value="">בחר לקוח...</option>
-                {clients.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
+            <Field label="לקוח" required className="md:col-span-2">
+              <div className="space-y-2">
+                <div className="inline-flex bg-orange-50 rounded-xl p-1 text-xs font-semibold gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setAdhocMode(false)}
+                    className={`px-3 py-1.5 rounded-lg transition-colors ${
+                      !adhocMode
+                        ? "bg-white text-orange-700 shadow-sm"
+                        : "text-stone-600 hover:text-stone-800"
+                    }`}
+                  >
+                    מהקטלוג
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAdhocMode(true)}
+                    className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg transition-colors ${
+                      adhocMode
+                        ? "bg-white text-orange-700 shadow-sm"
+                        : "text-stone-600 hover:text-stone-800"
+                    }`}
+                  >
+                    <UserPlus className="w-3 h-3" />
+                    לקוח מזדמן
+                  </button>
+                </div>
+                {adhocMode ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <input
+                      type="text"
+                      value={adhocName}
+                      onChange={(e) => setAdhocName(e.target.value)}
+                      placeholder="שם הלקוח *"
+                      className="input-warm"
+                    />
+                    <input
+                      type="text"
+                      value={adhocTaxId}
+                      onChange={(e) => setAdhocTaxId(e.target.value)}
+                      placeholder="ח.פ / ת.ז (אופציונלי)"
+                      className="input-warm"
+                    />
+                    <input
+                      type="email"
+                      value={adhocEmail}
+                      onChange={(e) => setAdhocEmail(e.target.value)}
+                      placeholder="email@example.com (אופציונלי)"
+                      dir="ltr"
+                      className="input-warm md:col-span-2"
+                    />
+                    <p className="text-xs text-stone-600 md:col-span-2">
+                      הלקוח לא יישמר במאגר - שמו יופיע על המסמך הזה בלבד.
+                    </p>
+                  </div>
+                ) : (
+                  <select
+                    value={clientId}
+                    onChange={(e) => setClientId(e.target.value)}
+                    className="input-warm"
+                  >
+                    <option value="">בחר לקוח...</option>
+                    {clients.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
             </Field>
 
             <Field label="תאריך">
@@ -261,12 +420,12 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
               />
             </Field>
 
-            <Field label="נושא" className="md:col-span-2">
+            <Field label="נושא">
               <input
                 type="text"
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
-                placeholder="למשל: ייעוץ טכנולוגי - אפריל 2026"
+                placeholder="למשל: ייעוץ - אפריל 2026"
                 className="input-warm"
               />
             </Field>
@@ -301,6 +460,38 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
         </Section>
 
         <Section title="פריטים" icon={Package}>
+          {vatRate > 0 && (
+            <div className="mb-4 flex items-center justify-between gap-3 p-3 rounded-xl bg-orange-50/60 border border-orange-100">
+              <div className="flex items-center gap-2">
+                <Percent className="w-4 h-4 text-orange-500" />
+                <span className="text-sm font-medium text-stone-800">המחירים שאני מזין</span>
+              </div>
+              <div className="inline-flex bg-white rounded-xl p-1 text-xs font-semibold gap-1 border border-orange-100">
+                <button
+                  type="button"
+                  onClick={() => setVatMode("exclusive")}
+                  className={`px-3 py-1.5 rounded-lg transition-colors ${
+                    vatMode === "exclusive"
+                      ? "bg-gradient-to-l from-orange-500 to-rose-500 text-white shadow-sm"
+                      : "text-stone-700 hover:text-stone-900"
+                  }`}
+                >
+                  ללא מע״מ
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setVatMode("inclusive")}
+                  className={`px-3 py-1.5 rounded-lg transition-colors ${
+                    vatMode === "inclusive"
+                      ? "bg-gradient-to-l from-orange-500 to-rose-500 text-white shadow-sm"
+                      : "text-stone-700 hover:text-stone-900"
+                  }`}
+                >
+                  כולל מע״מ ({vatRate}%)
+                </button>
+              </div>
+            </div>
+          )}
           <div className="space-y-3">
             {items.map((item, idx) => (
               <div key={item.id} className="grid grid-cols-12 gap-2 items-start">
@@ -344,7 +535,11 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                   />
                 </div>
                 <div className="col-span-4 md:col-span-2">
-                  {idx === 0 && <label className="text-xs font-semibold text-stone-700 mb-1 block">מחיר יחידה</label>}
+                  {idx === 0 && (
+                    <label className="text-xs font-semibold text-stone-700 mb-1 block">
+                      מחיר יחידה
+                    </label>
+                  )}
                   <input
                     type="number"
                     min="0"
@@ -420,11 +615,11 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                     ? `יישלח ל-${emailRecipients.length} נמענים. הפרד אימיילים בפסיק.`
                     : "הפרד כמה אימיילים בפסיק"}
                 </p>
-                {emailTo && emailOverridden && selectedClient?.email && (
+                {emailTo && emailOverridden && (
                   <button
                     type="button"
                     onClick={() => {
-                      setEmailTo(selectedClient.email || "");
+                      setEmailTo(adhocMode ? adhocEmail : selectedClient?.email || "");
                       setEmailOverridden(false);
                     }}
                     className="text-xs text-orange-600 hover:underline"
@@ -433,7 +628,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                   </button>
                 )}
               </div>
-              {selectedClient && !selectedClient.email && (
+              {!adhocMode && selectedClient && !selectedClient.email && (
                 <p className="text-xs text-amber-700 mt-1">
                   ללקוח זה אין אימייל שמור - מלא ידנית או ערוך את פרטי הלקוח
                 </p>
@@ -441,37 +636,68 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
             </Field>
           )}
         </Section>
+
+        <button
+          type="button"
+          onClick={() => setShowPreviewMobile((s) => !s)}
+          className="lg:hidden w-full inline-flex items-center justify-center gap-2 bg-white border-2 border-orange-200 text-stone-800 py-3 rounded-2xl text-sm font-semibold hover:bg-orange-50"
+        >
+          {showPreviewMobile ? (
+            <>
+              <EyeOff className="w-4 h-4" />
+              הסתר תצוגה מקדימה
+            </>
+          ) : (
+            <>
+              <Eye className="w-4 h-4" />
+              הצג תצוגה מקדימה
+            </>
+          )}
+        </button>
+
+        {showPreviewMobile && (
+          <div className="lg:hidden">
+            <DocumentPreview
+              business={business}
+              client={previewClient}
+              documentType={documentType}
+              date={date}
+              subject={subject || undefined}
+              items={previewItems}
+              subtotal={subtotal}
+              vat={vat}
+              vatRate={vatRate}
+              total={total}
+              paymentMethod={isQuote ? undefined : paymentMethod}
+              notes={notes || undefined}
+            />
+          </div>
+        )}
       </div>
 
-      <aside className="lg:col-span-1 space-y-4">
+      <aside className="lg:col-span-5 space-y-4">
         <div className="card-soft p-5 sticky top-4 bg-gradient-to-br from-orange-50/50 to-amber-50/50 border-orange-200">
-          <h3 className="font-semibold text-stone-900 mb-4 flex items-center gap-2">
+          <h3 className="font-semibold text-stone-900 mb-3 flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-orange-500" />
-            תצוגת סיכום
+            סיכום ושליחה
           </h3>
-          <div className="space-y-2 text-sm">
-            <SummaryRow label="עסק" value={business.name} />
-            <SummaryRow label={`מספר ${docLabel}`} value="אוטומטי בשמירה" />
-            <SummaryRow label="תאריך" value={date} />
-            <SummaryRow label="לקוח" value={selectedClient?.name || "—"} />
-            <SummaryRow label="מספר פריטים" value={String(items.length)} />
-            <div className="border-t border-orange-200 my-3" />
+          <div className="space-y-1.5 text-sm">
             {vatRate > 0 && (
               <>
                 <SummaryRow label="סכום ביניים" value={formatCurrency(subtotal)} />
                 <SummaryRow label={`מע״מ (${vatRate}%)`} value={formatCurrency(vat)} />
               </>
             )}
-            <div className="flex justify-between items-baseline">
+            <div className="flex justify-between items-baseline pt-2">
               <span className="text-stone-800 font-semibold">
                 {isQuote ? "סה״כ הצעה" : isCreditNote ? "סה״כ זיכוי" : "סה״כ לתשלום"}
               </span>
-              <span className="text-3xl font-bold bg-gradient-to-l from-orange-500 to-rose-500 bg-clip-text text-transparent">
+              <span className="text-2xl font-bold bg-gradient-to-l from-orange-500 to-rose-500 bg-clip-text text-transparent">
                 {formatCurrency(total)}
               </span>
             </div>
           </div>
-          <div className="mt-5 space-y-2">
+          <div className="mt-4 space-y-2">
             <button
               onClick={handleSave}
               disabled={!canSave || saving}
@@ -491,23 +717,22 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                 </>
               )}
             </button>
-            <p className="text-xs text-stone-600 text-center pt-1">
-              לאחר השמירה תועבר לתצוגת המסמך עם כפתור הדפסה/PDF
-            </p>
           </div>
           {!canSave && (
-            <div className="mt-4 flex items-start gap-2 text-xs text-amber-700 bg-amber-50 p-3 rounded-xl border border-amber-200">
+            <div className="mt-3 flex items-start gap-2 text-xs text-amber-700 bg-amber-50 p-3 rounded-xl border border-amber-200">
               <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
               <span>
-                {sendEmail && clientId && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTo)
+                {sendEmail && clientReady && !allEmailsValid
                   ? "יש להזין אימייל תקין לשליחה"
-                  : "יש למלא לקוח וכל פריט חייב תיאור וכמות חיובית"}
+                  : !clientReady
+                  ? "יש לבחור לקוח או למלא שם של לקוח מזדמן"
+                  : "כל פריט חייב תיאור, כמות חיובית ומחיר"}
               </span>
             </div>
           )}
           {toast && (
             <div
-              className={`mt-4 text-sm p-3 rounded-xl flex items-start gap-2 ${
+              className={`mt-3 text-sm p-3 rounded-xl flex items-start gap-2 ${
                 toast.kind === "success"
                   ? "bg-emerald-50 text-emerald-900 border border-emerald-200"
                   : "bg-rose-50 text-rose-900 border border-rose-200"
@@ -521,6 +746,27 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
               <span>{toast.text}</span>
             </div>
           )}
+        </div>
+
+        <div className="hidden lg:block">
+          <h3 className="font-semibold text-stone-900 mb-3 flex items-center gap-2 text-sm">
+            <Eye className="w-4 h-4 text-orange-500" />
+            תצוגה מקדימה
+          </h3>
+          <DocumentPreview
+            business={business}
+            client={previewClient}
+            documentType={documentType}
+            date={date}
+            subject={subject || undefined}
+            items={previewItems}
+            subtotal={subtotal}
+            vat={vat}
+            vatRate={vatRate}
+            total={total}
+            paymentMethod={isQuote ? undefined : paymentMethod}
+            notes={notes || undefined}
+          />
         </div>
       </aside>
     </div>

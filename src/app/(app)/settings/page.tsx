@@ -13,10 +13,12 @@ import {
   Pencil,
   Trash2,
   AlertTriangle,
+  Hash,
 } from "lucide-react";
 import { useBusiness } from "@/lib/business-store";
 import { BusinessFormModal } from "@/components/business-form-modal";
 import { EmailSettingsModal } from "@/components/email-settings-modal";
+import { DocumentNumberingSettings } from "@/components/document-numbering-settings";
 import { supabase } from "@/lib/supabase";
 import { getBusinessId } from "@/lib/business-init";
 
@@ -108,6 +110,14 @@ export default function SettingsPage() {
             );
           })}
         </div>
+      </div>
+
+      <div className="card-soft p-6">
+        <div className="flex items-center gap-2 pb-4 border-b border-orange-100 mb-4">
+          <Hash className="w-4 h-4 text-orange-500" />
+          <h2 className="font-semibold text-stone-900">מספור מסמכים</h2>
+        </div>
+        <DocumentNumberingSettings />
       </div>
 
       <div className="card-soft p-6">
