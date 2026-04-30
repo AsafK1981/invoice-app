@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
-const SITE_URL = "https://invoice-app-ochre-five.vercel.app";
+const SITE_URL = "https://mysuperfriendlyinvoiceapp.vercel.app";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

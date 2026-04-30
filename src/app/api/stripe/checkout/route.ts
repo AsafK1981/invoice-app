@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const origin = req.headers.get("origin") || "https://invoice-app-ochre-five.vercel.app";
+    const origin = req.headers.get("origin") || "https://mysuperfriendlyinvoiceapp.vercel.app";
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,

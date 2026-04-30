@@ -21,7 +21,9 @@
       "Read(//c/Users/asafk/projects/invoke-app/src/app/\\(app\\)/billing/**)",
       "Bash(node scripts/check-open-quotes.mjs)",
       "Bash(node scripts/check-open-quotes-by-user.mjs)",
-      "Bash(node scripts/delete-empty-quote.mjs)"
+      "Bash(node scripts/delete-empty-quote.mjs)",
+      "Bash(node scripts/rename-vercel-project.mjs)",
+      "Bash(node scripts/update-supabase-auth.mjs)"
     ]
   }
 }

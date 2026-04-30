@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
 
     const baseUrl = process.env.NEXT_PUBLIC_VERCEL_URL
       ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`
-      : process.env.NEXT_PUBLIC_APP_URL || "https://invoice-app-ochre-five.vercel.app";
+      : process.env.NEXT_PUBLIC_APP_URL || "https://mysuperfriendlyinvoiceapp.vercel.app";
     const viewUrl = `${baseUrl}/view/${documentId}`;
 
     if (!to || !clientName || !receiptNumber) {
