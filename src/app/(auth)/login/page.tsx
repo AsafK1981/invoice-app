@@ -33,12 +33,14 @@ export default function LoginPage() {
       const { error: signUpError } = await supabase.auth.signUp({
         email,
         password,
-        options: { emailRedirectTo: `${window.location.origin}/onboarding` },
+        options: { emailRedirectTo: `${window.location.origin}/auth/confirm?next=/onboarding` },
       });
       if (signUpError) {
         setError(signUpError.message);
       } else {
-        setSuccess("נשלח מייל אישור. בדוק את תיבת המייל שלך ולחץ על הקישור.");
+        setSuccess(
+          `שלחנו אימייל אישור אל ${email}. פתח את ההודעה (אולי בתיקיית הספאם) ולחץ על "אשר את הרישום".`
+        );
       }
     } else if (mode === "forgot") {
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {

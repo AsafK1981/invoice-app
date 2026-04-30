@@ -23,7 +23,13 @@
       "Bash(node scripts/check-open-quotes-by-user.mjs)",
       "Bash(node scripts/delete-empty-quote.mjs)",
       "Bash(node scripts/rename-vercel-project.mjs)",
-      "Bash(node scripts/update-supabase-auth.mjs)"
+      "Bash(node scripts/update-supabase-auth.mjs)",
+      "Edit(~/.claude/skills/auditing-saas-before-sharing/**)",
+      "Bash(node -e ' *)",
+      "Bash(node scripts/update-email-templates.mjs)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\asafk\\.claude\\skills"
     ]
   }
 }
