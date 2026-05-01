@@ -39,3 +39,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# security reports (contain exploit details — never commit)
+AEGIS_*.pdf
+*Security_Report*.pdf
+*security_report*.pdf
