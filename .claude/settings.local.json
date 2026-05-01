@@ -28,7 +28,10 @@
       "Bash(node -e ' *)",
       "Bash(node scripts/update-email-templates.mjs)",
       "Bash(node scripts/inspect-tables.mjs)",
-      "Bash(node scripts/run-sql.mjs \"SELECT column_name, data_type, is_nullable FROM information_schema.columns WHERE table_schema='public' AND table_name='documents' ORDER BY ordinal_position;\")"
+      "Bash(node scripts/run-sql.mjs \"SELECT column_name, data_type, is_nullable FROM information_schema.columns WHERE table_schema='public' AND table_name='documents' ORDER BY ordinal_position;\")",
+      "Bash(curl -sIo /dev/null -w \"%{http_code}\" https://mysuperfriendlyinvoiceapp.vercel.app/auth/confirm)",
+      "Bash(curl -sIo /dev/null -w \"%{http_code}\" https://mysuperfriendlyinvoiceapp.vercel.app/login)",
+      "Bash(curl -sIo /dev/null -w \"%{http_code}\" https://mysuperfriendlyinvoiceapp.vercel.app/documents/new/quote)"
     ],
     "additionalDirectories": [
       "c:\\Users\\asafk\\.claude\\skills"

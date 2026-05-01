@@ -113,3 +113,17 @@ export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   bit: "Bit",
   paypal: "PayPal",
 };
+
+export const BUSINESS_TYPE_LABELS: Record<Business["businessType"], string> = {
+  exempt: "עוסק פטור",
+  authorized: "עוסק מורשה",
+  company: "חברה בע״מ",
+};
+
+export const DEFAULT_NEXT_NUMBER: Record<DocumentType, number> = {
+  receipt: 1001,
+  quote: 201,
+  tax_invoice: 201,
+  tax_invoice_receipt: 201,
+  credit_note: 201,
+};

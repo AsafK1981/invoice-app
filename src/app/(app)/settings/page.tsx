@@ -21,12 +21,7 @@ import { EmailSettingsModal } from "@/components/email-settings-modal";
 import { DocumentNumberingSettings } from "@/components/document-numbering-settings";
 import { supabase } from "@/lib/supabase";
 import { getBusinessId } from "@/lib/business-init";
-
-const businessTypeLabels = {
-  exempt: "עוסק פטור",
-  authorized: "עוסק מורשה",
-  company: "חברה בע״מ",
-};
+import { BUSINESS_TYPE_LABELS } from "@/lib/types";
 
 export default function SettingsPage() {
   const { business } = useBusiness();
@@ -35,7 +30,7 @@ export default function SettingsPage() {
 
   const fields = [
     { icon: Building2, label: "שם העסק", value: business.name },
-    { icon: FileText, label: "סוג עוסק", value: businessTypeLabels[business.businessType] },
+    { icon: FileText, label: "סוג עוסק", value: BUSINESS_TYPE_LABELS[business.businessType] },
     { icon: CreditCard, label: "מספר עוסק / ח.פ", value: business.taxId },
     { icon: MapPin, label: "כתובת", value: business.address },
     { icon: Phone, label: "טלפון", value: business.phone || "—" },

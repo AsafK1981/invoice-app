@@ -2,6 +2,7 @@
 
 import { formatCurrency, formatDate } from "@/lib/format";
 import {
+  BUSINESS_TYPE_LABELS,
   DOCUMENT_TYPE_LABELS,
   PAYMENT_METHOD_LABELS,
   type Business,
@@ -14,12 +15,6 @@ interface Props {
   client: Client | null;
   document: InvoiceDocument;
 }
-
-const businessTypeLabels = {
-  exempt: "עוסק פטור",
-  authorized: "עוסק מורשה",
-  company: "חברה בע״מ",
-};
 
 export function ReceiptView({ business, client, document: doc }: Props) {
   return (
@@ -36,7 +31,7 @@ export function ReceiptView({ business, client, document: doc }: Props) {
           <div>
             <h1 className="text-3xl font-bold text-stone-900">{business.name}</h1>
             <p className="text-sm text-stone-700 mt-1">
-              {businessTypeLabels[business.businessType]} · {business.taxId}
+              {BUSINESS_TYPE_LABELS[business.businessType]} · {business.taxId}
             </p>
             <p className="text-sm text-stone-700 mt-1">{business.address}</p>
             {business.phone && (

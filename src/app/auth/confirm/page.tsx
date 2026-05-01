@@ -16,13 +16,17 @@ function ConfirmInner() {
   useEffect(() => {
     let cancelled = false;
     let resolved = false;
+    let redirectTimer: ReturnType<typeof setTimeout> | null = null;
 
     const finish = (session: { user: unknown } | null) => {
       if (resolved || cancelled) return;
       resolved = true;
+      clearTimeout(fallback);
       if (session) {
         setStatus("ok");
-        setTimeout(() => router.replace(next), 1200);
+        redirectTimer = setTimeout(() => {
+          if (!cancelled) router.replace(next);
+        }, 1200);
       } else {
         setStatus("error");
         setErrorMsg(
@@ -37,17 +41,21 @@ function ConfirmInner() {
       }
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => finish(session));
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!cancelled) finish(session);
+    });
 
     const fallback = setTimeout(() => {
-      if (!resolved) {
-        supabase.auth.getSession().then(({ data: { session } }) => finish(session));
-      }
+      if (resolved || cancelled) return;
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (!cancelled) finish(session);
+      });
     }, 1500);
 
     return () => {
       cancelled = true;
       clearTimeout(fallback);
+      if (redirectTimer) clearTimeout(redirectTimer);
       subscription.unsubscribe();
     };
   }, [router, next]);

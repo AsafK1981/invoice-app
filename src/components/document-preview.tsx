@@ -1,22 +1,19 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { formatCurrency, formatDate } from "@/lib/format";
 import {
+  BUSINESS_TYPE_LABELS,
   DOCUMENT_TYPE_LABELS,
   PAYMENT_METHOD_LABELS,
   type Business,
-  type Client,
   type DocumentItem,
   type DocumentType,
   type PaymentMethod,
 } from "@/lib/types";
 
-const businessTypeLabels = {
-  exempt: "עוסק פטור",
-  authorized: "עוסק מורשה",
-  company: "חברה בע״מ",
-};
+const useIsoLayoutEffect =
+  typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 interface PreviewClient {
   name: string;
@@ -63,12 +60,14 @@ export function DocumentPreview(props: Props) {
     return () => ro.disconnect();
   }, []);
 
-  useEffect(() => {
+  useIsoLayoutEffect(() => {
     if (!pageRef.current) return;
     const el = pageRef.current;
     const update = () => {
       const h = el.offsetHeight;
-      if (h > 0) setNaturalHeight(h);
+      if (h > 0) {
+        setNaturalHeight((prev) => (Math.abs(prev - h) < 1 ? prev : h));
+      }
     };
     update();
     const ro = new ResizeObserver(update);
@@ -136,7 +135,7 @@ function PreviewPage({
           <div>
             <h1 className="text-2xl font-bold text-stone-900">{business.name || "—"}</h1>
             <p className="text-sm text-stone-700 mt-1">
-              {businessTypeLabels[business.businessType]} · {business.taxId}
+              {BUSINESS_TYPE_LABELS[business.businessType]} · {business.taxId}
             </p>
             <p className="text-sm text-stone-700 mt-1">{business.address}</p>
             {business.phone && (

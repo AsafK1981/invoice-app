@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "./supabase";
 import { getBusinessId, onBusinessReady } from "./business-init";
-import type { DocumentType, InvoiceDocument, DocumentItem } from "./types";
+import { DEFAULT_NEXT_NUMBER, type DocumentType, type InvoiceDocument, type DocumentItem } from "./types";
 
 const CHANGE_EVENT = "invoice-app:documents-changed";
 
@@ -93,7 +93,7 @@ export function useDocument(id: string) {
 
 export async function getNextNumber(type: DocumentType): Promise<number> {
   const bid = getBusinessId();
-  if (!bid) return type === "receipt" ? 1001 : 201;
+  if (!bid) return DEFAULT_NEXT_NUMBER[type];
 
   const { data, error } = await supabase.rpc("get_next_doc_number", {
     p_business_id: bid,
@@ -101,7 +101,7 @@ export async function getNextNumber(type: DocumentType): Promise<number> {
   });
 
   if (error || data == null) {
-    return type === "receipt" ? 1001 : 201;
+    return DEFAULT_NEXT_NUMBER[type];
   }
   return data as number;
 }

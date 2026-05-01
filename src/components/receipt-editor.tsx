@@ -23,7 +23,7 @@ import { formatCurrency } from "@/lib/format";
 import { sendReceiptEmail } from "@/lib/email";
 import { getNextNumber, saveDocument } from "@/lib/document-store";
 import { parseEmails, joinEmails, isValidEmail } from "@/lib/emails";
-import { getVatRate } from "@/lib/vat";
+import { getVatRate, computeAmounts, round2, type VatMode } from "@/lib/vat";
 import {
   type Business,
   type Client,
@@ -35,6 +35,7 @@ import {
   DOCUMENT_TYPE_LABELS,
 } from "@/lib/types";
 import { DocumentPreview, type PreviewClient } from "./document-preview";
+import { FormField } from "./ui/form-field";
 
 interface EditorItem {
   id: string;
@@ -44,44 +45,11 @@ interface EditorItem {
   unitPrice: number;
 }
 
-type VatMode = "exclusive" | "inclusive";
-
 interface Props {
   business: Business;
   clients: Client[];
   products: Product[];
   documentType?: DocumentType;
-}
-
-function round2(n: number) {
-  return Math.round(n * 100) / 100;
-}
-
-function computeAmounts(items: EditorItem[], vatRate: number, vatMode: VatMode) {
-  if (vatRate === 0) {
-    const subtotal = items.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
-    return { subtotal: round2(subtotal), vat: 0, total: round2(subtotal), netUnitPriceFactor: 1 };
-  }
-  if (vatMode === "inclusive") {
-    const factor = 1 / (1 + vatRate / 100);
-    const totalGross = items.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
-    const subtotal = totalGross * factor;
-    const vat = totalGross - subtotal;
-    return {
-      subtotal: round2(subtotal),
-      vat: round2(vat),
-      total: round2(totalGross),
-      netUnitPriceFactor: factor,
-    };
-  }
-  const subtotal = items.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
-  const vat = subtotal * (vatRate / 100);
-  return {
-    subtotal: round2(subtotal),
-    vat: round2(vat),
-    total: round2(subtotal + vat),
-    netUnitPriceFactor: 1,
-  };
 }
 
 export function ReceiptEditor({ business, clients, products, documentType = "receipt" }: Props) {
@@ -121,23 +89,25 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   const [toast, setToast] = useState<{ kind: "success" | "error"; text: string } | null>(null);
 
   const selectedClient = clients.find((c) => c.id === clientId);
-  const previewClient: PreviewClient | null = adhocMode
-    ? adhocName.trim()
-      ? {
-          name: adhocName.trim(),
-          taxId: adhocTaxId.trim() || undefined,
-          email: adhocEmail.trim() || undefined,
-        }
-      : null
-    : selectedClient
-    ? {
-        name: selectedClient.name,
-        taxId: selectedClient.taxId,
-        address: selectedClient.address,
-        phone: selectedClient.phone,
-        email: selectedClient.email,
-      }
-    : null;
+  const previewClient: PreviewClient | null = (() => {
+    if (adhocMode) {
+      const name = adhocName.trim();
+      if (!name) return null;
+      return {
+        name,
+        taxId: adhocTaxId.trim() || undefined,
+        email: adhocEmail.trim() || undefined,
+      };
+    }
+    if (!selectedClient) return null;
+    return {
+      name: selectedClient.name,
+      taxId: selectedClient.taxId,
+      address: selectedClient.address,
+      phone: selectedClient.phone,
+      email: selectedClient.email,
+    };
+  })();
 
   const amounts = useMemo(
     () => computeAmounts(items, vatRate, vatMode),
@@ -197,6 +167,22 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
       }
     })();
   }, [fromDocId, isConvert]);
+
+  const previewItems = useMemo(
+    () =>
+      items.map((i) => {
+        const unitPrice = round2(i.unitPrice * netUnitPriceFactor);
+        return {
+          id: i.id,
+          productId: i.productId,
+          description: i.description,
+          quantity: i.quantity,
+          unitPrice,
+          total: round2(i.quantity * unitPrice),
+        };
+      }),
+    [items, netUnitPriceFactor]
+  );
 
   const emailRecipients = useMemo(() => parseEmails(emailTo), [emailTo]);
   const allEmailsValid =
@@ -317,35 +303,26 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
       }
 
       setTimeout(() => router.push(`/documents/${doc.id}`), 1000);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "שגיאה לא ידועה";
+      setToast({ kind: "error", text: `שמירת המסמך נכשלה: ${message}` });
     } finally {
       setSaving(false);
     }
   }
-
-  const previewItems = items.map((i) => {
-    const unitPrice = round2(i.unitPrice * netUnitPriceFactor);
-    return {
-      id: i.id,
-      productId: i.productId,
-      description: i.description,
-      quantity: i.quantity,
-      unitPrice,
-      total: round2(i.quantity * unitPrice),
-    };
-  });
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
       <div className="lg:col-span-7 space-y-6">
         <Section title="פרטי המסמך" icon={FileTextIcon}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field label="לקוח" required className="md:col-span-2">
+            <FormField label="לקוח" required className="md:col-span-2">
               <div className="space-y-2">
                 <div className="inline-flex bg-orange-50 rounded-xl p-1 text-xs font-semibold gap-1">
                   <button
                     type="button"
                     onClick={() => setAdhocMode(false)}
-                    className={`px-3 py-1.5 rounded-lg transition-colors ${
+                    className={`inline-flex items-center justify-center min-h-[36px] px-3.5 rounded-lg transition-colors ${
                       !adhocMode
                         ? "bg-white text-orange-700 shadow-sm"
                         : "text-stone-600 hover:text-stone-800"
@@ -356,7 +333,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                   <button
                     type="button"
                     onClick={() => setAdhocMode(true)}
-                    className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg transition-colors ${
+                    className={`inline-flex items-center justify-center gap-1 min-h-[36px] px-3.5 rounded-lg transition-colors ${
                       adhocMode
                         ? "bg-white text-orange-700 shadow-sm"
                         : "text-stone-600 hover:text-stone-800"
@@ -409,18 +386,18 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                   </select>
                 )}
               </div>
-            </Field>
+            </FormField>
 
-            <Field label="תאריך">
+            <FormField label="תאריך">
               <input
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
                 className="input-warm"
               />
-            </Field>
+            </FormField>
 
-            <Field label="נושא">
+            <FormField label="נושא">
               <input
                 type="text"
                 value={subject}
@@ -428,10 +405,10 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                 placeholder="למשל: ייעוץ - אפריל 2026"
                 className="input-warm"
               />
-            </Field>
+            </FormField>
 
             {!isQuote && (
-              <Field label="אמצעי תשלום">
+              <FormField label="אמצעי תשלום">
                 <select
                   value={paymentMethod}
                   onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
@@ -443,18 +420,18 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                     </option>
                   ))}
                 </select>
-              </Field>
+              </FormField>
             )}
 
             {isQuote && (
-              <Field label="תוקף ההצעה (אופציונלי)">
+              <FormField label="תוקף ההצעה (אופציונלי)">
                 <input
                   type="date"
                   value={validUntil}
                   onChange={(e) => setValidUntil(e.target.value)}
                   className="input-warm"
                 />
-              </Field>
+              </FormField>
             )}
           </div>
         </Section>
@@ -470,18 +447,18 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                 <button
                   type="button"
                   onClick={() => setVatMode("exclusive")}
-                  className={`px-3 py-1.5 rounded-lg transition-colors ${
+                  className={`inline-flex items-center justify-center min-h-[36px] px-3.5 rounded-lg transition-colors ${
                     vatMode === "exclusive"
                       ? "bg-gradient-to-l from-orange-500 to-rose-500 text-white shadow-sm"
                       : "text-stone-700 hover:text-stone-900"
                   }`}
                 >
-                  ללא מע״מ
+                  לפני מע״מ
                 </button>
                 <button
                   type="button"
                   onClick={() => setVatMode("inclusive")}
-                  className={`px-3 py-1.5 rounded-lg transition-colors ${
+                  className={`inline-flex items-center justify-center min-h-[36px] px-3.5 rounded-lg transition-colors ${
                     vatMode === "inclusive"
                       ? "bg-gradient-to-l from-orange-500 to-rose-500 text-white shadow-sm"
                       : "text-stone-700 hover:text-stone-900"
@@ -597,7 +574,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
             <span className="text-stone-700">שלח את ה{docLabel} אוטומטית במייל ללקוח כשאני לוחץ שמור</span>
           </label>
           {sendEmail && (
-            <Field label="נמענים">
+            <FormField label="נמענים">
               <input
                 type="text"
                 dir="ltr"
@@ -633,7 +610,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                   ללקוח זה אין אימייל שמור - מלא ידנית או ערוך את פרטי הלקוח
                 </p>
               )}
-            </Field>
+            </FormField>
           )}
         </Section>
 
@@ -788,27 +765,6 @@ function Section({
         {Icon && <Icon className="w-4 h-4 text-orange-500" />}
         {title}
       </h2>
-      {children}
-    </div>
-  );
-}
-
-function Field({
-  label,
-  children,
-  required,
-  className,
-}: {
-  label: string;
-  children: React.ReactNode;
-  required?: boolean;
-  className?: string;
-}) {
-  return (
-    <div className={className}>
-      <label className="text-xs font-semibold text-stone-700 mb-1 block">
-        {label} {required && <span className="text-rose-500">*</span>}
-      </label>
       {children}
     </div>
   );

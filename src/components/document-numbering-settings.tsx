@@ -4,7 +4,11 @@ import { useEffect, useState } from "react";
 import { Hash, Pencil, Check, X, AlertTriangle } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { getBusinessId } from "@/lib/business-init";
-import { DOCUMENT_TYPE_LABELS, type DocumentType } from "@/lib/types";
+import {
+  DEFAULT_NEXT_NUMBER,
+  DOCUMENT_TYPE_LABELS,
+  type DocumentType,
+} from "@/lib/types";
 
 const TYPE_ORDER: DocumentType[] = [
   "receipt",
@@ -18,13 +22,9 @@ type CounterRow = { doc_type: DocumentType; next_number: number };
 type MaxByType = Partial<Record<DocumentType, number>>;
 
 export function DocumentNumberingSettings() {
-  const [counters, setCounters] = useState<Record<DocumentType, number>>({
-    receipt: 1001,
-    quote: 201,
-    tax_invoice: 101,
-    tax_invoice_receipt: 101,
-    credit_note: 101,
-  });
+  const [counters, setCounters] = useState<Record<DocumentType, number>>(
+    () => ({ ...DEFAULT_NEXT_NUMBER })
+  );
   const [maxUsed, setMaxUsed] = useState<MaxByType>({});
   const [editing, setEditing] = useState<DocumentType | null>(null);
   const [draftValue, setDraftValue] = useState<string>("");
@@ -34,28 +34,35 @@ export function DocumentNumberingSettings() {
   async function load() {
     const bid = getBusinessId();
     if (!bid) return;
-    const { data } = await supabase
-      .from("document_counters")
-      .select("doc_type,next_number")
-      .eq("business_id", bid);
-    if (data) {
-      const next: Record<DocumentType, number> = { ...counters };
-      (data as CounterRow[]).forEach((row) => {
+    const [countersRes, ...maxResults] = await Promise.all([
+      supabase
+        .from("document_counters")
+        .select("doc_type,next_number")
+        .eq("business_id", bid),
+      ...TYPE_ORDER.map((type) =>
+        supabase
+          .from("documents")
+          .select("number")
+          .eq("business_id", bid)
+          .eq("type", type)
+          .order("number", { ascending: false })
+          .limit(1)
+          .maybeSingle()
+      ),
+    ]);
+    if (countersRes.data) {
+      const next: Record<DocumentType, number> = { ...DEFAULT_NEXT_NUMBER };
+      (countersRes.data as CounterRow[]).forEach((row) => {
         next[row.doc_type] = row.next_number;
       });
       setCounters(next);
     }
-    const { data: docs } = await supabase
-      .from("documents")
-      .select("type,number")
-      .eq("business_id", bid);
-    if (docs) {
-      const max: MaxByType = {};
-      (docs as { type: DocumentType; number: number }[]).forEach((row) => {
-        if ((max[row.type] ?? -Infinity) < row.number) max[row.type] = row.number;
-      });
-      setMaxUsed(max);
-    }
+    const max: MaxByType = {};
+    maxResults.forEach((res, idx) => {
+      const row = res.data as { number: number } | null;
+      if (row?.number != null) max[TYPE_ORDER[idx]] = row.number;
+    });
+    setMaxUsed(max);
   }
 
   useEffect(() => {
@@ -145,19 +152,19 @@ export function DocumentNumberingSettings() {
                     value={draftValue}
                     onChange={(e) => setDraftValue(e.target.value)}
                     autoFocus
-                    className="w-24 input-warm text-sm py-1.5 px-2 text-center"
+                    className="w-24 input-warm text-sm py-2 px-2 text-center"
                   />
                   <button
                     onClick={() => saveEdit(type)}
                     disabled={saving}
-                    className="p-1.5 rounded-lg bg-emerald-100 text-emerald-700 hover:bg-emerald-200 disabled:opacity-50"
+                    className="inline-flex items-center justify-center min-h-[36px] min-w-[36px] rounded-lg bg-emerald-100 text-emerald-700 hover:bg-emerald-200 disabled:opacity-50"
                     title="שמור"
                   >
                     <Check className="w-4 h-4" />
                   </button>
                   <button
                     onClick={cancelEdit}
-                    className="p-1.5 rounded-lg bg-stone-100 text-stone-700 hover:bg-stone-200"
+                    className="inline-flex items-center justify-center min-h-[36px] min-w-[36px] rounded-lg bg-stone-100 text-stone-700 hover:bg-stone-200"
                     title="בטל"
                   >
                     <X className="w-4 h-4" />
@@ -166,7 +173,7 @@ export function DocumentNumberingSettings() {
               ) : (
                 <button
                   onClick={() => startEdit(type)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium text-orange-700 hover:bg-orange-100 flex-shrink-0"
+                  className="inline-flex items-center justify-center gap-1.5 min-h-[36px] px-3 rounded-xl text-sm font-medium text-orange-700 hover:bg-orange-100 flex-shrink-0"
                 >
                   <Pencil className="w-3.5 h-3.5" />
                   ערוך
