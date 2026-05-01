@@ -23,7 +23,7 @@ import {
 import { useClients } from "@/lib/client-store";
 import { useBusiness } from "@/lib/business-store";
 import { createDocument } from "@/lib/document-store";
-import { getVatRate, calculateVat, canIssueTaxInvoices } from "@/lib/vat";
+import { getVatRate, calculateVat, canIssueTaxInvoices, round2 } from "@/lib/vat";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { DOCUMENT_TYPE_LABELS, type InvoiceDocument } from "@/lib/types";
 
@@ -39,10 +39,15 @@ export default function RecurringPage() {
     setCreatingId(template.id);
     setToast(null);
     try {
-      const subtotal = template.items.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
+      const subtotal = round2(
+        template.items.reduce((s, i) => s + i.quantity * i.unitPrice, 0)
+      );
       const vatRate = getVatRate(business);
       const vat = calculateVat(subtotal, vatRate);
-      const total = subtotal + vat;
+      const total = round2(subtotal + vat);
+      const isPaidOnIssue =
+        template.documentType === "receipt" ||
+        template.documentType === "tax_invoice_receipt";
 
       const draft: Omit<InvoiceDocument, "number"> = {
         id: crypto.randomUUID(),
@@ -51,13 +56,13 @@ export default function RecurringPage() {
         clientId: template.clientId,
         clientName: template.clientName,
         subject: template.subject,
-        status: template.documentType === "receipt" ? "paid" : "sent",
+        status: isPaidOnIssue ? "paid" : "sent",
         items: template.items.map((i) => ({
           id: crypto.randomUUID(),
           description: i.description,
           quantity: i.quantity,
           unitPrice: i.unitPrice,
-          total: i.quantity * i.unitPrice,
+          total: round2(i.quantity * i.unitPrice),
         })),
         subtotal,
         vat,

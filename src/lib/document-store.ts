@@ -130,6 +130,15 @@ export async function createDocument(
 
   if (error) throw new Error("שגיאה בשמירת המסמך: " + error.message);
 
+  if (
+    !data ||
+    typeof data !== "object" ||
+    typeof (data as { id?: unknown }).id !== "string" ||
+    typeof (data as { number?: unknown }).number !== "number"
+  ) {
+    throw new Error("השרת החזיר תשובה לא תקינה לאחר שמירת המסמך");
+  }
+
   window.dispatchEvent(new Event(CHANGE_EVENT));
   return data as { id: string; number: number };
 }

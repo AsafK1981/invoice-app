@@ -16,12 +16,13 @@ function ConfirmInner() {
   useEffect(() => {
     let cancelled = false;
     let resolved = false;
+    let fallbackTimer: ReturnType<typeof setTimeout> | null = null;
     let redirectTimer: ReturnType<typeof setTimeout> | null = null;
 
     const finish = (session: { user: unknown } | null) => {
       if (resolved || cancelled) return;
       resolved = true;
-      clearTimeout(fallback);
+      if (fallbackTimer) clearTimeout(fallbackTimer);
       if (session) {
         setStatus("ok");
         redirectTimer = setTimeout(() => {
@@ -45,7 +46,7 @@ function ConfirmInner() {
       if (!cancelled) finish(session);
     });
 
-    const fallback = setTimeout(() => {
+    fallbackTimer = setTimeout(() => {
       if (resolved || cancelled) return;
       supabase.auth.getSession().then(({ data: { session } }) => {
         if (!cancelled) finish(session);
@@ -54,7 +55,7 @@ function ConfirmInner() {
 
     return () => {
       cancelled = true;
-      clearTimeout(fallback);
+      if (fallbackTimer) clearTimeout(fallbackTimer);
       if (redirectTimer) clearTimeout(redirectTimer);
       subscription.unsubscribe();
     };
