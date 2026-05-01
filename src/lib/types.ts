@@ -127,3 +127,11 @@ export const DEFAULT_NEXT_NUMBER: Record<DocumentType, number> = {
   tax_invoice_receipt: 201,
   credit_note: 201,
 };
+
+export const DOC_SUM_LABEL: Record<DocumentType, string> = {
+  receipt: "סה״כ לתשלום",
+  quote: "סה״כ הצעה",
+  tax_invoice: "סה״כ לתשלום",
+  tax_invoice_receipt: "סה״כ לתשלום",
+  credit_note: "סה״כ זיכוי",
+};
