@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "./supabase";
 import { getBusinessId, onBusinessReady } from "./business-init";
-import { DEFAULT_NEXT_NUMBER, type DocumentType, type InvoiceDocument, type DocumentItem } from "./types";
+import type { DocumentType, InvoiceDocument, DocumentItem } from "./types";
 
 const CHANGE_EVENT = "invoice-app:documents-changed";
 
@@ -91,60 +91,47 @@ export function useDocument(id: string) {
   return { document, ready };
 }
 
-export async function getNextNumber(type: DocumentType): Promise<number> {
+/**
+ * Atomic document creation. Allocates the next number AND inserts the doc + items
+ * in one Postgres transaction. If the insert fails, the counter doesn't advance
+ * (no gap in numbering). Returns the assigned number.
+ *
+ * Pass `doc.number = 0` (or anything) — it's ignored; the RPC assigns the real number.
+ */
+export async function createDocument(
+  doc: Omit<InvoiceDocument, "number"> & { number?: number }
+): Promise<{ id: string; number: number }> {
   const bid = getBusinessId();
-  if (!bid) return DEFAULT_NEXT_NUMBER[type];
+  if (!bid) throw new Error("אין עסק פעיל");
 
-  const { data, error } = await supabase.rpc("get_next_doc_number", {
+  const { data, error } = await supabase.rpc("create_document_atomic", {
     p_business_id: bid,
-    p_doc_type: type,
+    p_id: doc.id,
+    p_type: doc.type,
+    p_date: doc.date,
+    p_client_id: doc.clientId || null,
+    p_client_name: doc.clientName,
+    p_subject: doc.subject || null,
+    p_status: doc.status,
+    p_subtotal: doc.subtotal,
+    p_vat: doc.vat,
+    p_total: doc.total,
+    p_payment_method: doc.paymentMethod || null,
+    p_notes: doc.notes || null,
+    p_items: doc.items.map((item) => ({
+      id: item.id,
+      product_id: item.productId || null,
+      description: item.description,
+      quantity: item.quantity,
+      unit_price: item.unitPrice,
+      total: item.total,
+    })),
   });
 
-  if (error || data == null) {
-    return DEFAULT_NEXT_NUMBER[type];
-  }
-  return data as number;
-}
-
-export async function saveDocument(doc: InvoiceDocument) {
-  const bid = getBusinessId();
-  if (!bid) return;
-
-  const { error: docError } = await supabase.from("documents").insert({
-    id: doc.id,
-    business_id: bid,
-    type: doc.type,
-    number: doc.number,
-    date: doc.date,
-    client_id: doc.clientId || null,
-    client_name: doc.clientName,
-    subject: doc.subject || null,
-    status: doc.status,
-    subtotal: doc.subtotal,
-    vat: doc.vat,
-    total: doc.total,
-    payment_method: doc.paymentMethod || null,
-    notes: doc.notes || null,
-  });
-  if (docError) throw new Error("שגיאה בשמירת המסמך: " + docError.message);
-
-  if (doc.items.length > 0) {
-    const { error: itemsError } = await supabase.from("document_items").insert(
-      doc.items.map((item, idx) => ({
-        id: item.id,
-        document_id: doc.id,
-        product_id: item.productId || null,
-        description: item.description,
-        quantity: item.quantity,
-        unit_price: item.unitPrice,
-        total: item.total,
-        sort_order: idx,
-      }))
-    );
-    if (itemsError) throw new Error("שגיאה בשמירת פריטי המסמך: " + itemsError.message);
-  }
+  if (error) throw new Error("שגיאה בשמירת המסמך: " + error.message);
 
   window.dispatchEvent(new Event(CHANGE_EVENT));
+  return data as { id: string; number: number };
 }
 
 export async function deleteDocument(id: string) {

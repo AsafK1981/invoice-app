@@ -22,7 +22,7 @@ import {
 } from "@/lib/recurring-store";
 import { useClients } from "@/lib/client-store";
 import { useBusiness } from "@/lib/business-store";
-import { getNextNumber, saveDocument } from "@/lib/document-store";
+import { createDocument } from "@/lib/document-store";
 import { getVatRate, calculateVat, canIssueTaxInvoices } from "@/lib/vat";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { DOCUMENT_TYPE_LABELS, type InvoiceDocument } from "@/lib/types";
@@ -43,12 +43,10 @@ export default function RecurringPage() {
       const vatRate = getVatRate(business);
       const vat = calculateVat(subtotal, vatRate);
       const total = subtotal + vat;
-      const allocatedNumber = await getNextNumber(template.documentType);
 
-      const doc: InvoiceDocument = {
+      const draft: Omit<InvoiceDocument, "number"> = {
         id: crypto.randomUUID(),
         type: template.documentType,
-        number: allocatedNumber,
         date: new Date().toISOString().slice(0, 10),
         clientId: template.clientId,
         clientName: template.clientName,
@@ -66,7 +64,7 @@ export default function RecurringPage() {
         total,
         paymentMethod: "bank_transfer",
       };
-      await saveDocument(doc);
+      const { id: docId, number: allocatedNumber } = await createDocument(draft);
 
       const updated: RecurringTemplate = {
         ...template,
@@ -75,7 +73,7 @@ export default function RecurringPage() {
       await saveTemplate(updated);
 
       setToast({ kind: "success", text: `מסמך #${allocatedNumber} נוצר. פותח...` });
-      setTimeout(() => router.push(`/documents/${doc.id}`), 800);
+      setTimeout(() => router.push(`/documents/${docId}`), 800);
     } catch (err) {
       setToast({
         kind: "error",

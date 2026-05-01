@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
 import { sendReceiptEmail } from "@/lib/email";
-import { getNextNumber, saveDocument } from "@/lib/document-store";
+import { createDocument } from "@/lib/document-store";
 import { parseEmails, joinEmails, isValidEmail } from "@/lib/emails";
 import { getVatRate, computeAmounts, round2, type VatMode } from "@/lib/vat";
 import {
@@ -236,7 +236,6 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
     setToast(null);
 
     try {
-      const allocatedNumber = await getNextNumber(documentType);
       const clientName = buildClientName();
 
       const persistItems = items.map((i) => {
@@ -251,10 +250,9 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
         };
       });
 
-      const doc: InvoiceDocument = {
+      const draft: Omit<InvoiceDocument, "number"> = {
         id: crypto.randomUUID(),
         type: documentType,
-        number: allocatedNumber,
         date,
         clientId: adhocMode ? "" : selectedClient?.id || "",
         clientName,
@@ -273,7 +271,8 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
           : notes.trim() || undefined,
       };
 
-      await saveDocument(doc);
+      const { id: docId, number: allocatedNumber } = await createDocument(draft);
+      const doc = { ...draft, id: docId, number: allocatedNumber };
 
       if (sendEmail) {
         const result = await sendReceiptEmail({
