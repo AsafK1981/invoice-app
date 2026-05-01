@@ -2,7 +2,6 @@
 
 import { use, useEffect, useState } from "react";
 import { Printer } from "lucide-react";
-import { supabase } from "@/lib/supabase";
 import { ReceiptView } from "@/components/receipt-view";
 import type { Business, Client, InvoiceDocument, DocumentItem } from "@/lib/types";
 
@@ -16,77 +15,71 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
 
   useEffect(() => {
     async function load() {
-      const { data: docRow, error: docErr } = await supabase
-        .from("documents")
-        .select("*")
-        .eq("id", id)
-        .single();
+      try {
+        const res = await fetch(`/api/public-document/${id}`, { cache: "no-store" });
+        if (!res.ok) {
+          setError("המסמך לא נמצא");
+          setLoading(false);
+          return;
+        }
+        const data = await res.json();
+        if (!data.ok || !data.document) {
+          setError("המסמך לא נמצא");
+          setLoading(false);
+          return;
+        }
 
-      if (docErr || !docRow) {
-        setError("המסמך לא נמצא");
-        setLoading(false);
-        return;
-      }
+        const docRow = data.document;
+        const items = (data.items || []) as Array<{
+          id: string;
+          product_id: string | null;
+          description: string;
+          quantity: number | string;
+          unit_price: number | string;
+          total: number | string;
+        }>;
+        const mappedItems: DocumentItem[] = items.map((r) => ({
+          id: r.id,
+          productId: r.product_id || undefined,
+          description: r.description,
+          quantity: Number(r.quantity),
+          unitPrice: Number(r.unit_price),
+          total: Number(r.total),
+        }));
 
-      const { data: items } = await supabase
-        .from("document_items")
-        .select("*")
-        .eq("document_id", id)
-        .order("sort_order");
-
-      const mappedItems: DocumentItem[] = (items || []).map((r) => ({
-        id: r.id,
-        productId: r.product_id || undefined,
-        description: r.description,
-        quantity: Number(r.quantity),
-        unitPrice: Number(r.unit_price),
-        total: Number(r.total),
-      }));
-
-      setDoc({
-        id: docRow.id,
-        type: docRow.type,
-        number: Number(docRow.number),
-        date: docRow.date,
-        clientId: docRow.client_id || "",
-        clientName: docRow.client_name,
-        subject: docRow.subject || undefined,
-        status: docRow.status,
-        items: mappedItems,
-        subtotal: Number(docRow.subtotal),
-        vat: Number(docRow.vat),
-        total: Number(docRow.total),
-        paymentMethod: docRow.payment_method || undefined,
-        notes: docRow.notes || undefined,
-      });
-
-      const { data: biz } = await supabase
-        .from("businesses")
-        .select("*")
-        .eq("id", docRow.business_id)
-        .single();
-
-      if (biz) {
-        setBusiness({
-          id: biz.id,
-          name: biz.name,
-          businessType: biz.business_type,
-          taxId: biz.tax_id,
-          address: biz.address,
-          phone: biz.phone || undefined,
-          email: biz.email || undefined,
-          logoUrl: biz.logo_url || undefined,
+        setDoc({
+          id: docRow.id,
+          type: docRow.type,
+          number: Number(docRow.number),
+          date: docRow.date,
+          clientId: docRow.client_id || "",
+          clientName: docRow.client_name,
+          subject: docRow.subject || undefined,
+          status: docRow.status,
+          items: mappedItems,
+          subtotal: Number(docRow.subtotal),
+          vat: Number(docRow.vat),
+          total: Number(docRow.total),
+          paymentMethod: docRow.payment_method || undefined,
+          notes: docRow.notes || undefined,
         });
-      }
 
-      if (docRow.client_id) {
-        const { data: cli } = await supabase
-          .from("clients")
-          .select("*")
-          .eq("id", docRow.client_id)
-          .single();
+        if (data.business) {
+          const biz = data.business;
+          setBusiness({
+            id: biz.id,
+            name: biz.name,
+            businessType: biz.business_type,
+            taxId: biz.tax_id,
+            address: biz.address,
+            phone: biz.phone || undefined,
+            email: biz.email || undefined,
+            logoUrl: biz.logo_url || undefined,
+          });
+        }
 
-        if (cli) {
+        if (data.client) {
+          const cli = data.client;
           setClient({
             id: cli.id,
             name: cli.name,
@@ -98,9 +91,12 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
             createdAt: cli.created_at?.slice(0, 10) || "",
           });
         }
-      }
 
-      setLoading(false);
+        setLoading(false);
+      } catch {
+        setError("המסמך לא נמצא");
+        setLoading(false);
+      }
     }
 
     load();
