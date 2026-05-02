@@ -7,6 +7,7 @@ import { useDocuments } from "@/lib/document-store";
 import { useClients } from "@/lib/client-store";
 import { useProducts } from "@/lib/product-store";
 import { formatCurrency, formatDate } from "@/lib/format";
+import { matchDocument } from "@/lib/document-search";
 import { DOCUMENT_TYPE_LABELS } from "@/lib/types";
 
 interface Result {
@@ -58,12 +59,7 @@ export function GlobalSearch() {
     if (!q) return [];
 
     const docs: Result[] = documents
-      .filter(
-        (d) =>
-          String(d.number).includes(q) ||
-          d.clientName.toLowerCase().includes(q) ||
-          (d.subject?.toLowerCase().includes(q) ?? false)
-      )
+      .filter((d) => matchDocument(d, q))
       .slice(0, 6)
       .map((d) => ({
         id: `doc-${d.id}`,
@@ -163,7 +159,7 @@ export function GlobalSearch() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={onKeyDown}
-            placeholder="חפש לקוחות, מסמכים, מוצרים..."
+            placeholder="חפש לפי מספר, לקוח, סכום, תיאור פריט..."
             className="flex-1 bg-transparent outline-none text-stone-900 placeholder:text-stone-400"
           />
           <button

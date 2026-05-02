@@ -2,17 +2,34 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search, X, Trash2, ReceiptText, FileText as FileTextIcon, FileCheck, FileMinus, FileSpreadsheet } from "lucide-react";
+import {
+  Search,
+  X,
+  Trash2,
+  ReceiptText,
+  FileText as FileTextIcon,
+  FileCheck,
+  FileMinus,
+  FileSpreadsheet,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
+} from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { deleteDocument } from "@/lib/document-store";
+import { matchDocument } from "@/lib/document-search";
 import {
   DOCUMENT_TYPE_LABELS,
   DOCUMENT_STATUS_LABELS,
   type InvoiceDocument,
   type DocumentType,
+  type DocumentStatus,
 } from "@/lib/types";
 
 type TypeFilter = "all" | DocumentType;
+type StatusFilter = "all" | DocumentStatus;
+type SortKey = "date" | "number" | "total";
+type SortDir = "asc" | "desc";
 
 interface Props {
   documents: InvoiceDocument[];
@@ -65,8 +82,11 @@ const STATUS_THEMES: Record<string, string> = {
 export function DocumentsTable({ documents, limit }: Props) {
   const router = useRouter();
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [monthFilter, setMonthFilter] = useState<string>("all");
   const [search, setSearch] = useState<string>("");
+  const [sortKey, setSortKey] = useState<SortKey>("date");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
 
   const availableMonths = useMemo(() => {
     const set = new Set(documents.map((d) => d.date.slice(0, 7)));
@@ -76,20 +96,38 @@ export function DocumentsTable({ documents, limit }: Props) {
   const filtered = useMemo(() => {
     let result = documents;
     if (typeFilter !== "all") result = result.filter((d) => d.type === typeFilter);
+    if (statusFilter !== "all") result = result.filter((d) => d.status === statusFilter);
     if (monthFilter !== "all") result = result.filter((d) => d.date.startsWith(monthFilter));
-    const q = search.trim().toLowerCase();
-    if (q) {
-      result = result.filter(
-        (d) =>
-          String(d.number).includes(q) ||
-          d.clientName.toLowerCase().includes(q) ||
-          (d.subject?.toLowerCase().includes(q) ?? false)
-      );
-    }
-    result = [...result].sort((a, b) => b.date.localeCompare(a.date));
+    if (search.trim()) result = result.filter((d) => matchDocument(d, search));
+    result = [...result].sort((a, b) => {
+      let cmp = 0;
+      if (sortKey === "date") cmp = a.date.localeCompare(b.date);
+      else if (sortKey === "number") cmp = a.number - b.number;
+      else cmp = a.total - b.total;
+      return sortDir === "asc" ? cmp : -cmp;
+    });
     if (limit) result = result.slice(0, limit);
     return result;
-  }, [documents, typeFilter, monthFilter, search, limit]);
+  }, [documents, typeFilter, statusFilter, monthFilter, search, limit, sortKey, sortDir]);
+
+  function toggleSort(key: SortKey) {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir("desc");
+    }
+  }
+
+  function clearFilters() {
+    setTypeFilter("all");
+    setStatusFilter("all");
+    setMonthFilter("all");
+    setSearch("");
+  }
+
+  const filtersActive =
+    typeFilter !== "all" || statusFilter !== "all" || monthFilter !== "all" || search.trim() !== "";
 
   return (
     <div>
@@ -100,7 +138,7 @@ export function DocumentsTable({ documents, limit }: Props) {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="חיפוש לפי מספר / לקוח / נושא..."
+            placeholder="חיפוש: מספר, לקוח, סכום, תיאור פריט..."
             className="input-warm pr-10 pl-9 w-72"
           />
           {search && (
@@ -127,6 +165,18 @@ export function DocumentsTable({ documents, limit }: Props) {
           ]}
         />
         <FilterSelect
+          label="סטטוס"
+          value={statusFilter}
+          onChange={(v) => setStatusFilter(v as StatusFilter)}
+          options={[
+            { value: "all", label: "כל הסטטוסים" },
+            { value: "draft", label: DOCUMENT_STATUS_LABELS.draft },
+            { value: "sent", label: DOCUMENT_STATUS_LABELS.sent },
+            { value: "paid", label: DOCUMENT_STATUS_LABELS.paid },
+            { value: "cancelled", label: DOCUMENT_STATUS_LABELS.cancelled },
+          ]}
+        />
+        <FilterSelect
           label="חודש"
           value={monthFilter}
           onChange={setMonthFilter}
@@ -135,109 +185,183 @@ export function DocumentsTable({ documents, limit }: Props) {
             ...availableMonths.map((m) => ({ value: m, label: formatMonthLabel(m) })),
           ]}
         />
+        {filtersActive && (
+          <button
+            onClick={clearFilters}
+            className="inline-flex items-center justify-center min-h-[36px] px-3 text-sm font-medium text-orange-700 hover:bg-orange-100 rounded-xl"
+          >
+            נקה הכל
+          </button>
+        )}
         <div className="text-sm font-medium text-stone-700 mr-auto">
           {filtered.length} מסמכים
         </div>
       </div>
 
       <div className="overflow-x-auto">
-      <table className="w-full min-w-[720px]">
-        <thead className="text-xs text-stone-700 bg-white">
-          <tr>
-            <th className="text-right px-6 py-3 font-semibold">מספר</th>
-            <th className="text-right px-6 py-3 font-semibold">סוג</th>
-            <th className="text-right px-6 py-3 font-semibold">לקוח</th>
-            <th className="text-right px-6 py-3 font-semibold">נושא</th>
-            <th className="text-right px-6 py-3 font-semibold">תאריך</th>
-            <th className="text-right px-6 py-3 font-semibold">סטטוס</th>
-            <th className="text-left px-6 py-3 font-semibold">סכום</th>
-            <th className="px-4 py-3 w-10"></th>
-          </tr>
-        </thead>
-        <tbody>
-          {filtered.length === 0 ? (
+        <table className="w-full min-w-[720px]">
+          <thead className="text-xs text-stone-700 bg-white">
             <tr>
-              <td colSpan={8} className="px-6 py-16 text-center">
-                <div className="text-4xl mb-2">📭</div>
-                <div className="text-sm text-stone-500">אין מסמכים העונים לסינון הנבחר</div>
-              </td>
+              <SortableHeader
+                label="מספר"
+                sortKey="number"
+                currentKey={sortKey}
+                dir={sortDir}
+                onClick={() => toggleSort("number")}
+                align="right"
+              />
+              <th className="text-right px-6 py-3 font-semibold">סוג</th>
+              <th className="text-right px-6 py-3 font-semibold">לקוח</th>
+              <th className="text-right px-6 py-3 font-semibold">נושא</th>
+              <SortableHeader
+                label="תאריך"
+                sortKey="date"
+                currentKey={sortKey}
+                dir={sortDir}
+                onClick={() => toggleSort("date")}
+                align="right"
+              />
+              <th className="text-right px-6 py-3 font-semibold">סטטוס</th>
+              <SortableHeader
+                label="סכום"
+                sortKey="total"
+                currentKey={sortKey}
+                dir={sortDir}
+                onClick={() => toggleSort("total")}
+                align="left"
+              />
+              <th className="px-4 py-3 w-10"></th>
             </tr>
-          ) : (
-            filtered.map((d) => {
-              const theme = TYPE_THEMES[d.type];
-              const Icon = TYPE_ICONS[d.type];
-              return (
-                <tr
-                  key={d.id}
-                  onClick={() => router.push(`/documents/${d.id}`)}
-                  className={`border-t border-orange-50 transition-colors cursor-pointer ${theme.row}`}
-                >
-                  <td className="px-6 py-3 text-sm font-bold text-stone-900">#{d.number}</td>
-                  <td className="px-6 py-3 text-sm">
-                    <span
-                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${theme.badge}`}
+          </thead>
+          <tbody>
+            {filtered.length === 0 ? (
+              <tr>
+                <td colSpan={8} className="px-6 py-16 text-center">
+                  <div className="text-4xl mb-2">🔍</div>
+                  <div className="text-sm text-stone-500">
+                    {filtersActive ? "אין מסמכים העונים לסינון הנבחר" : "אין מסמכים עדיין"}
+                  </div>
+                  {filtersActive && (
+                    <button
+                      onClick={clearFilters}
+                      className="text-sm text-orange-600 hover:underline mt-2"
                     >
-                      <Icon className="w-3.5 h-3.5" />
-                      {DOCUMENT_TYPE_LABELS[d.type]}
-                    </span>
-                  </td>
-                  <td className="px-6 py-3 text-sm font-medium text-stone-900">{d.clientName}</td>
-                  <td className="px-6 py-3 text-sm text-stone-700">{d.subject || "—"}</td>
-                  <td className="px-6 py-3 text-sm text-stone-600">{formatDate(d.date)}</td>
-                  <td className="px-6 py-3 text-sm">
-                    <div className="flex flex-col gap-1">
+                      נקה את כל הסינונים
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ) : (
+              filtered.map((d) => {
+                const theme = TYPE_THEMES[d.type];
+                const Icon = TYPE_ICONS[d.type];
+                return (
+                  <tr
+                    key={d.id}
+                    onClick={() => router.push(`/documents/${d.id}`)}
+                    className={`border-t border-orange-50 transition-colors cursor-pointer ${theme.row}`}
+                  >
+                    <td className="px-6 py-3 text-sm font-bold text-stone-900">#{d.number}</td>
+                    <td className="px-6 py-3 text-sm">
                       <span
-                        className={`inline-block px-2.5 py-1 rounded-full text-xs font-medium ${STATUS_THEMES[d.status]} self-start`}
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${theme.badge}`}
                       >
-                        {DOCUMENT_STATUS_LABELS[d.status]}
+                        <Icon className="w-3.5 h-3.5" />
+                        {DOCUMENT_TYPE_LABELS[d.type]}
                       </span>
-                      {d.status === "sent" && d.type !== "receipt" && d.type !== "tax_invoice_receipt" && (() => {
-                        const days = Math.floor(
-                          (Date.now() - new Date(d.date).getTime()) / (1000 * 60 * 60 * 24)
-                        );
-                        if (days >= 7) {
-                          return (
-                            <span className="text-xs text-amber-700 font-medium">
-                              {days} ימים ללא תשלום
-                            </span>
-                          );
-                        }
-                        return null;
-                      })()}
-                    </div>
-                  </td>
-                  <td className="px-6 py-3 text-sm font-bold text-left text-stone-900">
-                    {formatCurrency(d.total)}
-                  </td>
-                  <td className="px-2 py-3 text-center">
-                    {d.status === "draft" ? (
-                      <button
-                        onClick={async (e) => {
-                          e.stopPropagation();
-                          if (confirm(`למחוק את מסמך #${d.number}?`)) await deleteDocument(d.id);
-                        }}
-                        className="text-stone-300 hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-50 transition-colors"
-                        title="מחק"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    ) : (
-                      <span
-                        className="text-stone-200 p-1.5 inline-block cursor-not-allowed"
-                        title="לא ניתן למחוק מסמך שנשלח או שולם"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              );
-            })
-          )}
-        </tbody>
-      </table>
+                    </td>
+                    <td className="px-6 py-3 text-sm font-medium text-stone-900">{d.clientName}</td>
+                    <td className="px-6 py-3 text-sm text-stone-700">{d.subject || "—"}</td>
+                    <td className="px-6 py-3 text-sm text-stone-600">{formatDate(d.date)}</td>
+                    <td className="px-6 py-3 text-sm">
+                      <div className="flex flex-col gap-1">
+                        <span
+                          className={`inline-block px-2.5 py-1 rounded-full text-xs font-medium ${STATUS_THEMES[d.status]} self-start`}
+                        >
+                          {DOCUMENT_STATUS_LABELS[d.status]}
+                        </span>
+                        {d.status === "sent" &&
+                          d.type !== "receipt" &&
+                          d.type !== "tax_invoice_receipt" &&
+                          (() => {
+                            const days = Math.floor(
+                              (Date.now() - new Date(d.date).getTime()) / (1000 * 60 * 60 * 24)
+                            );
+                            if (days >= 7) {
+                              return (
+                                <span className="text-xs text-amber-700 font-medium">
+                                  {days} ימים ללא תשלום
+                                </span>
+                              );
+                            }
+                            return null;
+                          })()}
+                      </div>
+                    </td>
+                    <td className="px-6 py-3 text-sm font-bold text-left text-stone-900">
+                      {formatCurrency(d.total)}
+                    </td>
+                    <td className="px-2 py-3 text-center">
+                      {d.status === "draft" ? (
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            if (confirm(`למחוק את מסמך #${d.number}?`)) await deleteDocument(d.id);
+                          }}
+                          className="text-stone-300 hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-50 transition-colors"
+                          title="מחק"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      ) : (
+                        <span
+                          className="text-stone-200 p-1.5 inline-block cursor-not-allowed"
+                          title="לא ניתן למחוק מסמך שנשלח או שולם"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
+  );
+}
+
+function SortableHeader({
+  label,
+  sortKey,
+  currentKey,
+  dir,
+  onClick,
+  align,
+}: {
+  label: string;
+  sortKey: SortKey;
+  currentKey: SortKey;
+  dir: SortDir;
+  onClick: () => void;
+  align: "right" | "left";
+}) {
+  const active = sortKey === currentKey;
+  const Icon = !active ? ArrowUpDown : dir === "asc" ? ArrowUp : ArrowDown;
+  return (
+    <th className={`text-${align} px-6 py-3 font-semibold`}>
+      <button
+        onClick={onClick}
+        className={`inline-flex items-center gap-1 hover:text-orange-700 transition-colors ${
+          active ? "text-orange-700" : "text-stone-700"
+        }`}
+      >
+        {label}
+        <Icon className="w-3 h-3" />
+      </button>
+    </th>
   );
 }
 
