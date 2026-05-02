@@ -1,18 +1,89 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { TrendingUp, TrendingDown, PiggyBank, CalendarDays, Download } from "lucide-react";
 import { useDocuments } from "@/lib/document-store";
 import { useExpenses } from "@/lib/expense-store";
 import { formatCurrency } from "@/lib/format";
 import { exportDocuments, exportExpenses } from "@/lib/csv-export";
 
+type Period = string; // "all" | "2026" | "2026-Q1" | "2026-01"
+
+interface PeriodOption {
+  value: Period;
+  label: string;
+}
+
+function buildPeriodOptions(years: number[]): PeriodOption[] {
+  const monthNames = [
+    "ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יוני",
+    "יולי", "אוגוסט", "ספטמבר", "אוקטובר", "נובמבר", "דצמבר",
+  ];
+  const opts: PeriodOption[] = [{ value: "all", label: "כל הזמנים" }];
+  for (const y of years) {
+    opts.push({ value: String(y), label: `שנת ${y}` });
+    opts.push({ value: `${y}-Q1`, label: `${y} · רבעון 1 (ינו-מרץ)` });
+    opts.push({ value: `${y}-Q2`, label: `${y} · רבעון 2 (אפר-יונ)` });
+    opts.push({ value: `${y}-Q3`, label: `${y} · רבעון 3 (יול-ספט)` });
+    opts.push({ value: `${y}-Q4`, label: `${y} · רבעון 4 (אוק-דצמ)` });
+    for (let m = 1; m <= 12; m++) {
+      opts.push({
+        value: `${y}-${String(m).padStart(2, "0")}`,
+        label: `${monthNames[m - 1]} ${y}`,
+      });
+    }
+  }
+  return opts;
+}
+
+function periodMatches(period: Period, date: string): boolean {
+  if (period === "all") return true;
+  if (period.includes("-Q")) {
+    const [year, q] = period.split("-Q");
+    const monthsByQuarter: Record<string, string[]> = {
+      "1": ["01", "02", "03"],
+      "2": ["04", "05", "06"],
+      "3": ["07", "08", "09"],
+      "4": ["10", "11", "12"],
+    };
+    const months = monthsByQuarter[q];
+    return months ? months.some((m) => date.startsWith(`${year}-${m}`)) : false;
+  }
+  return date.startsWith(period);
+}
+
+function periodLabelShort(period: Period): string {
+  if (period === "all") return "all";
+  return period;
+}
+
 export default function ReportsPage() {
   const { documents } = useDocuments();
   const { items: expenses } = useExpenses();
+  const [period, setPeriod] = useState<Period>("all");
 
-  const paidDocs = documents.filter((d) => d.status === "paid");
+  const yearsWithData = useMemo(() => {
+    const set = new Set<number>();
+    documents.forEach((d) => set.add(parseInt(d.date.slice(0, 4), 10)));
+    expenses.forEach((e) => set.add(parseInt(e.date.slice(0, 4), 10)));
+    if (set.size === 0) set.add(new Date().getFullYear());
+    return Array.from(set).sort((a, b) => b - a);
+  }, [documents, expenses]);
+
+  const periodOptions = useMemo(() => buildPeriodOptions(yearsWithData), [yearsWithData]);
+
+  const filteredDocs = useMemo(
+    () => documents.filter((d) => periodMatches(period, d.date)),
+    [documents, period]
+  );
+  const filteredExpenses = useMemo(
+    () => expenses.filter((e) => periodMatches(period, e.date)),
+    [expenses, period]
+  );
+
+  const paidDocs = filteredDocs.filter((d) => d.status === "paid");
   const totalIncome = paidDocs.reduce((sum, d) => sum + d.total, 0);
-  const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+  const totalExpenses = filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
 
   const byMonth = new Map<string, { income: number; expenses: number }>();
   paidDocs.forEach((d) => {
@@ -21,7 +92,7 @@ export default function ReportsPage() {
     cur.income += d.total;
     byMonth.set(m, cur);
   });
-  expenses.forEach((e) => {
+  filteredExpenses.forEach((e) => {
     const m = e.date.slice(0, 7);
     const cur = byMonth.get(m) || { income: 0, expenses: 0 };
     cur.expenses += e.amount;
@@ -54,6 +125,8 @@ export default function ReportsPage() {
     },
   ];
 
+  const exportSuffix = periodLabelShort(period);
+
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between flex-wrap gap-4">
@@ -66,22 +139,36 @@ export default function ReportsPage() {
           </h1>
           <p className="text-sm text-stone-700 mt-2 mr-14">סיכום פיננסי לפי תקופה</p>
         </div>
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2 flex-wrap items-center">
+          <label className="flex items-center gap-2 text-sm">
+            <span className="text-stone-500">תקופה:</span>
+            <select
+              value={period}
+              onChange={(e) => setPeriod(e.target.value)}
+              className="input-warm py-1.5 px-3 text-sm w-auto"
+            >
+              {periodOptions.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </label>
           <button
-            onClick={() => exportDocuments(documents)}
-            disabled={documents.length === 0}
+            onClick={() => exportDocuments(filteredDocs, exportSuffix)}
+            disabled={filteredDocs.length === 0}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border-2 border-orange-200 text-stone-800 hover:bg-orange-50 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Download className="w-4 h-4" />
-            ייצוא מסמכים (CSV)
+            ייצוא מסמכים ({filteredDocs.length})
           </button>
           <button
-            onClick={() => exportExpenses(expenses)}
-            disabled={expenses.length === 0}
+            onClick={() => exportExpenses(filteredExpenses, exportSuffix)}
+            disabled={filteredExpenses.length === 0}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border-2 border-orange-200 text-stone-800 hover:bg-orange-50 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Download className="w-4 h-4" />
-            ייצוא הוצאות (CSV)
+            ייצוא הוצאות ({filteredExpenses.length})
           </button>
         </div>
       </div>
@@ -128,7 +215,7 @@ export default function ReportsPage() {
             {months.length === 0 ? (
               <tr>
                 <td colSpan={4} className="px-6 py-16 text-center text-sm text-stone-500">
-                  אין נתונים להצגה
+                  אין נתונים לתקופה הנבחרת
                 </td>
               </tr>
             ) : (

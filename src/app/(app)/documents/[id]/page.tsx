@@ -15,6 +15,7 @@ import {
   RefreshCw,
   Circle,
   Clock,
+  Link as LinkIcon,
 } from "lucide-react";
 import { useDocument, deleteDocument, updateDocumentStatus } from "@/lib/document-store";
 import { useClients } from "@/lib/client-store";
@@ -130,6 +131,15 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
     router.push(`/documents/new/${docTypeToRoute(doc.type)}?from=${doc.id}`);
   }
 
+  async function handleCopyLink() {
+    try {
+      await navigator.clipboard.writeText(publicUrl);
+      setToast({ kind: "success", text: "הקישור הועתק ללוח" });
+    } catch {
+      setToast({ kind: "error", text: "לא ניתן להעתיק - העתק ידנית: " + publicUrl });
+    }
+  }
+
   async function handleConvertToReceipt() {
     if (!doc) return;
     const targetType = canIssueTaxInvoices(business) ? "tax-invoice" : "receipt";
@@ -197,6 +207,14 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
           >
             <Copy className="w-4 h-4" />
             שכפל
+          </button>
+          <button
+            onClick={handleCopyLink}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border border-orange-200 text-stone-800 hover:bg-orange-50"
+            title={publicUrl}
+          >
+            <LinkIcon className="w-4 h-4" />
+            העתק קישור
           </button>
           <button
             onClick={handleWhatsApp}

@@ -13,7 +13,7 @@ function download(filename: string, content: string) {
   URL.revokeObjectURL(url);
 }
 
-export function exportDocuments(documents: InvoiceDocument[]) {
+export function exportDocuments(documents: InvoiceDocument[], suffix?: string) {
   const rows = documents.map((d) => ({
     "מספר": d.number,
     "סוג": DOCUMENT_TYPE_LABELS[d.type],
@@ -30,10 +30,11 @@ export function exportDocuments(documents: InvoiceDocument[]) {
 
   const csv = Papa.unparse(rows);
   const date = new Date().toISOString().slice(0, 10);
-  download(`documents-${date}.csv`, csv);
+  const tag = suffix ? `-${suffix}` : "";
+  download(`documents${tag}-${date}.csv`, csv);
 }
 
-export function exportExpenses(expenses: Expense[]) {
+export function exportExpenses(expenses: Expense[], suffix?: string) {
   const rows = expenses.map((e) => ({
     "תאריך": e.date,
     "קטגוריה": e.category,
@@ -43,7 +44,8 @@ export function exportExpenses(expenses: Expense[]) {
   }));
   const csv = Papa.unparse(rows);
   const date = new Date().toISOString().slice(0, 10);
-  download(`expenses-${date}.csv`, csv);
+  const tag = suffix ? `-${suffix}` : "";
+  download(`expenses${tag}-${date}.csv`, csv);
 }
 
 export function exportClients(clients: Client[]) {
