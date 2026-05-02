@@ -14,6 +14,8 @@ import {
   Trash2,
   AlertTriangle,
   Hash,
+  Landmark,
+  MessageSquare,
 } from "lucide-react";
 import { useBusiness } from "@/lib/business-store";
 import { BusinessFormModal } from "@/components/business-form-modal";
@@ -35,6 +37,24 @@ export default function SettingsPage() {
     { icon: MapPin, label: "כתובת", value: business.address },
     { icon: Phone, label: "טלפון", value: business.phone || "—" },
     { icon: Mail, label: "אימייל", value: business.email || "—" },
+  ];
+
+  const bankParts = [
+    business.bankName,
+    business.bankBranch ? `סניף ${business.bankBranch}` : null,
+    business.bankAccount ? `חשבון ${business.bankAccount}` : null,
+  ].filter(Boolean);
+  const paymentFields = [
+    {
+      icon: Landmark,
+      label: "העברה בנקאית",
+      value: bankParts.length > 0 ? bankParts.join(" · ") : "—",
+    },
+    {
+      icon: MessageSquare,
+      label: "הערות תשלום",
+      value: business.paymentNotes || "—",
+    },
   ];
 
   async function clearAllData() {
@@ -90,6 +110,42 @@ export default function SettingsPage() {
         </div>
         <div className="space-y-3">
           {fields.map((f) => {
+            const Icon = f.icon;
+            return (
+              <div
+                key={f.label}
+                className="flex items-center gap-3 py-2.5 border-b border-orange-50 last:border-0"
+              >
+                <div className="w-9 h-9 rounded-xl bg-orange-50 flex items-center justify-center flex-shrink-0">
+                  <Icon className="w-4 h-4 text-orange-500" />
+                </div>
+                <span className="text-sm font-medium text-stone-700 w-40">{f.label}</span>
+                <span className="text-sm font-semibold text-stone-900 flex-1">{f.value}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="card-soft p-6">
+        <div className="flex items-center justify-between pb-4 border-b border-orange-100 mb-4">
+          <h2 className="font-semibold text-stone-900 flex items-center gap-2">
+            <Landmark className="w-4 h-4 text-orange-500" />
+            פרטי תשלום על מסמכים
+          </h2>
+          <button
+            onClick={() => setEditOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-semibold text-orange-700 hover:bg-orange-50"
+          >
+            <Pencil className="w-3.5 h-3.5" />
+            עריכה
+          </button>
+        </div>
+        <p className="text-xs text-stone-600 mb-3">
+          פרטי תשלום מוצגים על חשבונות עסקה וחשבוניות מס (לא על קבלות וזיכויים).
+        </p>
+        <div className="space-y-3">
+          {paymentFields.map((f) => {
             const Icon = f.icon;
             return (
               <div
