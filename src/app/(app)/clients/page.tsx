@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   UserPlus,
   Users,
@@ -13,6 +13,8 @@ import {
   MapPin,
   Upload,
   Download,
+  Search,
+  X,
 } from "lucide-react";
 import { useClients, clientStore } from "@/lib/client-store";
 import { formatDate } from "@/lib/format";
@@ -22,11 +24,33 @@ import { CsvImportModal } from "@/components/csv-import-modal";
 import { exportClients } from "@/lib/csv-export";
 import type { Client } from "@/lib/types";
 
+function matchesClient(client: Client, query: string): boolean {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  const haystack = [
+    client.name,
+    client.taxId || "",
+    client.address || "",
+    client.phone || "",
+    client.email || "",
+    client.notes || "",
+  ]
+    .join(" ")
+    .toLowerCase();
+  return q.split(/\s+/).every((t) => haystack.includes(t));
+}
+
 export default function ClientsPage() {
   const { items: clients } = useClients();
   const [modalOpen, setModalOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [editing, setEditing] = useState<Client | null>(null);
+  const [search, setSearch] = useState("");
+
+  const filtered = useMemo(
+    () => clients.filter((c) => matchesClient(c, search)),
+    [clients, search]
+  );
 
   function openNew() {
     setEditing(null);
@@ -52,7 +76,11 @@ export default function ClientsPage() {
             </span>
             לקוחות
           </h1>
-          <p className="text-sm text-stone-700 mt-2 mr-14">{clients.length} לקוחות בספר</p>
+          <p className="text-sm text-stone-700 mt-2 mr-14">
+            {search.trim()
+              ? `${filtered.length} מתוך ${clients.length} לקוחות`
+              : `${clients.length} לקוחות בספר`}
+          </p>
         </div>
         <div className="flex gap-2 flex-wrap">
           <button
@@ -82,6 +110,28 @@ export default function ClientsPage() {
         </div>
       </div>
 
+      {clients.length > 0 && (
+        <div className="relative max-w-md">
+          <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="חיפוש: שם, ח.פ, אימייל, טלפון, הערות..."
+            className="input-warm pr-10 pl-9"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch("")}
+              className="absolute left-2 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700"
+              aria-label="נקה חיפוש"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+      )}
+
       {clients.length === 0 ? (
         <div className="card-soft p-12 text-center">
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-100 to-rose-100 flex items-center justify-center mx-auto mb-4">
@@ -97,9 +147,23 @@ export default function ClientsPage() {
             הוסף לקוח
           </button>
         </div>
+      ) : filtered.length === 0 ? (
+        <div className="card-soft p-12 text-center">
+          <div className="text-4xl mb-2">🔍</div>
+          <h3 className="font-bold text-stone-900 mb-1">לא נמצאו לקוחות</h3>
+          <p className="text-sm text-stone-700 mb-3">
+            אין לקוחות התואמים ל-&quot;{search}&quot;
+          </p>
+          <button
+            onClick={() => setSearch("")}
+            className="text-sm text-orange-600 hover:underline"
+          >
+            נקה חיפוש
+          </button>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {clients.map((c) => (
+          {filtered.map((c) => (
             <div
               key={c.id}
               className="card-soft p-5 hover:shadow-md hover:-translate-y-0.5 transition-all group relative"
