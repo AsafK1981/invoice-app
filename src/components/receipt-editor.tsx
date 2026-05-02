@@ -37,6 +37,13 @@ import {
 } from "@/lib/types";
 import { DocumentPreview, type PreviewClient } from "./document-preview";
 import { FormField } from "./ui/form-field";
+import {
+  loadDraft,
+  saveDraft,
+  clearDraft,
+  isDraftEmpty,
+  type EditorDraft,
+} from "@/lib/draft-storage";
 
 interface EditorItem {
   id: string;
@@ -88,6 +95,109 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   const [showPreviewMobile, setShowPreviewMobile] = useState<boolean>(false);
   const [saving, setSaving] = useState<boolean>(false);
   const [toast, setToast] = useState<{ kind: "success" | "error"; text: string } | null>(null);
+
+  const [draftRecovered, setDraftRecovered] = useState<{ savedAt: number } | null>(null);
+  const [draftDismissed, setDraftDismissed] = useState<boolean>(false);
+  const [draftHydrated, setDraftHydrated] = useState<boolean>(false);
+
+  // On mount: if there's no fromDocId (i.e. this is a fresh editor) and a saved
+  // draft exists for this doc type, load it and offer the user the option to
+  // discard. The hydration flag prevents the auto-save effect from overwriting
+  // the draft before we've had a chance to read it.
+  useEffect(() => {
+    if (fromDocId) {
+      setDraftHydrated(true);
+      return;
+    }
+    const stored = loadDraft(documentType);
+    if (stored && !isDraftEmpty(stored.draft)) {
+      const d = stored.draft;
+      setClientId(d.clientId);
+      setAdhocMode(d.adhocMode);
+      setAdhocName(d.adhocName);
+      setAdhocTaxId(d.adhocTaxId);
+      setAdhocEmail(d.adhocEmail);
+      setDate(d.date);
+      setSubject(d.subject);
+      setValidUntil(d.validUntil);
+      setPaymentMethod(d.paymentMethod);
+      setNotes(d.notes);
+      setVatMode(d.vatMode);
+      setItems(d.items);
+      setDraftRecovered({ savedAt: stored.savedAt });
+    }
+    setDraftHydrated(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Auto-save: write the current form state to localStorage whenever any
+  // saveable field changes. Only after hydration so we don't blow away the
+  // saved draft on the very first render.
+  useEffect(() => {
+    if (!draftHydrated || fromDocId) return;
+    const draft: EditorDraft = {
+      clientId,
+      adhocMode,
+      adhocName,
+      adhocTaxId,
+      adhocEmail,
+      date,
+      subject,
+      validUntil,
+      paymentMethod,
+      notes,
+      vatMode,
+      items,
+    };
+    if (isDraftEmpty(draft)) {
+      clearDraft(documentType);
+    } else {
+      saveDraft(documentType, draft);
+    }
+  }, [
+    draftHydrated,
+    fromDocId,
+    documentType,
+    clientId,
+    adhocMode,
+    adhocName,
+    adhocTaxId,
+    adhocEmail,
+    date,
+    subject,
+    validUntil,
+    paymentMethod,
+    notes,
+    vatMode,
+    items,
+  ]);
+
+  function discardDraft() {
+    clearDraft(documentType);
+    setClientId("");
+    setAdhocMode(false);
+    setAdhocName("");
+    setAdhocTaxId("");
+    setAdhocEmail("");
+    setDate(today);
+    setSubject("");
+    setValidUntil("");
+    setPaymentMethod("bank_transfer");
+    setNotes("");
+    setVatMode("exclusive");
+    setItems([{ id: crypto.randomUUID(), description: "", quantity: 1, unitPrice: 0 }]);
+    setDraftRecovered(null);
+    setDraftDismissed(true);
+  }
+
+  function formatRelativeTime(savedAt: number): string {
+    const diffMs = Date.now() - savedAt;
+    const diffMin = Math.round(diffMs / 60000);
+    if (diffMin < 1) return "לפני רגע";
+    if (diffMin < 60) return `לפני ${diffMin} דקות`;
+    const diffHr = Math.round(diffMin / 60);
+    return `לפני ${diffHr} ${diffHr === 1 ? "שעה" : "שעות"}`;
+  }
 
   const selectedClient = clients.find((c) => c.id === clientId);
   const previewClient: PreviewClient | null = (() => {
@@ -299,6 +409,10 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
       const { id: docId, number: allocatedNumber } = await createDocument(draft);
       const doc = { ...draft, id: docId, number: allocatedNumber };
 
+      // The doc actually persisted; clear the localStorage draft so it doesn't
+      // come back to haunt the next "new document" session.
+      clearDraft(documentType);
+
       if (sendEmail) {
         const result = await sendReceiptEmail({
           to: joinEmails(emailRecipients),
@@ -336,6 +450,38 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   }
 
   return (
+    <>
+      {draftRecovered && !draftDismissed && (
+        <div className="card-soft p-4 mb-4 bg-amber-50 border-amber-200">
+          <div className="flex items-start gap-3">
+            <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
+              <Save className="w-4 h-4 text-amber-700" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-stone-900 text-sm">שחזרנו טיוטה שלא נשמרה</p>
+              <p className="text-xs text-stone-700 mt-0.5">
+                התחלת לערוך {docLabel} {formatRelativeTime(draftRecovered.savedAt)} ולא סיימת. הפרטים הוטענו אוטומטית.
+              </p>
+              <div className="flex gap-2 mt-3">
+                <button
+                  type="button"
+                  onClick={() => setDraftDismissed(true)}
+                  className="inline-flex items-center justify-center min-h-[36px] px-3 text-sm font-medium text-amber-800 bg-amber-100 hover:bg-amber-200 rounded-xl"
+                >
+                  המשך מהטיוטה
+                </button>
+                <button
+                  type="button"
+                  onClick={discardDraft}
+                  className="inline-flex items-center justify-center min-h-[36px] px-3 text-sm font-medium text-stone-700 bg-white border border-stone-200 hover:bg-stone-50 rounded-xl"
+                >
+                  התחל מחדש
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
       <div className="lg:col-span-7 space-y-6">
         <Section title="פרטי המסמך" icon={FileTextIcon}>
@@ -788,6 +934,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
         </div>
       </aside>
     </div>
+    </>
   );
 }
 
