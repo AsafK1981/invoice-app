@@ -1,6 +1,7 @@
 import { Sidebar } from "@/components/layout/sidebar";
 import { AppProviders } from "@/components/providers";
 import { GlobalSearch } from "@/components/global-search";
+import { InstallPrompt } from "@/components/install-prompt";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -15,6 +16,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             {children}
           </div>
         </main>
+        <InstallPrompt />
       </div>
     </AppProviders>
   );
