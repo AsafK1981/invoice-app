@@ -14,9 +14,11 @@ import {
   ArrowUp,
   ArrowDown,
   ArrowUpDown,
+  CheckCircle2,
+  Circle,
 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/format";
-import { deleteDocument } from "@/lib/document-store";
+import { deleteDocument, updateDocumentStatus } from "@/lib/document-store";
 import { matchDocument } from "@/lib/document-search";
 import {
   DOCUMENT_TYPE_LABELS,
@@ -302,25 +304,7 @@ export function DocumentsTable({ documents, limit }: Props) {
                       {formatCurrency(d.total)}
                     </td>
                     <td className="px-2 py-3 text-center">
-                      {d.status === "draft" ? (
-                        <button
-                          onClick={async (e) => {
-                            e.stopPropagation();
-                            if (confirm(`למחוק את מסמך #${d.number}?`)) await deleteDocument(d.id);
-                          }}
-                          className="text-stone-300 hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-50 transition-colors"
-                          title="מחק"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      ) : (
-                        <span
-                          className="text-stone-200 p-1.5 inline-block cursor-not-allowed"
-                          title="לא ניתן למחוק מסמך שנשלח או שולם"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </span>
-                      )}
+                      <RowActions doc={d} />
                     </td>
                   </tr>
                 );
@@ -329,6 +313,57 @@ export function DocumentsTable({ documents, limit }: Props) {
           </tbody>
         </table>
       </div>
+    </div>
+  );
+}
+
+function RowActions({ doc }: { doc: InvoiceDocument }) {
+  const isReceipt = doc.type === "receipt" || doc.type === "tax_invoice_receipt";
+  const isCreditNote = doc.type === "credit_note";
+  const canMarkPaid = !isReceipt && !isCreditNote && doc.status !== "draft" && doc.status !== "cancelled";
+  const isPaid = doc.status === "paid";
+
+  return (
+    <div className="flex items-center justify-center gap-1">
+      {canMarkPaid && (
+        <button
+          onClick={async (e) => {
+            e.stopPropagation();
+            try {
+              await updateDocumentStatus(doc.id, isPaid ? "sent" : "paid");
+            } catch (err) {
+              alert(err instanceof Error ? err.message : "שגיאה בעדכון");
+            }
+          }}
+          className={`p-1.5 rounded-lg transition-colors ${
+            isPaid
+              ? "text-emerald-500 hover:text-emerald-700 hover:bg-emerald-50"
+              : "text-stone-300 hover:text-emerald-500 hover:bg-emerald-50"
+          }`}
+          title={isPaid ? "סמן כלא שולם" : "סמן כשולם"}
+        >
+          {isPaid ? <CheckCircle2 className="w-4 h-4" /> : <Circle className="w-4 h-4" />}
+        </button>
+      )}
+      {doc.status === "draft" ? (
+        <button
+          onClick={async (e) => {
+            e.stopPropagation();
+            if (confirm(`למחוק את מסמך #${doc.number}?`)) await deleteDocument(doc.id);
+          }}
+          className="text-stone-300 hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-50 transition-colors"
+          title="מחק"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      ) : (
+        <span
+          className="text-stone-200 p-1.5 inline-block cursor-not-allowed"
+          title="לא ניתן למחוק מסמך שנשלח או שולם"
+        >
+          <Trash2 className="w-4 h-4" />
+        </span>
+      )}
     </div>
   );
 }

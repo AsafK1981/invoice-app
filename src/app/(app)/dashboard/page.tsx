@@ -19,11 +19,14 @@ import { useDocuments } from "@/lib/document-store";
 import { useExpenses } from "@/lib/expense-store";
 import { useClients } from "@/lib/client-store";
 import { formatCurrency } from "@/lib/format";
+import { useBusiness } from "@/lib/business-store";
+import { useProducts } from "@/lib/product-store";
 import { DocumentsTable } from "@/components/documents-table";
 import { DashboardChart } from "@/components/dashboard-chart";
 import { TopClients } from "@/components/top-clients";
 import { ExpenseCategoriesChart } from "@/components/expense-categories-chart";
 import { QuoteAging } from "@/components/quote-aging";
+import { OnboardingChecklist } from "@/components/onboarding-checklist";
 
 type DateRange = "this_month" | "last_3_months" | "this_year" | "all_time";
 
@@ -53,6 +56,8 @@ export default function DashboardPage() {
   const { documents, ready } = useDocuments();
   const { items: expenses } = useExpenses();
   const { items: clients } = useClients();
+  const { items: products } = useProducts();
+  const { business } = useBusiness();
   const [range, setRange] = useState<DateRange>("this_month");
 
   const stats = useMemo(() => {
@@ -188,6 +193,13 @@ export default function DashboardPage() {
           </Link>
         </div>
       </div>
+
+      <OnboardingChecklist
+        business={business}
+        clients={clients}
+        products={products}
+        documents={documents}
+      />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {cards.map((s, idx) => {
