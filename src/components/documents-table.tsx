@@ -16,9 +16,11 @@ import {
   ArrowUpDown,
   CheckCircle2,
   Circle,
+  Download,
 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { deleteDocument, updateDocumentStatus } from "@/lib/document-store";
+import { exportDocuments } from "@/lib/csv-export";
 import { matchDocument } from "@/lib/document-search";
 import {
   DOCUMENT_TYPE_LABELS,
@@ -36,6 +38,7 @@ type SortDir = "asc" | "desc";
 interface Props {
   documents: InvoiceDocument[];
   limit?: number;
+  showExport?: boolean;
 }
 
 const TYPE_ICONS: Record<DocumentType, typeof ReceiptText> = {
@@ -81,7 +84,7 @@ const STATUS_THEMES: Record<string, string> = {
   cancelled: "bg-rose-100 text-rose-700",
 };
 
-export function DocumentsTable({ documents, limit }: Props) {
+export function DocumentsTable({ documents, limit, showExport = false }: Props) {
   const router = useRouter();
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
@@ -195,8 +198,20 @@ export function DocumentsTable({ documents, limit }: Props) {
             נקה הכל
           </button>
         )}
-        <div className="text-sm font-medium text-stone-700 mr-auto">
-          {filtered.length} מסמכים
+        <div className="text-sm font-medium text-stone-700 mr-auto flex items-center gap-3">
+          {showExport && filtered.length > 0 && (
+            <button
+              onClick={() =>
+                exportDocuments(filtered, filtersActive ? "filtered" : undefined)
+              }
+              className="inline-flex items-center gap-1.5 min-h-[36px] px-3 rounded-xl text-sm font-medium text-stone-700 bg-white border border-orange-200 hover:bg-orange-50"
+              title="ייצוא לקובץ CSV"
+            >
+              <Download className="w-3.5 h-3.5" />
+              ייצוא ({filtered.length})
+            </button>
+          )}
+          <span>{filtered.length} מסמכים</span>
         </div>
       </div>
 

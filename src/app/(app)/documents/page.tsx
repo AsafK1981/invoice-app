@@ -30,7 +30,7 @@ export default function DocumentsPage() {
       </div>
 
       <div className="card-soft overflow-hidden">
-        <DocumentsTable documents={documents} />
+        <DocumentsTable documents={documents} showExport />
       </div>
     </div>
   );
