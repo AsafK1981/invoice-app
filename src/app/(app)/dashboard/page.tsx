@@ -23,6 +23,7 @@ import { DocumentsTable } from "@/components/documents-table";
 import { DashboardChart } from "@/components/dashboard-chart";
 import { TopClients } from "@/components/top-clients";
 import { ExpenseCategoriesChart } from "@/components/expense-categories-chart";
+import { QuoteAging } from "@/components/quote-aging";
 
 type DateRange = "this_month" | "last_3_months" | "this_year" | "all_time";
 
@@ -233,6 +234,10 @@ export default function DashboardPage() {
             </div>
           );
         })}
+      </div>
+
+      <div className="animate-fade-in-up stagger-5">
+        <QuoteAging documents={documents} />
       </div>
 
       <div className="card-soft p-6 animate-fade-in-up stagger-6">

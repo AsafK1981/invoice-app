@@ -18,6 +18,7 @@ import {
   Eye,
   EyeOff,
   Percent,
+  GripVertical,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
 import { sendReceiptEmail } from "@/lib/email";
@@ -217,6 +218,30 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
 
   function removeItem(id: string) {
     setItems((curr) => (curr.length > 1 ? curr.filter((i) => i.id !== id) : curr));
+  }
+
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+
+  function handleDragStart(id: string) {
+    setDraggedId(id);
+  }
+
+  function handleDragOver(e: React.DragEvent, overId: string) {
+    e.preventDefault();
+    if (!draggedId || draggedId === overId) return;
+    setItems((curr) => {
+      const fromIdx = curr.findIndex((i) => i.id === draggedId);
+      const toIdx = curr.findIndex((i) => i.id === overId);
+      if (fromIdx === -1 || toIdx === -1 || fromIdx === toIdx) return curr;
+      const next = [...curr];
+      const [moved] = next.splice(fromIdx, 1);
+      next.splice(toIdx, 0, moved);
+      return next;
+    });
+  }
+
+  function handleDragEnd() {
+    setDraggedId(null);
   }
 
   const clientReady = adhocMode ? adhocName.trim().length > 0 : !!clientId;
@@ -470,10 +495,27 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
           )}
           <div className="space-y-3">
             {items.map((item, idx) => (
-              <div key={item.id} className="grid grid-cols-12 gap-2 items-start">
+              <div
+                key={item.id}
+                onDragOver={(e) => handleDragOver(e, item.id)}
+                className={`grid grid-cols-12 gap-2 items-start transition-opacity ${
+                  draggedId === item.id ? "opacity-40" : ""
+                }`}
+              >
                 <div className="col-span-12 md:col-span-5">
                   {idx === 0 && <label className="text-xs font-semibold text-stone-700 mb-1 block">תיאור</label>}
-                  <div className="flex gap-1">
+                  <div className="flex gap-1 items-center">
+                    {items.length > 1 && (
+                      <div
+                        draggable
+                        onDragStart={() => handleDragStart(item.id)}
+                        onDragEnd={handleDragEnd}
+                        className="cursor-grab active:cursor-grabbing text-stone-300 hover:text-stone-600 p-1 -mr-1 hidden md:flex items-center self-stretch"
+                        title="גרור כדי לסדר מחדש"
+                      >
+                        <GripVertical className="w-4 h-4" />
+                      </div>
+                    )}
                     <input
                       type="text"
                       value={item.description}

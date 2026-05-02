@@ -29,20 +29,30 @@ export function GlobalSearch() {
   const { items: clients } = useClients();
   const { items: products } = useProducts();
 
-  // Cmd+K / Ctrl+K to open
+  // Cmd+K / Ctrl+K to open search; "N" for new doc; Escape to close
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         setOpen(true);
+        return;
       }
       if (e.key === "Escape" && open) {
         setOpen(false);
+        return;
+      }
+      // "N" for new doc - only when not focused on an input/textarea/select and palette isn't open
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName?.toLowerCase();
+      const isInput = tag === "input" || tag === "textarea" || tag === "select" || target?.isContentEditable;
+      if (!isInput && !open && !e.ctrlKey && !e.metaKey && !e.altKey && e.key.toLowerCase() === "n") {
+        e.preventDefault();
+        router.push("/documents/new");
       }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open]);
+  }, [open, router]);
 
   useEffect(() => {
     if (open) {
@@ -134,6 +144,7 @@ export function GlobalSearch() {
         onClick={() => setOpen(true)}
         className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/70 border border-orange-100 hover:bg-white hover:border-orange-200 text-sm text-stone-600 transition-colors"
         aria-label="חיפוש"
+        title="חיפוש (⌘K) · מסמך חדש (N)"
       >
         <Search className="w-3.5 h-3.5" />
         <span className="hidden sm:inline">חיפוש</span>
@@ -175,7 +186,12 @@ export function GlobalSearch() {
           {!query.trim() && (
             <div className="px-5 py-10 text-center text-stone-500">
               <p className="text-sm">התחל להקליד כדי לחפש</p>
-              <p className="text-xs mt-2">חפש לקוחות, מסמכים, מוצרים, מספרי חשבונית, אימיילים...</p>
+              <p className="text-xs mt-2">חפש לפי מספר, סכום, לקוח, פריט, סטטוס, תאריך...</p>
+              <div className="mt-5 inline-flex items-center gap-2 text-xs text-stone-500">
+                <span>טיפ:</span>
+                <kbd className="bg-stone-100 border border-stone-200 px-1.5 py-0.5 rounded font-mono text-[10px]">N</kbd>
+                <span>למסמך חדש</span>
+              </div>
             </div>
           )}
 
