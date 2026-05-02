@@ -36,6 +36,10 @@ export function useBusiness() {
             phone: data.phone ?? undefined,
             email: data.email ?? undefined,
             logoUrl: data.logo_url ?? undefined,
+            bankName: data.bank_name ?? undefined,
+            bankBranch: data.bank_branch ?? undefined,
+            bankAccount: data.bank_account ?? undefined,
+            paymentNotes: data.payment_notes ?? undefined,
           }
         : defaultBusiness
     );
@@ -63,6 +67,10 @@ export async function saveBusiness(business: Business): Promise<void> {
       phone: business.phone || null,
       email: business.email || null,
       logo_url: business.logoUrl || null,
+      bank_name: business.bankName || null,
+      bank_branch: business.bankBranch || null,
+      bank_account: business.bankAccount || null,
+      payment_notes: business.paymentNotes || null,
     })
     .eq("id", business.id)
     .select();

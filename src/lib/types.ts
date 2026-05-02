@@ -18,6 +18,10 @@ export interface Business {
   phone?: string;
   email?: string;
   logoUrl?: string;
+  bankName?: string;
+  bankBranch?: string;
+  bankAccount?: string;
+  paymentNotes?: string;
 }
 
 export interface Client {

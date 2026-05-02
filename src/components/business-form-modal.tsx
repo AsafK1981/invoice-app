@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Building2, Upload, X, Image as ImageIcon } from "lucide-react";
+import { Building2, Upload, X, Image as ImageIcon, Landmark } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 import { FormField } from "@/components/ui/form-field";
 import { saveBusiness } from "@/lib/business-store";
@@ -88,6 +88,10 @@ export function BusinessFormModal({ open, onClose, business }: Props) {
         address: form.address.trim(),
         phone: form.phone?.trim() || undefined,
         email: form.email?.trim() || undefined,
+        bankName: form.bankName?.trim() || undefined,
+        bankBranch: form.bankBranch?.trim() || undefined,
+        bankAccount: form.bankAccount?.trim() || undefined,
+        paymentNotes: form.paymentNotes?.trim() || undefined,
       });
       onClose();
     } catch (err) {
@@ -243,6 +247,58 @@ export function BusinessFormModal({ open, onClose, business }: Props) {
               className="input-warm"
             />
           </FormField>
+        </div>
+
+        <div className="pt-2 border-t border-orange-100">
+          <h3 className="text-sm font-semibold text-stone-900 flex items-center gap-2 mb-3">
+            <Landmark className="w-4 h-4 text-orange-500" />
+            פרטי תשלום
+          </h3>
+          <p className="text-xs text-stone-600 mb-3">
+            יוצגו על מסמכים שמשולמים בהעברה בנקאית, כדי שהלקוח יידע לאן לשלוח את הכסף. כל השדות אופציונליים.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <FormField label="בנק">
+              <input
+                type="text"
+                value={form.bankName || ""}
+                onChange={(e) => update("bankName", e.target.value)}
+                placeholder="הפועלים"
+                className="input-warm"
+              />
+            </FormField>
+            <FormField label="סניף">
+              <input
+                type="text"
+                dir="ltr"
+                value={form.bankBranch || ""}
+                onChange={(e) => update("bankBranch", e.target.value)}
+                placeholder="604"
+                className="input-warm"
+              />
+            </FormField>
+            <FormField label="מספר חשבון">
+              <input
+                type="text"
+                dir="ltr"
+                value={form.bankAccount || ""}
+                onChange={(e) => update("bankAccount", e.target.value)}
+                placeholder="123456"
+                className="input-warm"
+              />
+            </FormField>
+          </div>
+          <div className="mt-3">
+            <FormField label="הערות תשלום (Bit, Paybox וכו')" hint="אופציונלי. יוצג מתחת לפרטי הבנק.">
+              <input
+                type="text"
+                value={form.paymentNotes || ""}
+                onChange={(e) => update("paymentNotes", e.target.value)}
+                placeholder="לתשלום בביט: 050-1234567"
+                className="input-warm"
+              />
+            </FormField>
+          </div>
         </div>
       </div>
     </Modal>

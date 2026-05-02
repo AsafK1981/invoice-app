@@ -20,6 +20,19 @@ export interface DocumentBodyClient {
   email?: string;
 }
 
+function showPaymentInfo(type: DocumentType, business: Business): boolean {
+  // Only show payment info on docs awaiting payment
+  if (type === "receipt" || type === "tax_invoice_receipt" || type === "credit_note") {
+    return false;
+  }
+  return Boolean(
+    business.bankName ||
+      business.bankBranch ||
+      business.bankAccount ||
+      business.paymentNotes
+  );
+}
+
 interface Props {
   business: Business;
   client: DocumentBodyClient | null;
@@ -196,6 +209,29 @@ export function DocumentBody({
             <span className="font-semibold">אמצעי תשלום: </span>
             {PAYMENT_METHOD_LABELS[paymentMethod]}
           </p>
+        </div>
+      )}
+
+      {showPaymentInfo(documentType, business) && (
+        <div className="mt-6 pt-6 border-t border-orange-100">
+          <h3 className="text-xs font-semibold text-stone-600 uppercase mb-2">פרטי תשלום</h3>
+          <div className="text-sm text-stone-800 space-y-1">
+            {(business.bankName || business.bankBranch || business.bankAccount) && (
+              <p>
+                <span className="font-semibold">העברה בנקאית: </span>
+                {[
+                  business.bankName,
+                  business.bankBranch ? `סניף ${business.bankBranch}` : "",
+                  business.bankAccount ? `חשבון ${business.bankAccount}` : "",
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </p>
+            )}
+            {business.paymentNotes && (
+              <p className="text-stone-700">{business.paymentNotes}</p>
+            )}
+          </div>
         </div>
       )}
 
