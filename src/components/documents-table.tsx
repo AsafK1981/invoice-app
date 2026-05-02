@@ -216,7 +216,7 @@ export function DocumentsTable({ documents, limit, showExport = false }: Props) 
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[720px]">
+        <table className="w-full">
           <thead className="text-xs text-stone-700 bg-white">
             <tr>
               <SortableHeader
@@ -227,18 +227,21 @@ export function DocumentsTable({ documents, limit, showExport = false }: Props) 
                 onClick={() => toggleSort("number")}
                 align="right"
               />
-              <th className="text-right px-6 py-3 font-semibold">סוג</th>
-              <th className="text-right px-6 py-3 font-semibold">לקוח</th>
-              <th className="text-right px-6 py-3 font-semibold">נושא</th>
-              <SortableHeader
-                label="תאריך"
-                sortKey="date"
-                currentKey={sortKey}
-                dir={sortDir}
-                onClick={() => toggleSort("date")}
-                align="right"
-              />
-              <th className="text-right px-6 py-3 font-semibold">סטטוס</th>
+              <th className="text-right px-3 sm:px-6 py-3 font-semibold">סוג</th>
+              <th className="text-right px-3 sm:px-6 py-3 font-semibold">לקוח</th>
+              <th className="text-right px-6 py-3 font-semibold hidden lg:table-cell">נושא</th>
+              <th className="text-right px-3 sm:px-6 py-3 font-semibold hidden md:table-cell">
+                <SortableHeader
+                  label="תאריך"
+                  sortKey="date"
+                  currentKey={sortKey}
+                  dir={sortDir}
+                  onClick={() => toggleSort("date")}
+                  align="right"
+                  inline
+                />
+              </th>
+              <th className="text-right px-3 sm:px-6 py-3 font-semibold">סטטוס</th>
               <SortableHeader
                 label="סכום"
                 sortKey="total"
@@ -247,7 +250,7 @@ export function DocumentsTable({ documents, limit, showExport = false }: Props) 
                 onClick={() => toggleSort("total")}
                 align="left"
               />
-              <th className="px-4 py-3 w-10"></th>
+              <th className="px-2 sm:px-4 py-3 w-10"></th>
             </tr>
           </thead>
           <tbody>
@@ -278,19 +281,24 @@ export function DocumentsTable({ documents, limit, showExport = false }: Props) 
                     onClick={() => router.push(`/documents/${d.id}`)}
                     className={`border-t border-orange-50 transition-colors cursor-pointer ${theme.row}`}
                   >
-                    <td className="px-6 py-3 text-sm font-bold text-stone-900">#{d.number}</td>
-                    <td className="px-6 py-3 text-sm">
+                    <td className="px-3 sm:px-6 py-3 text-sm font-bold text-stone-900 whitespace-nowrap">
+                      #{d.number}
+                      <div className="text-[10px] font-normal text-stone-500 md:hidden mt-0.5">
+                        {formatDate(d.date)}
+                      </div>
+                    </td>
+                    <td className="px-3 sm:px-6 py-3 text-sm">
                       <span
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${theme.badge}`}
+                        className={`inline-flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-full text-xs font-medium ${theme.badge}`}
                       >
                         <Icon className="w-3.5 h-3.5" />
-                        {DOCUMENT_TYPE_LABELS[d.type]}
+                        <span className="hidden sm:inline">{DOCUMENT_TYPE_LABELS[d.type]}</span>
                       </span>
                     </td>
-                    <td className="px-6 py-3 text-sm font-medium text-stone-900">{d.clientName}</td>
-                    <td className="px-6 py-3 text-sm text-stone-700">{d.subject || "—"}</td>
-                    <td className="px-6 py-3 text-sm text-stone-600">{formatDate(d.date)}</td>
-                    <td className="px-6 py-3 text-sm">
+                    <td className="px-3 sm:px-6 py-3 text-sm font-medium text-stone-900">{d.clientName}</td>
+                    <td className="px-6 py-3 text-sm text-stone-700 hidden lg:table-cell">{d.subject || "—"}</td>
+                    <td className="px-6 py-3 text-sm text-stone-600 hidden md:table-cell">{formatDate(d.date)}</td>
+                    <td className="px-3 sm:px-6 py-3 text-sm">
                       <div className="flex flex-col gap-1">
                         <span
                           className={`inline-block px-2.5 py-1 rounded-full text-xs font-medium ${STATUS_THEMES[d.status]} self-start`}
@@ -315,10 +323,10 @@ export function DocumentsTable({ documents, limit, showExport = false }: Props) 
                           })()}
                       </div>
                     </td>
-                    <td className="px-6 py-3 text-sm font-bold text-left text-stone-900">
+                    <td className="px-3 sm:px-6 py-3 text-sm font-bold text-left text-stone-900 whitespace-nowrap">
                       {formatCurrency(d.total)}
                     </td>
-                    <td className="px-2 py-3 text-center">
+                    <td className="px-2 sm:px-2 py-3 text-center">
                       <RowActions doc={d} />
                     </td>
                   </tr>
@@ -390,6 +398,7 @@ function SortableHeader({
   dir,
   onClick,
   align,
+  inline = false,
 }: {
   label: string;
   sortKey: SortKey;
@@ -397,20 +406,25 @@ function SortableHeader({
   dir: SortDir;
   onClick: () => void;
   align: "right" | "left";
+  inline?: boolean;
 }) {
   const active = sortKey === currentKey;
   const Icon = !active ? ArrowUpDown : dir === "asc" ? ArrowUp : ArrowDown;
+  const button = (
+    <button
+      onClick={onClick}
+      className={`inline-flex items-center gap-1 hover:text-orange-700 transition-colors ${
+        active ? "text-orange-700" : "text-stone-700"
+      }`}
+    >
+      {label}
+      <Icon className="w-3 h-3" />
+    </button>
+  );
+  if (inline) return button;
   return (
-    <th className={`text-${align} px-6 py-3 font-semibold`}>
-      <button
-        onClick={onClick}
-        className={`inline-flex items-center gap-1 hover:text-orange-700 transition-colors ${
-          active ? "text-orange-700" : "text-stone-700"
-        }`}
-      >
-        {label}
-        <Icon className="w-3 h-3" />
-      </button>
+    <th className={`text-${align} px-3 sm:px-6 py-3 font-semibold`}>
+      {button}
     </th>
   );
 }
