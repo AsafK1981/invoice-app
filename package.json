@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "prepare": "git config core.hooksPath .githooks"
   },
   "dependencies": {
     "@stripe/stripe-js": "^9.3.1",
