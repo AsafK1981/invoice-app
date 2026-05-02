@@ -293,6 +293,21 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
         </div>
       </div>
 
+      {doc.type === "quote" && doc.approvedAt && (
+        <div className="no-print card-soft p-4 flex items-start gap-3 max-w-[210mm] mx-auto bg-emerald-50 border-emerald-200">
+          <div className="w-10 h-10 rounded-2xl bg-emerald-500 flex items-center justify-center flex-shrink-0">
+            <CheckCircle2 className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <p className="font-semibold text-emerald-900">ההצעה אושרה על ידי הלקוח</p>
+            <p className="text-xs text-emerald-800 mt-0.5">
+              {new Date(doc.approvedAt).toLocaleDateString("he-IL")}
+              {doc.approvalSignature && <> · נחתם על ידי <strong>{doc.approvalSignature}</strong></>}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Status bar - mark as paid for non-receipt documents */}
       {!isReceipt && doc.status !== "draft" && doc.status !== "cancelled" && (
         <div className="no-print card-soft p-4 flex items-center justify-between flex-wrap gap-3 max-w-[210mm] mx-auto">

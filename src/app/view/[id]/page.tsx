@@ -1,10 +1,11 @@
 "use client";
 
 import { use, useEffect, useState } from "react";
-import { Printer, Download } from "lucide-react";
+import { Printer, Download, CheckCircle2, AlertCircle } from "lucide-react";
 import { ReceiptView } from "@/components/receipt-view";
 import { downloadElementAsPdf } from "@/lib/pdf-export";
 import { DOCUMENT_TYPE_LABELS } from "@/lib/types";
+import { formatDate } from "@/lib/format";
 import type { Business, Client, InvoiceDocument, DocumentItem } from "@/lib/types";
 
 export default function PublicDocumentPage({ params }: { params: Promise<{ id: string }> }) {
@@ -15,6 +16,40 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
   const [business, setBusiness] = useState<Business | null>(null);
   const [client, setClient] = useState<Client | null>(null);
   const [downloading, setDownloading] = useState(false);
+  const [signatureName, setSignatureName] = useState("");
+  const [approving, setApproving] = useState(false);
+  const [approveError, setApproveError] = useState<string | null>(null);
+
+  async function handleApprove() {
+    const name = signatureName.trim();
+    if (!name || name.length < 2) {
+      setApproveError("יש להזין שם מלא");
+      return;
+    }
+    setApproving(true);
+    setApproveError(null);
+    try {
+      const res = await fetch(`/api/public-document/${id}/approve`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ signature: name }),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        setApproveError(data.error || "שגיאה באישור");
+        return;
+      }
+      setDoc((prev) =>
+        prev
+          ? { ...prev, approvedAt: data.approvedAt, approvalSignature: name }
+          : prev
+      );
+    } catch (err) {
+      setApproveError(err instanceof Error ? err.message : "שגיאת רשת");
+    } finally {
+      setApproving(false);
+    }
+  }
 
   useEffect(() => {
     async function load() {
@@ -65,6 +100,8 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
           total: Number(docRow.total),
           paymentMethod: docRow.payment_method || undefined,
           notes: docRow.notes || undefined,
+          approvedAt: docRow.approved_at || undefined,
+          approvalSignature: docRow.approval_signature || undefined,
         });
 
         if (data.business) {
@@ -161,6 +198,57 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
       </div>
 
       <ReceiptView business={business} client={client} document={doc} />
+
+      {doc.type === "quote" && (
+        <div className="no-print max-w-[210mm] mx-auto mt-6">
+          {doc.approvedAt ? (
+            <div className="bg-emerald-50 border-2 border-emerald-200 rounded-2xl p-5 flex items-start gap-3">
+              <div className="w-11 h-11 rounded-2xl bg-emerald-500 flex items-center justify-center flex-shrink-0">
+                <CheckCircle2 className="w-6 h-6 text-white" />
+              </div>
+              <div className="flex-1">
+                <p className="font-bold text-emerald-900">ההצעה אושרה</p>
+                <p className="text-sm text-emerald-800 mt-1">
+                  אושרה בתאריך {formatDate(doc.approvedAt.slice(0, 10))}
+                  {doc.approvalSignature && <> על ידי <strong>{doc.approvalSignature}</strong></>}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-white rounded-2xl shadow-sm border border-orange-200 p-5">
+              <h3 className="font-bold text-stone-900 mb-2">אישור ההצעה</h3>
+              <p className="text-sm text-stone-700 mb-4">
+                אם ההצעה מקובלת עליך, אשר אותה כאן. האישור יתועד עם השם והתאריך
+                ויישלח חזרה ל{business?.name || "ספק"}.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <input
+                  type="text"
+                  value={signatureName}
+                  onChange={(e) => setSignatureName(e.target.value)}
+                  placeholder="שם מלא"
+                  className="flex-1 px-4 py-2.5 rounded-xl border-2 border-orange-200 focus:border-orange-400 focus:outline-none text-sm"
+                  disabled={approving}
+                />
+                <button
+                  onClick={handleApprove}
+                  disabled={approving || signatureName.trim().length < 2}
+                  className="inline-flex items-center justify-center gap-2 bg-gradient-to-l from-emerald-500 to-teal-500 text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:shadow-lg hover:shadow-emerald-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  {approving ? "מאשר..." : "אשר את ההצעה"}
+                </button>
+              </div>
+              {approveError && (
+                <div className="mt-3 flex items-start gap-2 text-sm text-rose-700 bg-rose-50 border border-rose-200 p-3 rounded-xl">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                  <span>{approveError}</span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="no-print max-w-[210mm] mx-auto mt-6">
         <div className="bg-white rounded-2xl shadow-sm border border-orange-100 p-4 text-center">

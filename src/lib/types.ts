@@ -67,6 +67,8 @@ export interface InvoiceDocument {
   total: number;
   paymentMethod?: PaymentMethod;
   notes?: string;
+  approvedAt?: string;
+  approvalSignature?: string;
 }
 
 export interface Expense {

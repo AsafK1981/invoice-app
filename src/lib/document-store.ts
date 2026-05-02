@@ -23,6 +23,8 @@ function mapDocRow(row: Record<string, unknown>, items: DocumentItem[]): Invoice
     total: Number(row.total) || 0,
     paymentMethod: (row.payment_method as InvoiceDocument["paymentMethod"]) || undefined,
     notes: (row.notes as string) || undefined,
+    approvedAt: (row.approved_at as string) || undefined,
+    approvalSignature: (row.approval_signature as string) || undefined,
   };
 }
 
