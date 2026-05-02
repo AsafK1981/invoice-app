@@ -16,7 +16,9 @@ import {
   Circle,
   Clock,
   Link as LinkIcon,
+  Download,
 } from "lucide-react";
+import { downloadElementAsPdf } from "@/lib/pdf-export";
 import { useDocument, deleteDocument, updateDocumentStatus } from "@/lib/document-store";
 import { useClients } from "@/lib/client-store";
 import { useBusiness } from "@/lib/business-store";
@@ -76,6 +78,32 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
 
   function handlePrint() {
     window.print();
+  }
+
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+
+  async function handleDownloadPdf() {
+    if (!doc) return;
+    const target = document.querySelector(".receipt-view") as HTMLElement | null;
+    if (!target) {
+      setToast({ kind: "error", text: "לא ניתן למצוא את המסמך לייצוא" });
+      return;
+    }
+    setDownloadingPdf(true);
+    setToast(null);
+    try {
+      const docLabel = DOCUMENT_TYPE_LABELS[doc.type];
+      const filename = `${docLabel}-${doc.number}-${doc.clientName}.pdf`.replace(/[\\/:*?"<>|]/g, "-");
+      await downloadElementAsPdf(target, filename);
+      setToast({ kind: "success", text: `${filename} הורד בהצלחה` });
+    } catch (err) {
+      setToast({
+        kind: "error",
+        text: err instanceof Error ? `שגיאה ביצירת ה-PDF: ${err.message}` : "שגיאה ביצירת ה-PDF",
+      });
+    } finally {
+      setDownloadingPdf(false);
+    }
   }
 
   async function handleResend() {
@@ -247,11 +275,20 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
             מחק
           </button>
           <button
+            onClick={handleDownloadPdf}
+            disabled={downloadingPdf}
+            className="inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-5 py-2 rounded-xl text-sm font-semibold hover:shadow-md hover:shadow-orange-200 disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            <Download className="w-4 h-4" />
+            {downloadingPdf ? "מכין PDF..." : "הורד PDF"}
+          </button>
+          <button
             onClick={handlePrint}
-            className="inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-5 py-2 rounded-xl text-sm font-semibold hover:shadow-md hover:shadow-orange-200"
+            className="inline-flex items-center gap-2 bg-white border border-orange-200 text-stone-800 px-4 py-2 rounded-xl text-sm font-semibold hover:bg-orange-50"
+            title="הדפס דרך הדפדפן"
           >
             <Printer className="w-4 h-4" />
-            הדפס / PDF
+            הדפס
           </button>
         </div>
       </div>
@@ -333,7 +370,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
 
       <div className="no-print card-soft p-4 bg-blue-50 border-blue-200 max-w-[210mm] mx-auto">
         <p className="text-sm text-blue-900">
-          <strong>טיפ:</strong> בלחיצה על "הדפס / PDF", בחר "שמור כ-PDF" ביעד ההדפסה של הדפדפן כדי לייצר קובץ PDF.
+          <strong>טיפ:</strong> "הורד PDF" יוצר קובץ מוכן לשליחה. "הדפס" פותח את חלון ההדפסה של הדפדפן לבחירת מדפסת או יעד אחר.
         </p>
       </div>
     </div>

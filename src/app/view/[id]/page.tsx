@@ -1,8 +1,10 @@
 "use client";
 
 import { use, useEffect, useState } from "react";
-import { Printer } from "lucide-react";
+import { Printer, Download } from "lucide-react";
 import { ReceiptView } from "@/components/receipt-view";
+import { downloadElementAsPdf } from "@/lib/pdf-export";
+import { DOCUMENT_TYPE_LABELS } from "@/lib/types";
 import type { Business, Client, InvoiceDocument, DocumentItem } from "@/lib/types";
 
 export default function PublicDocumentPage({ params }: { params: Promise<{ id: string }> }) {
@@ -12,6 +14,7 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
   const [doc, setDoc] = useState<InvoiceDocument | null>(null);
   const [business, setBusiness] = useState<Business | null>(null);
   const [client, setClient] = useState<Client | null>(null);
+  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -126,11 +129,34 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-50 py-8 px-4">
       <div className="no-print max-w-[210mm] mx-auto mb-6 flex items-center justify-end gap-3">
         <button
+          onClick={async () => {
+            const target = document.querySelector(".receipt-view") as HTMLElement | null;
+            if (!target || !doc) return;
+            setDownloading(true);
+            try {
+              const docLabel = DOCUMENT_TYPE_LABELS[doc.type];
+              const filename = `${docLabel}-${doc.number}-${doc.clientName}.pdf`.replace(
+                /[\\/:*?"<>|]/g,
+                "-"
+              );
+              await downloadElementAsPdf(target, filename);
+            } finally {
+              setDownloading(false);
+            }
+          }}
+          disabled={downloading}
+          className="inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-5 py-2.5 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          <Download className="w-4 h-4" />
+          {downloading ? "מכין PDF..." : "הורד PDF"}
+        </button>
+        <button
           onClick={() => window.print()}
-          className="inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-5 py-2.5 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200 transition-all"
+          className="inline-flex items-center gap-2 bg-white border border-orange-200 text-stone-800 px-4 py-2.5 rounded-2xl text-sm font-semibold hover:bg-orange-50"
+          title="הדפס דרך הדפדפן"
         >
           <Printer className="w-4 h-4" />
-          הדפס / הורד PDF
+          הדפס
         </button>
       </div>
 
@@ -139,7 +165,7 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
       <div className="no-print max-w-[210mm] mx-auto mt-6">
         <div className="bg-white rounded-2xl shadow-sm border border-orange-100 p-4 text-center">
           <p className="text-xs text-stone-500">
-            <strong>טיפ:</strong> לשמירת המסמך כ-PDF, לחץ "הדפס / הורד PDF" ובחר "שמור כ-PDF" ביעד ההדפסה
+            לחץ "הורד PDF" כדי לשמור את המסמך, או "הדפס" כדי לפתוח את חלון ההדפסה.
           </p>
         </div>
       </div>
