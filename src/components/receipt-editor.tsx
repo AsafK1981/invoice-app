@@ -83,7 +83,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   const [subject, setSubject] = useState<string>("");
   const [validUntil, setValidUntil] = useState<string>("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("bank_transfer");
-  const [notes, setNotes] = useState<string>("");
+  const [notes, setNotes] = useState<string>(business.defaultDocNotes || "");
   const [items, setItems] = useState<EditorItem[]>([
     { id: crypto.randomUUID(), description: "", quantity: 1, unitPrice: 0 },
   ]);

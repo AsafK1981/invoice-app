@@ -22,6 +22,7 @@ export interface Business {
   bankBranch?: string;
   bankAccount?: string;
   paymentNotes?: string;
+  defaultDocNotes?: string;
 }
 
 export interface Client {

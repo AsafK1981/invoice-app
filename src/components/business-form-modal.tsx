@@ -92,6 +92,7 @@ export function BusinessFormModal({ open, onClose, business }: Props) {
         bankBranch: form.bankBranch?.trim() || undefined,
         bankAccount: form.bankAccount?.trim() || undefined,
         paymentNotes: form.paymentNotes?.trim() || undefined,
+        defaultDocNotes: form.defaultDocNotes?.trim() || undefined,
       });
       onClose();
     } catch (err) {
@@ -299,6 +300,21 @@ export function BusinessFormModal({ open, onClose, business }: Props) {
               />
             </FormField>
           </div>
+        </div>
+
+        <div className="pt-2 border-t border-orange-100">
+          <FormField
+            label="הערות ברירת מחדל למסמכים"
+            hint="טקסט אופציונלי שיופיע אוטומטית בשדה ה'הערות' של כל מסמך חדש (תנאי תשלום, מדיניות החזרה וכו'). ניתן לערוך אותו לכל מסמך בנפרד."
+          >
+            <textarea
+              value={form.defaultDocNotes || ""}
+              onChange={(e) => update("defaultDocNotes", e.target.value)}
+              placeholder="למשל: תשלום תוך 30 יום מקבלת המסמך"
+              rows={2}
+              className="input-warm"
+            />
+          </FormField>
         </div>
       </div>
     </Modal>

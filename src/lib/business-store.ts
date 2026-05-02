@@ -40,6 +40,7 @@ export function useBusiness() {
             bankBranch: data.bank_branch ?? undefined,
             bankAccount: data.bank_account ?? undefined,
             paymentNotes: data.payment_notes ?? undefined,
+            defaultDocNotes: data.default_doc_notes ?? undefined,
           }
         : defaultBusiness
     );
@@ -71,6 +72,7 @@ export async function saveBusiness(business: Business): Promise<void> {
       bank_branch: business.bankBranch || null,
       bank_account: business.bankAccount || null,
       payment_notes: business.paymentNotes || null,
+      default_doc_notes: business.defaultDocNotes || null,
     })
     .eq("id", business.id)
     .select();
