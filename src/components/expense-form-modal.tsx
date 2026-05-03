@@ -53,7 +53,6 @@ export function ExpenseFormModal({ open, onClose, expense }: Props) {
         description: "",
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, expense]);
 
   function update<K extends keyof typeof form>(key: K, value: string) {

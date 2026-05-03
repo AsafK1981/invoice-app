@@ -112,7 +112,6 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
     if (clientDefaults.paymentMethod && clientDefaults.paymentMethod !== paymentMethod) {
       setPaymentMethod(clientDefaults.paymentMethod);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clientId, clientDefaults.paymentMethod]);
 
   const [draftRecovered, setDraftRecovered] = useState<{ savedAt: number } | null>(null);
@@ -146,7 +145,6 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
       setDraftRecovered({ savedAt: stored.savedAt });
     }
     setDraftHydrated(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Auto-save: write the current form state to localStorage whenever any

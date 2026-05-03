@@ -5,7 +5,7 @@ set -e
 
 cd "$(git rev-parse --show-toplevel)"
 
-echo "[pre-push] 1/4 typecheck..."
+echo "[pre-push] 1/5 typecheck..."
 if ! npx tsc --noEmit > /tmp/prepush-tsc.log 2>&1; then
   echo "✗ typecheck failed:"
   cat /tmp/prepush-tsc.log
@@ -15,7 +15,15 @@ if ! npx tsc --noEmit > /tmp/prepush-tsc.log 2>&1; then
 fi
 echo "✓ types clean"
 
-echo "[pre-push] 2/4 unit tests..."
+echo "[pre-push] 2/5 react-hooks lint..."
+if ! npx eslint src/ > /tmp/prepush-eslint.log 2>&1; then
+  echo "✗ react-hooks lint failed (this catches React error #310 — hooks after early returns):"
+  cat /tmp/prepush-eslint.log
+  exit 1
+fi
+echo "✓ hooks ordered"
+
+echo "[pre-push] 3/5 unit tests..."
 if ! npx vitest run > /tmp/prepush-tests.log 2>&1; then
   echo "✗ tests failed:"
   cat /tmp/prepush-tests.log
@@ -23,12 +31,12 @@ if ! npx vitest run > /tmp/prepush-tests.log 2>&1; then
 fi
 echo "✓ tests pass"
 
-echo "[pre-push] 3/4 anon-read security check..."
+echo "[pre-push] 4/5 anon-read security check..."
 if ! node scripts/check-anon-read.mjs; then
   exit 1
 fi
 
-echo "[pre-push] 4/4 stale URL grep..."
+echo "[pre-push] 5/5 stale URL grep..."
 if grep -rEn "invoice-app-ochre-five|http://localhost:3000" src/ 2>/dev/null; then
   echo "✗ stale URL found in src/ (above)"
   echo "Replace with mysuperfriendlyinvoiceapp.vercel.app or a process.env reference."
