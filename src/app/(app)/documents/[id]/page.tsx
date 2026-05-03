@@ -85,10 +85,15 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
   }
 
   async function handleDownloadPdf() {
-    if (!doc) return;
+    console.log("[pdf-download] click received");
+    if (!doc) {
+      console.warn("[pdf-download] aborted: no doc");
+      return;
+    }
     const target = document.querySelector(".receipt-view") as HTMLElement | null;
     if (!target) {
-      setToast({ kind: "error", text: "לא ניתן למצוא את המסמך לייצוא" });
+      console.warn("[pdf-download] aborted: .receipt-view not found in DOM");
+      setToast({ kind: "error", text: "לא ניתן למצוא את המסמך לייצוא — נסה לרענן את העמוד" });
       return;
     }
     setDownloadingPdf(true);
@@ -96,12 +101,18 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
     try {
       const docLabel = DOCUMENT_TYPE_LABELS[doc.type];
       const filename = `${docLabel}-${doc.number}-${doc.clientName}.pdf`.replace(/[\\/:*?"<>|]/g, "-");
+      console.log("[pdf-download] starting capture", { filename, target });
       await downloadElementAsPdf(target, filename);
+      console.log("[pdf-download] save() returned ok");
       setToast({ kind: "success", text: `${filename} הורד בהצלחה` });
     } catch (err) {
+      console.error("[pdf-download] failed", err);
       setToast({
         kind: "error",
-        text: err instanceof Error ? `שגיאה ביצירת ה-PDF: ${err.message}` : "שגיאה ביצירת ה-PDF",
+        text:
+          err instanceof Error
+            ? `שגיאה ביצירת ה-PDF: ${err.message} — אם הבעיה נמשכת, השתמש בכפתור "הדפס" ובחר "Save as PDF"`
+            : "שגיאה ביצירת ה-PDF",
       });
     } finally {
       setDownloadingPdf(false);
