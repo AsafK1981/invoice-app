@@ -13,6 +13,7 @@ import {
   Pencil,
   Trash2,
   AlertTriangle,
+  AlertCircle,
   Hash,
   Landmark,
   MessageSquare,
@@ -139,26 +140,45 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <div className="card-soft p-6">
-        <div className="flex items-center justify-between pb-4 border-b border-orange-100 mb-4">
-          <h2 className="font-semibold text-stone-900 flex items-center gap-2">
-            <Landmark className="w-4 h-4 text-orange-500" />
-            פרטי תשלום על מסמכים
-          </h2>
+      <div
+        className={`card-soft p-6 ${
+          bankParts.length === 0 && !business.paymentNotes ? "border-amber-300 bg-amber-50/30" : ""
+        }`}
+      >
+        <div className="flex items-center justify-between pb-4 border-b border-orange-100 mb-4 flex-wrap gap-2">
+          <div className="flex items-center gap-2">
+            <h2 className="font-semibold text-stone-900 flex items-center gap-2">
+              <Landmark className="w-4 h-4 text-orange-500" />
+              פרטי תשלום על מסמכים
+            </h2>
+            {bankParts.length === 0 && !business.paymentNotes && (
+              <span className="inline-flex items-center gap-1 text-xs font-semibold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
+                <AlertCircle className="w-3 h-3" />
+                חסר
+              </span>
+            )}
+          </div>
           <button
             onClick={() => setEditOpen(true)}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-semibold text-orange-700 hover:bg-orange-50"
           >
             <Pencil className="w-3.5 h-3.5" />
-            עריכה
+            {bankParts.length === 0 && !business.paymentNotes ? "מלא עכשיו" : "עריכה"}
           </button>
         </div>
-        <p className="text-xs text-stone-600 mb-3">
-          פרטי תשלום מוצגים על חשבונות עסקה וחשבוניות מס (לא על קבלות וזיכויים).
-        </p>
+        {bankParts.length === 0 && !business.paymentNotes ? (
+          <p className="text-sm text-amber-900 mb-3 leading-relaxed">
+            <strong>חשבונות עסקה וחשבוניות מס שתפיק יישלחו ללא בלוק תשלום</strong> — הלקוח לא יראה לאן להעביר את הכסף. הוסף לפחות פרט אחד (חשבון בנק, Bit, או הערת תשלום) כדי לתקן.
+          </p>
+        ) : (
+          <p className="text-xs text-stone-600 mb-3">
+            פרטי תשלום מוצגים על חשבונות עסקה וחשבוניות מס (לא על קבלות וזיכויים).
+          </p>
+        )}
         <div className="space-y-3">
           {paymentFields.map((f) => {
             const Icon = f.icon;
+            const isEmpty = f.value === "—";
             return (
               <div
                 key={f.label}
@@ -168,7 +188,9 @@ export default function SettingsPage() {
                   <Icon className="w-4 h-4 text-orange-500" />
                 </div>
                 <span className="text-sm font-medium text-stone-700 w-40">{f.label}</span>
-                <span className="text-sm font-semibold text-stone-900 flex-1">{f.value}</span>
+                <span className={`text-sm flex-1 ${isEmpty ? "text-stone-400 italic" : "font-semibold text-stone-900"}`}>
+                  {f.value}
+                </span>
               </div>
             );
           })}
