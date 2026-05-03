@@ -1,15 +1,33 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { FileText, Plus, Upload } from "lucide-react";
 import { useDocuments } from "@/lib/document-store";
 import { DocumentsTable } from "@/components/documents-table";
 import { CsvImportModal } from "@/components/csv-import-modal";
+import { formatCurrency } from "@/lib/format";
 
 export default function DocumentsPage() {
   const { documents } = useDocuments();
   const [importOpen, setImportOpen] = useState(false);
+
+  const totals = useMemo(() => {
+    let paid = 0;
+    let outstanding = 0;
+    for (const d of documents) {
+      if (d.status === "draft" || d.status === "cancelled") continue;
+      const sign = d.type === "credit_note" ? -1 : 1;
+      if (d.status === "paid") paid += sign * d.total;
+      else if (d.status === "sent" && (d.type === "quote" || d.type === "tax_invoice")) {
+        // "outstanding" = sent but unpaid quotes/invoices → money potentially
+        // owed to you. Receipts and tax_invoice_receipts are paid by definition
+        // and aren't double-counted here.
+        outstanding += d.total;
+      }
+    }
+    return { paid, outstanding };
+  }, [documents]);
 
   return (
     <div className="space-y-6">
@@ -21,7 +39,31 @@ export default function DocumentsPage() {
             </span>
             מסמכים
           </h1>
-          <p className="text-sm text-stone-700 mt-2 mr-14">{documents.length} מסמכים סה״כ</p>
+          <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-sm text-stone-700 mt-2 mr-14">
+            <span>{documents.length} מסמכים סה״כ</span>
+            {totals.paid > 0 && (
+              <>
+                <span className="text-stone-400">·</span>
+                <span>
+                  שולם:{" "}
+                  <span className="font-semibold text-emerald-700" dir="ltr">
+                    {formatCurrency(totals.paid)}
+                  </span>
+                </span>
+              </>
+            )}
+            {totals.outstanding > 0 && (
+              <>
+                <span className="text-stone-400">·</span>
+                <span>
+                  ממתין לתשלום:{" "}
+                  <span className="font-semibold text-amber-700" dir="ltr">
+                    {formatCurrency(totals.outstanding)}
+                  </span>
+                </span>
+              </>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <button
