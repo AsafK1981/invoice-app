@@ -1,5 +1,13 @@
 import { vi, beforeEach } from "vitest";
 
+// Stub env vars that some imported modules read at module load time.
+// Tests don't actually hit Supabase; the values just have to be non-empty
+// so client construction doesn't throw.
+process.env.NEXT_PUBLIC_SUPABASE_URL =
+  process.env.NEXT_PUBLIC_SUPABASE_URL || "https://test.supabase.co";
+process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY =
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "test-anon-key";
+
 class MemoryStorage implements Storage {
   private store = new Map<string, string>();
   get length() {

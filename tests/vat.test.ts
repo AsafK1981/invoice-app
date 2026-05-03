@@ -168,4 +168,43 @@ describe("computeAmounts", () => {
     expect(a.subtotal).toBe(b.subtotal);
     expect(a.total).toBe(b.total);
   });
+
+  it("inclusive mode round-trips: net subtotal × (1 + rate) == total", () => {
+    const result = computeAmounts(
+      [{ quantity: 5, unitPrice: 23.6 }],
+      18,
+      "inclusive"
+    );
+    expect(result.total).toBeCloseTo(result.subtotal * 1.18, 1);
+    expect(result.subtotal + result.vat).toBeCloseTo(result.total, 2);
+  });
+
+  it("exclusive mode invariant: subtotal + vat == total", () => {
+    const result = computeAmounts(
+      [
+        { quantity: 7, unitPrice: 13.7 },
+        { quantity: 3, unitPrice: 99.9 },
+      ],
+      18,
+      "exclusive"
+    );
+    expect(result.subtotal + result.vat).toBeCloseTo(result.total, 2);
+  });
+
+  it("netUnitPriceFactor is 1 for exclusive and zero-rate, < 1 for inclusive", () => {
+    const exclusive = computeAmounts([{ quantity: 1, unitPrice: 100 }], 18, "exclusive");
+    const inclusive = computeAmounts([{ quantity: 1, unitPrice: 100 }], 18, "inclusive");
+    const zero = computeAmounts([{ quantity: 1, unitPrice: 100 }], 0, "exclusive");
+    expect(exclusive.netUnitPriceFactor).toBe(1);
+    expect(zero.netUnitPriceFactor).toBe(1);
+    expect(inclusive.netUnitPriceFactor).toBeLessThan(1);
+    expect(inclusive.netUnitPriceFactor).toBeGreaterThan(0);
+  });
+
+  it("handles a 30-line invoice without precision drift > 1 cent", () => {
+    const items = Array.from({ length: 30 }, () => ({ quantity: 1, unitPrice: 33.33 }));
+    const result = computeAmounts(items, 18, "exclusive");
+    // Direct check — sum of 30 × 33.33 = 999.90 (might float-drift to 999.8999...)
+    expect(Math.abs(result.subtotal - 999.9)).toBeLessThan(0.01);
+  });
 });
