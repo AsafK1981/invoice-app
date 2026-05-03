@@ -137,7 +137,7 @@ export function DocumentsTable({ documents, limit, showExport = false }: Props) 
 
   return (
     <div>
-      <div className="flex flex-wrap items-center gap-3 px-6 py-4 bg-orange-50/50 border-b border-orange-100">
+      <div className="flex flex-wrap items-center gap-3 px-6 py-4 bg-orange-50 border-b border-orange-100 sticky top-0 z-10">
         <div className="relative">
           <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-stone-400" />
           <input
