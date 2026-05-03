@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Sparkles } from "lucide-react";
 import { useBusinessInit } from "@/lib/business-init";
 import { useRequireAuth } from "@/lib/auth";
+import { ConfirmProvider } from "@/components/ui/confirm-dialog";
 
 const BusinessContext = createContext<string | null>(null);
 
@@ -49,7 +50,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
 
   return (
     <BusinessContext.Provider value={businessId}>
-      {children}
+      <ConfirmProvider>{children}</ConfirmProvider>
     </BusinessContext.Provider>
   );
 }

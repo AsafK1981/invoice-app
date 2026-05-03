@@ -6,6 +6,7 @@ import { useProducts, productStore } from "@/lib/product-store";
 import { formatCurrency } from "@/lib/format";
 import { ProductFormModal } from "@/components/product-form-modal";
 import { CsvImportModal } from "@/components/csv-import-modal";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 import type { Product } from "@/lib/types";
 
 function matchesProduct(p: Product, query: string): boolean {
@@ -29,6 +30,7 @@ export default function ProductsPage() {
   const [importOpen, setImportOpen] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
   const [search, setSearch] = useState("");
+  const confirm = useConfirm();
 
   const filtered = useMemo(
     () => products.filter((p) => matchesProduct(p, search)),
@@ -46,7 +48,12 @@ export default function ProductsPage() {
   }
 
   async function remove(product: Product) {
-    if (confirm(`למחוק את "${product.name}"?`)) await productStore.remove(product.id);
+    const ok = await confirm({
+      title: `למחוק את "${product.name}"?`,
+      tone: "danger",
+      confirmLabel: "מחק",
+    });
+    if (ok) await productStore.remove(product.id);
   }
 
   return (

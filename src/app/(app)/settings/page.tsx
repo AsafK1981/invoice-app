@@ -21,6 +21,7 @@ import { useBusiness } from "@/lib/business-store";
 import { BusinessFormModal } from "@/components/business-form-modal";
 import { EmailSettingsModal } from "@/components/email-settings-modal";
 import { DocumentNumberingSettings } from "@/components/document-numbering-settings";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 import { supabase } from "@/lib/supabase";
 import { getBusinessId } from "@/lib/business-init";
 import { BUSINESS_TYPE_LABELS } from "@/lib/types";
@@ -29,6 +30,7 @@ export default function SettingsPage() {
   const { business } = useBusiness();
   const [editOpen, setEditOpen] = useState(false);
   const [emailOpen, setEmailOpen] = useState(false);
+  const confirm = useConfirm();
 
   const fields = [
     { icon: Building2, label: "שם העסק", value: business.name },
@@ -58,9 +60,12 @@ export default function SettingsPage() {
   ];
 
   async function clearAllData() {
-    const ok = confirm(
-      "זה ימחק את כל הנתונים (לקוחות, מוצרים, הוצאות, מסמכים). להמשיך?"
-    );
+    const ok = await confirm({
+      title: "מחיקת כל הנתונים",
+      message: "פעולה זו תמחק את כל הלקוחות, המוצרים, ההוצאות והמסמכים לצמיתות. לא ניתן לשחזר.",
+      tone: "danger",
+      confirmLabel: "מחק את הכל",
+    });
     if (!ok) return;
     const bid = getBusinessId();
     if (!bid) return;

@@ -9,6 +9,7 @@ import {
   getDownloadUrl,
   formatFileSize,
 } from "@/lib/attachment-store";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 import type { DocumentAttachment } from "@/lib/types";
 
 interface Props {
@@ -22,6 +23,7 @@ export function DocumentAttachmentsSection({ documentId }: Props) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const confirm = useConfirm();
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -56,7 +58,13 @@ export function DocumentAttachmentsSection({ documentId }: Props) {
   }
 
   async function handleDelete(att: DocumentAttachment) {
-    if (!confirm(`למחוק את "${att.filename}"?`)) return;
+    const ok = await confirm({
+      title: `למחוק את "${att.filename}"?`,
+      message: "הקובץ יוסר מהאחסון לצמיתות.",
+      tone: "danger",
+      confirmLabel: "מחק",
+    });
+    if (!ok) return;
     try {
       await deleteAttachment(att);
       await refetch();

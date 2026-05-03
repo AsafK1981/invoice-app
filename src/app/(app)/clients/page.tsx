@@ -21,6 +21,7 @@ import { formatDate } from "@/lib/format";
 import { parseEmails } from "@/lib/emails";
 import { ClientFormModal } from "@/components/client-form-modal";
 import { CsvImportModal } from "@/components/csv-import-modal";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 import { exportClients } from "@/lib/csv-export";
 import type { Client } from "@/lib/types";
 
@@ -46,6 +47,7 @@ export default function ClientsPage() {
   const [importOpen, setImportOpen] = useState(false);
   const [editing, setEditing] = useState<Client | null>(null);
   const [search, setSearch] = useState("");
+  const confirm = useConfirm();
 
   const filtered = useMemo(
     () => clients.filter((c) => matchesClient(c, search)),
@@ -63,7 +65,13 @@ export default function ClientsPage() {
   }
 
   async function remove(client: Client) {
-    if (confirm(`למחוק את ${client.name}?`)) await clientStore.remove(client.id);
+    const ok = await confirm({
+      title: `למחוק את ${client.name}?`,
+      message: "המסמכים שכבר הופקו עבור הלקוח יישמרו, אבל הלקוח יוסר מספר הלקוחות.",
+      tone: "danger",
+      confirmLabel: "מחק",
+    });
+    if (ok) await clientStore.remove(client.id);
   }
 
   return (

@@ -20,6 +20,7 @@ import {
   calculateNextDue,
   type RecurringTemplate,
 } from "@/lib/recurring-store";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 import { useClients } from "@/lib/client-store";
 import { useBusiness } from "@/lib/business-store";
 import { createDocument } from "@/lib/document-store";
@@ -34,6 +35,7 @@ export default function RecurringPage() {
   const { business } = useBusiness();
   const [creatingId, setCreatingId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ kind: "success" | "error"; text: string } | null>(null);
+  const confirm = useConfirm();
 
   async function handleGenerate(template: RecurringTemplate) {
     setCreatingId(template.id);
@@ -94,7 +96,13 @@ export default function RecurringPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("למחוק את התבנית הזו?")) return;
+    const ok = await confirm({
+      title: "למחוק את התבנית הזו?",
+      message: "תבניות שנמחקות לא ניתן לשחזר. מסמכים שהופקו מהתבנית יישמרו.",
+      tone: "danger",
+      confirmLabel: "מחק תבנית",
+    });
+    if (!ok) return;
     await deleteTemplate(id);
   }
 

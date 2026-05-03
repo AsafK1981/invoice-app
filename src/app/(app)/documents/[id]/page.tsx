@@ -21,6 +21,7 @@ import {
 import { downloadElementAsPdf } from "@/lib/pdf-export";
 import { useDocument, deleteDocument, updateDocumentStatus } from "@/lib/document-store";
 import { DocumentAttachmentsSection } from "@/components/document-attachments-section";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 import { useClients } from "@/lib/client-store";
 import { useBusiness } from "@/lib/business-store";
 import { sendReceiptEmail } from "@/lib/email";
@@ -39,6 +40,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
   const [sending, setSending] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState(false);
   const [toast, setToast] = useState<{ kind: "success" | "error"; text: string } | null>(null);
+  const confirm = useConfirm();
 
   if (!ready) {
     return <div className="text-center py-16 text-stone-500">טוען...</div>;
@@ -202,7 +204,13 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
       alert("לא ניתן למחוק מסמך שנשלח או שולם. ניתן להפיק חשבונית זיכוי במקום.");
       return;
     }
-    if (confirm(`למחוק את מסמך #${doc.number}?`)) {
+    const ok = await confirm({
+      title: `למחוק את מסמך #${doc.number}?`,
+      message: "פעולה זו לא ניתנת לביטול.",
+      tone: "danger",
+      confirmLabel: "מחק מסמך",
+    });
+    if (ok) {
       await deleteDocument(doc.id);
       router.push("/documents");
     }

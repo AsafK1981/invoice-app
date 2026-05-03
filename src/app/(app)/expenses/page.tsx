@@ -6,6 +6,7 @@ import { useExpenses, expenseStore } from "@/lib/expense-store";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { ExpenseFormModal } from "@/components/expense-form-modal";
 import { CsvImportModal } from "@/components/csv-import-modal";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 import type { Expense } from "@/lib/types";
 
 function matchesExpense(e: Expense, query: string): boolean {
@@ -40,6 +41,7 @@ export default function ExpensesPage() {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [monthFilter, setMonthFilter] = useState<string>("all");
+  const confirm = useConfirm();
 
   const availableMonths = useMemo(() => {
     const set = new Set(expenses.map((e) => e.date.slice(0, 7)));
@@ -74,7 +76,13 @@ export default function ExpensesPage() {
   }
 
   async function remove(expense: Expense) {
-    if (confirm(`למחוק הוצאה לספק "${expense.supplier}"?`)) await expenseStore.remove(expense.id);
+    const ok = await confirm({
+      title: `למחוק הוצאה לספק "${expense.supplier}"?`,
+      message: `סכום: ${formatCurrency(expense.amount)}`,
+      tone: "danger",
+      confirmLabel: "מחק",
+    });
+    if (ok) await expenseStore.remove(expense.id);
   }
 
   function clearFilters() {

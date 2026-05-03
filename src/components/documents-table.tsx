@@ -22,6 +22,7 @@ import { formatCurrency, formatDate } from "@/lib/format";
 import { deleteDocument, updateDocumentStatus } from "@/lib/document-store";
 import { exportDocuments } from "@/lib/csv-export";
 import { matchDocument } from "@/lib/document-search";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 import {
   DOCUMENT_TYPE_LABELS,
   DOCUMENT_STATUS_LABELS,
@@ -345,6 +346,7 @@ function RowActions({ doc }: { doc: InvoiceDocument }) {
   const isCreditNote = doc.type === "credit_note";
   const canMarkPaid = !isReceipt && !isCreditNote && doc.status !== "draft" && doc.status !== "cancelled";
   const isPaid = doc.status === "paid";
+  const confirm = useConfirm();
 
   return (
     <div className="flex items-center justify-center gap-1">
@@ -372,7 +374,13 @@ function RowActions({ doc }: { doc: InvoiceDocument }) {
         <button
           onClick={async (e) => {
             e.stopPropagation();
-            if (confirm(`למחוק את מסמך #${doc.number}?`)) await deleteDocument(doc.id);
+            const ok = await confirm({
+              title: `למחוק את מסמך #${doc.number}?`,
+              message: "פעולה זו לא ניתנת לביטול.",
+              tone: "danger",
+              confirmLabel: "מחק",
+            });
+            if (ok) await deleteDocument(doc.id);
           }}
           className="text-stone-300 hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-50 transition-colors"
           title="מחק"
