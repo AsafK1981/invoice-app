@@ -6,6 +6,7 @@ import { useDocuments } from "@/lib/document-store";
 import { useExpenses } from "@/lib/expense-store";
 import { formatCurrency } from "@/lib/format";
 import { exportDocuments, exportExpenses } from "@/lib/csv-export";
+import { TaxYearDetail } from "@/components/tax-year-detail";
 
 type Period = string; // "all" | "2026" | "2026-Q1" | "2026-01"
 
@@ -196,6 +197,16 @@ export default function ReportsPage() {
           );
         })}
       </div>
+
+      {/^\d{4}$/.test(period) && (
+        <TaxYearDetail
+          year={parseInt(period, 10)}
+          documents={filteredDocs}
+          expenses={filteredExpenses}
+          allDocuments={documents}
+          allExpenses={expenses}
+        />
+      )}
 
       <div className="card-soft overflow-hidden">
         <div className="px-6 py-4 border-b border-orange-100 flex items-center gap-2">
