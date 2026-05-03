@@ -70,6 +70,7 @@ export interface InvoiceDocument {
   notes?: string;
   approvedAt?: string;
   approvalSignature?: string;
+  emailedAt?: string;
 }
 
 export interface Expense {

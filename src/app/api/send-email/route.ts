@@ -107,7 +107,14 @@ export async function POST(req: NextRequest) {
     const userGmailPassword =
       (user.user_metadata?.gmail_app_password as string) || FALLBACK_GMAIL_APP_PASSWORD;
 
-    // Use Gmail SMTP if configured, else fall back to Resend
+    // Sanitize for SMTP From header (no HTML, no quotes, no commas)
+    const fromName = String(businessName || "").replace(/[",;<>\r\n]/g, " ").trim() || "Invoices";
+
+    // Prefer Gmail SMTP when configured. If both Gmail creds are present and
+    // the send fails, surface the error directly — falling through to Resend
+    // hides the real cause from the user (and Resend's onboarding@resend.dev
+    // sender can only deliver to the Resend account owner anyway, so it's not
+    // a useful fallback for arbitrary recipients).
     if (userGmailUser && userGmailPassword) {
       try {
         const transporter = nodemailer.createTransport({
@@ -116,12 +123,10 @@ export async function POST(req: NextRequest) {
           secure: true,
           auth: {
             user: userGmailUser,
-            pass: userGmailPassword,
+            pass: String(userGmailPassword).replace(/\s+/g, ""),
           },
         });
 
-        // Sanitize for SMTP From header (no HTML, no quotes, no commas)
-        const fromName = String(businessName || "").replace(/[",;<>\r\n]/g, " ").trim() || "Invoices";
         const info = await transporter.sendMail({
           from: `"${fromName}" <${userGmailUser}>`,
           to: recipients.join(", "),
@@ -129,6 +134,11 @@ export async function POST(req: NextRequest) {
           html,
         });
 
+        console.log("[send-email] gmail ok", {
+          to: recipients,
+          messageId: info.messageId,
+          documentId,
+        });
         return NextResponse.json({
           ok: true,
           messageId: info.messageId,
@@ -136,13 +146,16 @@ export async function POST(req: NextRequest) {
           provider: "gmail",
         });
       } catch (gmailErr) {
-        console.error("Gmail SMTP error:", gmailErr);
-        // Fall through to Resend
+        const msg = gmailErr instanceof Error ? gmailErr.message : String(gmailErr);
+        console.error("[send-email] gmail failed", { to: recipients, msg });
+        return NextResponse.json(
+          { ok: false, error: `שליחה ב-Gmail נכשלה: ${msg}` },
+          { status: 500 },
+        );
       }
     }
 
-    // Fallback: Resend
-    const fromName = String(businessName || "").replace(/[",;<>\r\n]/g, " ").trim() || "Invoices";
+    // Resend fallback path — only if Gmail isn't configured at all.
     const { data, error } = await resend.emails.send({
       from: `${fromName} <onboarding@resend.dev>`,
       to: recipients,
@@ -151,10 +164,11 @@ export async function POST(req: NextRequest) {
     });
 
     if (error) {
-      console.error("Resend error:", error);
+      console.error("[send-email] resend failed", { to: recipients, error });
       return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
     }
 
+    console.log("[send-email] resend ok", { to: recipients, messageId: data?.id, documentId });
     return NextResponse.json({ ok: true, messageId: data?.id, mocked: false, provider: "resend" });
   } catch (err) {
     console.error("Send email error:", err);

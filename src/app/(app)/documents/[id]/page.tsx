@@ -19,7 +19,7 @@ import {
   Download,
 } from "lucide-react";
 import { downloadElementAsPdf } from "@/lib/pdf-export";
-import { useDocument, deleteDocument, updateDocumentStatus } from "@/lib/document-store";
+import { useDocument, deleteDocument, updateDocumentStatus, markDocumentEmailed } from "@/lib/document-store";
 import { DocumentAttachmentsSection } from "@/components/document-attachments-section";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { useClients } from "@/lib/client-store";
@@ -128,6 +128,13 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
         logoUrl: business.logoUrl,
       });
       if (res.ok) {
+        if (!res.mocked) {
+          try {
+            await markDocumentEmailed(doc.id);
+          } catch {
+            // Don't block the success toast if the timestamp update fails
+          }
+        }
         setToast({
           kind: "success",
           text: res.mocked
@@ -320,6 +327,44 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
               {doc.approvalSignature && <> · נחתם על ידי <strong>{doc.approvalSignature}</strong></>}
             </p>
           </div>
+        </div>
+      )}
+
+      {/* Delivery status — separate from payment status. Set only when an
+          email send actually succeeds (not on doc creation). */}
+      {doc.status !== "draft" && doc.status !== "cancelled" && (
+        <div className="no-print card-soft p-3 flex items-center gap-3 max-w-[210mm] mx-auto">
+          {doc.emailedAt ? (
+            <>
+              <div className="w-9 h-9 rounded-2xl bg-emerald-100 flex items-center justify-center shrink-0">
+                <Mail className="w-4 h-4 text-emerald-700" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-stone-900">המסמך נשלח במייל ✓</p>
+                <p className="text-xs text-stone-600">
+                  {new Date(doc.emailedAt).toLocaleString("he-IL", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </p>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="w-9 h-9 rounded-2xl bg-stone-100 flex items-center justify-center shrink-0">
+                <Mail className="w-4 h-4 text-stone-500" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-stone-700">טרם נשלח במייל</p>
+                <p className="text-xs text-stone-500">
+                  לחץ על &quot;מייל&quot; למעלה כדי לשלוח ללקוח
+                </p>
+              </div>
+            </>
+          )}
         </div>
       )}
 

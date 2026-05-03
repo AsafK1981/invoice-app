@@ -26,6 +26,7 @@ function mapDocRow(row: Record<string, unknown>, items: DocumentItem[]): Invoice
     notes: (row.notes as string) || undefined,
     approvedAt: (row.approved_at as string) || undefined,
     approvalSignature: (row.approval_signature as string) || undefined,
+    emailedAt: (row.emailed_at as string) || undefined,
   };
 }
 
@@ -204,3 +205,16 @@ export async function updateDocumentStatus(id: string, status: InvoiceDocument["
   window.dispatchEvent(new Event(CHANGE_EVENT));
 }
 
+/**
+ * Records a successful email send. Sets emailed_at = now() so the doc page
+ * can show a clear "✓ נשלח" indicator (the existing `status` field is set
+ * to "sent" on doc creation and doesn't actually mean an email went out).
+ */
+export async function markDocumentEmailed(id: string) {
+  const { error } = await supabase
+    .from("documents")
+    .update({ emailed_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+  window.dispatchEvent(new Event(CHANGE_EVENT));
+}
