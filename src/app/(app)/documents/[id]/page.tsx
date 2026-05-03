@@ -102,7 +102,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
     }
   }
 
-  async function handleResend() {
+  async function handleResend(asReminder = false) {
     if (!doc) return;
     const to = client?.email;
     if (!to) {
@@ -112,6 +112,14 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
     setSending(true);
     setToast(null);
     try {
+      const daysSinceSent = doc.emailedAt
+        ? Math.max(
+            1,
+            Math.floor(
+              (Date.now() - new Date(doc.emailedAt).getTime()) / (1000 * 60 * 60 * 24),
+            ),
+          )
+        : undefined;
       const res = await sendReceiptEmail({
         to,
         clientName: doc.clientName,
@@ -120,6 +128,8 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
         businessName: business.name,
         documentId: doc.id,
         logoUrl: business.logoUrl,
+        kind: asReminder ? "reminder" : "initial",
+        daysSinceSent: asReminder ? daysSinceSent : undefined,
       });
       if (res.ok) {
         if (!res.mocked) {
@@ -133,7 +143,9 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
           kind: "success",
           text: res.mocked
             ? `מייל מדומה נשלח ל-${to} (יתחבר לשירות אמיתי בהמשך)`
-            : `המסמך נשלח ל-${to}`,
+            : asReminder
+              ? `תזכורת נשלחה ל-${to}`
+              : `המסמך נשלח ל-${to}`,
         });
       } else {
         setToast({ kind: "error", text: res.error || "שגיאה בשליחה" });
@@ -262,7 +274,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
             <span className="hidden sm:inline">WhatsApp</span>
           </button>
           <button
-            onClick={handleResend}
+            onClick={() => handleResend(false)}
             disabled={sending || !client?.email}
             className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-white border border-orange-200 text-stone-800 hover:bg-orange-50 disabled:opacity-50 disabled:cursor-not-allowed"
             title={client?.email ? `שליחה ל-${client.email}` : "אין אימייל שמור ללקוח"}
@@ -279,6 +291,27 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
               </>
             )}
           </button>
+          {/* Reminder button — only for sent quotes/tax_invoices that have
+              actually been emailed at least once and not yet paid. Hidden
+              entirely for receipts (no point reminding) and unsent docs
+              (use the regular "מייל" button to send first). */}
+          {doc.emailedAt &&
+            doc.status === "sent" &&
+            (doc.type === "quote" || doc.type === "tax_invoice") && (
+              <button
+                onClick={() => handleResend(true)}
+                disabled={sending || !client?.email}
+                className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-amber-50 border border-amber-200 text-amber-800 hover:bg-amber-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                title={
+                  client?.email
+                    ? `שלח תזכורת ל-${client.email}`
+                    : "אין אימייל שמור ללקוח"
+                }
+              >
+                <Clock className="w-4 h-4" />
+                <span className="hidden sm:inline">תזכורת</span>
+              </button>
+            )}
           <button
             onClick={handleDelete}
             className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-white border border-rose-200 text-rose-700 hover:bg-rose-50"

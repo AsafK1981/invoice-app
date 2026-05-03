@@ -26,8 +26,20 @@ function buildHtml(args: {
   total: number;
   viewUrl: string;
   logoUrl?: string;
+  kind?: "initial" | "reminder";
+  daysSinceSent?: number;
 }) {
-  const { businessName, clientName, receiptNumber, total, viewUrl, logoUrl } = args;
+  const { businessName, clientName, receiptNumber, total, viewUrl, logoUrl, kind = "initial", daysSinceSent } = args;
+  const isReminder = kind === "reminder";
+  const introLine = isReminder
+    ? `מקווה שאתם בסדר. רק תזכורת קלה לגבי מסמך מספר <strong>#${escapeHtml(String(receiptNumber))}</strong> על סך <strong>₪${escapeHtml(String(Number(total).toLocaleString()))}</strong>${
+        daysSinceSent ? ` ששלחנו לפני ${daysSinceSent} ימים` : ""
+      } — אשמח לדעת אם הוא הגיע ומה דעתכם.`
+    : `מצורף מסמך מספר <strong>#${escapeHtml(String(receiptNumber))}</strong> על סך <strong>₪${escapeHtml(String(Number(total).toLocaleString()))}</strong>.`;
+  const ctaLine = isReminder
+    ? "לצפייה חוזרת במסמך המלא:"
+    : "לצפייה במסמך המלא והדפסה/הורדה כ-PDF, לחץ על הכפתור למטה.";
+
   return `
     <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
       <div style="background: linear-gradient(135deg, #f97316, #e11d48); padding: 24px; border-radius: 16px; color: white; text-align: center; margin-bottom: 24px;">
@@ -40,10 +52,10 @@ function buildHtml(args: {
           שלום ${escapeHtml(clientName)},
         </p>
         <p style="margin: 0 0 16px 0; font-size: 16px; color: #44403c;">
-          מצורף מסמך מספר <strong>#${escapeHtml(String(receiptNumber))}</strong> על סך <strong>₪${escapeHtml(String(Number(total).toLocaleString()))}</strong>.
+          ${introLine}
         </p>
         <p style="margin: 0; font-size: 14px; color: #78716c;">
-          לצפייה במסמך המלא והדפסה/הורדה כ-PDF, לחץ על הכפתור למטה.
+          ${ctaLine}
         </p>
       </div>
 
@@ -55,7 +67,7 @@ function buildHtml(args: {
 
       <div style="text-align: center; margin-bottom: 24px;">
         <p style="font-size: 13px; color: #a8a29e;">
-          מסמך זה נשלח אוטומטית מ${escapeHtml(businessName)}
+          ${isReminder ? `תזכורת אוטומטית מ${escapeHtml(businessName)}` : `מסמך זה נשלח אוטומטית מ${escapeHtml(businessName)}`}
         </p>
       </div>
     </div>
@@ -76,7 +88,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { to, clientName, receiptNumber, total, businessName, subject, documentId, logoUrl } = body;
+    const { to, clientName, receiptNumber, total, businessName, subject, documentId, logoUrl, kind, daysSinceSent } = body;
 
     // Always use the canonical URL — never NEXT_PUBLIC_VERCEL_URL, which
     // is the immutable per-deploy hash and will decay into stale-code
@@ -101,8 +113,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "לא נמצאו נמענים" }, { status: 400 });
     }
 
-    const emailSubject = subject || `${businessName} - מסמך #${receiptNumber}`;
-    const html = buildHtml({ businessName, clientName, receiptNumber, total, viewUrl, logoUrl });
+    const isReminder = kind === "reminder";
+    const baseSubject = subject || `${businessName} - מסמך #${receiptNumber}`;
+    const emailSubject = isReminder ? `תזכורת: ${baseSubject}` : baseSubject;
+    const html = buildHtml({
+      businessName,
+      clientName,
+      receiptNumber,
+      total,
+      viewUrl,
+      logoUrl,
+      kind: isReminder ? "reminder" : "initial",
+      daysSinceSent: typeof daysSinceSent === "number" ? daysSinceSent : undefined,
+    });
 
     // Pick Gmail credentials: prefer the user's own, fall back to global env vars
     const userGmailUser = (user.user_metadata?.gmail_user as string) || FALLBACK_GMAIL_USER;
