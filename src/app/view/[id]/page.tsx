@@ -213,28 +213,31 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
               </div>
             </div>
           ) : (
-            <div className="bg-white rounded-2xl shadow-sm border border-orange-200 p-5">
-              <h3 className="font-bold text-stone-900 mb-2">אישור ההצעה</h3>
-              <p className="text-sm text-stone-700 mb-4">
-                אם ההצעה מקובלת עליך, אשר אותה כאן. האישור יתועד עם השם והתאריך
-                ויישלח חזרה ל{business?.name || "ספק"}.
+            <div className="bg-stone-50/70 rounded-2xl border border-stone-200 p-4">
+              <div className="flex items-baseline justify-between gap-2 flex-wrap mb-1">
+                <h3 className="font-semibold text-stone-800 text-sm">אישור ההצעה</h3>
+                <span className="text-xs text-stone-500 font-medium">לא חובה</span>
+              </div>
+              <p className="text-xs text-stone-600 mb-3">
+                אם נוח לכם, תוכלו לאשר כאן בלחיצה והאישור יישלח חזרה ל{business?.name || "ספק"}.
+                ניתן גם פשוט לחזור במייל או בטלפון.
               </p>
-              <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <input
                   type="text"
                   value={signatureName}
                   onChange={(e) => setSignatureName(e.target.value)}
-                  placeholder="שם מלא"
-                  className="flex-1 px-4 py-2.5 rounded-xl border-2 border-orange-200 focus:border-orange-400 focus:outline-none text-sm"
+                  placeholder="שם מלא (רק אם בוחרים לאשר)"
+                  className="flex-1 px-3 py-2 rounded-xl border border-stone-300 bg-white focus:border-stone-400 focus:outline-none text-sm"
                   disabled={approving}
                 />
                 <button
                   onClick={handleApprove}
                   disabled={approving || signatureName.trim().length < 2}
-                  className="inline-flex items-center justify-center gap-2 bg-gradient-to-l from-emerald-500 to-teal-500 text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:shadow-lg hover:shadow-emerald-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                  className="inline-flex items-center justify-center gap-2 bg-white border border-stone-300 text-stone-700 hover:bg-stone-100 px-4 py-2 rounded-xl text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
                   <CheckCircle2 className="w-4 h-4" />
-                  {approving ? "מאשר..." : "אשר את ההצעה"}
+                  {approving ? "מאשר..." : "אשר"}
                 </button>
               </div>
               {approveError && (
