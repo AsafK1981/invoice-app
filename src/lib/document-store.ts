@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "./supabase";
 import { getBusinessId, onBusinessReady } from "./business-init";
-import type { DocumentType, InvoiceDocument, DocumentItem } from "./types";
+import { DOCUMENT_STATUS_LABELS, DOCUMENT_TYPE_LABELS, type DocumentType, type InvoiceDocument, type DocumentItem } from "./types";
+import { logAudit } from "./audit-log";
 
 const CHANGE_EVENT = "invoice-app:documents-changed";
 
@@ -141,22 +142,65 @@ export async function createDocument(
     throw new Error("השרת החזיר תשובה לא תקינה לאחר שמירת המסמך");
   }
 
+  const result = data as { id: string; number: number };
+  logAudit({
+    action: "document.created",
+    targetType: "document",
+    targetId: result.id,
+    targetLabel: `${DOCUMENT_TYPE_LABELS[doc.type]} #${result.number} · ${doc.clientName}`,
+    payload: { type: doc.type, number: result.number, total: doc.total },
+  });
+
   window.dispatchEvent(new Event(CHANGE_EVENT));
-  return data as { id: string; number: number };
+  return result;
 }
 
 export async function deleteDocument(id: string) {
+  // Snapshot the doc for audit context BEFORE deleting
+  const { data: snap } = await supabase
+    .from("documents")
+    .select("type, number, client_name")
+    .eq("id", id)
+    .maybeSingle();
+
   await supabase.from("document_items").delete().eq("document_id", id);
   await supabase.from("documents").delete().eq("id", id);
+
+  if (snap) {
+    logAudit({
+      action: "document.deleted",
+      targetType: "document",
+      targetId: id,
+      targetLabel: `${DOCUMENT_TYPE_LABELS[snap.type as DocumentType]} #${snap.number} · ${snap.client_name}`,
+    });
+  }
+
   window.dispatchEvent(new Event(CHANGE_EVENT));
 }
 
 export async function updateDocumentStatus(id: string, status: InvoiceDocument["status"]) {
+  // Snapshot for context — what was the previous status?
+  const { data: snap } = await supabase
+    .from("documents")
+    .select("type, number, client_name, status")
+    .eq("id", id)
+    .maybeSingle();
+
   const { error } = await supabase
     .from("documents")
     .update({ status })
     .eq("id", id);
   if (error) throw new Error(error.message);
+
+  if (snap) {
+    logAudit({
+      action: "document.status_changed",
+      targetType: "document",
+      targetId: id,
+      targetLabel: `${DOCUMENT_TYPE_LABELS[snap.type as DocumentType]} #${snap.number} · ${snap.client_name}`,
+      payload: { from: DOCUMENT_STATUS_LABELS[snap.status as InvoiceDocument["status"]], to: DOCUMENT_STATUS_LABELS[status] },
+    });
+  }
   window.dispatchEvent(new Event(CHANGE_EVENT));
 }
 

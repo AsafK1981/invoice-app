@@ -21,7 +21,9 @@ import { useBusiness } from "@/lib/business-store";
 import { BusinessFormModal } from "@/components/business-form-modal";
 import { EmailSettingsModal } from "@/components/email-settings-modal";
 import { DocumentNumberingSettings } from "@/components/document-numbering-settings";
+import { AuditLogSection } from "@/components/audit-log-section";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { logAudit } from "@/lib/audit-log";
 import { supabase } from "@/lib/supabase";
 import { getBusinessId } from "@/lib/business-init";
 import { BUSINESS_TYPE_LABELS } from "@/lib/types";
@@ -84,6 +86,11 @@ export default function SettingsPage() {
     window.dispatchEvent(new Event("invoice-app:products-changed"));
     window.dispatchEvent(new Event("invoice-app:expenses-changed"));
     window.dispatchEvent(new Event("invoice-app:documents-changed"));
+    logAudit({
+      action: "data.cleared",
+      targetType: "all",
+      targetLabel: "כל הנתונים",
+    });
     alert("כל הנתונים נמחקו. עכשיו אתה יכול להוסיף את הנתונים האמיתיים שלך.");
   }
 
@@ -194,6 +201,8 @@ export default function SettingsPage() {
           חבר את חשבון ה-Gmail שלך כדי שמסמכים יישלחו ישירות ממך ולא מכתובת ניטרלית של המערכת.
         </p>
       </div>
+
+      <AuditLogSection />
 
       <div className="card-soft p-4 bg-gradient-to-br from-orange-50 to-amber-50 border-orange-200">
         <div className="flex items-start gap-3">
