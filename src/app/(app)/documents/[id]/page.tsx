@@ -221,74 +221,81 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
           {canConvert && (
             <button
               onClick={handleConvertToReceipt}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100"
+              className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100"
               title="המר את ההצעה לקבלה / חשבונית"
             >
               <RefreshCw className="w-4 h-4" />
-              המר ל{canIssueTaxInvoices(business) ? "חשבונית מס" : "קבלה"}
+              <span className="hidden sm:inline">המר ל{canIssueTaxInvoices(business) ? "חשבונית מס" : "קבלה"}</span>
             </button>
           )}
           <button
             onClick={handleDuplicate}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border border-orange-200 text-stone-800 hover:bg-orange-50"
+            className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-white border border-orange-200 text-stone-800 hover:bg-orange-50"
             title="צור עותק חדש"
           >
             <Copy className="w-4 h-4" />
-            שכפל
+            <span className="hidden sm:inline">שכפל</span>
           </button>
           <button
             onClick={handleCopyLink}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border border-orange-200 text-stone-800 hover:bg-orange-50"
-            title={publicUrl}
+            className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-white border border-orange-200 text-stone-800 hover:bg-orange-50"
+            title="העתק קישור לשיתוף"
           >
             <LinkIcon className="w-4 h-4" />
-            העתק קישור
+            <span className="hidden sm:inline">העתק קישור</span>
           </button>
           <button
             onClick={handleWhatsApp}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+            className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-50"
             title={client?.phone ? `שליחה ל-${client.phone}` : "שליחה ב-WhatsApp"}
           >
             <MessageCircle className="w-4 h-4" />
-            WhatsApp
+            <span className="hidden sm:inline">WhatsApp</span>
           </button>
           <button
             onClick={handleResend}
             disabled={sending || !client?.email}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border border-orange-200 text-stone-800 hover:bg-orange-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-white border border-orange-200 text-stone-800 hover:bg-orange-50 disabled:opacity-50 disabled:cursor-not-allowed"
             title={client?.email ? `שליחה ל-${client.email}` : "אין אימייל שמור ללקוח"}
           >
             {sending ? (
-              "שולח..."
+              <>
+                <Mail className="w-4 h-4" />
+                <span>שולח...</span>
+              </>
             ) : (
               <>
                 <Mail className="w-4 h-4" />
-                מייל
+                <span className="hidden sm:inline">מייל</span>
               </>
             )}
           </button>
           <button
             onClick={handleDelete}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border border-rose-200 text-rose-700 hover:bg-rose-50"
+            className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-white border border-rose-200 text-rose-700 hover:bg-rose-50"
+            title="מחק"
           >
             <Trash2 className="w-4 h-4" />
-            מחק
+            <span className="hidden sm:inline">מחק</span>
           </button>
           <button
             onClick={handleDownloadPdf}
             disabled={downloadingPdf}
-            className="inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-5 py-2 rounded-xl text-sm font-semibold hover:shadow-md hover:shadow-orange-200 disabled:opacity-60 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-3 sm:px-5 py-2 min-h-[40px] rounded-xl text-sm font-semibold hover:shadow-md hover:shadow-orange-200 disabled:opacity-60 disabled:cursor-not-allowed"
+            title="הורד PDF"
           >
             <Download className="w-4 h-4" />
-            {downloadingPdf ? "מכין PDF..." : "הורד PDF"}
+            <span className={downloadingPdf ? "" : "hidden sm:inline"}>
+              {downloadingPdf ? "מכין PDF..." : "הורד PDF"}
+            </span>
           </button>
           <button
             onClick={handlePrint}
-            className="inline-flex items-center gap-2 bg-white border border-orange-200 text-stone-800 px-4 py-2 rounded-xl text-sm font-semibold hover:bg-orange-50"
+            className="inline-flex items-center gap-2 bg-white border border-orange-200 text-stone-800 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold hover:bg-orange-50"
             title="הדפס דרך הדפדפן"
           >
             <Printer className="w-4 h-4" />
-            הדפס
+            <span className="hidden sm:inline">הדפס</span>
           </button>
         </div>
       </div>
