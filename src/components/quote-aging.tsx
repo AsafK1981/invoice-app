@@ -124,12 +124,48 @@ export function QuoteAging({ documents }: Props) {
       </div>
 
       {stale.length > 0 && (
-        <div className="mt-4 flex items-start gap-2 text-xs text-rose-700 bg-rose-50/50 border border-rose-100 p-3 rounded-xl">
-          <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-          <span>
-            יש לך {stale.length} {stale.length === 1 ? "הצעה" : "הצעות"} פתוחות מעל שבועיים בשווי{" "}
-            {formatCurrency(stale.reduce((s, q) => s + q.total, 0))}. שווה לעקוב אחריהן או להתקשר ללקוח.
-          </span>
+        <div className="mt-4 bg-rose-50/50 border border-rose-100 p-3 rounded-xl">
+          <div className="flex items-start gap-2 text-xs text-rose-700 mb-2">
+            <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+            <span>
+              <strong>{stale.length} {stale.length === 1 ? "הצעה" : "הצעות"}</strong> פתוחות מעל שבועיים בשווי{" "}
+              {formatCurrency(stale.reduce((s, q) => s + q.total, 0))}. כדאי לפתוח ולשלוח תזכורת.
+            </span>
+          </div>
+          <ul className="space-y-1">
+            {stale
+              .slice()
+              .sort((a, b) => a.date.localeCompare(b.date))
+              .slice(0, 5)
+              .map((q) => {
+                const days = daysSince(q.date);
+                return (
+                  <li key={q.id}>
+                    <Link
+                      href={`/documents/${q.id}`}
+                      className="flex items-center justify-between gap-3 px-2 py-1.5 rounded-lg hover:bg-white/80 transition-colors text-xs group"
+                    >
+                      <span className="flex items-center gap-2 min-w-0">
+                        <span className="font-semibold text-stone-900 truncate">
+                          {q.clientName}
+                        </span>
+                        <span className="text-stone-500">·</span>
+                        <span className="text-stone-600 truncate">#{q.number}</span>
+                      </span>
+                      <span className="flex items-center gap-2 text-stone-600 flex-shrink-0">
+                        <span className="font-medium">{formatCurrency(q.total)}</span>
+                        <span className="text-rose-700 font-semibold tabular-nums">
+                          {days}י׳
+                        </span>
+                      </span>
+                    </Link>
+                  </li>
+                );
+              })}
+            {stale.length > 5 && (
+              <li className="text-xs text-stone-500 pt-1">ועוד {stale.length - 5}…</li>
+            )}
+          </ul>
         </div>
       )}
     </div>
