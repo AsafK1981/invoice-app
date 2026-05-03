@@ -9,11 +9,11 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 This is a live SaaS with real users (Israeli עוסק פטור freelancers). Treat every change as production-bound.
 
-## Deploy mechanics — three traps that have all caught us before
+## Deploy mechanics — traps that have caught us before
 
 1. **Vercel deploys from `master`, not `main`.** After every commit, run `git push origin main:master` too. Pushing only to `main` does nothing for production.
-2. **The canonical alias `mysuperfriendlyinvoiceapp.vercel.app` does NOT auto-advance** when a new deployment goes ready. Confirm via `GET /v4/aliases/mysuperfriendlyinvoiceapp.vercel.app` and compare `deploymentId` to the latest production deployment. If different, repoint via `POST /v2/deployments/{depId}/aliases`.
-3. **`ssoProtection` should stay `null` on the project.** If it gets enabled, the public URL returns 401. Reset via `PATCH /v9/projects/{id}` with `ssoProtection: null`.
+2. **`ssoProtection` should stay `null` on the project.** If it gets enabled, the public URL returns 401. Reset via `PATCH /v9/projects/{id}` with `ssoProtection: null`.
+3. **Canonical alias auto-advance** — fixed 2026-05-03. `mysuperfriendlyinvoiceapp.vercel.app` is now an assigned production domain on the Vercel project (not a manual alias), so it advances automatically with each production deploy. `scripts/check-alias.mjs` exists as a fallback verifier; you should NOT need to repoint manually anymore. If you do see drift, something regressed at the project-domain level — investigate, don't just repoint.
 
 ## Required checks before claiming "shipped" or "done"
 
