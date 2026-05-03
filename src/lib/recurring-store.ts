@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "./supabase";
+import { logAudit } from "./audit-log";
 import type { DocumentType } from "./types";
 
 export interface RecurringTemplate {
@@ -42,6 +43,15 @@ export async function deleteTemplate(id: string) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
   const existing = (user.user_metadata?.recurring_templates as RecurringTemplate[]) || [];
+  const removed = existing.find((t) => t.id === id);
+  if (removed) {
+    logAudit({
+      action: "recurring.deleted",
+      targetType: "recurring",
+      targetId: id,
+      targetLabel: `${removed.clientName} · ${removed.subject || removed.frequency}`,
+    });
+  }
   await supabase.auth.updateUser({
     data: {
       ...user.user_metadata,

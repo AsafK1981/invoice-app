@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "./supabase";
 import { getBusinessId, onBusinessReady } from "./business-init";
+import { logAudit } from "./audit-log";
+import { formatCurrency } from "./format";
 import type { Expense } from "./types";
 
 const CHANGE_EVENT = "invoice-app:expenses-changed";
@@ -81,7 +83,21 @@ export const expenseStore = {
   },
 
   async remove(id: string) {
+    const { data: snap } = await supabase
+      .from("expenses")
+      .select("supplier, amount, category")
+      .eq("id", id)
+      .maybeSingle();
     await supabase.from("expenses").delete().eq("id", id);
+    if (snap?.supplier) {
+      logAudit({
+        action: "expense.deleted",
+        targetType: "expense",
+        targetId: id,
+        targetLabel: `${snap.supplier as string} · ${formatCurrency(Number(snap.amount))}`,
+        payload: { category: snap.category, amount: Number(snap.amount) },
+      });
+    }
     window.dispatchEvent(new Event(CHANGE_EVENT));
   },
 

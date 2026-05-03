@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "./supabase";
+import { logAudit } from "./audit-log";
 import type { DocumentAttachment } from "./types";
 
 const BUCKET = "document-attachments";
@@ -96,6 +97,14 @@ export async function deleteAttachment(attachment: DocumentAttachment): Promise<
     .delete()
     .eq("id", attachment.id);
   if (dbError) throw new Error("שגיאה במחיקה: " + dbError.message);
+
+  logAudit({
+    action: "attachment.deleted",
+    targetType: "attachment",
+    targetId: attachment.id,
+    targetLabel: attachment.filename,
+    payload: { documentId: attachment.documentId, fileSize: attachment.fileSize },
+  });
 }
 
 export async function getDownloadUrl(filePath: string, expiresInSec = 60): Promise<string> {

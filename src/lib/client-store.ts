@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "./supabase";
 import { getBusinessId, onBusinessReady } from "./business-init";
+import { logAudit } from "./audit-log";
 import type { Client } from "./types";
 
 const CHANGE_EVENT = "invoice-app:clients-changed";
@@ -85,7 +86,20 @@ export const clientStore = {
   },
 
   async remove(id: string) {
+    const { data: snap } = await supabase
+      .from("clients")
+      .select("name")
+      .eq("id", id)
+      .maybeSingle();
     await supabase.from("clients").delete().eq("id", id);
+    if (snap?.name) {
+      logAudit({
+        action: "client.deleted",
+        targetType: "client",
+        targetId: id,
+        targetLabel: snap.name as string,
+      });
+    }
     window.dispatchEvent(new Event(CHANGE_EVENT));
   },
 
