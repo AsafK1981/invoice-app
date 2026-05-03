@@ -42,15 +42,23 @@ export function BusinessFormModal({ open, onClose, business }: Props) {
       setUploadError("הקובץ גדול מדי (מקסימום 2MB)");
       return;
     }
-    if (!file.type.startsWith("image/")) {
-      setUploadError("יש להעלות קובץ תמונה בלבד");
+    // Only the formats that render reliably across browsers, PDF print,
+    // and email clients. Bucket-level allowed_mime_types enforces the
+    // same list server-side, but checking here gives instant feedback
+    // for the common case of an iPhone .heic.
+    const ALLOWED = new Set(["image/png", "image/jpeg", "image/jpg", "image/webp", "image/svg+xml"]);
+    if (!ALLOWED.has(file.type)) {
+      setUploadError("פורמט לא נתמך. השתמש ב-PNG, JPG, WebP או SVG (לא HEIC/HEIF, לא BMP, לא TIFF).");
       return;
     }
 
     setUploading(true);
     setUploadError(null);
 
-    const fileExt = file.name.split(".").pop();
+    // Lowercase the extension; Supabase Storage is case-sensitive on
+    // path lookups but browsers/CDNs sometimes normalize. Stick to lowercase
+    // for predictability.
+    const fileExt = (file.name.split(".").pop() || "png").toLowerCase();
     const fileName = `${business.id}-${Date.now()}.${fileExt}`;
 
     const { error: uploadErr } = await supabase.storage
