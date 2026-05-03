@@ -97,6 +97,26 @@ export function CsvImportModal({ open, onClose, entityType }: Props) {
 
     try {
       let imported = 0;
+      let skippedNonNumeric = 0;
+      let skippedInvalidVat = 0;
+      // Cache of clients we've already created in this batch — avoids
+      // creating the same client twice when two rows share a name and
+      // the supabase select hasn't seen the in-flight insert yet.
+      const clientCache = new Map<string, string>();
+      // Track the highest imported number per (type) so we can bump
+      // document_counters once at the end. Without this, the next live
+      // create_document_atomic would hand out a number that already
+      // exists in the DB.
+      const maxNumberByType = new Map<string, number>();
+      let importBusinessId: string | null = null;
+      if (entityType === "documents") {
+        importBusinessId = getBusinessId();
+        if (!importBusinessId) {
+          setError("אין עסק פעיל - רענן את הדף ונסה שוב");
+          setImporting(false);
+          return;
+        }
+      }
       for (const row of preview) {
         if (entityType === "clients") {
           const name = (row["שם"] || row["name"] || "").trim();
@@ -141,27 +161,37 @@ export function CsvImportModal({ open, onClose, entityType }: Props) {
           await expenseStore.save(expense);
           imported++;
         } else if (entityType === "documents") {
-          const businessId = getBusinessId();
-          if (!businessId) {
-            setError("אין עסק פעיל - רענן את הדף ונסה שוב");
-            break;
-          }
+          const businessId = importBusinessId!;
           const numberRaw = (row["מספר"] || row["number"] || "").trim();
           const clientName = (row["לקוח"] || row["client"] || row["client_name"] || "").trim();
           const totalRaw = (row["סכום"] || row["total"] || "0").replace(/[₪,\s]/g, "");
           const total = parseFloat(totalRaw);
+          // Strict integer: reject "INV-0042", "2024-001", etc. rather than
+          // silently truncating with parseInt (which would mangle the
+          // original number the import explicitly promises to preserve).
+          // If anyone needs alphanumeric numbers, they need a schema change
+          // (documents.number is currently int).
+          const isIntNumber = /^\d+$/.test(numberRaw);
+          if (!isIntNumber) {
+            skippedNonNumeric++;
+            continue;
+          }
           const number = parseInt(numberRaw, 10);
-          if (!clientName || !Number.isFinite(number) || !Number.isFinite(total) || total <= 0) continue;
+          if (!clientName || !Number.isFinite(total) || total <= 0) continue;
 
           const type = resolveDocumentType(row["סוג"] || row["type"] || "");
           const date = (row["תאריך"] || row["date"] || new Date().toISOString().slice(0, 10)).trim();
           const description = (row["תיאור"] || row["description"] || "").trim() || "שירות";
-          const vat = parseFloat((row['מע"מ'] || row["מעמ"] || row["vat"] || "0").replace(/[₪,\s]/g, "")) || 0;
+          const vatRaw = parseFloat((row['מע"מ'] || row["מעמ"] || row["vat"] || "0").replace(/[₪,\s]/g, "")) || 0;
+          // Reject rows with VAT > total — almost always a typo or column
+          // misalignment, and would otherwise insert a negative subtotal.
+          if (vatRaw > total) {
+            skippedInvalidVat++;
+            continue;
+          }
+          const vat = vatRaw;
           const subtotal = total - vat;
           const statusRaw = (row["סטטוס"] || row["status"] || "").trim().toLowerCase();
-          // Historical imports are usually paid receipts; default to "paid"
-          // for receipts/tax_invoice_receipt and "sent" for everything else
-          // unless explicitly given.
           let status: "draft" | "sent" | "paid" | "cancelled" = "paid";
           if (statusRaw === "draft" || statusRaw.includes("טיוטה")) status = "draft";
           else if (statusRaw === "sent" || statusRaw.includes("נשלח")) status = "sent";
@@ -179,25 +209,30 @@ export function CsvImportModal({ open, onClose, entityType }: Props) {
             .maybeSingle();
           if (existing) continue;
 
-          // Find or create the client by name
-          let clientId: string | null = null;
-          const { data: matchClient } = await supabase
-            .from("clients")
-            .select("id")
-            .eq("business_id", businessId)
-            .eq("name", clientName)
-            .maybeSingle();
-          if (matchClient) {
-            clientId = matchClient.id;
-          } else {
-            const newClient = {
-              id: crypto.randomUUID(),
-              business_id: businessId,
-              name: clientName,
-              created_at: new Date().toISOString(),
-            };
-            const { error: cErr } = await supabase.from("clients").insert(newClient);
-            if (!cErr) clientId = newClient.id;
+          // Find or create the client by name. Check the in-batch cache
+          // first so two rows with the same client name don't create
+          // duplicate client records.
+          let clientId: string | null = clientCache.get(clientName) ?? null;
+          if (!clientId) {
+            const { data: matchClient } = await supabase
+              .from("clients")
+              .select("id")
+              .eq("business_id", businessId)
+              .eq("name", clientName)
+              .maybeSingle();
+            if (matchClient) {
+              clientId = matchClient.id;
+            } else {
+              const newClient = {
+                id: crypto.randomUUID(),
+                business_id: businessId,
+                name: clientName,
+                created_at: new Date().toISOString(),
+              };
+              const { error: cErr } = await supabase.from("clients").insert(newClient);
+              if (!cErr) clientId = newClient.id;
+            }
+            if (clientId) clientCache.set(clientName, clientId);
           }
 
           // Insert document directly (bypassing the atomic-numbering RPC so
@@ -228,10 +263,44 @@ export function CsvImportModal({ open, onClose, entityType }: Props) {
             total: subtotal,
             sort_order: 0,
           });
+          maxNumberByType.set(type, Math.max(maxNumberByType.get(type) ?? 0, number));
           imported++;
         }
       }
-      setSuccess(`יובאו ${imported} רשומות בהצלחה`);
+      // CRITICAL: after importing historical docs, bump document_counters
+      // past the highest imported number per type. Without this, the next
+      // create_document_atomic call would hand out a number we just imported,
+      // creating a silent duplicate.
+      if (entityType === "documents" && importBusinessId && maxNumberByType.size > 0) {
+        for (const [type, maxNum] of maxNumberByType) {
+          const { data: counterRow } = await supabase
+            .from("document_counters")
+            .select("next_number")
+            .eq("business_id", importBusinessId)
+            .eq("doc_type", type)
+            .maybeSingle();
+          const target = maxNum + 1;
+          if (!counterRow) {
+            await supabase.from("document_counters").insert({
+              business_id: importBusinessId,
+              doc_type: type,
+              next_number: target,
+            });
+          } else if (counterRow.next_number < target) {
+            await supabase
+              .from("document_counters")
+              .update({ next_number: target })
+              .eq("business_id", importBusinessId)
+              .eq("doc_type", type);
+          }
+        }
+      }
+
+      const skipNotes: string[] = [];
+      if (skippedNonNumeric > 0) skipNotes.push(`${skippedNonNumeric} עם מספר לא מספרי`);
+      if (skippedInvalidVat > 0) skipNotes.push(`${skippedInvalidVat} עם מע"מ גדול מהסכום`);
+      const skipSuffix = skipNotes.length > 0 ? ` (דילוג על ${skipNotes.join(" · ")})` : "";
+      setSuccess(`יובאו ${imported} רשומות בהצלחה${skipSuffix}`);
       setPreview([]);
       if (fileInputRef.current) fileInputRef.current.value = "";
       setTimeout(() => onClose(), 1500);

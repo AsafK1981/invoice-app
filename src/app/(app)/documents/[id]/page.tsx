@@ -96,10 +96,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
     try {
       window.print();
     } finally {
-      // Restore on next tick so the print dialog has finished reading the title
-      setTimeout(() => {
-        document.title = original;
-      }, 100);
+      document.title = original;
     }
   }
 

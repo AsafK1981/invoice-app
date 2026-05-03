@@ -18,7 +18,6 @@ import {
   Circle,
   Download,
   Mail,
-  MailX,
 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { deleteDocument, updateDocumentStatus } from "@/lib/document-store";
@@ -309,19 +308,19 @@ export function DocumentsTable({ documents, limit, showExport = false }: Props) 
                           >
                             {DOCUMENT_STATUS_LABELS[d.status]}
                           </span>
-                          {d.status !== "draft" && d.status !== "cancelled" && (
-                            d.emailedAt ? (
-                              <span
-                                title={`נשלח במייל ב-${new Date(d.emailedAt).toLocaleString("he-IL")}`}
-                                className="inline-flex"
-                              >
-                                <Mail className="w-3.5 h-3.5 text-emerald-600 shrink-0" aria-label="נשלח במייל" />
-                              </span>
-                            ) : (
-                              <span title="טרם נשלח במייל" className="inline-flex">
-                                <MailX className="w-3.5 h-3.5 text-stone-400 shrink-0" aria-label="טרם נשלח במייל" />
-                              </span>
-                            )
+                          {/* Only show the green Mail icon when we positively
+                              know the doc was emailed (emailed_at is set).
+                              Absence is intentionally silent rather than a
+                              MailX — many docs predate the emailed_at column,
+                              so a "not sent" badge would be misleading on
+                              clearly-already-delivered legacy docs. */}
+                          {d.emailedAt && (
+                            <span
+                              title={`נשלח במייל ב-${new Date(d.emailedAt).toLocaleString("he-IL")}`}
+                              className="inline-flex"
+                            >
+                              <Mail className="w-3.5 h-3.5 text-emerald-600 shrink-0" aria-label="נשלח במייל" />
+                            </span>
                           )}
                         </div>
                         {d.status === "sent" &&

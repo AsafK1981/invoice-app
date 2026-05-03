@@ -176,9 +176,7 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
             try {
               window.print();
             } finally {
-              setTimeout(() => {
-                document.title = original;
-              }, 100);
+              document.title = original;
             }
           }}
           className="inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-5 py-2.5 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200 transition-all"

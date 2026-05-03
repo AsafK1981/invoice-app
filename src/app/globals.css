@@ -10,12 +10,12 @@ html {
 }
 
 /* Tailwind 4 dropped default cursor:pointer from buttons. Restore it
-   globally so every interactive control feels clickable. Disabled
-   buttons get not-allowed via the existing `disabled:cursor-not-allowed`
-   utility on the button element itself. */
+   globally so every interactive control feels clickable. Scoped to
+   anchors WITH an href so decorative/named-anchor `<a>` tags don't
+   break text-selection cursor feedback in body copy. */
 button:not(:disabled),
-[role="button"]:not(:disabled),
-a {
+[role="button"]:not([aria-disabled="true"]),
+a[href] {
   cursor: pointer;
 }
 button:disabled,
