@@ -27,6 +27,7 @@ import { TopClients } from "@/components/top-clients";
 import { ExpenseCategoriesChart } from "@/components/expense-categories-chart";
 import { QuoteAging } from "@/components/quote-aging";
 import { OnboardingChecklist } from "@/components/onboarding-checklist";
+import { ExemptCeilingTracker } from "@/components/exempt-ceiling-tracker";
 
 type DateRange = "this_month" | "last_3_months" | "this_year" | "all_time";
 
@@ -200,6 +201,8 @@ export default function DashboardPage() {
         products={products}
         documents={documents}
       />
+
+      <ExemptCeilingTracker business={business} documents={documents} />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {cards.map((s, idx) => {
