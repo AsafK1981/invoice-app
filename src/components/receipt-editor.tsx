@@ -507,6 +507,40 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
           </div>
         </div>
       )}
+      {(() => {
+        // Inline nudge: this doc type renders a "how to pay" block
+        // (quote / tax_invoice), but the business has no bank/payment info
+        // configured — so the client won't see how to pay you. Surface this
+        // at the moment of creation, when a fix is most useful.
+        const docShowsPayment = documentType === "quote" || documentType === "tax_invoice";
+        const hasPaymentInfo = Boolean(
+          business.bankName || business.bankBranch || business.bankAccount || business.paymentNotes,
+        );
+        if (!docShowsPayment || hasPaymentInfo) return null;
+        return (
+          <div className="card-soft p-3 mb-4 bg-amber-50 border-amber-200">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
+                <span className="text-base">💳</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-stone-900 text-sm">
+                  ללקוח לא יוצג איך לשלם
+                </p>
+                <p className="text-xs text-stone-700 mt-0.5">
+                  לא הוגדרו פרטי בנק או אפשרויות תשלום בעסק. המסמך יופק ללא בלוק תשלום.
+                </p>
+                <a
+                  href="/settings"
+                  className="inline-flex items-center mt-2 text-xs font-semibold text-orange-700 hover:text-orange-800 underline"
+                >
+                  הוסף פרטי תשלום בהגדרות ←
+                </a>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
       <div className="lg:col-span-7 space-y-6">
         <Section title="פרטי המסמך" icon={FileTextIcon}>
