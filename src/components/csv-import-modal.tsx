@@ -2,14 +2,30 @@
 
 import { useRef, useState } from "react";
 import Papa from "papaparse";
-import { Upload, Users, Package, Wallet, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Upload, Users, Package, Wallet, FileText, AlertCircle, CheckCircle2 } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 import { clientStore } from "@/lib/client-store";
 import { productStore } from "@/lib/product-store";
 import { expenseStore } from "@/lib/expense-store";
-import type { Client, Product, Expense } from "@/lib/types";
+import { supabase } from "@/lib/supabase";
+import { getBusinessId } from "@/lib/business-init";
+import type { Client, Product, Expense, DocumentType } from "@/lib/types";
 
-type EntityType = "clients" | "products" | "expenses";
+type EntityType = "clients" | "products" | "expenses" | "documents";
+
+// Maps Hebrew (and English) document-type labels seen in invoice4u/Morning/etc.
+// exports to our internal DocumentType. Anything we don't recognize falls
+// through to "receipt" — historical imports usually skew that way.
+function resolveDocumentType(raw: string): DocumentType {
+  const t = raw.trim().toLowerCase();
+  if (!t) return "receipt";
+  if (t === "receipt" || t.includes("קבלה") && !t.includes("חשבונית")) return "receipt";
+  if (t === "tax_invoice_receipt" || t.includes("חשבונית מס/קבלה") || t.includes("חשבונית מס קבלה")) return "tax_invoice_receipt";
+  if (t === "tax_invoice" || t === "invoice" || (t.includes("חשבונית") && t.includes("מס"))) return "tax_invoice";
+  if (t === "credit_note" || t.includes("זיכוי")) return "credit_note";
+  if (t === "quote" || t.includes("חשבון עסקה") || t.includes("הצעת מחיר") || t.includes("הצעה")) return "quote";
+  return "receipt";
+}
 
 interface Props {
   open: boolean;
@@ -36,6 +52,11 @@ const labels: Record<EntityType, { title: string; icon: typeof Users; columns: s
     title: "ייבוא הוצאות",
     icon: Wallet,
     columns: ["תאריך", "קטגוריה", "ספק", "סכום", "תיאור"],
+  },
+  documents: {
+    title: "ייבוא מסמכים היסטוריים",
+    icon: FileText,
+    columns: ["סוג", "מספר", "תאריך", "לקוח", "תיאור", "סכום", 'מע"מ', "סטטוס"],
   },
 };
 
@@ -118,6 +139,95 @@ export function CsvImportModal({ open, onClose, entityType }: Props) {
             description: (row["תיאור"] || row["description"] || "").trim() || undefined,
           };
           await expenseStore.save(expense);
+          imported++;
+        } else if (entityType === "documents") {
+          const businessId = getBusinessId();
+          if (!businessId) {
+            setError("אין עסק פעיל - רענן את הדף ונסה שוב");
+            break;
+          }
+          const numberRaw = (row["מספר"] || row["number"] || "").trim();
+          const clientName = (row["לקוח"] || row["client"] || row["client_name"] || "").trim();
+          const totalRaw = (row["סכום"] || row["total"] || "0").replace(/[₪,\s]/g, "");
+          const total = parseFloat(totalRaw);
+          const number = parseInt(numberRaw, 10);
+          if (!clientName || !Number.isFinite(number) || !Number.isFinite(total) || total <= 0) continue;
+
+          const type = resolveDocumentType(row["סוג"] || row["type"] || "");
+          const date = (row["תאריך"] || row["date"] || new Date().toISOString().slice(0, 10)).trim();
+          const description = (row["תיאור"] || row["description"] || "").trim() || "שירות";
+          const vat = parseFloat((row['מע"מ'] || row["מעמ"] || row["vat"] || "0").replace(/[₪,\s]/g, "")) || 0;
+          const subtotal = total - vat;
+          const statusRaw = (row["סטטוס"] || row["status"] || "").trim().toLowerCase();
+          // Historical imports are usually paid receipts; default to "paid"
+          // for receipts/tax_invoice_receipt and "sent" for everything else
+          // unless explicitly given.
+          let status: "draft" | "sent" | "paid" | "cancelled" = "paid";
+          if (statusRaw === "draft" || statusRaw.includes("טיוטה")) status = "draft";
+          else if (statusRaw === "sent" || statusRaw.includes("נשלח")) status = "sent";
+          else if (statusRaw === "cancelled" || statusRaw.includes("בוטל")) status = "cancelled";
+          else if (statusRaw === "paid" || statusRaw.includes("שולם")) status = "paid";
+          else if (type === "quote") status = "sent";
+
+          // Skip duplicates: same business, same type, same number
+          const { data: existing } = await supabase
+            .from("documents")
+            .select("id")
+            .eq("business_id", businessId)
+            .eq("type", type)
+            .eq("number", number)
+            .maybeSingle();
+          if (existing) continue;
+
+          // Find or create the client by name
+          let clientId: string | null = null;
+          const { data: matchClient } = await supabase
+            .from("clients")
+            .select("id")
+            .eq("business_id", businessId)
+            .eq("name", clientName)
+            .maybeSingle();
+          if (matchClient) {
+            clientId = matchClient.id;
+          } else {
+            const newClient = {
+              id: crypto.randomUUID(),
+              business_id: businessId,
+              name: clientName,
+              created_at: new Date().toISOString(),
+            };
+            const { error: cErr } = await supabase.from("clients").insert(newClient);
+            if (!cErr) clientId = newClient.id;
+          }
+
+          // Insert document directly (bypassing the atomic-numbering RPC so
+          // we can preserve the original invoice4u/legacy number).
+          const docId = crypto.randomUUID();
+          const { error: dErr } = await supabase.from("documents").insert({
+            id: docId,
+            business_id: businessId,
+            type,
+            number,
+            date,
+            client_id: clientId,
+            client_name: clientName,
+            status,
+            subtotal,
+            vat,
+            total,
+          });
+          if (dErr) continue;
+
+          // Single line item summarizing the row
+          await supabase.from("document_items").insert({
+            id: crypto.randomUUID(),
+            document_id: docId,
+            description,
+            quantity: 1,
+            unit_price: subtotal,
+            total: subtotal,
+            sort_order: 0,
+          });
           imported++;
         }
       }
