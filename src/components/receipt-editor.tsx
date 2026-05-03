@@ -66,6 +66,14 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   const searchParams = useSearchParams();
   const fromDocId = searchParams.get("from");
   const isConvert = searchParams.get("convert") === "1";
+  // Prefill client when arriving from a deep-link like /documents/new/quote?clientId=...
+  // (typically from the client profile page's "מסמך חדש" button). Verify the
+  // referenced client actually exists for this business before using it.
+  const prefilledClientId = (() => {
+    const qsClient = searchParams.get("clientId");
+    if (!qsClient) return "";
+    return clients.some((c) => c.id === qsClient) ? qsClient : "";
+  })();
   const today = new Date().toISOString().slice(0, 10);
   const isQuote = documentType === "quote";
   const docLabel = DOCUMENT_TYPE_LABELS[documentType];
@@ -75,7 +83,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   const sign = isCreditNote ? -1 : 1;
 
   const [adhocMode, setAdhocMode] = useState<boolean>(false);
-  const [clientId, setClientId] = useState<string>("");
+  const [clientId, setClientId] = useState<string>(prefilledClientId);
   const [adhocName, setAdhocName] = useState<string>("");
   const [adhocTaxId, setAdhocTaxId] = useState<string>("");
   const [adhocEmail, setAdhocEmail] = useState<string>("");

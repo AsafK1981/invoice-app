@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { ArrowRight, ReceiptText, FileText, FileCheck, FileMinus, FileSpreadsheet, Lock } from "lucide-react";
 import { useBusiness } from "@/lib/business-store";
 import { canIssueTaxInvoices } from "@/lib/vat";
@@ -8,13 +9,19 @@ import { canIssueTaxInvoices } from "@/lib/vat";
 export default function NewDocumentPage() {
   const { business } = useBusiness();
   const canTaxInvoice = canIssueTaxInvoices(business);
+  const searchParams = useSearchParams();
+  // Forward query params (clientId, etc.) to the type-specific routes so
+  // deep-links like /documents/new?clientId=X actually prefill the client
+  // in the editor instead of getting dropped here at the chooser.
+  const qs = searchParams.toString();
+  const suffix = qs ? `?${qs}` : "";
 
   const cards = [
     {
       title: "קבלה",
       desc: "מסמך רשמי שמונפק ללקוח אחרי תשלום",
       icon: ReceiptText,
-      href: "/documents/new/receipt",
+      href: `/documents/new/receipt${suffix}`,
       gradient: "from-emerald-400 to-teal-500",
       bgGradient: "from-emerald-50 to-teal-50",
     },
@@ -22,7 +29,7 @@ export default function NewDocumentPage() {
       title: "חשבון עסקה",
       desc: "מסמך שנשלח ללקוח לפני התשלום",
       icon: FileText,
-      href: "/documents/new/quote",
+      href: `/documents/new/quote${suffix}`,
       gradient: "from-amber-400 to-orange-500",
       bgGradient: "from-amber-50 to-orange-50",
     },
@@ -32,7 +39,7 @@ export default function NewDocumentPage() {
         ? "חשבונית מס - כולל מע״מ"
         : "זמין רק לעוסק מורשה",
       icon: FileCheck,
-      href: canTaxInvoice ? "/documents/new/tax-invoice" : undefined,
+      href: canTaxInvoice ? `/documents/new/tax-invoice${suffix}` : undefined,
       gradient: "from-sky-400 to-blue-500",
       bgGradient: "from-sky-50 to-blue-50",
       disabledReason: canTaxInvoice ? undefined : "שנה את סוג העוסק להגדרות לעוסק מורשה",
@@ -43,7 +50,7 @@ export default function NewDocumentPage() {
         ? "חשבונית מס + קבלה במסמך אחד"
         : "זמין רק לעוסק מורשה",
       icon: FileSpreadsheet,
-      href: canTaxInvoice ? "/documents/new/tax-invoice-receipt" : undefined,
+      href: canTaxInvoice ? `/documents/new/tax-invoice-receipt${suffix}` : undefined,
       gradient: "from-violet-400 to-purple-500",
       bgGradient: "from-violet-50 to-purple-50",
       disabledReason: canTaxInvoice ? undefined : "שנה את סוג העוסק להגדרות לעוסק מורשה",
@@ -54,7 +61,7 @@ export default function NewDocumentPage() {
         ? "ביטול/החזר על חשבונית מס שהונפקה"
         : "זמין רק לעוסק מורשה",
       icon: FileMinus,
-      href: canTaxInvoice ? "/documents/new/credit-note" : undefined,
+      href: canTaxInvoice ? `/documents/new/credit-note${suffix}` : undefined,
       gradient: "from-rose-400 to-pink-500",
       bgGradient: "from-rose-50 to-pink-50",
       disabledReason: canTaxInvoice ? undefined : "שנה את סוג העוסק להגדרות לעוסק מורשה",
