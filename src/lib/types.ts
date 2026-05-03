@@ -81,6 +81,16 @@ export interface Expense {
   description?: string;
 }
 
+export interface DocumentAttachment {
+  id: string;
+  documentId: string;
+  filePath: string;
+  filename: string;
+  fileSize: number;
+  contentType?: string;
+  uploadedAt: string;
+}
+
 export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
   receipt: "קבלה",
   quote: "חשבון עסקה",

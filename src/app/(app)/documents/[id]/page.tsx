@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { downloadElementAsPdf } from "@/lib/pdf-export";
 import { useDocument, deleteDocument, updateDocumentStatus } from "@/lib/document-store";
+import { DocumentAttachmentsSection } from "@/components/document-attachments-section";
 import { useClients } from "@/lib/client-store";
 import { useBusiness } from "@/lib/business-store";
 import { sendReceiptEmail } from "@/lib/email";
@@ -389,6 +390,8 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
       )}
 
       <ReceiptView business={business} client={client} document={doc} />
+
+      <DocumentAttachmentsSection documentId={doc.id} />
 
       <div className="no-print card-soft p-4 bg-blue-50 border-blue-200 max-w-[210mm] mx-auto">
         <p className="text-sm text-blue-900">
