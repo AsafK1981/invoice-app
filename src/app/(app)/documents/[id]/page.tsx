@@ -19,6 +19,7 @@ import {
   Download,
 } from "lucide-react";
 import { useDocument, deleteDocument, updateDocumentStatus, markDocumentEmailed } from "@/lib/document-store";
+import { publicDocumentUrl } from "@/lib/public-url";
 import { DocumentAttachmentsSection } from "@/components/document-attachments-section";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { useClients } from "@/lib/client-store";
@@ -67,8 +68,9 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
   const isReceipt = doc.type === "receipt" || doc.type === "tax_invoice_receipt";
   const canConvert = isQuote && doc.status !== "cancelled";
   const isPaid = doc.status === "paid";
-  const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
-  const publicUrl = `${baseUrl}/view/${doc.id}`;
+  // Always use the canonical origin for share links so they don't bake in
+  // a per-deploy hash URL and decay into stale-code views.
+  const publicUrl = publicDocumentUrl(doc.id);
 
   const daysSinceSent = (() => {
     if (doc.status !== "sent" || isReceipt) return null;

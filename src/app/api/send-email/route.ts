@@ -78,9 +78,11 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { to, clientName, receiptNumber, total, businessName, subject, documentId, logoUrl } = body;
 
-    const baseUrl = process.env.NEXT_PUBLIC_VERCEL_URL
-      ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`
-      : process.env.NEXT_PUBLIC_APP_URL || "https://mysuperfriendlyinvoiceapp.vercel.app";
+    // Always use the canonical URL — never NEXT_PUBLIC_VERCEL_URL, which
+    // is the immutable per-deploy hash and will decay into stale-code
+    // views minutes after the next push. The link is going into an email
+    // that will sit in someone's inbox for weeks.
+    const baseUrl = "https://mysuperfriendlyinvoiceapp.vercel.app";
     const viewUrl = `${baseUrl}/view/${documentId}`;
 
     if (!to || !clientName || !receiptNumber) {
