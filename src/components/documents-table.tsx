@@ -17,6 +17,8 @@ import {
   CheckCircle2,
   Circle,
   Download,
+  Mail,
+  MailX,
 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { deleteDocument, updateDocumentStatus } from "@/lib/document-store";
@@ -301,11 +303,27 @@ export function DocumentsTable({ documents, limit, showExport = false }: Props) 
                     <td className="px-6 py-3 text-sm text-stone-600 hidden md:table-cell">{formatDate(d.date)}</td>
                     <td className="px-3 sm:px-6 py-3 text-sm">
                       <div className="flex flex-col gap-1">
-                        <span
-                          className={`inline-block px-2.5 py-1 rounded-full text-xs font-medium ${STATUS_THEMES[d.status]} self-start`}
-                        >
-                          {DOCUMENT_STATUS_LABELS[d.status]}
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span
+                            className={`inline-block px-2.5 py-1 rounded-full text-xs font-medium ${STATUS_THEMES[d.status]}`}
+                          >
+                            {DOCUMENT_STATUS_LABELS[d.status]}
+                          </span>
+                          {d.status !== "draft" && d.status !== "cancelled" && (
+                            d.emailedAt ? (
+                              <span
+                                title={`נשלח במייל ב-${new Date(d.emailedAt).toLocaleString("he-IL")}`}
+                                className="inline-flex"
+                              >
+                                <Mail className="w-3.5 h-3.5 text-emerald-600 shrink-0" aria-label="נשלח במייל" />
+                              </span>
+                            ) : (
+                              <span title="טרם נשלח במייל" className="inline-flex">
+                                <MailX className="w-3.5 h-3.5 text-stone-400 shrink-0" aria-label="טרם נשלח במייל" />
+                              </span>
+                            )
+                          )}
+                        </div>
                         {d.status === "sent" &&
                           d.type !== "receipt" &&
                           d.type !== "tax_invoice_receipt" &&
