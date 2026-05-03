@@ -22,9 +22,10 @@ import {
 } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
 import { sendReceiptEmail } from "@/lib/email";
-import { createDocument } from "@/lib/document-store";
+import { createDocument, useDocuments } from "@/lib/document-store";
 import { parseEmails, joinEmails, isValidEmail } from "@/lib/emails";
 import { getVatRate, computeAmounts, round2, type VatMode } from "@/lib/vat";
+import { getClientDefaults } from "@/lib/client-defaults";
 import {
   type Business,
   type Client,
@@ -92,9 +93,27 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   const [sendEmail, setSendEmail] = useState<boolean>(true);
   const [emailTo, setEmailTo] = useState<string>("");
   const [emailOverridden, setEmailOverridden] = useState<boolean>(false);
+  const [paymentMethodTouched, setPaymentMethodTouched] = useState<boolean>(false);
   const [showPreviewMobile, setShowPreviewMobile] = useState<boolean>(false);
   const [saving, setSaving] = useState<boolean>(false);
   const [toast, setToast] = useState<{ kind: "success" | "error"; text: string } | null>(null);
+
+  const { documents: allDocuments } = useDocuments();
+  const clientDefaults = useMemo(
+    () => getClientDefaults(clientId, allDocuments),
+    [clientId, allDocuments]
+  );
+
+  // Auto-fill payment method from the client's most recent doc, but only if
+  // (a) user hasn't manually changed it this session, and (b) we're not editing
+  // a copy of an existing doc (which has its own payment method already).
+  useEffect(() => {
+    if (paymentMethodTouched || fromDocId || !clientId) return;
+    if (clientDefaults.paymentMethod && clientDefaults.paymentMethod !== paymentMethod) {
+      setPaymentMethod(clientDefaults.paymentMethod);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clientId, clientDefaults.paymentMethod]);
 
   const [draftRecovered, setDraftRecovered] = useState<{ savedAt: number } | null>(null);
   const [draftDismissed, setDraftDismissed] = useState<boolean>(false);
@@ -542,18 +561,32 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                     </p>
                   </div>
                 ) : (
-                  <select
-                    value={clientId}
-                    onChange={(e) => setClientId(e.target.value)}
-                    className="input-warm"
-                  >
-                    <option value="">בחר לקוח...</option>
-                    {clients.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
+                  <>
+                    <select
+                      value={clientId}
+                      onChange={(e) => setClientId(e.target.value)}
+                      className="input-warm"
+                    >
+                      <option value="">בחר לקוח...</option>
+                      {clients.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                    {clientId && clientDefaults.documentCount > 0 && (
+                      <p className="text-xs text-stone-600 mt-1">
+                        היסטוריה: {clientDefaults.documentCount}{" "}
+                        {clientDefaults.documentCount === 1 ? "מסמך" : "מסמכים"}
+                        {clientDefaults.averageTotal !== undefined && (
+                          <> · ממוצע {formatCurrency(clientDefaults.averageTotal)}</>
+                        )}
+                        {clientDefaults.paymentMethod && (
+                          <> · אמצעי תשלום אחרון: {PAYMENT_METHOD_LABELS[clientDefaults.paymentMethod]}</>
+                        )}
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
             </FormField>
@@ -581,7 +614,10 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
               <FormField label="אמצעי תשלום">
                 <select
                   value={paymentMethod}
-                  onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
+                  onChange={(e) => {
+                    setPaymentMethodTouched(true);
+                    setPaymentMethod(e.target.value as PaymentMethod);
+                  }}
                   className="input-warm"
                 >
                   {Object.entries(PAYMENT_METHOD_LABELS).map(([k, v]) => (
