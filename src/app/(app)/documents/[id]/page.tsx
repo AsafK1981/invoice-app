@@ -40,6 +40,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
   const [sending, setSending] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState(false);
   const [toast, setToast] = useState<{ kind: "success" | "error"; text: string } | null>(null);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
   const confirm = useConfirm();
 
   if (!ready) {
@@ -82,8 +83,6 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
   function handlePrint() {
     window.print();
   }
-
-  const [downloadingPdf, setDownloadingPdf] = useState(false);
 
   async function handleDownloadPdf() {
     if (!doc) return;
