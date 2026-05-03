@@ -105,16 +105,22 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
             )}
             <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-sm">
               {client.phone && (
-                <span className="inline-flex items-center gap-1.5 text-stone-700">
+                <a
+                  href={`tel:${client.phone.replace(/\s+/g, "")}`}
+                  className="inline-flex items-center gap-1.5 text-stone-700 hover:text-orange-700"
+                >
                   <Phone className="w-3.5 h-3.5 text-stone-500" />
                   <span dir="ltr">{client.phone}</span>
-                </span>
+                </a>
               )}
               {client.email && (
-                <span className="inline-flex items-center gap-1.5 text-stone-700">
+                <a
+                  href={`mailto:${client.email}`}
+                  className="inline-flex items-center gap-1.5 text-stone-700 hover:text-orange-700"
+                >
                   <Mail className="w-3.5 h-3.5 text-stone-500" />
                   <span dir="ltr">{client.email}</span>
-                </span>
+                </a>
               )}
               {client.address && (
                 <span className="inline-flex items-center gap-1.5 text-stone-700">
@@ -133,7 +139,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="card-soft p-4 bg-gradient-to-br from-emerald-50 to-teal-50 border-transparent">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center">

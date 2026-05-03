@@ -115,7 +115,7 @@ export default function SettingsPage() {
           </h2>
           <button
             onClick={() => setEditOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-semibold text-orange-700 hover:bg-orange-50"
+            className="inline-flex items-center gap-1.5 px-3 min-h-[40px] rounded-xl text-sm font-semibold text-orange-700 hover:bg-orange-50"
           >
             <Pencil className="w-3.5 h-3.5" />
             עריכה
@@ -142,7 +142,7 @@ export default function SettingsPage() {
 
       <div
         className={`card-soft p-6 ${
-          bankParts.length === 0 && !business.paymentNotes ? "border-amber-300 bg-amber-50/30" : ""
+          bankParts.length === 0 && !business.paymentNotes ? "border-rose-300 bg-rose-50/30" : ""
         }`}
       >
         <div className="flex items-center justify-between pb-4 border-b border-orange-100 mb-4 flex-wrap gap-2">
@@ -152,7 +152,7 @@ export default function SettingsPage() {
               פרטי תשלום על מסמכים
             </h2>
             {bankParts.length === 0 && !business.paymentNotes && (
-              <span className="inline-flex items-center gap-1 text-xs font-semibold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
+              <span className="inline-flex items-center gap-1 text-xs font-semibold bg-rose-100 text-rose-800 px-2 py-0.5 rounded-full">
                 <AlertCircle className="w-3 h-3" />
                 חסר
               </span>
@@ -160,14 +160,14 @@ export default function SettingsPage() {
           </div>
           <button
             onClick={() => setEditOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-semibold text-orange-700 hover:bg-orange-50"
+            className="inline-flex items-center gap-1.5 px-3 min-h-[40px] rounded-xl text-sm font-semibold text-orange-700 hover:bg-orange-50"
           >
             <Pencil className="w-3.5 h-3.5" />
             {bankParts.length === 0 && !business.paymentNotes ? "מלא עכשיו" : "עריכה"}
           </button>
         </div>
         {bankParts.length === 0 && !business.paymentNotes ? (
-          <p className="text-sm text-amber-900 mb-3 leading-relaxed">
+          <p className="text-sm text-rose-900 mb-3 leading-relaxed">
             <strong>חשבונות עסקה וחשבוניות מס שתפיק יישלחו ללא בלוק תשלום</strong> — הלקוח לא יראה לאן להעביר את הכסף. הוסף לפחות פרט אחד (חשבון בנק, Bit, או הערת תשלום) כדי לתקן.
           </p>
         ) : (
@@ -213,7 +213,7 @@ export default function SettingsPage() {
           </h2>
           <button
             onClick={() => setEmailOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-semibold text-orange-700 hover:bg-orange-50"
+            className="inline-flex items-center gap-1.5 px-3 min-h-[40px] rounded-xl text-sm font-semibold text-orange-700 hover:bg-orange-50"
           >
             <Pencil className="w-3.5 h-3.5" />
             הגדר

@@ -123,10 +123,11 @@ export function ExemptCeilingTracker({ business, documents }: Props) {
 
           <div className="mt-2 flex items-baseline justify-between gap-3 flex-wrap">
             <p className="text-base font-bold text-stone-900">
-              {formatCurrency(yearlyTurnover)}
-              <span className="text-xs font-medium text-stone-600 mr-1">
-                {" "}
-                ({percentage.toFixed(0)}%)
+              <span dir="ltr" className="inline-flex items-baseline gap-1">
+                {formatCurrency(yearlyTurnover)}
+                <span className="text-xs font-medium text-stone-600">
+                  ({percentage.toFixed(0)}%)
+                </span>
               </span>
             </p>
             <p className="text-xs font-medium text-stone-700">

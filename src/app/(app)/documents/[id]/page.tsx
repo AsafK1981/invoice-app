@@ -291,27 +291,33 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
               </>
             )}
           </button>
-          {/* Reminder button — only for sent quotes/tax_invoices that have
-              actually been emailed at least once and not yet paid. Hidden
-              entirely for receipts (no point reminding) and unsent docs
-              (use the regular "מייל" button to send first). */}
-          {doc.emailedAt &&
-            doc.status === "sent" &&
-            (doc.type === "quote" || doc.type === "tax_invoice") && (
-              <button
-                onClick={() => handleResend(true)}
-                disabled={sending || !client?.email}
-                className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-amber-50 border border-amber-200 text-amber-800 hover:bg-amber-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                title={
-                  client?.email
-                    ? `שלח תזכורת ל-${client.email}`
-                    : "אין אימייל שמור ללקוח"
-                }
-              >
-                <Clock className="w-4 h-4" />
-                <span className="hidden sm:inline">תזכורת</span>
-              </button>
-            )}
+          {/* Reminder button — relevant for sent quotes/tax_invoices that
+              haven't been paid yet. Always shown when the doc TYPE is right
+              and status is "sent", so the user discovers the feature exists.
+              Disabled with a tooltip explaining the gate when the doc hasn't
+              actually been emailed yet (no point reminding what was never
+              sent). Hidden entirely for receipts and credit notes. */}
+          {doc.status === "sent" &&
+            (doc.type === "quote" || doc.type === "tax_invoice") && (() => {
+              const notYetEmailed = !doc.emailedAt;
+              const reminderDisabled = sending || !client?.email || notYetEmailed;
+              const reminderTitle = !client?.email
+                ? "אין אימייל שמור ללקוח"
+                : notYetEmailed
+                  ? 'יופעל אחרי שתשלחו את המסמך פעם ראשונה (כפתור "מייל")'
+                  : `שלח תזכורת ל-${client.email}`;
+              return (
+                <button
+                  onClick={() => handleResend(true)}
+                  disabled={reminderDisabled}
+                  className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-amber-50 border border-amber-200 text-amber-800 hover:bg-amber-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={reminderTitle}
+                >
+                  <Clock className="w-4 h-4" />
+                  <span className="hidden sm:inline">תזכורת</span>
+                </button>
+              );
+            })()}
           <button
             onClick={handleDelete}
             className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-white border border-rose-200 text-rose-700 hover:bg-rose-50"

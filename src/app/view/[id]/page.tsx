@@ -228,6 +228,8 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
                   value={signatureName}
                   onChange={(e) => setSignatureName(e.target.value)}
                   placeholder="שם מלא (רק אם בוחרים לאשר)"
+                  autoComplete="name"
+                  inputMode="text"
                   className="flex-1 px-3 py-2 rounded-xl border border-stone-300 bg-white focus:border-stone-400 focus:outline-none text-sm"
                   disabled={approving}
                 />

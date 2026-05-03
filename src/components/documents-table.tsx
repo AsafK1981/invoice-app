@@ -91,6 +91,8 @@ export function DocumentsTable({ documents, limit, showExport = false }: Props) 
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [monthFilter, setMonthFilter] = useState<string>("all");
+  type EmailFilter = "all" | "emailed" | "not_emailed";
+  const [emailFilter, setEmailFilter] = useState<EmailFilter>("all");
   const [search, setSearch] = useState<string>("");
   const [sortKey, setSortKey] = useState<SortKey>("date");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
@@ -105,6 +107,9 @@ export function DocumentsTable({ documents, limit, showExport = false }: Props) 
     if (typeFilter !== "all") result = result.filter((d) => d.type === typeFilter);
     if (statusFilter !== "all") result = result.filter((d) => d.status === statusFilter);
     if (monthFilter !== "all") result = result.filter((d) => d.date.startsWith(monthFilter));
+    if (emailFilter === "emailed") result = result.filter((d) => Boolean(d.emailedAt));
+    else if (emailFilter === "not_emailed")
+      result = result.filter((d) => !d.emailedAt && d.status !== "draft" && d.status !== "cancelled");
     if (search.trim()) result = result.filter((d) => matchDocument(d, search));
     result = [...result].sort((a, b) => {
       let cmp = 0;
@@ -115,7 +120,7 @@ export function DocumentsTable({ documents, limit, showExport = false }: Props) 
     });
     if (limit) result = result.slice(0, limit);
     return result;
-  }, [documents, typeFilter, statusFilter, monthFilter, search, limit, sortKey, sortDir]);
+  }, [documents, typeFilter, statusFilter, monthFilter, emailFilter, search, limit, sortKey, sortDir]);
 
   function toggleSort(key: SortKey) {
     if (sortKey === key) {
@@ -130,11 +135,16 @@ export function DocumentsTable({ documents, limit, showExport = false }: Props) 
     setTypeFilter("all");
     setStatusFilter("all");
     setMonthFilter("all");
+    setEmailFilter("all");
     setSearch("");
   }
 
   const filtersActive =
-    typeFilter !== "all" || statusFilter !== "all" || monthFilter !== "all" || search.trim() !== "";
+    typeFilter !== "all" ||
+    statusFilter !== "all" ||
+    monthFilter !== "all" ||
+    emailFilter !== "all" ||
+    search.trim() !== "";
 
   return (
     <div>
@@ -190,6 +200,16 @@ export function DocumentsTable({ documents, limit, showExport = false }: Props) 
           options={[
             { value: "all", label: "כל החודשים" },
             ...availableMonths.map((m) => ({ value: m, label: formatMonthLabel(m) })),
+          ]}
+        />
+        <FilterSelect
+          label="מייל"
+          value={emailFilter}
+          onChange={(v) => setEmailFilter(v as EmailFilter)}
+          options={[
+            { value: "all", label: "הכל" },
+            { value: "emailed", label: "נשלח במייל" },
+            { value: "not_emailed", label: "טרם נשלח" },
           ]}
         />
         {filtersActive && (

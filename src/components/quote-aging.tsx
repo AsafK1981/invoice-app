@@ -145,15 +145,15 @@ export function QuoteAging({ documents }: Props) {
                       href={`/documents/${q.id}`}
                       className="flex items-center justify-between gap-3 px-2 py-1.5 rounded-lg hover:bg-white/80 transition-colors text-xs group"
                     >
-                      <span className="flex items-center gap-2 min-w-0">
+                      <span className="flex items-center gap-2 min-w-0 max-w-[60%]">
                         <span className="font-semibold text-stone-900 truncate">
                           {q.clientName}
                         </span>
-                        <span className="text-stone-500">·</span>
-                        <span className="text-stone-600 truncate">#{q.number}</span>
+                        <span className="text-stone-500 flex-shrink-0">·</span>
+                        <span className="text-stone-600 flex-shrink-0">#{q.number}</span>
                       </span>
                       <span className="flex items-center gap-2 text-stone-600 flex-shrink-0">
-                        <span className="font-medium">{formatCurrency(q.total)}</span>
+                        <span className="font-medium" dir="ltr">{formatCurrency(q.total)}</span>
                         <span className="text-rose-700 font-semibold tabular-nums">
                           {days}י׳
                         </span>
