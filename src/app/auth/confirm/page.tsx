@@ -19,12 +19,22 @@ function ConfirmInner() {
     let fallbackTimer: ReturnType<typeof setTimeout> | null = null;
     let redirectTimer: ReturnType<typeof setTimeout> | null = null;
 
-    const finish = (session: { user: unknown } | null) => {
+    const finish = (session: { user: unknown; access_token?: string } | null) => {
       if (resolved || cancelled) return;
       resolved = true;
       if (fallbackTimer) clearTimeout(fallbackTimer);
       if (session) {
         setStatus("ok");
+        // Fire-and-forget welcome email. Server side de-dupes via
+        // user_metadata.welcomed_at so re-clicks of the link don't double-send.
+        if (session.access_token) {
+          fetch("/api/send-welcome", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${session.access_token}` },
+          }).catch(() => {
+            // best-effort; not critical
+          });
+        }
         redirectTimer = setTimeout(() => {
           if (!cancelled) router.replace(next);
         }, 1200);
