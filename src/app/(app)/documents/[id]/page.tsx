@@ -18,7 +18,6 @@ import {
   Link as LinkIcon,
   Download,
 } from "lucide-react";
-import { downloadElementAsPdf } from "@/lib/pdf-export";
 import { useDocument, deleteDocument, updateDocumentStatus, markDocumentEmailed } from "@/lib/document-store";
 import { DocumentAttachmentsSection } from "@/components/document-attachments-section";
 import { useConfirm } from "@/components/ui/confirm-dialog";
@@ -40,7 +39,6 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
   const [sending, setSending] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState(false);
   const [toast, setToast] = useState<{ kind: "success" | "error"; text: string } | null>(null);
-  const [downloadingPdf, setDownloadingPdf] = useState(false);
   const confirm = useConfirm();
 
   if (!ready) {
@@ -84,38 +82,24 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
     window.print();
   }
 
-  async function handleDownloadPdf() {
-    console.log("[pdf-download] click received");
-    if (!doc) {
-      console.warn("[pdf-download] aborted: no doc");
-      return;
-    }
-    const target = document.querySelector(".receipt-view") as HTMLElement | null;
-    if (!target) {
-      console.warn("[pdf-download] aborted: .receipt-view not found in DOM");
-      setToast({ kind: "error", text: "לא ניתן למצוא את המסמך לייצוא — נסה לרענן את העמוד" });
-      return;
-    }
-    setDownloadingPdf(true);
-    setToast(null);
+  function handleDownloadPdf() {
+    if (!doc) return;
+    // We tried html2canvas + jspdf and html2canvas-pro — both throw on
+    // modern Tailwind colors (oklch, lab, lch). The native browser print
+    // dialog has "Save as PDF" built in and works in every browser, every
+    // OS, every CSS color function. Swap document.title temporarily so
+    // the suggested filename is sensible instead of "Document.pdf".
+    const docLabel = DOCUMENT_TYPE_LABELS[doc.type];
+    const filename = `${docLabel}-${doc.number}-${doc.clientName}`.replace(/[\\/:*?"<>|]/g, "-");
+    const original = document.title;
+    document.title = filename;
     try {
-      const docLabel = DOCUMENT_TYPE_LABELS[doc.type];
-      const filename = `${docLabel}-${doc.number}-${doc.clientName}.pdf`.replace(/[\\/:*?"<>|]/g, "-");
-      console.log("[pdf-download] starting capture", { filename, target });
-      await downloadElementAsPdf(target, filename);
-      console.log("[pdf-download] save() returned ok");
-      setToast({ kind: "success", text: `${filename} הורד בהצלחה` });
-    } catch (err) {
-      console.error("[pdf-download] failed", err);
-      setToast({
-        kind: "error",
-        text:
-          err instanceof Error
-            ? `שגיאה ביצירת ה-PDF: ${err.message} — אם הבעיה נמשכת, השתמש בכפתור "הדפס" ובחר "Save as PDF"`
-            : "שגיאה ביצירת ה-PDF",
-      });
+      window.print();
     } finally {
-      setDownloadingPdf(false);
+      // Restore on next tick so the print dialog has finished reading the title
+      setTimeout(() => {
+        document.title = original;
+      }, 100);
     }
   }
 
@@ -306,14 +290,11 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
           </button>
           <button
             onClick={handleDownloadPdf}
-            disabled={downloadingPdf}
-            className="inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-3 sm:px-5 py-2 min-h-[40px] rounded-xl text-sm font-semibold hover:shadow-md hover:shadow-orange-200 disabled:opacity-60 disabled:cursor-not-allowed"
-            title="הורד PDF"
+            className="inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-3 sm:px-5 py-2 min-h-[40px] rounded-xl text-sm font-semibold hover:shadow-md hover:shadow-orange-200"
+            title='הורד PDF — בחר "Save as PDF" בחלון ההדפסה'
           >
             <Download className="w-4 h-4" />
-            <span className={downloadingPdf ? "" : "hidden sm:inline"}>
-              {downloadingPdf ? "מכין PDF..." : "הורד PDF"}
-            </span>
+            <span className="hidden sm:inline">הורד PDF</span>
           </button>
           <button
             onClick={handlePrint}

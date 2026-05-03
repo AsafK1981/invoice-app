@@ -3,7 +3,6 @@
 import { use, useEffect, useState } from "react";
 import { Printer, Download, CheckCircle2, AlertCircle } from "lucide-react";
 import { ReceiptView } from "@/components/receipt-view";
-import { downloadElementAsPdf } from "@/lib/pdf-export";
 import { DOCUMENT_TYPE_LABELS } from "@/lib/types";
 import { formatDate } from "@/lib/format";
 import type { Business, Client, InvoiceDocument, DocumentItem } from "@/lib/types";
@@ -15,7 +14,6 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
   const [doc, setDoc] = useState<InvoiceDocument | null>(null);
   const [business, setBusiness] = useState<Business | null>(null);
   const [client, setClient] = useState<Client | null>(null);
-  const [downloading, setDownloading] = useState(false);
   const [signatureName, setSignatureName] = useState("");
   const [approving, setApproving] = useState(false);
   const [approveError, setApproveError] = useState<string | null>(null);
@@ -166,26 +164,28 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-50 py-8 px-4">
       <div className="no-print max-w-[210mm] mx-auto mb-6 flex items-center justify-end gap-3">
         <button
-          onClick={async () => {
-            const target = document.querySelector(".receipt-view") as HTMLElement | null;
-            if (!target || !doc) return;
-            setDownloading(true);
+          onClick={() => {
+            if (!doc) return;
+            const docLabel = DOCUMENT_TYPE_LABELS[doc.type];
+            const filename = `${docLabel}-${doc.number}-${doc.clientName}`.replace(
+              /[\\/:*?"<>|]/g,
+              "-",
+            );
+            const original = document.title;
+            document.title = filename;
             try {
-              const docLabel = DOCUMENT_TYPE_LABELS[doc.type];
-              const filename = `${docLabel}-${doc.number}-${doc.clientName}.pdf`.replace(
-                /[\\/:*?"<>|]/g,
-                "-"
-              );
-              await downloadElementAsPdf(target, filename);
+              window.print();
             } finally {
-              setDownloading(false);
+              setTimeout(() => {
+                document.title = original;
+              }, 100);
             }
           }}
-          disabled={downloading}
-          className="inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-5 py-2.5 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+          className="inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-5 py-2.5 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200 transition-all"
+          title='הורד PDF — בחר "Save as PDF" בחלון ההדפסה'
         >
           <Download className="w-4 h-4" />
-          {downloading ? "מכין PDF..." : "הורד PDF"}
+          הורד PDF
         </button>
         <button
           onClick={() => window.print()}
