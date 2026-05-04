@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
 import { sendReceiptEmail } from "@/lib/email";
-import { createDocument, useDocuments } from "@/lib/document-store";
+import { createDocument, markDocumentEmailed, useDocuments } from "@/lib/document-store";
 import { parseEmails, joinEmails, isValidEmail } from "@/lib/emails";
 import { getVatRate, computeAmounts, round2, type VatMode } from "@/lib/vat";
 import { getClientDefaults } from "@/lib/client-defaults";
@@ -451,6 +451,19 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
         if (!result.ok) {
           setToast({ kind: "error", text: `המסמך נשמר אבל שליחת המייל נכשלה: ${result.error}` });
           return;
+        }
+        // CRITICAL: stamp emailed_at on the new doc so the detail-page
+        // indicator reads "המסמך נשלח במייל ✓" instead of "טרם נשלח".
+        // Without this, the user thinks their email never went out and
+        // panics. Bug found by Asaf 2026-05-04 sending a real invoice.
+        if (!result.mocked) {
+          try {
+            await markDocumentEmailed(doc.id);
+          } catch {
+            // Don't fail the toast — the email already went out, just the
+            // timestamp is stuck. Doc page will say "טרם נשלח" but the
+            // user can re-click the email button to fix the marker.
+          }
         }
         setToast({
           kind: "success",
