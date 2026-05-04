@@ -117,6 +117,61 @@ html.dark .text-violet-900  { color: #f5f3ff !important; }
 html.dark .text-sky-700     { color: #bae6fd !important; }
 html.dark .text-sky-800     { color: #e0f2fe !important; }
 
+/* Hover states. Tailwind compiles `hover:bg-emerald-50/60` to a
+   pseudo-class selector (`:hover`), distinct from `.bg-emerald-50/60`,
+   so the bare bg-class overrides above don't fire on hover. Without
+   these explicit hover overrides, hovering a row applies the light
+   pastel default — composed with the dark body it shows as washed-
+   out grey, hiding any text in the row.
+   Audited from `grep -r "hover:bg-" src/`; covers every hover bg
+   pattern actually used in the codebase. !important to win regardless
+   of cascade order. */
+html.dark .hover\:bg-emerald-50\/60:hover { background-color: rgba(6, 78, 59, 0.45) !important; }
+html.dark .hover\:bg-amber-50\/60:hover   { background-color: rgba(120, 53, 15, 0.45) !important; }
+html.dark .hover\:bg-sky-50\/60:hover     { background-color: rgba(7, 89, 133, 0.45) !important; }
+html.dark .hover\:bg-violet-50\/60:hover  { background-color: rgba(76, 29, 149, 0.45) !important; }
+html.dark .hover\:bg-rose-50\/60:hover    { background-color: rgba(136, 19, 55, 0.45) !important; }
+
+html.dark .hover\:bg-orange-50:hover,
+html.dark .hover\:bg-orange-50\/30:hover,
+html.dark .hover\:bg-orange-50\/40:hover,
+html.dark .hover\:bg-orange-50\/50:hover,
+html.dark .hover\:bg-orange-50\/80:hover { background-color: rgba(124, 45, 18, 0.35) !important; }
+
+html.dark .hover\:bg-rose-50:hover,
+html.dark .hover\:bg-rose-50\/40:hover    { background-color: rgba(136, 19, 55, 0.3) !important; }
+
+html.dark .hover\:bg-violet-50:hover,
+html.dark .hover\:bg-violet-50\/30:hover  { background-color: rgba(76, 29, 149, 0.3) !important; }
+
+html.dark .hover\:bg-emerald-50:hover     { background-color: rgba(6, 78, 59, 0.3) !important; }
+html.dark .hover\:bg-amber-50:hover       { background-color: rgba(120, 53, 15, 0.3) !important; }
+html.dark .hover\:bg-stone-50:hover       { background-color: rgba(68, 64, 60, 0.5) !important; }
+html.dark .hover\:bg-stone-100:hover      { background-color: rgba(87, 83, 78, 0.55) !important; }
+html.dark .hover\:bg-stone-200:hover      { background-color: rgba(120, 113, 108, 0.6) !important; }
+
+html.dark .hover\:bg-white:hover          { background-color: rgba(41, 37, 36, 1) !important; }
+html.dark .hover\:bg-white\/60:hover      { background-color: rgba(120, 113, 108, 0.3) !important; }
+html.dark .hover\:bg-white\/80:hover      { background-color: rgba(41, 37, 36, 0.85) !important; }
+
+/* -100 hover variants — used on gradient buttons, settings icons, etc. */
+html.dark .hover\:bg-emerald-100:hover    { background-color: #064e3b !important; }
+html.dark .hover\:bg-amber-100:hover      { background-color: #78350f !important; }
+html.dark .hover\:bg-orange-100:hover     { background-color: #7c2d12 !important; }
+html.dark .hover\:bg-emerald-200:hover    { background-color: #065f46 !important; }
+html.dark .hover\:bg-amber-200:hover      { background-color: #92400e !important; }
+html.dark .hover\:bg-emerald-100\/70:hover { background-color: rgba(6, 78, 59, 0.7) !important; }
+html.dark .hover\:bg-amber-100\/70:hover   { background-color: rgba(120, 53, 15, 0.7) !important; }
+html.dark .hover\:bg-rose-100\/70:hover    { background-color: rgba(136, 19, 55, 0.7) !important; }
+html.dark .hover\:bg-blue-100\/70:hover    { background-color: rgba(30, 58, 138, 0.7) !important; }
+html.dark .hover\:bg-violet-100\/70:hover  { background-color: rgba(76, 29, 149, 0.7) !important; }
+
+/* text-stone-600 is used heavily for secondary text (dates, sublabels,
+   etc.). On dark, the previous #a8a29e was getting lost over hovered
+   row bgs. Lift to #d6d3d1 for guaranteed readability. */
+html.dark .text-stone-600 { color: #d6d3d1 !important; }
+html.dark .text-stone-700 { color: #e7e5e4 !important; }
+
 /* The receipt preview inside the app should ALWAYS render light, even
    when the surrounding app is in dark mode. It represents the final
    PDF, which is white paper. Otherwise the user sees a dark "preview"
