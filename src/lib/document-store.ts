@@ -187,11 +187,18 @@ export async function updateDocumentStatus(id: string, status: InvoiceDocument["
     .eq("id", id)
     .maybeSingle();
 
-  const { error } = await supabase
+  // .select() at the end forces supabase-js to return the affected rows
+  // so we can detect "0 rows affected" silently caused by a missing RLS
+  // UPDATE policy (which previously hid this entire feature breaking).
+  const { data: updated, error } = await supabase
     .from("documents")
     .update({ status })
-    .eq("id", id);
+    .eq("id", id)
+    .select();
   if (error) throw new Error(error.message);
+  if (!updated || updated.length === 0) {
+    throw new Error("עדכון לא עבר — ייתכן שאין הרשאה (RLS) או שהמסמך לא קיים");
+  }
 
   if (snap) {
     logAudit({
@@ -211,10 +218,15 @@ export async function updateDocumentStatus(id: string, status: InvoiceDocument["
  * to "sent" on doc creation and doesn't actually mean an email went out).
  */
 export async function markDocumentEmailed(id: string) {
-  const { error } = await supabase
+  // Same defensive .select() pattern: detect 0-row updates from RLS gaps.
+  const { data, error } = await supabase
     .from("documents")
     .update({ emailed_at: new Date().toISOString() })
-    .eq("id", id);
+    .eq("id", id)
+    .select();
   if (error) throw new Error(error.message);
+  if (!data || data.length === 0) {
+    throw new Error("עדכון לא עבר — ייתכן שאין הרשאה (RLS) או שהמסמך לא קיים");
+  }
   window.dispatchEvent(new Event(CHANGE_EVENT));
 }
