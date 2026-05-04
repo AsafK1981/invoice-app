@@ -89,6 +89,15 @@ export default function DashboardPage() {
     };
   }, [documents, expenses, range]);
 
+  // Build a `month=YYYY-MM` query suffix only when the dashboard is showing
+  // exactly one calendar month — for other ranges the documents-table month
+  // filter wouldn't match, and we'd rather show "all months" than wrong months.
+  const monthQs = (() => {
+    if (range !== "this_month") return "";
+    const now = new Date();
+    return `&month=${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  })();
+
   const cards = [
     {
       label: "הכנסות",
@@ -98,6 +107,7 @@ export default function DashboardPage() {
       gradient: "from-emerald-400 to-teal-500",
       bgGradient: "from-emerald-50 to-teal-50",
       iconBg: "shadow-emerald-200/50",
+      href: `/documents?status=paid${monthQs}`,
     },
     {
       label: "הוצאות",
@@ -107,6 +117,7 @@ export default function DashboardPage() {
       gradient: "from-rose-400 to-pink-500",
       bgGradient: "from-rose-50 to-pink-50",
       iconBg: "shadow-rose-200/50",
+      href: "/expenses",
     },
     {
       label: "רווח",
@@ -116,6 +127,7 @@ export default function DashboardPage() {
       gradient: "from-orange-400 to-amber-500",
       bgGradient: "from-orange-50 to-amber-50",
       iconBg: "shadow-orange-200/50",
+      href: "/reports",
     },
     {
       label: "ממוצע למסמך",
@@ -125,6 +137,7 @@ export default function DashboardPage() {
       gradient: "from-violet-400 to-purple-500",
       bgGradient: "from-violet-50 to-purple-50",
       iconBg: "shadow-violet-200/50",
+      href: `/documents?status=paid${monthQs}`,
     },
   ];
 
@@ -141,6 +154,7 @@ export default function DashboardPage() {
       icon: FileQuestion,
       color: "text-amber-600",
       bg: "bg-amber-50 border-amber-200",
+      href: "/documents?type=quote&status=sent",
     },
     {
       label: "סה״כ לקוחות",
@@ -149,6 +163,7 @@ export default function DashboardPage() {
       icon: Users,
       color: "text-rose-600",
       bg: "bg-rose-50 border-rose-200",
+      href: "/clients",
     },
     {
       label: "סה״כ מסמכים",
@@ -157,6 +172,7 @@ export default function DashboardPage() {
       icon: Wallet,
       color: "text-blue-600",
       bg: "bg-blue-50 border-blue-200",
+      href: `/documents${monthQs ? `?${monthQs.slice(1)}` : ""}`,
     },
   ];
 
@@ -211,9 +227,10 @@ export default function DashboardPage() {
         {cards.map((s, idx) => {
           const Icon = s.icon;
           return (
-            <div
+            <Link
               key={s.label}
-              className={`card-soft p-5 bg-gradient-to-br ${s.bgGradient} border-transparent hover:shadow-lg hover:-translate-y-1 animate-fade-in-up stagger-${idx + 1}`}
+              href={s.href}
+              className={`card-soft p-5 bg-gradient-to-br ${s.bgGradient} border-transparent hover:shadow-lg hover:-translate-y-1 animate-fade-in-up stagger-${idx + 1} block group`}
             >
               <div className="flex items-start justify-between">
                 <div className="min-w-0 flex-1">
@@ -229,7 +246,7 @@ export default function DashboardPage() {
                   <Icon className="w-5 h-5 text-white" />
                 </div>
               </div>
-            </div>
+            </Link>
           );
         })}
       </div>
@@ -238,7 +255,11 @@ export default function DashboardPage() {
         {secondary.map((s) => {
           const Icon = s.icon;
           return (
-            <div key={s.label} className={`rounded-2xl border p-4 ${s.bg}`}>
+            <Link
+              key={s.label}
+              href={s.href}
+              className={`rounded-2xl border p-4 hover:shadow-md hover:-translate-y-0.5 transition-all block ${s.bg}`}
+            >
               <div className="flex items-center gap-3">
                 <Icon className={`w-5 h-5 ${s.color}`} />
                 <div className="min-w-0 flex-1">
@@ -249,7 +270,7 @@ export default function DashboardPage() {
                   </div>
                 </div>
               </div>
-            </div>
+            </Link>
           );
         })}
       </div>

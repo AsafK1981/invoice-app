@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Search,
   X,
@@ -88,11 +88,34 @@ const STATUS_THEMES: Record<string, string> = {
 
 export function DocumentsTable({ documents, limit, showExport = false }: Props) {
   const router = useRouter();
-  const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-  const [monthFilter, setMonthFilter] = useState<string>("all");
+  const searchParams = useSearchParams();
+  // Read initial filter values from URL search params so dashboard cards
+  // (and other deep-links like /documents?type=quote&status=sent) can
+  // pre-filter the table. Validates against known values to ignore noise.
   type EmailFilter = "all" | "emailed" | "not_emailed";
-  const [emailFilter, setEmailFilter] = useState<EmailFilter>("all");
+  const initialType: TypeFilter = (() => {
+    const v = searchParams.get("type");
+    if (v === "receipt" || v === "quote" || v === "tax_invoice" || v === "tax_invoice_receipt" || v === "credit_note") return v;
+    return "all";
+  })();
+  const initialStatus: StatusFilter = (() => {
+    const v = searchParams.get("status");
+    if (v === "draft" || v === "sent" || v === "paid" || v === "cancelled") return v;
+    return "all";
+  })();
+  const initialMonth = (() => {
+    const v = searchParams.get("month");
+    return v && /^\d{4}-\d{2}$/.test(v) ? v : "all";
+  })();
+  const initialEmail: EmailFilter = (() => {
+    const v = searchParams.get("email");
+    if (v === "emailed" || v === "not_emailed") return v;
+    return "all";
+  })();
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>(initialType);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(initialStatus);
+  const [monthFilter, setMonthFilter] = useState<string>(initialMonth);
+  const [emailFilter, setEmailFilter] = useState<EmailFilter>(initialEmail);
   const [search, setSearch] = useState<string>("");
   const [sortKey, setSortKey] = useState<SortKey>("date");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
