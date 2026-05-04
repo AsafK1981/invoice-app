@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -17,6 +17,7 @@ import {
   Clock,
   Link as LinkIcon,
   Download,
+  MoreHorizontal,
 } from "lucide-react";
 import { useDocument, useDocuments, deleteDocument, updateDocumentStatus, markDocumentEmailed } from "@/lib/document-store";
 import { publicDocumentUrl } from "@/lib/public-url";
@@ -43,6 +44,28 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
   const [sending, setSending] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState(false);
   const [toast, setToast] = useState<{ kind: "success" | "error"; text: string } | null>(null);
+  // Mobile-only overflow menu state. The action row has too many buttons
+  // to fit on a phone width; on mobile, secondary actions collapse into
+  // a "⋯" popover. Desktop (sm+) keeps showing everything inline.
+  const [moreOpen, setMoreOpen] = useState(false);
+  const moreRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!moreOpen) return;
+    function onMouse(e: MouseEvent) {
+      if (moreRef.current && !moreRef.current.contains(e.target as Node)) {
+        setMoreOpen(false);
+      }
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setMoreOpen(false);
+    }
+    window.addEventListener("mousedown", onMouse);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("mousedown", onMouse);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [moreOpen]);
   const confirm = useConfirm();
 
   if (!ready) {
@@ -355,7 +378,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
           )}
           <button
             onClick={handleDuplicate}
-            className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-white border border-orange-200 text-stone-800 hover:bg-orange-50"
+            className="hidden sm:inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-white border border-orange-200 text-stone-800 hover:bg-orange-50"
             title="צור עותק חדש"
           >
             <Copy className="w-4 h-4" />
@@ -363,7 +386,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
           </button>
           <button
             onClick={handleCopyLink}
-            className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-white border border-orange-200 text-stone-800 hover:bg-orange-50"
+            className="hidden sm:inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-white border border-orange-200 text-stone-800 hover:bg-orange-50"
             title="העתק קישור לשיתוף"
           >
             <LinkIcon className="w-4 h-4" />
@@ -372,7 +395,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
           <button
             onClick={handleWhatsApp}
             disabled={allocationGate}
-            className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="hidden sm:inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-50 disabled:opacity-50 disabled:cursor-not-allowed"
             title={
               allocationGate
                 ? "חסר מספר הקצאה — אסור לשלוח חשבונית מס מבלעדיו"
@@ -425,7 +448,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                 <button
                   onClick={() => handleResend(true)}
                   disabled={reminderDisabled}
-                  className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-amber-50 border border-amber-200 text-amber-800 hover:bg-amber-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="hidden sm:inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-amber-50 border border-amber-200 text-amber-800 hover:bg-amber-100 disabled:opacity-50 disabled:cursor-not-allowed"
                   title={reminderTitle}
                 >
                   <Clock className="w-4 h-4" />
@@ -435,7 +458,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
             })()}
           <button
             onClick={handleDelete}
-            className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-white border border-rose-200 text-rose-700 hover:bg-rose-50"
+            className="hidden sm:inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-white border border-rose-200 text-rose-700 hover:bg-rose-50"
             title="מחק"
           >
             <Trash2 className="w-4 h-4" />
@@ -451,12 +474,109 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
           </button>
           <button
             onClick={handlePrint}
-            className="inline-flex items-center gap-2 bg-white border border-orange-200 text-stone-800 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold hover:bg-orange-50"
+            className="hidden sm:inline-flex items-center gap-2 bg-white border border-orange-200 text-stone-800 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold hover:bg-orange-50"
             title="הדפס דרך הדפדפן"
           >
             <Printer className="w-4 h-4" />
             <span className="hidden sm:inline">הדפס</span>
           </button>
+
+          {/* Mobile-only overflow menu. Desktop (sm+) shows the full
+              row above; on phones we collapse the secondary actions
+              (Duplicate / Copy link / WhatsApp / Reminder / Print /
+              Delete) into a "⋯" popover so the row stays a single line
+              with just the three primary actions: Convert/MarkPaid,
+              Mail, Download PDF. */}
+          <div className="relative sm:hidden" ref={moreRef}>
+            <button
+              onClick={() => setMoreOpen((v) => !v)}
+              className="inline-flex items-center gap-2 px-3 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-white border border-orange-200 text-stone-800 hover:bg-orange-50"
+              aria-expanded={moreOpen}
+              aria-haspopup="menu"
+              title="עוד פעולות"
+            >
+              <MoreHorizontal className="w-4 h-4" />
+            </button>
+            {moreOpen && (
+              <div
+                role="menu"
+                className="absolute top-full mt-2 left-0 z-30 w-56 bg-white rounded-2xl shadow-lg border border-orange-100 p-1 flex flex-col gap-0.5 animate-fade-in"
+              >
+                <button
+                  role="menuitem"
+                  onClick={() => {
+                    setMoreOpen(false);
+                    handleDuplicate();
+                  }}
+                  className="inline-flex items-center gap-2 px-3 py-2 min-h-[40px] rounded-xl text-sm font-medium text-stone-800 hover:bg-orange-50 text-right"
+                >
+                  <Copy className="w-4 h-4 text-stone-500" />
+                  שכפל
+                </button>
+                <button
+                  role="menuitem"
+                  onClick={() => {
+                    setMoreOpen(false);
+                    handleCopyLink();
+                  }}
+                  className="inline-flex items-center gap-2 px-3 py-2 min-h-[40px] rounded-xl text-sm font-medium text-stone-800 hover:bg-orange-50 text-right"
+                >
+                  <LinkIcon className="w-4 h-4 text-stone-500" />
+                  העתק קישור
+                </button>
+                <button
+                  role="menuitem"
+                  disabled={allocationGate}
+                  onClick={() => {
+                    setMoreOpen(false);
+                    handleWhatsApp();
+                  }}
+                  className="inline-flex items-center gap-2 px-3 py-2 min-h-[40px] rounded-xl text-sm font-medium text-emerald-700 hover:bg-emerald-50 text-right disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  WhatsApp
+                </button>
+                {doc.status === "sent" &&
+                  (doc.type === "quote" || doc.type === "tax_invoice") && (
+                    <button
+                      role="menuitem"
+                      disabled={sending || !client?.email || !doc.emailedAt}
+                      onClick={() => {
+                        setMoreOpen(false);
+                        handleResend(true);
+                      }}
+                      className="inline-flex items-center gap-2 px-3 py-2 min-h-[40px] rounded-xl text-sm font-medium text-amber-800 hover:bg-amber-50 text-right disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Clock className="w-4 h-4" />
+                      שלח תזכורת
+                    </button>
+                  )}
+                <button
+                  role="menuitem"
+                  onClick={() => {
+                    setMoreOpen(false);
+                    handlePrint();
+                  }}
+                  className="inline-flex items-center gap-2 px-3 py-2 min-h-[40px] rounded-xl text-sm font-medium text-stone-800 hover:bg-orange-50 text-right"
+                >
+                  <Printer className="w-4 h-4 text-stone-500" />
+                  הדפס
+                </button>
+                <div className="border-t border-stone-100 my-0.5" />
+                <button
+                  role="menuitem"
+                  onClick={() => {
+                    setMoreOpen(false);
+                    handleDelete();
+                  }}
+                  className="inline-flex items-center gap-2 px-3 py-2 min-h-[40px] rounded-xl text-sm font-medium text-rose-700 hover:bg-rose-50 text-right"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  מחק
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
