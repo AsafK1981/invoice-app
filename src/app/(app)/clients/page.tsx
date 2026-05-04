@@ -18,13 +18,35 @@ import {
   X,
 } from "lucide-react";
 import { useClients, clientStore } from "@/lib/client-store";
-import { formatDate } from "@/lib/format";
+import { useDocuments } from "@/lib/document-store";
+import { formatCurrency, formatDate } from "@/lib/format";
 import { parseEmails } from "@/lib/emails";
 import { ClientFormModal } from "@/components/client-form-modal";
 import { CsvImportModal } from "@/components/csv-import-modal";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { exportClients } from "@/lib/csv-export";
-import type { Client } from "@/lib/types";
+import type { Client, InvoiceDocument } from "@/lib/types";
+
+interface ClientStats {
+  docCount: number;
+  totalBilled: number;
+  lastDocDate: string | null;
+}
+
+function buildStatsByClient(documents: InvoiceDocument[]): Map<string, ClientStats> {
+  const m = new Map<string, ClientStats>();
+  for (const d of documents) {
+    if (!d.clientId) continue;
+    if (d.status === "draft" || d.status === "cancelled") continue;
+    const sign = d.type === "credit_note" ? -1 : 1;
+    const cur = m.get(d.clientId) ?? { docCount: 0, totalBilled: 0, lastDocDate: null };
+    cur.docCount += 1;
+    cur.totalBilled += sign * d.total;
+    if (!cur.lastDocDate || d.date > cur.lastDocDate) cur.lastDocDate = d.date;
+    m.set(d.clientId, cur);
+  }
+  return m;
+}
 
 function matchesClient(client: Client, query: string): boolean {
   const q = query.trim().toLowerCase();
@@ -44,11 +66,14 @@ function matchesClient(client: Client, query: string): boolean {
 
 export default function ClientsPage() {
   const { items: clients } = useClients();
+  const { documents } = useDocuments();
   const [modalOpen, setModalOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [editing, setEditing] = useState<Client | null>(null);
   const [search, setSearch] = useState("");
   const confirm = useConfirm();
+
+  const statsByClient = useMemo(() => buildStatsByClient(documents), [documents]);
 
   const filtered = useMemo(
     () => clients.filter((c) => matchesClient(c, search)),
@@ -258,9 +283,31 @@ export default function ClientsPage() {
                 )}
               </div>
 
-              <div className="mt-4 pt-3 border-t border-orange-100 text-xs text-stone-500">
-                נוסף בתאריך {formatDate(c.createdAt)}
-              </div>
+              {(() => {
+                const stats = statsByClient.get(c.id);
+                if (!stats || stats.docCount === 0) {
+                  return (
+                    <div className="mt-4 pt-3 border-t border-orange-100 text-xs text-stone-500">
+                      אין מסמכים עדיין · נוסף ב-{formatDate(c.createdAt)}
+                    </div>
+                  );
+                }
+                return (
+                  <div className="mt-4 pt-3 border-t border-orange-100 flex items-baseline justify-between gap-2 text-xs">
+                    <span className="text-stone-700">
+                      <span className="font-bold text-stone-900" dir="ltr">
+                        {formatCurrency(stats.totalBilled)}
+                      </span>{" "}
+                      ב-{stats.docCount} {stats.docCount === 1 ? "מסמך" : "מסמכים"}
+                    </span>
+                    {stats.lastDocDate && (
+                      <span className="text-stone-500">
+                        אחרון: {formatDate(stats.lastDocDate)}
+                      </span>
+                    )}
+                  </div>
+                );
+              })()}
             </Link>
           ))}
         </div>
