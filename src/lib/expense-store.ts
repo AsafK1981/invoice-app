@@ -17,6 +17,7 @@ function mapRow(row: Record<string, unknown>): Expense {
     supplier: row.supplier as string,
     amount: Number(row.amount) || 0,
     description: (row.description as string) || undefined,
+    vatAmount: row.vat_amount != null ? Number(row.vat_amount) : 0,
   };
 }
 
@@ -66,6 +67,7 @@ export const expenseStore = {
           supplier: expense.supplier,
           amount: expense.amount,
           description: expense.description || null,
+          vat_amount: expense.vatAmount ?? 0,
         })
         .eq("id", expense.id);
     } else {
@@ -77,6 +79,7 @@ export const expenseStore = {
         supplier: expense.supplier,
         amount: expense.amount,
         description: expense.description || null,
+        vat_amount: expense.vatAmount ?? 0,
       });
     }
     window.dispatchEvent(new Event(CHANGE_EVENT));

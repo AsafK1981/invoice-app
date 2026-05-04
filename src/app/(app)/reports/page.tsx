@@ -4,9 +4,11 @@ import { useMemo, useState } from "react";
 import { TrendingUp, TrendingDown, PiggyBank, CalendarDays, Download } from "lucide-react";
 import { useDocuments } from "@/lib/document-store";
 import { useExpenses } from "@/lib/expense-store";
+import { useBusiness } from "@/lib/business-store";
 import { formatCurrency } from "@/lib/format";
 import { exportDocuments, exportExpenses } from "@/lib/csv-export";
 import { TaxYearDetail } from "@/components/tax-year-detail";
+import { VatPeriodReport } from "@/components/vat-period-report";
 
 type Period = string; // "all" | "2026" | "2026-Q1" | "2026-01"
 
@@ -61,6 +63,7 @@ function periodLabelShort(period: Period): string {
 export default function ReportsPage() {
   const { documents } = useDocuments();
   const { items: expenses } = useExpenses();
+  const { business } = useBusiness();
   const [period, setPeriod] = useState<Period>("all");
 
   const yearsWithData = useMemo(() => {
@@ -197,6 +200,8 @@ export default function ReportsPage() {
           );
         })}
       </div>
+
+      <VatPeriodReport business={business} documents={documents} expenses={expenses} />
 
       {/^\d{4}$/.test(period) && (
         <TaxYearDetail

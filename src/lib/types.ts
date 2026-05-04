@@ -88,6 +88,11 @@ export interface Expense {
   supplier: string;
   amount: number;
   description?: string;
+  /**
+   * VAT (מע"מ) component of the expense — used by עוסק מורשה for
+   * input-VAT credit on periodic VAT returns. Always 0 for עוסק פטור.
+   */
+  vatAmount?: number;
 }
 
 export interface DocumentAttachment {

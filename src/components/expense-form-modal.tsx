@@ -5,6 +5,7 @@ import { Wallet } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 import { FormField } from "@/components/ui/form-field";
 import { expenseStore } from "@/lib/expense-store";
+import { useBusiness } from "@/lib/business-store";
 import type { Expense } from "@/lib/types";
 
 interface Props {
@@ -25,12 +26,17 @@ const COMMON_CATEGORIES = [
 
 export function ExpenseFormModal({ open, onClose, expense }: Props) {
   const today = new Date().toISOString().slice(0, 10);
+  const { business } = useBusiness();
+  // Only עוסק מורשה / company can claim input-VAT credit, so the field
+  // is hidden for עוסק פטור (it'd just be confusion / clutter for them).
+  const showVatField = business.businessType === "authorized" || business.businessType === "company";
 
   const [form, setForm] = useState({
     date: today,
     category: COMMON_CATEGORIES[0],
     supplier: "",
     amount: "",
+    vatAmount: "",
     description: "",
   });
 
@@ -42,6 +48,7 @@ export function ExpenseFormModal({ open, onClose, expense }: Props) {
         category: expense.category,
         supplier: expense.supplier,
         amount: String(expense.amount),
+        vatAmount: expense.vatAmount ? String(expense.vatAmount) : "",
         description: expense.description || "",
       });
     } else {
@@ -50,6 +57,7 @@ export function ExpenseFormModal({ open, onClose, expense }: Props) {
         category: COMMON_CATEGORIES[0],
         supplier: "",
         amount: "",
+        vatAmount: "",
         description: "",
       });
     }
@@ -62,6 +70,8 @@ export function ExpenseFormModal({ open, onClose, expense }: Props) {
   async function handleSubmit() {
     const amount = parseFloat(form.amount);
     if (!form.supplier.trim() || isNaN(amount) || amount <= 0) return;
+    const vatRaw = parseFloat(form.vatAmount);
+    const vat = showVatField && Number.isFinite(vatRaw) && vatRaw > 0 ? vatRaw : 0;
 
     const record: Expense = {
       id: expense?.id ?? crypto.randomUUID(),
@@ -70,6 +80,7 @@ export function ExpenseFormModal({ open, onClose, expense }: Props) {
       supplier: form.supplier.trim(),
       amount,
       description: form.description.trim() || undefined,
+      vatAmount: vat,
     };
     await expenseStore.save(record);
     onClose();
@@ -139,18 +150,35 @@ export function ExpenseFormModal({ open, onClose, expense }: Props) {
           />
         </FormField>
 
-        <FormField label="סכום (₪)" required>
-          <input
-            type="number"
-            min="0"
-            step="0.01"
-            dir="ltr"
-            value={form.amount}
-            onChange={(e) => update("amount", e.target.value)}
-            placeholder="120"
-            className="input-warm"
-          />
-        </FormField>
+        <div className={showVatField ? "grid grid-cols-2 gap-3" : ""}>
+          <FormField label="סכום כולל מע״מ (₪)" required>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              dir="ltr"
+              value={form.amount}
+              onChange={(e) => update("amount", e.target.value)}
+              placeholder="120"
+              className="input-warm"
+            />
+          </FormField>
+
+          {showVatField && (
+            <FormField label="מתוכו מע״מ (₪)" hint="להחזר במע״מ תשומות">
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                dir="ltr"
+                value={form.vatAmount}
+                onChange={(e) => update("vatAmount", e.target.value)}
+                placeholder="20.40"
+                className="input-warm"
+              />
+            </FormField>
+          )}
+        </div>
 
         <FormField label="תיאור / הערות">
           <textarea
