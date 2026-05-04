@@ -210,6 +210,26 @@ html.dark .bg-violet-50\/60 {
   background-color: rgba(76, 29, 149, 0.25);
 }
 
+/* Badge backgrounds (-100 family) used on documents-table type/status
+   chips. Default Tailwind -100 stays a bright pastel in dark, and I
+   already lifted the text-{color}-700/800 colors brighter for legibility
+   on dark — bright-on-bright = unreadable. Map -100 to a deeper
+   translucent tone that still suggests the original hue but contrasts
+   with the now-brighter text. */
+html.dark .bg-emerald-100 { background-color: rgba(6, 78, 59, 0.55); }
+html.dark .bg-amber-100   { background-color: rgba(120, 53, 15, 0.5); }
+html.dark .bg-rose-100    { background-color: rgba(136, 19, 55, 0.45); }
+html.dark .bg-blue-100    { background-color: rgba(30, 58, 138, 0.45); }
+html.dark .bg-violet-100  { background-color: rgba(76, 29, 149, 0.5); }
+html.dark .bg-sky-100     { background-color: rgba(7, 89, 133, 0.5); }
+html.dark .bg-orange-100  { background-color: rgba(124, 45, 18, 0.5); }
+html.dark .bg-teal-100    { background-color: rgba(19, 78, 74, 0.5); }
+html.dark .bg-pink-100    { background-color: rgba(157, 23, 77, 0.4); }
+html.dark .bg-purple-100  { background-color: rgba(88, 28, 135, 0.5); }
+html.dark .bg-indigo-100  { background-color: rgba(49, 46, 129, 0.5); }
+html.dark .bg-yellow-100  { background-color: rgba(133, 77, 14, 0.5); }
+html.dark .bg-cyan-100    { background-color: rgba(22, 78, 99, 0.5); }
+
 /* Border darkening — most light-200 borders fade in dark */
 html.dark .border-orange-100,
 html.dark .border-orange-100\/60,
