@@ -230,11 +230,14 @@ export default function DashboardPage() {
             <Link
               key={s.label}
               href={s.href}
-              className={`card-soft p-5 bg-gradient-to-br ${s.bgGradient} border-transparent hover:shadow-lg hover:-translate-y-1 animate-fade-in-up stagger-${idx + 1} block group`}
+              className={`card-soft p-5 bg-gradient-to-br ${s.bgGradient} border-transparent hover:shadow-lg hover:-translate-y-1 animate-fade-in-up stagger-${idx + 1} block group cursor-pointer relative`}
             >
               <div className="flex items-start justify-between">
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-stone-700">{s.label}</p>
+                  <p className="text-sm font-medium text-stone-700 flex items-center gap-1">
+                    {s.label}
+                    <ArrowLeft className="w-3 h-3 opacity-0 group-hover:opacity-50 -translate-x-1 group-hover:translate-x-0 transition-all" />
+                  </p>
                   <p className="text-2xl font-bold mt-2 text-stone-900 truncate">
                     {ready ? s.value : "..."}
                   </p>
@@ -258,10 +261,10 @@ export default function DashboardPage() {
             <Link
               key={s.label}
               href={s.href}
-              className={`rounded-2xl border p-4 hover:shadow-md hover:-translate-y-0.5 transition-all block ${s.bg}`}
+              className={`rounded-2xl border p-4 hover:shadow-md hover:-translate-y-0.5 transition-all block group cursor-pointer ${s.bg}`}
             >
               <div className="flex items-center gap-3">
-                <Icon className={`w-5 h-5 ${s.color}`} />
+                <Icon className={`w-5 h-5 ${s.color} flex-shrink-0`} />
                 <div className="min-w-0 flex-1">
                   <p className="text-xs text-stone-600">{s.label}</p>
                   <div className="flex items-baseline gap-2">
@@ -269,6 +272,9 @@ export default function DashboardPage() {
                     <span className="text-xs text-stone-600 truncate">{s.sub}</span>
                   </div>
                 </div>
+                <ArrowLeft
+                  className={`w-4 h-4 ${s.color} opacity-0 group-hover:opacity-70 -translate-x-1 group-hover:translate-x-0 transition-all flex-shrink-0`}
+                />
               </div>
             </Link>
           );
