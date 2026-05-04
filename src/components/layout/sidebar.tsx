@@ -18,25 +18,29 @@ import {
   User,
   RefreshCw,
   Bug,
+  Moon,
+  Sun,
 } from "lucide-react";
 import { useBusiness } from "@/lib/business-store";
 import { signOut } from "@/lib/auth";
+import { useTheme } from "@/lib/theme";
 import { AccountSettingsModal } from "@/components/account-settings-modal";
 
 const navItems = [
-  { href: "/dashboard", label: "דשבורד", icon: LayoutDashboard },
-  { href: "/documents", label: "מסמכים", icon: FileText },
-  { href: "/clients", label: "לקוחות", icon: Users },
-  { href: "/products", label: "מוצרים ושירותים", icon: Package },
-  { href: "/expenses", label: "הוצאות", icon: Wallet },
-  { href: "/recurring", label: "חיובים חוזרים", icon: RefreshCw },
-  { href: "/reports", label: "דו״חות", icon: TrendingUp },
-  { href: "/settings", label: "הגדרות", icon: Settings },
+  { href: "/dashboard", label: "דשבורד", icon: LayoutDashboard, hint: "סקירה מהירה: הכנסות, הוצאות, רווח, הצעות ממתינות" },
+  { href: "/documents", label: "מסמכים", icon: FileText, hint: "כל המסמכים שהפקת — חשבוניות, קבלות, הצעות" },
+  { href: "/clients", label: "לקוחות", icon: Users, hint: "ניהול הלקוחות שלך + היסטוריית מסמכים לכל אחד" },
+  { href: "/products", label: "מוצרים ושירותים", icon: Package, hint: "קטלוג מוצרים ושירותים להשלמה אוטומטית בעורך" },
+  { href: "/expenses", label: "הוצאות", icon: Wallet, hint: "תיעוד הוצאות עסקיות לדיווח ומס" },
+  { href: "/recurring", label: "חיובים חוזרים", icon: RefreshCw, hint: "תבניות לחיובים חודשיים/שבועיים בלחיצה" },
+  { href: "/reports", label: "דו״חות", icon: TrendingUp, hint: "סיכומים תקופתיים, דיווח מע״מ, סיכום שנתי לרו״ח" },
+  { href: "/settings", label: "הגדרות", icon: Settings, hint: "פרטי העסק, פרטי תשלום, הגדרות אימייל" },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
   const { business } = useBusiness();
+  const { theme, toggle: toggleTheme } = useTheme();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
 
@@ -79,7 +83,7 @@ export function Sidebar() {
               }`}
             >
               <div
-                className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200 ${
+                className={`relative group/icon w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200 ${
                   isActive
                     ? "bg-gradient-to-br from-orange-400 to-rose-400 shadow-sm"
                     : "bg-stone-100 group-hover:bg-gradient-to-br group-hover:from-orange-300 group-hover:to-rose-300"
@@ -90,6 +94,17 @@ export function Sidebar() {
                     isActive ? "text-white" : "text-stone-500 group-hover:text-white"
                   }`}
                 />
+                {/* Hover tooltip: appears when hovering the icon
+                    container, anchored to the inline-end (left in RTL)
+                    so it doesn't get clipped by the sidebar edge.
+                    Pointer-events-none so it doesn't interfere with
+                    the parent Link's click hit. */}
+                <span
+                  role="tooltip"
+                  className="pointer-events-none absolute top-1/2 -translate-y-1/2 left-full ms-3 z-50 whitespace-nowrap rounded-lg bg-stone-900 text-white text-xs font-medium px-3 py-1.5 shadow-lg opacity-0 group-hover/icon:opacity-100 transition-opacity duration-150"
+                >
+                  {item.hint}
+                </span>
               </div>
               <span>{item.label}</span>
               {isActive && (
@@ -104,6 +119,22 @@ export function Sidebar() {
             with the current page URL so testing friends can report
             something they hit in one tap. The phone number is the
             user's real WhatsApp; if you fork this app, change it. */}
+        <button
+          onClick={toggleTheme}
+          className="flex items-center gap-2 w-full px-3 py-2 rounded-xl text-sm text-stone-700 hover:bg-orange-50 hover:text-orange-700 transition-colors"
+        >
+          {theme === "dark" ? (
+            <>
+              <Sun className="w-4 h-4" />
+              עבור למצב בהיר
+            </>
+          ) : (
+            <>
+              <Moon className="w-4 h-4" />
+              עבור למצב כהה
+            </>
+          )}
+        </button>
         <a
           href={(() => {
             const PHONE = "972549000684"; // +972 549000684 (international format)

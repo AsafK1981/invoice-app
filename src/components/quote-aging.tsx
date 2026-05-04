@@ -62,7 +62,7 @@ export function QuoteAging({ documents }: Props) {
   const buckets: Bucket[] = [
     {
       key: "fresh",
-      label: "טריות (פחות משבוע)",
+      label: "פחות משבוע",
       count: fresh.length,
       value: fresh.reduce((s, q) => s + q.total, 0),
       items: fresh,
@@ -74,7 +74,7 @@ export function QuoteAging({ documents }: Props) {
     },
     {
       key: "aging",
-      label: "מתבגרות (1-2 שבועות)",
+      label: "1–2 שבועות",
       count: aging.length,
       value: aging.reduce((s, q) => s + q.total, 0),
       items: aging,
@@ -86,7 +86,7 @@ export function QuoteAging({ documents }: Props) {
     },
     {
       key: "stale",
-      label: "ישנות (יותר משבועיים)",
+      label: "מעל שבועיים",
       count: stale.length,
       value: stale.reduce((s, q) => s + q.total, 0),
       items: stale,
@@ -106,7 +106,7 @@ export function QuoteAging({ documents }: Props) {
         <div>
           <h2 className="font-semibold text-stone-900 flex items-center gap-2">
             <FileQuestion className="w-5 h-5 text-amber-600" />
-            הצעות פתוחות לפי גיל
+            הצעות פתוחות — לפי זמן ההפקה
           </h2>
           <p className="text-xs text-stone-600 mt-1">
             סה״כ <span className="font-semibold text-stone-900">{formatCurrency(totalValue)}</span>{" "}

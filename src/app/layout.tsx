@@ -1,7 +1,14 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
+
+// Inline pre-hydration theme script — applies the user's persisted theme
+// choice to <html class="dark"> BEFORE first paint, avoiding a flash of
+// light when the user has chosen dark. The string is hardcoded (no user
+// input flows into it), so it's safe.
+const themeInitScript = `(function(){try{var t=localStorage.getItem("invoice-app:theme");if(t==="dark"){document.documentElement.classList.add("dark");}}catch(e){}})();`;
 
 const SITE_URL = "https://mysuperfriendlyinvoiceapp.vercel.app";
 
@@ -74,6 +81,12 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap"
           rel="stylesheet"
         />
+        <Script
+          id="theme-init"
+          strategy="beforeInteractive"
+        >
+          {themeInitScript}
+        </Script>
       </head>
       <body className="min-h-full flex flex-col font-sans text-stone-800">
         {children}

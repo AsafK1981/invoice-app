@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* Class-based dark mode. Tailwind 4 reads prefers-color-scheme by
+   default; we override with an explicit `dark` class on <html> so the
+   user can toggle independently of OS preference. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme inline {
   --font-sans: "Heebo", system-ui, sans-serif;
 }
@@ -31,6 +36,131 @@ body {
     linear-gradient(180deg, #fffaf5 0%, #fef6ed 100%);
   background-attachment: fixed;
   color: #44403c;
+}
+
+/* ========== DARK MODE ==========
+   Sweeping overrides applied when <html class="dark">. Tailwind utility
+   classes (bg-white, text-stone-900, etc.) compile to specific colors
+   that wouldn't auto-flip; instead of editing every component, we
+   override the most common surface colors here at the layer level.
+   Components that need fine-grained dark variants (e.g. specific
+   gradients or status colors) can still use `dark:` prefixed utilities. */
+
+html.dark body {
+  background:
+    radial-gradient(1200px 600px at 100% -10%, rgba(120, 53, 15, 0.35), transparent 60%),
+    radial-gradient(900px 500px at -10% 10%, rgba(67, 20, 7, 0.45), transparent 60%),
+    linear-gradient(180deg, #1c1917 0%, #0c0a09 100%);
+  color: #d6d3d1;
+}
+
+/* Card surfaces */
+html.dark .card-soft {
+  background: #1c1917;
+  border: 1px solid rgba(68, 64, 60, 0.7);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.4),
+    0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Inputs */
+html.dark .input-warm {
+  background: #1c1917;
+  border-color: #44403c;
+  color: #f5f5f4;
+}
+html.dark .input-warm:focus {
+  background: #292524;
+  border-color: #fb923c;
+  box-shadow: 0 0 0 3px rgba(251, 146, 60, 0.18);
+}
+html.dark .input-warm::placeholder {
+  color: #78716c;
+}
+
+/* Common Tailwind backgrounds → dark equivalents.
+   Specific color classes used heavily throughout the app: */
+html.dark .bg-white {
+  background-color: #1c1917;
+}
+html.dark .bg-stone-50,
+html.dark .bg-stone-100 {
+  background-color: #292524;
+}
+html.dark .bg-orange-50 {
+  background-color: rgba(124, 45, 18, 0.25);
+}
+html.dark .bg-orange-50\/60,
+html.dark .bg-orange-50\/40,
+html.dark .bg-orange-50\/30,
+html.dark .bg-orange-50\/80 {
+  background-color: rgba(124, 45, 18, 0.18);
+}
+html.dark .bg-amber-50,
+html.dark .bg-amber-50\/40,
+html.dark .bg-amber-50\/30,
+html.dark .bg-amber-50\/50,
+html.dark .bg-amber-50\/60 {
+  background-color: rgba(120, 53, 15, 0.25);
+}
+html.dark .bg-emerald-50,
+html.dark .bg-emerald-50\/40,
+html.dark .bg-emerald-50\/30,
+html.dark .bg-emerald-50\/50,
+html.dark .bg-emerald-50\/60 {
+  background-color: rgba(6, 78, 59, 0.3);
+}
+html.dark .bg-rose-50,
+html.dark .bg-rose-50\/40,
+html.dark .bg-rose-50\/30,
+html.dark .bg-rose-50\/50,
+html.dark .bg-rose-50\/60 {
+  background-color: rgba(136, 19, 55, 0.25);
+}
+html.dark .bg-blue-50,
+html.dark .bg-blue-50\/40,
+html.dark .bg-blue-50\/30,
+html.dark .bg-blue-50\/50,
+html.dark .bg-blue-50\/60 {
+  background-color: rgba(30, 58, 138, 0.25);
+}
+html.dark .bg-violet-50,
+html.dark .bg-violet-50\/40,
+html.dark .bg-violet-50\/30,
+html.dark .bg-violet-50\/50,
+html.dark .bg-violet-50\/60 {
+  background-color: rgba(76, 29, 149, 0.25);
+}
+
+/* Border darkening — most light-200 borders fade in dark */
+html.dark .border-orange-100,
+html.dark .border-orange-100\/60,
+html.dark .border-orange-200,
+html.dark .border-stone-100,
+html.dark .border-stone-200 {
+  border-color: rgba(68, 64, 60, 0.7);
+}
+
+/* Text — common stone scales */
+html.dark .text-stone-900 { color: #f5f5f4; }
+html.dark .text-stone-800 { color: #e7e5e4; }
+html.dark .text-stone-700 { color: #d6d3d1; }
+html.dark .text-stone-600 { color: #a8a29e; }
+html.dark .text-stone-500 { color: #78716c; }
+html.dark .text-stone-400 { color: #57534e; }
+
+/* Sidebar (uses bg-white/80 + backdrop blur) */
+html.dark aside.bg-white\/80,
+html.dark .bg-white\/80,
+html.dark .bg-white\/95 {
+  background-color: rgba(28, 25, 23, 0.85);
+}
+
+/* Print: always force light. Tax-authority print rules + dark-mode
+   ink-saving combined to invisible PDFs would be a real bug. */
+@media print {
+  html.dark body { background: white !important; color: #1c1917 !important; }
+  html.dark .card-soft { background: white !important; color: #1c1917 !important; }
 }
 
 /* ========== CARDS ========== */
