@@ -5,6 +5,7 @@ import { Building2, Upload, X, Image as ImageIcon, Landmark } from "lucide-react
 import { Modal } from "@/components/ui/modal";
 import { FormField } from "@/components/ui/form-field";
 import { saveBusiness } from "@/lib/business-store";
+import { isPlaceholderBusinessName, isPlaceholderBusinessTaxId } from "@/lib/business-init";
 import { supabase } from "@/lib/supabase";
 import type { Business } from "@/lib/types";
 
@@ -24,7 +25,14 @@ export function BusinessFormModal({ open, onClose, business }: Props) {
 
   useEffect(() => {
     if (open) {
-      setForm(business);
+      // Treat legacy default placeholder values as if the field were empty,
+      // so the input's HTML `placeholder=` shows guidance text instead of
+      // "העסק שלי" / "000000000" pre-filled in bold like real data.
+      setForm({
+        ...business,
+        name: isPlaceholderBusinessName(business.name) ? "" : business.name,
+        taxId: isPlaceholderBusinessTaxId(business.taxId) ? "" : business.taxId,
+      });
       setUploadError(null);
       setSaveError(null);
     }

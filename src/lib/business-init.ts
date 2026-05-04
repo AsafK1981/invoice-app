@@ -7,14 +7,32 @@ import type { Business } from "./types";
 const BUSINESS_ID_KEY = "invoice-app-business-id";
 const BUSINESS_READY_EVENT = "invoice-app:business-ready";
 
+// Empty strings — NOT placeholder Hebrew text. The form's placeholder=
+// attribute is the right place for guidance text; storing literal
+// "העסק שלי" / "000000000" as real data made them render as bold,
+// "already filled in" values in Settings, fooling the user into
+// thinking onboarding was done.
 const defaultBusiness: Omit<Business, "id"> = {
-  name: "העסק שלי",
+  name: "",
   businessType: "exempt",
-  taxId: "000000000",
+  taxId: "",
   address: "",
   phone: undefined,
   email: undefined,
 };
+
+// Legacy placeholder values that were stored as real data on auto-create
+// before 2026-05-04. Treat these (and empty string) as "not yet set"
+// in any "is configured?" check.
+const PLACEHOLDER_NAME = "העסק שלי";
+const PLACEHOLDER_TAX_ID = "000000000";
+
+export function isPlaceholderBusinessName(name: string | undefined | null): boolean {
+  return !name || name === PLACEHOLDER_NAME;
+}
+export function isPlaceholderBusinessTaxId(taxId: string | undefined | null): boolean {
+  return !taxId || taxId === PLACEHOLDER_TAX_ID;
+}
 
 export function useBusinessInit() {
   const [businessId, setBusinessId] = useState<string | null>(null);

@@ -9,7 +9,7 @@ const CHANGE_EVENT = "invoice-app:business-changed";
 
 const defaultBusiness: Business = {
   id: "",
-  name: "העסק שלי",
+  name: "",
   businessType: "exempt",
   taxId: "",
   address: "",

@@ -19,6 +19,7 @@ import {
   MessageSquare,
 } from "lucide-react";
 import { useBusiness } from "@/lib/business-store";
+import { isPlaceholderBusinessName, isPlaceholderBusinessTaxId } from "@/lib/business-init";
 import { BusinessFormModal } from "@/components/business-form-modal";
 import { EmailSettingsModal } from "@/components/email-settings-modal";
 import { DocumentNumberingSettings } from "@/components/document-numbering-settings";
@@ -35,13 +36,21 @@ export default function SettingsPage() {
   const [emailOpen, setEmailOpen] = useState(false);
   const confirm = useConfirm();
 
+  // Detect legacy placeholder values that were stored as real data
+  // ("העסק שלי" / "000000000" stuck around from the original auto-create).
+  // Renders these as muted "[לא הוגדר]" hints instead of bold black text,
+  // so the user understands they still need to fill in their real details.
+  const namePlaceholder = isPlaceholderBusinessName(business.name);
+  const taxIdPlaceholder = isPlaceholderBusinessTaxId(business.taxId);
+  const addressEmpty = !business.address?.trim();
+
   const fields = [
-    { icon: Building2, label: "שם העסק", value: business.name },
-    { icon: FileText, label: "סוג עוסק", value: BUSINESS_TYPE_LABELS[business.businessType] },
-    { icon: CreditCard, label: "מספר עוסק / ח.פ", value: business.taxId },
-    { icon: MapPin, label: "כתובת", value: business.address },
-    { icon: Phone, label: "טלפון", value: business.phone || "—" },
-    { icon: Mail, label: "אימייל", value: business.email || "—" },
+    { icon: Building2, label: "שם העסק", value: business.name, placeholder: namePlaceholder },
+    { icon: FileText, label: "סוג עוסק", value: BUSINESS_TYPE_LABELS[business.businessType], placeholder: false },
+    { icon: CreditCard, label: "מספר עוסק / ח.פ", value: business.taxId, placeholder: taxIdPlaceholder },
+    { icon: MapPin, label: "כתובת", value: business.address, placeholder: addressEmpty },
+    { icon: Phone, label: "טלפון", value: business.phone, placeholder: !business.phone },
+    { icon: Mail, label: "אימייל", value: business.email, placeholder: !business.email },
   ];
 
   const bankParts = [
@@ -133,7 +142,11 @@ export default function SettingsPage() {
                   <Icon className="w-4 h-4 text-orange-500" />
                 </div>
                 <span className="text-sm font-medium text-stone-700 w-40">{f.label}</span>
-                <span className="text-sm font-semibold text-stone-900 flex-1">{f.value}</span>
+                {f.placeholder ? (
+                  <span className="text-sm italic text-stone-400 flex-1">לא הוגדר</span>
+                ) : (
+                  <span className="text-sm font-semibold text-stone-900 flex-1">{f.value}</span>
+                )}
               </div>
             );
           })}
