@@ -17,6 +17,8 @@ import {
   Hash,
   Landmark,
   MessageSquare,
+  ShieldCheck,
+  ExternalLink,
 } from "lucide-react";
 import { useBusiness } from "@/lib/business-store";
 import { isPlaceholderBusinessName, isPlaceholderBusinessTaxId } from "@/lib/business-init";
@@ -209,6 +211,48 @@ export default function SettingsPage() {
           })}
         </div>
       </div>
+
+      {(business.businessType === "authorized" || business.businessType === "company") && (
+        <div className="card-soft p-6">
+          <div className="flex items-center gap-2 pb-4 border-b border-orange-100 mb-4">
+            <ShieldCheck className="w-4 h-4 text-orange-500" />
+            <h2 className="font-semibold text-stone-900">חשבונית ישראל (רשות המסים)</h2>
+          </div>
+          <p className="text-sm text-stone-700 leading-relaxed">
+            עוסק מורשה חייב במספר הקצאה (חשבונית ישראל) על חשבוניות מס מעל לסף השנתי שקבעה רשות המסים.
+            המערכת מקפצת אזהרה אדומה על מסמכים שדורשים הקצאה ולא תאפשר שליחה ללקוח לפני שהמספר משויך אליהם.
+          </p>
+          <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+            <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-3">
+              <p className="font-semibold text-emerald-900 mb-1">✓ פעיל היום</p>
+              <p className="text-emerald-800 leading-relaxed">
+                הקלדת מספר הקצאה ידנית במסמך לאחר קבלתו מהפורטל. המספר יודפס על ה-PDF.
+              </p>
+            </div>
+            <div className="rounded-xl bg-stone-50 border border-stone-200 p-3">
+              <p className="font-semibold text-stone-900 mb-1">⏳ בקרוב</p>
+              <p className="text-stone-700 leading-relaxed">
+                שליחה אוטומטית ישירות לרשות המסים וקבלת המספר חזרה. דורש תעודת חתימה דיגיטלית (Comsign / PersonalID).
+              </p>
+            </div>
+            <div className="rounded-xl bg-stone-50 border border-stone-200 p-3">
+              <p className="font-semibold text-stone-900 mb-1">תקרה שנתית</p>
+              <p className="text-stone-700 leading-relaxed">
+                2024: 25,000 ₪ · 2025: 20,000 ₪ · 2026: 5,000 ₪. כל שנה בינואר רשות המסים מורידה את הסף.
+              </p>
+            </div>
+          </div>
+          <a
+            href="https://invoices.gov.il"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-orange-700 hover:text-orange-900 underline"
+          >
+            <ExternalLink className="w-3.5 h-3.5" />
+            פורטל חשבונית ישראל
+          </a>
+        </div>
+      )}
 
       <div className="card-soft p-6">
         <div className="flex items-center gap-2 pb-4 border-b border-orange-100 mb-4">
