@@ -79,6 +79,12 @@ export interface InvoiceDocument {
    */
   allocationNumber?: string;
   allocationSetAt?: string;
+  /**
+   * When a quote was converted into a receipt/tax-invoice (because the
+   * client paid), this is the resulting doc's id. NULL on receipts and
+   * on quotes that haven't been converted yet.
+   */
+  convertedToId?: string;
 }
 
 export interface Expense {

@@ -18,7 +18,7 @@ import {
   Link as LinkIcon,
   Download,
 } from "lucide-react";
-import { useDocument, deleteDocument, updateDocumentStatus, markDocumentEmailed } from "@/lib/document-store";
+import { useDocument, useDocuments, deleteDocument, updateDocumentStatus, markDocumentEmailed } from "@/lib/document-store";
 import { publicDocumentUrl } from "@/lib/public-url";
 import { DocumentAttachmentsSection } from "@/components/document-attachments-section";
 import { AllocationNumberSection } from "@/components/allocation-number-section";
@@ -36,6 +36,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
   const { id } = use(params);
   const router = useRouter();
   const { document: doc, ready } = useDocument(id);
+  const { documents: allDocuments } = useDocuments();
   const { items: clients } = useClients();
   const { business } = useBusiness();
 
@@ -68,7 +69,24 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
   const client = clients.find((c) => c.id === doc.clientId) ?? null;
   const isQuote = doc.type === "quote";
   const isReceipt = doc.type === "receipt" || doc.type === "tax_invoice_receipt";
-  const canConvert = isQuote && doc.status !== "cancelled";
+  // Convert button only relevant for sent/paid quotes that haven't already
+  // been converted. Drafts can't be converted (haven't been issued to the
+  // client yet); cancelled and already-converted ones can't either.
+  const canConvert =
+    isQuote &&
+    doc.status !== "cancelled" &&
+    doc.status !== "draft" &&
+    !doc.convertedToId;
+  // The doc this quote was converted into (if any) — used to render a
+  // "→ הומר לקבלה #N" link instead of the convert button.
+  const convertedDoc = doc.convertedToId
+    ? allDocuments.find((d) => d.id === doc.convertedToId)
+    : null;
+  // The quote this receipt was created FROM (if it was a conversion) —
+  // shown as a "← נוצר מהצעה #N" link.
+  const sourceQuote = !isQuote
+    ? allDocuments.find((d) => d.convertedToId === doc.id)
+    : null;
   const isPaid = doc.status === "paid";
   // Always use the canonical origin for share links so they don't bake in
   // a per-deploy hash URL and decay into stale-code views.
@@ -209,6 +227,13 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
 
   async function handleConvertToReceipt() {
     if (!doc) return;
+    const targetTypeLabel = canIssueTaxInvoices(business) ? "חשבונית מס" : "קבלה";
+    const ok = await confirm({
+      title: `להמיר את הצעה #${doc.number} ל${targetTypeLabel}?`,
+      message: `ייפתח טופס חדש עם פרטי ההצעה כבר ממולאים. לאחר שתשמור אותו, ההצעה המקורית תסומן כשולמה ותקושר ל${targetTypeLabel} שייווצר.`,
+      confirmLabel: "המשך",
+    });
+    if (!ok) return;
     const targetType = canIssueTaxInvoices(business) ? "tax-invoice" : "receipt";
     router.push(`/documents/new/${targetType}?from=${doc.id}&convert=1`);
   }
@@ -294,11 +319,39 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
             <button
               onClick={handleConvertToReceipt}
               className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100"
-              title="המר את ההצעה לקבלה / חשבונית"
+              title="המר את ההצעה לקבלה / חשבונית — הצעה תסומן כשולמה"
             >
               <RefreshCw className="w-4 h-4" />
               <span className="hidden sm:inline">המר ל{canIssueTaxInvoices(business) ? "חשבונית מס" : "קבלה"}</span>
             </button>
+          )}
+          {/* If this quote was already converted, show the receipt link
+              instead of the convert button so user can navigate over. */}
+          {isQuote && convertedDoc && (
+            <Link
+              href={`/documents/${convertedDoc.id}`}
+              className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-emerald-50 border border-emerald-200 text-emerald-800 hover:bg-emerald-100"
+              title={`הומר ל${DOCUMENT_TYPE_LABELS[convertedDoc.type]} #${convertedDoc.number}`}
+            >
+              <RefreshCw className="w-4 h-4" />
+              <span className="hidden sm:inline">
+                הומר ל{DOCUMENT_TYPE_LABELS[convertedDoc.type]} #{convertedDoc.number}
+              </span>
+            </Link>
+          )}
+          {/* On a receipt that was created via conversion, link back to
+              the source quote so user can compare or audit. */}
+          {!isQuote && sourceQuote && (
+            <Link
+              href={`/documents/${sourceQuote.id}`}
+              className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-amber-50 border border-amber-200 text-amber-800 hover:bg-amber-100"
+              title={`נוצר מהצעת מחיר #${sourceQuote.number}`}
+            >
+              <ArrowRight className="w-4 h-4 rotate-180" />
+              <span className="hidden sm:inline">
+                מהצעה #{sourceQuote.number}
+              </span>
+            </Link>
           )}
           <button
             onClick={handleDuplicate}

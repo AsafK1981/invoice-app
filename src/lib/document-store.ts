@@ -29,6 +29,7 @@ function mapDocRow(row: Record<string, unknown>, items: DocumentItem[]): Invoice
     emailedAt: (row.emailed_at as string) || undefined,
     allocationNumber: (row.allocation_number as string) || undefined,
     allocationSetAt: (row.allocation_set_at as string) || undefined,
+    convertedToId: (row.converted_to_id as string) || undefined,
   };
 }
 
@@ -219,6 +220,29 @@ export async function updateDocumentStatus(id: string, status: InvoiceDocument["
  * can show a clear "✓ נשלח" indicator (the existing `status` field is set
  * to "sent" on doc creation and doesn't actually mean an email went out).
  */
+/**
+ * Records that `sourceQuoteId` was converted into `targetReceiptId` and
+ * marks the source quote as "paid" — because conversion only happens
+ * when the client actually paid for the quote. One transaction, both
+ * updates. Used by the receipt editor after a successful create-from
+ * convert flow.
+ */
+export async function linkConvertedDocument(sourceQuoteId: string, targetReceiptId: string) {
+  const { data, error } = await supabase
+    .from("documents")
+    .update({
+      converted_to_id: targetReceiptId,
+      status: "paid",
+    })
+    .eq("id", sourceQuoteId)
+    .select();
+  if (error) throw new Error(error.message);
+  if (!data || data.length === 0) {
+    throw new Error("עדכון מסמך המקור נכשל — ייתכן שאין הרשאה (RLS) או שהמסמך לא קיים");
+  }
+  window.dispatchEvent(new Event(CHANGE_EVENT));
+}
+
 /**
  * Sets (or clears) the מספר הקצאה on a document. Pass null/empty to clear.
  * Sets allocation_set_at to now() when a number is provided so the UI can

@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
 import { sendReceiptEmail } from "@/lib/email";
-import { createDocument, markDocumentEmailed, useDocuments } from "@/lib/document-store";
+import { createDocument, linkConvertedDocument, markDocumentEmailed, useDocuments } from "@/lib/document-store";
 import { parseEmails, joinEmails, isValidEmail } from "@/lib/emails";
 import { getVatRate, computeAmounts, round2, type VatMode } from "@/lib/vat";
 import { getClientDefaults } from "@/lib/client-defaults";
@@ -437,6 +437,18 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
       // The doc actually persisted; clear the localStorage draft so it doesn't
       // come back to haunt the next "new document" session.
       clearDraft(documentType);
+
+      // If this was a convert-from-quote flow, link the original quote to
+      // this new receipt and mark it paid. Failures are logged but
+      // don't block the success toast — the receipt itself is already
+      // created, the link is purely for navigation/UX.
+      if (isConvert && fromDocId) {
+        try {
+          await linkConvertedDocument(fromDocId, docId);
+        } catch (err) {
+          console.warn("[convert] failed to link source quote", err);
+        }
+      }
 
       if (sendEmail) {
         const result = await sendReceiptEmail({
