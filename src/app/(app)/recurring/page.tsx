@@ -12,6 +12,7 @@ import {
   Sparkles,
   AlertCircle,
   CheckCircle2,
+  SkipForward,
 } from "lucide-react";
 import {
   useRecurringTemplates,
@@ -93,6 +94,16 @@ export default function RecurringPage() {
 
   async function handleToggleActive(template: RecurringTemplate) {
     await saveTemplate({ ...template, active: !template.active });
+  }
+
+  async function handleSkip(template: RecurringTemplate) {
+    // Advances nextDue without creating a doc — useful when a client
+    // cancels for a single period but the recurring relationship continues.
+    await saveTemplate({
+      ...template,
+      nextDue: calculateNextDue(template.nextDue, template.frequency),
+    });
+    setToast({ kind: "success", text: `דילגת על התקופה הזו של ${template.clientName}` });
   }
 
   async function handleDelete(id: string) {
@@ -225,6 +236,15 @@ export default function RecurringPage() {
                       <Plus className="w-4 h-4" />
                       {creatingId === t.id ? "יוצר..." : "הפק עכשיו"}
                     </button>
+                    {isDue && (
+                      <button
+                        onClick={() => handleSkip(t)}
+                        className="w-9 h-9 rounded-xl text-stone-500 hover:bg-stone-100 flex items-center justify-center"
+                        title="דלג על התקופה הזו (מתקדם לתאריך הבא בלי להפיק מסמך)"
+                      >
+                        <SkipForward className="w-4 h-4" />
+                      </button>
+                    )}
                     <button
                       onClick={() => handleToggleActive(t)}
                       className="w-9 h-9 rounded-xl text-stone-500 hover:bg-stone-100 flex items-center justify-center"

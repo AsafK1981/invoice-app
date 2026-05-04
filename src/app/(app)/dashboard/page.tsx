@@ -28,6 +28,7 @@ import { ExpenseCategoriesChart } from "@/components/expense-categories-chart";
 import { QuoteAging } from "@/components/quote-aging";
 import { OnboardingChecklist } from "@/components/onboarding-checklist";
 import { ExemptCeilingTracker } from "@/components/exempt-ceiling-tracker";
+import { RecurringDueAlert } from "@/components/recurring-due-alert";
 
 type DateRange = "this_month" | "last_3_months" | "this_year" | "all_time";
 
@@ -203,6 +204,8 @@ export default function DashboardPage() {
       />
 
       <ExemptCeilingTracker business={business} documents={documents} />
+
+      <RecurringDueAlert />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {cards.map((s, idx) => {
