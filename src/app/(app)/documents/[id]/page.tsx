@@ -212,15 +212,42 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
 
   async function handleDelete() {
     if (!doc) return;
-    if (doc.status !== "draft") {
-      alert("לא ניתן למחוק מסמך שנשלח או שולם. ניתן להפיק חשבונית זיכוי במקום.");
-      return;
+
+    // Quotes (חשבון עסקה / הצעת מחיר) aren't tax-recognized documents —
+    // deleting one is fine. Tax invoices and receipts ARE legally
+    // protected: the prescribed flow is a credit note, not deletion.
+    // For the latter we still allow a force-delete escape hatch (it's
+    // the user's own books, and "this was a test" is a real case),
+    // just with a much sterner confirm dialog.
+    const isLegallyProtected =
+      doc.type === "receipt" ||
+      doc.type === "tax_invoice" ||
+      doc.type === "tax_invoice_receipt" ||
+      doc.type === "credit_note";
+
+    let message: string;
+    let confirmLabel: string;
+    if (doc.status === "draft") {
+      message = "פעולה זו לא ניתנת לביטול.";
+      confirmLabel = "מחק מסמך";
+    } else if (!isLegallyProtected) {
+      // Non-draft quote
+      message =
+        "המסמך כבר הופק. המחיקה היא סופית והמספור לא יוחזר — תהיה רצף חסר במספרי המסמכים.";
+      confirmLabel = "מחק בכל זאת";
+    } else {
+      // Non-draft receipt/tax invoice/credit note: legally should be a
+      // credit note. Force-delete is allowed but only for true test data.
+      message =
+        "מסמכי מס וקבלות הם רשומות חשבונאיות — הדרך הנכונה לבטל היא הפקת חשבונית זיכוי. אם זה היה ניסיון בלבד שלא נשלח ללקוח אמיתי, אפשר למחוק בכפייה. המחיקה לא תוחזר ולא יישאר תיעוד למסמך.";
+      confirmLabel = "מחק בכפייה (היה ניסיון)";
     }
+
     const ok = await confirm({
       title: `למחוק את מסמך #${doc.number}?`,
-      message: "פעולה זו לא ניתנת לביטול.",
+      message,
       tone: "danger",
-      confirmLabel: "מחק מסמך",
+      confirmLabel,
     });
     if (ok) {
       await deleteDocument(doc.id);
