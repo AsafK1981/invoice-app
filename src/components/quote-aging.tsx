@@ -1,7 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { Clock, AlertTriangle, CheckCircle2, FileQuestion, ArrowLeft } from "lucide-react";
+import { Clock, AlertTriangle, CheckCircle2, FileQuestion, ArrowLeft, ChevronDown } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
 import type { InvoiceDocument } from "@/lib/types";
 
@@ -9,14 +10,19 @@ interface Props {
   documents: InvoiceDocument[];
 }
 
+type BucketKey = "fresh" | "aging" | "stale";
+
 interface Bucket {
+  key: BucketKey;
   label: string;
   count: number;
   value: number;
+  items: InvoiceDocument[];
   icon: typeof Clock;
   color: string;
   bg: string;
   border: string;
+  expandedBg: string;
 }
 
 function daysSince(date: string): number {
@@ -26,12 +32,9 @@ function daysSince(date: string): number {
 export function QuoteAging({ documents }: Props) {
   const openQuotes = documents.filter((d) => d.type === "quote" && d.status === "sent");
 
-  if (openQuotes.length === 0) return null;
-
   const fresh: InvoiceDocument[] = [];
   const aging: InvoiceDocument[] = [];
   const stale: InvoiceDocument[] = [];
-
   for (const q of openQuotes) {
     const d = daysSince(q.date);
     if (d < 7) fresh.push(q);
@@ -39,37 +42,55 @@ export function QuoteAging({ documents }: Props) {
     else stale.push(q);
   }
 
+  // Default to showing the stale bucket if any exist (preserves the
+  // urgent "you have N stale quotes" surface from before the buckets
+  // became clickable). Otherwise no bucket is auto-expanded.
+  const [expanded, setExpanded] = useState<BucketKey | null>(stale.length > 0 ? "stale" : null);
+
+  if (openQuotes.length === 0) return null;
+
   const totalValue = openQuotes.reduce((s, q) => s + q.total, 0);
 
   const buckets: Bucket[] = [
     {
+      key: "fresh",
       label: "טריות (פחות משבוע)",
       count: fresh.length,
       value: fresh.reduce((s, q) => s + q.total, 0),
+      items: fresh,
       icon: CheckCircle2,
       color: "text-emerald-700",
       bg: "bg-emerald-50",
       border: "border-emerald-200",
+      expandedBg: "bg-emerald-50/50 border-emerald-200",
     },
     {
+      key: "aging",
       label: "מתבגרות (1-2 שבועות)",
       count: aging.length,
       value: aging.reduce((s, q) => s + q.total, 0),
+      items: aging,
       icon: Clock,
       color: "text-amber-700",
       bg: "bg-amber-50",
       border: "border-amber-200",
+      expandedBg: "bg-amber-50/50 border-amber-200",
     },
     {
+      key: "stale",
       label: "ישנות (יותר משבועיים)",
       count: stale.length,
       value: stale.reduce((s, q) => s + q.total, 0),
+      items: stale,
       icon: AlertTriangle,
       color: "text-rose-700",
       bg: "bg-rose-50",
       border: "border-rose-200",
+      expandedBg: "bg-rose-50/50 border-rose-100",
     },
   ];
+
+  const expandedBucket = buckets.find((b) => b.key === expanded) ?? null;
 
   return (
     <div className="card-soft p-5">
@@ -81,11 +102,11 @@ export function QuoteAging({ documents }: Props) {
           </h2>
           <p className="text-xs text-stone-600 mt-1">
             סה״כ <span className="font-semibold text-stone-900">{formatCurrency(totalValue)}</span>{" "}
-            ב-{openQuotes.length} {openQuotes.length === 1 ? "הצעה" : "הצעות"} ממתינות לתשובה
+            ב-{openQuotes.length} {openQuotes.length === 1 ? "הצעה" : "הצעות"} ממתינות לתשובה. לחץ על קבוצה כדי לראות איזה.
           </p>
         </div>
         <Link
-          href="/documents"
+          href="/documents?type=quote&status=sent"
           className="inline-flex items-center gap-1 text-sm text-orange-600 hover:text-orange-700 font-medium group flex-shrink-0"
         >
           לכל המסמכים
@@ -97,16 +118,35 @@ export function QuoteAging({ documents }: Props) {
         {buckets.map((b) => {
           const Icon = b.icon;
           const empty = b.count === 0;
+          const isExpanded = expanded === b.key;
           return (
-            <div
-              key={b.label}
-              className={`rounded-2xl border p-4 ${empty ? "bg-stone-50 border-stone-200" : `${b.bg} ${b.border}`}`}
+            <button
+              key={b.key}
+              type="button"
+              onClick={() => {
+                if (empty) return;
+                setExpanded(isExpanded ? null : b.key);
+              }}
+              disabled={empty}
+              aria-expanded={isExpanded}
+              className={`text-right rounded-2xl border p-4 transition-all ${
+                empty
+                  ? "bg-stone-50 border-stone-200 cursor-not-allowed"
+                  : isExpanded
+                    ? `${b.bg} ${b.border} ring-2 ring-offset-1 ${b.color.replace("text-", "ring-")}/40 cursor-pointer`
+                    : `${b.bg} ${b.border} hover:shadow-md hover:-translate-y-0.5 cursor-pointer`
+              }`}
             >
               <div className="flex items-center gap-2 mb-2">
                 <Icon className={`w-4 h-4 ${empty ? "text-stone-400" : b.color}`} />
                 <span className={`text-xs font-medium ${empty ? "text-stone-500" : b.color}`}>
                   {b.label}
                 </span>
+                {!empty && (
+                  <ChevronDown
+                    className={`w-3.5 h-3.5 mr-auto ${b.color} transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                  />
+                )}
               </div>
               <div className="flex items-baseline gap-2">
                 <span className={`text-2xl font-bold ${empty ? "text-stone-400" : "text-stone-900"}`}>
@@ -114,29 +154,21 @@ export function QuoteAging({ documents }: Props) {
                 </span>
                 {!empty && (
                   <span className="text-xs text-stone-600">
-                    · {formatCurrency(b.value)}
+                    · <span dir="ltr">{formatCurrency(b.value)}</span>
                   </span>
                 )}
               </div>
-            </div>
+            </button>
           );
         })}
       </div>
 
-      {stale.length > 0 && (
-        <div className="mt-4 bg-rose-50/50 border border-rose-100 p-3 rounded-xl">
-          <div className="flex items-start gap-2 text-xs text-rose-700 mb-2">
-            <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-            <span>
-              <strong>{stale.length} {stale.length === 1 ? "הצעה" : "הצעות"}</strong> פתוחות מעל שבועיים בשווי{" "}
-              {formatCurrency(stale.reduce((s, q) => s + q.total, 0))}. כדאי לפתוח ולשלוח תזכורת.
-            </span>
-          </div>
+      {expandedBucket && expandedBucket.count > 0 && (
+        <div className={`mt-4 ${expandedBucket.expandedBg} border p-3 rounded-xl`}>
           <ul className="space-y-1">
-            {stale
+            {expandedBucket.items
               .slice()
               .sort((a, b) => a.date.localeCompare(b.date))
-              .slice(0, 5)
               .map((q) => {
                 const days = daysSince(q.date);
                 return (
@@ -154,7 +186,7 @@ export function QuoteAging({ documents }: Props) {
                       </span>
                       <span className="flex items-center gap-2 text-stone-600 flex-shrink-0">
                         <span className="font-medium" dir="ltr">{formatCurrency(q.total)}</span>
-                        <span className="text-rose-700 font-semibold tabular-nums">
+                        <span className={`${expandedBucket.color} font-semibold tabular-nums`}>
                           {days}י׳
                         </span>
                       </span>
@@ -162,9 +194,6 @@ export function QuoteAging({ documents }: Props) {
                   </li>
                 );
               })}
-            {stale.length > 5 && (
-              <li className="text-xs text-stone-500 pt-1">ועוד {stale.length - 5}…</li>
-            )}
           </ul>
         </div>
       )}
