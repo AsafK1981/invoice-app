@@ -171,7 +171,7 @@ export function DocumentsTable({ documents, limit, showExport = false }: Props) 
 
   return (
     <div>
-      <div className="flex flex-wrap items-center gap-3 px-6 py-4 bg-orange-50 border-b border-orange-100 sticky top-0 z-10">
+      <div className="flex flex-wrap items-center gap-3 px-3 sm:px-6 py-4 bg-orange-50 border-b border-orange-100 sticky top-0 z-10">
         <div className="relative">
           <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-stone-400" />
           <input
@@ -179,7 +179,7 @@ export function DocumentsTable({ documents, limit, showExport = false }: Props) 
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="חיפוש: מספר, לקוח, סכום, תיאור פריט..."
-            className="input-warm pr-10 pl-9 w-72"
+            className="input-warm pr-10 pl-9 w-full sm:w-72"
           />
           {search && (
             <button
@@ -295,7 +295,7 @@ export function DocumentsTable({ documents, limit, showExport = false }: Props) 
                 onClick={() => toggleSort("total")}
                 align="left"
               />
-              <th className="px-2 sm:px-4 py-3 w-10"></th>
+              <th className="px-2 sm:px-4 py-3 w-20"></th>
             </tr>
           </thead>
           <tbody>

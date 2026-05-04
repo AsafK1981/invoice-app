@@ -65,6 +65,16 @@ export function AllocationNumberSection({ doc }: Props) {
   }
 
   async function handleClear() {
+    // If the doc has already been emailed to the client, the allocation
+    // is part of what was delivered — clearing it leaves the recipient
+    // with a doc that cites a number we no longer have on record.
+    // Require explicit confirmation in that case.
+    if (doc.emailedAt) {
+      const ok = window.confirm(
+        "המסמך כבר נשלח ללקוח עם מספר ההקצאה הזה. ניקוי המספר אינו מבטל את החשבונית — אם זו טעות, צור חשבונית זיכוי במקום. להמשיך בכל זאת?",
+      );
+      if (!ok) return;
+    }
     setSaving(true);
     setError(null);
     try {

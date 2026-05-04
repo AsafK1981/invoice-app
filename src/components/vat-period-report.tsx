@@ -85,7 +85,13 @@ export function VatPeriodReport({ business, documents, expenses }: Props) {
   // ALL hooks must run before any conditional return — same trap as
   // React #310 yesterday. The early return for עוסק פטור comes last.
   const [mode, setMode] = useState<PeriodMode>("this_2m");
-  const today = new Date();
+  // Stable across renders. Without memo, the next two useMemos invalidate
+  // every render because Date instances aren't ===; the report would
+  // re-aggregate documents/expenses on every keystroke elsewhere on the
+  // page. Recompute would be wasted work — the period only depends on
+  // today's calendar date, which doesn't change for the life of the
+  // component instance (worst case: midnight rollover, acceptable).
+  const today = useMemo(() => new Date(), []);
   const range = useMemo(() => {
     switch (mode) {
       case "this_2m": return biMonthlyRange(today, 0);
@@ -122,12 +128,14 @@ export function VatPeriodReport({ business, documents, expenses }: Props) {
     }
 
     // Input VAT (מע"מ תשומות) = sum of vat_amount on expenses in period.
+    // Clamp negative net-of-VAT to 0 in case the user typed a vat_amount
+    // larger than the total amount (typo) — base shouldn't go negative.
     let inputVat = 0;
     let inputBase = 0;
     for (const e of expensesInRange) {
       const v = e.vatAmount || 0;
       inputVat += v;
-      inputBase += (e.amount - v);
+      inputBase += Math.max(0, e.amount - v);
     }
 
     return {

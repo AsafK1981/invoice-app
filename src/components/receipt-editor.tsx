@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import {
@@ -23,6 +23,7 @@ import {
 import { formatCurrency } from "@/lib/format";
 import { sendReceiptEmail } from "@/lib/email";
 import { createDocument, linkConvertedDocument, markDocumentEmailed, useDocuments } from "@/lib/document-store";
+import { getBusinessId } from "@/lib/business-init";
 import { parseEmails, joinEmails, isValidEmail } from "@/lib/emails";
 import { getVatRate, computeAmounts, round2, type VatMode } from "@/lib/vat";
 import { getClientDefaults } from "@/lib/client-defaults";
@@ -104,6 +105,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   const [paymentMethodTouched, setPaymentMethodTouched] = useState<boolean>(false);
   const [showPreviewMobile, setShowPreviewMobile] = useState<boolean>(false);
   const [saving, setSaving] = useState<boolean>(false);
+  const saveInFlightRef = useRef(false);
   const [toast, setToast] = useState<{ kind: "success" | "error"; text: string } | null>(null);
 
   const { documents: allDocuments } = useDocuments();
@@ -269,6 +271,15 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
         .eq("id", fromDocId)
         .maybeSingle();
       if (!srcDoc) return;
+      // Sanity: srcDoc must belong to the currently-active business.
+      // RLS already prevents cross-tenant reads, but if the user
+      // switched business mid-flow (between clicking "Convert" and the
+      // editor mounting) we'd silently apply the wrong VAT rate / sign.
+      const currentBid = getBusinessId();
+      if (currentBid && srcDoc.business_id !== currentBid) {
+        console.warn("[convert] source doc belongs to a different business — abort");
+        return;
+      }
       const { data: srcItems } = await supabase
         .from("document_items")
         .select("*")
@@ -392,6 +403,13 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
 
   async function handleSave() {
     if (!canSave) return;
+    // Hard double-click guard. The disabled-button-via-state approach loses
+    // a race on rapid taps because React batches the disabled re-render
+    // until after the click handler returns; a fast double-tap on mobile
+    // reliably fires twice and would create two docs + two emails. The
+    // ref check fires synchronously on the very first call.
+    if (saveInFlightRef.current) return;
+    saveInFlightRef.current = true;
     setSaving(true);
     setToast(null);
 
@@ -495,6 +513,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
       const message = err instanceof Error ? err.message : "שגיאה לא ידועה";
       setToast({ kind: "error", text: `שמירת המסמך נכשלה: ${message}` });
     } finally {
+      saveInFlightRef.current = false;
       setSaving(false);
     }
   }

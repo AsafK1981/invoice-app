@@ -236,9 +236,9 @@ export default function SettingsPage() {
               </p>
             </div>
             <div className="rounded-xl bg-stone-50 border border-stone-200 p-3">
-              <p className="font-semibold text-stone-900 mb-1">תקרה שנתית</p>
+              <p className="font-semibold text-stone-900 mb-1">סף הקצאה שנתי</p>
               <p className="text-stone-700 leading-relaxed">
-                2024: 25,000 ₪ · 2025: 20,000 ₪ · 2026: 5,000 ₪. כל שנה בינואר רשות המסים מורידה את הסף.
+                <span dir="ltr">2024: ₪25,000</span> · <span dir="ltr">2025: ₪20,000</span> · <span dir="ltr">2026: ₪5,000</span>. כל שנה בינואר רשות המסים מורידה את הסף. (אין קשר לתקרת מחזור עוסק פטור — זה סף לחובת מספר הקצאה.)
               </p>
             </div>
           </div>

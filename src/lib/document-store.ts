@@ -228,6 +228,11 @@ export async function updateDocumentStatus(id: string, status: InvoiceDocument["
  * convert flow.
  */
 export async function linkConvertedDocument(sourceQuoteId: string, targetReceiptId: string) {
+  // Race-safe: only update when converted_to_id is still null. Two tabs
+  // converting the same quote simultaneously would otherwise produce two
+  // different receipts and the second tab's link would silently overwrite
+  // the first. With this guard the second update returns 0 rows and we
+  // throw a clear error instead.
   const { data, error } = await supabase
     .from("documents")
     .update({
@@ -235,10 +240,13 @@ export async function linkConvertedDocument(sourceQuoteId: string, targetReceipt
       status: "paid",
     })
     .eq("id", sourceQuoteId)
+    .is("converted_to_id", null)
     .select();
   if (error) throw new Error(error.message);
   if (!data || data.length === 0) {
-    throw new Error("עדכון מסמך המקור נכשל — ייתכן שאין הרשאה (RLS) או שהמסמך לא קיים");
+    throw new Error(
+      "ההצעה כבר הומרה לקבלה אחרת — שני טאבים פעילים? רענן ובדוק.",
+    );
   }
   window.dispatchEvent(new Event(CHANGE_EVENT));
 }

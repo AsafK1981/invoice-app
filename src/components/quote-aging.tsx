@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Clock, AlertTriangle, CheckCircle2, FileQuestion, ArrowLeft, ChevronDown } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
@@ -46,6 +46,14 @@ export function QuoteAging({ documents }: Props) {
   // urgent "you have N stale quotes" surface from before the buckets
   // became clickable). Otherwise no bucket is auto-expanded.
   const [expanded, setExpanded] = useState<BucketKey | null>(stale.length > 0 ? "stale" : null);
+  // If the currently-expanded bucket goes empty mid-session (e.g. the
+  // user marked a stale quote as paid, leaving the bucket empty), close
+  // it so we don't show an empty list under a now-unclickable card.
+  useEffect(() => {
+    if (expanded === "fresh" && fresh.length === 0) setExpanded(null);
+    else if (expanded === "aging" && aging.length === 0) setExpanded(null);
+    else if (expanded === "stale" && stale.length === 0) setExpanded(null);
+  }, [expanded, fresh.length, aging.length, stale.length]);
 
   if (openQuotes.length === 0) return null;
 
@@ -102,7 +110,7 @@ export function QuoteAging({ documents }: Props) {
           </h2>
           <p className="text-xs text-stone-600 mt-1">
             סה״כ <span className="font-semibold text-stone-900">{formatCurrency(totalValue)}</span>{" "}
-            ב-{openQuotes.length} {openQuotes.length === 1 ? "הצעה" : "הצעות"} ממתינות לתשובה. לחץ על קבוצה כדי לראות איזה.
+            ב-{openQuotes.length} {openQuotes.length === 1 ? "הצעה" : "הצעות"} ממתינות לתשובה. לחץ על קבוצה כדי לראות אילו.
           </p>
         </div>
         <Link
@@ -186,8 +194,8 @@ export function QuoteAging({ documents }: Props) {
                       </span>
                       <span className="flex items-center gap-2 text-stone-600 flex-shrink-0">
                         <span className="font-medium" dir="ltr">{formatCurrency(q.total)}</span>
-                        <span className={`${expandedBucket.color} font-semibold tabular-nums`}>
-                          {days}י׳
+                        <span className={`${expandedBucket.color} font-semibold tabular-nums`} dir="rtl">
+                          {days} י׳
                         </span>
                       </span>
                     </Link>

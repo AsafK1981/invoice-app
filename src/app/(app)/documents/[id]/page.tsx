@@ -250,14 +250,21 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
 
   async function handleConvertToReceipt() {
     if (!doc) return;
-    const targetTypeLabel = canIssueTaxInvoices(business) ? "חשבונית מס" : "קבלה";
+    // Convert produces a doc that represents "paid for" the original quote.
+    // עוסק פטור: receipt (קבלה).
+    // עוסק מורשה / company: tax_invoice_receipt (חשבונית מס/קבלה) — combines
+    // the tax invoice and the receipt in one doc, status auto-paid. Routing
+    // to plain tax_invoice would leave it status=sent, which is wrong: the
+    // client already paid.
+    const isAuthorized = canIssueTaxInvoices(business);
+    const targetType = isAuthorized ? "tax-invoice-receipt" : "receipt";
+    const targetTypeLabel = isAuthorized ? "חשבונית מס/קבלה" : "קבלה";
     const ok = await confirm({
       title: `להמיר את הצעה #${doc.number} ל${targetTypeLabel}?`,
       message: `ייפתח טופס חדש עם פרטי ההצעה כבר ממולאים. לאחר שתשמור אותו, ההצעה המקורית תסומן כשולמה ותקושר ל${targetTypeLabel} שייווצר.`,
       confirmLabel: "המשך",
     });
     if (!ok) return;
-    const targetType = canIssueTaxInvoices(business) ? "tax-invoice" : "receipt";
     router.push(`/documents/new/${targetType}?from=${doc.id}&convert=1`);
   }
 
@@ -345,7 +352,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
               title="המר את ההצעה לקבלה / חשבונית — הצעה תסומן כשולמה"
             >
               <RefreshCw className="w-4 h-4" />
-              <span className="hidden sm:inline">המר ל{canIssueTaxInvoices(business) ? "חשבונית מס" : "קבלה"}</span>
+              <span className="hidden sm:inline">המר ל{canIssueTaxInvoices(business) ? "חשבונית מס/קבלה" : "קבלה"}</span>
             </button>
           )}
           {/* If this quote was already converted, show the receipt link
@@ -500,7 +507,10 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
             {moreOpen && (
               <div
                 role="menu"
-                className="absolute top-full mt-2 left-0 z-30 w-56 bg-white rounded-2xl shadow-lg border border-orange-100 p-1 flex flex-col gap-0.5 animate-fade-in"
+                // RTL: anchor to the inline-start side (right in RTL, left in
+                // LTR) so the panel doesn't clip off-viewport when the
+                // trigger sits near the start of the action row.
+                className="absolute top-full mt-2 right-0 z-30 w-56 bg-white rounded-2xl shadow-lg border border-orange-100 p-1 flex flex-col gap-0.5 animate-fade-in"
               >
                 <button
                   role="menuitem"
