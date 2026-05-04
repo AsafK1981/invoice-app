@@ -28,6 +28,7 @@ import { useBusiness } from "@/lib/business-store";
 import { sendReceiptEmail } from "@/lib/email";
 import { ReceiptView } from "@/components/receipt-view";
 import { canIssueTaxInvoices } from "@/lib/vat";
+import { requiresAllocationNumber } from "@/lib/tax-authority";
 import { formatCurrency } from "@/lib/format";
 import { DOCUMENT_TYPE_LABELS } from "@/lib/types";
 
@@ -81,6 +82,11 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
     return days;
   })();
 
+  // True when the doc legally needs a מספר הקצאה but doesn't have one yet.
+  // Used to disable any "send to client" button — sending without it would
+  // be a regulatory violation.
+  const allocationGate = requiresAllocationNumber(doc) && !doc.allocationNumber;
+
   function handlePrint() {
     window.print();
   }
@@ -105,6 +111,16 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
 
   async function handleResend(asReminder = false) {
     if (!doc) return;
+    // Tax Authority gate: don't let the user send a tax invoice that
+    // legally requires a מספר הקצאה without one. The law forbids
+    // delivering the doc to the buyer until the allocation is in.
+    if (requiresAllocationNumber(doc) && !doc.allocationNumber) {
+      setToast({
+        kind: "error",
+        text: 'יש להוסיף מספר הקצאה לפני שליחה. גלול מטה לבלוק "נדרש מספר הקצאה".',
+      });
+      return;
+    }
     const to = client?.email;
     if (!to) {
       setToast({ kind: "error", text: "אין אימייל שמור ללקוח - הוסף בעמוד הלקוחות" });
@@ -158,6 +174,13 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
 
   function handleWhatsApp() {
     if (!doc) return;
+    if (requiresAllocationNumber(doc) && !doc.allocationNumber) {
+      setToast({
+        kind: "error",
+        text: 'יש להוסיף מספר הקצאה לפני שליחה. גלול מטה לבלוק "נדרש מספר הקצאה".',
+      });
+      return;
+    }
     const docLabel = DOCUMENT_TYPE_LABELS[doc.type];
     const message =
       `שלום ${doc.clientName},\n\n` +
@@ -295,17 +318,28 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
           </button>
           <button
             onClick={handleWhatsApp}
-            className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-50"
-            title={client?.phone ? `שליחה ל-${client.phone}` : "שליחה ב-WhatsApp"}
+            disabled={allocationGate}
+            className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            title={
+              allocationGate
+                ? "חסר מספר הקצאה — אסור לשלוח חשבונית מס מבלעדיו"
+                : client?.phone ? `שליחה ל-${client.phone}` : "שליחה ב-WhatsApp"
+            }
           >
             <MessageCircle className="w-4 h-4" />
             <span className="hidden sm:inline">WhatsApp</span>
           </button>
           <button
             onClick={() => handleResend(false)}
-            disabled={sending || !client?.email}
+            disabled={sending || !client?.email || allocationGate}
             className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-white border border-orange-200 text-stone-800 hover:bg-orange-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            title={client?.email ? `שליחה ל-${client.email}` : "אין אימייל שמור ללקוח"}
+            title={
+              allocationGate
+                ? "חסר מספר הקצאה — אסור לשלוח חשבונית מס מבלעדיו"
+                : client?.email
+                  ? `שליחה ל-${client.email}`
+                  : "אין אימייל שמור ללקוח"
+            }
           >
             {sending ? (
               <>
