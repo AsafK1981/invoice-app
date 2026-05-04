@@ -223,6 +223,29 @@ export default function DashboardPage() {
 
       <RecurringDueAlert />
 
+      {/* Empty-state hero — only when the user has zero docs at all
+          (across all time). Replaces the dense KPI grid with an obvious
+          "create your first" CTA. Auto-disappears the moment they
+          create their first doc. */}
+      {ready && documents.length === 0 && (
+        <div className="card-soft p-8 bg-gradient-to-br from-orange-50 to-rose-50 border-orange-200 text-center">
+          <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-orange-400 to-rose-400 flex items-center justify-center shadow-lg shadow-orange-200/50 mx-auto mb-4">
+            <Sparkles className="w-7 h-7 text-white" />
+          </div>
+          <h2 className="text-xl font-bold text-stone-900 mb-2">בואו נתחיל</h2>
+          <p className="text-sm text-stone-700 mb-5 max-w-md mx-auto leading-relaxed">
+            עדיין אין לך מסמכים. הפק חשבון עסקה, הצעת מחיר או קבלה ראשונה — זה לוקח דקה. הסטטיסטיקות יופיעו כאן ברגע שיהיה מה לסכם.
+          </p>
+          <Link
+            href="/documents/new"
+            className="inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-6 py-3 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200 transition-all"
+          >
+            <Plus className="w-4 h-4" />
+            צור מסמך ראשון
+          </Link>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {cards.map((s, idx) => {
           const Icon = s.icon;

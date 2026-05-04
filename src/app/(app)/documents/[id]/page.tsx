@@ -18,6 +18,7 @@ import {
   Link as LinkIcon,
   Download,
   MoreHorizontal,
+  X,
 } from "lucide-react";
 import { useDocument, useDocuments, deleteDocument, updateDocumentStatus, markDocumentEmailed } from "@/lib/document-store";
 import { publicDocumentUrl } from "@/lib/public-url";
@@ -49,6 +50,19 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
   // a "⋯" popover. Desktop (sm+) keeps showing everything inline.
   const [moreOpen, setMoreOpen] = useState(false);
   const moreRef = useRef<HTMLDivElement | null>(null);
+  // PDF-tip card: dismissable, persisted in localStorage so it stays
+  // dismissed across pages and sessions. After 1-2 docs the user knows
+  // how Print → Save as PDF works.
+  const [tipDismissed, setTipDismissed] = useState(false);
+  useEffect(() => {
+    setTipDismissed(typeof window !== "undefined" && window.localStorage.getItem("invoice-app:pdf-tip-dismissed") === "1");
+  }, []);
+  function dismissTip() {
+    setTipDismissed(true);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("invoice-app:pdf-tip-dismissed", "1");
+    }
+  }
   useEffect(() => {
     if (!moreOpen) return;
     function onMouse(e: MouseEvent) {
@@ -722,11 +736,21 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
 
       <DocumentAttachmentsSection documentId={doc.id} />
 
-      <div className="no-print card-soft p-4 bg-blue-50 border-blue-200 max-w-[210mm] mx-auto">
-        <p className="text-sm text-blue-900">
-          <strong>טיפ:</strong> "הורד PDF" יוצר קובץ מוכן לשליחה. "הדפס" פותח את חלון ההדפסה של הדפדפן לבחירת מדפסת או יעד אחר.
-        </p>
-      </div>
+      {!tipDismissed && (
+        <div className="no-print card-soft p-4 bg-blue-50 border-blue-200 max-w-[210mm] mx-auto flex items-start gap-3">
+          <p className="text-sm text-blue-900 flex-1">
+            <strong>טיפ:</strong> &quot;הורד PDF&quot; פותח את חלון ההדפסה — בחר &quot;Save as PDF&quot; כיעד. &quot;הדפס&quot; עושה את אותו דבר.
+          </p>
+          <button
+            onClick={dismissTip}
+            className="text-blue-700 hover:text-blue-900 hover:bg-blue-100 rounded-lg p-1 flex-shrink-0"
+            title="אל תציג שוב"
+            aria-label="סגור טיפ"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

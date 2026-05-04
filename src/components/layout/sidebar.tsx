@@ -17,6 +17,7 @@ import {
   X,
   User,
   RefreshCw,
+  Bug,
 } from "lucide-react";
 import { useBusiness } from "@/lib/business-store";
 import { signOut } from "@/lib/auth";
@@ -99,6 +100,25 @@ export function Sidebar() {
         })}
       </nav>
       <div className="p-3 border-t border-orange-100/60 space-y-1">
+        {/* Beta feedback button — pre-fills a WhatsApp message to Asaf
+            with the current page URL so testing friends can report
+            something they hit in one tap. The phone number is the
+            user's real WhatsApp; if you fork this app, change it. */}
+        <a
+          href={(() => {
+            const PHONE = "972549000684"; // +972 549000684 (international format)
+            const where = typeof window !== "undefined" ? window.location.href : "";
+            const text = `היי אסף, מצאתי משהו ב-MySuperFriendlyInvoiceApp:\n\n[תאר כאן את הבעיה]\n\nבעמוד: ${where}`;
+            return `https://wa.me/${PHONE}?text=${encodeURIComponent(text)}`;
+          })()}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => setMobileOpen(false)}
+          className="flex items-center gap-2 w-full px-3 py-2 rounded-xl text-sm text-stone-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
+        >
+          <Bug className="w-4 h-4" />
+          דווח על באג / רעיון
+        </a>
         <button
           onClick={() => {
             setAccountOpen(true);

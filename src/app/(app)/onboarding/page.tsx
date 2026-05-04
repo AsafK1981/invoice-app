@@ -81,9 +81,9 @@ export default function OnboardingPage() {
     }
   }
 
-  async function finish() {
+  async function finish(target: "dashboard" | "new-doc" = "new-doc") {
     await supabase.auth.updateUser({ data: { onboarded: true } });
-    router.push("/dashboard");
+    router.push(target === "new-doc" ? "/documents/new" : "/dashboard");
   }
 
   const stepIndex = ["welcome", "business", "client", "done"].indexOf(step);
@@ -151,7 +151,7 @@ export default function OnboardingPage() {
                   <ArrowLeft className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={finish}
+                  onClick={() => finish("dashboard")}
                   className="inline-flex items-center gap-1.5 text-sm font-medium text-stone-600 hover:text-orange-700 underline decoration-stone-300 hover:decoration-orange-500 underline-offset-4 cursor-pointer transition-colors"
                 >
                   <SkipForward className="w-3.5 h-3.5" />
@@ -381,15 +381,23 @@ export default function OnboardingPage() {
               </div>
               <h1 className="text-3xl font-bold text-stone-900">הכל מוכן! 🎉</h1>
               <p className="text-stone-700 mt-3 max-w-md mx-auto">
-                החשבון שלך מוכן לשימוש. עכשיו אפשר להתחיל להפיק חשבוניות וקבלות.
+                החשבון שלך מוכן לשימוש. בוא נפיק את המסמך הראשון.
               </p>
-              <button
-                onClick={finish}
-                className="btn-glow inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-6 py-3.5 rounded-2xl text-base font-semibold hover:shadow-lg hover:shadow-orange-200/60 hover:-translate-y-0.5 transition-all mt-8"
-              >
-                לדשבורד
-                <ArrowRight className="w-4 h-4 rotate-180" />
-              </button>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-2 mt-8">
+                <button
+                  onClick={() => finish("new-doc")}
+                  className="btn-glow inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-6 py-3.5 rounded-2xl text-base font-semibold hover:shadow-lg hover:shadow-orange-200/60 hover:-translate-y-0.5 transition-all"
+                >
+                  צור מסמך ראשון
+                  <ArrowRight className="w-4 h-4 rotate-180" />
+                </button>
+                <button
+                  onClick={() => finish("dashboard")}
+                  className="inline-flex items-center gap-2 text-stone-700 hover:text-orange-700 px-4 py-3 text-sm font-medium"
+                >
+                  אולי אחר כך — לדשבורד
+                </button>
+              </div>
             </div>
           )}
         </div>
