@@ -408,6 +408,47 @@ function RowActions({ doc }: { doc: InvoiceDocument }) {
   const isPaid = doc.status === "paid";
   const confirm = useConfirm();
 
+  // Mirrors the delete logic on the doc detail page: drafts delete cleanly;
+  // quotes (non-draft) get a soft warning + force-delete; receipts and tax
+  // docs get a strong "this should be a credit note" warning + force-delete
+  // escape hatch for test data. Numbering counters are not rolled back.
+  const isLegallyProtected =
+    doc.type === "receipt" ||
+    doc.type === "tax_invoice" ||
+    doc.type === "tax_invoice_receipt" ||
+    doc.type === "credit_note";
+
+  async function handleRowDelete(e: React.MouseEvent) {
+    e.stopPropagation();
+    let message: string;
+    let confirmLabel: string;
+    if (doc.status === "draft") {
+      message = "פעולה זו לא ניתנת לביטול.";
+      confirmLabel = "מחק";
+    } else if (!isLegallyProtected) {
+      message =
+        "המסמך כבר הופק. המחיקה היא סופית והמספור לא יוחזר — תהיה רצף חסר במספרי המסמכים.";
+      confirmLabel = "מחק בכל זאת";
+    } else {
+      message =
+        "מסמכי מס וקבלות הם רשומות חשבונאיות — הדרך הנכונה לבטל היא הפקת חשבונית זיכוי. אם זה היה ניסיון בלבד שלא נשלח ללקוח אמיתי, אפשר למחוק בכפייה.";
+      confirmLabel = "מחק בכפייה (היה ניסיון)";
+    }
+    const ok = await confirm({
+      title: `למחוק את ${DOCUMENT_TYPE_LABELS[doc.type]} #${doc.number}?`,
+      message,
+      tone: "danger",
+      confirmLabel,
+    });
+    if (ok) {
+      try {
+        await deleteDocument(doc.id);
+      } catch (err) {
+        alert(err instanceof Error ? err.message : "שגיאה במחיקה");
+      }
+    }
+  }
+
   return (
     <div className="flex items-center justify-center gap-1">
       {canMarkPaid && (
@@ -420,7 +461,7 @@ function RowActions({ doc }: { doc: InvoiceDocument }) {
               alert(err instanceof Error ? err.message : "שגיאה בעדכון");
             }
           }}
-          className={`p-1.5 rounded-lg transition-colors ${
+          className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
             isPaid
               ? "text-emerald-500 hover:text-emerald-700 hover:bg-emerald-50"
               : "text-stone-300 hover:text-emerald-500 hover:bg-emerald-50"
@@ -430,31 +471,13 @@ function RowActions({ doc }: { doc: InvoiceDocument }) {
           {isPaid ? <CheckCircle2 className="w-4 h-4" /> : <Circle className="w-4 h-4" />}
         </button>
       )}
-      {doc.status === "draft" ? (
-        <button
-          onClick={async (e) => {
-            e.stopPropagation();
-            const ok = await confirm({
-              title: `למחוק את מסמך #${doc.number}?`,
-              message: "פעולה זו לא ניתנת לביטול.",
-              tone: "danger",
-              confirmLabel: "מחק",
-            });
-            if (ok) await deleteDocument(doc.id);
-          }}
-          className="text-stone-300 hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-50 transition-colors"
-          title="מחק"
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
-      ) : (
-        <span
-          className="text-stone-200 p-1.5 inline-block cursor-not-allowed"
-          title="לא ניתן למחוק מסמך שנשלח או שולם"
-        >
-          <Trash2 className="w-4 h-4" />
-        </span>
-      )}
+      <button
+        onClick={handleRowDelete}
+        className="text-stone-300 hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer"
+        title="מחק"
+      >
+        <Trash2 className="w-4 h-4" />
+      </button>
     </div>
   );
 }
