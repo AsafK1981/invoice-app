@@ -78,15 +78,15 @@ export function Sidebar() {
               onClick={() => setMobileOpen(false)}
               className={`group flex items-center gap-3 px-3 py-2.5 rounded-2xl text-sm font-semibold transition-all duration-200 animate-fade-in-up stagger-${idx + 1} ${
                 isActive
-                  ? "bg-gradient-to-l from-orange-100 to-amber-50 text-orange-700 shadow-sm shadow-orange-100"
-                  : "text-stone-900 hover:bg-orange-50/80 hover:text-orange-700 hover:translate-x-[-2px]"
+                  ? "bg-gradient-to-l from-orange-100 to-amber-50 dark:from-orange-900/35 dark:to-amber-900/20 text-orange-700 shadow-sm shadow-orange-100 dark:shadow-orange-950/30"
+                  : "text-stone-900 hover:bg-orange-50/80 dark:hover:bg-orange-900/25 hover:text-orange-700 hover:translate-x-[-2px]"
               }`}
             >
               <div
                 className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200 ${
                   isActive
                     ? "bg-gradient-to-br from-orange-400 to-rose-400 shadow-sm"
-                    : "bg-stone-100 group-hover:bg-gradient-to-br group-hover:from-orange-300 group-hover:to-rose-300"
+                    : "bg-stone-100 dark:bg-stone-800 group-hover:bg-gradient-to-br group-hover:from-orange-300 group-hover:to-rose-300 dark:group-hover:from-orange-800/70 dark:group-hover:to-rose-800/60"
                 }`}
               >
                 <Icon
