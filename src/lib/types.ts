@@ -71,6 +71,14 @@ export interface InvoiceDocument {
   approvedAt?: string;
   approvalSignature?: string;
   emailedAt?: string;
+  /**
+   * מספר הקצאה — Tax Authority allocation number from חשבונית ישראל.
+   * Required on tax invoices above the annual threshold (סעיף 47ב לחוק מע"מ).
+   * Manually entered by the user after submitting the doc to the gov portal;
+   * future API integration will set this automatically.
+   */
+  allocationNumber?: string;
+  allocationSetAt?: string;
 }
 
 export interface Expense {

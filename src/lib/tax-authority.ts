@@ -27,14 +27,43 @@ export interface TaxAuthorityConfig {
 }
 
 /**
- * Threshold above which an allocation number is required.
- * Currently 25,000 NIS, will lower in future years per Tax Authority schedule.
+ * Threshold above which an allocation number is required, by calendar year.
+ * רשות המסים lowers this on a published rollout schedule. Update each
+ * January when new figures are released.
+ *
+ * Source: https://www.gov.il/he/departments/general/checkout-isr-system
+ *   2024: 25,000 ₪
+ *   2025: 20,000 ₪
+ *   2026: 5,000 ₪  (per published rollout — verify current figure)
  */
-export const ALLOCATION_THRESHOLD_NIS = 25000;
+const THRESHOLD_BY_YEAR: Record<number, number> = {
+  2024: 25_000,
+  2025: 20_000,
+  2026: 5_000,
+};
+const FALLBACK_THRESHOLD_NIS = 5_000;
+
+export function getAllocationThresholdForYear(year: number): number {
+  return THRESHOLD_BY_YEAR[year] ?? FALLBACK_THRESHOLD_NIS;
+}
+
+/** Back-compat constant for callers that don't carry a year. Uses current year. */
+export const ALLOCATION_THRESHOLD_NIS = getAllocationThresholdForYear(new Date().getFullYear());
 
 export function requiresAllocationNumber(doc: InvoiceDocument): boolean {
-  if (doc.type !== "tax_invoice") return false;
-  return Math.abs(doc.total) >= ALLOCATION_THRESHOLD_NIS;
+  // Only חשבונית מס and חשבונית מס/קבלה require allocation numbers; other
+  // doc types (receipts, quotes, credit notes — wait, credit notes DO under
+  // some circumstances, but only those issued by עוסק מורשה for paired
+  // tax invoices, so we conservatively include them too).
+  const isTaxDoc =
+    doc.type === "tax_invoice" ||
+    doc.type === "tax_invoice_receipt" ||
+    doc.type === "credit_note";
+  if (!isTaxDoc) return false;
+
+  const docYear = parseInt(doc.date.slice(0, 4), 10) || new Date().getFullYear();
+  const threshold = getAllocationThresholdForYear(docYear);
+  return Math.abs(doc.total) >= threshold;
 }
 
 /**

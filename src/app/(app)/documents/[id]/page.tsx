@@ -21,6 +21,7 @@ import {
 import { useDocument, deleteDocument, updateDocumentStatus, markDocumentEmailed } from "@/lib/document-store";
 import { publicDocumentUrl } from "@/lib/public-url";
 import { DocumentAttachmentsSection } from "@/components/document-attachments-section";
+import { AllocationNumberSection } from "@/components/allocation-number-section";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { useClients } from "@/lib/client-store";
 import { useBusiness } from "@/lib/business-store";
@@ -497,6 +498,8 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
           <span>{toast.text}</span>
         </div>
       )}
+
+      <AllocationNumberSection doc={doc} />
 
       <ReceiptView business={business} client={client} document={doc} />
 

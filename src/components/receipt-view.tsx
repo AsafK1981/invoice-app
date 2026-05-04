@@ -50,6 +50,7 @@ export function ReceiptView({ business, client, document: doc }: Props) {
         total={doc.total}
         paymentMethod={doc.paymentMethod}
         notes={doc.notes}
+        allocationNumber={doc.allocationNumber}
       />
     </div>
   );

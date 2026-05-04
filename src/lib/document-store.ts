@@ -27,6 +27,8 @@ function mapDocRow(row: Record<string, unknown>, items: DocumentItem[]): Invoice
     approvedAt: (row.approved_at as string) || undefined,
     approvalSignature: (row.approval_signature as string) || undefined,
     emailedAt: (row.emailed_at as string) || undefined,
+    allocationNumber: (row.allocation_number as string) || undefined,
+    allocationSetAt: (row.allocation_set_at as string) || undefined,
   };
 }
 
@@ -217,6 +219,29 @@ export async function updateDocumentStatus(id: string, status: InvoiceDocument["
  * can show a clear "✓ נשלח" indicator (the existing `status` field is set
  * to "sent" on doc creation and doesn't actually mean an email went out).
  */
+/**
+ * Sets (or clears) the מספר הקצאה on a document. Pass null/empty to clear.
+ * Sets allocation_set_at to now() when a number is provided so the UI can
+ * show a timestamp. The user typically gets this number by submitting the
+ * doc to https://invoices.gov.il and pasting back the response.
+ */
+export async function setAllocationNumber(id: string, allocationNumber: string | null) {
+  const trimmed = allocationNumber?.trim() || null;
+  const { data, error } = await supabase
+    .from("documents")
+    .update({
+      allocation_number: trimmed,
+      allocation_set_at: trimmed ? new Date().toISOString() : null,
+    })
+    .eq("id", id)
+    .select();
+  if (error) throw new Error(error.message);
+  if (!data || data.length === 0) {
+    throw new Error("עדכון לא עבר — ייתכן שאין הרשאה (RLS) או שהמסמך לא קיים");
+  }
+  window.dispatchEvent(new Event(CHANGE_EVENT));
+}
+
 export async function markDocumentEmailed(id: string) {
   // Same defensive .select() pattern: detect 0-row updates from RLS gaps.
   const { data, error } = await supabase

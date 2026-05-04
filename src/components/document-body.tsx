@@ -48,6 +48,8 @@ interface Props {
   paymentMethod?: PaymentMethod;
   notes?: string;
   placeholders?: boolean;
+  /** מספר הקצאה (Tax Authority allocation), shown on tax-invoice docs that have one. */
+  allocationNumber?: string;
 }
 
 export function DocumentBody({
@@ -65,6 +67,7 @@ export function DocumentBody({
   paymentMethod,
   notes,
   placeholders = false,
+  allocationNumber,
 }: Props) {
   const numberStr = number != null ? `#${number}` : "(אוטומטי)";
   const dateStr = date ? formatDate(date) : "—";
@@ -107,6 +110,12 @@ export function DocumentBody({
           </div>
           <p className="text-2xl font-bold text-stone-900 mt-3">{numberStr}</p>
           <p className="text-sm text-stone-700 mt-1">תאריך: {dateStr}</p>
+          {allocationNumber && (
+            <p className="text-xs text-stone-700 mt-1.5 font-mono" dir="ltr">
+              <span className="font-sans text-stone-600">מספר הקצאה: </span>
+              {allocationNumber}
+            </p>
+          )}
         </div>
       </div>
 
