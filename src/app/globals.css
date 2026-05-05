@@ -38,6 +38,81 @@ body {
   color: #44403c;
 }
 
+/* ========== LANDING PAGE DECORATIVE LAYER ==========
+   Animated floating blobs + grid pattern + decorative mini-cards used
+   on the public landing page. Scoped to .landing-decor so they only
+   apply where intended (no impact on app pages). */
+
+@keyframes blob-float-1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%      { transform: translate(40px, -50px) scale(1.1); }
+  66%      { transform: translate(-30px, 30px) scale(0.95); }
+}
+@keyframes blob-float-2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%      { transform: translate(-50px, 40px) scale(1.08); }
+  66%      { transform: translate(30px, -40px) scale(0.92); }
+}
+@keyframes blob-float-3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(-40px, -30px) scale(1.12); }
+}
+@keyframes float-card {
+  0%, 100% { transform: translateY(0) rotate(var(--rot, 0deg)); }
+  50%      { transform: translateY(-12px) rotate(var(--rot, 0deg)); }
+}
+
+.landing-decor {
+  position: relative;
+  overflow: hidden;
+}
+.landing-decor .blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.55;
+  pointer-events: none;
+  z-index: 0;
+}
+.landing-decor .blob-1 {
+  width: 480px; height: 480px;
+  top: -120px; right: -100px;
+  background: radial-gradient(circle, #fb923c 0%, #f97316 60%, transparent 80%);
+  animation: blob-float-1 20s ease-in-out infinite;
+}
+.landing-decor .blob-2 {
+  width: 420px; height: 420px;
+  top: 200px; left: -80px;
+  background: radial-gradient(circle, #fda4af 0%, #f43f5e 55%, transparent 80%);
+  animation: blob-float-2 25s ease-in-out infinite;
+}
+.landing-decor .blob-3 {
+  width: 360px; height: 360px;
+  bottom: -60px; right: 30%;
+  background: radial-gradient(circle, #fcd34d 0%, #f59e0b 55%, transparent 80%);
+  animation: blob-float-3 22s ease-in-out infinite;
+  opacity: 0.4;
+}
+.landing-decor .grid-pattern {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, rgba(120, 53, 15, 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(120, 53, 15, 0.06) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 30%, black 30%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 30%, black 30%, transparent 80%);
+  pointer-events: none;
+  z-index: 0;
+}
+.landing-decor > * {
+  position: relative;
+  z-index: 1;
+}
+.landing-float-card {
+  animation: float-card 6s ease-in-out infinite;
+}
+
 /* ========== DARK MODE ==========
    Sweeping overrides applied when <html class="dark">. Tailwind utility
    classes (bg-white, text-stone-900, etc.) compile to specific colors

@@ -16,6 +16,8 @@ import {
   Globe,
   ArrowLeft,
   Check,
+  CheckCircle2,
+  Bell,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
@@ -108,36 +110,113 @@ export default function LandingPage() {
         </Link>
       </header>
 
-      <section className="max-w-5xl mx-auto px-6 pt-12 pb-20 text-center animate-fade-in-up">
-        <div className="inline-flex items-center gap-1.5 bg-white/70 backdrop-blur border border-orange-200 rounded-full px-4 py-1.5 mb-6 text-xs font-semibold text-orange-700">
-          <Sparkles className="w-3 h-3" />
-          הדרך הכי פשוטה לנהל חשבוניות
+      <section className="landing-decor max-w-5xl mx-auto px-6 pt-12 pb-24 text-center">
+        {/* Decorative animated blobs + grid pattern (purely visual) */}
+        <div className="blob blob-1" aria-hidden />
+        <div className="blob blob-2" aria-hidden />
+        <div className="blob blob-3" aria-hidden />
+        <div className="grid-pattern" aria-hidden />
+
+        {/* Floating mock-app cards — small UI snippets that hint at what
+            the app looks like, positioned around the hero. Hidden on
+            mobile (no room) and on dark mode (they reuse light bg). */}
+        <div
+          className="hidden lg:block landing-float-card absolute top-20 -left-8 w-56 bg-white border border-orange-100 rounded-2xl shadow-xl shadow-orange-200/40 p-3 text-right"
+          style={{ ["--rot" as string]: "-4deg" }}
+          aria-hidden
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-7 h-7 rounded-lg bg-emerald-100 flex items-center justify-center">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+            </div>
+            <div className="text-xs font-semibold text-stone-900">קבלה #1042</div>
+          </div>
+          <div className="text-[10px] text-stone-500 mb-1">דנה לוי</div>
+          <div className="text-base font-bold text-stone-900" dir="ltr">₪ 4,650</div>
+          <div className="mt-2 text-[10px] inline-flex items-center gap-1 bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-semibold">
+            שולם ✓
+          </div>
         </div>
-        <h1 className="text-4xl sm:text-6xl font-bold text-stone-900 leading-tight">
-          חשבוניות וקבלות
-          <br />
-          <span className="bg-gradient-to-l from-orange-500 to-rose-500 bg-clip-text text-transparent">
-            בלי כאב ראש
-          </span>
-        </h1>
-        <p className="text-lg text-stone-700 mt-6 max-w-2xl mx-auto">
-          אפליקציה לעצמאיים בישראל. הפק קבלות וחשבוניות, נהל לקוחות, שלח במייל - הכל בעברית, חינם, ובלי גבולות.
-        </p>
-        <div className="flex flex-wrap items-center justify-center gap-3 mt-10">
-          <Link
-            href="/login"
-            className="btn-glow inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-6 py-3.5 rounded-2xl text-base font-semibold hover:shadow-lg hover:shadow-orange-200/60 hover:-translate-y-0.5 transition-all duration-200"
-          >
-            <Sparkles className="w-4 h-4" />
-            התחל בחינם
-          </Link>
-          <a
-            href="#features"
-            className="inline-flex items-center gap-1 text-sm text-stone-700 hover:text-orange-700 font-semibold px-4 py-3"
-          >
-            למד עוד
-            <ArrowLeft className="w-4 h-4" />
-          </a>
+
+        <div
+          className="hidden lg:block landing-float-card absolute top-40 -right-4 w-52 bg-white border border-orange-100 rounded-2xl shadow-xl shadow-orange-200/40 p-3 text-right"
+          style={{ ["--rot" as string]: "5deg", animationDelay: "1.5s" }}
+          aria-hidden
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-7 h-7 rounded-lg bg-orange-100 flex items-center justify-center">
+              <Mail className="w-4 h-4 text-orange-600" />
+            </div>
+            <div className="text-xs font-semibold text-stone-900">נשלח ללקוח</div>
+          </div>
+          <div className="text-[10px] text-stone-600 leading-snug">
+            המסמך נשלח אוטומטית ל-asaf@example.com
+          </div>
+        </div>
+
+        <div
+          className="hidden xl:block landing-float-card absolute bottom-24 left-2 bg-gradient-to-br from-orange-400 to-rose-500 rounded-2xl shadow-2xl shadow-orange-300/50 p-4 text-white"
+          style={{ ["--rot" as string]: "-3deg", animationDelay: "3s" }}
+          aria-hidden
+        >
+          <div className="flex items-center gap-2">
+            <Bell className="w-4 h-4" />
+            <div>
+              <div className="text-[10px] opacity-90">השבוע</div>
+              <div className="text-base font-bold" dir="ltr">₪ 12,400</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="animate-fade-in-up">
+          <div className="inline-flex items-center gap-1.5 bg-white/70 backdrop-blur border border-orange-200 rounded-full px-4 py-1.5 mb-6 text-xs font-semibold text-orange-700 shadow-sm">
+            <Sparkles className="w-3 h-3" />
+            הדרך הכי פשוטה לנהל חשבוניות
+          </div>
+          <h1 className="text-4xl sm:text-6xl font-bold text-stone-900 leading-tight">
+            חשבוניות וקבלות
+            <br />
+            <span className="bg-gradient-to-l from-orange-500 to-rose-500 bg-clip-text text-transparent">
+              בלי כאב ראש
+            </span>
+          </h1>
+          <p className="text-lg text-stone-700 mt-6 max-w-2xl mx-auto">
+            אפליקציה לעצמאיים בישראל. הפק קבלות וחשבוניות, נהל לקוחות, שלח במייל — הכל בעברית, חינם, ובלי גבולות.
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-3 mt-10">
+            <Link
+              href="/login"
+              className="btn-glow inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-6 py-3.5 rounded-2xl text-base font-semibold hover:shadow-lg hover:shadow-orange-200/60 hover:-translate-y-0.5 transition-all duration-200"
+            >
+              <Sparkles className="w-4 h-4" />
+              התחל בחינם
+            </Link>
+            <a
+              href="#features"
+              className="inline-flex items-center gap-1 text-sm text-stone-700 hover:text-orange-700 font-semibold px-4 py-3"
+            >
+              למד עוד
+              <ArrowLeft className="w-4 h-4" />
+            </a>
+          </div>
+
+          {/* Trust micro-line under the CTA */}
+          <div className="mt-8 flex items-center justify-center gap-4 text-xs text-stone-600 flex-wrap">
+            <span className="inline-flex items-center gap-1">
+              <Check className="w-3.5 h-3.5 text-emerald-600" />
+              ללא כרטיס אשראי
+            </span>
+            <span className="text-stone-400">·</span>
+            <span className="inline-flex items-center gap-1">
+              <Check className="w-3.5 h-3.5 text-emerald-600" />
+              עברית מלאה
+            </span>
+            <span className="text-stone-400">·</span>
+            <span className="inline-flex items-center gap-1">
+              <Check className="w-3.5 h-3.5 text-emerald-600" />
+              עוסק פטור / מורשה
+            </span>
+          </div>
         </div>
       </section>
 
