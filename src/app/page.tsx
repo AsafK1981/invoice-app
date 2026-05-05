@@ -200,7 +200,11 @@ export default function LandingPage() {
             wrapping a real-looking invoice page. Tells visitors exactly
             what they're getting in 2 seconds, way better than any
             description. */}
-        <div className="mt-16 max-w-5xl mx-auto animate-fade-in-up stagger-3">
+        <div className="mt-20 max-w-5xl mx-auto animate-fade-in-up stagger-3">
+          {/* Caption above the mockup — sets context before the visual. */}
+          <p className="text-center text-sm sm:text-base text-stone-700 mb-5 font-medium">
+            ככה נראית חשבונית לדוגמא — נקייה, מקצועית, מוכנה לשלוח 👇
+          </p>
           <div className="rounded-3xl bg-white border border-orange-200 shadow-2xl shadow-orange-200/40 overflow-hidden">
             {/* Browser chrome — clean: just the traffic-light dots, no URL bar.
                 The URL "mysuperfriendlyinvoiceapp.vercel.app/documents/1042"
@@ -256,8 +260,8 @@ export default function LandingPage() {
                         <Sparkles className="w-5 h-5 text-white" />
                       </div>
                       <div>
-                        <h3 className="text-xl sm:text-2xl font-bold text-stone-900">אסף קוטלר</h3>
-                        <p className="text-xs text-stone-700">עוסק פטור · 049040686</p>
+                        <h3 className="text-xl sm:text-2xl font-bold text-stone-900">רוני אדלר</h3>
+                        <p className="text-xs text-stone-700">עוסק פטור · 031234567</p>
                       </div>
                     </div>
                   </div>
@@ -305,10 +309,6 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Caption under the mockup */}
-          <p className="text-center text-xs text-stone-500 mt-4">
-            ככה נראית חשבונית שיוצאת מהאפליקציה — נקייה, מקצועית, מוכנה לשלוח.
-          </p>
         </div>
       </section>
 
