@@ -202,17 +202,15 @@ export default function LandingPage() {
             description. */}
         <div className="mt-16 max-w-5xl mx-auto animate-fade-in-up stagger-3">
           <div className="rounded-3xl bg-white border border-orange-200 shadow-2xl shadow-orange-200/40 overflow-hidden">
-            {/* Browser chrome */}
-            <div className="flex items-center gap-3 px-5 py-3 bg-stone-50 border-b border-stone-200">
+            {/* Browser chrome — clean: just the traffic-light dots, no URL bar.
+                The URL "mysuperfriendlyinvoiceapp.vercel.app/documents/1042"
+                looked busy and broke the visual focus on the actual document. */}
+            <div className="flex items-center px-5 py-3 bg-stone-50 border-b border-stone-200">
               <div className="flex gap-1.5">
                 <span className="w-3 h-3 rounded-full bg-rose-300" />
                 <span className="w-3 h-3 rounded-full bg-amber-300" />
                 <span className="w-3 h-3 rounded-full bg-emerald-300" />
               </div>
-              <div className="flex-1 max-w-md mx-auto bg-white border border-stone-200 rounded-lg px-3 py-1 text-xs text-stone-500 text-center font-mono" dir="ltr">
-                mysuperfriendlyinvoiceapp.vercel.app/documents/1042
-              </div>
-              <div className="w-6" />
             </div>
 
             {/* App content area */}
