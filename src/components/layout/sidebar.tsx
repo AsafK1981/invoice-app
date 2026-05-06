@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -20,10 +20,13 @@ import {
   Bug,
   Moon,
   Sun,
+  ShieldAlert,
 } from "lucide-react";
 import { useBusiness } from "@/lib/business-store";
 import { signOut } from "@/lib/auth";
 import { useTheme } from "@/lib/theme";
+import { isAdminEmail } from "@/lib/admin";
+import { supabase } from "@/lib/supabase";
 import { AccountSettingsModal } from "@/components/account-settings-modal";
 
 const navItems = [
@@ -42,6 +45,15 @@ export function Sidebar() {
   const { business } = useBusiness();
   const { theme, toggle: toggleTheme } = useTheme();
   const [mobileOpen, setMobileOpen] = useState(false);
+  // Show the "/admin" nav item only when the logged-in user's email
+  // appears in the admin allow-list. Computed client-side; the API
+  // route enforces the same check server-side.
+  const [isAdmin, setIsAdmin] = useState(false);
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setIsAdmin(isAdminEmail(user?.email));
+    });
+  }, []);
   const [accountOpen, setAccountOpen] = useState(false);
 
   const sidebarContent = (
@@ -68,7 +80,12 @@ export function Sidebar() {
         </div>
       </div>
       <nav className="flex-1 p-3 space-y-1">
-        {navItems.map((item, idx) => {
+        {[
+          ...navItems,
+          ...(isAdmin
+            ? [{ href: "/admin", label: "ניהול מערכת", icon: ShieldAlert }]
+            : []),
+        ].map((item, idx) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
           const Icon = item.icon;
           return (

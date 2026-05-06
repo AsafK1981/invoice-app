@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import nodemailer from "nodemailer";
 import { createClient } from "@supabase/supabase-js";
+import { checkRate, clientIp } from "@/lib/rate-limit";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -76,6 +77,20 @@ function buildHtml(args: {
 
 export async function POST(req: NextRequest) {
   try {
+    // Rate limit BEFORE auth: cheaper to reject bad actors early. Using
+    // IP because we haven't auth'd yet. 20 sends per IP per minute is
+    // generous for legitimate users (a freelancer sending out a batch)
+    // but stops a runaway script from blasting through Gmail's daily
+    // quota in seconds.
+    const ip = clientIp(req);
+    const ipLimit = checkRate({ key: `send-email:ip:${ip}`, max: 20, windowMs: 60_000 });
+    if (!ipLimit.ok) {
+      return NextResponse.json(
+        { ok: false, error: "יותר מדי בקשות. נסה שוב בעוד דקה." },
+        { status: 429, headers: { "Retry-After": String(Math.ceil(ipLimit.resetIn / 1000)) } },
+      );
+    }
+
     const authHeader = req.headers.get("authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
@@ -85,6 +100,16 @@ export async function POST(req: NextRequest) {
     const { data: { user }, error: authError } = await authClient.auth.getUser(token);
     if (authError || !user) {
       return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Per-user limit on top of per-IP. A legitimate user behind a NAT
+    // shouldn't see this; a single user account being abused will.
+    const userLimit = checkRate({ key: `send-email:user:${user.id}`, max: 60, windowMs: 60 * 60_000 });
+    if (!userLimit.ok) {
+      return NextResponse.json(
+        { ok: false, error: "חרגת ממכסת השליחה השעתית (60 מיילים בשעה)." },
+        { status: 429, headers: { "Retry-After": String(Math.ceil(userLimit.resetIn / 1000)) } },
+      );
     }
 
     const body = await req.json();
