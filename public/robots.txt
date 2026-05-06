@@ -1,0 +1,21 @@
+User-agent: *
+Allow: /
+Allow: /privacy
+Allow: /terms
+Allow: /status
+Disallow: /api/
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /documents
+Disallow: /clients
+Disallow: /products
+Disallow: /expenses
+Disallow: /reports
+Disallow: /settings
+Disallow: /billing
+Disallow: /onboarding
+Disallow: /reset-password
+Disallow: /auth/
+Disallow: /view/
+
+Sitemap: https://mysuperfriendlyinvoiceapp.vercel.app/sitemap.xml
