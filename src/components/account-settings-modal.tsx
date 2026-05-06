@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { User, Lock, Trash2, AlertTriangle, CheckCircle2, AlertCircle, Eye, EyeOff } from "lucide-react";
+import { User, Lock, Trash2, AlertTriangle, CheckCircle2, AlertCircle, Eye, EyeOff, Download } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 import { FormField } from "@/components/ui/form-field";
 import { supabase } from "@/lib/supabase";
@@ -54,6 +54,37 @@ export function AccountSettingsModal({ open, onClose }: Props) {
     setToast({ kind: "success", text: "הסיסמה עודכנה בהצלחה" });
     setPassword("");
     setConfirmPassword("");
+  }
+
+  async function handleExport() {
+    setSaving(true);
+    setToast(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) throw new Error("לא מחובר - התחבר מחדש");
+      const res = await fetch("/api/export-data", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "שגיאה בייצוא הנתונים");
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `mysuperfriendlyinvoiceapp-export-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      setToast({ kind: "success", text: "קובץ הנתונים הורד" });
+    } catch (err) {
+      setToast({ kind: "error", text: err instanceof Error ? err.message : "שגיאה" });
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function handleDeleteAccount() {
@@ -175,6 +206,25 @@ export function AccountSettingsModal({ open, onClose }: Props) {
             <span>{toast.text}</span>
           </div>
         )}
+
+        <div className="border-t border-orange-100 pt-6">
+          <div className="flex items-center gap-2 mb-3">
+            <Download className="w-4 h-4 text-orange-500" />
+            <h3 className="font-semibold text-stone-900">ייצוא הנתונים שלי</h3>
+          </div>
+          <p className="text-sm text-stone-700 mb-3 leading-relaxed">
+            הורד קובץ JSON עם כל הנתונים שלך — עסקים, לקוחות, מוצרים, מסמכים,
+            פרטי הוצאות, יומן פעילות. מתאים לגיבוי או למעבר לשירות אחר.
+          </p>
+          <button
+            onClick={handleExport}
+            disabled={saving}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border-2 border-orange-200 text-stone-800 hover:bg-orange-50 disabled:opacity-50"
+          >
+            <Download className="w-4 h-4" />
+            {saving ? "מייצא..." : "הורד את הנתונים שלי"}
+          </button>
+        </div>
 
         <div className="border-t border-rose-100 pt-6">
           <div className="rounded-2xl border-2 border-rose-200 bg-rose-50/40 p-5">
