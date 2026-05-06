@@ -48,8 +48,16 @@ interface Stats {
   revenue: { totalPaid: number };
 }
 
+interface Health {
+  ok: boolean;
+  status: string;
+  latencyMs: number;
+  checks: Record<string, { ok: boolean; latencyMs?: number; error?: string }>;
+}
+
 export default function AdminPage() {
   const [stats, setStats] = useState<Stats | null>(null);
+  const [health, setHealth] = useState<Health | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [allowed, setAllowed] = useState(false);
@@ -77,15 +85,26 @@ export default function AdminPage() {
         setError("לא מחובר");
         return;
       }
-      const res = await fetch("/api/admin/stats", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (!data.ok) {
-        setError(data.error || "שגיאה בטעינת הסטטיסטיקות");
+      // Fetch stats and health in parallel — they're independent and the
+      // health check shouldn't block stats display if it's slow.
+      const [statsRes, healthRes] = await Promise.all([
+        fetch("/api/admin/stats", { headers: { Authorization: `Bearer ${token}` } }),
+        fetch("/api/health", { cache: "no-store" }).catch(() => null),
+      ]);
+      const statsData = await statsRes.json();
+      if (!statsData.ok) {
+        setError(statsData.error || "שגיאה בטעינת הסטטיסטיקות");
         return;
       }
-      setStats(data);
+      setStats(statsData);
+      if (healthRes) {
+        try {
+          const healthData = await healthRes.json();
+          setHealth(healthData);
+        } catch {
+          // Health endpoint unreachable — leave previous value
+        }
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "שגיאה");
     } finally {
@@ -148,16 +167,80 @@ export default function AdminPage() {
         <div className="text-center py-16 text-stone-500">טוען נתונים...</div>
       ) : stats ? (
         <>
-          {/* System status */}
-          <div className="card-soft p-4 bg-emerald-50 border-emerald-200 flex items-center gap-3">
-            <CheckCircle2 className="w-5 h-5 text-emerald-700" />
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-emerald-900">המערכת תקינה</p>
-              <p className="text-xs text-emerald-700">
-                עודכן: {new Date(stats.generatedAt).toLocaleString("he-IL")}
-              </p>
+          {/* System status — real per-component health from /api/health */}
+          {health ? (
+            <div
+              className={`card-soft p-4 border ${
+                health.ok
+                  ? "bg-emerald-50 border-emerald-200"
+                  : "bg-rose-50 border-rose-200"
+              }`}
+            >
+              <div className="flex items-center gap-3 mb-3">
+                {health.ok ? (
+                  <CheckCircle2 className="w-5 h-5 text-emerald-700" />
+                ) : (
+                  <AlertTriangle className="w-5 h-5 text-rose-700" />
+                )}
+                <div className="flex-1">
+                  <p
+                    className={`text-sm font-semibold ${
+                      health.ok ? "text-emerald-900" : "text-rose-900"
+                    }`}
+                  >
+                    {health.ok ? "כל הרכיבים תקינים" : "יש רכיב לא תקין"}
+                  </p>
+                  <p
+                    className={`text-xs ${
+                      health.ok ? "text-emerald-700" : "text-rose-700"
+                    }`}
+                  >
+                    זמן בדיקה: {health.latencyMs}ms · עודכן{" "}
+                    {new Date(stats.generatedAt).toLocaleTimeString("he-IL")}
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                {Object.entries(health.checks).map(([name, c]) => (
+                  <div
+                    key={name}
+                    className={`rounded-xl border p-2.5 text-center ${
+                      c.ok
+                        ? "bg-white border-emerald-200"
+                        : "bg-white border-rose-300"
+                    }`}
+                  >
+                    <p className="text-xs text-stone-600">
+                      {name === "database"
+                        ? "DB"
+                        : name === "storage"
+                          ? "Storage"
+                          : "Auth"}
+                    </p>
+                    <p
+                      className={`text-sm font-bold ${
+                        c.ok ? "text-emerald-700" : "text-rose-700"
+                      }`}
+                    >
+                      {c.ok ? `✓ ${c.latencyMs}ms` : "✗ down"}
+                    </p>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="card-soft p-4 bg-stone-50 border-stone-200 flex items-center gap-3">
+              <CheckCircle2 className="w-5 h-5 text-stone-500" />
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-stone-700">
+                  סטטוס מערכת לא זמין
+                </p>
+                <p className="text-xs text-stone-500">
+                  עודכן: {new Date(stats.generatedAt).toLocaleString("he-IL")}
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Top stat cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
