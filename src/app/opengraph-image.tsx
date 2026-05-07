@@ -5,7 +5,33 @@ export const alt = "MySuperFriendlyInvoiceApp - חשבוניות וקבלות ב
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
+/**
+ * Loads a Google Font as binary data so satori (the engine behind
+ * ImageResponse) can shape Hebrew correctly. Without this, Hebrew
+ * renders as reversed unshaped glyphs because satori has no system
+ * font fallback and the default doesn't include Hebrew support.
+ */
+async function loadGoogleFont(family: string, weight: number, text: string) {
+  const url = `https://fonts.googleapis.com/css2?family=${family}:wght@${weight}&text=${encodeURIComponent(text)}`;
+  const css = await (await fetch(url)).text();
+  const match = css.match(/src: url\((.+?)\) format\('(?:opentype|truetype|woff2?)'\)/);
+  if (!match) throw new Error(`couldn't parse font URL from CSS for ${family} ${weight}`);
+  const fontRes = await fetch(match[1]);
+  if (!fontRes.ok) throw new Error(`failed to load font ${family} ${weight}`);
+  return await fontRes.arrayBuffer();
+}
+
 export default async function OpengraphImage() {
+  const headline = "חשבוניות וקבלות בלי כאב ראש";
+  const pills = "חינם · עברית · עוסק פטור";
+  const allHebrew = headline + pills;
+
+  // Load two weights so the headline can be heavier than the pills.
+  const [heeboBold, heeboMedium] = await Promise.all([
+    loadGoogleFont("Heebo", 800, allHebrew),
+    loadGoogleFont("Heebo", 500, allHebrew),
+  ]);
+
   return new ImageResponse(
     (
       <div
@@ -17,7 +43,6 @@ export default async function OpengraphImage() {
           alignItems: "center",
           justifyContent: "center",
           background: "linear-gradient(135deg, #fff7ed 0%, #fef3c7 100%)",
-          fontFamily: "system-ui, -apple-system, sans-serif",
           padding: 80,
           textAlign: "center",
         }}
@@ -53,13 +78,14 @@ export default async function OpengraphImage() {
         <div
           style={{
             fontSize: 36,
-            fontWeight: 500,
+            fontWeight: 800,
             color: "#57534e",
             marginTop: 28,
             display: "flex",
+            direction: "rtl",
           }}
         >
-          חשבוניות וקבלות בלי כאב ראש
+          {headline}
         </div>
         <div
           style={{
@@ -67,17 +93,20 @@ export default async function OpengraphImage() {
             color: "#a8a29e",
             marginTop: 60,
             display: "flex",
-            gap: 24,
+            fontWeight: 500,
+            direction: "rtl",
           }}
         >
-          <span>חינם</span>
-          <span>·</span>
-          <span>עברית</span>
-          <span>·</span>
-          <span>עוסק פטור</span>
+          {pills}
         </div>
       </div>
     ),
-    size,
+    {
+      ...size,
+      fonts: [
+        { name: "Heebo", data: heeboBold, style: "normal", weight: 800 },
+        { name: "Heebo", data: heeboMedium, style: "normal", weight: 500 },
+      ],
+    },
   );
 }
