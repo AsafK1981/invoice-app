@@ -52,6 +52,9 @@ export async function GET(req: NextRequest) {
     expenseCountResult,
     paidDocsResult,
     docsRecentResult,
+    businessesResult,
+    auditLogResult,
+    distinctDocOwnersResult,
   ] = await Promise.all([
     sb.auth.admin.listUsers({ page: 1, perPage: 1000 }),
     sb.from("documents").select("*", { count: "exact", head: true }),
@@ -64,6 +67,15 @@ export async function GET(req: NextRequest) {
       .gte("created_at", thirtyDaysAgo)
       .order("created_at", { ascending: false })
       .limit(20),
+    // Onboarding: count businesses (proxy for "users who finished onboarding")
+    sb.from("businesses").select("id, name, user_id"),
+    // Audit log — last 30 entries, all tenants
+    sb.from("audit_log")
+      .select("id, business_id, action, target_type, target_label, created_at")
+      .order("created_at", { ascending: false })
+      .limit(30),
+    // Distinct business_ids that have at least one document (engagement proxy)
+    sb.from("documents").select("business_id"),
   ]);
 
   const allUsers = usersResult.data?.users ?? [];
@@ -109,6 +121,40 @@ export async function GET(req: NextRequest) {
   }
   const dailyChart = Object.entries(perDay).map(([date, count]) => ({ date, count }));
 
+  // Onboarding funnel:
+  //   signed_up         = userCount
+  //   created_business  = users with at least one row in `businesses`
+  //   created_first_doc = users with at least one document
+  const businesses = businessesResult.data ?? [];
+  const usersWithBusiness = new Set(businesses.map((b) => b.user_id));
+  const businessIdToUser: Record<string, string> = {};
+  const businessIdToName: Record<string, string> = {};
+  for (const b of businesses) {
+    businessIdToUser[b.id] = b.user_id;
+    businessIdToName[b.id] = b.name || "(ללא שם)";
+  }
+  const usersWithDoc = new Set(
+    (distinctDocOwnersResult.data ?? [])
+      .map((r) => businessIdToUser[r.business_id as string])
+      .filter(Boolean),
+  );
+
+  // Audit log — enrich with business name + user email
+  const userIdToEmail: Record<string, string> = {};
+  for (const u of allUsers) userIdToEmail[u.id] = u.email || "";
+  const auditEntries = (auditLogResult.data ?? []).map((row) => {
+    const userId = businessIdToUser[row.business_id as string];
+    return {
+      id: row.id,
+      action: row.action,
+      target_type: row.target_type,
+      target_label: row.target_label,
+      created_at: row.created_at,
+      business_name: businessIdToName[row.business_id as string] || "?",
+      user_email: userId ? userIdToEmail[userId] || "" : "",
+    };
+  });
+
   return NextResponse.json({
     ok: true,
     generatedAt: new Date().toISOString(),
@@ -116,6 +162,11 @@ export async function GET(req: NextRequest) {
       total: userCount,
       activeLast7d: activeUsers7d,
       recentSignups,
+    },
+    onboarding: {
+      signedUp: userCount,
+      createdBusiness: usersWithBusiness.size,
+      createdFirstDoc: usersWithDoc.size,
     },
     documents: {
       total: docCountResult.count ?? 0,
@@ -132,5 +183,6 @@ export async function GET(req: NextRequest) {
     revenue: {
       totalPaid: totalRevenue,
     },
+    auditLog: auditEntries,
   });
 }

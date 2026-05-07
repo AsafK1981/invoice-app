@@ -10,6 +10,8 @@ import {
   RefreshCw,
   CheckCircle2,
   AlertTriangle,
+  Activity,
+  TrendingDown,
 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { supabase } from "@/lib/supabase";
@@ -46,6 +48,20 @@ interface Stats {
   clients: { total: number };
   expenses: { total: number };
   revenue: { totalPaid: number };
+  onboarding?: {
+    signedUp: number;
+    createdBusiness: number;
+    createdFirstDoc: number;
+  };
+  auditLog?: Array<{
+    id: string;
+    action: string;
+    target_type: string;
+    target_label: string | null;
+    created_at: string;
+    business_name: string;
+    user_email: string;
+  }>;
 }
 
 interface Health {
@@ -324,6 +340,53 @@ export default function AdminPage() {
             )}
           </div>
 
+          {/* Onboarding funnel */}
+          {stats.onboarding && (
+            <div className="card-soft p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <TrendingDown className="w-4 h-4 text-orange-500" />
+                <h2 className="font-semibold text-stone-900">משפך הצטרפות</h2>
+              </div>
+              <FunnelBars onboarding={stats.onboarding} />
+            </div>
+          )}
+
+          {/* Audit log */}
+          {stats.auditLog && stats.auditLog.length > 0 && (
+            <div className="card-soft overflow-hidden">
+              <div className="px-5 py-3 border-b border-orange-100 flex items-center gap-2">
+                <Activity className="w-4 h-4 text-orange-500" />
+                <h2 className="font-semibold text-stone-900">יומן פעילות — 30 פעולות אחרונות</h2>
+              </div>
+              <ul className="divide-y divide-orange-50 max-h-96 overflow-y-auto">
+                {stats.auditLog.map((entry) => (
+                  <li
+                    key={entry.id}
+                    className="px-5 py-3 flex items-start justify-between gap-3 hover:bg-orange-50/40"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm text-stone-900 truncate">
+                        <span className="font-mono text-xs text-stone-500">{entry.action}</span>
+                        {entry.target_label && (
+                          <span className="text-stone-700"> · {entry.target_label}</span>
+                        )}
+                      </p>
+                      <p className="text-xs text-stone-600 mt-0.5">
+                        <span dir="ltr">{entry.user_email || entry.business_name}</span>
+                        {entry.user_email && entry.business_name && (
+                          <> · {entry.business_name}</>
+                        )}
+                      </p>
+                    </div>
+                    <span className="text-xs text-stone-500 flex-shrink-0 mt-0.5">
+                      {formatDate(entry.created_at.slice(0, 10))}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {/* Recent docs */}
           <div className="card-soft overflow-hidden">
             <div className="px-5 py-3 border-b border-orange-100 flex items-center gap-2">
@@ -389,6 +452,57 @@ function StatCard({
           <Icon className="w-5 h-5 text-white" />
         </div>
       </div>
+    </div>
+  );
+}
+
+function FunnelBars({
+  onboarding,
+}: {
+  onboarding: { signedUp: number; createdBusiness: number; createdFirstDoc: number };
+}) {
+  const max = Math.max(onboarding.signedUp, 1);
+  const stages: Array<{ label: string; count: number; gradient: string }> = [
+    { label: "נרשמו", count: onboarding.signedUp, gradient: "from-orange-400 to-rose-500" },
+    {
+      label: "השלימו פרטי עסק",
+      count: onboarding.createdBusiness,
+      gradient: "from-amber-400 to-orange-500",
+    },
+    {
+      label: "הפיקו מסמך ראשון",
+      count: onboarding.createdFirstDoc,
+      gradient: "from-emerald-400 to-teal-500",
+    },
+  ];
+  return (
+    <div className="space-y-3">
+      {stages.map((s, i) => {
+        const pct = Math.round((s.count / max) * 100);
+        const fromPrev =
+          i === 0 || stages[i - 1].count === 0
+            ? null
+            : Math.round((s.count / stages[i - 1].count) * 100);
+        return (
+          <div key={s.label}>
+            <div className="flex items-center justify-between text-sm mb-1">
+              <span className="text-stone-700">{s.label}</span>
+              <span className="font-semibold text-stone-900">
+                {s.count}
+                {fromPrev !== null && (
+                  <span className="text-xs text-stone-500 mr-2">({fromPrev}% מהשלב הקודם)</span>
+                )}
+              </span>
+            </div>
+            <div className="h-3 rounded-full bg-stone-100 overflow-hidden">
+              <div
+                className={`h-full bg-gradient-to-l ${s.gradient}`}
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
