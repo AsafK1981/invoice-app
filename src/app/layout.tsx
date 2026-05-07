@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     template: "%s | MySuperFriendlyInvoiceApp",
   },
   description:
-    "אפליקציית חשבוניות חינמית לעצמאיים בישראל. הפק קבלות, חשבונות עסקה וחשבוניות מס במהירות. שליחה במייל, ניהול לקוחות, דשבורד עם גרפים. עברית מלאה.",
+    "אפליקציית חשבוניות לעצמאיים. הפק קבלות, חשבונות עסקה וחשבוניות מס במהירות. שליחה במייל, ניהול לקוחות, דשבורד עם גרפים.",
   keywords: [
     "חשבוניות",
     "קבלות",
@@ -47,14 +47,14 @@ export const metadata: Metadata = {
     siteName: "MySuperFriendlyInvoiceApp",
     title: "MySuperFriendlyInvoiceApp - חשבוניות וקבלות בלי כאב ראש",
     description:
-      "אפליקציית חשבוניות חינמית לעצמאיים בישראל. עברית מלאה, ניהול לקוחות, שליחה במייל, דשבורד עם גרפים.",
+      "אפליקציית חשבוניות לעצמאיים. ניהול לקוחות, שליחה במייל, דשבורד עם גרפים.",
     // images intentionally omitted — Next picks up src/app/opengraph-image.tsx
     // automatically and generates a 1200x630 card.
   },
   twitter: {
     card: "summary_large_image",
     title: "MySuperFriendlyInvoiceApp - חשבוניות וקבלות בלי כאב ראש",
-    description: "אפליקציית חשבוניות חינמית לעצמאיים בישראל",
+    description: "אפליקציית חשבוניות לעצמאיים",
     // images: same — file-based generation handles it.
   },
 };

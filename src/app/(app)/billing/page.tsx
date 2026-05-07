@@ -106,7 +106,7 @@ export default function BillingPage() {
           חיוב ומסלולים
         </h1>
         <p className="text-sm text-stone-700 mt-2 mr-14">
-          {isPro ? "אתה מנוי על Pro" : "המסלול הנוכחי שלך: חינם"}
+          {isPro ? "אתה מנוי על Pro" : "המסלול הנוכחי שלך: בסיסי"}
         </p>
       </div>
 
@@ -184,7 +184,7 @@ export default function BillingPage() {
               <p className="text-sm text-stone-700 mt-1">{plan.description}</p>
               <div className="mt-4 flex items-baseline gap-1">
                 <span className="text-4xl font-bold text-stone-900">
-                  {plan.priceMonthly === 0 ? "חינם" : formatCurrency(plan.priceMonthly)}
+                  {plan.priceMonthly === 0 ? "—" : formatCurrency(plan.priceMonthly)}
                 </span>
                 {plan.priceMonthly > 0 && (
                   <span className="text-sm text-stone-600">/ חודש</span>

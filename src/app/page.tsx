@@ -159,7 +159,7 @@ export default function LandingPage() {
             </span>
           </h1>
           <p className="text-lg sm:text-xl text-stone-700 mt-6 max-w-2xl mx-auto leading-relaxed">
-            אפליקציה לעצמאיים בישראל. הפק קבלות וחשבוניות, נהל לקוחות, שלח במייל — הכל בעברית, חינם, ובלי גבולות.
+            אפליקציה לעצמאיים. הפק קבלות וחשבוניות, נהל לקוחות, שלח במייל — בלי בלגן ובלי גבולות.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3 mt-10">
             <Link
@@ -167,7 +167,7 @@ export default function LandingPage() {
               className="btn-glow inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-7 py-4 rounded-2xl text-base font-semibold hover:shadow-xl hover:shadow-orange-200/60 hover:-translate-y-0.5 transition-all duration-200"
             >
               <Sparkles className="w-4 h-4" />
-              התחל בחינם
+              התחל עכשיו
             </Link>
             <a
               href="#features"
@@ -424,11 +424,11 @@ export default function LandingPage() {
           <div className="text-center relative">
             <div className="inline-flex items-center gap-1.5 bg-emerald-100 border border-emerald-200 rounded-full px-4 py-1.5 mb-4 text-xs font-semibold text-emerald-700">
               <Zap className="w-3 h-3" />
-              חינם, לתמיד
+              פשוט, מהיר, בלי הפתעות
             </div>
-            <h2 className="text-3xl sm:text-4xl font-bold text-stone-900">חינם לחלוטין</h2>
+            <h2 className="text-3xl sm:text-4xl font-bold text-stone-900">כל מה שצריך, בלי כאב ראש</h2>
             <p className="text-stone-700 mt-3 max-w-md mx-auto">
-              ללא תשלום, ללא כרטיס אשראי, ללא הפתעות.
+              הכלים שעצמאי באמת זקוק להם — בלי תפריטים מבולגנים ובלי שדות מיותרים.
             </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-8 max-w-xl mx-auto relative">
@@ -447,9 +447,9 @@ export default function LandingPage() {
               className="btn-glow inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-7 py-4 rounded-2xl text-base font-semibold hover:shadow-xl hover:shadow-orange-200/60 hover:-translate-y-0.5 transition-all"
             >
               <Sparkles className="w-4 h-4" />
-              צור חשבון - חינם
+              צור חשבון
             </Link>
-            <p className="text-xs text-stone-500 mt-3">תיקח לך פחות מדקה. לא צריך כרטיס אשראי.</p>
+            <p className="text-xs text-stone-500 mt-3">תיקח לך פחות מדקה.</p>
           </div>
         </div>
       </section>

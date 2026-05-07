@@ -22,7 +22,7 @@ export interface Plan {
 export const PLANS: Record<PlanTier, Plan> = {
   free: {
     tier: "free",
-    name: "חינם",
+    name: "בסיסי",
     priceMonthly: 0,
     description: "מתאים לעצמאיים בתחילת הדרך",
     features: [
@@ -30,7 +30,6 @@ export const PLANS: Record<PlanTier, Plan> = {
       "עד 3 לקוחות",
       "שליחת מסמכים במייל (דרך המערכת)",
       "PDF להדפסה והורדה",
-      "עברית מלאה ו-RTL",
     ],
     limits: {
       documentsPerMonth: 5,
@@ -56,7 +55,6 @@ export const PLANS: Record<PlanTier, Plan> = {
       "דשבורד עם גרפים מלאים",
       "לוגו עסקי על מסמכים",
       "כמה אימיילים לכל לקוח",
-      "תמיכה לעוסק פטור ועוסק מורשה",
     ],
     limits: {
       documentsPerMonth: null,

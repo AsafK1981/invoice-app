@@ -41,16 +41,9 @@ function visualRtl(s: string): string {
 
 export default async function OpengraphImage() {
   const headlineLogical = "חשבוניות וקבלות בלי כאב ראש";
-  const pillsLogical = "חינם · עברית · עוסק פטור";
   const headline = visualRtl(headlineLogical);
-  const pills = visualRtl(pillsLogical);
-  const allHebrew = headlineLogical + pillsLogical;
 
-  // Load two weights so the headline can be heavier than the pills.
-  const [heeboBold, heeboMedium] = await Promise.all([
-    loadGoogleFont("Heebo", 800, allHebrew),
-    loadGoogleFont("Heebo", 500, allHebrew),
-  ]);
+  const heeboBold = await loadGoogleFont("Heebo", 800, headlineLogical);
 
   return new ImageResponse(
     (
@@ -97,34 +90,20 @@ export default async function OpengraphImage() {
         </div>
         <div
           style={{
-            fontSize: 36,
+            fontSize: 44,
             fontWeight: 800,
             color: "#57534e",
-            marginTop: 28,
+            marginTop: 36,
             display: "flex",
           }}
         >
           {headline}
         </div>
-        <div
-          style={{
-            fontSize: 24,
-            color: "#a8a29e",
-            marginTop: 60,
-            display: "flex",
-            fontWeight: 500,
-          }}
-        >
-          {pills}
-        </div>
       </div>
     ),
     {
       ...size,
-      fonts: [
-        { name: "Heebo", data: heeboBold, style: "normal", weight: 800 },
-        { name: "Heebo", data: heeboMedium, style: "normal", weight: 500 },
-      ],
+      fonts: [{ name: "Heebo", data: heeboBold, style: "normal", weight: 800 }],
     },
   );
 }

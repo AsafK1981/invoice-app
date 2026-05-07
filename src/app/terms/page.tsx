@@ -30,7 +30,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl font-bold text-stone-900 mb-2">1. השירות</h2>
             <p className="text-sm text-stone-700 leading-relaxed">
-              MySuperFriendlyInvoiceApp הוא כלי לניהול חשבוניות וקבלות לעצמאיים. השימוש בשירות הוא חינם וניתן באופן "כפי שהוא" (AS-IS).
+              MySuperFriendlyInvoiceApp הוא כלי לניהול חשבוניות וקבלות לעצמאיים. השירות ניתן באופן "כפי שהוא" (AS-IS).
             </p>
           </section>
 
