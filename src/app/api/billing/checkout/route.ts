@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { polar, getProductId } from "@/lib/polar";
-import type { PlanTier, BillingInterval } from "@/lib/plans";
+import { TRIAL_DAYS, type PlanTier, type BillingInterval } from "@/lib/plans";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -57,6 +57,11 @@ export async function POST(req: NextRequest) {
 
     const origin = req.headers.get("origin") || "https://mysuperfriendlyinvoiceapp.vercel.app";
 
+    // First-time subscribers get a 14-day trial; returning subscribers
+    // (canceled then resubscribed) don't, so they can't farm the trial
+    // by churning.
+    const hasUsedTrial = user.user_metadata?.plan_trial_used === true;
+
     const checkout = await polar.checkouts.create({
       products: [productId],
       customerEmail: user.email,
@@ -72,6 +77,15 @@ export async function POST(req: NextRequest) {
         interval,
       },
       allowDiscountCodes: true,
+      // 14-day trial for first-time subscribers. Polar honors trial
+      // settings on the checkout level when allowTrial is true.
+      ...(hasUsedTrial
+        ? { allowTrial: false as const }
+        : {
+            allowTrial: true as const,
+            trialInterval: "day" as const,
+            trialIntervalCount: TRIAL_DAYS,
+          }),
     });
 
     // Best-effort: store the Polar customer hint on the Supabase user so
