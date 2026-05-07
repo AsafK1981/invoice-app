@@ -21,10 +21,30 @@ async function loadGoogleFont(family: string, weight: number, text: string) {
   return await fontRes.arrayBuffer();
 }
 
+/**
+ * satori does NOT implement the Unicode Bidi Algorithm. It renders
+ * every character left-to-right in storage order. For Hebrew that
+ * means characters end up visually reversed (the logical first
+ * character lands on the LEFT, but Hebrew readers expect it on the
+ * right). CSS `direction: rtl` and the JSX `dir` attribute are both
+ * ignored by satori for inline text shaping.
+ *
+ * Workaround: pre-reverse the string at the code-point level so
+ * left-to-right glyph emission produces the visually correct RTL
+ * order. We split with Array.from to handle surrogate pairs and
+ * combining marks safely (Heebo has no combining marks for our
+ * letters, but the cost is negligible and the safety is real).
+ */
+function visualRtl(s: string): string {
+  return Array.from(s).reverse().join("");
+}
+
 export default async function OpengraphImage() {
-  const headline = "חשבוניות וקבלות בלי כאב ראש";
-  const pills = "חינם · עברית · עוסק פטור";
-  const allHebrew = headline + pills;
+  const headlineLogical = "חשבוניות וקבלות בלי כאב ראש";
+  const pillsLogical = "חינם · עברית · עוסק פטור";
+  const headline = visualRtl(headlineLogical);
+  const pills = visualRtl(pillsLogical);
+  const allHebrew = headlineLogical + pillsLogical;
 
   // Load two weights so the headline can be heavier than the pills.
   const [heeboBold, heeboMedium] = await Promise.all([
@@ -82,7 +102,6 @@ export default async function OpengraphImage() {
             color: "#57534e",
             marginTop: 28,
             display: "flex",
-            direction: "rtl",
           }}
         >
           {headline}
@@ -94,7 +113,6 @@ export default async function OpengraphImage() {
             marginTop: 60,
             display: "flex",
             fontWeight: 500,
-            direction: "rtl",
           }}
         >
           {pills}
