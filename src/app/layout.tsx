@@ -48,20 +48,14 @@ export const metadata: Metadata = {
     title: "MySuperFriendlyInvoiceApp - חשבוניות וקבלות בלי כאב ראש",
     description:
       "אפליקציית חשבוניות חינמית לעצמאיים בישראל. עברית מלאה, ניהול לקוחות, שליחה במייל, דשבורד עם גרפים.",
-    images: [
-      {
-        url: "/logo.svg",
-        width: 512,
-        height: 512,
-        alt: "MySuperFriendlyInvoiceApp",
-      },
-    ],
+    // images intentionally omitted — Next picks up src/app/opengraph-image.tsx
+    // automatically and generates a 1200x630 card.
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: "MySuperFriendlyInvoiceApp - חשבוניות וקבלות בלי כאב ראש",
     description: "אפליקציית חשבוניות חינמית לעצמאיים בישראל",
-    images: ["/logo.svg"],
+    // images: same — file-based generation handles it.
   },
 };
 
