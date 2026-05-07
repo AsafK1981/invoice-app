@@ -113,15 +113,15 @@ export interface PlanStatus {
   trialing?: boolean;
   cancelAtPeriodEnd?: boolean;
   currentPeriodEnd?: string;
-  stripeSubscriptionId?: string;
-  stripeCustomerId?: string;
+  subscriptionId?: string;
+  customerId?: string;
 }
 
 export function getPlanStatus(userMetadata: Record<string, unknown> | undefined): PlanStatus {
   const tier = (userMetadata?.plan_tier as PlanTier) || "free";
-  // For the beta period (before Stripe is wired), users without a paid
+  // For the beta period (before payments are wired), users without a paid
   // subscription are still treated as active so nobody loses access.
-  // Once Stripe is fully configured this becomes:
+  // Once Polar is fully configured this becomes:
   //   active: userMetadata?.plan_active === true
   return {
     tier,
@@ -129,7 +129,11 @@ export function getPlanStatus(userMetadata: Record<string, unknown> | undefined)
     trialing: userMetadata?.plan_trialing === true,
     cancelAtPeriodEnd: userMetadata?.plan_cancel_at_period_end === true,
     currentPeriodEnd: userMetadata?.plan_current_period_end as string | undefined,
-    stripeSubscriptionId: userMetadata?.stripe_subscription_id as string | undefined,
-    stripeCustomerId: userMetadata?.stripe_customer_id as string | undefined,
+    subscriptionId:
+      (userMetadata?.polar_subscription_id as string | undefined) ||
+      (userMetadata?.stripe_subscription_id as string | undefined),
+    customerId:
+      (userMetadata?.polar_customer_id as string | undefined) ||
+      (userMetadata?.stripe_customer_id as string | undefined),
   };
 }

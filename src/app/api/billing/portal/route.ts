@@ -1,13 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { stripe } from "@/lib/stripe";
+import { polar } from "@/lib/polar";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
+/**
+ * Creates a one-time customer portal session for the calling user. The
+ * portal lets them update their payment method, cancel, see invoices,
+ * and switch plan tier — all hosted by Polar.
+ */
 export async function POST(req: NextRequest) {
-  if (!stripe) {
-    return NextResponse.json({ ok: false, error: "Stripe not configured" }, { status: 503 });
+  if (!polar) {
+    return NextResponse.json(
+      { ok: false, error: "Polar not configured" },
+      { status: 503 },
+    );
   }
 
   try {
@@ -23,27 +31,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
     }
 
-    const customerId = user.user_metadata?.stripe_customer_id as string | undefined;
-    if (!customerId) {
-      return NextResponse.json(
-        { ok: false, error: "No Stripe customer found" },
-        { status: 400 }
-      );
-    }
+    // Look up by external ID (= Supabase user.id) so we don't need a
+    // pre-existing polar_customer_id in metadata. Polar resolves it
+    // server-side. Falls back to direct customer ID if we have one.
+    const customerId = user.user_metadata?.polar_customer_id as string | undefined;
+    const session = customerId
+      ? await polar.customerSessions.create({ customerId })
+      : await polar.customerSessions.create({ externalCustomerId: user.id });
 
-    const origin = req.headers.get("origin") || "https://mysuperfriendlyinvoiceapp.vercel.app";
-
-    const portal = await stripe.billingPortal.sessions.create({
-      customer: customerId,
-      return_url: `${origin}/billing`,
-    });
-
-    return NextResponse.json({ ok: true, url: portal.url });
+    return NextResponse.json({ ok: true, url: session.customerPortalUrl });
   } catch (err) {
     console.error("Portal error:", err);
     return NextResponse.json(
       { ok: false, error: err instanceof Error ? err.message : "Internal error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

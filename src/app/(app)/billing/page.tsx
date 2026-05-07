@@ -50,7 +50,7 @@ export default function BillingPage() {
     setToast(null);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch("/api/stripe/checkout", {
+      const res = await fetch("/api/billing/checkout", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${session?.access_token}`,
@@ -79,7 +79,7 @@ export default function BillingPage() {
     setToast(null);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch("/api/stripe/portal", {
+      const res = await fetch("/api/billing/portal", {
         method: "POST",
         headers: { Authorization: `Bearer ${session?.access_token}` },
       });
@@ -107,7 +107,7 @@ export default function BillingPage() {
   const isPaying =
     planStatus.active &&
     !planStatus.trialing &&
-    planStatus.stripeSubscriptionId !== undefined;
+    planStatus.subscriptionId !== undefined;
   const periodEnd = planStatus.currentPeriodEnd
     ? new Date(planStatus.currentPeriodEnd).toLocaleDateString("he-IL")
     : null;
