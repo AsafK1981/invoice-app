@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { stripe } from "@/lib/stripe";
+import { stripe, findTierByPriceId } from "@/lib/stripe";
 import type Stripe from "stripe";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -41,7 +41,16 @@ export async function POST(req: NextRequest) {
 
     const status = sub.status;
     const isActive = status === "active" || status === "trialing";
+    const isTrialing = status === "trialing";
     const periodEndUnix = (sub as unknown as { current_period_end?: number }).current_period_end;
+
+    // Detect which tier they're paying for from the subscription's price ID
+    // (rather than trusting metadata, which could be missing for legacy subs).
+    // Default to "pro" when active because that's what the legacy single-tier
+    // setup did.
+    const subPriceId = sub.items?.data?.[0]?.price?.id;
+    const lookup = subPriceId ? findTierByPriceId(subPriceId) : null;
+    const paidTier = lookup?.tier ?? (sub.metadata?.tier as "free" | "pro" | undefined) ?? "pro";
 
     const { data: { user } } = await admin.auth.admin.getUserById(userId);
     if (!user) return;
@@ -49,8 +58,12 @@ export async function POST(req: NextRequest) {
     await admin.auth.admin.updateUserById(userId, {
       user_metadata: {
         ...user.user_metadata,
-        plan_tier: isActive ? "pro" : "free",
+        plan_tier: isActive ? paidTier : "free",
         plan_active: isActive,
+        plan_trialing: isTrialing,
+        // Mark trial as "used" once they hit any trialing or active state — so
+        // canceling and resubscribing doesn't grant another 14 free days.
+        plan_trial_used: user.user_metadata?.plan_trial_used === true || isActive,
         plan_cancel_at_period_end: sub.cancel_at_period_end,
         plan_current_period_end: periodEndUnix
           ? new Date(periodEndUnix * 1000).toISOString()

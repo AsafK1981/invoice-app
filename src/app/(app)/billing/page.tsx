@@ -12,14 +12,22 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { PLANS, getPlanStatus, type PlanStatus } from "@/lib/plans";
+import {
+  PLANS,
+  getPlanStatus,
+  TRIAL_DAYS,
+  type PlanStatus,
+  type PlanTier,
+  type BillingInterval,
+} from "@/lib/plans";
 import { formatCurrency } from "@/lib/format";
 
 export default function BillingPage() {
   const searchParams = useSearchParams();
   const [planStatus, setPlanStatus] = useState<PlanStatus>({ tier: "free", active: true });
   const [loading, setLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState<PlanTier | null>(null);
+  const [interval, setInterval] = useState<BillingInterval>("month");
   const [toast, setToast] = useState<{ kind: "success" | "error"; text: string } | null>(null);
 
   useEffect(() => {
@@ -37,14 +45,18 @@ export default function BillingPage() {
     });
   }, []);
 
-  async function handleUpgrade() {
-    setActionLoading(true);
+  async function handleSubscribe(tier: PlanTier) {
+    setActionLoading(tier);
     setToast(null);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch("/api/stripe/checkout", {
         method: "POST",
-        headers: { Authorization: `Bearer ${session?.access_token}` },
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ tier, interval }),
       });
       const data = await res.json();
       if (data.ok && data.url) {
@@ -58,12 +70,12 @@ export default function BillingPage() {
         text: err instanceof Error ? err.message : "שגיאה",
       });
     } finally {
-      setActionLoading(false);
+      setActionLoading(null);
     }
   }
 
   async function handleManage() {
-    setActionLoading(true);
+    setActionLoading("pro");
     setToast(null);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -83,7 +95,7 @@ export default function BillingPage() {
         text: err instanceof Error ? err.message : "שגיאה",
       });
     } finally {
-      setActionLoading(false);
+      setActionLoading(null);
     }
   }
 
@@ -92,9 +104,15 @@ export default function BillingPage() {
   }
 
   const isPro = planStatus.tier === "pro" && planStatus.active;
+  const isPaying =
+    planStatus.active &&
+    !planStatus.trialing &&
+    planStatus.stripeSubscriptionId !== undefined;
   const periodEnd = planStatus.currentPeriodEnd
     ? new Date(planStatus.currentPeriodEnd).toLocaleDateString("he-IL")
     : null;
+  const yearlySavings = (priceMonthly: number, priceYearly: number) =>
+    Math.round((1 - priceYearly / (priceMonthly * 12)) * 100);
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -144,22 +162,59 @@ export default function BillingPage() {
               ) : null}
               <button
                 onClick={handleManage}
-                disabled={actionLoading}
+                disabled={actionLoading !== null}
                 className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border-2 border-violet-200 text-violet-700 hover:bg-violet-50 disabled:opacity-50"
               >
                 <ExternalLink className="w-4 h-4" />
-                {actionLoading ? "טוען..." : "נהל מנוי / בטל / עדכן כרטיס"}
+                {actionLoading !== null ? "טוען..." : "נהל מנוי / בטל / עדכן כרטיס"}
               </button>
             </div>
           </div>
         </div>
       )}
 
+      {/* Monthly / Yearly toggle */}
+      <div className="flex items-center justify-center">
+        <div className="inline-flex items-center bg-white border border-stone-200 rounded-full p-1 shadow-sm">
+          <button
+            onClick={() => setInterval("month")}
+            className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-all ${
+              interval === "month"
+                ? "bg-gradient-to-l from-orange-500 to-rose-500 text-white shadow-sm"
+                : "text-stone-600 hover:text-stone-900"
+            }`}
+          >
+            חודשי
+          </button>
+          <button
+            onClick={() => setInterval("year")}
+            className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-all flex items-center gap-1.5 ${
+              interval === "year"
+                ? "bg-gradient-to-l from-orange-500 to-rose-500 text-white shadow-sm"
+                : "text-stone-600 hover:text-stone-900"
+            }`}
+          >
+            שנתי
+            <span
+              className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                interval === "year" ? "bg-white/25" : "bg-emerald-100 text-emerald-700"
+              }`}
+            >
+              -20%
+            </span>
+          </button>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {(["free", "pro"] as const).map((tier) => {
           const plan = PLANS[tier];
           const isCurrent = planStatus.tier === tier && planStatus.active;
           const isProCard = tier === "pro";
+          const displayPrice = interval === "year" ? plan.priceYearly : plan.priceMonthly;
+          const intervalLabel = interval === "year" ? "/ שנה" : "/ חודש";
+          const monthlyEquivalent =
+            interval === "year" ? Math.round(plan.priceYearly / 12) : null;
 
           return (
             <div
@@ -184,12 +239,15 @@ export default function BillingPage() {
               <p className="text-sm text-stone-700 mt-1">{plan.description}</p>
               <div className="mt-4 flex items-baseline gap-1">
                 <span className="text-4xl font-bold text-stone-900">
-                  {plan.priceMonthly === 0 ? "—" : formatCurrency(plan.priceMonthly)}
+                  {formatCurrency(displayPrice)}
                 </span>
-                {plan.priceMonthly > 0 && (
-                  <span className="text-sm text-stone-600">/ חודש</span>
-                )}
+                <span className="text-sm text-stone-600">{intervalLabel}</span>
               </div>
+              {monthlyEquivalent !== null && (
+                <p className="text-xs text-stone-500 mt-1">
+                  ({formatCurrency(monthlyEquivalent)} לחודש, נחסך {yearlySavings(plan.priceMonthly, plan.priceYearly)}%)
+                </p>
+              )}
               <ul className="mt-6 space-y-2.5">
                 {plan.features.map((f) => (
                   <li key={f} className="flex items-start gap-2 text-sm text-stone-800">
@@ -200,20 +258,19 @@ export default function BillingPage() {
                   </li>
                 ))}
               </ul>
-              {!isCurrent && tier === "pro" && (
+              {!isCurrent && (
                 <button
-                  onClick={handleUpgrade}
-                  disabled={actionLoading}
-                  className="w-full mt-6 btn-glow inline-flex items-center justify-center gap-2 bg-gradient-to-l from-violet-500 to-purple-500 text-white py-3 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-violet-200/60 disabled:opacity-50 transition-all"
+                  onClick={() => handleSubscribe(tier)}
+                  disabled={actionLoading !== null}
+                  className={`w-full mt-6 btn-glow inline-flex items-center justify-center gap-2 text-white py-3 rounded-2xl text-sm font-semibold disabled:opacity-50 transition-all ${
+                    isProCard
+                      ? "bg-gradient-to-l from-violet-500 to-purple-500 hover:shadow-lg hover:shadow-violet-200/60"
+                      : "bg-gradient-to-l from-orange-500 to-rose-500 hover:shadow-lg hover:shadow-orange-200/60"
+                  }`}
                 >
                   <Sparkles className="w-4 h-4" />
-                  {actionLoading ? "טוען..." : "שדרג ל-Pro"}
+                  {actionLoading === tier ? "טוען..." : !isPaying ? `התחל ${TRIAL_DAYS} ימי ניסיון` : `שדרג ל-${plan.name}`}
                 </button>
-              )}
-              {isCurrent && tier === "free" && (
-                <p className="mt-6 text-xs text-center text-stone-600">
-                  שדרג ל-Pro כדי לקבל גישה ללא הגבלות
-                </p>
               )}
             </div>
           );
@@ -221,6 +278,7 @@ export default function BillingPage() {
       </div>
 
       <p className="text-xs text-center text-stone-500 mt-4">
+        {!isPaying && `${TRIAL_DAYS} ימי ניסיון חינם, ללא צורך בכרטיס אשראי. `}
         תשלום מאובטח דרך Stripe. ניתן לבטל בכל עת.
       </p>
     </div>
