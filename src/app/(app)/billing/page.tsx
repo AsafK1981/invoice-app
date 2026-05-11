@@ -10,6 +10,8 @@ import {
   CheckCircle2,
   AlertCircle,
   ExternalLink,
+  ShieldCheck,
+  Globe,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import {
@@ -21,6 +23,7 @@ import {
   type BillingInterval,
 } from "@/lib/plans";
 import { formatCurrency } from "@/lib/format";
+import { Modal } from "@/components/ui/modal";
 
 export default function BillingPage() {
   const searchParams = useSearchParams();
@@ -29,6 +32,11 @@ export default function BillingPage() {
   const [actionLoading, setActionLoading] = useState<PlanTier | null>(null);
   const [interval, setInterval] = useState<BillingInterval>("month");
   const [toast, setToast] = useState<{ kind: "success" | "error"; text: string } | null>(null);
+  // Confirmation modal — shown when user clicks subscribe, before
+  // redirecting to Polar's English checkout page. Sets expectations:
+  // (1) summary of the plan in Hebrew, (2) Polar is the processor and
+  // its checkout page is in English, (3) what happens after.
+  const [confirmingTier, setConfirmingTier] = useState<PlanTier | null>(null);
 
   useEffect(() => {
     if (searchParams.get("success") === "1") {
@@ -45,9 +53,18 @@ export default function BillingPage() {
     });
   }, []);
 
-  async function handleSubscribe(tier: PlanTier) {
-    setActionLoading(tier);
+  // Step 1: clicking the plan card just opens the confirm modal —
+  // the actual checkout call happens inside, after the user reviews
+  // the plan + the "next page is in English" notice.
+  function handleSubscribe(tier: PlanTier) {
     setToast(null);
+    setConfirmingTier(tier);
+  }
+
+  // Step 2: user confirmed in the modal — now create the Polar
+  // checkout session and redirect to it.
+  async function actuallySubscribe(tier: PlanTier) {
+    setActionLoading(tier);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch("/api/billing/checkout", {
@@ -62,9 +79,11 @@ export default function BillingPage() {
       if (data.ok && data.url) {
         window.location.href = data.url;
       } else {
+        setConfirmingTier(null);
         setToast({ kind: "error", text: data.error || "שגיאה ביצירת קישור תשלום" });
       }
     } catch (err) {
+      setConfirmingTier(null);
       setToast({
         kind: "error",
         text: err instanceof Error ? err.message : "שגיאה",
@@ -278,9 +297,120 @@ export default function BillingPage() {
       </div>
 
       <p className="text-xs text-center text-stone-500 mt-4">
-        {!isPaying && `${TRIAL_DAYS} ימי ניסיון חינם, ללא צורך בכרטיס אשראי. `}
-        תשלום מאובטח דרך Stripe. ניתן לבטל בכל עת.
+        {!isPaying && `${TRIAL_DAYS} ימי ניסיון, ללא חיוב במשך התקופה. `}
+        תשלום מאובטח דרך Polar (Stripe). ניתן לבטל בכל עת.
       </p>
+
+      {/* Confirm-before-redirect modal. Shows plan summary in Hebrew
+          and warns that the next page (Polar's checkout) is in English
+          — manages expectations so Israeli users don't bounce when
+          they hit the language switch. */}
+      <Modal
+        open={confirmingTier !== null}
+        onClose={() => setConfirmingTier(null)}
+        title={
+          confirmingTier
+            ? `${PLANS[confirmingTier].name} — אישור הזמנה`
+            : "אישור הזמנה"
+        }
+        subtitle={
+          interval === "year"
+            ? `חיוב שנתי (חיסכון של 20%)`
+            : `חיוב חודשי`
+        }
+        icon={ShieldCheck}
+        maxWidth="md"
+        footer={
+          <div className="flex gap-2 w-full">
+            <button
+              onClick={() => setConfirmingTier(null)}
+              className="flex-1 px-4 py-2 rounded-xl text-sm font-semibold text-stone-700 hover:bg-white"
+            >
+              ביטול
+            </button>
+            <button
+              onClick={() => confirmingTier && actuallySubscribe(confirmingTier)}
+              disabled={actionLoading !== null}
+              className="flex-1 btn-glow inline-flex items-center justify-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white py-2.5 rounded-xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200/60 disabled:opacity-50 transition-all"
+            >
+              <Sparkles className="w-4 h-4" />
+              {actionLoading !== null ? "מעביר לתשלום..." : "המשך לתשלום"}
+            </button>
+          </div>
+        }
+      >
+        {confirmingTier && (
+          <div className="space-y-5">
+            <div className="rounded-2xl bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-100 p-5">
+              <div className="flex items-baseline justify-between">
+                <div>
+                  <p className="text-xs text-stone-700 font-medium">{PLANS[confirmingTier].description}</p>
+                  <p className="font-bold text-stone-900 text-xl mt-1">
+                    {PLANS[confirmingTier].name}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-3xl font-bold text-stone-900">
+                    {formatCurrency(
+                      interval === "year"
+                        ? PLANS[confirmingTier].priceYearly
+                        : PLANS[confirmingTier].priceMonthly,
+                    )}
+                  </p>
+                  <p className="text-xs text-stone-600">
+                    {interval === "year" ? "לשנה" : "לחודש"}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-4 flex items-center gap-2 text-sm font-semibold text-emerald-700">
+                <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                <span>{TRIAL_DAYS} ימי ניסיון — אפס חיוב במשך התקופה הזו</span>
+              </div>
+            </div>
+
+            <ul className="space-y-2 text-sm">
+              {PLANS[confirmingTier].features.slice(0, 4).map((f) => (
+                <li key={f} className="flex items-start gap-2 text-stone-800">
+                  <Check className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
+                  <span>{f}</span>
+                </li>
+              ))}
+            </ul>
+
+            <div className="rounded-2xl border-2 border-amber-200 bg-amber-50/60 p-4">
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center flex-shrink-0 shadow-sm">
+                  <Globe className="w-4 h-4 text-amber-600" />
+                </div>
+                <div className="flex-1 text-sm leading-relaxed">
+                  <p className="font-bold text-stone-900">דף התשלום הבא הוא באנגלית</p>
+                  <p className="text-stone-700 mt-1">
+                    התשלום מאובטח דרך <strong>Polar</strong> — סוחר רשום באירופה
+                    שעובד עם <strong>Stripe</strong> ברקע. דף ה-checkout שלהם
+                    זמין כרגע באנגלית בלבד. שאר האפליקציה נשארת בעברית, וההזמנה
+                    שלך תועבר אוטומטית חזרה לאחר התשלום.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <ul className="text-xs text-stone-600 space-y-1.5">
+              <li className="flex items-start gap-2">
+                <CheckCircle2 className="w-3.5 h-3.5 text-stone-400 mt-0.5 flex-shrink-0" />
+                ניתן לבטל בכל עת מתוך עמוד "חיוב ומסלולים"
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle2 className="w-3.5 h-3.5 text-stone-400 mt-0.5 flex-shrink-0" />
+                החיוב הראשון יתבצע רק לאחר {TRIAL_DAYS} ימי ניסיון
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle2 className="w-3.5 h-3.5 text-stone-400 mt-0.5 flex-shrink-0" />
+                חשבונית מס/קבלה תישלח אוטומטית לאחר כל חיוב
+              </li>
+            </ul>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }
