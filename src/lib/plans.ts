@@ -115,25 +115,52 @@ export interface PlanStatus {
   currentPeriodEnd?: string;
   subscriptionId?: string;
   customerId?: string;
+  /** True if this user got their access via a beta invite, not a paid Polar sub. */
+  betaGrant?: boolean;
+  /** Invite code they redeemed, if any. */
+  betaInviteCode?: string;
+  /** Days remaining until grant or subscription period ends. Negative = expired. Null = no end date set. */
+  daysRemaining?: number | null;
+  /** True if the user's beta grant expired — they revert to the free tier with basic limits. */
+  betaExpired?: boolean;
 }
 
 export function getPlanStatus(userMetadata: Record<string, unknown> | undefined): PlanStatus {
-  const tier = (userMetadata?.plan_tier as PlanTier) || "free";
-  // For the beta period (before payments are wired), users without a paid
-  // subscription are still treated as active so nobody loses access.
-  // Once Polar is fully configured this becomes:
-  //   active: userMetadata?.plan_active === true
+  const rawTier = (userMetadata?.plan_tier as PlanTier) || "free";
+  const isBetaGrant = userMetadata?.plan_beta_grant === true;
+  const periodEnd = userMetadata?.plan_current_period_end as string | undefined;
+  const periodEndMs = periodEnd ? new Date(periodEnd).getTime() : null;
+  const now = Date.now();
+
+  // A beta grant that's past its end date should NOT keep granting Pro
+  // access. We treat the user as free-tier with basic limits — friendly
+  // degradation rather than a hard lockout (so they can still see their
+  // historical data and decide whether to subscribe).
+  const betaExpired = isBetaGrant && periodEndMs !== null && periodEndMs < now;
+
+  const effectiveTier: PlanTier = betaExpired ? "free" : rawTier;
+  const isActive =
+    !betaExpired &&
+    (effectiveTier === "free" || userMetadata?.plan_active === true);
+
+  const daysRemaining =
+    periodEndMs !== null ? Math.ceil((periodEndMs - now) / (24 * 60 * 60 * 1000)) : null;
+
   return {
-    tier,
-    active: tier === "free" || userMetadata?.plan_active === true,
+    tier: effectiveTier,
+    active: isActive,
     trialing: userMetadata?.plan_trialing === true,
     cancelAtPeriodEnd: userMetadata?.plan_cancel_at_period_end === true,
-    currentPeriodEnd: userMetadata?.plan_current_period_end as string | undefined,
+    currentPeriodEnd: periodEnd,
     subscriptionId:
       (userMetadata?.polar_subscription_id as string | undefined) ||
       (userMetadata?.stripe_subscription_id as string | undefined),
     customerId:
       (userMetadata?.polar_customer_id as string | undefined) ||
       (userMetadata?.stripe_customer_id as string | undefined),
+    betaGrant: isBetaGrant && !betaExpired,
+    betaInviteCode: userMetadata?.plan_invite_code as string | undefined,
+    daysRemaining,
+    betaExpired,
   };
 }

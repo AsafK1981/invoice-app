@@ -29,6 +29,7 @@ import { QuoteAging } from "@/components/quote-aging";
 import { OnboardingChecklist } from "@/components/onboarding-checklist";
 import { ExemptCeilingTracker } from "@/components/exempt-ceiling-tracker";
 import { RecurringDueAlert } from "@/components/recurring-due-alert";
+import { BetaBanner } from "@/components/beta-banner";
 
 type DateRange = "this_month" | "last_3_months" | "this_year" | "all_time";
 
@@ -211,6 +212,8 @@ export default function DashboardPage() {
           </Link>
         </div>
       </div>
+
+      <BetaBanner />
 
       <OnboardingChecklist
         business={business}
