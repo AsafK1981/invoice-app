@@ -36,12 +36,26 @@ if ! node scripts/check-anon-read.mjs; then
   exit 1
 fi
 
-echo "[pre-push] 5/5 stale URL grep..."
+echo "[pre-push] 5/6 stale URL grep..."
 if grep -rEn "invoice-app-ochre-five|http://localhost:3000" src/ 2>/dev/null; then
   echo "✗ stale URL found in src/ (above)"
   echo "Replace with mysuperfriendlyinvoiceapp.vercel.app or a process.env reference."
   exit 1
 fi
 echo "✓ no stale URLs"
+
+echo "[pre-push] 6/6 plan/polar fields in user_metadata (write side)..."
+# user_metadata is user-writable from the browser console. Writing
+# plan_* / polar_* / stripe_* fields to user_metadata = user can grant
+# themselves Pro for free. They must go into app_metadata (admin-only).
+# Catches `user_metadata: { ... plan_tier ... }` shapes in route handlers.
+if grep -rEn "user_metadata:[^}]*(plan_|polar_subscription_id|polar_customer_id|stripe_subscription_id|stripe_customer_id)" src/app/api/ 2>/dev/null; then
+  echo "✗ A route handler writes plan/polar fields to user_metadata (above)."
+  echo "  user_metadata is user-writable from the browser console — a hacker"
+  echo "  could grant themselves Pro by editing it. Use app_metadata instead:"
+  echo "    admin.auth.admin.updateUserById(id, { app_metadata: { plan_tier: ... } })"
+  exit 1
+fi
+echo "✓ plan fields go to app_metadata only"
 
 echo "[pre-push] all checks passed"

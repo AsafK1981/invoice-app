@@ -59,8 +59,12 @@ export async function POST(req: NextRequest) {
 
     // First-time subscribers get a 14-day trial; returning subscribers
     // (canceled then resubscribed) don't, so they can't farm the trial
-    // by churning.
-    const hasUsedTrial = user.user_metadata?.plan_trial_used === true;
+    // by churning. Read from app_metadata (the trustworthy source).
+    const hasUsedTrial =
+      ((user.app_metadata || {}) as Record<string, unknown>).plan_trial_used === true ||
+      // Fallback for any pre-migration users (the migration should have
+      // moved this already, but defense in depth).
+      ((user.user_metadata || {}) as Record<string, unknown>).plan_trial_used === true;
 
     const checkout = await polar.checkouts.create({
       products: [productId],
@@ -88,15 +92,17 @@ export async function POST(req: NextRequest) {
           }),
     });
 
-    // Best-effort: store the Polar customer hint on the Supabase user so
-    // the customer portal route can resolve it without a round-trip.
+    // Best-effort: store the Polar customer hint on the Supabase user
+    // (in app_metadata, which is service-role only) so the customer
+    // portal route can resolve it without a round-trip.
     try {
       const admin = createClient(supabaseUrl, serviceKey);
       const customerId =
         typeof checkout.customerId === "string" ? checkout.customerId : undefined;
-      if (customerId && user.user_metadata?.polar_customer_id !== customerId) {
+      const prevAppMeta = (user.app_metadata || {}) as Record<string, unknown>;
+      if (customerId && prevAppMeta.polar_customer_id !== customerId) {
         await admin.auth.admin.updateUserById(user.id, {
-          user_metadata: { ...user.user_metadata, polar_customer_id: customerId },
+          app_metadata: { ...prevAppMeta, polar_customer_id: customerId },
         });
       }
     } catch {

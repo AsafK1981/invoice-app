@@ -48,7 +48,7 @@ export default function BillingPage() {
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
-      setPlanStatus(getPlanStatus(user?.user_metadata));
+      setPlanStatus(getPlanStatus(user));
       setLoading(false);
     });
   }, []);

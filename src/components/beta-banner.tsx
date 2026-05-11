@@ -26,7 +26,7 @@ export function BetaBanner() {
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
-      const s = getPlanStatus(user?.user_metadata);
+      const s = getPlanStatus(user);
       setStatus(s);
     });
     // Per-day dismissal — re-shows once a day even after the user closes it.

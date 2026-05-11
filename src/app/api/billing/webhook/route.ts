@@ -81,17 +81,26 @@ export async function POST(req: NextRequest) {
       ? new Date(sub.currentPeriodEnd).toISOString()
       : null;
 
+    // Write to app_metadata — only the service role can touch this. The
+    // user CANNOT modify it from a browser console (which would let
+    // them grant themselves Pro for free if we stored plan fields in
+    // user_metadata).
+    const prevAppMeta = (user.app_metadata || {}) as Record<string, unknown>;
     await admin.auth.admin.updateUserById(externalId, {
-      user_metadata: {
-        ...user.user_metadata,
+      app_metadata: {
+        ...prevAppMeta,
         plan_tier: isActive ? paidTier : "free",
         plan_active: isActive,
         plan_trialing: isTrialing,
-        plan_trial_used: user.user_metadata?.plan_trial_used === true || isActive,
+        plan_trial_used: prevAppMeta.plan_trial_used === true || isActive,
         plan_cancel_at_period_end: sub.cancelAtPeriodEnd === true,
         plan_current_period_end: periodEndIso,
+        plan_beta_grant: false, // they're paying now — no longer a beta grant
         polar_subscription_id: sub.id,
-        polar_customer_id: sub.customerId || sub.customer?.id || user.user_metadata?.polar_customer_id,
+        polar_customer_id:
+          sub.customerId ||
+          sub.customer?.id ||
+          (prevAppMeta.polar_customer_id as string | undefined),
       },
     });
   }

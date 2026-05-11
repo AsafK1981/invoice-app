@@ -125,10 +125,39 @@ export interface PlanStatus {
   betaExpired?: boolean;
 }
 
-export function getPlanStatus(userMetadata: Record<string, unknown> | undefined): PlanStatus {
-  const rawTier = (userMetadata?.plan_tier as PlanTier) || "free";
-  const isBetaGrant = userMetadata?.plan_beta_grant === true;
-  const periodEnd = userMetadata?.plan_current_period_end as string | undefined;
+/**
+ * Source of truth for plan status.
+ *
+ * **Security:** `app_metadata` (admin/service-role only) takes precedence
+ * over `user_metadata` (user-writable). Supabase users can update their
+ * own `user_metadata` directly from a browser console — they cannot
+ * touch `app_metadata`. So we always write plan_* into `app_metadata`,
+ * and we read from `app_metadata` first.
+ *
+ * We still merge `user_metadata` as a fallback so any users whose plan
+ * fields haven't been migrated yet aren't suddenly logged out — but
+ * `app_metadata` overrides anything they might have placed in
+ * `user_metadata` themselves.
+ */
+export function getPlanStatus(
+  user:
+    | {
+        user_metadata?: Record<string, unknown> | null;
+        app_metadata?: Record<string, unknown> | null;
+      }
+    | null
+    | undefined,
+): PlanStatus {
+  // Merge with app_metadata winning on key conflict. user_metadata is
+  // kept only as a fallback for users predating the migration.
+  const meta: Record<string, unknown> = {
+    ...(user?.user_metadata || {}),
+    ...(user?.app_metadata || {}),
+  };
+
+  const rawTier = (meta.plan_tier as PlanTier) || "free";
+  const isBetaGrant = meta.plan_beta_grant === true;
+  const periodEnd = meta.plan_current_period_end as string | undefined;
   const periodEndMs = periodEnd ? new Date(periodEnd).getTime() : null;
   const now = Date.now();
 
@@ -140,8 +169,7 @@ export function getPlanStatus(userMetadata: Record<string, unknown> | undefined)
 
   const effectiveTier: PlanTier = betaExpired ? "free" : rawTier;
   const isActive =
-    !betaExpired &&
-    (effectiveTier === "free" || userMetadata?.plan_active === true);
+    !betaExpired && (effectiveTier === "free" || meta.plan_active === true);
 
   const daysRemaining =
     periodEndMs !== null ? Math.ceil((periodEndMs - now) / (24 * 60 * 60 * 1000)) : null;
@@ -149,17 +177,17 @@ export function getPlanStatus(userMetadata: Record<string, unknown> | undefined)
   return {
     tier: effectiveTier,
     active: isActive,
-    trialing: userMetadata?.plan_trialing === true,
-    cancelAtPeriodEnd: userMetadata?.plan_cancel_at_period_end === true,
+    trialing: meta.plan_trialing === true,
+    cancelAtPeriodEnd: meta.plan_cancel_at_period_end === true,
     currentPeriodEnd: periodEnd,
     subscriptionId:
-      (userMetadata?.polar_subscription_id as string | undefined) ||
-      (userMetadata?.stripe_subscription_id as string | undefined),
+      (meta.polar_subscription_id as string | undefined) ||
+      (meta.stripe_subscription_id as string | undefined),
     customerId:
-      (userMetadata?.polar_customer_id as string | undefined) ||
-      (userMetadata?.stripe_customer_id as string | undefined),
+      (meta.polar_customer_id as string | undefined) ||
+      (meta.stripe_customer_id as string | undefined),
     betaGrant: isBetaGrant && !betaExpired,
-    betaInviteCode: userMetadata?.plan_invite_code as string | undefined,
+    betaInviteCode: meta.plan_invite_code as string | undefined,
     daysRemaining,
     betaExpired,
   };

@@ -33,8 +33,11 @@ export async function POST(req: NextRequest) {
 
     // Look up by external ID (= Supabase user.id) so we don't need a
     // pre-existing polar_customer_id in metadata. Polar resolves it
-    // server-side. Falls back to direct customer ID if we have one.
-    const customerId = user.user_metadata?.polar_customer_id as string | undefined;
+    // server-side. Falls back to direct customer ID if we have one
+    // (checking app_metadata first since that's the secure write target).
+    const customerId =
+      ((user.app_metadata || {}) as Record<string, unknown>).polar_customer_id as string | undefined ||
+      ((user.user_metadata || {}) as Record<string, unknown>).polar_customer_id as string | undefined;
     const session = customerId
       ? await polar.customerSessions.create({ customerId })
       : await polar.customerSessions.create({ externalCustomerId: user.id });

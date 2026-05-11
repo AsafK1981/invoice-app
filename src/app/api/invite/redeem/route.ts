@@ -50,9 +50,22 @@ export async function POST(req: NextRequest) {
   }
 
   // Refuse if user already has a paid Polar subscription — we don't want
-  // to overwrite their real sub state with beta-grant fields.
-  const meta = user.user_metadata || {};
-  if (meta.polar_subscription_id && meta.plan_active === true && meta.plan_beta_grant !== true) {
+  // to overwrite their real sub state with beta-grant fields. Read from
+  // app_metadata (service-role-only) since that's where the webhook
+  // writes plan state.
+  const appMeta = (user.app_metadata || {}) as Record<string, unknown>;
+  const userMeta = (user.user_metadata || {}) as Record<string, unknown>;
+  // Look in app_metadata first, fall back to user_metadata for legacy users.
+  const planActive =
+    appMeta.plan_active === true ||
+    (appMeta.plan_active === undefined && userMeta.plan_active === true);
+  const polarSubId =
+    (appMeta.polar_subscription_id as string | undefined) ||
+    (userMeta.polar_subscription_id as string | undefined);
+  const isBetaGrant =
+    appMeta.plan_beta_grant === true ||
+    (appMeta.plan_beta_grant === undefined && userMeta.plan_beta_grant === true);
+  if (polarSubId && planActive && !isBetaGrant) {
     return NextResponse.json(
       { ok: false, error: "כבר יש לך מנוי פעיל בתשלום — לא ניתן להמיר אותו לבטא." },
       { status: 409 },
@@ -130,11 +143,11 @@ export async function POST(req: NextRequest) {
     .update({ redemptions_count: invite.redemptions_count + 1 })
     .eq("id", invite.id);
 
-  // Stamp the grant on user_metadata. The Polar webhook will overwrite
-  // these if the user later subscribes for real.
+  // Stamp the grant on app_metadata (admin-only). The Polar webhook will
+  // overwrite these if the user later subscribes for real.
   await sb.auth.admin.updateUserById(user.id, {
-    user_metadata: {
-      ...meta,
+    app_metadata: {
+      ...appMeta,
       plan_tier: invite.plan_tier,
       plan_active: true,
       plan_beta_grant: true,
