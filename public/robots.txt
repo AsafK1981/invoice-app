@@ -17,5 +17,6 @@ Disallow: /onboarding
 Disallow: /reset-password
 Disallow: /auth/
 Disallow: /view/
+Disallow: /invite/
 
 Sitemap: https://mysuperfriendlyinvoiceapp.vercel.app/sitemap.xml

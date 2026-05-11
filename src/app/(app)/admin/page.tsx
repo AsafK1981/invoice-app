@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import {
   Users,
   FileText,
@@ -12,6 +13,7 @@ import {
   AlertTriangle,
   Activity,
   TrendingDown,
+  Gift,
 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { supabase } from "@/lib/supabase";
@@ -162,14 +164,23 @@ export default function AdminPage() {
             סטטיסטיקות אגרגטיביות על כל המשתמשים והנתונים במערכת
           </p>
         </div>
-        <button
-          onClick={load}
-          disabled={loading}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border border-stone-200 text-stone-800 hover:bg-stone-50 disabled:opacity-50"
-        >
-          <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-          רענן
-        </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Link
+            href="/admin/invites"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-gradient-to-l from-emerald-500 to-teal-500 text-white hover:shadow-md hover:shadow-emerald-200"
+          >
+            <Gift className="w-4 h-4" />
+            הזמנות בטא
+          </Link>
+          <button
+            onClick={load}
+            disabled={loading}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border border-stone-200 text-stone-800 hover:bg-stone-50 disabled:opacity-50"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+            רענן
+          </button>
+        </div>
       </div>
 
       {error && (
