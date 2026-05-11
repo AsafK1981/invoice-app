@@ -18,6 +18,17 @@ import { supabase } from "@/lib/supabase";
 import { isAdminEmail } from "@/lib/admin";
 import { formatDate } from "@/lib/format";
 
+// Friendly random suffix to keep "FOR-FRIENDS-ONLY-" codes unique on
+// repeated clicks. Avoids confusing chars (0/O, 1/I/L).
+function defaultCode(): string {
+  const chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+  let s = "FOR-FRIENDS-ONLY-";
+  for (let i = 0; i < 4; i++) {
+    s += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return s;
+}
+
 interface Invite {
   id: string;
   code: string;
@@ -40,9 +51,11 @@ export default function AdminInvitesPage() {
   const [checked, setChecked] = useState(false);
   const [toast, setToast] = useState<{ kind: "success" | "error"; text: string } | null>(null);
 
-  // Form
-  const [code, setCode] = useState("");
-  const [notes, setNotes] = useState("");
+  // Form — pre-filled with sensible defaults so creating a code is
+  // literally one click. Each successful create rotates the suffix so
+  // back-to-back clicks don't collide on the UNIQUE constraint.
+  const [code, setCode] = useState(() => defaultCode());
+  const [notes, setNotes] = useState("For Friends Only");
   const [maxRedemptions, setMaxRedemptions] = useState(1);
   const [daysGranted, setDaysGranted] = useState(90);
   const [planTier, setPlanTier] = useState<"free" | "pro">("pro");
@@ -101,8 +114,10 @@ export default function AdminInvitesPage() {
       const data = await res.json();
       if (data.ok) {
         setToast({ kind: "success", text: `קוד "${data.invite.code}" נוצר` });
-        setCode("");
-        setNotes("");
+        // Rotate the suffix so the next click gets a fresh unique code,
+        // and keep the notes default so the user doesn't have to retype.
+        setCode(defaultCode());
+        setNotes("For Friends Only");
         load();
       } else {
         setToast({ kind: "error", text: data.error || "שגיאה" });
