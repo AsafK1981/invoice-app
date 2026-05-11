@@ -23,7 +23,22 @@ if (!URL_BASE || !KEY) {
   process.exit(1);
 }
 
-const TABLES = ["businesses", "clients", "products", "documents", "document_items", "expenses"];
+const TABLES = [
+  "businesses",
+  "clients",
+  "products",
+  "documents",
+  "document_items",
+  "expenses",
+  // Added 2026-05-11 after the security audit — any new public-schema
+  // table goes here so a forgotten `ENABLE ROW LEVEL SECURITY` is caught
+  // before reaching prod.
+  "audit_log",
+  "document_attachments",
+  "document_counters",
+  "beta_invites",
+  "beta_invite_redemptions",
+];
 const leaks = [];
 
 for (const table of TABLES) {
@@ -50,4 +65,4 @@ if (leaks.length > 0) {
   process.exit(1);
 }
 
-console.log("✓ anon-read locked down (all 6 tables returned 0 rows)");
+console.log(`✓ anon-read locked down (all ${TABLES.length} tables returned 0 rows)`);

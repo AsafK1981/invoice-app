@@ -9,17 +9,16 @@ const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 /**
  * Redeem a beta invite code. Body: { code: string }
  *
- * Behavior:
- *   1. Auth user must be logged in (Bearer token).
- *   2. Code must exist, be active, not expired, and have available slots.
- *   3. User can't redeem the same code twice.
- *   4. If user already has an active *paid* subscription (Polar), refuse —
- *      no point granting a beta on top.
- *   5. On success: bump redemptions_count, insert redemption row, set
- *      user_metadata.plan_tier / plan_active / plan_beta_grant / plan_current_period_end.
+ * The check / counter-bump / redemption-insert is one atomic SQL
+ * function (public.redeem_beta_invite) to close the race window
+ * where N concurrent redeemers all passed the cap check before
+ * anyone bumped the counter.
  *
- * Rate limit: 10 attempts per minute per IP — slows brute force guessing
- * of unknown codes.
+ * Rate limit: 10 attempts per minute per IP — slows brute-force code
+ * guessing. Refuses if user already has a paid Polar subscription
+ * (don't want to overwrite their real sub state with beta-grant
+ * fields). Just before writing app_metadata we re-fetch the user so
+ * a concurrent Polar webhook write isn't silently clobbered.
  */
 export async function POST(req: NextRequest) {
   const ip = clientIp(req);
@@ -49,13 +48,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "קוד לא תקין" }, { status: 400 });
   }
 
-  // Refuse if user already has a paid Polar subscription — we don't want
-  // to overwrite their real sub state with beta-grant fields. Read from
-  // app_metadata (service-role-only) since that's where the webhook
-  // writes plan state.
+  // Refuse if user already has a paid Polar subscription — read from
+  // app_metadata (the trustworthy source) first.
   const appMeta = (user.app_metadata || {}) as Record<string, unknown>;
   const userMeta = (user.user_metadata || {}) as Record<string, unknown>;
-  // Look in app_metadata first, fall back to user_metadata for legacy users.
   const planActive =
     appMeta.plan_active === true ||
     (appMeta.plan_active === undefined && userMeta.plan_active === true);
@@ -76,90 +72,74 @@ export async function POST(req: NextRequest) {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  const { data: invite, error: lookupError } = await sb
-    .from("beta_invites")
-    .select("*")
-    .eq("code", code)
-    .single();
-
-  if (lookupError || !invite) {
-    return NextResponse.json({ ok: false, error: "קוד לא קיים או שגוי" }, { status: 404 });
-  }
-
-  if (!invite.active) {
-    return NextResponse.json({ ok: false, error: "הקוד הושבת" }, { status: 410 });
-  }
-
-  if (invite.expires_at && new Date(invite.expires_at).getTime() < Date.now()) {
-    return NextResponse.json({ ok: false, error: "הקוד פג תוקף" }, { status: 410 });
-  }
-
-  if (invite.redemptions_count >= invite.max_redemptions) {
-    return NextResponse.json(
-      { ok: false, error: "הקוד נוצל במלואו" },
-      { status: 410 },
-    );
-  }
-
-  // Check if this user already redeemed this code (different path than the
-  // UNIQUE constraint — we want a clean error message, not a DB violation).
-  const { data: existing } = await sb
-    .from("beta_invite_redemptions")
-    .select("id, expires_at")
-    .eq("invite_id", invite.id)
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (existing) {
-    return NextResponse.json(
-      { ok: false, error: "כבר השתמשת בקוד הזה", alreadyExpiresAt: existing.expires_at },
-      { status: 409 },
-    );
-  }
-
-  const expiresAt = new Date(Date.now() + invite.days_granted * 24 * 60 * 60 * 1000);
-
-  // Insert the redemption row. If two requests race, the UNIQUE
-  // (invite_id, user_id) constraint will fail the second one — we
-  // catch and return 409.
-  const { error: redeemError } = await sb.from("beta_invite_redemptions").insert({
-    invite_id: invite.id,
-    user_id: user.id,
-    expires_at: expiresAt.toISOString(),
+  // Atomic: check existence + active + not-expired + has-slots, bump
+  // counter, insert redemption row, all in one SQL call.
+  const { data: result, error: rpcError } = await sb.rpc("redeem_beta_invite", {
+    p_code: code,
+    p_user_id: user.id,
   });
 
-  if (redeemError) {
-    if (redeemError.code === "23505") {
-      return NextResponse.json({ ok: false, error: "כבר השתמשת בקוד הזה" }, { status: 409 });
-    }
-    return NextResponse.json({ ok: false, error: redeemError.message }, { status: 500 });
+  if (rpcError) {
+    console.error("redeem_beta_invite RPC failed:", rpcError);
+    return NextResponse.json(
+      { ok: false, error: "שגיאה בהפעלת ההזמנה" },
+      { status: 500 },
+    );
   }
 
-  // Atomically bump the counter. If this races past max_redemptions we
-  // accept the slight over-redemption rather than failing — at small
-  // scale (≤1000 invites) it's not worth a full transaction.
-  await sb
-    .from("beta_invites")
-    .update({ redemptions_count: invite.redemptions_count + 1 })
-    .eq("id", invite.id);
+  const r = result as
+    | {
+        ok: true;
+        invite_id: string;
+        plan_tier: "free" | "pro";
+        invite_code: string;
+        days_granted: number;
+        expires_at: string;
+      }
+    | { ok: false; reason: string; already_expires_at?: string };
 
-  // Stamp the grant on app_metadata (admin-only). The Polar webhook will
-  // overwrite these if the user later subscribes for real.
+  if (!r.ok) {
+    const map: Record<string, { status: number; text: string }> = {
+      not_found: { status: 404, text: "קוד לא קיים או שגוי" },
+      inactive: { status: 410, text: "הקוד הושבת" },
+      expired: { status: 410, text: "הקוד פג תוקף" },
+      exhausted: { status: 410, text: "הקוד נוצל במלואו" },
+      already_redeemed: { status: 409, text: "כבר השתמשת בקוד הזה" },
+    };
+    const e = map[r.reason] || { status: 500, text: "שגיאה" };
+    return NextResponse.json(
+      {
+        ok: false,
+        error: e.text,
+        ...("already_expires_at" in r ? { alreadyExpiresAt: r.already_expires_at } : {}),
+      },
+      { status: e.status },
+    );
+  }
+
+  // Re-fetch user RIGHT before writing app_metadata so a concurrent
+  // Polar webhook (e.g. checkout completing in another tab) isn't
+  // silently overwritten. The window between `auth.getUser(token)` up
+  // top and here can be a couple hundred ms — enough for that race
+  // to fire.
+  const { data: latest } = await sb.auth.admin.getUserById(user.id);
+  const latestAppMeta = (latest.user?.app_metadata || {}) as Record<string, unknown>;
+
   await sb.auth.admin.updateUserById(user.id, {
     app_metadata: {
-      ...appMeta,
-      plan_tier: invite.plan_tier,
+      ...latestAppMeta,
+      plan_tier: r.plan_tier,
       plan_active: true,
       plan_beta_grant: true,
-      plan_invite_code: invite.code,
-      plan_current_period_end: expiresAt.toISOString(),
+      plan_invite_code: r.invite_code,
+      plan_current_period_end: r.expires_at,
     },
   });
 
   return NextResponse.json({
     ok: true,
-    plan_tier: invite.plan_tier,
-    expires_at: expiresAt.toISOString(),
-    days_granted: invite.days_granted,
+    plan_tier: r.plan_tier,
+    expires_at: r.expires_at,
+    days_granted: r.days_granted,
   });
 }

@@ -107,7 +107,12 @@ export default function AdminPage() {
       // health check shouldn't block stats display if it's slow.
       const [statsRes, healthRes] = await Promise.all([
         fetch("/api/admin/stats", { headers: { Authorization: `Bearer ${token}` } }),
-        fetch("/api/health", { cache: "no-store" }).catch(() => null),
+        // Pass the admin bearer so /api/health includes the deploy SHA
+        // (the public endpoint hides it from anonymous callers).
+        fetch("/api/health", {
+          cache: "no-store",
+          headers: { Authorization: `Bearer ${token}` },
+        }).catch(() => null),
       ]);
       const statsData = await statsRes.json();
       if (!statsData.ok) {

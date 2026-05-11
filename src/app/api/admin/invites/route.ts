@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { isAdminEmail } from "@/lib/admin";
+import { checkRate } from "@/lib/rate-limit";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -48,6 +49,17 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const user = await authAdmin(req);
   if (!user) return NextResponse.json({ ok: false, error: "Not found" }, { status: 404 });
+
+  // Defense in depth: rate-limit creation even from admins. A
+  // compromised admin session shouldn't be able to dump 100,000
+  // invite rows into the DB in seconds.
+  const rl = checkRate({ key: `admin-invites:${user.id}`, max: 30, windowMs: 60_000 });
+  if (!rl.ok) {
+    return NextResponse.json(
+      { ok: false, error: "Slow down — 30 creations per minute max" },
+      { status: 429, headers: { "Retry-After": String(Math.ceil(rl.resetIn / 1000)) } },
+    );
+  }
 
   const body = (await req.json().catch(() => ({}))) as {
     code?: string;

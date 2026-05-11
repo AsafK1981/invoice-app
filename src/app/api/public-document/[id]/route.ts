@@ -74,9 +74,24 @@ export async function GET(
       .select("*")
       .eq("document_id", id)
       .order("sort_order"),
-    admin.from("businesses").select("*").eq("id", doc.business_id).maybeSingle(),
+    // Explicit allowlist — never select("*") on a publicly-visible
+    // resource. Any future column added to businesses (tax_authority
+    // API keys, internal flags, etc.) won't accidentally leak via
+    // every shared document URL. user_id and created_at intentionally
+    // dropped — receivers of an invoice don't need them.
+    admin
+      .from("businesses")
+      .select(
+        "id, name, business_type, tax_id, address, phone, email, logo_url, bank_name, bank_branch, bank_account, payment_notes, default_doc_notes",
+      )
+      .eq("id", doc.business_id)
+      .maybeSingle(),
     doc.client_id
-      ? admin.from("clients").select("*").eq("id", doc.client_id).maybeSingle()
+      ? admin
+          .from("clients")
+          .select("id, name, tax_id, address, phone, email")
+          .eq("id", doc.client_id)
+          .maybeSingle()
       : Promise.resolve({ data: null, error: null }),
   ]);
 

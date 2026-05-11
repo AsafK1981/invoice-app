@@ -214,8 +214,14 @@ export async function POST(req: NextRequest) {
     });
 
     if (error) {
+      // Full error stays in server logs; client gets a generic string
+      // so we don't leak Resend / Postgres internals to authenticated
+      // users (who can be arbitrary signups).
       console.error("[send-email] resend failed", { to: recipients, error });
-      return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+      return NextResponse.json(
+        { ok: false, error: "שליחת המייל נכשלה. נסה שוב או פנה לתמיכה." },
+        { status: 500 },
+      );
     }
 
     console.log("[send-email] resend ok", { to: recipients, messageId: data?.id, documentId });

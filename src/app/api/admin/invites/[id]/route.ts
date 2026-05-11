@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { isAdminEmail } from "@/lib/admin";
+import { checkRate } from "@/lib/rate-limit";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -31,6 +32,13 @@ export async function PATCH(
 ) {
   const user = await authAdmin(req);
   if (!user) return NextResponse.json({ ok: false, error: "Not found" }, { status: 404 });
+  const rl = checkRate({ key: `admin-invites-mut:${user.id}`, max: 60, windowMs: 60_000 });
+  if (!rl.ok) {
+    return NextResponse.json(
+      { ok: false, error: "Slow down" },
+      { status: 429, headers: { "Retry-After": String(Math.ceil(rl.resetIn / 1000)) } },
+    );
+  }
   const { id } = await params;
   if (!UUID_RE.test(id)) {
     return NextResponse.json({ ok: false, error: "Invalid id" }, { status: 400 });
@@ -60,6 +68,13 @@ export async function DELETE(
 ) {
   const user = await authAdmin(req);
   if (!user) return NextResponse.json({ ok: false, error: "Not found" }, { status: 404 });
+  const rl = checkRate({ key: `admin-invites-mut:${user.id}`, max: 60, windowMs: 60_000 });
+  if (!rl.ok) {
+    return NextResponse.json(
+      { ok: false, error: "Slow down" },
+      { status: 429, headers: { "Retry-After": String(Math.ceil(rl.resetIn / 1000)) } },
+    );
+  }
   const { id } = await params;
   if (!UUID_RE.test(id)) {
     return NextResponse.json({ ok: false, error: "Invalid id" }, { status: 400 });
