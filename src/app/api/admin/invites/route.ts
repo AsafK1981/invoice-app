@@ -58,12 +58,24 @@ export async function POST(req: NextRequest) {
     expiresAt?: string | null;
   };
 
-  // Generate a short, friendly code if none provided. Avoids confusing
-  // chars (0/O, 1/I/l) and stays under 12 characters.
-  const code = (body.code || randomCode()).trim().toUpperCase();
+  // Normalize the code: uppercase, dashes for spaces, drop anything else.
+  // This is forgiving — a human typing "For Friends Only" gets the same
+  // result as one typing "FOR-FRIENDS-ONLY".
+  const code = body.code
+    ? body.code
+        .trim()
+        .toUpperCase()
+        .replace(/\s+/g, "-")
+        .replace(/[^A-Z0-9-]/g, "")
+        .replace(/-+/g, "-")
+        .replace(/^-|-$/g, "")
+    : randomCode();
   if (!/^[A-Z0-9-]{4,32}$/.test(code)) {
     return NextResponse.json(
-      { ok: false, error: "Code must be 4-32 chars, A-Z 0-9 or dash only" },
+      {
+        ok: false,
+        error: "אחרי הניקוי הקוד קצר מדי או ריק. השתמש לפחות ב-4 תווים באנגלית או מספרים.",
+      },
       { status: 400 },
     );
   }
