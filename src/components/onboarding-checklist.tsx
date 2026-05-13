@@ -114,6 +114,31 @@ export function OnboardingChecklist({ business, clients, products, documents }: 
         </div>
       </div>
 
+      {/* "Migrating from another tool?" hint — shows only while the user
+          hasn't ticked off any steps yet (i.e. fresh signup). */}
+      {completedCount === 0 && (
+        <Link
+          href="/migrate"
+          className="flex items-center gap-3 p-3 rounded-xl bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 mb-2 transition-colors group"
+        >
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-sm flex-shrink-0">
+            <Sparkles className="w-4 h-4 text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-stone-900">
+              מגיע מ-Invoice4U או חשבונית ירוקה?
+            </p>
+            <p className="text-xs text-stone-700 mt-0.5">
+              ייבוא הלקוחות, המוצרים וההיסטוריה — כל הצעדים בדף אחד
+            </p>
+          </div>
+          <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700">
+            התחל
+            <ArrowLeft className="w-3 h-3" />
+          </span>
+        </Link>
+      )}
+
       <div className="space-y-2">
         {steps.map((step) => (
           <Link
