@@ -14,6 +14,7 @@ import {
   Activity,
   TrendingDown,
   Gift,
+  Upload,
 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { supabase } from "@/lib/supabase";
@@ -176,6 +177,13 @@ export default function AdminPage() {
           >
             <Gift className="w-4 h-4" />
             הזמנות בטא
+          </Link>
+          <Link
+            href="/admin/import-for-user"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-gradient-to-l from-violet-500 to-purple-500 text-white hover:shadow-md hover:shadow-violet-200"
+          >
+            <Upload className="w-4 h-4" />
+            Concierge import
           </Link>
           <button
             onClick={load}
