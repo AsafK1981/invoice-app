@@ -126,10 +126,10 @@ export function OnboardingChecklist({ business, clients, products, documents }: 
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-stone-900">
-              מגיע מ-Invoice4U או חשבונית ירוקה?
+              מגיע מתוכנת חשבוניות אחרת?
             </p>
             <p className="text-xs text-stone-700 mt-0.5">
-              ייבוא הלקוחות, המוצרים וההיסטוריה — כל הצעדים בדף אחד
+              Invoice4U · חשבונית ירוקה · iCount · ריווחית · Morning · חשבשבת — מדריך מעבר לכולם
             </p>
           </div>
           <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700">

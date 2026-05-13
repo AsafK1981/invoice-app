@@ -19,7 +19,15 @@ import {
 } from "lucide-react";
 import { CsvImportModal } from "@/components/csv-import-modal";
 
-type Vendor = "invoice4u" | "greeninvoice" | "other" | null;
+type Vendor =
+  | "invoice4u"
+  | "greeninvoice"
+  | "icount"
+  | "rivhit"
+  | "morning"
+  | "hashavshevet"
+  | "other"
+  | null;
 type EntityType = "clients" | "products" | "documents" | "expenses";
 
 interface ExportStep {
@@ -28,6 +36,39 @@ interface ExportStep {
   /** Direct link into the competitor's export UI (when known) */
   link?: string;
 }
+
+// Generic export instructions shared across less-documented Israeli
+// vendors. Each gets its own login link but the underlying steps are
+// the same — find the Settings/Backup area, export each entity type
+// as CSV or Excel.
+const GENERIC_STEPS = (loginUrl: string, vendorName: string): ExportStep[] => [
+  {
+    title: "ייצוא לקוחות",
+    steps: [
+      `התחבר ל-${vendorName}`,
+      'נווט אל "לקוחות" או "אנשי קשר"',
+      'מצא תפריט "ייצוא" / "Export" / "גיבוי" (לרוב בכפתור 3 נקודות או באייקון ⬇️)',
+      "בחר CSV או Excel ושמור את הקובץ",
+    ],
+    link: loginUrl,
+  },
+  {
+    title: "ייצוא מוצרים / שירותים",
+    steps: [
+      'נווט אל "מוצרים" / "שירותים" / "קטלוג"',
+      'ייצוא ל-CSV או Excel',
+    ],
+  },
+  {
+    title: "ייצוא היסטוריית מסמכים",
+    steps: [
+      'נווט אל "מסמכים" / "חשבוניות"',
+      "הגדר טווח תאריכים — מומלץ השנה הנוכחית + 2 שנים אחורה",
+      "ייצוא ל-CSV או Excel",
+      "ודא שמספרים רצים נשמרים — חשוב לרצף לרשות המיסים",
+    ],
+  },
+];
 
 const EXPORT_GUIDES: Record<Exclude<Vendor, null>, ExportStep[]> = {
   invoice4u: [
@@ -85,6 +126,10 @@ const EXPORT_GUIDES: Record<Exclude<Vendor, null>, ExportStep[]> = {
       ],
     },
   ],
+  icount: GENERIC_STEPS("https://app.icount.co.il", "iCount"),
+  rivhit: GENERIC_STEPS("https://invoice.rivhit.co.il", "ריווחית"),
+  morning: GENERIC_STEPS("https://app.morning.co.il", "Morning"),
+  hashavshevet: GENERIC_STEPS("https://www.hashavshevet.co.il", "חשבשבת"),
   other: [
     {
       title: "פתח את הקובץ במקור שלך",
@@ -97,10 +142,42 @@ const EXPORT_GUIDES: Record<Exclude<Vendor, null>, ExportStep[]> = {
   ],
 };
 
-const VENDOR_META = {
-  invoice4u: { name: "Invoice4U", color: "from-rose-400 to-orange-500" },
-  greeninvoice: { name: "חשבונית ירוקה", color: "from-emerald-400 to-teal-500" },
-  other: { name: "Excel / אחר", color: "from-amber-400 to-orange-500" },
+const VENDOR_META: Record<Exclude<Vendor, null>, { name: string; color: string; tagline: string }> = {
+  invoice4u: {
+    name: "Invoice4U",
+    color: "from-rose-400 to-orange-500",
+    tagline: "מדריך ספציפי, 5 דקות",
+  },
+  greeninvoice: {
+    name: "חשבונית ירוקה",
+    color: "from-emerald-400 to-teal-500",
+    tagline: "מדריך ספציפי, 5 דקות",
+  },
+  icount: {
+    name: "iCount",
+    color: "from-blue-400 to-indigo-500",
+    tagline: "מדריך כללי, 5–10 דקות",
+  },
+  rivhit: {
+    name: "ריווחית",
+    color: "from-violet-400 to-purple-500",
+    tagline: "מדריך כללי, 5–10 דקות",
+  },
+  morning: {
+    name: "Morning",
+    color: "from-amber-400 to-yellow-500",
+    tagline: "מדריך כללי, 5–10 דקות",
+  },
+  hashavshevet: {
+    name: "חשבשבת",
+    color: "from-stone-500 to-stone-700",
+    tagline: "מדריך כללי, 5–10 דקות",
+  },
+  other: {
+    name: "Excel / אחר",
+    color: "from-amber-400 to-orange-500",
+    tagline: "ייבוא כללי מ-CSV / Excel",
+  },
 };
 
 export default function MigratePage() {
@@ -134,7 +211,10 @@ export default function MigratePage() {
       {!vendor && (
         <>
           <h2 className="text-lg font-semibold text-stone-900">מאיזה כלי אתה מגיע?</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <p className="text-sm text-stone-600 -mt-3">
+            לא רואה את הכלי שלך כאן? לחץ <strong>"Excel / אחר"</strong> — או דלג לקטע ה-WhatsApp למטה.
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
             {(Object.keys(VENDOR_META) as Array<keyof typeof VENDOR_META>).map((v) => (
               <button
                 key={v}
@@ -142,18 +222,16 @@ export default function MigratePage() {
                   setVendor(v);
                   setOpenStep(0);
                 }}
-                className="card-soft p-6 text-right hover:shadow-lg hover:shadow-orange-200/50 transition-all group cursor-pointer"
+                className="card-soft p-4 text-right hover:shadow-lg hover:shadow-orange-200/50 transition-all group cursor-pointer"
               >
                 <div
-                  className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${VENDOR_META[v].color} flex items-center justify-center shadow-md mb-3`}
+                  className={`w-10 h-10 rounded-2xl bg-gradient-to-br ${VENDOR_META[v].color} flex items-center justify-center shadow-md mb-2`}
                 >
-                  <Upload className="w-6 h-6 text-white" />
+                  <Upload className="w-5 h-5 text-white" />
                 </div>
-                <h3 className="font-bold text-stone-900">{VENDOR_META[v].name}</h3>
-                <p className="text-xs text-stone-600 mt-1">
-                  {v === "invoice4u" || v === "greeninvoice"
-                    ? "מדריך ספציפי, תוך 5 דקות"
-                    : "ייבוא כללי מ-Excel/CSV"}
+                <h3 className="font-bold text-stone-900 text-sm">{VENDOR_META[v].name}</h3>
+                <p className="text-xs text-stone-600 mt-1 leading-snug">
+                  {VENDOR_META[v].tagline}
                 </p>
               </button>
             ))}
