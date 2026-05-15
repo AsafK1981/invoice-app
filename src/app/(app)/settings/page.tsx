@@ -26,6 +26,7 @@ import { BusinessFormModal } from "@/components/business-form-modal";
 import { EmailSettingsModal } from "@/components/email-settings-modal";
 import { DocumentNumberingSettings } from "@/components/document-numbering-settings";
 import { AuditLogSection } from "@/components/audit-log-section";
+import { TaxAuthoritySection } from "@/components/tax-authority-section";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { logAudit } from "@/lib/audit-log";
 import { supabase } from "@/lib/supabase";
@@ -281,19 +282,9 @@ export default function SettingsPage() {
         </p>
       </div>
 
-      <AuditLogSection />
+      <TaxAuthoritySection />
 
-      <div className="card-soft p-4 bg-gradient-to-br from-orange-50 to-amber-50 border-orange-200">
-        <div className="flex items-start gap-3">
-          <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center flex-shrink-0 shadow-sm">
-            <Info className="w-4 h-4 text-orange-500" />
-          </div>
-          <div className="text-sm text-stone-800">
-            <strong className="block mb-1 text-stone-900">בהמשך:</strong>
-            התקנת תעודת חתימה דיגיטלית, וחיבור API של חשבונית ישראל (למעבר לעוסק מורשה).
-          </div>
-        </div>
-      </div>
+      <AuditLogSection />
 
       <div className="card-soft p-5 border-rose-200 bg-rose-50/40">
         <div className="flex items-start gap-3">

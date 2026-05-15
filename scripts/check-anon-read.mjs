@@ -38,6 +38,8 @@ const TABLES = [
   "document_counters",
   "beta_invites",
   "beta_invite_redemptions",
+  "tax_authority_credentials",
+  "tax_authority_oauth_states",
 ];
 const leaks = [];
 
