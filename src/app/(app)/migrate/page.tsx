@@ -18,6 +18,7 @@ import {
   Image as ImageIcon,
 } from "lucide-react";
 import { CsvImportModal } from "@/components/csv-import-modal";
+import { BulkImportZone } from "@/components/bulk-import-zone";
 
 type Vendor =
   | "invoice4u"
@@ -333,41 +334,70 @@ export default function MigratePage() {
                 </li>
               ))}
 
-              {/* Import buttons */}
-              <ImportStep
-                num={guides.length + 1}
-                title="ייבוא הלקוחות לכאן"
-                desc="טען את קובץ הלקוחות שייצאת. המערכת תזהה אוטומטית את העמודות."
-                icon={Users}
-                onClick={() => setImportingEntity("clients")}
-              />
-              <ImportStep
-                num={guides.length + 2}
-                title="ייבוא המוצרים / שירותים"
-                desc="העלה את קובץ המוצרים."
-                icon={Package}
-                onClick={() => setImportingEntity("products")}
-              />
-              <ImportStep
-                num={guides.length + 3}
-                title="ייבוא היסטוריית מסמכים"
-                desc="המסמכים יישמרו במספרים המקוריים — חשוב לרצף לרשות המיסים."
-                icon={FileText}
-                onClick={() => setImportingEntity("documents")}
-              />
-              <ImportStep
-                num={guides.length + 4}
-                title="ייבוא הוצאות (אופציונלי)"
-                desc="אם תרצה לשמור גם היסטוריית הוצאות."
-                icon={Wallet}
-                onClick={() => setImportingEntity("expenses")}
-              />
+              {/* One-click bulk import — preferred path */}
+              <li className="rounded-2xl border-2 border-orange-200 bg-gradient-to-br from-orange-50/80 to-amber-50/60 px-4 py-4">
+                <div className="flex items-start gap-3 mb-3">
+                  <span className="w-7 h-7 rounded-full bg-gradient-to-br from-orange-400 to-rose-500 text-white flex items-center justify-center text-xs font-bold flex-shrink-0 shadow-sm">
+                    {guides.length + 1}
+                  </span>
+                  <div className="flex-1">
+                    <p className="font-bold text-stone-900 flex items-center gap-2">
+                      <Upload className="w-4 h-4 text-orange-500" />
+                      ייבוא הכל בלחיצה אחת
+                    </p>
+                    <p className="text-sm text-stone-700 mt-0.5">
+                      גרור את כל הקבצים שייצאת (לקוחות / מוצרים / הוצאות / מסמכים) — או קובץ Excel
+                      אחד עם כל הגיליונות — המערכת תזהה אוטומטית מה כל קובץ ותייבא הכל יחד.
+                    </p>
+                  </div>
+                </div>
+                <BulkImportZone />
+              </li>
+
+              {/* Fallback: per-entity manual imports (collapsed by default) */}
+              <li className="rounded-2xl border border-stone-200 bg-white">
+                <details className="group">
+                  <summary className="cursor-pointer px-4 py-3 text-sm text-stone-700 hover:bg-stone-50 rounded-2xl flex items-center justify-between">
+                    <span>
+                      <ChevronDown className="w-4 h-4 inline group-open:hidden" />
+                      <ChevronUp className="w-4 h-4 inline hidden group-open:inline" /> או — ייבוא
+                      נפרד לכל סוג נתונים
+                    </span>
+                  </summary>
+                  <div className="border-t border-stone-100 p-3 space-y-2">
+                    <button
+                      onClick={() => setImportingEntity("clients")}
+                      className="w-full inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm bg-stone-50 hover:bg-stone-100 text-stone-800"
+                    >
+                      <Users className="w-4 h-4 text-orange-500" /> ייבוא לקוחות
+                    </button>
+                    <button
+                      onClick={() => setImportingEntity("products")}
+                      className="w-full inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm bg-stone-50 hover:bg-stone-100 text-stone-800"
+                    >
+                      <Package className="w-4 h-4 text-orange-500" /> ייבוא מוצרים
+                    </button>
+                    <button
+                      onClick={() => setImportingEntity("documents")}
+                      className="w-full inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm bg-stone-50 hover:bg-stone-100 text-stone-800"
+                    >
+                      <FileText className="w-4 h-4 text-orange-500" /> ייבוא מסמכים
+                    </button>
+                    <button
+                      onClick={() => setImportingEntity("expenses")}
+                      className="w-full inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm bg-stone-50 hover:bg-stone-100 text-stone-800"
+                    >
+                      <Wallet className="w-4 h-4 text-orange-500" /> ייבוא הוצאות
+                    </button>
+                  </div>
+                </details>
+              </li>
 
               {/* Settings reminders */}
               <li className="rounded-2xl border border-emerald-100 bg-emerald-50/40 px-4 py-3">
                 <div className="flex items-start gap-3">
                   <span className="w-7 h-7 rounded-full bg-white border border-emerald-200 flex items-center justify-center text-xs font-bold text-emerald-700">
-                    {guides.length + 5}
+                    {guides.length + 2}
                   </span>
                   <div className="flex-1 text-sm">
                     <p className="font-semibold text-stone-900 flex items-center gap-2">
@@ -442,40 +472,3 @@ export default function MigratePage() {
   );
 }
 
-function ImportStep({
-  num,
-  title,
-  desc,
-  icon: Icon,
-  onClick,
-}: {
-  num: number;
-  title: string;
-  desc: string;
-  icon: typeof Users;
-  onClick: () => void;
-}) {
-  return (
-    <li className="rounded-2xl border border-orange-100 bg-white px-4 py-3 hover:bg-orange-50/40">
-      <div className="flex items-start gap-3">
-        <span className="w-7 h-7 rounded-full bg-white border border-orange-200 flex items-center justify-center text-xs font-bold text-orange-700 flex-shrink-0 mt-0.5">
-          {num}
-        </span>
-        <div className="flex-1">
-          <p className="font-semibold text-stone-900 flex items-center gap-2">
-            <Icon className="w-4 h-4 text-orange-500" />
-            {title}
-          </p>
-          <p className="text-sm text-stone-700 mt-1">{desc}</p>
-          <button
-            onClick={onClick}
-            className="mt-2 inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold bg-gradient-to-l from-orange-500 to-rose-500 text-white hover:shadow-md hover:shadow-orange-200"
-          >
-            <Upload className="w-3.5 h-3.5" />
-            העלה קובץ
-          </button>
-        </div>
-      </div>
-    </li>
-  );
-}
