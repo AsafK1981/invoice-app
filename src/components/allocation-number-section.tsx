@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { ShieldCheck, AlertTriangle, ExternalLink, Pencil, X } from "lucide-react";
+import { ShieldCheck, AlertTriangle, ExternalLink, Pencil, X, Sparkles, Loader2 } from "lucide-react";
 import { setAllocationNumber } from "@/lib/document-store";
 import { requiresAllocationNumber, getAllocationThresholdForYear } from "@/lib/tax-authority";
 import { formatCurrency } from "@/lib/format";
+import { supabase } from "@/lib/supabase";
 import type { InvoiceDocument } from "@/lib/types";
 
 interface Props {
@@ -33,6 +34,7 @@ export function AllocationNumberSection({ doc }: Props) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(doc.allocationNumber || "");
   const [saving, setSaving] = useState(false);
+  const [fetching, setFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const isTaxDoc =
@@ -45,6 +47,38 @@ export function AllocationNumberSection({ doc }: Props) {
   const docYear = parseInt(doc.date.slice(0, 4), 10) || new Date().getFullYear();
   const threshold = getAllocationThresholdForYear(docYear);
   const hasNumber = Boolean(doc.allocationNumber);
+
+  // Tries our /api/tax-authority/request-allocation endpoint, which
+  // hits gov.il using the business's stored OAuth tokens. On success
+  // the server has already persisted the number on the document —
+  // we update local UI so the user doesn't need to refresh.
+  async function handleAutoFetch() {
+    setFetching(true);
+    setError(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch("/api/tax-authority/request-allocation", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ documentId: doc.id }),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        setError(data.error || "שגיאה בקבלת מספר הקצאה");
+        return;
+      }
+      // The server saved it on the doc; mirror locally so the UI flips
+      // to "received" without a full reload.
+      await setAllocationNumber(doc.id, data.allocationNumber);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "שגיאה");
+    } finally {
+      setFetching(false);
+    }
+  }
 
   async function handleSave() {
     const trimmed = value.trim();
@@ -145,7 +179,31 @@ export function AllocationNumberSection({ doc }: Props) {
             אסור לשלוח את המסמך ללקוח לפני שמספר ההקצאה משויך אליו.
           </p>
 
+          {/* Auto-fetch via our /api/tax-authority/request-allocation — works
+              if the business has connected to gov.il in /settings. Falls
+              back gracefully (just shows an error in this card) if the
+              connection isn't set up; the manual paste flow below stays
+              available either way. */}
+          <button
+            onClick={handleAutoFetch}
+            disabled={fetching || saving}
+            className="mt-3 w-full inline-flex items-center justify-center gap-2 bg-gradient-to-l from-blue-500 to-indigo-500 text-white py-2.5 rounded-xl text-sm font-semibold hover:shadow-lg hover:shadow-blue-200/60 disabled:opacity-50"
+          >
+            {fetching ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                שולח בקשה לרשות המיסים...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4" />
+                קבל אוטומטית מרשות המיסים
+              </>
+            )}
+          </button>
+
           <div className="mt-3 flex items-center gap-2 flex-wrap">
+            <p className="text-xs text-stone-600">או — הזן את המספר ידנית אם קיבלת אותו במקום אחר:</p>
             <a
               href={GOV_PORTAL_URL}
               target="_blank"
@@ -157,7 +215,7 @@ export function AllocationNumberSection({ doc }: Props) {
             </a>
           </div>
 
-          <div className="mt-3 flex flex-col sm:flex-row gap-2">
+          <div className="mt-2 flex flex-col sm:flex-row gap-2">
             <input
               type="text"
               value={value}
