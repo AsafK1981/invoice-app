@@ -205,7 +205,7 @@ export default function ClientsPage() {
               className="card-soft p-5 hover:shadow-md hover:-translate-y-0.5 transition-all group relative block"
             >
               <div className="absolute top-3 left-3 flex gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
-                <Tooltip label="עריכת לקוח">
+                <Tooltip label="עריכת לקוח" align="start">
                   <button
                     onClick={(e) => {
                       e.preventDefault();
@@ -218,7 +218,7 @@ export default function ClientsPage() {
                     <Pencil className="w-3.5 h-3.5" />
                   </button>
                 </Tooltip>
-                <Tooltip label="מחיקת לקוח">
+                <Tooltip label="מחיקת לקוח" align="start">
                   <button
                     onClick={(e) => {
                       e.preventDefault();
