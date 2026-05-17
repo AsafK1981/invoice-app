@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Download, X } from "lucide-react";
 
 interface BeforeInstallPromptEvent extends Event {
@@ -10,19 +10,42 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 const DISMISS_KEY = "invoice-app:install-dismissed-at";
-const DISMISS_DAYS = 14;
+const PERMANENT_KEY = "invoice-app:install-dismissed-permanently";
+const SESSION_KEY = "invoice-app:install-dismissed-this-session";
+const DISMISS_DAYS = 60; // bumped from 14 — popping up every 2 weeks is still annoying
 
 export function InstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [visible, setVisible] = useState(false);
+  // Set to true once the user has chosen ANY option in this session — prevents
+  // the prompt from re-appearing if the browser fires beforeinstallprompt a
+  // second time (which it does whenever you navigate routes in some Chromes).
+  const dismissedThisSessionRef = useRef(false);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    // Permanent dismiss: never show again
+    if (localStorage.getItem(PERMANENT_KEY) === "1") return;
+
+    // Already dismissed this browser session (in-memory + sessionStorage as backup)
+    if (sessionStorage.getItem(SESSION_KEY) === "1") {
+      dismissedThisSessionRef.current = true;
+      return;
+    }
+
+    // Cooldown after "Not now"
     const dismissedAt = Number(localStorage.getItem(DISMISS_KEY) || "0");
-    const ageDays = (Date.now() - dismissedAt) / (1000 * 60 * 60 * 24);
-    if (dismissedAt && ageDays < DISMISS_DAYS) return;
+    if (dismissedAt) {
+      const ageDays = (Date.now() - dismissedAt) / (1000 * 60 * 60 * 24);
+      if (ageDays < DISMISS_DAYS) return;
+    }
 
     const handler = (e: Event) => {
       e.preventDefault();
+      // If user already dealt with the prompt this session, swallow the
+      // event silently — don't pop up again.
+      if (dismissedThisSessionRef.current) return;
       setDeferredPrompt(e as BeforeInstallPromptEvent);
       setVisible(true);
     };
@@ -31,9 +54,22 @@ export function InstallPrompt() {
     return () => window.removeEventListener("beforeinstallprompt", handler);
   }, []);
 
-  function dismiss() {
-    localStorage.setItem(DISMISS_KEY, String(Date.now()));
+  function markDismissedThisSession() {
+    dismissedThisSessionRef.current = true;
+    try {
+      sessionStorage.setItem(SESSION_KEY, "1");
+    } catch {}
     setVisible(false);
+  }
+
+  function dismissTemporarily() {
+    localStorage.setItem(DISMISS_KEY, String(Date.now()));
+    markDismissedThisSession();
+  }
+
+  function dismissPermanently() {
+    localStorage.setItem(PERMANENT_KEY, "1");
+    markDismissedThisSession();
   }
 
   async function install() {
@@ -41,10 +77,10 @@ export function InstallPrompt() {
     await deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
     if (outcome === "accepted") {
-      setVisible(false);
-    } else {
-      dismiss();
+      // Installed — never show again
+      localStorage.setItem(PERMANENT_KEY, "1");
     }
+    markDismissedThisSession();
     setDeferredPrompt(null);
   }
 
@@ -61,7 +97,7 @@ export function InstallPrompt() {
           <p className="text-xs text-stone-600 mt-1">
             הוסף את MySuperFriendlyInvoiceApp למסך הבית לגישה מהירה כמו אפליקציה רגילה.
           </p>
-          <div className="flex gap-2 mt-3">
+          <div className="flex gap-2 mt-3 flex-wrap">
             <button
               onClick={install}
               className="inline-flex items-center justify-center min-h-[36px] px-4 rounded-xl bg-gradient-to-l from-orange-500 to-rose-500 text-white text-sm font-semibold hover:shadow-lg hover:shadow-orange-200 transition-all"
@@ -69,15 +105,21 @@ export function InstallPrompt() {
               התקן
             </button>
             <button
-              onClick={dismiss}
+              onClick={dismissTemporarily}
               className="inline-flex items-center justify-center min-h-[36px] px-4 rounded-xl text-stone-700 text-sm font-medium hover:bg-stone-100 transition-colors"
             >
               לא עכשיו
             </button>
           </div>
+          <button
+            onClick={dismissPermanently}
+            className="mt-2 text-xs text-stone-500 hover:text-stone-700 underline"
+          >
+            אל תציג שוב
+          </button>
         </div>
         <button
-          onClick={dismiss}
+          onClick={dismissTemporarily}
           className="text-stone-400 hover:text-stone-700 p-1 -m-1"
           aria-label="סגור"
         >
