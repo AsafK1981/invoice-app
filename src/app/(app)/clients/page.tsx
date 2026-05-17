@@ -234,9 +234,11 @@ export default function ClientsPage() {
               </div>
 
               <div className="flex items-start gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-200 to-rose-200 flex items-center justify-center flex-shrink-0">
-                  <Building2 className="w-5 h-5 text-orange-700" />
-                </div>
+                <Tooltip label={`כרטיס לקוח: ${c.name}`} side="bottom">
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-200 to-rose-200 dark:from-orange-300 dark:to-rose-300 flex items-center justify-center flex-shrink-0 ring-1 ring-orange-300/40 dark:ring-orange-400/60">
+                    <Building2 className="w-5 h-5 text-orange-900" strokeWidth={2.5} />
+                  </div>
+                </Tooltip>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-bold text-stone-900 truncate">{c.name}</h3>
                   {c.taxId && (
