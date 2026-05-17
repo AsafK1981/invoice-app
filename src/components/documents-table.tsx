@@ -24,6 +24,7 @@ import { deleteDocument, updateDocumentStatus } from "@/lib/document-store";
 import { exportDocuments } from "@/lib/csv-export";
 import { matchDocument } from "@/lib/document-search";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { Tooltip } from "@/components/ui/tooltip";
 import {
   DOCUMENT_TYPE_LABELS,
   DOCUMENT_STATUS_LABELS,
@@ -466,17 +467,21 @@ function RowActions({ doc }: { doc: InvoiceDocument }) {
               ? "text-emerald-500 hover:text-emerald-700 hover:bg-emerald-50"
               : "text-stone-300 hover:text-emerald-500 hover:bg-emerald-50"
           }`}
-          title={isPaid ? "סמן כלא שולם" : "סמן כשולם"}
+          aria-label={isPaid ? "סמן כלא שולם" : "סמן כשולם"}
         >
-          {isPaid ? <CheckCircle2 className="w-4 h-4" /> : <Circle className="w-4 h-4" />}
+          <Tooltip label={isPaid ? "סמן כלא שולם" : "סמן כשולם"} side="left">
+            {isPaid ? <CheckCircle2 className="w-4 h-4" /> : <Circle className="w-4 h-4" />}
+          </Tooltip>
         </button>
       )}
       <button
         onClick={handleRowDelete}
         className="text-stone-300 hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer"
-        title="מחק"
+        aria-label="מחק מסמך"
       >
-        <Trash2 className="w-4 h-4" />
+        <Tooltip label="מחק מסמך" side="left">
+          <Trash2 className="w-4 h-4" />
+        </Tooltip>
       </button>
     </div>
   );

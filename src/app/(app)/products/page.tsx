@@ -7,6 +7,7 @@ import { formatCurrency } from "@/lib/format";
 import { ProductFormModal } from "@/components/product-form-modal";
 import { CsvImportModal } from "@/components/csv-import-modal";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { Tooltip } from "@/components/ui/tooltip";
 import type { Product } from "@/lib/types";
 
 function matchesProduct(p: Product, query: string): boolean {
@@ -151,20 +152,24 @@ export default function ProductsPage() {
               className="card-soft p-5 hover:shadow-md hover:-translate-y-0.5 transition-all group relative"
             >
               <div className="absolute top-3 left-3 flex gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
-                <button
-                  onClick={() => openEdit(p)}
-                  className="w-8 h-8 rounded-xl bg-white hover:bg-orange-50 text-stone-600 hover:text-orange-600 flex items-center justify-center shadow-sm border border-orange-100"
-                  title="עריכה"
-                >
-                  <Pencil className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => remove(p)}
-                  className="w-8 h-8 rounded-xl bg-white hover:bg-rose-50 text-stone-600 hover:text-rose-600 flex items-center justify-center shadow-sm border border-orange-100"
-                  title="מחיקה"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
+                <Tooltip label="עריכת מוצר">
+                  <button
+                    onClick={() => openEdit(p)}
+                    className="w-8 h-8 rounded-xl bg-white hover:bg-orange-50 text-stone-600 hover:text-orange-600 flex items-center justify-center shadow-sm border border-orange-100"
+                    aria-label="עריכת מוצר"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
+                </Tooltip>
+                <Tooltip label="מחיקת מוצר">
+                  <button
+                    onClick={() => remove(p)}
+                    className="w-8 h-8 rounded-xl bg-white hover:bg-rose-50 text-stone-600 hover:text-rose-600 flex items-center justify-center shadow-sm border border-orange-100"
+                    aria-label="מחיקת מוצר"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </Tooltip>
               </div>
 
               <div className="flex items-start gap-3">

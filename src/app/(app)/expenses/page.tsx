@@ -7,6 +7,7 @@ import { formatCurrency, formatDate } from "@/lib/format";
 import { ExpenseFormModal } from "@/components/expense-form-modal";
 import { CsvImportModal } from "@/components/csv-import-modal";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { Tooltip } from "@/components/ui/tooltip";
 import type { Expense } from "@/lib/types";
 
 function matchesExpense(e: Expense, query: string): boolean {
@@ -248,20 +249,24 @@ export default function ExpensesPage() {
                       </td>
                       <td className="px-2 py-3 text-center">
                         <div className="flex items-center justify-center gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
-                          <button
-                            onClick={() => openEdit(e)}
-                            className="w-8 h-8 rounded-xl text-stone-400 hover:text-orange-600 hover:bg-orange-50 flex items-center justify-center"
-                            title="עריכה"
-                          >
-                            <Pencil className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => remove(e)}
-                            className="w-8 h-8 rounded-xl text-stone-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center"
-                            title="מחיקה"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          <Tooltip label="עריכת הוצאה" side="top">
+                            <button
+                              onClick={() => openEdit(e)}
+                              className="w-8 h-8 rounded-xl text-stone-400 hover:text-orange-600 hover:bg-orange-50 flex items-center justify-center"
+                              aria-label="עריכת הוצאה"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                          </Tooltip>
+                          <Tooltip label="מחיקת הוצאה" side="top">
+                            <button
+                              onClick={() => remove(e)}
+                              className="w-8 h-8 rounded-xl text-stone-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center"
+                              aria-label="מחיקת הוצאה"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </Tooltip>
                         </div>
                       </td>
                     </tr>
