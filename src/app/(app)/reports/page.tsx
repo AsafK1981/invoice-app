@@ -9,6 +9,8 @@ import { formatCurrency } from "@/lib/format";
 import { exportDocuments, exportExpenses } from "@/lib/csv-export";
 import { TaxYearDetail } from "@/components/tax-year-detail";
 import { VatPeriodReport } from "@/components/vat-period-report";
+import { Form1301Helper } from "@/components/form-1301-helper";
+import { CapitalDeclarationReport } from "@/components/capital-declaration-report";
 
 type Period = string; // "all" | "2026" | "2026-Q1" | "2026-01"
 
@@ -204,14 +206,24 @@ export default function ReportsPage() {
       <VatPeriodReport business={business} documents={documents} expenses={expenses} />
 
       {/^\d{4}$/.test(period) && (
-        <TaxYearDetail
-          year={parseInt(period, 10)}
-          documents={filteredDocs}
-          expenses={filteredExpenses}
-          allDocuments={documents}
-          allExpenses={expenses}
-        />
+        <>
+          <TaxYearDetail
+            year={parseInt(period, 10)}
+            documents={filteredDocs}
+            expenses={filteredExpenses}
+            allDocuments={documents}
+            allExpenses={expenses}
+          />
+          <Form1301Helper
+            year={parseInt(period, 10)}
+            business={business}
+            documents={filteredDocs}
+            expenses={filteredExpenses}
+          />
+        </>
       )}
+
+      <CapitalDeclarationReport documents={documents} expenses={expenses} />
 
       <div className="card-soft overflow-hidden">
         <div className="px-6 py-4 border-b border-orange-100 flex items-center gap-2">

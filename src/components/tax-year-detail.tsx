@@ -64,6 +64,32 @@ export function TaxYearDetail({ year, documents, expenses, allDocuments, allExpe
       .filter((e) => e.date.startsWith(`${priorYear}-`))
       .reduce((s, e) => s + e.amount, 0);
 
+    // End-of-year projection — only meaningful when looking at the
+    // current year mid-stride. Extrapolate linearly from days-elapsed.
+    const now = new Date();
+    const isCurrentYear = year === now.getFullYear();
+    let projection: { income: number; expenses: number; profit: number; daysElapsed: number; daysInYear: number } | null = null;
+    if (isCurrentYear) {
+      const yearStart = new Date(year, 0, 1).getTime();
+      const yearEnd = new Date(year + 1, 0, 1).getTime();
+      const daysInYear = Math.round((yearEnd - yearStart) / 86_400_000);
+      const daysElapsed = Math.max(
+        1,
+        Math.round((now.getTime() - yearStart) / 86_400_000),
+      );
+      const ratio = daysInYear / daysElapsed;
+      // Only show if we have at least 30 days and we're not near year-end.
+      if (daysElapsed >= 30 && daysElapsed < daysInYear - 14) {
+        projection = {
+          income: totalIncome * ratio,
+          expenses: totalExpenses * ratio,
+          profit: (totalIncome - totalExpenses) * ratio,
+          daysElapsed,
+          daysInYear,
+        };
+      }
+    }
+
     return {
       totalIncome,
       totalExpenses,
@@ -77,6 +103,7 @@ export function TaxYearDetail({ year, documents, expenses, allDocuments, allExpe
       priorProfit: priorIncome - priorExpensesTotal,
       paidCount: paid.length,
       hasPriorData: priorIncome > 0 || priorExpensesTotal > 0,
+      projection,
     };
   }, [documents, expenses, allDocuments, allExpenses, year]);
 
@@ -138,6 +165,37 @@ export function TaxYearDetail({ year, documents, expenses, allDocuments, allExpe
             <strong>מע״מ שנגבה:</strong> {formatCurrency(stats.totalVat)} — ייתכן ויש להעביר
             לרשות המסים בדיווח התקופתי.
           </p>
+        </div>
+      )}
+
+      {stats.projection && (
+        <div className="rounded-2xl bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-200 p-4 mb-6">
+          <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
+            <p className="text-sm text-stone-800">
+              <strong>תחזית לסוף שנה</strong> (לפי קצב נוכחי · יום {stats.projection.daysElapsed} מתוך{" "}
+              {stats.projection.daysInYear})
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <div className="text-xs text-stone-600">צפי הכנסות</div>
+              <div className="text-lg font-bold text-emerald-700 tabular-nums">
+                {formatCurrency(stats.projection.income)}
+              </div>
+            </div>
+            <div>
+              <div className="text-xs text-stone-600">צפי הוצאות</div>
+              <div className="text-lg font-bold text-rose-700 tabular-nums">
+                {formatCurrency(stats.projection.expenses)}
+              </div>
+            </div>
+            <div>
+              <div className="text-xs text-stone-600">צפי רווח נקי</div>
+              <div className="text-lg font-bold text-stone-900 tabular-nums">
+                {formatCurrency(stats.projection.profit)}
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
