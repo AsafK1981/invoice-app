@@ -1,55 +1,111 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 interface Props {
   label: string;
   children: ReactNode;
-  /** Where the tooltip floats relative to its trigger. Default: bottom. */
   side?: "top" | "bottom" | "left" | "right";
-  /**
-   * For top/bottom sides: how the tooltip aligns horizontally with the
-   * trigger. "center" (default) — centered on trigger (can extend in both
-   * directions). "start" — left-aligned in LTR, right-aligned in RTL.
-   * "end" — opposite. Pick "start" when the trigger sits near the edge
-   * of its container, otherwise the centered tooltip will clip.
-   */
+  /** Reserved for future use — kept for backwards compat with callers */
   align?: "start" | "center" | "end";
-  /** Optional extra classes on the outer wrapper */
   className?: string;
 }
 
-export function Tooltip({ label, children, side = "bottom", align = "center", className = "" }: Props) {
-  // Compute the position class for the floating label.
-  let positionClass = "";
-  if (side === "top" || side === "bottom") {
-    const vertical = side === "top" ? "bottom-full mb-1.5" : "top-full mt-1.5";
-    // Horizontal alignment. Using physical left/right (not logical) because
-    // the icon buttons we use this on are themselves positioned with absolute
-    // `left-3` / `right-3` — keeping the math consistent.
-    const horizontal =
-      align === "start"
-        ? "left-0"
-        : align === "end"
-        ? "right-0"
-        : "left-1/2 -translate-x-1/2";
-    positionClass = `${vertical} ${horizontal}`;
-  } else {
-    positionClass =
-      side === "left"
-        ? "right-full top-1/2 -translate-y-1/2 mr-1.5"
-        : "left-full top-1/2 -translate-y-1/2 ml-1.5";
+/**
+ * Portal-rendered tooltip. Computes the trigger's viewport rect on hover
+ * and renders the tooltip text directly into <body> with `position:fixed`.
+ * That bypasses every ancestor `overflow:hidden` / transform-induced
+ * clipping issue — the tooltip can extend anywhere on screen.
+ *
+ * The earlier CSS-only `position:absolute` version got clipped when the
+ * trigger sat near the edge of an `overflow:hidden` ancestor. The portal
+ * approach removes that whole class of bug.
+ */
+export function Tooltip({ label, children, side = "bottom", className = "" }: Props) {
+  const triggerRef = useRef<HTMLSpanElement>(null);
+  const [visible, setVisible] = useState(false);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const [mounted, setMounted] = useState(false);
+  const tooltipId = useId();
+
+  useEffect(() => setMounted(true), []);
+
+  function show() {
+    const el = triggerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    // 8px gap between trigger and tooltip
+    const gap = 8;
+    let top = 0;
+    let left = 0;
+    if (side === "bottom") {
+      top = rect.bottom + gap;
+      left = rect.left + rect.width / 2;
+    } else if (side === "top") {
+      top = rect.top - gap;
+      left = rect.left + rect.width / 2;
+    } else if (side === "left") {
+      top = rect.top + rect.height / 2;
+      left = rect.left - gap;
+    } else {
+      // right
+      top = rect.top + rect.height / 2;
+      left = rect.right + gap;
+    }
+    setPos({ top, left });
+    setVisible(true);
   }
 
+  function hide() {
+    setVisible(false);
+  }
+
+  // Translate origin based on side, so the tooltip "grows" from the
+  // trigger rather than from its own center mass.
+  const transformOrigin =
+    side === "bottom"
+      ? "translate(-50%, 0)"
+      : side === "top"
+      ? "translate(-50%, -100%)"
+      : side === "left"
+      ? "translate(-100%, -50%)"
+      : "translate(0, -50%)";
+
   return (
-    <span className={`group relative inline-flex ${className}`}>
+    <span
+      ref={triggerRef}
+      className={`inline-flex ${className}`}
+      onMouseEnter={show}
+      onMouseLeave={hide}
+      onFocus={show}
+      onBlur={hide}
+      aria-describedby={visible ? tooltipId : undefined}
+    >
       {children}
-      <span
-        role="tooltip"
-        className={`pointer-events-none absolute z-50 whitespace-nowrap rounded-md bg-stone-900 text-white text-xs font-medium px-2 py-1 opacity-0 scale-95 transition-all duration-150 group-hover:opacity-100 group-hover:scale-100 group-focus-within:opacity-100 group-focus-within:scale-100 shadow-lg ${positionClass}`}
-      >
-        {label}
-      </span>
+      {mounted && visible && pos
+        ? createPortal(
+            <span
+              id={tooltipId}
+              role="tooltip"
+              style={{
+                position: "fixed",
+                top: pos.top,
+                left: pos.left,
+                transform: transformOrigin,
+                zIndex: 9999,
+                pointerEvents: "none",
+                // Generous max-width so long labels still wrap nicely if a
+                // truly long one is passed in.
+                maxWidth: "min(280px, calc(100vw - 16px))",
+              }}
+              className="whitespace-nowrap rounded-md bg-stone-900 text-white text-xs font-medium px-2 py-1 shadow-lg"
+            >
+              {label}
+            </span>,
+            document.body,
+          )
+        : null}
     </span>
   );
 }
