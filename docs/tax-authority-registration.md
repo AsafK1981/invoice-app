@@ -24,7 +24,7 @@ Tax Authority sees a coherent application.
 | **Security.txt** | https://mysuperfriendlyinvoiceapp.vercel.app/.well-known/security.txt |
 | **Vendor name** | Asaf Kotler (sole proprietor / עוסק) |
 | **Vendor type** | יחיד / עוסק פטור |
-| **Vendor tax ID** | _<fill in your 9-digit ID number>_ |
+| **Vendor tax ID** | 049040686 |
 | **Vendor address** | התלת"ן 12, עודים |
 | **Vendor postal code** | _<lookup needed — Udim>_ |
 | **Phone** | +972 54 900 0684 |
@@ -158,6 +158,58 @@ misim.gov.il/mm_tocna/.
 Worth submitting in parallel; not on the critical path.
 
 ---
+
+## Known issue — Login-P duplicate (2026-05-17, 03:41)
+
+After successful Sign-up at the developer portal, attempting to
+Sign in via "Israel Taxes Login-P" returns:
+
+> Multiple sign-ups using the same email asafkotlar@gmail.com is
+> not allowed. Error while authenticating user. Please contact
+> your system administrator.
+
+This happens even when authenticating directly at
+`secapp.taxes.gov.il/logon/LogonPoint/tmindex.html` with the
+correct ID number + permanent code. Login-P has two entries
+keyed off `asafkotlar@gmail.com` and refuses to bind them.
+
+**Action required:** email `apisupport@taxes.gov.il` (see template
+below). Cannot self-resolve from the UI.
+
+### Email template — send to apisupport@taxes.gov.il
+
+```
+Subject: בקשה לפתרון כפילות חשבון ב-Developer Portal
+
+שלום,
+
+נרשמתי ל-API Developer Portal של רשות המסים ב-17/5/2026 ב-2:53
+עם המייל asafkotlar@gmail.com. ההרשמה הצליחה והופיעה ההודעה:
+"Your account was created successfully and is pending approval."
+
+בכל ניסיון להתחבר דרך Israel Taxes Login-P (גם ישירות בכתובת
+secapp.taxes.gov.il/logon/LogonPoint/tmindex.html עם ת.ז וקוד
+משתמש קבוע תקינים), מתקבלת השגיאה:
+
+  "Multiple sign-ups using the same email asafkotlar@gmail.com
+   is not allowed. Error while authenticating user."
+
+נראה ש-Login-P מחזיק שתי רשומות שונות הקשורות לאימייל הזה ולכן
+נכשל באימות.
+
+אבקש סיוע באיחוד / ניקוי הכפילות והשלמת הפעלת החשבון.
+
+פרטים:
+- שם: אסף קוטלר
+- ת.ז: 049040686
+- מייל: asafkotlar@gmail.com
+- טלפון: +972 54 900 0684
+- שם האפליקציה: MySuperFriendlyInvoiceApp
+- מטרה: חיבור ל-API Invoices לקבלת מספרי הקצאה לחשבוניות מס
+
+תודה,
+אסף קוטלר
+```
 
 ## Contact info collected
 
