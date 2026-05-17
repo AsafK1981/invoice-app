@@ -44,3 +44,14 @@ next-env.d.ts
 AEGIS_*.pdf
 *Security_Report*.pdf
 *security_report*.pdf
+
+# Tax Authority forms — only commit blank public-domain templates,
+# never signed/scanned versions (they contain Asaf's ID, signature,
+# and personal details). The 2 blank PDFs already committed are fine;
+# signed scans dropped here will be auto-excluded.
+Rashot Hamisim/**/*signed*
+Rashot Hamisim/**/*חתום*
+Rashot Hamisim/**/*scan*
+Rashot Hamisim/**/*סרוק*
+Rashot Hamisim/**/*filled*
+Rashot Hamisim/**/*מולא*
