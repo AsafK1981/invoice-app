@@ -625,12 +625,23 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
         <div className="no-print card-soft p-3 flex items-center gap-3 max-w-[210mm] mx-auto">
           {doc.emailedAt ? (
             <>
-              <div className="w-9 h-9 rounded-2xl bg-emerald-100 flex items-center justify-center shrink-0">
-                <Mail className="w-4 h-4 text-emerald-700" />
+              <div
+                className={`w-9 h-9 rounded-2xl flex items-center justify-center shrink-0 ${
+                  doc.emailOpenedAt ? "bg-blue-100" : "bg-emerald-100"
+                }`}
+              >
+                <Mail
+                  className={`w-4 h-4 ${
+                    doc.emailOpenedAt ? "text-blue-700" : "text-emerald-700"
+                  }`}
+                />
               </div>
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-stone-900">המסמך נשלח במייל ✓</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-stone-900">
+                  {doc.emailOpenedAt ? "הלקוח פתח את המייל 👀" : "המסמך נשלח במייל ✓"}
+                </p>
                 <p className="text-xs text-stone-600">
+                  נשלח{" "}
                   {new Date(doc.emailedAt).toLocaleString("he-IL", {
                     day: "2-digit",
                     month: "2-digit",
@@ -638,6 +649,20 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                     hour: "2-digit",
                     minute: "2-digit",
                   })}
+                  {doc.emailOpenedAt && (
+                    <>
+                      {" · נפתח "}
+                      {new Date(doc.emailOpenedAt).toLocaleString("he-IL", {
+                        day: "2-digit",
+                        month: "2-digit",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                      {doc.emailOpenCount && doc.emailOpenCount > 1 && (
+                        <> · {doc.emailOpenCount} פתיחות</>
+                      )}
+                    </>
+                  )}
                 </p>
               </div>
             </>

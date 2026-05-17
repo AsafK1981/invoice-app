@@ -55,6 +55,49 @@ function getRangeStart(range: DateRange): string {
   }
 }
 
+/**
+ * Get the matching previous period — same length, immediately before the
+ * current one. Used to compute month-over-month / year-over-year deltas
+ * on the dashboard cards.
+ *   this_month       -> prev month
+ *   last_3_months    -> the 3 months before that
+ *   this_year        -> prev year
+ *   all_time         -> no prior period
+ */
+function getPreviousRange(range: DateRange): { start: string; end: string } | null {
+  const now = new Date();
+  if (range === "this_month") {
+    const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const start = `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, "0")}-01`;
+    const end = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+    return { start, end };
+  }
+  if (range === "last_3_months") {
+    const prevStart = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+    const prevEnd = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+    const fmt = (d: Date) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
+    return { start: fmt(prevStart), end: fmt(prevEnd) };
+  }
+  if (range === "this_year") {
+    return { start: `${now.getFullYear() - 1}-01-01`, end: `${now.getFullYear()}-01-01` };
+  }
+  return null; // all_time has no prior
+}
+
+/**
+ * Compute percentage delta between current and previous, treating each
+ * gracefully — null when there's no previous data to compare against,
+ * +∞ when going from zero to positive (rendered as "חדש" by the UI).
+ */
+function calcDelta(curr: number, prev: number): { pct: number | null; mode: "up" | "down" | "flat" | "new" } {
+  if (prev === 0 && curr === 0) return { pct: 0, mode: "flat" };
+  if (prev === 0) return { pct: null, mode: "new" };
+  const pct = ((curr - prev) / Math.abs(prev)) * 100;
+  if (Math.abs(pct) < 0.5) return { pct: 0, mode: "flat" };
+  return { pct, mode: pct > 0 ? "up" : "down" };
+}
+
 export default function DashboardPage() {
   const { documents, ready } = useDocuments();
   const { items: expenses } = useExpenses();
@@ -77,6 +120,25 @@ export default function DashboardPage() {
     const openQuotesValue = openQuotes.reduce((sum, d) => sum + d.total, 0);
     const avgInvoice = paidDocs.length > 0 ? income / paidDocs.length : 0;
 
+    // Previous-period stats for month-over-month-style deltas. When the
+    // range is "all_time" there's no prior; deltas are null in that case.
+    const prev = getPreviousRange(range);
+    let prevIncome = 0;
+    let prevExpense = 0;
+    let prevProfit = 0;
+    let prevPaidCount = 0;
+    let prevAvg = 0;
+    if (prev) {
+      const prevDocs = documents.filter((d) => d.date >= prev.start && d.date < prev.end);
+      const prevExpenses = expenses.filter((e) => e.date >= prev.start && e.date < prev.end);
+      const prevPaid = prevDocs.filter((d) => d.status === "paid");
+      prevIncome = prevPaid.reduce((sum, d) => sum + d.total, 0);
+      prevExpense = prevExpenses.reduce((sum, e) => sum + e.amount, 0);
+      prevProfit = prevIncome - prevExpense;
+      prevPaidCount = prevPaid.length;
+      prevAvg = prevPaid.length > 0 ? prevIncome / prevPaid.length : 0;
+    }
+
     return {
       inRange,
       expensesInRange,
@@ -87,8 +149,24 @@ export default function DashboardPage() {
       openQuotesValue,
       avgInvoice,
       paidCount: paidDocs.length,
+      hasPrev: prev !== null,
+      incomeDelta: calcDelta(income, prevIncome),
+      expenseDelta: calcDelta(expenseTotal, prevExpense),
+      profitDelta: calcDelta(profit, prevProfit),
+      paidCountDelta: calcDelta(paidDocs.length, prevPaidCount),
+      avgDelta: calcDelta(avgInvoice, prevAvg),
     };
   }, [documents, expenses, range]);
+
+  /** Hebrew label for the previous period (used in tooltips on delta badges) */
+  const prevLabel =
+    range === "this_month"
+      ? "חודש שעבר"
+      : range === "last_3_months"
+      ? "3 החודשים שלפניהם"
+      : range === "this_year"
+      ? "שנה שעברה"
+      : null;
 
   // Build a `month=YYYY-MM` query suffix only when the dashboard is showing
   // exactly one calendar month — for other ranges the documents-table month
@@ -109,6 +187,9 @@ export default function DashboardPage() {
       bgGradient: "from-emerald-50 to-teal-50",
       iconBg: "shadow-emerald-200/50",
       href: `/documents?status=paid${monthQs}`,
+      delta: stats.hasPrev ? stats.incomeDelta : null,
+      /** Higher = better — for income, "up" is good (green) */
+      higherIsBetter: true,
     },
     {
       label: "הוצאות",
@@ -119,6 +200,9 @@ export default function DashboardPage() {
       bgGradient: "from-rose-50 to-pink-50",
       iconBg: "shadow-rose-200/50",
       href: "/expenses",
+      delta: stats.hasPrev ? stats.expenseDelta : null,
+      /** Lower = better — for expenses, "down" is good (green) */
+      higherIsBetter: false,
     },
     {
       label: "רווח",
@@ -129,6 +213,8 @@ export default function DashboardPage() {
       bgGradient: "from-orange-50 to-amber-50",
       iconBg: "shadow-orange-200/50",
       href: "/reports",
+      delta: stats.hasPrev ? stats.profitDelta : null,
+      higherIsBetter: true,
     },
     {
       label: "ממוצע למסמך",
@@ -139,6 +225,8 @@ export default function DashboardPage() {
       bgGradient: "from-violet-50 to-purple-50",
       iconBg: "shadow-violet-200/50",
       href: `/documents?status=paid${monthQs}`,
+      delta: stats.hasPrev ? stats.avgDelta : null,
+      higherIsBetter: true,
     },
   ];
 
@@ -267,7 +355,12 @@ export default function DashboardPage() {
                   <p className="text-2xl font-bold mt-2 text-stone-900 truncate">
                     {ready ? s.value : "..."}
                   </p>
-                  <p className="text-xs text-stone-600 mt-1">{s.sub}</p>
+                  <div className="flex items-baseline gap-2 mt-1 flex-wrap">
+                    <p className="text-xs text-stone-600">{s.sub}</p>
+                    {ready && s.delta && prevLabel && (
+                      <DeltaBadge delta={s.delta} higherIsBetter={s.higherIsBetter} prevLabel={prevLabel} />
+                    )}
+                  </div>
                 </div>
                 <div
                   className={`w-11 h-11 rounded-2xl bg-gradient-to-br ${s.gradient} flex items-center justify-center shadow-lg ${s.iconBg} flex-shrink-0`}
@@ -356,5 +449,61 @@ export default function DashboardPage() {
         <DocumentsTable documents={documents} limit={10} />
       </div>
     </div>
+  );
+}
+
+/**
+ * Small badge next to a KPI showing % change vs the previous period.
+ * Color & icon flip based on `higherIsBetter` — for expenses, "down"
+ * is the good direction so it renders green even though the delta
+ * itself is negative. The label is rendered as a tooltip so the
+ * card stays uncluttered.
+ */
+function DeltaBadge({
+  delta,
+  higherIsBetter,
+  prevLabel,
+}: {
+  delta: { pct: number | null; mode: "up" | "down" | "flat" | "new" };
+  higherIsBetter: boolean;
+  prevLabel: string;
+}) {
+  if (delta.mode === "flat") {
+    return (
+      <span
+        className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-stone-500 bg-stone-100 px-1.5 py-0.5 rounded-md"
+        title={`ללא שינוי לעומת ${prevLabel}`}
+      >
+        — 0%
+      </span>
+    );
+  }
+  if (delta.mode === "new") {
+    return (
+      <span
+        className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded-md"
+        title={`חדש לעומת ${prevLabel}`}
+      >
+        ✨ חדש
+      </span>
+    );
+  }
+  if (delta.pct === null) return null;
+
+  const isPositive = delta.mode === "up";
+  const isGood = higherIsBetter ? isPositive : !isPositive;
+  const colorClass = isGood
+    ? "text-emerald-700 bg-emerald-100"
+    : "text-rose-700 bg-rose-100";
+  const arrow = isPositive ? "↑" : "↓";
+  const pctText = `${Math.abs(delta.pct).toFixed(0)}%`;
+
+  return (
+    <span
+      className={`inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-md ${colorClass}`}
+      title={`${isPositive ? "עלייה" : "ירידה"} של ${pctText} לעומת ${prevLabel}`}
+    >
+      {arrow} {pctText}
+    </span>
   );
 }

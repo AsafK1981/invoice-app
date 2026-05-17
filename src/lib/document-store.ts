@@ -27,6 +27,8 @@ function mapDocRow(row: Record<string, unknown>, items: DocumentItem[]): Invoice
     approvedAt: (row.approved_at as string) || undefined,
     approvalSignature: (row.approval_signature as string) || undefined,
     emailedAt: (row.emailed_at as string) || undefined,
+    emailOpenedAt: (row.email_opened_at as string) || undefined,
+    emailOpenCount: row.email_open_count != null ? Number(row.email_open_count) : undefined,
     allocationNumber: (row.allocation_number as string) || undefined,
     allocationSetAt: (row.allocation_set_at as string) || undefined,
     convertedToId: (row.converted_to_id as string) || undefined,

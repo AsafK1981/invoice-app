@@ -29,8 +29,11 @@ function buildHtml(args: {
   logoUrl?: string;
   kind?: "initial" | "reminder";
   daysSinceSent?: number;
+  /** 1×1 tracking-pixel URL — stamps email_opened_at when the recipient
+   *  loads the message. Omit to disable tracking for a particular send. */
+  trackingPixelUrl?: string;
 }) {
-  const { businessName, clientName, receiptNumber, total, viewUrl, logoUrl, kind = "initial", daysSinceSent } = args;
+  const { businessName, clientName, receiptNumber, total, viewUrl, logoUrl, kind = "initial", daysSinceSent, trackingPixelUrl } = args;
   const isReminder = kind === "reminder";
   const introLine = isReminder
     ? `מקווה שאתם בסדר. רק תזכורת קלה לגבי מסמך מספר <strong>#${escapeHtml(String(receiptNumber))}</strong> על סך <strong>₪${escapeHtml(String(Number(total).toLocaleString()))}</strong>${
@@ -71,6 +74,12 @@ function buildHtml(args: {
           ${isReminder ? `תזכורת אוטומטית מ${escapeHtml(businessName)}` : `מסמך זה נשלח אוטומטית מ${escapeHtml(businessName)}`}
         </p>
       </div>
+
+      ${
+        trackingPixelUrl
+          ? `<img src="${escapeHtml(trackingPixelUrl)}" alt="" width="1" height="1" style="display:block;width:1px;height:1px;border:0;outline:none;" />`
+          : ""
+      }
     </div>
   `;
 }
@@ -141,6 +150,14 @@ export async function POST(req: NextRequest) {
     const isReminder = kind === "reminder";
     const baseSubject = subject || `${businessName} - מסמך #${receiptNumber}`;
     const emailSubject = isReminder ? `תזכורת: ${baseSubject}` : baseSubject;
+    // Tracking pixel — only when we have a documentId to attribute the
+    // open event to. Suffix `.gif` for mail clients that are picky about
+    // extensionless image URLs.
+    const trackingPixelUrl =
+      typeof documentId === "string" && documentId
+        ? `${baseUrl}/api/email/track/${documentId}.gif`
+        : undefined;
+
     const html = buildHtml({
       businessName,
       clientName,
@@ -150,6 +167,7 @@ export async function POST(req: NextRequest) {
       logoUrl,
       kind: isReminder ? "reminder" : "initial",
       daysSinceSent: typeof daysSinceSent === "number" ? daysSinceSent : undefined,
+      trackingPixelUrl,
     });
 
     // Pick Gmail credentials: prefer the user's own, fall back to global env vars

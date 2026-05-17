@@ -8,6 +8,7 @@ import { ProductFormModal } from "@/components/product-form-modal";
 import { CsvImportModal } from "@/components/csv-import-modal";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { Tooltip } from "@/components/ui/tooltip";
+import { EmptyState } from "@/components/ui/empty-state";
 import type { Product } from "@/lib/types";
 
 function matchesProduct(p: Product, query: string): boolean {
@@ -114,22 +115,20 @@ export default function ProductsPage() {
       )}
 
       {products.length === 0 ? (
-        <div className="card-soft p-12 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center mx-auto mb-4">
-            <Package className="w-7 h-7 text-orange-500" />
-          </div>
-          <h3 className="font-bold text-stone-900 mb-1">הקטלוג ריק</h3>
-          <p className="text-sm text-stone-700 mb-5">
-            הוסף מוצרים ושירותים כדי להשלים אותם מהר בעורך המסמכים
-          </p>
-          <button
-            onClick={openNew}
-            className="inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-5 py-2.5 rounded-2xl text-sm font-semibold hover:shadow-md"
-          >
-            <Plus className="w-4 h-4" />
-            הוסף פריט
-          </button>
-        </div>
+        <EmptyState
+          icon={Package}
+          title="הקטלוג ריק"
+          description="הוסף את המוצרים והשירותים שאתה מוכר — שם, מחיר, יחידה. בעורך מסמכים תוכל לבחור פריט בקליק ולחסוך הקלדה חוזרת."
+          primaryAction={{
+            label: "הוסף פריט ראשון",
+            onClick: openNew,
+            icon: Plus,
+          }}
+          secondaryAction={{
+            label: "ייבוא מקובץ CSV",
+            onClick: () => setImportOpen(true),
+          }}
+        />
       ) : filtered.length === 0 ? (
         <div className="card-soft p-12 text-center">
           <div className="text-4xl mb-2">🔍</div>

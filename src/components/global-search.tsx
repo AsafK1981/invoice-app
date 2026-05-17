@@ -2,17 +2,18 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search, X, Building2, Package, ReceiptText, FileText } from "lucide-react";
+import { Search, X, Building2, Package, ReceiptText, Wallet } from "lucide-react";
 import { useDocuments } from "@/lib/document-store";
 import { useClients } from "@/lib/client-store";
 import { useProducts } from "@/lib/product-store";
+import { useExpenses } from "@/lib/expense-store";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { matchDocument } from "@/lib/document-search";
 import { DOCUMENT_TYPE_LABELS } from "@/lib/types";
 
 interface Result {
   id: string;
-  kind: "document" | "client" | "product";
+  kind: "document" | "client" | "product" | "expense";
   title: string;
   subtitle?: string;
   meta?: string;
@@ -28,6 +29,7 @@ export function GlobalSearch() {
   const { documents } = useDocuments();
   const { items: clients } = useClients();
   const { items: products } = useProducts();
+  const { items: expenses } = useExpenses();
 
   // Cmd+K / Ctrl+K to open search; "N" for new doc; Escape to close
   useEffect(() => {
@@ -113,8 +115,26 @@ export function GlobalSearch() {
         href: "/products",
       }));
 
-    return [...docs, ...cls, ...prods];
-  }, [query, documents, clients, products]);
+    const exps: Result[] = expenses
+      .filter(
+        (e) =>
+          e.supplier.toLowerCase().includes(q) ||
+          (e.category?.toLowerCase().includes(q) ?? false) ||
+          (e.description?.toLowerCase().includes(q) ?? false) ||
+          String(e.amount).includes(q),
+      )
+      .slice(0, 5)
+      .map((e) => ({
+        id: `exp-${e.id}`,
+        kind: "expense",
+        title: `${e.supplier} · ${formatCurrency(e.amount)}`,
+        subtitle: [e.category, e.description].filter(Boolean).join(" · "),
+        meta: formatDate(e.date),
+        href: "/expenses",
+      }));
+
+    return [...docs, ...cls, ...prods, ...exps];
+  }, [query, documents, clients, products, expenses]);
 
   useEffect(() => {
     setActiveIndex(0);
@@ -205,12 +225,20 @@ export function GlobalSearch() {
             <div className="py-2">
               {results.map((r, idx) => {
                 const Icon =
-                  r.kind === "document" ? ReceiptText : r.kind === "client" ? Building2 : Package;
+                  r.kind === "document"
+                    ? ReceiptText
+                    : r.kind === "client"
+                    ? Building2
+                    : r.kind === "expense"
+                    ? Wallet
+                    : Package;
                 const iconBg =
                   r.kind === "document"
                     ? "bg-orange-100 text-orange-700"
                     : r.kind === "client"
                     ? "bg-rose-100 text-rose-700"
+                    : r.kind === "expense"
+                    ? "bg-pink-100 text-pink-700"
                     : "bg-amber-100 text-amber-700";
                 const isActive = idx === activeIndex;
                 return (

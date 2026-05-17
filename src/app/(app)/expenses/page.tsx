@@ -8,6 +8,7 @@ import { ExpenseFormModal } from "@/components/expense-form-modal";
 import { CsvImportModal } from "@/components/csv-import-modal";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { Tooltip } from "@/components/ui/tooltip";
+import { EmptyState } from "@/components/ui/empty-state";
 import type { Expense } from "@/lib/types";
 
 function matchesExpense(e: Expense, query: string): boolean {
@@ -134,22 +135,20 @@ export default function ExpensesPage() {
       </div>
 
       {expenses.length === 0 ? (
-        <div className="card-soft p-12 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-rose-100 to-pink-100 flex items-center justify-center mx-auto mb-4">
-            <Wallet className="w-7 h-7 text-rose-500" />
-          </div>
-          <h3 className="font-bold text-stone-900 mb-1">אין הוצאות מתועדות</h3>
-          <p className="text-sm text-stone-700 mb-5">
-            תיעוד הוצאות יעזור לך לחשב רווח נטו ולהכין דיווחים
-          </p>
-          <button
-            onClick={openNew}
-            className="inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-5 py-2.5 rounded-2xl text-sm font-semibold hover:shadow-md"
-          >
-            <Plus className="w-4 h-4" />
-            הוסף הוצאה ראשונה
-          </button>
-        </div>
+        <EmptyState
+          icon={Wallet}
+          title="אין הוצאות מתועדות"
+          description="תיעוד הוצאות מאפשר לך לחשב רווח נטו, להפיק דיווחים תקופתיים, ולהיות מוכן ליום של הצהרת הון. הוסף הוצאה ראשונה — שתי דקות עבודה, חודשים של שקט."
+          primaryAction={{
+            label: "הוסף הוצאה ראשונה",
+            onClick: openNew,
+            icon: Plus,
+          }}
+          secondaryAction={{
+            label: "ייבוא מקובץ CSV",
+            onClick: () => setImportOpen(true),
+          }}
+        />
       ) : (
         <div className="card-soft overflow-hidden">
           <div className="flex flex-wrap items-center gap-3 px-6 py-4 bg-orange-50/50 border-b border-orange-100">

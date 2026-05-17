@@ -71,6 +71,10 @@ export interface InvoiceDocument {
   approvedAt?: string;
   approvalSignature?: string;
   emailedAt?: string;
+  /** When the recipient first opened the email (loaded the 1×1 tracking pixel). */
+  emailOpenedAt?: string;
+  /** Total number of times the tracking pixel has loaded (open + later re-reads). */
+  emailOpenCount?: number;
   /**
    * מספר הקצאה — Tax Authority allocation number from חשבונית ישראל.
    * Required on tax invoices above the annual threshold (סעיף 47ב לחוק מע"מ).
