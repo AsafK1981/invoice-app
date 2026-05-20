@@ -1,12 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { TrendingUp, TrendingDown, PiggyBank, CalendarDays, Download } from "lucide-react";
+import { TrendingUp, TrendingDown, PiggyBank, CalendarDays, Download, FileArchive } from "lucide-react";
 import { useDocuments } from "@/lib/document-store";
 import { useExpenses } from "@/lib/expense-store";
 import { useBusiness } from "@/lib/business-store";
 import { formatCurrency } from "@/lib/format";
 import { exportDocuments, exportExpenses } from "@/lib/csv-export";
+import { supabase } from "@/lib/supabase";
 import { TaxYearDetail } from "@/components/tax-year-detail";
 import { VatPeriodReport } from "@/components/vat-period-report";
 import { Form1301Helper } from "@/components/form-1301-helper";
@@ -133,6 +134,34 @@ export default function ReportsPage() {
 
   const exportSuffix = periodLabelShort(period);
 
+  // Year detected from the selected period — used by the OPENFORMAT
+  // export, which only makes sense scoped to a single tax year.
+  const selectedYear = /^\d{4}/.test(period) ? parseInt(period.slice(0, 4), 10) : null;
+
+  async function downloadUniformStructure() {
+    const year = selectedYear ?? new Date().getFullYear();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) {
+      alert("צריך להתחבר מחדש");
+      return;
+    }
+    const res = await fetch(`/api/uniform-structure/export?year=${year}`, {
+      headers: { authorization: `Bearer ${session.access_token}` },
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: "שגיאה לא ידועה" }));
+      alert(`ייצוא נכשל: ${err.error || res.status}`);
+      return;
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `OPENFRMT-${business.taxId}-${year}.zip`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between flex-wrap gap-4">
@@ -175,6 +204,14 @@ export default function ReportsPage() {
           >
             <Download className="w-4 h-4" />
             ייצוא הוצאות ({filteredExpenses.length})
+          </button>
+          <button
+            onClick={downloadUniformStructure}
+            title="ייצוא קבצי מבנה אחיד (OPENFORMAT 1.31) לסימולטור רשות המסים ולביקורת"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border-2 border-purple-200 text-stone-800 hover:bg-purple-50"
+          >
+            <FileArchive className="w-4 h-4 text-purple-600" />
+            מבנה אחיד {selectedYear ? `(${selectedYear})` : "(שנה נוכחית)"}
           </button>
         </div>
       </div>

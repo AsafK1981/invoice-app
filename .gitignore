@@ -20,6 +20,9 @@
 # production
 /build
 
+# smoke-test output
+/tmp/
+
 # misc
 .DS_Store
 *.pem

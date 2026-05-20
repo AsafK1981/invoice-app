@@ -211,9 +211,29 @@ secapp.taxes.gov.il/logon/LogonPoint/tmindex.html עם ת.ז וקוד
 אסף קוטלר
 ```
 
+## Submitted application — 2026-05-18
+
+| Field | Value |
+| --- | --- |
+| **Request number (מספר בקשה)** | **1973** |
+| Submitted | 2026-05-18 |
+| Submitted via | https://secapp.taxes.gov.il/mm-rishum-tochna/confirm-api/init-id-av |
+| Status | Pending approval (expected within "few days") |
+| Attached: כתב התחייבות | `Rashot Hamisim/Need to fill out and email them/Filled out/New Scan 2026-05-18 1422.pdf` |
+| Attached: נספח אבטחת מידע | `Rashot Hamisim/Need to fill out and email them/Filled out/New Scan 2026-05-18 1424.pdf` |
+| Customer/Token count declared | 1 / 1 (stay below 10 to avoid PT requirement) |
+
+After approval (per confirmation screen) — proceed to developer-portal
+procedure, page 4 §1 of "נוהל עבודה בפורטל המפתחים".
+
+**Blocking issue still open:** Login-P duplicate (asafkotlar@gmail.com)
+— must be resolved by apisupport@taxes.gov.il before we can create the
+app + Client ID in the developer portal.
+
 ## Contact info collected
 
-- API support: `apisupport@taxes.gov.il`
+- API support (tech): `APISupport@taxes.gov.il` · phone 02-5688444 · Sun–Thu 8:00–17:00
+- Software-house registration support: `lakohot-bt@taxes.gov.il`
 - General SHAAM contact: https://secapp.taxes.gov.il/sr-pniyot-shaam
 - Developer portal: https://openapi-portal.taxes.gov.il/
 - Production API: https://openapi.taxes.gov.il/shaam/production
