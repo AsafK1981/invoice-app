@@ -68,6 +68,29 @@ export function formatAmount(value: number, width: number): string {
   return padNum(agorot, width);
 }
 
+/**
+ * Signed amount per spec format X9(integerDigits)v9(decimalDigits).
+ *
+ *   X    sign — '+' for positive (or zero), '-' for negative
+ *   9(n) n integer digits with leading zeros
+ *   v    implied decimal point (no character emitted)
+ *   9(m) m decimal digits
+ *
+ * Total length = 1 (sign) + integerDigits + decimalDigits.
+ *
+ * Example: formatSignedAmount(1500.50, 12, 2) → "+00000000150050"
+ *          formatSignedAmount(-100.25, 9, 2)  → "-00000010025"
+ */
+export function formatSignedAmount(value: number, integerDigits: number, decimalDigits: number): string {
+  if (!Number.isFinite(value)) value = 0;
+  const sign = value < 0 ? "-" : "+";
+  const absValue = Math.abs(value);
+  const multiplier = Math.pow(10, decimalDigits);
+  const scaled = Math.round(absValue * multiplier);
+  const total = integerDigits + decimalDigits;
+  return sign + String(scaled).padStart(total, "0");
+}
+
 /** Build a CRLF-terminated record line by concatenating its fixed-width parts. */
 export function buildLine(parts: string[]): string {
   return parts.join("") + "\r\n";

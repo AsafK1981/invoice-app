@@ -3,6 +3,9 @@
 //
 // Returns the two file contents as Windows-1255 Buffers ready to ship
 // in a ZIP archive: INI.txt (header / counts) + BKMVDATA.txt (data).
+//
+// Field positions and record layouts are governed by horaot_131.pdf
+// (the official OPENFORMAT 1.31 spec — see docs/uniform-structure/).
 
 import { toWindows1255 } from "./encode";
 import {
@@ -28,8 +31,8 @@ export interface UniformInput {
   clients: Client[];
   expenses: Expense[];
   taxYear: number;
-  fromDate: string; // YYYY-MM-DD
-  toDate: string; // YYYY-MM-DD
+  fromDate: string;
+  toDate: string;
   softwareName?: string;
   softwareVersion?: string;
   softwareVendorName?: string;
@@ -40,32 +43,23 @@ export interface UniformInput {
 export interface UniformOutput {
   ini: Buffer;
   bkmvdata: Buffer;
-  /** Plain-text version, useful for debugging / inspection. */
   iniText: string;
   bkmvdataText: string;
   counts: RecordCounts;
 }
 
 /**
- * Synthetic chart of accounts. Our app is invoice-centric (no real
- * bookkeeping), so the simulator needs a minimal account list to
- * validate B100 journal entries against.
+ * Minimal synthetic chart of accounts. Each account becomes a B110
+ * record and gets referenced by B100 journal entries.
  */
 const STANDARD_ACCOUNTS = [
-  { code: "SALES-000", name: "הכנסות ממכירות", class: "INCOME" },
-  { code: "VAT-COL", name: "מע״מ עסקאות", class: "LIABILITY" },
-  { code: "VAT-INP", name: "מע״מ תשומות", class: "ASSET" },
-  { code: "CASH", name: "מזומן", class: "ASSET" },
-  { code: "BANK", name: "בנק", class: "ASSET" },
+  { code: "SALES-000", name: "הכנסות ממכירות", tbCode: "INCOME", tbDesc: "הכנסות" },
+  { code: "VAT-COL", name: "מע״מ עסקאות", tbCode: "VAT-OUT", tbDesc: "מע״מ עסקאות" },
+  { code: "VAT-INP", name: "מע״מ תשומות", tbCode: "VAT-IN", tbDesc: "מע״מ תשומות" },
+  { code: "CASH", name: "מזומן", tbCode: "ASSETS", tbDesc: "מזומנים ושווי מזומנים" },
+  { code: "BANK", name: "בנק", tbCode: "ASSETS", tbDesc: "מזומנים ושווי מזומנים" },
 ];
 
-/**
- * Build the מבנה אחיד files. Output order in BKMVDATA matches the
- * example PDF (page 15 onward): A100 → B110 (accounts) → M100 (items)
- * → C100 (doc headers) → D110 (doc items) → D120 (payments) → B100
- * (journal entries) → Z900. Records are grouped by type, not
- * interleaved per-document — this is critical for the simulator.
- */
 export function buildUniformStructure(input: UniformInput): UniformOutput {
   const meta: FileMeta = {
     business: input.business,
@@ -79,7 +73,6 @@ export function buildUniformStructure(input: UniformInput): UniformOutput {
     fromDate: input.fromDate,
     toDate: input.toDate,
   };
-  const vatFile = input.business.taxId;
 
   // Filter to the requested year window.
   const fromMs = new Date(input.fromDate).getTime();
@@ -95,8 +88,7 @@ export function buildUniformStructure(input: UniformInput): UniformOutput {
 
   const clientById = new Map(input.clients.map((c) => [c.id, c]));
 
-  // ── Collect unique items across all documents (for M100 master records).
-  // Key by item description since our app doesn't enforce product codes.
+  // Collect unique items across all docs for M100 master records.
   const uniqueItems = new Map<string, { code: string; description: string }>();
   for (const doc of docs) {
     for (const item of doc.items) {
@@ -110,24 +102,20 @@ export function buildUniformStructure(input: UniformInput): UniformOutput {
     }
   }
 
-  // ── Record number is monotonic across the entire BKMVDATA file.
-  let recordNum = 2; // 1 = A100 header
-  const b110Lines: string[] = [];
-  const m100Lines: string[] = [];
-  const c100Lines: string[] = [];
-  const d110Lines: string[] = [];
-  const d120Lines: string[] = [];
-  const b100Lines: string[] = [];
+  // Sequence numbers are monotonic across the entire BKMVDATA file.
+  let recordNum = 2; // 1 = A100
 
-  // ── B110: chart of accounts + one row per client ────────────────────
+  // ── B110 chart of accounts (standard + per-client) ──────────────────
+  const b110Lines: string[] = [];
   for (const acct of STANDARD_ACCOUNTS) {
     b110Lines.push(
       buildB110({
         recordNum: recordNum++,
-        vatFile,
-        accountCode: acct.code,
+        meta,
+        accountKey: acct.code,
         accountName: acct.name,
-        accountClass: acct.class,
+        trialBalanceCode: acct.tbCode,
+        trialBalanceDesc: acct.tbDesc,
       }),
     );
   }
@@ -135,21 +123,24 @@ export function buildUniformStructure(input: UniformInput): UniformOutput {
     b110Lines.push(
       buildB110({
         recordNum: recordNum++,
-        vatFile,
-        accountCode: `CLI-${c.id.slice(0, 10)}`,
+        meta,
+        accountKey: `CLI-${c.id.slice(0, 10)}`,
         accountName: c.name,
-        accountClass: "CUSTOMER",
+        trialBalanceCode: "CUSTOMERS",
+        trialBalanceDesc: "לקוחות",
+        customerSupplierVat: c.taxId,
       }),
     );
   }
   const b110Count = b110Lines.length;
 
-  // ── M100: unique inventory items master records ─────────────────────
+  // ── M100 inventory items ───────────────────────────────────────────
+  const m100Lines: string[] = [];
   for (const item of uniqueItems.values()) {
     m100Lines.push(
       buildM100({
         recordNum: recordNum++,
-        vatFile,
+        meta,
         itemCode: item.code,
         itemDescription: item.description,
       }),
@@ -157,20 +148,22 @@ export function buildUniformStructure(input: UniformInput): UniformOutput {
   }
   const m100Count = m100Lines.length;
 
-  // ── C100: document headers ──────────────────────────────────────────
+  // ── C100 document headers ──────────────────────────────────────────
+  const c100Lines: string[] = [];
   for (const doc of docs) {
     const client = doc.clientId ? clientById.get(doc.clientId) || null : null;
-    c100Lines.push(buildC100({ recordNum: recordNum++, vatFile, doc, client }));
+    c100Lines.push(buildC100({ recordNum: recordNum++, meta, doc, client }));
   }
   const c100Count = c100Lines.length;
 
-  // ── D110: document line items ───────────────────────────────────────
+  // ── D110 document line items ───────────────────────────────────────
+  const d110Lines: string[] = [];
   for (const doc of docs) {
     doc.items.forEach((item, idx) => {
       d110Lines.push(
         buildD110({
           recordNum: recordNum++,
-          vatFile,
+          meta,
           doc,
           item,
           lineNumber: idx + 1,
@@ -180,17 +173,21 @@ export function buildUniformStructure(input: UniformInput): UniformOutput {
   }
   const d110Count = d110Lines.length;
 
-  // ── D120: payment lines (receipts + tax-invoice-receipts only) ──────
+  // ── D120 payment lines ─────────────────────────────────────────────
+  const d120Lines: string[] = [];
   for (const doc of docs) {
     if (doc.type === "receipt" || doc.type === "tax_invoice_receipt") {
-      d120Lines.push(buildD120({ recordNum: recordNum++, vatFile, doc, lineNumber: 1 }));
+      d120Lines.push(buildD120({ recordNum: recordNum++, meta, doc, lineNumber: 1 }));
     }
   }
   const d120Count = d120Lines.length;
 
-  // ── B100: journal entries ───────────────────────────────────────────
+  // ── B100 journal entries ───────────────────────────────────────────
+  // Each paid document: dr customer / cr sales / [cr vat]
+  // Each expense: dr expense / cr cash
+  const b100Lines: string[] = [];
   let txNum = 1;
-  // 2-3 lines per paid document (dr customer / cr sales / [cr vat])
+
   for (const doc of docs) {
     if (doc.status !== "paid") continue;
     const client = doc.clientId ? clientById.get(doc.clientId) || null : null;
@@ -200,16 +197,16 @@ export function buildUniformStructure(input: UniformInput): UniformOutput {
     b100Lines.push(
       buildB100({
         recordNum: recordNum++,
-        vatFile,
+        meta,
         transactionNum: txNum,
         transactionLine: 1,
-        docType: docTypeCode,
-        docNum: String(doc.number),
+        docRefNum: String(doc.number),
+        docTypeRef: docTypeCode,
         date: doc.date,
         valueDate: doc.date,
-        accountCode: customerAcct,
-        counterAccountCode: "SALES-000",
-        details: `${doc.clientName} ${doc.subject ?? ""}`,
+        accountKey: customerAcct,
+        counterAccountKey: "SALES-000",
+        details: `${doc.clientName} ${doc.subject ?? ""}`.slice(0, 50),
         amount: doc.total,
         side: "1",
       }),
@@ -217,16 +214,16 @@ export function buildUniformStructure(input: UniformInput): UniformOutput {
     b100Lines.push(
       buildB100({
         recordNum: recordNum++,
-        vatFile,
+        meta,
         transactionNum: txNum,
         transactionLine: 2,
-        docType: docTypeCode,
-        docNum: String(doc.number),
+        docRefNum: String(doc.number),
+        docTypeRef: docTypeCode,
         date: doc.date,
         valueDate: doc.date,
-        accountCode: "SALES-000",
-        counterAccountCode: customerAcct,
-        details: `${doc.clientName} ${doc.subject ?? ""}`,
+        accountKey: "SALES-000",
+        counterAccountKey: customerAcct,
+        details: `${doc.clientName} ${doc.subject ?? ""}`.slice(0, 50),
         amount: doc.subtotal,
         side: "2",
       }),
@@ -235,15 +232,15 @@ export function buildUniformStructure(input: UniformInput): UniformOutput {
       b100Lines.push(
         buildB100({
           recordNum: recordNum++,
-          vatFile,
+          meta,
           transactionNum: txNum,
           transactionLine: 3,
-          docType: docTypeCode,
-          docNum: String(doc.number),
+          docRefNum: String(doc.number),
+          docTypeRef: docTypeCode,
           date: doc.date,
           valueDate: doc.date,
-          accountCode: "VAT-COL",
-          counterAccountCode: customerAcct,
+          accountKey: "VAT-COL",
+          counterAccountKey: customerAcct,
           details: "מע״מ עסקאות",
           amount: doc.vat,
           side: "2",
@@ -252,20 +249,20 @@ export function buildUniformStructure(input: UniformInput): UniformOutput {
     }
     txNum++;
   }
-  // 2 lines per expense
+
   for (const e of expenses) {
     b100Lines.push(
       buildB100({
         recordNum: recordNum++,
-        vatFile,
+        meta,
         transactionNum: txNum,
         transactionLine: 1,
-        docType: "800",
-        docNum: e.id.slice(0, 20),
+        docRefNum: e.id.slice(0, 20),
+        docTypeRef: "800",
         date: e.date,
         valueDate: e.date,
-        accountCode: `EXP-${e.category}`.slice(0, 15),
-        counterAccountCode: "CASH",
+        accountKey: `EXP-${e.category}`.slice(0, 15),
+        counterAccountKey: "CASH",
         details: `${e.supplier} ${e.description ?? ""}`.slice(0, 50),
         amount: e.amount,
         side: "1",
@@ -274,15 +271,15 @@ export function buildUniformStructure(input: UniformInput): UniformOutput {
     b100Lines.push(
       buildB100({
         recordNum: recordNum++,
-        vatFile,
+        meta,
         transactionNum: txNum,
         transactionLine: 2,
-        docType: "800",
-        docNum: e.id.slice(0, 20),
+        docRefNum: e.id.slice(0, 20),
+        docTypeRef: "800",
         date: e.date,
         valueDate: e.date,
-        accountCode: "CASH",
-        counterAccountCode: `EXP-${e.category}`.slice(0, 15),
+        accountKey: "CASH",
+        counterAccountKey: `EXP-${e.category}`.slice(0, 15),
         details: `${e.supplier} ${e.description ?? ""}`.slice(0, 50),
         amount: e.amount,
         side: "2",
@@ -292,18 +289,17 @@ export function buildUniformStructure(input: UniformInput): UniformOutput {
   }
   const b100Count = b100Lines.length;
 
-  // ── Z900 footer ─────────────────────────────────────────────────────
-  const dataRecordCount = recordNum - 1;
-  const totalIncludingZ900 = dataRecordCount + 1;
+  // ── Z900 footer ────────────────────────────────────────────────────
+  const totalIncludingZ900 = recordNum; // recordNum is the next free slot = Z900's number
   const z900Line = buildZ900({
     recordNum: recordNum++,
-    vatFile,
+    meta,
     totalRecords: totalIncludingZ900,
   });
 
-  // ── Assemble BKMVDATA in canonical order ────────────────────────────
+  // ── Final BKMVDATA assembly ────────────────────────────────────────
   const bkmvdataText =
-    buildA100(meta, totalIncludingZ900) +
+    buildA100({ recordNum: 1, meta }) +
     b110Lines.join("") +
     m100Lines.join("") +
     c100Lines.join("") +
@@ -322,19 +318,14 @@ export function buildUniformStructure(input: UniformInput): UniformOutput {
     m100: m100Count,
   };
 
-  // ── INI.txt: A000 + summary records (one per type in BKMVDATA) ──────
-  const docTotal = docs.reduce((s, d) => s + d.total, 0);
-  const docItemTotal = docs.reduce(
-    (s, d) => s + d.items.reduce((ss, it) => ss + it.total, 0),
-    0,
-  );
+  // ── INI.txt: A000 + summary records (one per type in BKMVDATA) ─────
   const summaries = [
-    c100Count > 0 ? buildSummary({ recordType: "C100", vatFile, count: c100Count, totalAmount: docTotal }) : "",
-    d110Count > 0 ? buildSummary({ recordType: "D110", vatFile, count: d110Count, totalAmount: docItemTotal }) : "",
-    d120Count > 0 ? buildSummary({ recordType: "D120", vatFile, count: d120Count, totalAmount: docTotal }) : "",
-    m100Count > 0 ? buildSummary({ recordType: "M100", vatFile, count: m100Count }) : "",
-    b100Count > 0 ? buildSummary({ recordType: "B100", vatFile, count: b100Count }) : "",
-    b110Count > 0 ? buildSummary({ recordType: "B110", vatFile, count: b110Count }) : "",
+    c100Count > 0 ? buildSummary({ recordType: "C100", count: c100Count }) : "",
+    d110Count > 0 ? buildSummary({ recordType: "D110", count: d110Count }) : "",
+    d120Count > 0 ? buildSummary({ recordType: "D120", count: d120Count }) : "",
+    m100Count > 0 ? buildSummary({ recordType: "M100", count: m100Count }) : "",
+    b100Count > 0 ? buildSummary({ recordType: "B100", count: b100Count }) : "",
+    b110Count > 0 ? buildSummary({ recordType: "B110", count: b110Count }) : "",
   ].filter(Boolean).join("");
   const iniText = buildA000(meta, counts) + summaries;
 
