@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import JSZip from "jszip";
 import { checkRate, clientIp } from "@/lib/rate-limit";
 import { buildUniformStructure } from "@/lib/uniform-structure/builder";
+import { generateSampleDataset } from "@/lib/uniform-structure/sample-data";
 import type { Business, Client, DocumentItem, Expense, InvoiceDocument } from "@/lib/types";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -49,6 +50,9 @@ export async function GET(req: NextRequest) {
     : new Date().getFullYear();
   const fromDate = `${taxYear}-01-01`;
   const toDate = `${taxYear}-12-31`;
+  // sample=true → synthesize 2000+ records for the Tax Authority's
+  // software-registry simulator (which rejects files <2000 records).
+  const useSampleData = searchParams.get("sample") === "true";
 
   const sb = createClient(supabaseUrl, serviceKey, {
     auth: { autoRefreshToken: false, persistSession: false },
@@ -74,76 +78,87 @@ export async function GET(req: NextRequest) {
     email: bizRow.email ?? undefined,
   };
 
-  const [clientsRes, docsRes, expensesRes] = await Promise.all([
-    sb.from("clients").select("*").eq("business_id", business.id),
-    sb.from("documents")
-      .select("*")
-      .eq("business_id", business.id)
-      .gte("date", fromDate)
-      .lte("date", toDate),
-    sb.from("expenses")
-      .select("*")
-      .eq("business_id", business.id)
-      .gte("date", fromDate)
-      .lte("date", toDate),
-  ]);
+  let clients: Client[];
+  let documents: InvoiceDocument[];
+  let expenses: Expense[];
 
-  const docIds = (docsRes.data ?? []).map((d) => d.id);
-  const itemsRes = docIds.length > 0
-    ? await sb.from("document_items").select("*").in("document_id", docIds).order("sort_order")
-    : { data: [] as Record<string, unknown>[] };
+  if (useSampleData) {
+    const sample = generateSampleDataset({ business, taxYear });
+    clients = sample.clients;
+    documents = sample.documents;
+    expenses = sample.expenses;
+  } else {
+    const [clientsRes, docsRes, expensesRes] = await Promise.all([
+      sb.from("clients").select("*").eq("business_id", business.id),
+      sb.from("documents")
+        .select("*")
+        .eq("business_id", business.id)
+        .gte("date", fromDate)
+        .lte("date", toDate),
+      sb.from("expenses")
+        .select("*")
+        .eq("business_id", business.id)
+        .gte("date", fromDate)
+        .lte("date", toDate),
+    ]);
 
-  const itemsByDoc = new Map<string, DocumentItem[]>();
-  for (const row of itemsRes.data ?? []) {
-    const did = row.document_id as string;
-    if (!itemsByDoc.has(did)) itemsByDoc.set(did, []);
-    itemsByDoc.get(did)!.push({
+    const docIds = (docsRes.data ?? []).map((d) => d.id);
+    const itemsRes = docIds.length > 0
+      ? await sb.from("document_items").select("*").in("document_id", docIds).order("sort_order")
+      : { data: [] as Record<string, unknown>[] };
+
+    const itemsByDoc = new Map<string, DocumentItem[]>();
+    for (const row of itemsRes.data ?? []) {
+      const did = row.document_id as string;
+      if (!itemsByDoc.has(did)) itemsByDoc.set(did, []);
+      itemsByDoc.get(did)!.push({
+        id: row.id as string,
+        productId: (row.product_id as string) || undefined,
+        description: row.description as string,
+        quantity: Number(row.quantity) || 0,
+        unitPrice: Number(row.unit_price) || 0,
+        total: Number(row.total) || 0,
+      });
+    }
+
+    clients = (clientsRes.data ?? []).map((row) => ({
       id: row.id as string,
-      productId: (row.product_id as string) || undefined,
-      description: row.description as string,
-      quantity: Number(row.quantity) || 0,
-      unitPrice: Number(row.unit_price) || 0,
+      name: row.name as string,
+      taxId: (row.tax_id as string) || undefined,
+      address: (row.address as string) || undefined,
+      phone: (row.phone as string) || undefined,
+      email: (row.email as string) || undefined,
+      createdAt: (row.created_at as string)?.slice(0, 10) || "",
+    }));
+
+    documents = (docsRes.data ?? []).map((row) => ({
+      id: row.id as string,
+      type: row.type as InvoiceDocument["type"],
+      number: Number(row.number),
+      date: (row.date as string) || "",
+      clientId: (row.client_id as string) || "",
+      clientName: (row.client_name as string) || "",
+      subject: (row.subject as string) || undefined,
+      status: (row.status as InvoiceDocument["status"]) || "draft",
+      items: itemsByDoc.get(row.id as string) ?? [],
+      subtotal: Number(row.subtotal) || 0,
+      vat: Number(row.vat) || 0,
       total: Number(row.total) || 0,
-    });
+      paymentMethod: (row.payment_method as InvoiceDocument["paymentMethod"]) || undefined,
+      notes: (row.notes as string) || undefined,
+      allocationNumber: (row.allocation_number as string) || undefined,
+    }));
+
+    expenses = (expensesRes.data ?? []).map((row) => ({
+      id: row.id as string,
+      date: row.date as string,
+      category: row.category as string,
+      supplier: row.supplier as string,
+      amount: Number(row.amount) || 0,
+      description: (row.description as string) || undefined,
+      vatAmount: row.vat_amount != null ? Number(row.vat_amount) : 0,
+    }));
   }
-
-  const clients: Client[] = (clientsRes.data ?? []).map((row) => ({
-    id: row.id as string,
-    name: row.name as string,
-    taxId: (row.tax_id as string) || undefined,
-    address: (row.address as string) || undefined,
-    phone: (row.phone as string) || undefined,
-    email: (row.email as string) || undefined,
-    createdAt: (row.created_at as string)?.slice(0, 10) || "",
-  }));
-
-  const documents: InvoiceDocument[] = (docsRes.data ?? []).map((row) => ({
-    id: row.id as string,
-    type: row.type as InvoiceDocument["type"],
-    number: Number(row.number),
-    date: (row.date as string) || "",
-    clientId: (row.client_id as string) || "",
-    clientName: (row.client_name as string) || "",
-    subject: (row.subject as string) || undefined,
-    status: (row.status as InvoiceDocument["status"]) || "draft",
-    items: itemsByDoc.get(row.id as string) ?? [],
-    subtotal: Number(row.subtotal) || 0,
-    vat: Number(row.vat) || 0,
-    total: Number(row.total) || 0,
-    paymentMethod: (row.payment_method as InvoiceDocument["paymentMethod"]) || undefined,
-    notes: (row.notes as string) || undefined,
-    allocationNumber: (row.allocation_number as string) || undefined,
-  }));
-
-  const expenses: Expense[] = (expensesRes.data ?? []).map((row) => ({
-    id: row.id as string,
-    date: row.date as string,
-    category: row.category as string,
-    supplier: row.supplier as string,
-    amount: Number(row.amount) || 0,
-    description: (row.description as string) || undefined,
-    vatAmount: row.vat_amount != null ? Number(row.vat_amount) : 0,
-  }));
 
   const result = buildUniformStructure({
     business,
@@ -165,7 +180,7 @@ export async function GET(req: NextRequest) {
   zip.file("BKMVDATA.txt", result.bkmvdata);
   const blob = await zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE" });
 
-  const filename = `OPENFRMT-${business.taxId}-${taxYear}.zip`;
+  const filename = `OPENFRMT-${business.taxId}-${taxYear}${useSampleData ? "-SAMPLE" : ""}.zip`;
   return new NextResponse(blob as unknown as BodyInit, {
     headers: {
       "Content-Type": "application/zip",

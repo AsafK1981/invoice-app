@@ -138,14 +138,15 @@ export default function ReportsPage() {
   // export, which only makes sense scoped to a single tax year.
   const selectedYear = /^\d{4}/.test(period) ? parseInt(period.slice(0, 4), 10) : null;
 
-  async function downloadUniformStructure() {
+  async function downloadUniformStructure(sample = false) {
     const year = selectedYear ?? new Date().getFullYear();
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.access_token) {
       alert("צריך להתחבר מחדש");
       return;
     }
-    const res = await fetch(`/api/uniform-structure/export?year=${year}`, {
+    const qs = `year=${year}${sample ? "&sample=true" : ""}`;
+    const res = await fetch(`/api/uniform-structure/export?${qs}`, {
       headers: { authorization: `Bearer ${session.access_token}` },
     });
     if (!res.ok) {
@@ -157,7 +158,7 @@ export default function ReportsPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `OPENFRMT-${business.taxId}-${year}.zip`;
+    a.download = `OPENFRMT-${business.taxId}-${year}${sample ? "-SAMPLE" : ""}.zip`;
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -206,12 +207,20 @@ export default function ReportsPage() {
             ייצוא הוצאות ({filteredExpenses.length})
           </button>
           <button
-            onClick={downloadUniformStructure}
-            title="ייצוא קבצי מבנה אחיד (OPENFORMAT 1.31) לסימולטור רשות המסים ולביקורת"
+            onClick={() => downloadUniformStructure(false)}
+            title="ייצוא קבצי מבנה אחיד (OPENFORMAT 1.31) מהנתונים האמיתיים — לאודיט"
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border-2 border-purple-200 text-stone-800 hover:bg-purple-50"
           >
             <FileArchive className="w-4 h-4 text-purple-600" />
             מבנה אחיד {selectedYear ? `(${selectedYear})` : "(שנה נוכחית)"}
+          </button>
+          <button
+            onClick={() => downloadUniformStructure(true)}
+            title="ייצוא קבצי מבנה אחיד דוגמה (2500+ רשומות סינתטיות) — לסימולטור רשות המסים לצורך רישום במרשם תוכנות"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border-2 border-fuchsia-200 text-stone-800 hover:bg-fuchsia-50"
+          >
+            <FileArchive className="w-4 h-4 text-fuchsia-600" />
+            מבנה אחיד — דוגמה ({selectedYear || "שנה"})
           </button>
         </div>
       </div>

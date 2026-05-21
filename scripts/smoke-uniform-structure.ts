@@ -5,6 +5,7 @@
 // Run with: npx tsx scripts/smoke-uniform-structure.ts
 
 import { buildUniformStructure } from "../src/lib/uniform-structure/builder";
+import { generateSampleDataset } from "../src/lib/uniform-structure/sample-data";
 import { writeFileSync, mkdirSync } from "node:fs";
 import type { Business, Client, Expense, InvoiceDocument } from "../src/lib/types";
 
@@ -67,6 +68,41 @@ const expenses: Expense[] = [
     vatAmount: 0,
   },
 ];
+
+// Also run the sample-data path to verify it produces 2000+ records.
+const sample = generateSampleDataset({ business, taxYear: 2026 });
+console.log("Sample dataset:");
+console.log("  clients:", sample.clients.length);
+console.log("  documents:", sample.documents.length);
+console.log("  expenses:", sample.expenses.length);
+console.log();
+
+const sampleResult = buildUniformStructure({
+  business,
+  documents: sample.documents,
+  clients: sample.clients,
+  expenses: sample.expenses,
+  taxYear: 2026,
+  fromDate: "2026-01-01",
+  toDate: "2026-12-31",
+});
+
+console.log("Sample result record counts:");
+console.log("  total:", sampleResult.counts.total);
+console.log("  C100:", sampleResult.counts.c100);
+console.log("  D110:", sampleResult.counts.d110);
+console.log("  D120:", sampleResult.counts.d120);
+console.log("  B100:", sampleResult.counts.b100);
+console.log("  B110:", sampleResult.counts.b110);
+console.log();
+
+mkdirSync("./tmp", { recursive: true });
+writeFileSync("./tmp/SAMPLE-INI.txt", sampleResult.ini);
+writeFileSync("./tmp/SAMPLE-BKMVDATA.txt", sampleResult.bkmvdata);
+console.log("Sample files written to ./tmp/SAMPLE-*.txt");
+console.log("  INI:", sampleResult.ini.length, "bytes");
+console.log("  BKMVDATA:", sampleResult.bkmvdata.length, "bytes");
+console.log();
 
 const result = buildUniformStructure({
   business,
