@@ -347,13 +347,27 @@ export function buildZ900(args: { recordNum: number; vatFile: string; totalRecor
   ]);
 }
 
-/** No-op for now — we don't track inventory. Exported for future use. */
-export function buildM100(_args: {
+/**
+ * M100 — inventory item master record. One record per unique item
+ * that appears in any document (across the entire file). Example
+ * PDF page 15: "לכל פריט נוצרה רשומה מסוג M100".
+ */
+export function buildM100(args: {
   recordNum: number;
   vatFile: string;
+  itemCode: string;
+  itemDescription: string;
+  unitOfMeasure?: string;
 }): string {
-  // intentionally not implemented — we don't have an inventory module
-  throw new Error("M100 not implemented — no inventory in this app");
+  return buildLine([
+    "M100",
+    padNum(args.recordNum, 9),
+    padStr(args.vatFile, 9),
+    padStr(args.itemCode, 20),
+    padStr(args.itemDescription, 50),
+    padStr(args.unitOfMeasure || "יח׳", 20),
+    padStr("", 50), // reserved
+  ]);
 }
 
 /** Used by the expense-export path (B100 only — no document records). */
