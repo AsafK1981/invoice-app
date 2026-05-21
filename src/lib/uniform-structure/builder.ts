@@ -13,6 +13,7 @@ import {
   buildC100,
   buildD110,
   buildD120,
+  buildSummary,
   buildZ900,
   expenseAsJournal,
   DOC_TYPE_CODE,
@@ -255,7 +256,22 @@ export function buildUniformStructure(input: UniformInput): UniformOutput {
     m100: 0,
   };
 
-  const iniText = buildA000(meta, counts);
+  // ── INI.txt: A000 + summary records (one per type in BKMVDATA) ──────
+  // Spec page 9 requires a summary record for every record type present
+  // in BKMVDATA. Best-guess format: type code + VAT + count + sum.
+  const docTotal = docs.reduce((s, d) => s + d.total, 0);
+  const docItemTotal = docs.reduce(
+    (s, d) => s + d.items.reduce((ss, it) => ss + it.total, 0),
+    0,
+  );
+  const summaries = [
+    counts.c100 > 0 ? buildSummary({ recordType: "C100", vatFile, count: counts.c100, totalAmount: docTotal }) : "",
+    counts.d110 > 0 ? buildSummary({ recordType: "D110", vatFile, count: counts.d110, totalAmount: docItemTotal }) : "",
+    counts.d120 > 0 ? buildSummary({ recordType: "D120", vatFile, count: counts.d120, totalAmount: docTotal }) : "",
+    counts.b100 > 0 ? buildSummary({ recordType: "B100", vatFile, count: counts.b100 }) : "",
+    counts.b110 > 0 ? buildSummary({ recordType: "B110", vatFile, count: counts.b110 }) : "",
+  ].filter(Boolean).join("");
+  const iniText = buildA000(meta, counts) + summaries;
 
   return {
     iniText,

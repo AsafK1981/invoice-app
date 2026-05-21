@@ -66,67 +66,101 @@ export interface RecordCounts {
 }
 
 /**
- * A100 — file header of BKMVDATA.txt. Layout per OPENFORMAT 1.31.
- * Field 1104 must carry the system constant "1031" (= version 1.31).
- * Iteration 2 — field positions revised after first simulator run.
+ * A100 — opening record of BKMVDATA.txt (section 4.1 of the spec).
+ * Mirrors A000's pattern: code → reserved → totals → VAT → primary
+ * identifier → system constant → metadata. The simulator cross-checks
+ * fields 1003/1004 (A000) against 1103/1104 (A100), so values must
+ * match exactly.
  */
 export function buildA100(meta: FileMeta, totalRecords: number): string {
+  const primaryId = padNum(meta.business.taxId, 15);
   return buildLine([
-    "A100", // 1-4: record code
-    padNum(1, 9), // 5-13: 1101 — record number
-    padStr(meta.business.taxId, 9), // 14-22: 1102 — VAT file number (must match A000)
-    padNum(meta.taxYear, 4), // 23-26: 1103 — tax year
-    "1031", // 27-30: 1104 — system constant (version 1.31)
-    formatDate(meta.generatedAt), // 31-38: 1105 — generation date
-    formatTime(meta.generatedAt), // 39-42: 1106 — generation time
-    padStr(meta.softwareName, 20), // 43-62: 1107 — software name
-    padStr(meta.softwareRegistrationNumber, 8), // 63-70: 1108 — software reg #
-    padStr(meta.softwareVendorTaxId, 9), // 71-79: 1109 — vendor tax id
-    padStr(meta.softwareVendorName, 20), // 80-99: 1110 — vendor name
-    padStr(meta.softwareVersion, 20), // 100-119: 1111 — software version
-    padStr(meta.business.taxId, 9), // 120-128: 1112 — VAT file (again)
-    padStr(meta.business.name, 50), // 129-178: 1113 — business name
-    padStr(meta.business.address || "", 50), // 179-228: 1114 — address
-    formatDate(meta.fromDate), // 229-236: 1115 — period start
-    formatDate(meta.toDate), // 237-244: 1116 — period end
-    padStr("L", 1), // 245: 1117 — linear file marker
-    padStr("", 50), // 246-295: reserved
+    "A100", // 1100: code
+    padStr("", 8), // 1101: reserved
+    padNum(totalRecords, 15), // 1102: total records
+    padStr(meta.business.taxId, 9), // 1103: VAT (must match A000 1003)
+    primaryId, // 1104: primary ID (must match A000 1004)
+    "&OF1.31&", // 1105: system constant (was 1005 in A000)
+    padStr(meta.softwareRegistrationNumber, 8), // 1106: software reg
+    padStr(meta.softwareName, 20), // 1107: software name
+    padStr(meta.softwareVersion, 20), // 1108: version
+    padNum(meta.taxYear, 4), // 1109: tax year
+    formatDate(meta.fromDate), // 1110: period start
+    formatDate(meta.toDate), // 1111: period end
+    formatDate(meta.generatedAt), // 1112: generation date
+    formatTime(meta.generatedAt), // 1113: generation time
+    padStr(meta.business.name, 50), // 1114: business name
+    padStr(meta.business.address || "", 50), // 1115: address
   ]);
 }
 
 /**
- * A000 — header of INI.txt. Contains metadata + per-record-type counts so
- * the auditor can verify BKMVDATA.txt matches the declared counts.
- * Iteration 2 — revised layout, ensure VAT file matches A100/Z900.
+ * Summary records that appear in INI.txt after A000 — one per record
+ * type present in BKMVDATA.txt (per spec page 9). Each carries the
+ * type code, the count, and the sum of amounts (where applicable).
+ *
+ * Codes for summary records use the same 4-char prefix as the records
+ * they summarize. Best-guess format until we see the spec.
+ */
+export function buildSummary(args: {
+  recordType: string; // e.g., "C100", "D110"
+  vatFile: string;
+  count: number;
+  totalAmount?: number;
+}): string {
+  return buildLine([
+    args.recordType, // type code
+    padStr(args.vatFile, 9),
+    padNum(args.count, 15),
+    formatAmount(args.totalAmount ?? 0, 15),
+    padStr("", 50), // reserved
+  ]);
+}
+
+/**
+ * A000 — master record of INI.txt. Layout matches the example PDF from
+ * the Tax Authority (page 13, ביקורת מערכות מידע — מבנה אחיד 1.31).
+ *
+ * Fields (1000–1013):
+ *   1000: record code "A000"
+ *   1001: reserved (for future use, blank)
+ *   1002: total record count in BKMVDATA.txt
+ *   1003: business VAT/tax ID
+ *   1004: primary identifier (15-digit unique ID for the business)
+ *   1005: system constant — literal "&OF1.31&" for version 1.31
+ *   1006: software registration number (assigned by misim.gov.il)
+ *   1007: software name
+ *   1008: software version/edition
+ *   1009: vendor VAT/tax ID
+ *   1010: vendor name
+ *   1011: software type — "1" single-year / "2" multi-year
+ *   1012: backup data path (filesystem path where exports go)
+ *   1013: bookkeeping method — "1" single-entry / "2" double-entry
  */
 export function buildA000(meta: FileMeta, counts: RecordCounts): string {
+  // 15-digit primary identifier — for an עוסק פטור this is the personal
+  // ID. We pad to 15 zeros to match the example's width.
+  const primaryId = padNum(meta.business.taxId, 15);
+  // עוסק פטור = single-entry bookkeeping (חד צידית).
+  const bookkeepingType = meta.business.businessType === "exempt" ? "1" : "2";
+  // We export single-year files for now; the simulator accepts both.
+  const softwareType = "1";
+
   return buildLine([
-    "A000", // 1-4: record code
-    padNum(1, 9), // 5-13: 1001 — record number
-    padStr(meta.business.taxId, 9), // 14-22: 1002 — VAT file (must match A100/Z900)
-    padNum(meta.taxYear, 4), // 23-26: 1003 — tax year
-    "1031", // 27-30: 1004 — system constant (version 1.31)
-    formatDate(meta.generatedAt), // 31-38: 1005 — generation date
-    formatTime(meta.generatedAt), // 39-42: 1006 — generation time
-    padStr(meta.softwareName, 20), // 43-62: 1007 — software name
-    padStr(meta.softwareRegistrationNumber, 8), // 63-70: 1008 — software reg #
-    padStr(meta.softwareVendorTaxId, 9), // 71-79: 1009 — vendor tax id
-    padStr(meta.softwareVendorName, 20), // 80-99: 1010 — vendor name
-    padStr(meta.softwareVersion, 20), // 100-119: 1011 — software version
-    padStr(meta.business.taxId, 9), // 120-128: 1012 — VAT file (again)
-    padStr(meta.business.name, 50), // 129-178: 1013 — business name
-    padStr(meta.business.address || "", 50), // 179-228: 1014 — address
-    formatDate(meta.fromDate), // 229-236: 1015 — period start
-    formatDate(meta.toDate), // 237-244: 1016 — period end
-    // Per-record summary counts — 15 chars each, in canonical order:
-    padNum(counts.c100, 15), // 245-259: C100 count
-    padNum(counts.d110, 15), // 260-274: D110 count
-    padNum(counts.d120, 15), // 275-289: D120 count
-    padNum(counts.b100, 15), // 290-304: B100 count
-    padNum(counts.b110, 15), // 305-319: B110 count
-    padNum(counts.m100, 15), // 320-334: M100 count
-    padNum(counts.total, 15), // 335-349: total records
-    padStr("", 50), // 350-399: reserved
+    "A000", // 1000: 4 chars
+    padStr("", 8), // 1001: reserved (8)
+    padNum(counts.total, 15), // 1002: total records (15)
+    padStr(meta.business.taxId, 9), // 1003: VAT (9)
+    primaryId, // 1004: primary ID (15)
+    "&OF1.31&", // 1005: system constant (8)
+    padStr(meta.softwareRegistrationNumber, 8), // 1006: software reg (8)
+    padStr(meta.softwareName, 20), // 1007: software name (20)
+    padStr(meta.softwareVersion, 20), // 1008: version (20)
+    padStr(meta.softwareVendorTaxId, 9), // 1009: vendor VAT (9)
+    padStr(meta.softwareVendorName, 20), // 1010: vendor name (20)
+    softwareType, // 1011: software type (1)
+    padStr("C:\\OPENFRMT", 50), // 1012: backup path (50)
+    bookkeepingType, // 1013: bookkeeping method (1)
   ]);
 }
 
