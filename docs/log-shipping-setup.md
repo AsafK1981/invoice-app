@@ -57,9 +57,37 @@ well as Sentry.
 
 ## Retention policy
 
-365 days minimum. Older logs are automatically purged by the chosen
-provider. No PII / customer data is logged — only request metadata,
-error messages, and security event tags.
+**Two-tier retention** chosen because Axiom's free tier caps at 30
+days but the appendix requires 12 months:
+
+1. **Hot (queryable, 30 days):** in Axiom. Used for day-to-day
+   debugging and Sentry alerting.
+2. **Cold (archive, indefinite):** Supabase Storage bucket
+   `axiom-archive`. Populated by a Vercel Cron job
+   (`/api/cron/axiom-archive`) every Sunday at 04:00 UTC. Each weekly
+   snapshot is gzipped NDJSON, named
+   `YYYY/MM/YYYY-MM-DD_to_YYYY-MM-DD.ndjson.gz`.
+
+The cold archive is bucket-private (service-role only, no public URL
+access, RLS bypass enforced). It satisfies the §19 retention
+requirement and the §21 Tax-Authority log-access right. When the Tax
+Authority requests logs, generate a short-TTL signed URL from the
+bucket and share it.
+
+**Required env vars for the archive cron:**
+
+| Variable | Source |
+| --- | --- |
+| `AXIOM_API_TOKEN` | Axiom Settings → API Tokens → Create token (read-only on the dataset) |
+| `AXIOM_DATASET` | `mysuperfriendlyinvoiceapp` (or whatever you named it) |
+| `AXIOM_API_BASE` | `https://api.eu.axiom.co` (EU instance — already the default in code) |
+| `CRON_SECRET` | Already set; used to gate the cron endpoint |
+
+Set them on Vercel via the dashboard or via
+`node scripts/admin.mjs` env-var helpers.
+
+No PII / customer data is logged — only request metadata, error
+messages, and security event tags.
 
 ## Operational notes
 
