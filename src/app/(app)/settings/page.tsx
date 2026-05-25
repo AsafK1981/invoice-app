@@ -27,6 +27,7 @@ import { EmailSettingsModal } from "@/components/email-settings-modal";
 import { DocumentNumberingSettings } from "@/components/document-numbering-settings";
 import { AuditLogSection } from "@/components/audit-log-section";
 import { TaxAuthoritySection } from "@/components/tax-authority-section";
+import { TwoFactorSection } from "@/components/two-factor-section";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { logAudit } from "@/lib/audit-log";
 import { supabase } from "@/lib/supabase";
@@ -283,6 +284,8 @@ export default function SettingsPage() {
       </div>
 
       <TaxAuthoritySection />
+
+      <TwoFactorSection />
 
       <AuditLogSection />
 

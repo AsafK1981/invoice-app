@@ -8,6 +8,9 @@ import {
   requiresAllocationNumber,
   type AllocationRequest,
 } from "@/lib/tax-authority";
+import { decryptColumn, encryptColumn } from "@/lib/crypto";
+import { emitSecurityEvent } from "@/lib/security-events";
+import { clientIp } from "@/lib/rate-limit";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -128,18 +131,37 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Refresh access token if it's within 5 minutes of expiry
-  let accessToken = creds.access_token as string;
+  // Refresh access token if it's within 5 minutes of expiry. Tokens are
+  // stored AES-256-GCM encrypted (info-security appendix §18) — decrypt
+  // before use and re-encrypt before writing back.
+  let accessToken: string;
+  try {
+    accessToken = decryptColumn(creds.access_token as string);
+  } catch (err) {
+    emitSecurityEvent({
+      kind: "tax_authority_token_decrypt_failed",
+      ip: clientIp(req),
+      businessId: business.id as string,
+      message: "Token decrypt failed — wrong key, corrupted blob, or tampering",
+      severity: "error",
+      extra: { error: err instanceof Error ? err.message : "unknown" },
+    });
+    return NextResponse.json(
+      { ok: false, error: "אירעה שגיאה בקריאת ההרשאות. חבר מחדש בהגדרות." },
+      { status: 500 },
+    );
+  }
   const expiresAtMs = new Date(creds.expires_at as string).getTime();
   if (expiresAtMs - Date.now() < 5 * 60 * 1000) {
     try {
-      const fresh = await refreshAccessToken(creds.refresh_token as string);
+      const refreshToken = decryptColumn(creds.refresh_token as string);
+      const fresh = await refreshAccessToken(refreshToken);
       accessToken = fresh.access_token;
       await sb
         .from("tax_authority_credentials")
         .update({
-          access_token: fresh.access_token,
-          refresh_token: fresh.refresh_token,
+          access_token: encryptColumn(fresh.access_token),
+          refresh_token: encryptColumn(fresh.refresh_token),
           expires_at: new Date(Date.now() + fresh.expires_in * 1000).toISOString(),
         })
         .eq("business_id", business.id);

@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { exchangeCodeForTokens, taxAuthorityEnv } from "@/lib/tax-authority";
+import { encryptColumn } from "@/lib/crypto";
+import { emitSecurityEvent } from "@/lib/security-events";
+import { clientIp } from "@/lib/rate-limit";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -46,6 +49,12 @@ export async function GET(req: NextRequest) {
     .maybeSingle();
 
   if (!stateRow) {
+    emitSecurityEvent({
+      kind: "tax_authority_unauthorized",
+      ip: clientIp(req),
+      message: "OAuth callback with invalid/unknown state — possible CSRF or replay",
+      severity: "warning",
+    });
     return NextResponse.redirect(`${origin}/settings?tax_authority=error&reason=invalid_state`);
   }
   if (new Date(stateRow.expires_at as string).getTime() < Date.now()) {
@@ -66,8 +75,8 @@ export async function GET(req: NextRequest) {
         {
           business_id: stateRow.business_id,
           vat_number: tokens.vat_number || "",
-          access_token: tokens.access_token,
-          refresh_token: tokens.refresh_token,
+          access_token: encryptColumn(tokens.access_token),
+          refresh_token: encryptColumn(tokens.refresh_token),
           expires_at: expiresAt,
           environment: taxAuthorityEnv(),
           connected_at: new Date().toISOString(),
