@@ -17,6 +17,7 @@
  */
 
 import * as Sentry from "@sentry/nextjs";
+import { logToAxiom } from "./axiom-logger";
 
 export type SecurityEventKind =
   | "auth_failed"              // user/password mismatch, rate-limit hit
@@ -69,4 +70,17 @@ export function emitSecurityEvent(ev: SecurityEvent): void {
     `[security] ${ev.kind} ${ev.message}`,
     { ip: ev.ip, userId: ev.userId, businessId: ev.businessId, extra: ev.extra },
   );
+
+  // Direct ingest to Axiom (free; doesn't require Vercel Pro Log
+  // Drains). Fire-and-forget — never blocks the request.
+  logToAxiom({
+    source: "security-events",
+    severity,
+    kind: ev.kind,
+    message: ev.message,
+    ip: ev.ip,
+    user_id: ev.userId,
+    business_id: ev.businessId,
+    ...ev.extra,
+  });
 }

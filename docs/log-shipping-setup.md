@@ -3,33 +3,70 @@
 Required by info-security appendix §19: logs must be retained for 12
 months, encrypted at rest.
 
-Vercel's built-in log retention is only ~30 days on Hobby/Pro plans.
-We ship to **Axiom** via Vercel's native Log Drain integration.
+## Architecture (two-tier, free)
+
+| Tier | Where | Retention | Source |
+| --- | --- | --- | --- |
+| **Hot** | Axiom dataset `mysuperfriendlyinvoiceapp` | 30 days (free tier cap) | Direct ingest from app code via `src/lib/axiom-logger.ts` |
+| **Cold** | Supabase Storage bucket `axiom-archive` | Indefinite | Weekly cron `/api/cron/axiom-archive` pulls from Axiom |
+
+The Vercel→Axiom marketplace integration is NOT used — it requires
+Vercel Pro ($20/mo) because Log Drains aren't on the Hobby plan. We
+get equivalent functional coverage via direct ingest from application
+code (`logToAxiom` in `src/lib/axiom-logger.ts`), which captures all
+the events that actually matter for compliance: security events, auth
+attempts, allocation API calls, etc.
 
 ## One-time setup (Asaf to do)
 
-### Step 1 — Create Axiom account
+### Step 1 — Create Axiom account + dataset
 
 1. Sign up at https://app.axiom.co/ with `asafkotlar@gmail.com`
-2. Create a dataset called `mysuperfriendlyinvoiceapp` with retention
-   set to **365 days** (free tier limit: 500MB/month ingest, 30 days
-   retention — may need a paid plan for 365 days; alternatively use
-   BetterStack or set up S3 archival)
+2. Pick **EU Central 1 (AWS)** as the edge deployment for GDPR
+3. Create a dataset:
+   - Name: `mysuperfriendlyinvoiceapp`
+   - Retention: 30 days (free-tier cap)
+   - Edge: EU Central 1
 
-### Step 2 — Install Vercel integration
+### Step 2 — Create Axiom Ingest token
 
-1. Open https://vercel.com/integrations/axiom
-2. Click "Add Integration"
-3. Select project: `invoice-app`
-4. Pick the Axiom dataset created in Step 1
-5. Choose what to send: **All logs** (function logs + build logs)
-6. Confirm
+1. In Axiom: **Settings (gear icon) → API Tokens → + New API Token**
+2. Name: `vercel-direct-ingest`
+3. Permissions: **Ingest** (write) scoped to dataset
+   `mysuperfriendlyinvoiceapp`. No other permissions needed.
+4. Save and **copy the token immediately** — shown once only.
 
-### Step 3 — Verify
+### Step 3 — Create Axiom Read token (for the archive cron)
 
-After deploying any change, check the Axiom dashboard to see logs
-flowing in. The dataset should populate within 1-2 minutes of a
-production request.
+1. Same place: **+ New API Token**
+2. Name: `vercel-cron-archive`
+3. Permissions: **Read** scoped to the same dataset.
+4. Save and copy.
+
+### Step 4 — Set Vercel env vars
+
+Add to the `mysuperfriendlyinvoiceapp` Vercel project, all
+environments (Production + Preview + Development):
+
+| Variable | Value |
+| --- | --- |
+| `AXIOM_INGEST_TOKEN` | The ingest token from Step 2 |
+| `AXIOM_API_TOKEN` | The read token from Step 3 |
+| `AXIOM_DATASET` | `mysuperfriendlyinvoiceapp` |
+| `AXIOM_API_BASE` | `https://api.eu.axiom.co` (only if EU instance) |
+
+Redeploy after setting them so the live runtime picks them up.
+
+### Step 5 — Verify
+
+1. Make any authenticated request to a production route (e.g., load
+   `/settings`). Within 30 seconds the Axiom dashboard should show
+   `source: "security-events"` events arriving.
+2. Force a security event by hitting `/api/tax-authority/callback`
+   without a state parameter — should show a
+   `kind: "tax_authority_unauthorized"` event.
+3. The weekly cron runs Sunday 04:00 UTC — first archive will appear
+   in the `axiom-archive` Supabase Storage bucket after the next run.
 
 ## Alternative — BetterStack (if Axiom retention is insufficient)
 
