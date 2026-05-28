@@ -1,8 +1,12 @@
 name: Tax Authority Email Watch
 
 on:
-  schedule:
-    - cron: '*/5 * * * *'
+  # Schedule disabled 2026-05-28 — workflow was spamming Asaf with duplicate
+  # WhatsApps when state push races with the next cron tick. Manual trigger
+  # only until dedup is hardened (consider: case-normalize messageId, retry
+  # the state push, or move state out of git into a side store).
+  # schedule:
+  #   - cron: '*/5 * * * *'
   workflow_dispatch:
 
 permissions:
