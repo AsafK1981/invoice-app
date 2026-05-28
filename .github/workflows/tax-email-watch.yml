@@ -1,0 +1,45 @@
+name: Tax Authority Email Watch
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tax-email-watch
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install imapflow
+        run: npm install --no-save imapflow@1.0.169
+
+      - name: Check inbox for new Tax Authority emails
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          GAYA_PUSH_TOKEN: ${{ secrets.GAYA_PUSH_TOKEN }}
+        run: node scripts/check-tax-emails.mjs
+
+      - name: Commit updated state if changed
+        run: |
+          git config user.name "tax-email-watch[bot]"
+          git config user.email "noreply@github.com"
+          git add .github/tax-email-state.json
+          if git diff --quiet --cached; then
+            echo "no state change"
+          else
+            git commit -m "tax-email-watch: state update [skip ci]"
+            git push origin HEAD:main
+          fi
