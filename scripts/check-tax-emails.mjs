@@ -1,35 +1,45 @@
 #!/usr/bin/env node
 // Polls Gmail for new emails from taxes.gov.il (Israeli Tax Authority).
-// For each new one, pushes a WhatsApp via Gaya. State (seen Message-Ids)
-// persists in .github/tax-email-state.json so dupes are not re-fired.
+// For each new one, pushes a WhatsApp via Gaya. Deduplication is
+// SERVER-SIDE: we POST to Gaya's /watch-claim with the Message-Id and only
+// send /push when claim.first === true. This replaces the git-stored
+// seen-list which raced between cron ticks and produced duplicate
+// WhatsApps (2026-05-28 incident).
 //
 // Env vars required:
 //   GMAIL_USER, GMAIL_APP_PASSWORD  - Gmail IMAP credentials
-//   GAYA_PUSH_TOKEN                 - Bearer token for the /push endpoint
+//   GAYA_PUSH_TOKEN                 - Bearer token (same one /push uses)
 //
 // Runs inside GitHub Actions: tax-email-watch.yml
 
 import { ImapFlow } from "imapflow";
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
-import { dirname } from "node:path";
 
-const STATE_PATH = ".github/tax-email-state.json";
-const TAX_SENDERS = /taxes\.gov\.il>?$/i;
+const GAYA_BASE = "https://136.111.197.22.nip.io";
+const SOURCE = "tax-email-watch";
 const LOOKBACK_DAYS = 2;
 
-function loadState() {
-  if (!existsSync(STATE_PATH)) return { seen: [] };
-  try {
-    return JSON.parse(readFileSync(STATE_PATH, "utf8"));
-  } catch {
-    return { seen: [] };
+async function claimFirstTime(id) {
+  const token = process.env.GAYA_PUSH_TOKEN;
+  if (!token) {
+    console.error("GAYA_PUSH_TOKEN missing; failing CLOSED (no push) to avoid spam");
+    return false;
   }
-}
-
-function saveState(state) {
-  mkdirSync(dirname(STATE_PATH), { recursive: true });
-  const trimmed = { ...state, seen: state.seen.slice(-200) };
-  writeFileSync(STATE_PATH, JSON.stringify(trimmed, null, 2) + "\n");
+  try {
+    const res = await fetch(`${GAYA_BASE}/watch-claim`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ source: SOURCE, id }),
+    });
+    if (!res.ok) {
+      console.error(`watch-claim returned ${res.status}; failing CLOSED to avoid spam`);
+      return false;
+    }
+    const data = await res.json();
+    return data.first === true;
+  } catch (err) {
+    console.error(`watch-claim error: ${err.message}; failing CLOSED to avoid spam`);
+    return false;
+  }
 }
 
 async function pushWhatsApp(text) {
@@ -38,13 +48,13 @@ async function pushWhatsApp(text) {
     console.error("GAYA_PUSH_TOKEN missing");
     return false;
   }
-  const res = await fetch("https://136.111.197.22.nip.io/push", {
+  const res = await fetch(`${GAYA_BASE}/push`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ text, source: "tax-email-watch" }),
+    body: JSON.stringify({ text, source: SOURCE }),
   });
   console.log(`push status: ${res.status}`);
   return res.ok;
@@ -67,9 +77,6 @@ async function main() {
     process.exit(1);
   }
 
-  const state = loadState();
-  const seen = new Set(state.seen);
-
   const client = new ImapFlow({
     host: "imap.gmail.com",
     port: 993,
@@ -82,7 +89,8 @@ async function main() {
   console.log(`connected to imap.gmail.com as ${user}`);
 
   const lock = await client.getMailboxLock("INBOX");
-  let newCount = 0;
+  let sentCount = 0;
+  let skippedDup = 0;
   try {
     const since = new Date(Date.now() - LOOKBACK_DAYS * 24 * 60 * 60 * 1000);
     const uids = await client.search({ since });
@@ -96,10 +104,14 @@ async function main() {
       if (!isTax) continue;
 
       const id = env.messageId || `${env.from?.[0]?.address}|${env.date}|${env.subject}`;
-      if (seen.has(id)) continue;
 
-      seen.add(id);
-      newCount++;
+      // Server-side atomic claim — first run wins, every subsequent call
+      // for the same id returns first=false. No race possible.
+      const isFirst = await claimFirstTime(id);
+      if (!isFirst) {
+        skippedDup++;
+        continue;
+      }
 
       const fromName = env.from?.[0]?.name || env.from?.[0]?.address || "Tax Authority";
       const fromAddr = env.from?.[0]?.address || "";
@@ -115,17 +127,15 @@ async function main() {
 
       console.log(`new tax email: ${subject} from ${fromAddr}`);
       const ok = await pushWhatsApp(text);
-      if (!ok) console.error("push failed for", id);
+      if (ok) sentCount++;
+      else console.error("push failed for", id);
     }
   } finally {
     lock.release();
     await client.logout();
   }
 
-  state.seen = Array.from(seen);
-  state.lastRun = new Date().toISOString();
-  saveState(state);
-  console.log(`done. new=${newCount}, total tracked=${state.seen.length}`);
+  console.log(`done. sent=${sentCount}, dedup-skipped=${skippedDup}`);
 }
 
 main().catch((err) => {

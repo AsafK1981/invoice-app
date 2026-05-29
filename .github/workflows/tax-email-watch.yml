@@ -1,16 +1,14 @@
 name: Tax Authority Email Watch
 
 on:
-  # Schedule disabled 2026-05-28 — workflow was spamming Asaf with duplicate
-  # WhatsApps when state push races with the next cron tick. Manual trigger
-  # only until dedup is hardened (consider: case-normalize messageId, retry
-  # the state push, or move state out of git into a side store).
-  # schedule:
-  #   - cron: '*/5 * * * *'
+  # Cron back on after 2026-05-28 spam incident. Dedup moved server-side
+  # (POST /watch-claim on Gaya). No git state to commit anymore — no race.
+  schedule:
+    - cron: '*/5 * * * *'
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: tax-email-watch
@@ -35,15 +33,3 @@ jobs:
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           GAYA_PUSH_TOKEN: ${{ secrets.GAYA_PUSH_TOKEN }}
         run: node scripts/check-tax-emails.mjs
-
-      - name: Commit updated state if changed
-        run: |
-          git config user.name "tax-email-watch[bot]"
-          git config user.email "noreply@github.com"
-          git add .github/tax-email-state.json
-          if git diff --quiet --cached; then
-            echo "no state change"
-          else
-            git commit -m "tax-email-watch: state update [skip ci]"
-            git push origin HEAD:main
-          fi
