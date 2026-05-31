@@ -118,12 +118,12 @@ export function ExpenseFormModal({ open, onClose, expense, prefill }: Props) {
     <Modal
       open={open}
       onClose={onClose}
-      title={expense ? "עריכת הוצאה" : prefill ? "סריקת קבלה" : "הוצאה חדשה"}
+      title={expense ? "עריכת הוצאה" : prefill ? "הוצאה מתוך מסמך" : "הוצאה חדשה"}
       subtitle={
         expense
           ? "עדכן את פרטי ההוצאה"
           : prefill
-            ? "בדוק את הפרטים שזוהו ושמור"
+            ? "מילאתי לפי המסמך — בדוק ושמור"
             : "תיעוד הוצאה עסקית"
       }
       icon={Wallet}

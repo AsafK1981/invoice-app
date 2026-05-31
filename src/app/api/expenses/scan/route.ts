@@ -7,9 +7,17 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const anthropicKey = process.env.ANTHROPIC_API_KEY;
 
-const SYSTEM = `You are a receipt and invoice OCR system for Israeli small businesses (עוסק פטור / עוסק מורשה).
+const SYSTEM = `You are an expense extraction system for Israeli small businesses (עוסק פטור / עוסק מורשה).
 
-Given an image of a receipt or invoice (typically in Hebrew), extract these fields and return STRICT JSON only:
+You will be given evidence of a business expense, in any of these forms:
+- A receipt or invoice photo (Hebrew or English)
+- A PDF of an invoice or receipt
+- A screenshot of a WhatsApp/SMS message confirming payment
+- A screenshot of an Israeli payment app (Bit, Paybox, Pepper Pay, bank app) showing money sent
+- A screenshot of a credit card / bank statement line
+- An email screenshot with payment confirmation
+
+Whatever the form, extract the same fields and return STRICT JSON only:
 
 {
   "vendor": string,
@@ -21,15 +29,15 @@ Given an image of a receipt or invoice (typically in Hebrew), extract these fiel
 }
 
 Field rules:
-- vendor: Business or supplier name. Use the Hebrew name if printed in Hebrew, else English.
-- amount: The TOTAL bottom-line amount paid by the buyer, in NIS (₪). Include VAT. Just the number, no currency symbol.
-- vatAmount: If the receipt explicitly shows a VAT line (מע"מ / מעמ / VAT), extract that number. Otherwise null.
-- date: Date on the receipt in YYYY-MM-DD format. Israeli date formats are usually DD/MM/YYYY — convert. If date is unreadable, use today's date.
-- category: Best guess from this exact list (Hebrew strings):
+- vendor: Who got paid. Business/supplier name if printed; if WhatsApp/SMS/Bit-style, use the recipient's name (e.g. "דניאל כהן" or "מוסך זהב"). Hebrew if originally Hebrew, else English.
+- amount: TOTAL amount paid in NIS (₪). Include VAT. Just the number, no currency symbol. If currency isn't shown but obviously Israeli context, assume NIS.
+- vatAmount: Only if the source EXPLICITLY shows a VAT (מע"מ / מעמ / VAT) line. Otherwise null.
+- date: Date of the expense / payment in YYYY-MM-DD format. Israeli dates are usually DD/MM/YYYY — convert. If unclear, use today's date.
+- category: Best guess from this exact Hebrew list:
   "תוכנה" | "ציוד" | "שיווק" | "משרד" | "שירותים מקצועיים" | "נסיעות" | "אחר"
-- description: One-line Hebrew description of what was purchased (e.g. "ארוחת עסקים", "דלק", "מנוי חודשי תוכנה").
+- description: One-line Hebrew description of WHAT the expense was for (e.g. "ארוחת עסקים", "דלק", "מנוי חודשי OpenAI", "תיקון לרכב"). If you can't tell the purpose, describe the source (e.g. "תשלום בביט", "העברה בנקאית").
 
-If the image is unreadable or clearly not a receipt, return:
+If the file is unreadable or clearly not evidence of an expense, return:
 {"error": "cannot_parse", "reason": "<short Hebrew explanation>"}
 
 Return JSON only. No markdown fences. No commentary. No extra text.`;
@@ -89,25 +97,45 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const imageRaw = String(body.image || "").trim();
-    if (!imageRaw) {
-      return NextResponse.json({ ok: false, error: "תמונה חסרה." }, { status: 400 });
+    const fileRaw = String(body.image || body.file || "").trim();
+    if (!fileRaw) {
+      return NextResponse.json({ ok: false, error: "קובץ חסר." }, { status: 400 });
     }
 
-    let mediaType: "image/jpeg" | "image/png" | "image/webp" | "image/gif" = "image/jpeg";
-    let data = imageRaw;
-    const dataUrlMatch = imageRaw.match(/^data:(image\/(?:jpeg|png|webp|gif));base64,(.+)$/i);
+    type ImageMedia = "image/jpeg" | "image/png" | "image/webp" | "image/gif";
+    type DocMedia = "application/pdf";
+    let mediaType: ImageMedia | DocMedia = "image/jpeg";
+    let data = fileRaw;
+    const dataUrlMatch = fileRaw.match(/^data:(image\/(?:jpeg|png|webp|gif)|application\/pdf);base64,(.+)$/i);
     if (dataUrlMatch) {
-      mediaType = dataUrlMatch[1].toLowerCase() as typeof mediaType;
+      mediaType = dataUrlMatch[1].toLowerCase() as ImageMedia | DocMedia;
       data = dataUrlMatch[2];
     }
+    const isPdf = mediaType === "application/pdf";
 
-    if (data.length > 8_000_000) {
-      return NextResponse.json({ ok: false, error: "התמונה גדולה מדי (מעל ~5MB)." }, { status: 413 });
+    // PDFs can be larger than photos; allow up to ~15MB of base64 (~11MB
+    // original). Images stay at the original ~5MB cap because the model
+    // doesn't benefit from larger photos.
+    const sizeCap = isPdf ? 20_000_000 : 8_000_000;
+    if (data.length > sizeCap) {
+      return NextResponse.json(
+        { ok: false, error: isPdf ? "ה-PDF גדול מדי (מעל ~12MB)." : "התמונה גדולה מדי (מעל ~5MB)." },
+        { status: 413 },
+      );
     }
 
     const anthropic = new Anthropic({ apiKey: anthropicKey });
     const today = new Date().toISOString().slice(0, 10);
+
+    const fileBlock = isPdf
+      ? ({
+          type: "document",
+          source: { type: "base64", media_type: "application/pdf", data },
+        } as const)
+      : ({
+          type: "image",
+          source: { type: "base64", media_type: mediaType as ImageMedia, data },
+        } as const);
 
     const msg = await anthropic.messages.create({
       model: MODEL,
@@ -119,8 +147,8 @@ export async function POST(req: NextRequest) {
         {
           role: "user",
           content: [
-            { type: "image", source: { type: "base64", media_type: mediaType, data } },
-            { type: "text", text: `Today's date is ${today}. Parse this receipt and return JSON only.` },
+            fileBlock,
+            { type: "text", text: `Today's date is ${today}. Extract the expense and return JSON only.` },
           ],
         },
       ],

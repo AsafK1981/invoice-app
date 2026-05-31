@@ -111,8 +111,10 @@ export default function ExpensesPage() {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      setScanError("רק קובץ תמונה.");
+    const isImage = file.type.startsWith("image/");
+    const isPdf = file.type === "application/pdf";
+    if (!isImage && !isPdf) {
+      setScanError("רק תמונה או PDF.");
       return;
     }
     setScanning(true);
@@ -190,8 +192,7 @@ export default function ExpensesPage() {
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/*"
-            capture="environment"
+            accept="image/*,application/pdf"
             onChange={handleScanFile}
             className="hidden"
           />
@@ -210,12 +211,12 @@ export default function ExpensesPage() {
             {scanning ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                סורק...
+                מנתח...
               </>
             ) : (
               <>
                 <ScanLine className="w-4 h-4" />
-                סרוק קבלה
+                העלה קבלה / מסמך
               </>
             )}
           </button>
