@@ -139,8 +139,26 @@ export default function ExpensesPage() {
         setScanError(json.error || "סריקה נכשלה.");
         return;
       }
+      // The OCR API returns the supplier name as `vendor` (the term the
+      // model thinks in). The expense form's field is `supplier`. Map at
+      // the boundary so the rest of the code can stay in form-vocabulary.
+      const d = json.data as {
+        vendor?: string;
+        amount?: number;
+        vatAmount?: number | null;
+        date?: string;
+        category?: string;
+        description?: string;
+      };
       setEditing(null);
-      setPrefill(json.data as ScanPrefill);
+      setPrefill({
+        supplier: d.vendor,
+        amount: d.amount,
+        vatAmount: d.vatAmount ?? undefined,
+        date: d.date,
+        category: d.category,
+        description: d.description,
+      });
       setModalOpen(true);
     } catch (err) {
       setScanError(err instanceof Error ? err.message : "סריקה נכשלה.");
