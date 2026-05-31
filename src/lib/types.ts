@@ -103,6 +103,9 @@ export interface Expense {
    * input-VAT credit on periodic VAT returns. Always 0 for עוסק פטור.
    */
   vatAmount?: number;
+  /** Storage path in the `expense-receipts` bucket, set when the expense
+   *  was created from a scanned document. */
+  receiptPath?: string;
 }
 
 export interface DocumentAttachment {

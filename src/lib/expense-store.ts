@@ -18,6 +18,7 @@ function mapRow(row: Record<string, unknown>): Expense {
     amount: Number(row.amount) || 0,
     description: (row.description as string) || undefined,
     vatAmount: row.vat_amount != null ? Number(row.vat_amount) : 0,
+    receiptPath: (row.receipt_path as string) || undefined,
   };
 }
 
@@ -68,6 +69,7 @@ export const expenseStore = {
           amount: expense.amount,
           description: expense.description || null,
           vat_amount: expense.vatAmount ?? 0,
+          receipt_path: expense.receiptPath || null,
         })
         .eq("id", expense.id);
     } else {
@@ -80,6 +82,7 @@ export const expenseStore = {
         amount: expense.amount,
         description: expense.description || null,
         vat_amount: expense.vatAmount ?? 0,
+        receipt_path: expense.receiptPath || null,
       });
     }
     window.dispatchEvent(new Event(CHANGE_EVENT));

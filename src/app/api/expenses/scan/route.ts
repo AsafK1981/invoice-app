@@ -5,7 +5,19 @@ import { checkRate, clientIp } from "@/lib/rate-limit";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const anthropicKey = process.env.ANTHROPIC_API_KEY;
+
+const RECEIPT_BUCKET = "expense-receipts";
+
+function extForMediaType(mt: string): string {
+  if (mt === "image/jpeg") return "jpg";
+  if (mt === "image/png") return "png";
+  if (mt === "image/webp") return "webp";
+  if (mt === "image/gif") return "gif";
+  if (mt === "application/pdf") return "pdf";
+  return "bin";
+}
 
 const SYSTEM = `You are an expense extraction system for Israeli small businesses (עוסק פטור / עוסק מורשה).
 
@@ -187,6 +199,31 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Persist the source file in Storage so the user can revisit it later
+    // and double-check the OCR. Path: {user_id}/{uuid}.{ext}. RLS scopes
+    // access to the owner via the first folder segment (see migration
+    // 20260531-expense-receipts.sql).
+    let receiptPath: string | null = null;
+    try {
+      const ext = extForMediaType(mediaType);
+      const fileBytes = Buffer.from(data, "base64");
+      const uuid = crypto.randomUUID();
+      const path = `${user.id}/${uuid}.${ext}`;
+      const admin = createClient(supabaseUrl, supabaseServiceRoleKey, {
+        auth: { autoRefreshToken: false, persistSession: false },
+      });
+      const { error: upErr } = await admin.storage
+        .from(RECEIPT_BUCKET)
+        .upload(path, fileBytes, { contentType: mediaType, upsert: false });
+      if (upErr) {
+        console.error("[scan] storage upload failed:", upErr.message);
+      } else {
+        receiptPath = path;
+      }
+    } catch (uploadErr) {
+      console.error("[scan] storage upload exception:", uploadErr instanceof Error ? uploadErr.message : uploadErr);
+    }
+
     return NextResponse.json({
       ok: true,
       data: {
@@ -196,6 +233,7 @@ export async function POST(req: NextRequest) {
         date: String(r.date || today),
         category: String(r.category || "אחר"),
         description: String(r.description || ""),
+        receiptPath,
       },
     });
   } catch (err) {

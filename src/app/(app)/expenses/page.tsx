@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import { Wallet, Plus, ShoppingBag, Pencil, Trash2, Upload, Search, X, ScanLine, Loader2 } from "lucide-react";
+import { Wallet, Plus, ShoppingBag, Pencil, Trash2, Upload, Search, X, ScanLine, Loader2, Paperclip } from "lucide-react";
 import { useExpenses, expenseStore } from "@/lib/expense-store";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { ExpenseFormModal } from "@/components/expense-form-modal";
@@ -19,6 +19,7 @@ type ScanPrefill = {
   amount?: number;
   vatAmount?: number;
   description?: string;
+  receiptPath?: string;
 };
 
 function fileToBase64(file: File): Promise<string> {
@@ -107,6 +108,17 @@ export default function ExpensesPage() {
     fileInputRef.current?.click();
   }
 
+  async function openReceipt(receiptPath: string) {
+    const { data, error } = await supabase.storage
+      .from("expense-receipts")
+      .createSignedUrl(receiptPath, 60 * 60);
+    if (error || !data?.signedUrl) {
+      setScanError(error?.message || "לא ניתן לפתוח את הקובץ.");
+      return;
+    }
+    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+  }
+
   async function handleScanFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = "";
@@ -149,6 +161,7 @@ export default function ExpensesPage() {
         date?: string;
         category?: string;
         description?: string;
+        receiptPath?: string | null;
       };
       setEditing(null);
       setPrefill({
@@ -158,6 +171,7 @@ export default function ExpensesPage() {
         date: d.date,
         category: d.category,
         description: d.description,
+        receiptPath: d.receiptPath || undefined,
       });
       setModalOpen(true);
     } catch (err) {
@@ -369,7 +383,22 @@ export default function ExpensesPage() {
                           {e.category}
                         </span>
                       </td>
-                      <td className="px-6 py-3 text-sm font-medium text-stone-900">{e.supplier}</td>
+                      <td className="px-6 py-3 text-sm font-medium text-stone-900">
+                        <div className="flex items-center gap-2">
+                          {e.receiptPath && (
+                            <Tooltip label="פתח את הקובץ המקורי" side="top">
+                              <button
+                                onClick={() => openReceipt(e.receiptPath!)}
+                                className="w-6 h-6 rounded-lg text-sky-600 hover:bg-sky-50 flex items-center justify-center flex-shrink-0"
+                                aria-label="פתח קבלה מצורפת"
+                              >
+                                <Paperclip className="w-3.5 h-3.5" />
+                              </button>
+                            </Tooltip>
+                          )}
+                          <span>{e.supplier}</span>
+                        </div>
+                      </td>
                       <td className="px-6 py-3 text-sm text-stone-700">{e.description || "—"}</td>
                       <td className="px-6 py-3 text-sm font-bold text-left text-rose-600">
                         {formatCurrency(e.amount)}

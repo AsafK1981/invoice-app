@@ -15,6 +15,9 @@ type PrefillFromScan = {
   amount?: number;
   vatAmount?: number;
   description?: string;
+  /** Set by the scan flow — the uploaded receipt's storage path. The form
+   *  carries it through to the save call without exposing it in the UI. */
+  receiptPath?: string;
 };
 
 interface Props {
@@ -107,6 +110,7 @@ export function ExpenseFormModal({ open, onClose, expense, prefill }: Props) {
       amount,
       description: form.description.trim() || undefined,
       vatAmount: vat,
+      receiptPath: expense?.receiptPath || prefill?.receiptPath || undefined,
     };
     await expenseStore.save(record);
     onClose();
