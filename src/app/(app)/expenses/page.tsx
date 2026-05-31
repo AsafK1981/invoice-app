@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Wallet, Plus, ShoppingBag, Pencil, Trash2, Upload, Search, X } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
+import { Wallet, Plus, ShoppingBag, Pencil, Trash2, Upload, Search, X, ScanLine, Loader2 } from "lucide-react";
 import { useExpenses, expenseStore } from "@/lib/expense-store";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { ExpenseFormModal } from "@/components/expense-form-modal";
@@ -9,7 +9,26 @@ import { CsvImportModal } from "@/components/csv-import-modal";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { Tooltip } from "@/components/ui/tooltip";
 import { EmptyState } from "@/components/ui/empty-state";
+import { supabase } from "@/lib/supabase";
 import type { Expense } from "@/lib/types";
+
+type ScanPrefill = {
+  date?: string;
+  category?: string;
+  supplier?: string;
+  amount?: number;
+  vatAmount?: number;
+  description?: string;
+};
+
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(reader.error || new Error("read failed"));
+    reader.readAsDataURL(file);
+  });
+}
 
 function matchesExpense(e: Expense, query: string): boolean {
   const q = query.trim().toLowerCase();
@@ -40,6 +59,10 @@ export default function ExpensesPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [editing, setEditing] = useState<Expense | null>(null);
+  const [prefill, setPrefill] = useState<ScanPrefill | null>(null);
+  const [scanning, setScanning] = useState(false);
+  const [scanError, setScanError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [monthFilter, setMonthFilter] = useState<string>("all");
@@ -69,12 +92,59 @@ export default function ExpensesPage() {
 
   function openNew() {
     setEditing(null);
+    setPrefill(null);
     setModalOpen(true);
   }
 
   function openEdit(expense: Expense) {
     setEditing(expense);
+    setPrefill(null);
     setModalOpen(true);
+  }
+
+  function triggerScan() {
+    setScanError(null);
+    fileInputRef.current?.click();
+  }
+
+  async function handleScanFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setScanError("רק קובץ תמונה.");
+      return;
+    }
+    setScanning(true);
+    setScanError(null);
+    try {
+      const base64 = await fileToBase64(file);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setScanError("ההתחברות שלך פגה. רענן את הדף ונסה שוב.");
+        return;
+      }
+      const res = await fetch("/api/expenses/scan", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ image: base64 }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.ok) {
+        setScanError(json.error || "סריקה נכשלה.");
+        return;
+      }
+      setEditing(null);
+      setPrefill(json.data as ScanPrefill);
+      setModalOpen(true);
+    } catch (err) {
+      setScanError(err instanceof Error ? err.message : "סריקה נכשלה.");
+    } finally {
+      setScanning(false);
+    }
   }
 
   async function remove(expense: Expense) {
@@ -117,12 +187,37 @@ export default function ExpensesPage() {
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={handleScanFile}
+            className="hidden"
+          />
           <button
             onClick={() => setImportOpen(true)}
             className="inline-flex items-center gap-2 bg-white border-2 border-orange-200 text-stone-800 px-4 py-2.5 rounded-2xl text-sm font-semibold hover:bg-orange-50"
           >
             <Upload className="w-4 h-4" />
             ייבוא
+          </button>
+          <button
+            onClick={triggerScan}
+            disabled={scanning}
+            className="inline-flex items-center gap-2 bg-white border-2 border-sky-300 text-sky-800 px-4 py-2.5 rounded-2xl text-sm font-semibold hover:bg-sky-50 disabled:opacity-60"
+          >
+            {scanning ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                סורק...
+              </>
+            ) : (
+              <>
+                <ScanLine className="w-4 h-4" />
+                סרוק קבלה
+              </>
+            )}
           </button>
           <button
             onClick={openNew}
@@ -133,6 +228,20 @@ export default function ExpensesPage() {
           </button>
         </div>
       </div>
+
+      {scanError && (
+        <div className="flex items-start gap-3 bg-rose-50 border border-rose-200 text-rose-800 px-4 py-3 rounded-2xl text-sm">
+          <span className="font-semibold">סריקה נכשלה:</span>
+          <span className="flex-1">{scanError}</span>
+          <button
+            onClick={() => setScanError(null)}
+            className="text-rose-600 hover:text-rose-900"
+            aria-label="סגור"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {expenses.length === 0 ? (
         <EmptyState
@@ -279,8 +388,12 @@ export default function ExpensesPage() {
 
       <ExpenseFormModal
         open={modalOpen}
-        onClose={() => setModalOpen(false)}
+        onClose={() => {
+          setModalOpen(false);
+          setPrefill(null);
+        }}
         expense={editing}
+        prefill={prefill}
       />
 
       <CsvImportModal

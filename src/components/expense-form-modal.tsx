@@ -8,10 +8,21 @@ import { expenseStore } from "@/lib/expense-store";
 import { useBusiness } from "@/lib/business-store";
 import type { Expense } from "@/lib/types";
 
+type PrefillFromScan = {
+  date?: string;
+  category?: string;
+  supplier?: string;
+  amount?: number;
+  vatAmount?: number;
+  description?: string;
+};
+
 interface Props {
   open: boolean;
   onClose: () => void;
   expense?: Expense | null;
+  /** Pre-fills the form (used after OCR scan). Ignored when `expense` is set. */
+  prefill?: PrefillFromScan | null;
 }
 
 const COMMON_CATEGORIES = [
@@ -24,7 +35,7 @@ const COMMON_CATEGORIES = [
   "אחר",
 ];
 
-export function ExpenseFormModal({ open, onClose, expense }: Props) {
+export function ExpenseFormModal({ open, onClose, expense, prefill }: Props) {
   const today = new Date().toISOString().slice(0, 10);
   const { business } = useBusiness();
   // Only עוסק מורשה / company can claim input-VAT credit, so the field
@@ -51,6 +62,21 @@ export function ExpenseFormModal({ open, onClose, expense }: Props) {
         vatAmount: expense.vatAmount ? String(expense.vatAmount) : "",
         description: expense.description || "",
       });
+    } else if (prefill) {
+      // Coerce the scan output's category to one of our common values; fall
+      // back to "אחר" if the model returned something off-list.
+      const cat =
+        prefill.category && COMMON_CATEGORIES.includes(prefill.category)
+          ? prefill.category
+          : "אחר";
+      setForm({
+        date: prefill.date || today,
+        category: cat,
+        supplier: prefill.supplier || "",
+        amount: prefill.amount != null ? String(prefill.amount) : "",
+        vatAmount: prefill.vatAmount != null ? String(prefill.vatAmount) : "",
+        description: prefill.description || "",
+      });
     } else {
       setForm({
         date: today,
@@ -61,7 +87,7 @@ export function ExpenseFormModal({ open, onClose, expense }: Props) {
         description: "",
       });
     }
-  }, [open, expense]);
+  }, [open, expense, prefill]);
 
   function update<K extends keyof typeof form>(key: K, value: string) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -92,8 +118,14 @@ export function ExpenseFormModal({ open, onClose, expense }: Props) {
     <Modal
       open={open}
       onClose={onClose}
-      title={expense ? "עריכת הוצאה" : "הוצאה חדשה"}
-      subtitle={expense ? "עדכן את פרטי ההוצאה" : "תיעוד הוצאה עסקית"}
+      title={expense ? "עריכת הוצאה" : prefill ? "סריקת קבלה" : "הוצאה חדשה"}
+      subtitle={
+        expense
+          ? "עדכן את פרטי ההוצאה"
+          : prefill
+            ? "בדוק את הפרטים שזוהו ושמור"
+            : "תיעוד הוצאה עסקית"
+      }
       icon={Wallet}
       footer={
         <>
