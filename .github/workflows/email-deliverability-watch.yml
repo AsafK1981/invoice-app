@@ -1,0 +1,64 @@
+name: Email Deliverability Watch
+
+on:
+  schedule:
+    # Every Sunday 08:00 UTC = 11:00 Israel time.
+    - cron: '0 8 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: email-deliverability-watch
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install runtime deps
+        run: npm install --no-save nodemailer@7 imapflow@1.0.169
+
+      - name: Send test + verify delivery + structure + auth
+        id: check
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: |
+          set +e
+          OUTPUT=$(node scripts/email-deliverability-check.mjs 2>&1)
+          EXIT=$?
+          echo "$OUTPUT"
+          # Capture summary for the alert step.
+          SUMMARY=$(echo "$OUTPUT" | tail -1)
+          {
+            echo "exit_code=$EXIT"
+            echo "summary<<EOF"
+            echo "$OUTPUT" | tail -40
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+          exit $EXIT
+
+      - name: Push WhatsApp on failure
+        if: failure() && env.GAYA_PUSH_TOKEN != ''
+        env:
+          GAYA_PUSH_TOKEN: ${{ secrets.GAYA_PUSH_TOKEN }}
+        run: |
+          curl -sS -X POST https://136.111.197.22.nip.io/push \
+            -H "Authorization: Bearer $GAYA_PUSH_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "$(cat <<EOF
+          {
+            "text": "🚨 Email deliverability check FAILED.\nRun: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\n\nA bug like the 2026-06-01 corporate-inbox blank-body incident may be back. Check the pipeline before next customer send.",
+            "source": "email-deliverability-watch"
+          }
+          EOF
+          )" \
+            -o /dev/null -w "Push status: %{http_code}\n"
