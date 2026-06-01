@@ -424,7 +424,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
             }
           >
             <MessageCircle className="w-4 h-4" />
-            <span className="hidden sm:inline">WhatsApp</span>
+            <span className="hidden sm:inline">שלח ב-WhatsApp</span>
           </button>
           <button
             onClick={() => handleResend(false)}
@@ -446,7 +446,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
             ) : (
               <>
                 <Mail className="w-4 h-4" />
-                <span className="hidden sm:inline">מייל</span>
+                <span className="hidden sm:inline">שלח במייל</span>
               </>
             )}
           </button>
