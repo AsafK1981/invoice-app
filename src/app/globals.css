@@ -374,6 +374,19 @@ html.dark .text-sky-600     { color: #7dd3fc !important; }
 html.dark .text-stone-800,
 html.dark .text-stone-900   { color: #f5f5f4 !important; }
 
+/* Border colors at the -200 tier disappear into the dark body — the
+   light pastels were calibrated for a white page and read as "no
+   border" once the surroundings flip dark. Lift to a higher-contrast
+   tier so action-bar buttons keep their outlined look. */
+html.dark .border-orange-200  { border-color: rgba(251, 146, 60, 0.55) !important; }
+html.dark .border-amber-200   { border-color: rgba(253, 186, 116, 0.55) !important; }
+html.dark .border-emerald-200 { border-color: rgba(110, 231, 183, 0.55) !important; }
+html.dark .border-rose-200    { border-color: rgba(253, 164, 175, 0.55) !important; }
+html.dark .border-sky-200     { border-color: rgba(125, 211, 252, 0.55) !important; }
+html.dark .border-violet-200  { border-color: rgba(196, 181, 253, 0.55) !important; }
+html.dark .border-blue-200    { border-color: rgba(147, 197, 253, 0.55) !important; }
+html.dark .border-stone-200   { border-color: rgba(120, 113, 108, 0.65) !important; }
+
 /* Badge backgrounds (-100 family) used on documents-table type/status
    chips. Tailwind utilities live in the same cascade layer as our
    custom rules, so we need !important to reliably win — without it

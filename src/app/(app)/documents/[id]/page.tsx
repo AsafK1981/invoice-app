@@ -487,7 +487,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
           </button>
           <button
             onClick={handleDownloadPdf}
-            className="inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-3 sm:px-5 py-2 min-h-[40px] rounded-xl text-sm font-semibold hover:shadow-md hover:shadow-orange-200"
+            className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-orange-500 border border-orange-600 text-white hover:bg-orange-600"
             title='הורד PDF — בחר "Save as PDF" בחלון ההדפסה'
           >
             <Download className="w-4 h-4" />
