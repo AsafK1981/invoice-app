@@ -119,21 +119,30 @@ export function DashboardInsights() {
         {insights.map((insight, idx) => {
           const style = STYLES[insight.kind] || STYLES.info;
           const Icon = style.icon;
+          // Defense-in-depth: server already strips unsafe hrefs, but if a
+          // future code path bypasses it, the Link must still refuse to
+          // navigate anywhere except a same-origin relative path.
+          const safeHref =
+            typeof insight.href === "string" &&
+            insight.href.startsWith("/") &&
+            !insight.href.startsWith("//")
+              ? insight.href
+              : null;
           const body = (
             <div
               className={`flex items-start gap-3 p-3 rounded-2xl border ${style.bg} ${style.border} ${
-                insight.href ? "hover:shadow-sm transition-shadow cursor-pointer" : ""
+                safeHref ? "hover:shadow-sm transition-shadow cursor-pointer" : ""
               }`}
             >
               <div className={`w-7 h-7 rounded-xl ${style.iconBg} flex items-center justify-center flex-shrink-0 mt-0.5`}>
                 <Icon className={`w-3.5 h-3.5 ${style.iconText}`} />
               </div>
               <p className="text-sm text-stone-800 leading-relaxed flex-1 pt-0.5">{insight.text}</p>
-              {insight.href && <ArrowLeft className="w-4 h-4 text-stone-400 flex-shrink-0 mt-1.5" />}
+              {safeHref && <ArrowLeft className="w-4 h-4 text-stone-400 flex-shrink-0 mt-1.5" />}
             </div>
           );
-          return insight.href ? (
-            <Link key={idx} href={insight.href}>
+          return safeHref ? (
+            <Link key={idx} href={safeHref}>
               {body}
             </Link>
           ) : (

@@ -207,12 +207,22 @@ export async function POST(req: NextRequest) {
       .replace(/^```json\s*/i, "")
       .replace(/```\s*$/i, "");
 
+    // Prompt-injection defense: the model output flows into a <Link href>
+    // and Next.js Link will happily navigate to javascript:, data:, or
+    // off-site URLs if asked. Only accept same-origin relative paths.
+    const SAFE_HREF = /^\/(?!\/)[A-Za-z0-9_\-/?=&.%#]*$/;
+
     let insights: Insight[] = [];
     try {
       const parsed = JSON.parse(text);
       if (Array.isArray(parsed)) {
         insights = parsed
           .filter((i): i is Insight => i && typeof i.text === "string" && typeof i.kind === "string")
+          .map((i) => ({
+            kind: i.kind,
+            text: i.text,
+            href: typeof i.href === "string" && SAFE_HREF.test(i.href) ? i.href : null,
+          }))
           .slice(0, 5);
       }
     } catch {
