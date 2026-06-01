@@ -308,37 +308,71 @@ html.dark .bg-amber-50,
 html.dark .bg-amber-50\/40,
 html.dark .bg-amber-50\/30,
 html.dark .bg-amber-50\/50,
-html.dark .bg-amber-50\/60 {
+html.dark .bg-amber-50\/60,
+html.dark .bg-amber-50\/70,
+html.dark .bg-amber-50\/80 {
   background-color: rgba(120, 53, 15, 0.25);
 }
 html.dark .bg-emerald-50,
 html.dark .bg-emerald-50\/40,
 html.dark .bg-emerald-50\/30,
 html.dark .bg-emerald-50\/50,
-html.dark .bg-emerald-50\/60 {
+html.dark .bg-emerald-50\/60,
+html.dark .bg-emerald-50\/70,
+html.dark .bg-emerald-50\/80 {
   background-color: rgba(6, 78, 59, 0.3);
 }
 html.dark .bg-rose-50,
 html.dark .bg-rose-50\/40,
 html.dark .bg-rose-50\/30,
 html.dark .bg-rose-50\/50,
-html.dark .bg-rose-50\/60 {
+html.dark .bg-rose-50\/60,
+html.dark .bg-rose-50\/70,
+html.dark .bg-rose-50\/80 {
   background-color: rgba(136, 19, 55, 0.25);
 }
 html.dark .bg-blue-50,
 html.dark .bg-blue-50\/40,
 html.dark .bg-blue-50\/30,
 html.dark .bg-blue-50\/50,
-html.dark .bg-blue-50\/60 {
+html.dark .bg-blue-50\/60,
+html.dark .bg-blue-50\/70,
+html.dark .bg-blue-50\/80 {
   background-color: rgba(30, 58, 138, 0.25);
 }
 html.dark .bg-violet-50,
 html.dark .bg-violet-50\/40,
 html.dark .bg-violet-50\/30,
 html.dark .bg-violet-50\/50,
-html.dark .bg-violet-50\/60 {
+html.dark .bg-violet-50\/60,
+html.dark .bg-violet-50\/70,
+html.dark .bg-violet-50\/80 {
   background-color: rgba(76, 29, 149, 0.25);
 }
+html.dark .bg-sky-50,
+html.dark .bg-sky-50\/40,
+html.dark .bg-sky-50\/30,
+html.dark .bg-sky-50\/50,
+html.dark .bg-sky-50\/60,
+html.dark .bg-sky-50\/70,
+html.dark .bg-sky-50\/80 {
+  background-color: rgba(7, 89, 133, 0.25);
+}
+
+/* -600 text variants used heavily for KPI card values and small accent
+   chips (text-rose-600 for client counts, text-amber-600 for quotes,
+   etc.). At their original hex they sit near the same lightness as the
+   dimmed -50 backgrounds above and the foreground vs background washes
+   out into "white on red". Lift to lighter values for readable contrast. */
+html.dark .text-orange-600  { color: #fdba74 !important; }
+html.dark .text-amber-600   { color: #fcd34d !important; }
+html.dark .text-emerald-600 { color: #6ee7b7 !important; }
+html.dark .text-rose-600    { color: #fda4af !important; }
+html.dark .text-blue-600    { color: #93c5fd !important; }
+html.dark .text-violet-600  { color: #c4b5fd !important; }
+html.dark .text-sky-600     { color: #7dd3fc !important; }
+html.dark .text-stone-800,
+html.dark .text-stone-900   { color: #f5f5f4 !important; }
 
 /* Badge backgrounds (-100 family) used on documents-table type/status
    chips. Tailwind utilities live in the same cascade layer as our
