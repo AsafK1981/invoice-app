@@ -44,44 +44,96 @@ function buildHtml(args: {
     ? "לצפייה חוזרת במסמך המלא:"
     : "לצפייה במסמך המלא והדפסה/הורדה כ-PDF, לחץ על הכפתור למטה.";
 
-  return `
-    <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <div style="background: linear-gradient(135deg, #f97316, #e11d48); padding: 24px; border-radius: 16px; color: white; text-align: center; margin-bottom: 24px;">
-        ${logoUrl ? `<img src="${escapeHtml(logoUrl)}" alt="${escapeHtml(businessName)}" style="max-height: 60px; max-width: 200px; margin-bottom: 12px; background: white; padding: 8px; border-radius: 8px;" />` : ""}
-        <h1 style="margin: 0; font-size: 24px;">${escapeHtml(businessName)}</h1>
-      </div>
-
-      <div style="background: #fffaf5; border: 1px solid #fed7aa; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
-        <p style="margin: 0 0 12px 0; font-size: 16px; color: #44403c;">
-          שלום ${escapeHtml(clientName)},
-        </p>
-        <p style="margin: 0 0 16px 0; font-size: 16px; color: #44403c;">
-          ${introLine}
-        </p>
-        <p style="margin: 0; font-size: 14px; color: #78716c;">
-          ${ctaLine}
-        </p>
-      </div>
-
-      <div style="text-align: center; margin-bottom: 24px;">
-        <a href="${escapeHtml(viewUrl)}" style="display: inline-block; background: linear-gradient(135deg, #f97316, #e11d48); color: white; text-decoration: none; padding: 14px 32px; border-radius: 12px; font-size: 16px; font-weight: bold;">
-          צפה במסמך ←
-        </a>
-      </div>
-
-      <div style="text-align: center; margin-bottom: 24px;">
-        <p style="font-size: 13px; color: #a8a29e;">
-          ${isReminder ? `תזכורת אוטומטית מ${escapeHtml(businessName)}` : `מסמך זה נשלח אוטומטית מ${escapeHtml(businessName)}`}
-        </p>
-      </div>
-
-      ${
-        trackingPixelUrl
-          ? `<img src="${escapeHtml(trackingPixelUrl)}" alt="" width="1" height="1" style="display:block;width:1px;height:1px;border:0;outline:none;" />`
-          : ""
-      }
+  // Full HTML document — corporate mail filters (Microsoft 365 Defender,
+  // Mimecast, etc.) flag bare HTML fragments as suspicious. Wrap with a
+  // proper doctype + charset + body so Outlook/Exchange clients accept
+  // the message and render the Hebrew correctly. Past incident
+  // (2026-06-01): receipient on a corporate domain reported "can't open
+  // the email" while the same mail rendered fine in Gmail Sent.
+  return `<!DOCTYPE html>
+<html lang="he" dir="rtl" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="x-apple-disable-message-reformatting" />
+  <title>${escapeHtml(businessName)}</title>
+</head>
+<body style="margin:0; padding:0; background:#f5f5f4; font-family: Arial, sans-serif;">
+  <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="background: linear-gradient(135deg, #f97316, #e11d48); padding: 24px; border-radius: 16px; color: white; text-align: center; margin-bottom: 24px;">
+      ${logoUrl ? `<img src="${escapeHtml(logoUrl)}" alt="${escapeHtml(businessName)}" style="max-height: 60px; max-width: 200px; margin-bottom: 12px; background: white; padding: 8px; border-radius: 8px;" />` : ""}
+      <h1 style="margin: 0; font-size: 24px;">${escapeHtml(businessName)}</h1>
     </div>
-  `;
+
+    <div style="background: #fffaf5; border: 1px solid #fed7aa; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+      <p style="margin: 0 0 12px 0; font-size: 16px; color: #44403c;">
+        שלום ${escapeHtml(clientName)},
+      </p>
+      <p style="margin: 0 0 16px 0; font-size: 16px; color: #44403c;">
+        ${introLine}
+      </p>
+      <p style="margin: 0; font-size: 14px; color: #78716c;">
+        ${ctaLine}
+      </p>
+    </div>
+
+    <div style="text-align: center; margin-bottom: 24px;">
+      <a href="${escapeHtml(viewUrl)}" style="display: inline-block; background: linear-gradient(135deg, #f97316, #e11d48); color: white; text-decoration: none; padding: 14px 32px; border-radius: 12px; font-size: 16px; font-weight: bold;">
+        צפה במסמך ←
+      </a>
+    </div>
+
+    <div style="text-align: center; margin-bottom: 16px;">
+      <p style="font-size: 13px; color: #57534e; margin: 0 0 6px 0;">
+        אם הכפתור לא נפתח, העתק את הקישור:
+      </p>
+      <p style="font-size: 12px; color: #78716c; margin: 0; word-break: break-all;">
+        <a href="${escapeHtml(viewUrl)}" style="color: #ea580c;">${escapeHtml(viewUrl)}</a>
+      </p>
+    </div>
+
+    <div style="text-align: center; margin-bottom: 24px;">
+      <p style="font-size: 13px; color: #a8a29e;">
+        ${isReminder ? `תזכורת אוטומטית מ${escapeHtml(businessName)}` : `מסמך זה נשלח אוטומטית מ${escapeHtml(businessName)}`}
+      </p>
+    </div>
+
+    ${
+      trackingPixelUrl
+        ? `<img src="${escapeHtml(trackingPixelUrl)}" alt="" width="1" height="1" style="display:block;width:1px;height:1px;border:0;outline:none;" />`
+        : ""
+    }
+  </div>
+</body>
+</html>`;
+}
+
+function buildText(args: {
+  businessName: string;
+  clientName: string;
+  receiptNumber: string | number;
+  total: number;
+  viewUrl: string;
+  kind?: "initial" | "reminder";
+  daysSinceSent?: number;
+}): string {
+  const { businessName, clientName, receiptNumber, total, viewUrl, kind = "initial", daysSinceSent } = args;
+  const isReminder = kind === "reminder";
+  const intro = isReminder
+    ? `תזכורת קלה לגבי מסמך מספר #${receiptNumber} על סך ₪${Number(total).toLocaleString()}${
+        daysSinceSent ? ` ששלחנו לפני ${daysSinceSent} ימים` : ""
+      }.`
+    : `מצורף מסמך מספר #${receiptNumber} על סך ₪${Number(total).toLocaleString()}.`;
+  return `שלום ${clientName},
+
+${intro}
+
+לצפייה במסמך המלא והדפסה/הורדה כ-PDF, פתח את הקישור:
+${viewUrl}
+
+${isReminder ? "תזכורת אוטומטית" : "מסמך נשלח אוטומטית"} מ${businessName}
+`;
 }
 
 export async function POST(req: NextRequest) {
@@ -169,6 +221,15 @@ export async function POST(req: NextRequest) {
       daysSinceSent: typeof daysSinceSent === "number" ? daysSinceSent : undefined,
       trackingPixelUrl,
     });
+    const text = buildText({
+      businessName,
+      clientName,
+      receiptNumber,
+      total,
+      viewUrl,
+      kind: isReminder ? "reminder" : "initial",
+      daysSinceSent: typeof daysSinceSent === "number" ? daysSinceSent : undefined,
+    });
 
     // Pick Gmail credentials: prefer the user's own, fall back to global env vars
     const userGmailUser = (user.user_metadata?.gmail_user as string) || FALLBACK_GMAIL_USER;
@@ -200,6 +261,11 @@ export async function POST(req: NextRequest) {
           to: recipients.join(", "),
           subject: emailSubject,
           html,
+          text,
+          headers: {
+            "X-Auto-Response-Suppress": "All",
+            "List-Unsubscribe": `<mailto:${userGmailUser}?subject=unsubscribe>`,
+          },
         });
 
         console.log("[send-email] gmail ok", {
@@ -229,6 +295,7 @@ export async function POST(req: NextRequest) {
       to: recipients,
       subject: emailSubject,
       html,
+      text,
     });
 
     if (error) {
