@@ -18,6 +18,7 @@ import {
   Circle,
   Download,
   Mail,
+  FilePlus2,
 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { deleteDocument, updateDocumentStatus } from "@/lib/document-store";
@@ -25,6 +26,8 @@ import { exportDocuments } from "@/lib/csv-export";
 import { matchDocument } from "@/lib/document-search";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { Tooltip } from "@/components/ui/tooltip";
+import { useBusiness } from "@/lib/business-store";
+import { canIssueTaxInvoices } from "@/lib/vat";
 import {
   DOCUMENT_TYPE_LABELS,
   DOCUMENT_STATUS_LABELS,
@@ -403,10 +406,20 @@ export function DocumentsTable({ documents, limit, showExport = false }: Props) 
 }
 
 function RowActions({ doc }: { doc: InvoiceDocument }) {
+  const router = useRouter();
+  const { business } = useBusiness();
   const isReceipt = doc.type === "receipt" || doc.type === "tax_invoice_receipt";
   const isCreditNote = doc.type === "credit_note";
   const canMarkPaid = !isReceipt && !isCreditNote && doc.status !== "draft" && doc.status !== "cancelled";
   const isPaid = doc.status === "paid";
+  // Quote that's been issued (sent or paid) and isn't already linked to a
+  // receipt can be one-click converted. Mirrors handleConvert() on the doc
+  // detail page so the table button behaves identically.
+  const canConvertToReceipt =
+    doc.type === "quote" &&
+    doc.status !== "draft" &&
+    doc.status !== "cancelled" &&
+    !doc.convertedToId;
   const confirm = useConfirm();
 
   // Mirrors the delete logic on the doc detail page: drafts delete cleanly;
@@ -452,6 +465,21 @@ function RowActions({ doc }: { doc: InvoiceDocument }) {
 
   return (
     <div className="flex items-center justify-center gap-1">
+      {canConvertToReceipt && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            const targetType = canIssueTaxInvoices(business) ? "tax-invoice-receipt" : "receipt";
+            router.push(`/documents/new/${targetType}?from=${doc.id}&convert=1`);
+          }}
+          className="p-1.5 rounded-lg text-stone-300 hover:text-sky-600 hover:bg-sky-50 transition-colors cursor-pointer"
+          aria-label="הפק קבלה לחשבון העסקה הזה"
+        >
+          <Tooltip label="הפק קבלה — כסף התקבל" side="left">
+            <FilePlus2 className="w-4 h-4" />
+          </Tooltip>
+        </button>
+      )}
       {canMarkPaid && (
         <button
           onClick={async (e) => {
