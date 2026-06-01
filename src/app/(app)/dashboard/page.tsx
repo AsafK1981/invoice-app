@@ -30,6 +30,7 @@ import { OnboardingChecklist } from "@/components/onboarding-checklist";
 import { ExemptCeilingTracker } from "@/components/exempt-ceiling-tracker";
 import { RecurringDueAlert } from "@/components/recurring-due-alert";
 import { BetaBanner } from "@/components/beta-banner";
+import { DashboardInsights } from "@/components/dashboard-insights";
 
 type DateRange = "this_month" | "last_3_months" | "this_year" | "all_time";
 
@@ -313,6 +314,8 @@ export default function DashboardPage() {
       <ExemptCeilingTracker business={business} documents={documents} />
 
       <RecurringDueAlert />
+
+      {ready && documents.length > 0 && <DashboardInsights />}
 
       {/* Empty-state hero — only when the user has zero docs at all
           (across all time). Replaces the dense KPI grid with an obvious
