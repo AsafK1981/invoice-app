@@ -1,0 +1,69 @@
+name: Email Mail-Tester Deep Check
+
+on:
+  schedule:
+    # First Sunday of every month, 09:00 UTC (12:00 Israel).
+    # Cron has no "first-of-month-by-weekday" directly; we run every
+    # Sunday and the script gates itself to the first 7 days of the
+    # month via the env var check below.
+    - cron: '0 9 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: email-mail-tester-monthly
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Gate to first Sunday of the month
+        id: gate
+        run: |
+          DOM=$(date -u +%d)
+          if [ "$DOM" -le "07" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "First Sunday of month or manual dispatch — running."
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "Not first Sunday of month — skipping (avoids burning mail-tester free quota)."
+          fi
+
+      - uses: actions/setup-node@v4
+        if: steps.gate.outputs.run == 'true'
+        with:
+          node-version: '20'
+
+      - name: Install runtime deps
+        if: steps.gate.outputs.run == 'true'
+        run: npm install --no-save nodemailer@7
+
+      - name: Send + score via mail-tester.com
+        id: check
+        if: steps.gate.outputs.run == 'true'
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: node scripts/email-mail-tester-check.mjs
+
+      - name: Push WhatsApp on failure
+        if: steps.gate.outputs.run == 'true' && failure() && env.GAYA_PUSH_TOKEN != ''
+        env:
+          GAYA_PUSH_TOKEN: ${{ secrets.GAYA_PUSH_TOKEN }}
+        run: |
+          curl -sS -X POST https://136.111.197.22.nip.io/push \
+            -H "Authorization: Bearer $GAYA_PUSH_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "$(cat <<EOF
+          {
+            "text": "📉 Mail-tester monthly score below threshold or check failed.\nRun: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\nDeliverability may be degrading — sender reputation, DNS, or HTML hygiene issue likely.",
+            "source": "email-mail-tester-monthly"
+          }
+          EOF
+          )" \
+            -o /dev/null -w "Push status: %{http_code}\n"
