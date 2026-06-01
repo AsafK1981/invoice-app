@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { Maximize2, X } from "lucide-react";
 import {
   type Business,
   type DocumentItem,
@@ -37,6 +39,7 @@ export function DocumentPreview(props: Props) {
   const pageRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.5);
   const [naturalHeight, setNaturalHeight] = useState<number>(1100);
+  const [zoomed, setZoomed] = useState(false);
 
   useEffect(() => {
     if (!wrapRef.current) return;
@@ -66,43 +69,112 @@ export function DocumentPreview(props: Props) {
     return () => ro.disconnect();
   }, []);
 
+  useEffect(() => {
+    if (!zoomed) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setZoomed(false);
+    };
+    document.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [zoomed]);
+
+  const body = (
+    <DocumentBody
+      business={props.business}
+      client={props.client}
+      documentType={props.documentType}
+      number={props.number ?? null}
+      date={props.date}
+      subject={props.subject}
+      items={props.items}
+      subtotal={props.subtotal}
+      vat={props.vat}
+      vatRate={props.vatRate}
+      total={props.total}
+      paymentMethod={props.paymentMethod}
+      notes={props.notes}
+      placeholders
+    />
+  );
+
   return (
-    <div ref={wrapRef} className="w-full">
-      <div
-        style={{
-          height: naturalHeight * scale,
-          overflow: "hidden",
-        }}
-      >
-        <div
-          style={{
-            width: PAGE_WIDTH_PX,
-            transform: `scale(${scale})`,
-            transformOrigin: "top right",
-          }}
+    <>
+      <div ref={wrapRef} className="w-full">
+        <button
+          type="button"
+          onClick={() => setZoomed(true)}
+          className="group relative block w-full cursor-zoom-in"
+          aria-label="הגדל תצוגה מקדימה"
         >
-          <div ref={pageRef}>
-            <div className="bg-white rounded-2xl shadow-md p-10" dir="rtl">
-              <DocumentBody
-                business={props.business}
-                client={props.client}
-                documentType={props.documentType}
-                number={props.number ?? null}
-                date={props.date}
-                subject={props.subject}
-                items={props.items}
-                subtotal={props.subtotal}
-                vat={props.vat}
-                vatRate={props.vatRate}
-                total={props.total}
-                paymentMethod={props.paymentMethod}
-                notes={props.notes}
-                placeholders
-              />
+          <div
+            style={{
+              height: naturalHeight * scale,
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                width: PAGE_WIDTH_PX,
+                transform: `scale(${scale})`,
+                transformOrigin: "top right",
+              }}
+            >
+              <div ref={pageRef}>
+                <div className="bg-white rounded-2xl shadow-md p-10" dir="rtl">
+                  {body}
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+          <div
+            className="absolute inset-0 rounded-2xl bg-stone-900/0 group-hover:bg-stone-900/15 transition-colors flex items-start justify-end p-3 pointer-events-none"
+          >
+            <span className="inline-flex items-center gap-1.5 bg-stone-900/80 text-white text-xs font-medium px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
+              <Maximize2 className="w-3.5 h-3.5" />
+              לחץ לתצוגה מוגדלת
+            </span>
+          </div>
+        </button>
       </div>
-    </div>
+
+      {zoomed && typeof document !== "undefined" &&
+        createPortal(
+          <div className="fixed inset-0 z-50 flex flex-col">
+            <div
+              className="absolute inset-0 bg-stone-900/70 backdrop-blur-sm"
+              onClick={() => setZoomed(false)}
+              aria-hidden="true"
+            />
+            <div className="relative z-10 flex items-center justify-between px-4 py-3 bg-stone-900/80 backdrop-blur-sm">
+              <span className="text-sm text-stone-100 font-medium">
+                תצוגה מקדימה — לחץ מחוץ למסמך או על X כדי לסגור
+              </span>
+              <button
+                type="button"
+                onClick={() => setZoomed(false)}
+                className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors"
+                aria-label="סגור תצוגה מוגדלת"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="relative z-10 flex-1 overflow-auto py-6 px-4">
+              <div
+                className="bg-white rounded-2xl shadow-2xl p-10 mx-auto"
+                style={{ width: PAGE_WIDTH_PX, maxWidth: "100%" }}
+                dir="rtl"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {body}
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )}
+    </>
   );
 }
