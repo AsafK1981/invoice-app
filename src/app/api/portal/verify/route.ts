@@ -8,7 +8,9 @@ import {
 
 export async function GET(req: NextRequest) {
   const token = req.nextUrl.searchParams.get("token") || "";
-  const payload = verifyPortalToken(token);
+  // Demand aud="link" — refuse to bootstrap a session from anything
+  // other than a freshly-emailed magic link.
+  const payload = verifyPortalToken(token, "link");
 
   const baseUrl = "https://mysuperfriendlyinvoiceapp.vercel.app";
 
@@ -19,7 +21,7 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const sessionToken = signPortalToken(payload.email, PORTAL_SESSION_TTL_MS);
+  const sessionToken = signPortalToken(payload.email, PORTAL_SESSION_TTL_MS, "session");
 
   const res = NextResponse.redirect(`${baseUrl}/portal/me`, { status: 303 });
   res.cookies.set(PORTAL_COOKIE, sessionToken, {

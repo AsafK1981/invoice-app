@@ -34,18 +34,32 @@ function base64UrlDecode(str: string): Buffer {
   return Buffer.from(b64, "base64");
 }
 
+export type PortalTokenAudience = "link" | "session";
+
 export interface PortalTokenPayload {
   email: string;
   /** ms-since-epoch expiry */
   exp: number;
+  /** Audience — "link" tokens are emailed to the customer once and
+   *  consumed by /api/portal/verify; "session" tokens are set as a
+   *  cookie after a successful verify. Mixing them up would let an
+   *  attacker reuse an emailed link as if it were a session cookie
+   *  (and vice versa). The verify endpoint must demand aud="link";
+   *  the data endpoints must demand aud="session". */
+  aud: PortalTokenAudience;
 }
 
 /** Mint a token good for `ttlMs` milliseconds. */
-export function signPortalToken(email: string, ttlMs: number): string {
+export function signPortalToken(
+  email: string,
+  ttlMs: number,
+  aud: PortalTokenAudience,
+): string {
   if (!SECRET) throw new Error("PORTAL_TOKEN_SECRET not configured");
   const payload: PortalTokenPayload = {
     email: email.toLowerCase().trim(),
     exp: Date.now() + ttlMs,
+    aud,
   };
   const body = JSON.stringify(payload);
   const bodyB64 = base64UrlEncode(ENCODER.encode(body));
@@ -53,8 +67,12 @@ export function signPortalToken(email: string, ttlMs: number): string {
   return `${bodyB64}.${base64UrlEncode(sig)}`;
 }
 
-/** Verify + decode. Returns null on any failure (bad sig, expired, malformed). */
-export function verifyPortalToken(token: string): PortalTokenPayload | null {
+/** Verify + decode. Returns null on any failure (bad sig, expired,
+ *  malformed, or wrong audience). `expectedAud` MUST match exactly. */
+export function verifyPortalToken(
+  token: string,
+  expectedAud: PortalTokenAudience,
+): PortalTokenPayload | null {
   if (!SECRET) return null;
   if (typeof token !== "string") return null;
   const dot = token.indexOf(".");
@@ -80,6 +98,7 @@ export function verifyPortalToken(token: string): PortalTokenPayload | null {
     return null;
   }
   if (typeof payload.email !== "string" || typeof payload.exp !== "number") return null;
+  if (payload.aud !== expectedAud) return null;
   if (payload.exp < Date.now()) return null;
   return payload;
 }

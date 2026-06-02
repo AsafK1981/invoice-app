@@ -7,7 +7,8 @@ const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 export async function GET(req: NextRequest) {
   const sessionToken = req.cookies.get(PORTAL_COOKIE)?.value || "";
-  const payload = verifyPortalToken(sessionToken);
+  // Demand aud="session" — refuse a raw link token used as a cookie.
+  const payload = verifyPortalToken(sessionToken, "session");
   if (!payload) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
@@ -16,10 +17,16 @@ export async function GET(req: NextRequest) {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
+  // ilike is intentional — client emails were stored as the business
+  // typed them, often mixed-case. The token's email is wildcard-safe:
+  // request-link's regex rejects `%` and `_`, and signPortalToken
+  // lowercases + trims. We still escape defensively in case future
+  // edits relax the regex.
+  const escapedEmail = payload.email.replace(/[\\%_]/g, "\\$&");
   const { data: clientRows } = await admin
     .from("clients")
     .select("id, business_id, name")
-    .ilike("email", payload.email);
+    .ilike("email", escapedEmail);
 
   if (!clientRows || clientRows.length === 0) {
     return NextResponse.json({ ok: true, documents: [], businesses: [] });

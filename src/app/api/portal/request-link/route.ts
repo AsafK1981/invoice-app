@@ -9,7 +9,12 @@ const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const GMAIL_USER = process.env.GMAIL_USER!;
 const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD!;
 
-const EMAIL_RE = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+// Strict-and-narrow email regex. RFC technically allows `_` and `%` in
+// local-parts, but they're SQL wildcards in the downstream ilike/like
+// path — even if we use eq() everywhere, refusing them at the boundary
+// makes a regression cheap to spot. Real users practically never use
+// either in their addresses.
+const EMAIL_RE = /^[a-zA-Z0-9.+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
 export async function POST(req: NextRequest) {
   try {
@@ -35,15 +40,19 @@ export async function POST(req: NextRequest) {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
+    // ilike for case-insensitive match against stored emails. The
+    // submitted email already passed EMAIL_RE (no `%`/`_`) but escape
+    // anyway as defense-in-depth.
+    const escapedEmail = email.replace(/[\\%_]/g, "\\$&");
     const { data: clientRows } = await admin
       .from("clients")
       .select("id, email")
-      .ilike("email", email);
+      .ilike("email", escapedEmail);
 
     const hasMatch = (clientRows?.length ?? 0) > 0;
 
     if (hasMatch) {
-      const token = signPortalToken(email, PORTAL_LINK_TTL_MS);
+      const token = signPortalToken(email, PORTAL_LINK_TTL_MS, "link");
       const baseUrl = "https://mysuperfriendlyinvoiceapp.vercel.app";
       const link = `${baseUrl}/api/portal/verify?token=${encodeURIComponent(token)}`;
 
