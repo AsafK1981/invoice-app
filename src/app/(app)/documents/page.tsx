@@ -2,15 +2,27 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { FileText, Plus, Upload } from "lucide-react";
+import { FileText, Plus, Upload, Banknote } from "lucide-react";
 import { useDocuments } from "@/lib/document-store";
 import { DocumentsTable } from "@/components/documents-table";
 import { CsvImportModal } from "@/components/csv-import-modal";
+import { BankImportModal } from "@/components/bank-import-modal";
 import { formatCurrency } from "@/lib/format";
 
 export default function DocumentsPage() {
   const { documents } = useDocuments();
   const [importOpen, setImportOpen] = useState(false);
+  const [bankImportOpen, setBankImportOpen] = useState(false);
+
+  const unpaidDocuments = useMemo(
+    () =>
+      documents.filter(
+        (d) =>
+          (d.type === "tax_invoice" || d.type === "quote") &&
+          (d.status === "sent" || d.status === "draft"),
+      ),
+    [documents],
+  );
 
   const totals = useMemo(() => {
     let paid = 0;
@@ -65,7 +77,16 @@ export default function DocumentsPage() {
             )}
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={() => setBankImportOpen(true)}
+            disabled={unpaidDocuments.length === 0}
+            className="inline-flex items-center gap-2 bg-white border border-emerald-200 text-stone-800 px-4 py-3 rounded-2xl text-sm font-semibold hover:bg-emerald-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            title="העלאת תדפיס חשבון בנק לזיהוי תשלומים וסימון אוטומטי של חשבוניות"
+          >
+            <Banknote className="w-4 h-4 text-emerald-600" />
+            ייבוא תנועות מהבנק
+          </button>
           <button
             onClick={() => setImportOpen(true)}
             className="inline-flex items-center gap-2 bg-white border border-orange-200 text-stone-800 px-4 py-3 rounded-2xl text-sm font-semibold hover:bg-orange-50"
@@ -92,6 +113,13 @@ export default function DocumentsPage() {
         open={importOpen}
         onClose={() => setImportOpen(false)}
         entityType="documents"
+      />
+
+      <BankImportModal
+        open={bankImportOpen}
+        onClose={() => setBankImportOpen(false)}
+        unpaidDocuments={unpaidDocuments}
+        onPaid={() => setBankImportOpen(false)}
       />
     </div>
   );

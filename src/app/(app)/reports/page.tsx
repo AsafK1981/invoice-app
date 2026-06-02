@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { TrendingUp, TrendingDown, PiggyBank, CalendarDays, Download, FileArchive } from "lucide-react";
+import Link from "next/link";
+import { TrendingUp, TrendingDown, PiggyBank, CalendarDays, Download, FileArchive, BookOpen } from "lucide-react";
 import { useDocuments } from "@/lib/document-store";
 import { useExpenses } from "@/lib/expense-store";
 import { useBusiness } from "@/lib/business-store";
@@ -222,6 +223,16 @@ export default function ReportsPage() {
             <FileArchive className="w-4 h-4 text-fuchsia-600" />
             מבנה אחיד — דוגמה ({selectedYear || "שנה"})
           </button>
+          {selectedYear && (
+            <Link
+              href={`/reports/journal/${selectedYear}`}
+              title="יומן הוצאות והכנסות שנתי — מסמך מעוצב להדפסה / שמירה כ-PDF"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border-2 border-emerald-200 text-stone-800 hover:bg-emerald-50"
+            >
+              <BookOpen className="w-4 h-4 text-emerald-600" />
+              יומן שנתי ({selectedYear})
+            </Link>
+          )}
         </div>
       </div>
 

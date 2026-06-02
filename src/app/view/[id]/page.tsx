@@ -3,6 +3,7 @@
 import { use, useEffect, useState } from "react";
 import { Printer, Download, CheckCircle2, AlertCircle } from "lucide-react";
 import { ReceiptView } from "@/components/receipt-view";
+import { PaymentOptionsCard } from "@/components/payment-options-card";
 import { DOCUMENT_TYPE_LABELS } from "@/lib/types";
 import { formatDate } from "@/lib/format";
 import type { Business, Client, InvoiceDocument, DocumentItem } from "@/lib/types";
@@ -113,6 +114,10 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
             phone: biz.phone || undefined,
             email: biz.email || undefined,
             logoUrl: biz.logo_url || undefined,
+            bankName: biz.bank_name || undefined,
+            bankBranch: biz.bank_branch || undefined,
+            bankAccount: biz.bank_account || undefined,
+            paymentNotes: biz.payment_notes || undefined,
           });
         }
 
@@ -196,6 +201,8 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
       </div>
 
       <ReceiptView business={business} client={client} document={doc} />
+
+      <PaymentOptionsCard business={business} document={doc} />
 
       {doc.type === "quote" && (
         <div className="no-print max-w-[210mm] mx-auto mt-6">

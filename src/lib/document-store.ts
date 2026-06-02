@@ -32,6 +32,8 @@ function mapDocRow(row: Record<string, unknown>, items: DocumentItem[]): Invoice
     allocationNumber: (row.allocation_number as string) || undefined,
     allocationSetAt: (row.allocation_set_at as string) || undefined,
     convertedToId: (row.converted_to_id as string) || undefined,
+    paidAt: (row.paid_at as string) || undefined,
+    paymentReference: (row.payment_reference as string) || undefined,
   };
 }
 

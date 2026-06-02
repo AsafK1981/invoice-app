@@ -89,6 +89,14 @@ export interface InvoiceDocument {
    * on quotes that haven't been converted yet.
    */
   convertedToId?: string;
+  /**
+   * When the document was marked paid (either manually or via the bank-
+   * import matcher). Independent of status — historical docs that were
+   * marked paid before this field existed have status=paid but null here.
+   */
+  paidAt?: string;
+  /** Free-form payment reference — bank transaction id, Bit ref, etc. */
+  paymentReference?: string;
 }
 
 export interface Expense {
