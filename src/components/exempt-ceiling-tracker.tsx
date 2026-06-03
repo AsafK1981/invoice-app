@@ -3,24 +3,8 @@
 import { useMemo } from "react";
 import { AlertTriangle, TrendingUp, ShieldCheck } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
+import { getExemptCeiling } from "@/lib/tax-thresholds";
 import type { Business, InvoiceDocument } from "@/lib/types";
-
-// Annual turnover ceiling for עוסק פטור. The Tax Authority adjusts this
-// roughly yearly — if you're reading this and it's wrong, update it here.
-// Source: רשות המסים, סעיף 31 לחוק מע"מ.
-//   2024: 107,692 ₪
-//   2025: 120,000 ₪
-//   2026: 120,000 ₪ (no published change as of 2026-05)
-const CEILING_BY_YEAR: Record<number, number> = {
-  2024: 107_692,
-  2025: 120_000,
-  2026: 120_000,
-};
-const FALLBACK_CEILING = 120_000;
-
-function getCeiling(year: number): number {
-  return CEILING_BY_YEAR[year] ?? FALLBACK_CEILING;
-}
 
 interface Props {
   business: Business | null;
@@ -29,7 +13,7 @@ interface Props {
 
 export function ExemptCeilingTracker({ business, documents }: Props) {
   const year = new Date().getFullYear();
-  const ceiling = getCeiling(year);
+  const ceiling = getExemptCeiling(year);
 
   const yearlyTurnover = useMemo(() => {
     // Annual ceiling counts all issued documents (drafts and cancelled

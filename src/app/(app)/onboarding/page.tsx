@@ -14,6 +14,7 @@ import {
 import { useBusiness, saveBusiness } from "@/lib/business-store";
 import { clientStore } from "@/lib/client-store";
 import { supabase } from "@/lib/supabase";
+import { BusinessTypeHint } from "@/components/business-type-hint";
 import type { Business, Client } from "@/lib/types";
 
 type Step = "welcome" | "business" | "client" | "done";
@@ -207,6 +208,7 @@ export default function OnboardingPage() {
                       <option value="authorized">עוסק מורשה</option>
                       <option value="company">חברה בע״מ</option>
                     </select>
+                    <BusinessTypeHint type={bizForm.businessType} />
                   </div>
                   <div>
                     <label className="text-xs font-semibold text-stone-700 mb-1 block">

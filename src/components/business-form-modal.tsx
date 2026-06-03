@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Building2, Upload, X, Image as ImageIcon, Landmark } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 import { FormField } from "@/components/ui/form-field";
+import { BusinessTypeHint } from "@/components/business-type-hint";
 import { saveBusiness } from "@/lib/business-store";
 import { isPlaceholderBusinessName, isPlaceholderBusinessTaxId } from "@/lib/business-init";
 import { supabase } from "@/lib/supabase";
@@ -218,6 +219,7 @@ export function BusinessFormModal({ open, onClose, business }: Props) {
               <option value="authorized">עוסק מורשה</option>
               <option value="company">חברה בע״מ</option>
             </select>
+            <BusinessTypeHint type={form.businessType} />
           </FormField>
 
           <FormField label="מספר עוסק / ח.פ" required>

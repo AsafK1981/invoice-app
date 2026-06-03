@@ -1,0 +1,33 @@
+name: Exempt Ceiling Yearly Check
+
+on:
+  schedule:
+    # Jan 5 + Feb 5 + Mar 5 each year, 09:00 UTC (~12:00 Israel time).
+    # Three runs catch slow Tax Authority publishing — the value for the
+    # new year is often published in late January or February. After the
+    # value is added to tax-thresholds.ts, subsequent runs pass silently
+    # so no spam.
+    - cron: '0 9 5 1,2,3 *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: exempt-ceiling-check
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Verify current year present in tax-thresholds.ts
+        env:
+          GAYA_PUSH_TOKEN: ${{ secrets.GAYA_PUSH_TOKEN }}
+        run: node scripts/exempt-ceiling-check.mjs
