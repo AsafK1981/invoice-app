@@ -89,11 +89,12 @@ export function AgingReport({ documents }: Props) {
   if (rows.length === 0) {
     return (
       <div className="card-soft p-6">
-        <div className="flex items-center gap-2 mb-3">
-          <AlertTriangle className="w-5 h-5 text-orange-500" />
-          <h2 className="font-semibold text-stone-900">גיול חובות</h2>
+        <div className="flex items-baseline gap-2 mb-1 flex-wrap">
+          <AlertTriangle className="w-5 h-5 text-orange-500 self-center" />
+          <h2 className="font-semibold text-stone-900">חובות פתוחים</h2>
+          <span className="text-xs text-stone-500">חלוקה לפי וותק החוב</span>
         </div>
-        <p className="text-sm text-stone-600">
+        <p className="text-sm text-stone-600 mt-2">
           אין חשבוניות פתוחות. כל הלקוחות מסונכרנים — נכון לעכשיו 👌
         </p>
       </div>
@@ -112,9 +113,15 @@ export function AgingReport({ documents }: Props) {
   return (
     <div className="card-soft overflow-hidden">
       <div className="px-6 py-4 border-b border-orange-100 flex items-baseline justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-2">
-          <AlertTriangle className="w-5 h-5 text-orange-500" />
-          <h2 className="font-semibold text-stone-900">גיול חובות</h2>
+        <div className="flex items-baseline gap-2 flex-wrap">
+          <AlertTriangle className="w-5 h-5 text-orange-500 self-center" />
+          <h2 className="font-semibold text-stone-900">חובות פתוחים</h2>
+          <span
+            className="text-xs text-stone-500"
+            title="כמה ימים עברו מאז הפקת המסמך — מה שמכונה בעולם החשבונאות 'גיול חובות'."
+          >
+            לפי וותק החוב
+          </span>
         </div>
         <p className="text-xs text-stone-600">
           {rows.length} לקוחות · סך פתוח{" "}
