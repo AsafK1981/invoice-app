@@ -13,6 +13,7 @@ import {
   CalendarDays,
   Plus,
   Pencil,
+  BookOpen,
 } from "lucide-react";
 import { useClients } from "@/lib/client-store";
 import { useDocuments } from "@/lib/document-store";
@@ -75,7 +76,15 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
           <ArrowRight className="w-4 h-4" />
           חזרה ללקוחות
         </Link>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Link
+            href={`/clients/${client.id}/statement`}
+            title="כרטסת לקוח עם כל החשבוניות והיתרה — מסמך מעוצב להדפסה / שמירה כ-PDF"
+            className="inline-flex items-center gap-2 bg-white border border-emerald-200 text-stone-800 px-4 py-2 rounded-xl text-sm font-semibold hover:bg-emerald-50"
+          >
+            <BookOpen className="w-4 h-4 text-emerald-600" />
+            כרטסת
+          </Link>
           <Link
             href={`/clients?edit=${client.id}`}
             className="inline-flex items-center gap-2 bg-white border border-stone-200 text-stone-800 px-4 py-2 rounded-xl text-sm font-semibold hover:bg-stone-50"

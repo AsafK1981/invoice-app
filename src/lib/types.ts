@@ -23,6 +23,11 @@ export interface Business {
   bankAccount?: string;
   paymentNotes?: string;
   defaultDocNotes?: string;
+  /** When true, the daily dunning cron sends reminder emails for
+   *  this business's unpaid invoices at day 3 / 14 / 30 after issue. */
+  dunningEnabled?: boolean;
+  /** Optional friendly From name on dunning emails (defaults to name). */
+  dunningFromName?: string;
 }
 
 export interface Client {

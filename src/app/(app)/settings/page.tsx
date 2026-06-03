@@ -27,6 +27,7 @@ import { EmailSettingsModal } from "@/components/email-settings-modal";
 import { DocumentNumberingSettings } from "@/components/document-numbering-settings";
 import { AuditLogSection } from "@/components/audit-log-section";
 import { TaxAuthoritySection } from "@/components/tax-authority-section";
+import { DunningSettingsSection } from "@/components/dunning-settings-section";
 import { TwoFactorSection } from "@/components/two-factor-section";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { logAudit } from "@/lib/audit-log";
@@ -284,6 +285,8 @@ export default function SettingsPage() {
       </div>
 
       <TaxAuthoritySection />
+
+      <DunningSettingsSection />
 
       <TwoFactorSection />
 

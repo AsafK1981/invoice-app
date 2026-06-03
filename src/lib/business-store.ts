@@ -41,6 +41,8 @@ export function useBusiness() {
             bankAccount: data.bank_account ?? undefined,
             paymentNotes: data.payment_notes ?? undefined,
             defaultDocNotes: data.default_doc_notes ?? undefined,
+            dunningEnabled: data.dunning_enabled ?? false,
+            dunningFromName: data.dunning_from_name ?? undefined,
           }
         : defaultBusiness
     );
@@ -73,6 +75,8 @@ export async function saveBusiness(business: Business): Promise<void> {
       bank_account: business.bankAccount || null,
       payment_notes: business.paymentNotes || null,
       default_doc_notes: business.defaultDocNotes || null,
+      dunning_enabled: business.dunningEnabled ?? false,
+      dunning_from_name: business.dunningFromName || null,
     })
     .eq("id", business.id)
     .select();

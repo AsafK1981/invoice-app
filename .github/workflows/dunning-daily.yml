@@ -1,0 +1,58 @@
+name: Dunning Daily Run
+
+on:
+  schedule:
+    # Every day at 08:30 UTC = 11:30 Israel time. Late morning so
+    # customers see the email at a time they're likely to act on it.
+    - cron: '30 8 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dunning-daily
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call /api/dunning/run
+        env:
+          DUNNING_CRON_SECRET: ${{ secrets.DUNNING_CRON_SECRET }}
+        run: |
+          if [ -z "$DUNNING_CRON_SECRET" ]; then
+            echo "::error::DUNNING_CRON_SECRET not set as a repo secret"
+            exit 1
+          fi
+          RESPONSE=$(curl -sS -X POST \
+            "https://mysuperfriendlyinvoiceapp.vercel.app/api/dunning/run" \
+            -H "x-cron-secret: $DUNNING_CRON_SECRET" \
+            -H "content-type: application/json" \
+            -d '{}' \
+            -w "\nHTTP %{http_code}")
+          echo "$RESPONSE"
+          if echo "$RESPONSE" | tail -1 | grep -qE "HTTP 2[0-9][0-9]"; then
+            echo "✓ dunning run completed"
+          else
+            echo "::error::dunning run failed"
+            exit 1
+          fi
+
+      - name: Push WhatsApp on failure
+        if: failure() && env.GAYA_PUSH_TOKEN != ''
+        env:
+          GAYA_PUSH_TOKEN: ${{ secrets.GAYA_PUSH_TOKEN }}
+        run: |
+          curl -sS -X POST https://136.111.197.22.nip.io/push \
+            -H "Authorization: Bearer $GAYA_PUSH_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "$(cat <<EOF
+          {
+            "text": "🚨 Dunning daily cron FAILED.\nRun: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\n\nNo reminders went out today — customers may be expecting them.",
+            "source": "dunning-daily"
+          }
+          EOF
+          )" \
+            -o /dev/null -w "Push status: %{http_code}\n"

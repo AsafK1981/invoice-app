@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { TrendingUp, TrendingDown, PiggyBank, CalendarDays, Download, FileArchive, BookOpen } from "lucide-react";
+import { TrendingUp, TrendingDown, PiggyBank, CalendarDays, Download, FileArchive, BookOpen, Calculator } from "lucide-react";
 import { useDocuments } from "@/lib/document-store";
 import { useExpenses } from "@/lib/expense-store";
 import { useBusiness } from "@/lib/business-store";
@@ -13,6 +13,7 @@ import { TaxYearDetail } from "@/components/tax-year-detail";
 import { VatPeriodReport } from "@/components/vat-period-report";
 import { Form1301Helper } from "@/components/form-1301-helper";
 import { CapitalDeclarationReport } from "@/components/capital-declaration-report";
+import { AgingReport } from "@/components/aging-report";
 
 type Period = string; // "all" | "2026" | "2026-Q1" | "2026-01"
 
@@ -233,6 +234,14 @@ export default function ReportsPage() {
               יומן שנתי ({selectedYear})
             </Link>
           )}
+          <Link
+            href="/reports/tax-projection"
+            title="צפי מס + ביטוח לאומי לסוף השנה — דע מראש כמה לשמור בצד"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border-2 border-teal-200 text-stone-800 hover:bg-teal-50"
+          >
+            <Calculator className="w-4 h-4 text-teal-600" />
+            צפי מס שנתי
+          </Link>
         </div>
       </div>
 
@@ -259,6 +268,8 @@ export default function ReportsPage() {
           );
         })}
       </div>
+
+      <AgingReport documents={documents} />
 
       <VatPeriodReport business={business} documents={documents} expenses={expenses} />
 
