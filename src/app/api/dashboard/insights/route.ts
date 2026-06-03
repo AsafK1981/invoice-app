@@ -33,6 +33,13 @@ OUTPUT — STRICT JSON array, nothing else. No markdown fences:
 
 Rules:
 - Hebrew only. Names of services in English are fine (Anthropic, Cursor, etc.) but the sentence structure is Hebrew.
+- **Write natural, idiomatic Hebrew as a native Israeli speaker would.** Do NOT translate from English literally. Do NOT invent clever-sounding phrases. If unsure, pick the SIMPLE wording.
+- Each sentence must be grammatically correct and immediately understandable. If a phrase sounds like AI-Hebrew (forced or unusual word combinations), rewrite it. Common bad patterns to AVOID:
+  - "כל השולמים ובאים" (made-up)
+  - "המתשלמים והמסיימים" (made-up)
+  - "התובנות מצביעות על" (translation-ese)
+  - Cute slogans that aren't real Hebrew expressions
+- When there's nothing alarming to report, say something genuinely positive in plain Hebrew, e.g. "כל החשבוניות שולמו — אין חוב פתוח." or "אין הצעות שמחכות לאישור — סיימת את כולן." Don't invent flourishes.
 - Specific numbers > vague claims. Use ₪ symbol.
 - 2-5 insights. Fewer is fine if data is sparse.
 - If data is too sparse to say anything substantive, return ONE welcoming insight encouraging usage (e.g. "ההוצאה הראשונה תועדה — ככל שתתעד יותר, תקבל כאן תובנות יותר עשירות.").
