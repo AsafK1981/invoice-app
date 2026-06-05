@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 import { supabase } from "@/lib/supabase";
+import { getBusinessId } from "@/lib/business-init";
+import { createNotificationClient } from "@/lib/notifications-store";
 import type { InvoiceDocument } from "@/lib/types";
 import { DOCUMENT_TYPE_LABELS } from "@/lib/types";
 import { formatCurrency, formatDate } from "@/lib/format";
@@ -227,6 +229,9 @@ export function BankImportModal({ open, onClose, unpaidDocuments, onPaid }: Prop
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("פג תוקף החיבור. התחבר מחדש ונסה שוב.");
 
+      const businessId = getBusinessId();
+      const userId = session.user.id;
+
       let updated = 0;
       for (const m of toApply) {
         const { error } = await supabase
@@ -239,6 +244,21 @@ export function BankImportModal({ open, onClose, unpaidDocuments, onPaid }: Prop
           .eq("id", m.selectedDocId!);
         if (error) throw new Error(error.message);
         updated++;
+        // Notification — best-effort, never blocks the matching action.
+        if (businessId) {
+          const matchedDoc = unpaidDocuments.find((d) => d.id === m.selectedDocId);
+          if (matchedDoc) {
+            await createNotificationClient({
+              businessId,
+              userId,
+              kind: "payment_matched",
+              title: `תשלום זוהה — ${matchedDoc.clientName}`,
+              body: `מסמך #${matchedDoc.number} (₪${matchedDoc.total.toLocaleString("he-IL")}) סומן כשולם לפי תנועה בבנק ב-${formatDate(m.tx.date)}.`,
+              href: `/documents/${m.selectedDocId}`,
+              documentId: m.selectedDocId!,
+            });
+          }
+        }
       }
       setImportedCount(updated);
       setStep("done");

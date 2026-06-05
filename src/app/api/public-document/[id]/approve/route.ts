@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { createNotificationForBusiness } from "@/lib/notifications-server";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -63,7 +64,7 @@ export async function POST(
 
   const { data: doc, error: fetchError } = await admin
     .from("documents")
-    .select("id, type, status, approved_at")
+    .select("id, type, status, approved_at, business_id, client_name, number, total")
     .eq("id", id)
     .maybeSingle();
 
@@ -93,6 +94,17 @@ export async function POST(
 
   if (updateError) {
     return NextResponse.json({ ok: false, error: updateError.message }, { status: 500 });
+  }
+
+  if (doc.business_id) {
+    await createNotificationForBusiness({
+      businessId: doc.business_id,
+      kind: "quote_approved",
+      title: `${doc.client_name} אישר/ה את הצעת המחיר`,
+      body: `הצעת מחיר #${doc.number} על סך ₪${Number(doc.total).toLocaleString("he-IL")} אושרה על-ידי ${signature}.`,
+      href: `/documents/${id}`,
+      documentId: id,
+    });
   }
 
   return NextResponse.json({ ok: true, approvedAt, signature });

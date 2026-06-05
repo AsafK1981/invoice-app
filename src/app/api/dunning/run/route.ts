@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 import { createClient } from "@supabase/supabase-js";
+import { createNotificationForBusiness } from "@/lib/notifications-server";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -298,6 +299,14 @@ export async function POST(req: NextRequest) {
           day_bucket: bucket,
           sent_to: clientEmail,
           success: true,
+        });
+        await createNotificationForBusiness({
+          businessId: biz.id,
+          kind: "dunning_sent",
+          title: `נשלחה תזכורת ל-${doc.client_name}`,
+          body: `מסמך #${doc.number} (₪${Number(doc.total).toLocaleString("he-IL")}) — תזכורת יום ${bucket}.`,
+          href: `/documents/${doc.id}`,
+          documentId: doc.id,
         });
         sent++;
         details.push({ doc: doc.id, bucket, outcome: "sent" });

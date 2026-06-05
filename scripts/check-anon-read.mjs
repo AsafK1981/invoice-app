@@ -41,6 +41,7 @@ const TABLES = [
   "tax_authority_credentials",
   "tax_authority_oauth_states",
   "dunning_log",
+  "notifications",
 ];
 const leaks = [];
 

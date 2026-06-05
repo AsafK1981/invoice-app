@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { createNotificationForBusiness } from "@/lib/notifications-server";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -56,10 +57,11 @@ export async function GET(
     // counter.
     const { data: existing } = await sb
       .from("documents")
-      .select("email_opened_at, email_open_count")
+      .select("email_opened_at, email_open_count, business_id, client_name, number, type")
       .eq("id", id)
       .maybeSingle();
     if (existing) {
+      const isFirstOpen = !existing.email_opened_at;
       await sb
         .from("documents")
         .update({
@@ -67,6 +69,16 @@ export async function GET(
           email_open_count: (existing.email_open_count || 0) + 1,
         })
         .eq("id", id);
+      if (isFirstOpen && existing.business_id) {
+        await createNotificationForBusiness({
+          businessId: existing.business_id,
+          kind: "invoice_viewed",
+          title: `${existing.client_name} פתח/ה את המסמך`,
+          body: `מסמך #${existing.number} נצפה לראשונה.`,
+          href: `/documents/${id}`,
+          documentId: id,
+        });
+      }
     }
   } catch (err) {
     // Tracking is best-effort — never let it break the pixel response.

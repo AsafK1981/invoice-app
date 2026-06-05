@@ -23,6 +23,7 @@ import {
 import { useDocument, useDocuments, deleteDocument, updateDocumentStatus, markDocumentEmailed } from "@/lib/document-store";
 import { publicDocumentUrl } from "@/lib/public-url";
 import { DocumentAttachmentsSection } from "@/components/document-attachments-section";
+import { DocumentTimeline } from "@/components/document-timeline";
 import { AllocationNumberSection } from "@/components/allocation-number-section";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { useClients } from "@/lib/client-store";
@@ -760,6 +761,10 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
       <ReceiptView business={business} client={client} document={doc} />
 
       <DocumentAttachmentsSection documentId={doc.id} />
+
+      <div className="no-print">
+        <DocumentTimeline document={doc} />
+      </div>
 
       {!tipDismissed && (
         <div className="no-print card-soft p-4 bg-blue-50 border-blue-200 max-w-[210mm] mx-auto flex items-start gap-3">
