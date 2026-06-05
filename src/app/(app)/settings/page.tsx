@@ -11,8 +11,6 @@ import {
   Mail,
   Info,
   Pencil,
-  Trash2,
-  AlertTriangle,
   AlertCircle,
   Hash,
   Landmark,
@@ -29,17 +27,13 @@ import { AuditLogSection } from "@/components/audit-log-section";
 import { TaxAuthoritySection } from "@/components/tax-authority-section";
 import { DunningSettingsSection } from "@/components/dunning-settings-section";
 import { TwoFactorSection } from "@/components/two-factor-section";
-import { useConfirm } from "@/components/ui/confirm-dialog";
-import { logAudit } from "@/lib/audit-log";
-import { supabase } from "@/lib/supabase";
-import { getBusinessId } from "@/lib/business-init";
+import { DangerZoneSection } from "@/components/danger-zone-section";
 import { BUSINESS_TYPE_LABELS } from "@/lib/types";
 
 export default function SettingsPage() {
   const { business } = useBusiness();
   const [editOpen, setEditOpen] = useState(false);
   const [emailOpen, setEmailOpen] = useState(false);
-  const confirm = useConfirm();
 
   // Detect legacy placeholder values that were stored as real data
   // ("העסק שלי" / "000000000" stuck around from the original auto-create).
@@ -75,39 +69,6 @@ export default function SettingsPage() {
       value: business.paymentNotes || "—",
     },
   ];
-
-  async function clearAllData() {
-    const ok = await confirm({
-      title: "מחיקת כל הנתונים",
-      message: "פעולה זו תמחק את כל הלקוחות, המוצרים, ההוצאות והמסמכים לצמיתות. לא ניתן לשחזר.",
-      tone: "danger",
-      confirmLabel: "מחק את הכל",
-    });
-    if (!ok) return;
-    const bid = getBusinessId();
-    if (!bid) return;
-
-    const { data: docIds } = await supabase.from("documents").select("id").eq("business_id", bid);
-    if (docIds && docIds.length > 0) {
-      await supabase.from("document_items").delete().in("document_id", docIds.map(d => d.id));
-    }
-    await supabase.from("documents").delete().eq("business_id", bid);
-    await supabase.from("expenses").delete().eq("business_id", bid);
-    await supabase.from("clients").delete().eq("business_id", bid);
-    await supabase.from("products").delete().eq("business_id", bid);
-    await supabase.from("document_counters").delete().eq("business_id", bid);
-
-    window.dispatchEvent(new Event("invoice-app:clients-changed"));
-    window.dispatchEvent(new Event("invoice-app:products-changed"));
-    window.dispatchEvent(new Event("invoice-app:expenses-changed"));
-    window.dispatchEvent(new Event("invoice-app:documents-changed"));
-    logAudit({
-      action: "data.cleared",
-      targetType: "all",
-      targetLabel: "כל הנתונים",
-    });
-    alert("כל הנתונים נמחקו. עכשיו אתה יכול להוסיף את הנתונים האמיתיים שלך.");
-  }
 
   return (
     <div className="space-y-6 max-w-3xl">
@@ -292,26 +253,7 @@ export default function SettingsPage() {
 
       <AuditLogSection />
 
-      <div className="card-soft p-5 border-rose-200 bg-rose-50/40">
-        <div className="flex items-start gap-3">
-          <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center flex-shrink-0 shadow-sm">
-            <AlertTriangle className="w-4 h-4 text-rose-500" />
-          </div>
-          <div className="flex-1">
-            <h3 className="font-bold text-stone-900">מחיקת כל הנתונים</h3>
-            <p className="text-sm text-stone-700 mt-1">
-              פעולה זו תמחק את כל הלקוחות, המוצרים, המסמכים וההוצאות לצמיתות. השתמש בזהירות.
-            </p>
-            <button
-              onClick={clearAllData}
-              className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border-2 border-rose-200 text-rose-700 hover:bg-rose-50"
-            >
-              <Trash2 className="w-4 h-4" />
-              מחק את כל הנתונים
-            </button>
-          </div>
-        </div>
-      </div>
+      <DangerZoneSection />
 
       <BusinessFormModal
         open={editOpen}
