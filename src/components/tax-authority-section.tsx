@@ -186,14 +186,33 @@ export function TaxAuthoritySection() {
       )}
 
       {status?.vendorConfigured && status?.businessType === "licensed" && !status?.connected && (
-        <button
-          onClick={handleConnect}
-          disabled={acting}
-          className="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-l from-blue-500 to-indigo-500 text-white py-3 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-blue-200/60 disabled:opacity-50"
-        >
-          <ExternalLink className="w-4 h-4" />
-          {acting ? "מעביר..." : "חבר לרשות המיסים (פעם אחת)"}
-        </button>
+        <div className="space-y-3">
+          <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-4 text-sm text-stone-700">
+            <p className="font-semibold text-stone-900 mb-2.5">איך מתחברים — פעם אחת, פחות מדקה:</p>
+            <ol className="space-y-2">
+              {[
+                "לחיצה על הכפתור תעביר אותך לאתר רשות המסים. התחבר עם פרטי השירותים הדיגיטליים שלך (ת.ז + קוד משתמש קבוע) ואשר את הגישה.",
+                "תוחזר לכאן אוטומטית — והעסק שלך מחובר. אין מה למלא ידנית.",
+                "מכאן, כל חשבונית מס מעל הסף תקבל מספר הקצאה מרשות המסים בלחיצה אחת.",
+              ].map((step, i) => (
+                <li key={i} className="flex gap-2.5 leading-relaxed">
+                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-500 text-white text-[11px] font-bold flex items-center justify-center mt-0.5">
+                    {i + 1}
+                  </span>
+                  <span>{step}</span>
+                </li>
+              ))}
+            </ol>
+          </div>
+          <button
+            onClick={handleConnect}
+            disabled={acting}
+            className="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-l from-blue-500 to-indigo-500 text-white py-3 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-blue-200/60 disabled:opacity-50"
+          >
+            <ExternalLink className="w-4 h-4" />
+            {acting ? "מעביר..." : "חבר לרשות המיסים (פעם אחת)"}
+          </button>
+        </div>
       )}
 
       {status?.connected && status.credentials && (
