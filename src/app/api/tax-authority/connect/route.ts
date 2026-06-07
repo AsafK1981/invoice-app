@@ -54,12 +54,14 @@ export async function POST(req: NextRequest) {
       { status: 400 },
     );
   }
-  if (biz.business_type !== "licensed") {
+  // Allocation numbers apply to VAT-charging businesses: עוסק מורשה
+  // ("authorized") and חברה ("company"). The DB never stores "licensed".
+  if (biz.business_type !== "authorized" && biz.business_type !== "company") {
     return NextResponse.json(
       {
         ok: false,
         error:
-          "חיבור ל-חשבונית ישראל זמין רק לעוסק מורשה. עדכן את סוג העסק בהגדרות אם רלוונטי.",
+          "חיבור ל-חשבונית ישראל זמין רק לעוסק מורשה / חברה. עדכן את סוג העסק בהגדרות אם רלוונטי.",
       },
       { status: 400 },
     );

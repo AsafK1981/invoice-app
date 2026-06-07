@@ -22,10 +22,10 @@ import { supabase } from "@/lib/supabase";
  *   1. Vendor not configured — app owner hasn't registered with gov.il
  *      yet. No connect button is shown; the section just explains that
  *      this is coming soon.
- *   2. Not licensed dealer — business_type is "exempt". Section is
- *      hidden (allocation numbers don't apply to עוסק פטור).
- *   3. Vendor configured + licensed dealer + not connected — shows a
- *      "Connect" button that initiates the OAuth flow.
+ *   2. Exempt dealer — business_type is "exempt". Section is hidden
+ *      (allocation numbers don't apply to עוסק פטור).
+ *   3. Vendor configured + VAT-charging business (authorized / company)
+ *      + not connected — shows a "Connect" button that starts OAuth.
  *   4. Connected — shows status (last used, expires when, environment)
  *      and a Disconnect button.
  *
@@ -39,7 +39,7 @@ interface Status {
   ok: boolean;
   vendorConfigured: boolean;
   environment: "sandbox" | "production";
-  businessType: "exempt" | "licensed" | null;
+  businessType: "exempt" | "authorized" | "company" | null;
   connected: boolean;
   credentials: {
     vat_number: string;
@@ -232,7 +232,9 @@ export function TaxAuthoritySection() {
         </p>
       )}
 
-      {status?.vendorConfigured && status?.businessType === "licensed" && !status?.connected && (
+      {status?.vendorConfigured &&
+        (status?.businessType === "authorized" || status?.businessType === "company") &&
+        !status?.connected && (
         <div className="relative space-y-4">
           {/* Connect walkthrough — a connected gradient stepper over a faint security texture */}
           <div className="relative overflow-hidden rounded-2xl border border-indigo-100/80 bg-gradient-to-b from-indigo-50/60 to-white p-5">
