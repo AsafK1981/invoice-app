@@ -17,6 +17,18 @@ export function getVatRate(business: Business | null | undefined): number {
 }
 
 /**
+ * Derive a document's whole-number VAT rate from its stored vat/subtotal.
+ * Israeli VAT is always an integer percent (18% since 2025); rounding
+ * avoids sending 17.99/18.01 to the Tax Authority (a line/header mismatch
+ * it would reject). Falls back to the canonical standard rate when
+ * subtotal is 0.
+ */
+export function deriveVatRate(vat: number, subtotal: number): number {
+  if (subtotal > 0) return Math.round((vat / subtotal) * 100);
+  return VAT_RATES.authorized;
+}
+
+/**
  * Calculate VAT given a subtotal and rate (as percent, e.g. 18 for 18%).
  */
 export function calculateVat(subtotal: number, ratePercent: number): number {
@@ -63,9 +75,18 @@ export function computeAmounts(items: AmountInput[], vatRate: number, vatMode: V
 }
 
 /**
+ * String-level predicate for "this business charges VAT and can issue
+ * tax invoices (חשבונית מס)" — i.e. עוסק מורשה or חברה. Works directly on
+ * a raw DB `business_type` value, so server routes holding a Supabase row
+ * (not a `Business`) can share the same rule as the UI.
+ */
+export function canIssueTaxInvoicesByType(type: string | null | undefined): boolean {
+  return type === "authorized" || type === "company";
+}
+
+/**
  * Returns true if the business can issue tax invoices (חשבונית מס).
  */
 export function canIssueTaxInvoices(business: Business | null | undefined): boolean {
-  if (!business) return false;
-  return business.businessType === "authorized" || business.businessType === "company";
+  return canIssueTaxInvoicesByType(business?.businessType);
 }

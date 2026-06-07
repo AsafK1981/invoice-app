@@ -14,6 +14,7 @@ import {
   ArrowDown,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { canIssueTaxInvoicesByType } from "@/lib/vat";
 
 /**
  * Settings card for "חשבונית ישראל" — Israel Tax Authority allocation
@@ -41,6 +42,8 @@ interface Status {
   environment: "sandbox" | "production";
   businessType: "exempt" | "authorized" | "company" | null;
   connected: boolean;
+  /** Current allocation-required threshold in ₪ (date-aware, from the server). */
+  threshold?: number;
   credentials: {
     vat_number: string;
     connected_at: string;
@@ -189,7 +192,9 @@ export function TaxAuthoritySection() {
           </p>
           <span className="inline-flex items-center gap-1 mt-2.5 px-2.5 py-1 rounded-full bg-stone-100/80 border border-stone-200/70 text-[11px] font-semibold text-stone-600">
             סף נוכחי
-            <span className="font-mono text-stone-900">₪5,000</span>
+            <span className="font-mono text-stone-900">
+              ₪{(status?.threshold ?? 5000).toLocaleString("he-IL")}
+            </span>
           </span>
         </div>
       </div>
@@ -233,7 +238,7 @@ export function TaxAuthoritySection() {
       )}
 
       {status?.vendorConfigured &&
-        (status?.businessType === "authorized" || status?.businessType === "company") &&
+        canIssueTaxInvoicesByType(status?.businessType) &&
         !status?.connected && (
         <div className="relative space-y-4">
           {/* Connect walkthrough — a connected gradient stepper over a faint security texture */}
@@ -307,32 +312,55 @@ export function TaxAuthoritySection() {
               </div>
             </div>
             <dl className="grid grid-cols-1 gap-px overflow-hidden rounded-xl border border-emerald-100 bg-emerald-100/40 text-xs">
-              {status.credentials.vat_number && (
-                <div className="flex items-center justify-between bg-white/70 px-3 py-2">
-                  <dt className="text-stone-500">מספר עוסק</dt>
-                  <dd className="font-mono text-stone-900">{status.credentials.vat_number}</dd>
-                </div>
-              )}
-              <div className="flex items-center justify-between bg-white/70 px-3 py-2">
-                <dt className="text-stone-500">חובר ב-</dt>
-                <dd className="text-stone-800">
-                  {new Date(status.credentials.connected_at).toLocaleDateString("he-IL")}
-                </dd>
-              </div>
-              {status.credentials.last_used_at && (
-                <div className="flex items-center justify-between bg-white/70 px-3 py-2">
-                  <dt className="text-stone-500">שימוש אחרון</dt>
-                  <dd className="text-stone-800">
-                    {new Date(status.credentials.last_used_at).toLocaleDateString("he-IL")}
+              {(
+                [
+                  status.credentials.vat_number && {
+                    label: "מספר עוסק",
+                    value: status.credentials.vat_number,
+                    mono: true,
+                  },
+                  {
+                    label: "חובר ב-",
+                    value: new Date(status.credentials.connected_at).toLocaleDateString("he-IL"),
+                  },
+                  status.credentials.last_used_at && {
+                    label: "שימוש אחרון",
+                    value: new Date(status.credentials.last_used_at).toLocaleDateString("he-IL"),
+                  },
+                  status.credentials.last_error && {
+                    label: "שגיאה אחרונה",
+                    value: status.credentials.last_error,
+                    error: true,
+                  },
+                ].filter(Boolean) as {
+                  label: string;
+                  value: string;
+                  mono?: boolean;
+                  error?: boolean;
+                }[]
+              ).map((row) => (
+                <div
+                  key={row.label}
+                  className={`flex items-start justify-between gap-2 px-3 py-2 ${
+                    row.error ? "bg-rose-50/80" : "bg-white/70"
+                  }`}
+                >
+                  <dt className={`flex-shrink-0 ${row.error ? "text-rose-600" : "text-stone-500"}`}>
+                    {row.label}
+                  </dt>
+                  <dd
+                    className={`text-left ${
+                      row.error
+                        ? "text-rose-700"
+                        : row.mono
+                          ? "font-mono text-stone-900"
+                          : "text-stone-800"
+                    }`}
+                  >
+                    {row.value}
                   </dd>
                 </div>
-              )}
-              {status.credentials.last_error && (
-                <div className="flex items-start justify-between gap-2 bg-rose-50/80 px-3 py-2">
-                  <dt className="text-rose-600 flex-shrink-0">שגיאה אחרונה</dt>
-                  <dd className="text-rose-700 text-left">{status.credentials.last_error}</dd>
-                </div>
-              )}
+              ))}
             </dl>
           </div>
           <button

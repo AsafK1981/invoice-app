@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { randomBytes } from "node:crypto";
 import { buildAuthorizeUrl, isTaxAuthorityConfigured } from "@/lib/tax-authority";
+import { canIssueTaxInvoicesByType } from "@/lib/vat";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -56,7 +57,7 @@ export async function POST(req: NextRequest) {
   }
   // Allocation numbers apply to VAT-charging businesses: עוסק מורשה
   // ("authorized") and חברה ("company"). The DB never stores "licensed".
-  if (biz.business_type !== "authorized" && biz.business_type !== "company") {
+  if (!canIssueTaxInvoicesByType(biz.business_type)) {
     return NextResponse.json(
       {
         ok: false,

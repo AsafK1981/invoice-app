@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { isTaxAuthorityConfigured, taxAuthorityEnv } from "@/lib/tax-authority";
+import {
+  isTaxAuthorityConfigured,
+  taxAuthorityEnv,
+  allocationRequiredThreshold,
+} from "@/lib/tax-authority";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -44,6 +48,7 @@ export async function GET(req: NextRequest) {
       environment: taxAuthorityEnv(),
       businessType: null,
       connected: false,
+      threshold: allocationRequiredThreshold(),
     });
   }
 
@@ -60,6 +65,7 @@ export async function GET(req: NextRequest) {
     businessType: biz.business_type,
     connected: !!creds,
     credentials: creds || null,
+    threshold: allocationRequiredThreshold(),
   });
 }
 

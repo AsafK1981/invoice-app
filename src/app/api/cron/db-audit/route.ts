@@ -1,10 +1,6 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import * as Sentry from "@sentry/nextjs";
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const cronSecret = process.env.CRON_SECRET;
+import { cronAuthError, cronAdminClient } from "@/lib/cron";
 
 const SENSITIVE_TABLES = [
   "businesses",
@@ -22,17 +18,10 @@ interface IntegrityIssue {
 }
 
 export async function GET(req: Request) {
-  // Vercel Cron sends `Authorization: Bearer <CRON_SECRET>` automatically when
-  // CRON_SECRET is set as an env var. Reject anything else so the route can't
-  // be hammered from the public internet.
-  const auth = req.headers.get("authorization");
-  if (cronSecret && auth !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
-  }
+  const unauth = cronAuthError(req);
+  if (unauth) return unauth;
 
-  const admin = createClient(supabaseUrl, serviceKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
+  const admin = cronAdminClient();
 
   const issues: IntegrityIssue[] = [];
 

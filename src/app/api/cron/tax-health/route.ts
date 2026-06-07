@@ -1,11 +1,7 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import * as Sentry from "@sentry/nextjs";
 import { isTaxAuthorityConfigured, taxAuthorityEnv } from "@/lib/tax-authority";
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const cronSecret = process.env.CRON_SECRET;
+import { cronAuthError, cronAdminClient } from "@/lib/cron";
 
 /**
  * Daily health check for the "חשבונית ישראל" (Israel Tax Authority)
@@ -24,15 +20,10 @@ const cronSecret = process.env.CRON_SECRET;
  * software-number error, that env var is the first thing to revisit.
  */
 export async function GET(req: Request) {
-  // Vercel Cron sends `Authorization: Bearer <CRON_SECRET>` automatically.
-  const auth = req.headers.get("authorization");
-  if (cronSecret && auth !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
-  }
+  const unauth = cronAuthError(req);
+  if (unauth) return unauth;
 
-  const admin = createClient(supabaseUrl, serviceKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
+  const admin = cronAdminClient();
 
   const { data: creds, error } = await admin
     .from("tax_authority_credentials")

@@ -5,6 +5,8 @@ import {
   round2,
   computeAmounts,
   canIssueTaxInvoices,
+  canIssueTaxInvoicesByType,
+  deriveVatRate,
   VAT_RATES,
 } from "@/lib/vat";
 import type { Business } from "@/lib/types";
@@ -206,5 +208,40 @@ describe("computeAmounts", () => {
     const result = computeAmounts(items, 18, "exclusive");
     // Direct check — sum of 30 × 33.33 = 999.90 (might float-drift to 999.8999...)
     expect(Math.abs(result.subtotal - 999.9)).toBeLessThan(0.01);
+  });
+});
+
+describe("canIssueTaxInvoicesByType", () => {
+  it("is true for VAT-charging types (authorized / company)", () => {
+    expect(canIssueTaxInvoicesByType("authorized")).toBe(true);
+    expect(canIssueTaxInvoicesByType("company")).toBe(true);
+  });
+
+  it("is false for exempt, unknown, or nullish types", () => {
+    expect(canIssueTaxInvoicesByType("exempt")).toBe(false);
+    expect(canIssueTaxInvoicesByType("licensed")).toBe(false); // stale value that used to bite us
+    expect(canIssueTaxInvoicesByType(null)).toBe(false);
+    expect(canIssueTaxInvoicesByType(undefined)).toBe(false);
+  });
+
+  it("agrees with the Business-object variant", () => {
+    expect(canIssueTaxInvoices(authorizedBiz)).toBe(canIssueTaxInvoicesByType("authorized"));
+    expect(canIssueTaxInvoices(exemptBiz)).toBe(canIssueTaxInvoicesByType("exempt"));
+  });
+});
+
+describe("deriveVatRate", () => {
+  it("derives a whole 18% from clean totals", () => {
+    expect(deriveVatRate(180, 1000)).toBe(18);
+  });
+
+  it("rounds to a whole rate so we never send 17.99 / 18.01", () => {
+    // round2'd vat on an odd subtotal drifts slightly off exactly 18%
+    expect(deriveVatRate(18.05, 100.3)).toBe(18);
+    expect(deriveVatRate(17.99, 100)).toBe(18);
+  });
+
+  it("falls back to the canonical standard rate when subtotal is 0", () => {
+    expect(deriveVatRate(0, 0)).toBe(VAT_RATES.authorized);
   });
 });

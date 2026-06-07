@@ -11,7 +11,7 @@ import {
 import { decryptColumn, encryptColumn } from "@/lib/crypto";
 import { emitSecurityEvent } from "@/lib/security-events";
 import { clientIp } from "@/lib/rate-limit";
-import { round2 } from "@/lib/vat";
+import { round2, deriveVatRate } from "@/lib/vat";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -195,14 +195,7 @@ export async function POST(req: NextRequest) {
       ? 330
       : 305;
 
-  // Israeli VAT is a whole-number rate (18% since 2025). Derive it from the
-  // document's own vat/subtotal and round to the nearest integer so we never
-  // send 17.99/18.01 (which the Tax Authority would reject for a line/header
-  // mismatch). Fall back to the canonical 18 when subtotal is 0.
-  const vatRate =
-    doc.subtotal && Number(doc.subtotal) > 0
-      ? Math.round((Number(doc.vat) / Number(doc.subtotal)) * 100)
-      : 18;
+  const vatRate = deriveVatRate(Number(doc.vat) || 0, Number(doc.subtotal) || 0);
 
   const allocRequest: AllocationRequest = {
     invoiceId: doc.id as string,

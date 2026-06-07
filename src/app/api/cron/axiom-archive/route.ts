@@ -1,11 +1,7 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import { gzipSync } from "node:zlib";
 import * as Sentry from "@sentry/nextjs";
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const cronSecret = process.env.CRON_SECRET;
+import { cronAuthError, cronAdminClient } from "@/lib/cron";
 
 const AXIOM_API_TOKEN = process.env.AXIOM_API_TOKEN || "";
 const AXIOM_DATASET = process.env.AXIOM_DATASET || "mysuperfriendlyinvoiceapp";
@@ -28,10 +24,8 @@ const AXIOM_BASE = process.env.AXIOM_API_BASE || "https://api.eu.axiom.co";
  * Schedule: Sunday 04:00 UTC (configured in vercel.json).
  */
 export async function GET(req: Request) {
-  const auth = req.headers.get("authorization");
-  if (cronSecret && auth !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
-  }
+  const unauth = cronAuthError(req);
+  if (unauth) return unauth;
 
   if (!AXIOM_API_TOKEN) {
     return NextResponse.json(
@@ -118,9 +112,7 @@ export async function GET(req: Request) {
   const dateSlug = `${startTime.toISOString().slice(0, 10)}_to_${endTime.toISOString().slice(0, 10)}`;
   const objectPath = `${yyyy}/${mm}/${dateSlug}.ndjson.gz`;
 
-  const sb = createClient(supabaseUrl, serviceKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
+  const sb = cronAdminClient();
 
   const { error: upErr } = await sb.storage
     .from("axiom-archive")
