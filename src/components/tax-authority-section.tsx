@@ -11,6 +11,7 @@ import {
   Loader2,
   ShieldCheck,
   Check,
+  ArrowDown,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
@@ -241,19 +242,22 @@ export function TaxAuthoritySection() {
                 איך מתחברים
               </p>
               <p className="font-bold text-stone-900 mb-4">פעם אחת · פחות מדקה</p>
-              <ol className="relative space-y-4">
+              <ol className="relative">
                 {CONNECT_STEPS.map((step, i) => (
-                  <li key={i} className="relative flex gap-3.5">
+                  <li key={i}>
+                    <div className="flex items-start gap-3 rounded-2xl border border-indigo-100/90 bg-white/80 p-3.5 shadow-sm shadow-indigo-100/60">
+                      <span className="flex-shrink-0 w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-blue-600 text-white text-xs font-bold flex items-center justify-center shadow-sm shadow-indigo-400/50 ring-2 ring-white">
+                        {i + 1}
+                      </span>
+                      <span className="text-sm text-stone-700 leading-relaxed pt-0.5">{step}</span>
+                    </div>
                     {i < CONNECT_STEPS.length - 1 && (
-                      <span
-                        aria-hidden
-                        className="absolute top-7 right-[13.5px] w-px h-[calc(100%-0.5rem)] bg-gradient-to-b from-indigo-400/70 to-indigo-200/40"
-                      />
+                      <div className="flex justify-center py-1.5" aria-hidden>
+                        <span className="flex items-center justify-center w-6 h-6 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-500 shadow-sm">
+                          <ArrowDown className="w-3.5 h-3.5" strokeWidth={2.5} />
+                        </span>
+                      </div>
                     )}
-                    <span className="relative z-10 flex-shrink-0 w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-blue-600 text-white text-xs font-bold flex items-center justify-center shadow-sm shadow-indigo-400/50 ring-2 ring-white">
-                      {i + 1}
-                    </span>
-                    <span className="text-sm text-stone-700 leading-relaxed pt-1">{step}</span>
                   </li>
                 ))}
               </ol>
