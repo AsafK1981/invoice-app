@@ -57,13 +57,14 @@ export async function GET(req: NextRequest) {
     });
     return NextResponse.redirect(`${origin}/settings?tax_authority=error&reason=invalid_state`);
   }
+  // Consume the state up front — one-time use. Doing it before the expiry
+  // check means expired/abandoned rows also get cleaned here instead of
+  // piling up (there's no separate GC for this table).
+  await sb.from("tax_authority_oauth_states").delete().eq("state", state);
+
   if (new Date(stateRow.expires_at as string).getTime() < Date.now()) {
     return NextResponse.redirect(`${origin}/settings?tax_authority=error&reason=expired_state`);
   }
-
-  // Consume the state — even if the exchange fails, this row should be
-  // dead so it can't be replayed.
-  await sb.from("tax_authority_oauth_states").delete().eq("state", state);
 
   try {
     const tokens = await exchangeCodeForTokens(code);
