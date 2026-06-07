@@ -31,10 +31,10 @@ button:disabled,
 body {
   background:
     url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23f97316' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"),
-    radial-gradient(1100px 620px at 100% -10%, rgba(253, 186, 116, 0.52), transparent 60%),
-    radial-gradient(860px 520px at -8% 12%, rgba(252, 211, 77, 0.40), transparent 60%),
-    radial-gradient(820px 560px at 50% 118%, rgba(249, 115, 22, 0.20), transparent 62%),
-    linear-gradient(180deg, #fff7ec 0%, #fbe7cf 100%);
+    radial-gradient(1100px 620px at 100% -10%, rgba(254, 196, 138, 0.46), transparent 60%),
+    radial-gradient(860px 520px at -8% 12%, rgba(253, 219, 110, 0.36), transparent 60%),
+    radial-gradient(820px 560px at 50% 118%, rgba(250, 132, 44, 0.17), transparent 62%),
+    linear-gradient(180deg, #fff8f0 0%, #fcebda 100%);
   background-attachment: fixed;
   color: #44403c;
 }
