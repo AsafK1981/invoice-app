@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { ShieldCheck, AlertTriangle, ExternalLink, Pencil, X, Sparkles, Loader2 } from "lucide-react";
 import { setAllocationNumber } from "@/lib/document-store";
-import { requiresAllocationNumber, getAllocationThresholdForYear } from "@/lib/tax-authority";
+import { requiresAllocationNumber, allocationRequiredThreshold } from "@/lib/tax-authority";
 import { formatCurrency } from "@/lib/format";
 import { supabase } from "@/lib/supabase";
 import type { InvoiceDocument } from "@/lib/types";
@@ -45,7 +45,10 @@ export function AllocationNumberSection({ doc }: Props) {
   if (!isTaxDoc || !required) return null;
 
   const docYear = parseInt(doc.date.slice(0, 4), 10) || new Date().getFullYear();
-  const threshold = getAllocationThresholdForYear(docYear);
+  // Use the date-aware threshold (honours the mid-2026 drop to ₪5,000) so the
+  // displayed number matches what requiresAllocationNumber() actually gates on
+  // — otherwise a ₪7,000 June-2026 doc would claim a ₪10,000 threshold.
+  const threshold = allocationRequiredThreshold(doc.date ? new Date(doc.date) : new Date());
   const hasNumber = Boolean(doc.allocationNumber);
 
   // Tries our /api/tax-authority/request-allocation endpoint, which

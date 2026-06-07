@@ -104,6 +104,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "Business mismatch" }, { status: 400 });
   }
 
+  // A valid עוסק/company number is mandatory for the allocation request. New
+  // businesses may still carry the placeholder ("000000000") or an empty
+  // value — fail with a clear pointer instead of letting the Tax Authority
+  // reject Vat_Number=0 with a cryptic code the user can't act on.
+  const vatNumber = String(business.tax_id || "").replace(/\D/g, "");
+  if (!vatNumber || /^0+$/.test(vatNumber)) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "חסר מספר עוסק תקין בפרטי העסק. עדכן אותו בהגדרות לפני בקשת מספר הקצאה.",
+      },
+      { status: 400 },
+    );
+  }
+
   // Verify the doc actually needs an allocation (defense in depth — UI
   // should also check, but we don't trust the UI)
   if (
@@ -200,7 +215,7 @@ export async function POST(req: NextRequest) {
   const allocRequest: AllocationRequest = {
     invoiceId: doc.id as string,
     invoiceType,
-    vatNumber: (business.tax_id as string) || "",
+    vatNumber,
     invoiceDate: doc.date as string,
     issuanceDate: new Date().toISOString().slice(0, 10),
     amountBeforeDiscount: Number(doc.subtotal) || 0,
