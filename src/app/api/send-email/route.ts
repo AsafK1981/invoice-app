@@ -3,12 +3,16 @@ import { Resend } from "resend";
 import nodemailer from "nodemailer";
 import { createClient } from "@supabase/supabase-js";
 import { checkRate, clientIp } from "@/lib/rate-limit";
+import { sanitizeEmailSubject } from "@/lib/email-subject";
 import { buildHtml, buildText } from "./template";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const FALLBACK_GMAIL_USER = process.env.GMAIL_USER;
 const FALLBACK_GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD;
@@ -52,7 +56,44 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { to, clientName, receiptNumber, total, businessName, subject, documentId, logoUrl, kind, daysSinceSent } = body;
+    // Only these come from the client. Everything shown in the email
+    // (business name, amount, doc number, client name, logo) is derived
+    // from the DB below — never trusted from the body — so an authenticated
+    // user can't send fabricated invoice content (phishing) through the
+    // platform's shared Gmail identity.
+    const { to, subject, documentId, kind, daysSinceSent } = body;
+
+    if (!documentId || !UUID_RE.test(String(documentId))) {
+      return NextResponse.json({ ok: false, error: "documentId required" }, { status: 400 });
+    }
+
+    // Verify the caller owns this document, then pull the real content from it.
+    const admin = createClient(supabaseUrl, serviceKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+    const { data: docRow } = await admin
+      .from("documents")
+      .select("id, business_id, number, total, client_name")
+      .eq("id", documentId)
+      .maybeSingle();
+    if (!docRow) {
+      return NextResponse.json({ ok: false, error: "מסמך לא נמצא" }, { status: 404 });
+    }
+    const { data: bizRow } = await admin
+      .from("businesses")
+      .select("id, user_id, name, logo_url")
+      .eq("id", docRow.business_id)
+      .maybeSingle();
+    if (!bizRow || bizRow.user_id !== user.id) {
+      return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403 });
+    }
+
+    // Authentic content, straight from the owned document.
+    const businessName = bizRow.name as string;
+    const logoUrl = (bizRow.logo_url as string) || undefined;
+    const receiptNumber = docRow.number as string | number;
+    const total = docRow.total as number;
+    const clientName = (docRow.client_name as string) || "";
 
     // Always use the canonical URL — never NEXT_PUBLIC_VERCEL_URL, which
     // is the immutable per-deploy hash and will decay into stale-code
@@ -61,11 +102,8 @@ export async function POST(req: NextRequest) {
     const baseUrl = "https://mysuperfriendlyinvoiceapp.vercel.app";
     const viewUrl = `${baseUrl}/view/${documentId}`;
 
-    if (!to || !clientName || !receiptNumber) {
-      return NextResponse.json(
-        { ok: false, error: "Missing required fields" },
-        { status: 400 }
-      );
+    if (!to) {
+      return NextResponse.json({ ok: false, error: "חסר נמען" }, { status: 400 });
     }
 
     const recipients = String(to)
@@ -78,11 +116,7 @@ export async function POST(req: NextRequest) {
     }
 
     const isReminder = kind === "reminder";
-    // Strip CR/LF (header-injection defense) and cap length before the
-    // subject goes into the mail header.
-    const baseSubject = String(subject || `${businessName} - מסמך #${receiptNumber}`)
-      .replace(/[\r\n]+/g, " ")
-      .slice(0, 200);
+    const baseSubject = sanitizeEmailSubject(subject, `${businessName} - מסמך #${receiptNumber}`);
     const emailSubject = isReminder ? `תזכורת: ${baseSubject}` : baseSubject;
     // Tracking pixel — only when we have a documentId to attribute the
     // open event to. Suffix `.gif` for mail clients that are picky about
