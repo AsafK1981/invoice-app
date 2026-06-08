@@ -245,3 +245,49 @@ describe("deriveVatRate", () => {
     expect(deriveVatRate(0, 0)).toBe(VAT_RATES.authorized);
   });
 });
+
+describe("computeAmounts — line/header reconciliation (multi-line rounding)", () => {
+  // Re-derive the per-line net amounts the document persists and assert they
+  // sum exactly to the header — the bug was a few-agorot drift here.
+  function lineNetsOf(items: { quantity: number; unitPrice: number }[], factor: number) {
+    return items.map((i) => round2(i.quantity * round2(i.unitPrice * factor)));
+  }
+
+  const tricky = [
+    { quantity: 3, unitPrice: 33.33 },
+    { quantity: 7, unitPrice: 13.7 },
+    { quantity: 2, unitPrice: 19.99 },
+    { quantity: 1, unitPrice: 0.07 },
+  ];
+
+  it("exclusive: sum of line nets equals header subtotal, and subtotal + vat == total", () => {
+    const r = computeAmounts(tricky, 18, "exclusive");
+    const lineSum = round2(lineNetsOf(tricky, 1).reduce((s, n) => s + n, 0));
+    expect(lineSum).toBe(r.subtotal);
+    expect(round2(r.subtotal + r.vat)).toBe(r.total);
+  });
+
+  it("inclusive: sum of line nets equals header subtotal, and subtotal + vat == total", () => {
+    const factor = 1 / 1.18;
+    const r = computeAmounts(tricky, 18, "inclusive");
+    const lineSum = round2(lineNetsOf(tricky, factor).reduce((s, n) => s + n, 0));
+    expect(lineSum).toBe(r.subtotal);
+    expect(round2(r.subtotal + r.vat)).toBe(r.total);
+  });
+
+  it("zero-rate: lines reconcile and there is no VAT", () => {
+    const r = computeAmounts(tricky, 0, "exclusive");
+    const lineSum = round2(lineNetsOf(tricky, 1).reduce((s, n) => s + n, 0));
+    expect(lineSum).toBe(r.subtotal);
+    expect(r.total).toBe(r.subtotal);
+    expect(r.vat).toBe(0);
+  });
+
+  it("30 identical inclusive lines reconcile exactly", () => {
+    const items = Array.from({ length: 30 }, () => ({ quantity: 1, unitPrice: 11.81 }));
+    const r = computeAmounts(items, 18, "inclusive");
+    const lineSum = round2(lineNetsOf(items, 1 / 1.18).reduce((s, n) => s + n, 0));
+    expect(lineSum).toBe(r.subtotal);
+    expect(round2(r.subtotal + r.vat)).toBe(r.total);
+  });
+});

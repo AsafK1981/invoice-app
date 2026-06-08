@@ -20,45 +20,72 @@ export interface RecurringTemplate {
 
 const CHANGE_EVENT = "invoice-app:recurring-changed";
 
+/**
+ * Recurring templates live in a single user_metadata JSON blob, so every
+ * mutation is a read-modify-write with no row-level merge. Two concurrent
+ * mutations (generate from two templates at once, or a save while another
+ * is in flight) would otherwise read the same baseline and the second
+ * updateUser would clobber the first — a lost update.
+ *
+ * serializeWrite runs mutations one at a time. Each one re-reads the freshest
+ * metadata inside its own callback (after the previous write has persisted),
+ * so updates compose instead of overwriting. Exported for direct testing.
+ * (Note: this guards a single session/tab; truly concurrent edits from two
+ * separate tabs/devices still need a row-backed table — a larger change.)
+ */
+let writeChain: Promise<unknown> = Promise.resolve();
+export function serializeWrite<T>(fn: () => Promise<T>): Promise<T> {
+  const run = writeChain.then(fn, fn);
+  writeChain = run.then(
+    () => undefined,
+    () => undefined,
+  );
+  return run;
+}
+
 export async function getTemplates(): Promise<RecurringTemplate[]> {
   const { data: { user } } = await supabase.auth.getUser();
   return (user?.user_metadata?.recurring_templates as RecurringTemplate[]) || [];
 }
 
 export async function saveTemplate(template: RecurringTemplate) {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
-  const existing = (user.user_metadata?.recurring_templates as RecurringTemplate[]) || [];
-  const idx = existing.findIndex((t) => t.id === template.id);
-  const next = [...existing];
-  if (idx >= 0) next[idx] = template;
-  else next.push(template);
-  await supabase.auth.updateUser({
-    data: { ...user.user_metadata, recurring_templates: next },
+  return serializeWrite(async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("Not authenticated");
+    const existing = (user.user_metadata?.recurring_templates as RecurringTemplate[]) || [];
+    const idx = existing.findIndex((t) => t.id === template.id);
+    const next = [...existing];
+    if (idx >= 0) next[idx] = template;
+    else next.push(template);
+    await supabase.auth.updateUser({
+      data: { ...user.user_metadata, recurring_templates: next },
+    });
+    window.dispatchEvent(new Event(CHANGE_EVENT));
   });
-  window.dispatchEvent(new Event(CHANGE_EVENT));
 }
 
 export async function deleteTemplate(id: string) {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return;
-  const existing = (user.user_metadata?.recurring_templates as RecurringTemplate[]) || [];
-  const removed = existing.find((t) => t.id === id);
-  if (removed) {
-    logAudit({
-      action: "recurring.deleted",
-      targetType: "recurring",
-      targetId: id,
-      targetLabel: `${removed.clientName} · ${removed.subject || removed.frequency}`,
+  return serializeWrite(async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const existing = (user.user_metadata?.recurring_templates as RecurringTemplate[]) || [];
+    const removed = existing.find((t) => t.id === id);
+    if (removed) {
+      logAudit({
+        action: "recurring.deleted",
+        targetType: "recurring",
+        targetId: id,
+        targetLabel: `${removed.clientName} · ${removed.subject || removed.frequency}`,
+      });
+    }
+    await supabase.auth.updateUser({
+      data: {
+        ...user.user_metadata,
+        recurring_templates: existing.filter((t) => t.id !== id),
+      },
     });
-  }
-  await supabase.auth.updateUser({
-    data: {
-      ...user.user_metadata,
-      recurring_templates: existing.filter((t) => t.id !== id),
-    },
+    window.dispatchEvent(new Event(CHANGE_EVENT));
   });
-  window.dispatchEvent(new Event(CHANGE_EVENT));
 }
 
 export function useRecurringTemplates() {

@@ -47,31 +47,32 @@ interface AmountInput {
 }
 
 export function computeAmounts(items: AmountInput[], vatRate: number, vatMode: VatMode) {
-  const sumLines = (factor = 1) =>
-    items.reduce((s, i) => s + i.quantity * i.unitPrice * factor, 0);
+  // Header figures are summed from the SAME per-line rounded amounts the
+  // document persists (receipt-editor stores round2(qty × round2(unit ×
+  // factor)) per line). Rounding the per-line nets and summing those —
+  // rather than rounding one big gross sum — guarantees the line items
+  // always reconcile with the header subtotal/VAT/total (otherwise they
+  // could drift a few agorot apart, which both looks wrong on the document
+  // and gets a tax-export rejected for a line/header mismatch).
+  const sum = (arr: number[]) => round2(arr.reduce((s, n) => s + n, 0));
 
   if (vatRate === 0) {
-    const subtotal = round2(sumLines());
+    const lineTotals = items.map((i) => round2(i.quantity * round2(i.unitPrice)));
+    const subtotal = sum(lineTotals);
     return { subtotal, vat: 0, total: subtotal, netUnitPriceFactor: 1 };
   }
   if (vatMode === "inclusive") {
     const factor = 1 / (1 + vatRate / 100);
-    const totalGross = sumLines();
-    const subtotal = totalGross * factor;
-    return {
-      subtotal: round2(subtotal),
-      vat: round2(totalGross - subtotal),
-      total: round2(totalGross),
-      netUnitPriceFactor: factor,
-    };
+    const lineNets = items.map((i) => round2(i.quantity * round2(i.unitPrice * factor)));
+    const lineGross = items.map((i) => round2(i.quantity * i.unitPrice));
+    const subtotal = sum(lineNets);
+    const total = sum(lineGross);
+    return { subtotal, vat: round2(total - subtotal), total, netUnitPriceFactor: factor };
   }
-  const subtotal = sumLines();
-  return {
-    subtotal: round2(subtotal),
-    vat: calculateVat(subtotal, vatRate),
-    total: round2(subtotal * (1 + vatRate / 100)),
-    netUnitPriceFactor: 1,
-  };
+  const lineNets = items.map((i) => round2(i.quantity * round2(i.unitPrice)));
+  const subtotal = sum(lineNets);
+  const vat = calculateVat(subtotal, vatRate);
+  return { subtotal, vat, total: round2(subtotal + vat), netUnitPriceFactor: 1 };
 }
 
 /**
