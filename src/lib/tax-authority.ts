@@ -68,10 +68,16 @@ export function getAllocationThresholdForYear(year: number): number {
   return THRESHOLD_BY_YEAR[year] ?? FALLBACK_THRESHOLD_NIS;
 }
 
-/** Threshold honoring the mid-year drop on 2026-06-01 → ₪5,000. */
+/**
+ * Threshold honoring the mid-year drop on 2026-06-01 → ₪5,000.
+ * Uses UTC so the invoice's calendar date determines the threshold
+ * deterministically, regardless of the runtime timezone — a date string
+ * like "2026-06-01" parses to UTC midnight, and reading the local month
+ * on a UTC-negative host would otherwise mis-bucket it as May.
+ */
 export function allocationRequiredThreshold(date: Date = new Date()): number {
-  const y = date.getFullYear();
-  const m = date.getMonth() + 1;
+  const y = date.getUTCFullYear();
+  const m = date.getUTCMonth() + 1;
   if (y >= 2027) return 5_000;
   if (y === 2026 && m >= 6) return 5_000;
   if (y === 2026) return 10_000;
