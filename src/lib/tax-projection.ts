@@ -137,13 +137,13 @@ export function projectAnnualTax(inputs: ProjectionInputs): ProjectionResult {
   const setAsidePct = projectedIncome > 0 ? totalTax / projectedIncome : 0;
 
   const monthsRemaining = Math.max(0.5, (daysInYear - daysElapsed) / 30.4);
-  // Subtract money already conceptually owed against YTD profit, since
-  // YTD profit already incurred tax that should have been set aside.
-  // Simpler heuristic: total / (12 - months passed), so the monthly
-  // reserve evens out over the year.
-  const monthlyReserve = monthsRemaining > 0.5
-    ? Math.max(0, totalTax * (monthsRemaining / 12))
-    : totalTax;
+  // Spread the full projected annual tax across the months left in the
+  // year, so by year-end the user has reserved the whole liability.
+  // Fewer months remaining → a larger monthly reserve (catch-up), which
+  // is the intent. (The previous formula multiplied then divided by
+  // monthsRemaining, which cancelled out to a constant totalTax/12 and
+  // badly under-reserved late in the year.)
+  const monthlyReserve = totalTax / monthsRemaining;
 
   return {
     projectedIncome,
@@ -155,7 +155,7 @@ export function projectAnnualTax(inputs: ProjectionInputs): ProjectionResult {
     effectiveRate,
     setAsidePct,
     monthsRemaining,
-    monthlyReserve: monthlyReserve / Math.max(1, monthsRemaining),
+    monthlyReserve,
   };
 }
 

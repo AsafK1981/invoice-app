@@ -197,9 +197,13 @@ export async function updateDocumentStatus(id: string, status: InvoiceDocument["
   // .select() at the end forces supabase-js to return the affected rows
   // so we can detect "0 rows affected" silently caused by a missing RLS
   // UPDATE policy (which previously hid this entire feature breaking).
+  // Stamp paid_at when transitioning to "paid" (and clear it otherwise) so
+  // the payment date shows in the portal / client statement / timeline /
+  // backup. Previously only the bank-import flow set paid_at, leaving the
+  // date blank for docs marked paid via the normal button or convert flow.
   const { data: updated, error } = await supabase
     .from("documents")
-    .update({ status })
+    .update({ status, paid_at: status === "paid" ? new Date().toISOString() : null })
     .eq("id", id)
     .select();
   if (error) throw new Error(error.message);
@@ -242,6 +246,7 @@ export async function linkConvertedDocument(sourceQuoteId: string, targetReceipt
     .update({
       converted_to_id: targetReceiptId,
       status: "paid",
+      paid_at: new Date().toISOString(),
     })
     .eq("id", sourceQuoteId)
     .is("converted_to_id", null)

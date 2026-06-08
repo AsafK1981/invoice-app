@@ -78,7 +78,11 @@ export async function POST(req: NextRequest) {
     }
 
     const isReminder = kind === "reminder";
-    const baseSubject = subject || `${businessName} - מסמך #${receiptNumber}`;
+    // Strip CR/LF (header-injection defense) and cap length before the
+    // subject goes into the mail header.
+    const baseSubject = String(subject || `${businessName} - מסמך #${receiptNumber}`)
+      .replace(/[\r\n]+/g, " ")
+      .slice(0, 200);
     const emailSubject = isReminder ? `תזכורת: ${baseSubject}` : baseSubject;
     // Tracking pixel — only when we have a documentId to attribute the
     // open event to. Suffix `.gif` for mail clients that are picky about

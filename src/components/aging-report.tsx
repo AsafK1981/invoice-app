@@ -19,12 +19,16 @@ interface AgingRow {
 }
 
 function daysOverdue(doc: InvoiceDocument): number {
-  // Use issue date as the proxy for "due" — most יומן freelancers issue
-  // and expect payment within 30 days. If the doc has paymentDueAt
-  // someday we'd switch to that.
-  const issued = new Date(doc.date).getTime();
-  const now = Date.now();
-  return Math.max(0, Math.floor((now - issued) / 86400000));
+  // Use issue date as the proxy for "due" — most freelancers issue and
+  // expect payment within 30 days. Compare calendar day to calendar day:
+  // doc.date ("YYYY-MM-DD") parses as UTC midnight, so mixing it with a
+  // local Date.now() drifts ±1 day near midnight and flips boundary docs
+  // between aging buckets. Float both to a UTC calendar day instead.
+  const [y, m, d] = doc.date.split("-").map(Number);
+  const issuedUTC = Date.UTC(y, m - 1, d);
+  const now = new Date();
+  const todayUTC = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  return Math.max(0, Math.floor((todayUTC - issuedUTC) / 86400000));
 }
 
 function bucketIndex(days: number): 0 | 1 | 2 | 3 {

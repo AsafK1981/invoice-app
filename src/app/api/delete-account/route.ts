@@ -24,20 +24,13 @@ const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
  */
 export async function POST(req: NextRequest) {
   try {
-    // Identify the user from the bearer token
+    // Require an explicit Authorization: Bearer header (the client always
+    // sends it). We deliberately do NOT fall back to reading the session
+    // token from the cookie: a header-only contract can't be driven by a
+    // cross-site request, so this keeps irreversible account deletion
+    // CSRF-safe.
     const authHeader = req.headers.get("authorization");
-    let token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
-
-    if (!token) {
-      const cookies = req.headers.get("cookie") || "";
-      const match = cookies.match(/sb-[^=]*-auth-token=([^;]+)/);
-      if (match) {
-        try {
-          const decoded = JSON.parse(decodeURIComponent(match[1]));
-          token = decoded?.access_token || decoded?.[0]?.access_token;
-        } catch {}
-      }
-    }
+    const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
 
     if (!token) {
       return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });

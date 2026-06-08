@@ -66,7 +66,21 @@ export async function GET(
   if (docRes.error || !docRes.data) {
     return NextResponse.json({ ok: false, error: "Not found" }, { status: 404 });
   }
-  const doc = docRes.data;
+  // Strip internal/tracking columns before returning to a public (auth-less)
+  // viewer. The recipient of a shared invoice has no business seeing the
+  // sender's read-receipt tracking or private payment reference. Keep
+  // allocation_number — it's legally required to appear on the invoice.
+  const doc = { ...docRes.data } as Record<string, unknown>;
+  for (const f of [
+    "email_opened_at",
+    "email_open_count",
+    "payment_reference",
+    "paid_at",
+    "converted_to_id",
+    "user_id",
+  ]) {
+    delete doc[f];
+  }
 
   const [itemsRes, bizRes, cliRes] = await Promise.all([
     admin

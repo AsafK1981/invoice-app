@@ -376,7 +376,7 @@ async function importDocuments(sb: SB, businessId: string, rows: ImportRow[]): P
       .from("document_counters")
       .select("next_number")
       .eq("business_id", businessId)
-      .eq("type", type)
+      .eq("doc_type", type)
       .maybeSingle();
     const nextWanted = max + 1;
     if (counter) {
@@ -385,12 +385,12 @@ async function importDocuments(sb: SB, businessId: string, rows: ImportRow[]): P
           .from("document_counters")
           .update({ next_number: nextWanted })
           .eq("business_id", businessId)
-          .eq("type", type);
+          .eq("doc_type", type);
       }
     } else {
       await sb
         .from("document_counters")
-        .insert({ business_id: businessId, type, next_number: nextWanted });
+        .insert({ business_id: businessId, doc_type: type, next_number: nextWanted });
     }
   }
 

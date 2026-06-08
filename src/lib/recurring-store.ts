@@ -81,11 +81,19 @@ export function useRecurringTemplates() {
 }
 
 export function calculateNextDue(currentDue: string, frequency: "monthly" | "weekly"): string {
-  const date = new Date(currentDue);
-  if (frequency === "monthly") {
-    date.setMonth(date.getMonth() + 1);
-  } else {
-    date.setDate(date.getDate() + 7);
+  const [y, m, d] = currentDue.split("-").map(Number);
+  if (frequency === "weekly") {
+    return new Date(Date.UTC(y, m - 1, d + 7)).toISOString().slice(0, 10);
   }
-  return date.toISOString().slice(0, 10);
+  // Monthly: advance one calendar month, clamping the day to the target
+  // month's last day so the 29th–31st don't overflow into the month after
+  // (plain setMonth turns Jan 31 + 1 month into Mar 3, silently skipping
+  // months for end-of-month templates). All math in UTC to stay stable
+  // regardless of the runtime timezone.
+  const targetMonth = m; // 0-based index of next month = (m-1) + 1
+  const targetYear = y + Math.floor(targetMonth / 12);
+  const normMonth = targetMonth % 12;
+  const lastDay = new Date(Date.UTC(targetYear, normMonth + 1, 0)).getUTCDate();
+  const day = Math.min(d, lastDay);
+  return new Date(Date.UTC(targetYear, normMonth, day)).toISOString().slice(0, 10);
 }

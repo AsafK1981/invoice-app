@@ -65,8 +65,14 @@ interface ClientRow {
 }
 
 function daysSince(dateStr: string): number {
-  const d = new Date(dateStr).getTime();
-  return Math.floor((Date.now() - d) / 86400000);
+  // Compare calendar day to calendar day. dateStr ("YYYY-MM-DD") parses as
+  // UTC midnight; mixing it with a local Date.now() drifts ±1 day near
+  // midnight and can fire a reminder bucket a day early/late.
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const issuedUTC = Date.UTC(y, m - 1, d);
+  const now = new Date();
+  const todayUTC = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  return Math.floor((todayUTC - issuedUTC) / 86400000);
 }
 
 function bucketFor(days: number): DayBucket | null {
@@ -212,7 +218,11 @@ export async function POST(req: NextRequest) {
       .select("id, business_id, client_id, client_name, number, date, total, type, status, paid_at")
       .eq("business_id", biz.id)
       .in("type", ["quote", "tax_invoice"])
-      .eq("status", "sent");
+      .eq("status", "sent")
+      // Defensive: never dun a doc that's been paid, even if its status
+      // wasn't flipped to "paid" (status/paid_at can desync via the bank
+      // import or a future flow).
+      .is("paid_at", null);
 
     if (!docs || docs.length === 0) continue;
 
@@ -312,14 +322,12 @@ export async function POST(req: NextRequest) {
         details.push({ doc: doc.id, bucket, outcome: "sent" });
       } catch (err) {
         const msg = err instanceof Error ? err.message : "unknown error";
-        await admin.from("dunning_log").insert({
-          document_id: doc.id,
-          business_id: biz.id,
-          day_bucket: bucket,
-          sent_to: clientEmail,
-          success: false,
-          error_message: msg.slice(0, 500),
-        });
+        // Deliberately do NOT write a dunning_log row on failure: the
+        // UNIQUE(document_id, day_bucket) constraint + the seenBuckets
+        // check would then treat this bucket as already-done and never
+        // retry, so a transient send failure would silently drop that
+        // reminder forever. Leaving no row means the next run retries.
+        // The failure is still surfaced in the run response `details`.
         errors++;
         details.push({ doc: doc.id, bucket, outcome: `error: ${msg}` });
       }
