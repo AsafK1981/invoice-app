@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
   const { data: doc, error: docError } = await sb
     .from("documents")
     .select(
-      "id, business_id, type, number, date, total, subtotal, vat, client_name, allocation_number",
+      "id, business_id, type, number, date, total, subtotal, vat, client_name, allocation_number, total_ils, subtotal_ils, vat_ils, exchange_rate",
     )
     .eq("id", body.documentId)
     .in("business_id", businessIds)
@@ -210,7 +210,12 @@ export async function POST(req: NextRequest) {
       ? 330
       : 305;
 
-  const vatRate = deriveVatRate(Number(doc.vat) || 0, Number(doc.subtotal) || 0);
+  const rate = Number(doc.exchange_rate) || 1;
+  const subtotalIls = Number(doc.subtotal_ils ?? doc.subtotal) || 0;
+  const vatIls = Number(doc.vat_ils ?? doc.vat) || 0;
+  const totalIls = Number(doc.total_ils ?? doc.total) || 0;
+
+  const vatRate = deriveVatRate(vatIls, subtotalIls);
 
   const allocRequest: AllocationRequest = {
     invoiceId: doc.id as string,
@@ -218,21 +223,21 @@ export async function POST(req: NextRequest) {
     vatNumber,
     invoiceDate: doc.date as string,
     issuanceDate: new Date().toISOString().slice(0, 10),
-    amountBeforeDiscount: Number(doc.subtotal) || 0,
+    amountBeforeDiscount: subtotalIls,
     discount: 0,
-    paymentAmount: Number(doc.subtotal) || 0,
-    vatAmount: Number(doc.vat) || 0,
-    paymentAmountIncludingVat: Number(doc.total) || 0,
+    paymentAmount: subtotalIls,
+    vatAmount: vatIls,
+    paymentAmountIncludingVat: totalIls,
     items: (items || []).map((it, idx) => ({
       index: idx + 1,
       description: it.description as string,
       quantity: Number(it.quantity) || 1,
       pricePerUnit: Number(it.unit_price) || 0,
-      totalAmount: Number(it.total) || 0,
+      totalAmount: round2((Number(it.total) || 0) * rate),
       vatRate,
       // it.total is the NET (pre-VAT) line amount, so VAT is total*rate/100 —
       // NOT the total*rate/(100+rate) extraction used for VAT-inclusive sums.
-      vatAmount: round2(((Number(it.total) || 0) * vatRate) / 100),
+      vatAmount: round2(((Number(it.total) || 0) * rate * vatRate) / 100),
     })),
   };
 
