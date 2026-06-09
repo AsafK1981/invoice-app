@@ -94,7 +94,10 @@ export function requiresAllocationNumber(doc: InvoiceDocument): boolean {
     doc.type === "credit_note";
   if (!isTaxDoc) return false;
   const docDate = doc.date ? new Date(doc.date) : new Date();
-  return Math.abs(doc.total) >= allocationRequiredThreshold(docDate);
+  // The Tax Authority threshold is in ₪ — use the ₪ equivalent of a
+  // foreign-currency document (falls back to total for legacy ILS docs).
+  const amountIls = Math.abs((doc.totalIls ?? doc.total) as number);
+  return amountIls >= allocationRequiredThreshold(docDate);
 }
 
 /* ------------------------------------------------------------------ */

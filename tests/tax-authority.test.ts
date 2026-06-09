@@ -72,3 +72,14 @@ describe("requiresAllocationNumber", () => {
     expect(requiresAllocationNumber(doc({ type: "invoice", date: "2026-06-10", total: 50_000 }))).toBe(false);
   });
 });
+
+describe("requiresAllocationNumber — ₪ equivalent governs the threshold", () => {
+  it("a $2000 export doc worth ₪7400 (over the June-2026 ₪5,000 threshold) requires a number", () => {
+    const doc = { type: "tax_invoice", date: "2026-06-10", total: 2000, totalIls: 7400 } as never;
+    expect(requiresAllocationNumber(doc)).toBe(true);
+  });
+  it("a $2000 doc worth only ₪4000 is below threshold", () => {
+    const doc = { type: "tax_invoice", date: "2026-06-10", total: 2000, totalIls: 4000 } as never;
+    expect(requiresAllocationNumber(doc)).toBe(false);
+  });
+});
