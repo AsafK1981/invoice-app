@@ -17,16 +17,16 @@ interface Props {
 export function TaxYearDetail({ year, documents, expenses, allDocuments, allExpenses }: Props) {
   const stats = useMemo(() => {
     const paid = documents.filter((d) => d.status === "paid");
-    const totalIncome = paid.reduce((s, d) => s + d.total, 0);
+    const totalIncome = paid.reduce((s, d) => s + (d.totalIls ?? d.total), 0);
     const totalExpenses = expenses.reduce((s, e) => s + e.amount, 0);
-    const totalVat = paid.reduce((s, d) => s + Math.abs(d.vat), 0);
+    const totalVat = paid.reduce((s, d) => s + Math.abs(d.vatIls ?? d.vat), 0);
 
     // Income by document type
     const incomeByType = new Map<string, { count: number; total: number }>();
     for (const d of paid) {
       const cur = incomeByType.get(d.type) || { count: 0, total: 0 };
       cur.count++;
-      cur.total += d.total;
+      cur.total += (d.totalIls ?? d.total);
       incomeByType.set(d.type, cur);
     }
 
@@ -47,7 +47,7 @@ export function TaxYearDetail({ year, documents, expenses, allDocuments, allExpe
     for (const d of paid) {
       const cur = incomeByClient.get(d.clientName) || { name: d.clientName, count: 0, total: 0 };
       cur.count++;
-      cur.total += d.total;
+      cur.total += (d.totalIls ?? d.total);
       incomeByClient.set(d.clientName, cur);
     }
     const topClients = Array.from(incomeByClient.values())
@@ -59,7 +59,7 @@ export function TaxYearDetail({ year, documents, expenses, allDocuments, allExpe
     const priorPaid = allDocuments.filter(
       (d) => d.status === "paid" && d.date.startsWith(`${priorYear}-`)
     );
-    const priorIncome = priorPaid.reduce((s, d) => s + d.total, 0);
+    const priorIncome = priorPaid.reduce((s, d) => s + (d.totalIls ?? d.total), 0);
     const priorExpensesTotal = allExpenses
       .filter((e) => e.date.startsWith(`${priorYear}-`))
       .reduce((s, e) => s + e.amount, 0);

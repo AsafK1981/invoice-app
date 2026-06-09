@@ -38,8 +38,8 @@ export default function YearJournalPage({ params }: { params: Promise<{ year: st
     for (const d of incomeDocs) {
       const m = parseInt(d.date.slice(5, 7), 10) - 1;
       if (m >= 0 && m < 12) {
-        incomeByMonth[m] += d.total;
-        incomeVatByMonth[m] += Math.abs(d.vat);
+        incomeByMonth[m] += (d.totalIls ?? d.total);
+        incomeVatByMonth[m] += Math.abs(d.vatIls ?? d.vat);
       }
     }
     for (const e of yearExpenses) {
@@ -49,8 +49,8 @@ export default function YearJournalPage({ params }: { params: Promise<{ year: st
       }
     }
 
-    const totalIncome = incomeDocs.reduce((s, d) => s + d.total, 0);
-    const totalIncomeVat = incomeDocs.reduce((s, d) => s + Math.abs(d.vat), 0);
+    const totalIncome = incomeDocs.reduce((s, d) => s + (d.totalIls ?? d.total), 0);
+    const totalIncomeVat = incomeDocs.reduce((s, d) => s + Math.abs(d.vatIls ?? d.vat), 0);
     const totalExpenses = yearExpenses.reduce((s, e) => s + e.amount, 0);
 
     return {
@@ -177,9 +177,9 @@ export default function YearJournalPage({ params }: { params: Promise<{ year: st
                     <td className="px-3 py-1.5 border border-stone-200">{DOCUMENT_TYPE_LABELS[d.type]}</td>
                     <td className="px-3 py-1.5 border border-stone-200 font-mono">{d.number}</td>
                     <td className="px-3 py-1.5 border border-stone-200">{d.clientName}</td>
-                    <td className="px-3 py-1.5 border border-stone-200 text-left font-mono">{formatCurrency(d.subtotal)}</td>
-                    <td className="px-3 py-1.5 border border-stone-200 text-left font-mono">{formatCurrency(Math.abs(d.vat))}</td>
-                    <td className="px-3 py-1.5 border border-stone-200 text-left font-mono font-semibold">{formatCurrency(d.total)}</td>
+                    <td className="px-3 py-1.5 border border-stone-200 text-left font-mono">{formatCurrency(d.subtotalIls ?? d.subtotal)}</td>
+                    <td className="px-3 py-1.5 border border-stone-200 text-left font-mono">{formatCurrency(Math.abs(d.vatIls ?? d.vat))}</td>
+                    <td className="px-3 py-1.5 border border-stone-200 text-left font-mono font-semibold">{formatCurrency(d.totalIls ?? d.total)}</td>
                   </tr>
                 ))}
                 <tr className="bg-emerald-50 font-bold">

@@ -25,7 +25,7 @@ export function ExemptCeilingTracker({ business, documents }: Props) {
       .filter((d) => d.status !== "draft" && d.status !== "cancelled")
       .reduce((sum, d) => {
         const sign = d.type === "credit_note" ? -1 : 1;
-        return sum + sign * d.total;
+        return sum + sign * (d.totalIls ?? d.total);
       }, 0);
   }, [documents, year]);
 

@@ -40,7 +40,7 @@ export function CapitalDeclarationReport({ documents, expenses }: Props) {
         (d) => d.status === "paid" && d.date.startsWith(`${y}-`)
       );
       const yearExpenses = expenses.filter((e) => e.date.startsWith(`${y}-`));
-      const income = yearDocs.reduce((s, d) => s + d.total, 0);
+      const income = yearDocs.reduce((s, d) => s + (d.totalIls ?? d.total), 0);
       const totalExpenses = yearExpenses.reduce((s, e) => s + e.amount, 0);
       result.push({
         year: y,
