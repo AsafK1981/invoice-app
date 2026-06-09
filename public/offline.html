@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>אין חיבור — MySuperFriendlyInvoiceApp</title>
+<style>
+  html, body { height: 100%; margin: 0; }
+  body {
+    font-family: "Heebo", -apple-system, "Segoe UI", system-ui, sans-serif;
+    background: linear-gradient(180deg, #fff8f0 0%, #fcebda 100%);
+    color: #44403c;
+    display: flex; align-items: center; justify-content: center;
+    text-align: center; padding: 24px;
+  }
+  .card {
+    max-width: 360px; background: #fff; border: 1px solid rgba(255,237,213,.8);
+    border-radius: 1.5rem; padding: 32px 24px;
+    box-shadow: 0 4px 20px rgba(194,110,40,.08);
+  }
+  .icon {
+    width: 56px; height: 56px; margin: 0 auto 16px; border-radius: 1rem;
+    background: linear-gradient(135deg, #fb923c, #f97316);
+    display: flex; align-items: center; justify-content: center;
+  }
+  h1 { font-size: 18px; font-weight: 800; color: #1c1917; margin: 0 0 8px; }
+  p { font-size: 14px; line-height: 1.6; color: #57534e; margin: 0 0 20px; }
+  button {
+    border: 0; cursor: pointer; font: inherit; font-weight: 600;
+    color: #fff; background: linear-gradient(90deg, #f97316, #ea580c);
+    padding: 10px 22px; border-radius: 9999px;
+  }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+    </div>
+    <h1>אין חיבור לאינטרנט</h1>
+    <p>נראה שאין חיבור כרגע. החשבוניות שלך מסונכרנות בענן — ברגע שהחיבור יחזור, הכל יהיה כאן.</p>
+    <button onclick="location.reload()">נסה שוב</button>
+  </div>
+</body>
+</html>

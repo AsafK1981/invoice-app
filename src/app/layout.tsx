@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { SwRegister } from "@/components/sw-register";
 import "./globals.css";
 
 // Inline pre-hydration theme script — applies the user's persisted theme
@@ -84,6 +85,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col font-sans text-stone-800">
         {children}
+        <SwRegister />
         <Analytics />
         <SpeedInsights />
       </body>
