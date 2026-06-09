@@ -126,6 +126,7 @@ export async function POST(req: NextRequest) {
       type: doc.type as never,
       date: doc.date as string,
       total: doc.total as number,
+      totalIls: (doc.total_ils ?? doc.total) as number,
     } as never)
   ) {
     return NextResponse.json(
