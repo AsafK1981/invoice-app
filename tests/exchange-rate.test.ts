@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { ilsEquivalents } from "@/lib/exchange-rate";
+import { ilsEquivalents, getRate, __setRateFetcher } from "@/lib/exchange-rate";
 
 describe("ilsEquivalents", () => {
   it("ILS-at-rate-1 returns the same numbers (backward compatible)", () => {
@@ -17,5 +17,25 @@ describe("ilsEquivalents", () => {
     expect(r.subtotalIls).toBe(123.82);
     expect(r.vatIls).toBe(22.29);
     expect(r.totalIls).toBe(146.11);
+  });
+});
+
+describe("getRate", () => {
+  it("short-circuits ILS to 1 with no fetch", async () => {
+    let called = 0;
+    __setRateFetcher(async () => { called++; return 9; });
+    expect(await getRate("ILS", "2026-06-09")).toBe(1);
+    expect(called).toBe(0);
+  });
+  it("fetches a foreign rate and caches by (currency,date)", async () => {
+    let called = 0;
+    __setRateFetcher(async () => { called++; return 3.71; });
+    expect(await getRate("USD", "2026-06-09")).toBe(3.71);
+    expect(await getRate("USD", "2026-06-09")).toBe(3.71);
+    expect(called).toBe(1);
+  });
+  it("returns null when the fetch fails (manual-entry fallback)", async () => {
+    __setRateFetcher(async () => { throw new Error("boom"); });
+    expect(await getRate("EUR", "2026-06-01")).toBeNull();
   });
 });
