@@ -34,6 +34,12 @@ function mapDocRow(row: Record<string, unknown>, items: DocumentItem[]): Invoice
     convertedToId: (row.converted_to_id as string) || undefined,
     paidAt: (row.paid_at as string) || undefined,
     paymentReference: (row.payment_reference as string) || undefined,
+    currency: (row.currency as string) || "ILS",
+    exchangeRate: row.exchange_rate != null ? Number(row.exchange_rate) : 1,
+    subtotalIls: row.subtotal_ils != null ? Number(row.subtotal_ils) : Number(row.subtotal) || 0,
+    vatIls: row.vat_ils != null ? Number(row.vat_ils) : Number(row.vat) || 0,
+    totalIls: row.total_ils != null ? Number(row.total_ils) : Number(row.total) || 0,
+    zeroRated: Boolean(row.zero_rated),
   };
 }
 
@@ -137,6 +143,12 @@ export async function createDocument(
       unit_price: item.unitPrice,
       total: item.total,
     })),
+    p_currency: doc.currency || "ILS",
+    p_exchange_rate: doc.exchangeRate ?? 1,
+    p_subtotal_ils: doc.subtotalIls ?? doc.subtotal,
+    p_vat_ils: doc.vatIls ?? doc.vat,
+    p_total_ils: doc.totalIls ?? doc.total,
+    p_zero_rated: doc.zeroRated ?? false,
   });
 
   if (error) throw new Error("שגיאה בשמירת המסמך: " + error.message);

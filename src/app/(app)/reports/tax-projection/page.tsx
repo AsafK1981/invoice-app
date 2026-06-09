@@ -45,7 +45,7 @@ export default function TaxProjectionPage() {
     const ytdIncome = documents
       .filter((d) => d.status === "paid" && d.date.startsWith(prefix))
       .reduce(
-        (s, d) => s + (d.type === "credit_note" ? -d.total : d.total),
+        (s, d) => s + (d.type === "credit_note" ? -(d.totalIls ?? d.total) : (d.totalIls ?? d.total)),
         0,
       );
     const ytdExpenses = expenses

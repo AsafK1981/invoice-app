@@ -72,8 +72,8 @@ export function AgingReport({ documents }: Props) {
         };
         byClient.set(key, row);
       }
-      row.buckets[b] += d.total;
-      row.total += d.total;
+      row.buckets[b] += (d.totalIls ?? d.total);
+      row.total += (d.totalIls ?? d.total);
       row.docs.push(d);
     }
 
@@ -241,7 +241,7 @@ function FragmentRow({
                       </span>
                     </Link>
                     <span className="font-mono font-semibold text-stone-900" dir="ltr">
-                      {formatCurrency(d.total)}
+                      {formatCurrency(d.totalIls ?? d.total)}
                     </span>
                   </li>
                 ))}

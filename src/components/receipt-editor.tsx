@@ -25,7 +25,9 @@ import { sendReceiptEmail } from "@/lib/email";
 import { createDocument, linkConvertedDocument, markDocumentEmailed, useDocuments } from "@/lib/document-store";
 import { getBusinessId } from "@/lib/business-init";
 import { parseEmails, joinEmails, isValidEmail } from "@/lib/emails";
-import { getVatRate, computeAmounts, round2, type VatMode } from "@/lib/vat";
+import { getVatRate, computeAmounts, round2, canIssueTaxInvoices, type VatMode } from "@/lib/vat";
+import { CURRENCIES, formatMoney } from "@/lib/currencies";
+import { ilsEquivalents } from "@/lib/exchange-rate";
 import { getClientDefaults } from "@/lib/client-defaults";
 import {
   type Business,
@@ -79,7 +81,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   const isQuote = documentType === "quote";
   const docLabel = DOCUMENT_TYPE_LABELS[documentType];
 
-  const vatRate = getVatRate(business);
+  const baseVatRate = getVatRate(business);
   const isCreditNote = documentType === "credit_note";
   const sign = isCreditNote ? -1 : 1;
 
@@ -107,6 +109,11 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   const [saving, setSaving] = useState<boolean>(false);
   const saveInFlightRef = useRef(false);
   const [toast, setToast] = useState<{ kind: "success" | "error"; text: string } | null>(null);
+
+  const [currency, setCurrency] = useState("ILS");
+  const [zeroRated, setZeroRated] = useState(false);
+  const [rate, setRate] = useState(1);
+  const [rateLoading, setRateLoading] = useState(false);
 
   const { documents: allDocuments } = useDocuments();
   const clientDefaults = useMemo(
@@ -247,9 +254,23 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
     };
   })();
 
+  const effectiveVatRate = zeroRated ? 0 : baseVatRate;
+
+  useEffect(() => {
+    if (currency === "ILS") { setRate(1); return; }
+    let cancelled = false;
+    setRateLoading(true);
+    fetch(`/api/exchange-rate?currency=${currency}&date=${date}`)
+      .then((r) => r.json())
+      .then((d) => { if (!cancelled && d.ok && d.rate) setRate(d.rate); })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setRateLoading(false); });
+    return () => { cancelled = true; };
+  }, [currency, date]);
+
   const amounts = useMemo(
-    () => computeAmounts(items, vatRate, vatMode),
-    [items, vatRate, vatMode]
+    () => computeAmounts(items, effectiveVatRate, vatMode),
+    [items, effectiveVatRate, vatMode]
   );
   const { subtotal, vat, total, netUnitPriceFactor } = amounts;
 
@@ -428,6 +449,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
         };
       });
 
+      const effectiveRate = currency === "ILS" ? 1 : rate;
       const draft: Omit<InvoiceDocument, "number"> = {
         id: crypto.randomUUID(),
         type: documentType,
@@ -447,6 +469,13 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
         notes: isQuote && validUntil
           ? `${notes.trim() ? notes.trim() + "\n" : ""}הצעה בתוקף עד: ${validUntil}`
           : notes.trim() || undefined,
+        currency,
+        exchangeRate: effectiveRate,
+        zeroRated,
+        ...ilsEquivalents(
+          { subtotal: round2(sign * subtotal), vat: round2(sign * vat), total: round2(sign * total) },
+          effectiveRate
+        ),
       };
 
       const { id: docId, number: allocatedNumber } = await createDocument(draft);
@@ -723,11 +752,54 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                 />
               </FormField>
             )}
+
+            <FormField label="מטבע">
+              <select
+                value={currency}
+                onChange={(e) => setCurrency(e.target.value)}
+                className="input-warm"
+              >
+                {CURRENCIES.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.code} · {c.name}
+                  </option>
+                ))}
+              </select>
+            </FormField>
+
+            {canIssueTaxInvoices(business) && (
+              <div className="flex items-center gap-2 text-sm">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={zeroRated}
+                    onChange={(e) => setZeroRated(e.target.checked)}
+                    className="w-4 h-4 accent-orange-500"
+                  />
+                  <span className="text-stone-700">עסקה בשיעור אפס (ייצוא)</span>
+                </label>
+              </div>
+            )}
+
+            {currency !== "ILS" && (
+              <FormField label={`שער ${currency}→₪${rateLoading ? " …" : ""}`}>
+                <input
+                  type="number"
+                  step="0.0001"
+                  value={rate}
+                  onChange={(e) => setRate(Number(e.target.value) || 0)}
+                  className="input-warm font-mono"
+                />
+                <span className="text-xs text-stone-500 block mt-1">
+                  ≈ {formatMoney(round2(total * rate), "ILS")}
+                </span>
+              </FormField>
+            )}
           </div>
         </Section>
 
         <Section title="פריטים" icon={Package}>
-          {vatRate > 0 && (
+          {effectiveVatRate > 0 && (
             <div className="mb-4 flex items-center justify-between gap-3 p-3 rounded-xl bg-orange-50/60 border border-orange-100">
               <div className="flex items-center gap-2">
                 <Percent className="w-4 h-4 text-orange-500" />
@@ -754,7 +826,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                       : "text-stone-700 hover:text-stone-900"
                   }`}
                 >
-                  כולל מע״מ ({vatRate}%)
+                  כולל מע״מ ({effectiveVatRate}%)
                 </button>
               </div>
             </div>
@@ -950,7 +1022,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
               items={previewItems}
               subtotal={subtotal}
               vat={vat}
-              vatRate={vatRate}
+              vatRate={effectiveVatRate}
               total={total}
               paymentMethod={isQuote ? undefined : paymentMethod}
               notes={notes || undefined}
@@ -966,10 +1038,10 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
             סיכום ושליחה
           </h3>
           <div className="space-y-1.5 text-sm">
-            {vatRate > 0 && (
+            {effectiveVatRate > 0 && (
               <>
                 <SummaryRow label="סכום ביניים" value={formatCurrency(subtotal)} />
-                <SummaryRow label={`מע״מ (${vatRate}%)`} value={formatCurrency(vat)} />
+                <SummaryRow label={`מע״מ (${effectiveVatRate}%)`} value={formatCurrency(vat)} />
               </>
             )}
             <div className="flex justify-between items-baseline pt-2">
@@ -1046,7 +1118,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
             items={previewItems}
             subtotal={subtotal}
             vat={vat}
-            vatRate={vatRate}
+            vatRate={effectiveVatRate}
             total={total}
             paymentMethod={isQuote ? undefined : paymentMethod}
             notes={notes || undefined}

@@ -1,6 +1,7 @@
 "use client";
 
 import { formatCurrency, formatDate } from "@/lib/format";
+import { formatMoney } from "@/lib/currencies";
 import {
   BUSINESS_TYPE_LABELS,
   DOC_SUM_LABEL,
@@ -73,6 +74,14 @@ interface Props {
   placeholders?: boolean;
   /** מספר הקצאה (Tax Authority allocation), shown on tax-invoice docs that have one. */
   allocationNumber?: string;
+  /** ISO 4217 currency code. Defaults to "ILS". */
+  currency?: string;
+  /** Exchange rate (₪ per 1 unit of currency). Only relevant when currency !== "ILS". */
+  exchangeRate?: number;
+  /** Total in ₪ equivalent (snapshotted). Only relevant when currency !== "ILS". */
+  totalIls?: number;
+  /** Zero-rated export transaction (0% VAT, distinct from עוסק פטור). */
+  zeroRated?: boolean;
 }
 
 export function DocumentBody({
@@ -91,7 +100,14 @@ export function DocumentBody({
   notes,
   placeholders = false,
   allocationNumber,
+  currency: currencyProp,
+  exchangeRate,
+  totalIls,
+  zeroRated = false,
 }: Props) {
+  const currency = currencyProp || "ILS";
+  const money = (n: number) => (currency === "ILS" ? formatCurrency(n) : formatMoney(n, currency));
+
   const numberStr = number != null ? `#${number}` : "(אוטומטי)";
   const dateStr = date ? formatDate(date) : "—";
   const businessName = business.name || (placeholders ? "—" : "");
@@ -245,10 +261,10 @@ export function DocumentBody({
                     {item.quantity}
                   </td>
                   <td className="px-4 py-3.5 text-sm text-left text-stone-800 tabular-nums">
-                    {formatCurrency(item.unitPrice)}
+                    {money(item.unitPrice)}
                   </td>
                   <td className="px-4 py-3.5 text-sm text-left font-semibold text-stone-900 tabular-nums">
-                    {formatCurrency(item.total)}
+                    {money(item.total)}
                   </td>
                 </tr>
               ))
@@ -263,20 +279,29 @@ export function DocumentBody({
         <div className="w-80 space-y-2 text-stone-700">
           <div className="flex justify-between text-sm">
             <span>סכום ביניים</span>
-            <span className="tabular-nums">{formatCurrency(subtotal)}</span>
+            <span className="tabular-nums">{money(subtotal)}</span>
           </div>
-          {vatRate > 0 && (
-            <div className="flex justify-between text-sm">
-              <span>מע״מ ({vatRate}%)</span>
-              <span className="tabular-nums">{formatCurrency(vat)}</span>
-            </div>
+          {zeroRated ? (
+            <div className="text-sm text-stone-600">עסקה בשיעור אפס — ייצוא שירותים</div>
+          ) : (
+            vatRate > 0 && (
+              <div className="flex justify-between text-sm">
+                <span>מע״מ ({vatRate}%)</span>
+                <span className="tabular-nums">{money(vat)}</span>
+              </div>
+            )
           )}
           <div className="flex justify-between items-baseline pt-3 border-t-[3px] border-orange-500 mt-1 rounded-b-xl bg-orange-50/60 print:bg-orange-50 -mx-3 px-3 py-2.5">
             <span className="font-bold text-stone-900 text-base">{DOC_SUM_LABEL[documentType]}</span>
             <span className="text-2xl font-bold text-stone-900 tabular-nums">
-              {formatCurrency(total)}
+              {money(total)}
             </span>
           </div>
+          {currency !== "ILS" && (
+            <div className="mt-1 text-xs text-stone-500">
+              סה״כ ב-₪ (שער {Number(exchangeRate ?? 1).toFixed(4)}): {formatMoney(Number(totalIls ?? 0), "ILS")}
+            </div>
+          )}
         </div>
       </div>
 

@@ -119,11 +119,11 @@ export function VatPeriodReport({ business, documents, expenses }: Props) {
     let taxableSales = 0;
     for (const d of docsInRange) {
       if (d.type === "tax_invoice" || d.type === "tax_invoice_receipt") {
-        outputVat += d.vat;
-        taxableSales += d.subtotal;
+        outputVat += (d.vatIls ?? d.vat);
+        taxableSales += (d.subtotalIls ?? d.subtotal);
       } else if (d.type === "credit_note") {
-        outputVat -= d.vat;
-        taxableSales -= d.subtotal;
+        outputVat -= (d.vatIls ?? d.vat);
+        taxableSales -= (d.subtotalIls ?? d.subtotal);
       }
     }
 

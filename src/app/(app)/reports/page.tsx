@@ -91,14 +91,14 @@ export default function ReportsPage() {
   );
 
   const paidDocs = filteredDocs.filter((d) => d.status === "paid");
-  const totalIncome = paidDocs.reduce((sum, d) => sum + d.total, 0);
+  const totalIncome = paidDocs.reduce((sum, d) => sum + (d.totalIls ?? d.total), 0);
   const totalExpenses = filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
 
   const byMonth = new Map<string, { income: number; expenses: number }>();
   paidDocs.forEach((d) => {
     const m = d.date.slice(0, 7);
     const cur = byMonth.get(m) || { income: 0, expenses: 0 };
-    cur.income += d.total;
+    cur.income += (d.totalIls ?? d.total);
     byMonth.set(m, cur);
   });
   filteredExpenses.forEach((e) => {

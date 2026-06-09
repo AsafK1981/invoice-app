@@ -32,9 +32,9 @@ export function Form1301Helper({ year, business, documents, expenses }: Props) {
 
   const fields = useMemo<FieldRow[]>(() => {
     const paid = documents.filter((d) => d.status === "paid");
-    const grossIncome = paid.reduce((s, d) => s + (d.subtotal || (d.total - (d.vat || 0))), 0);
-    const totalIncomeWithVat = paid.reduce((s, d) => s + d.total, 0);
-    const vatCollected = paid.reduce((s, d) => s + Math.abs(d.vat || 0), 0);
+    const grossIncome = paid.reduce((s, d) => s + ((d.subtotalIls ?? d.subtotal) || ((d.totalIls ?? d.total) - (d.vatIls ?? (d.vat || 0)))), 0);
+    const totalIncomeWithVat = paid.reduce((s, d) => s + (d.totalIls ?? d.total), 0);
+    const vatCollected = paid.reduce((s, d) => s + Math.abs((d.vatIls ?? d.vat) || 0), 0);
     const totalExpenses = expenses.reduce((s, e) => s + e.amount, 0);
     const vatInput = expenses.reduce((s, e) => s + (e.vatAmount || 0), 0);
     const netProfit = grossIncome - (totalExpenses - vatInput);
