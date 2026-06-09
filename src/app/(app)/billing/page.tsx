@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { track } from "@vercel/analytics";
 import { useSearchParams } from "next/navigation";
 import {
   CreditCard,
@@ -77,6 +78,7 @@ export default function BillingPage() {
       });
       const data = await res.json();
       if (data.ok && data.url) {
+        track("checkout_started", { tier, interval });
         window.location.href = data.url;
       } else {
         setConfirmingTier(null);

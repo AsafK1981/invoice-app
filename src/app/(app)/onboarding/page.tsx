@@ -11,6 +11,7 @@ import {
   ArrowRight,
   SkipForward,
 } from "lucide-react";
+import { track } from "@vercel/analytics";
 import { useBusiness, saveBusiness } from "@/lib/business-store";
 import { clientStore } from "@/lib/client-store";
 import { supabase } from "@/lib/supabase";
@@ -84,6 +85,7 @@ export default function OnboardingPage() {
 
   async function finish(target: "dashboard" | "new-doc" = "new-doc") {
     await supabase.auth.updateUser({ data: { onboarded: true } });
+    track("onboarding_complete");
     router.push(target === "new-doc" ? "/documents/new" : "/dashboard");
   }
 

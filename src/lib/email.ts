@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { track } from "@vercel/analytics";
 import { parseEmails, isValidEmail } from "./emails";
 
 export interface SendReceiptEmailArgs {
@@ -49,6 +50,7 @@ export async function sendReceiptEmail(args: SendReceiptEmailArgs): Promise<Send
     });
 
     const data = await res.json();
+    if (data.ok) track("invoice_emailed");
     return {
       ok: data.ok,
       messageId: data.messageId,

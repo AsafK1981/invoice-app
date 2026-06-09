@@ -5,6 +5,7 @@ import { supabase } from "./supabase";
 import { getBusinessId, onBusinessReady } from "./business-init";
 import { DOCUMENT_STATUS_LABELS, DOCUMENT_TYPE_LABELS, type DocumentType, type InvoiceDocument, type DocumentItem } from "./types";
 import { logAudit } from "./audit-log";
+import { track } from "@vercel/analytics";
 
 const CHANGE_EVENT = "invoice-app:documents-changed";
 
@@ -172,6 +173,7 @@ export async function createDocument(
   });
 
   window.dispatchEvent(new Event(CHANGE_EVENT));
+  track("document_created", { type: doc.type });
   return result;
 }
 

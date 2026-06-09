@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Sparkles, Mail, Lock, LogIn, UserPlus, Eye, EyeOff, ArrowRight } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { track } from "@vercel/analytics";
 
 type Mode = "login" | "signup" | "forgot";
 
@@ -38,6 +39,7 @@ export default function LoginPage() {
       if (signUpError) {
         setError(signUpError.message);
       } else {
+        track("sign_up");
         setSuccess(
           `שלחנו אימייל אישור אל ${email}. פתח את ההודעה (אולי בתיקיית הספאם) ולחץ על "אשר את הרישום".`
         );
