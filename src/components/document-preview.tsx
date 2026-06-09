@@ -30,6 +30,10 @@ interface Props {
   total: number;
   paymentMethod?: PaymentMethod;
   notes?: string;
+  currency?: string;
+  exchangeRate?: number;
+  totalIls?: number;
+  zeroRated?: boolean;
 }
 
 const PAGE_WIDTH_PX = 794;
@@ -97,6 +101,10 @@ export function DocumentPreview(props: Props) {
       total={props.total}
       paymentMethod={props.paymentMethod}
       notes={props.notes}
+      currency={props.currency}
+      exchangeRate={props.exchangeRate}
+      totalIls={props.totalIls}
+      zeroRated={props.zeroRated}
       placeholders
     />
   );

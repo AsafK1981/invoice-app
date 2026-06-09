@@ -51,6 +51,10 @@ export function ReceiptView({ business, client, document: doc }: Props) {
         paymentMethod={doc.paymentMethod}
         notes={doc.notes}
         allocationNumber={doc.allocationNumber}
+        currency={doc.currency}
+        exchangeRate={doc.exchangeRate}
+        totalIls={doc.totalIls}
+        zeroRated={doc.zeroRated}
       />
     </div>
   );
