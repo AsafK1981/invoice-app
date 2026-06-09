@@ -102,6 +102,16 @@ export interface InvoiceDocument {
   paidAt?: string;
   /** Free-form payment reference — bank transaction id, Bit ref, etc. */
   paymentReference?: string;
+  /** ISO 4217 currency the document is denominated in. Default "ILS". */
+  currency?: string;
+  /** ₪ per 1 unit of `currency`, snapshotted at issue. ILS → 1. */
+  exchangeRate?: number;
+  /** ₪ equivalents snapshotted at issue (= foreign × rate). For ILS docs = the foreign value. */
+  subtotalIls?: number;
+  vatIls?: number;
+  totalIls?: number;
+  /** Zero-rated export transaction (0% VAT, distinct from עוסק פטור). */
+  zeroRated?: boolean;
 }
 
 export interface Expense {
