@@ -1,15 +1,15 @@
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 
-// Content-Security-Policy — defense-in-depth against XSS. Rolled out in
-// Report-Only mode FIRST (it reports violations to the browser console but
-// blocks nothing), so it cannot break the live app. Once verified clean in a
-// real browser, switch the header key to "Content-Security-Policy" to enforce.
-// Allowed origins reflect what the app actually loads: Vercel analytics/speed-
-// insights, Google Fonts, Supabase (REST + realtime wss), and Sentry ingest.
+// Content-Security-Policy — defense-in-depth against XSS. Verified in a real
+// browser via Report-Only mode first (only violation was recharts/d3 string
+// evaluation, hence 'unsafe-eval'; our own code contains zero eval). Now
+// enforcing. Allowed origins reflect what the app actually loads: Vercel
+// analytics/speed-insights, Google Fonts, Supabase (REST + realtime wss),
+// Sentry ingest, and the recharts charting lib.
 const csp = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com data:",
   "img-src 'self' data: blob: https:",
@@ -26,7 +26,7 @@ const securityHeaders = [
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
-  { key: "Content-Security-Policy-Report-Only", value: csp },
+  { key: "Content-Security-Policy", value: csp },
 ];
 
 const nextConfig: NextConfig = {
