@@ -8,6 +8,13 @@ import { track } from "@vercel/analytics";
 
 type Mode = "login" | "signup" | "forgot";
 
+// Temporarily hidden: the Google OAuth consent screen shows the raw Supabase
+// project URL ("…supabase.co") instead of the app name, which reads like a
+// phishing prompt to a first-time user. Re-enable (flip to true) once the
+// OAuth consent screen is branded (App name + logo in Google Cloud Console)
+// and/or a Supabase custom auth domain is set up. Email signup is unaffected.
+const GOOGLE_SIGNIN_ENABLED = false;
+
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -184,7 +191,7 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {mode !== "forgot" && (
+          {GOOGLE_SIGNIN_ENABLED && mode !== "forgot" && (
             <>
               <div className="relative my-6">
                 <div className="absolute inset-0 flex items-center">
