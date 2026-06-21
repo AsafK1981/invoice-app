@@ -28,6 +28,7 @@ import { parseEmails, joinEmails, isValidEmail } from "@/lib/emails";
 import { getVatRate, computeAmounts, round2, canIssueTaxInvoices, type VatMode } from "@/lib/vat";
 import { CURRENCIES, formatMoney } from "@/lib/currencies";
 import { ilsEquivalents } from "@/lib/exchange-rate";
+import { AllocationConnectBanner } from "@/components/allocation-connect-banner";
 import { getClientDefaults } from "@/lib/client-defaults";
 import {
   type Business,
@@ -614,6 +615,17 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
           </div>
         );
       })()}
+    {(documentType === "tax_invoice" ||
+      documentType === "tax_invoice_receipt" ||
+      documentType === "credit_note") && (
+      <div className="mb-4">
+        <AllocationConnectBanner
+          documentType={documentType}
+          amountIls={currency === "ILS" ? total : round2(total * rate)}
+          date={date}
+        />
+      </div>
+    )}
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
       <div className="lg:col-span-7 space-y-6">
         <Section title="פרטי המסמך" icon={FileTextIcon}>

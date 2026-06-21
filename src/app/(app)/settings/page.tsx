@@ -245,7 +245,9 @@ export default function SettingsPage() {
         </p>
       </div>
 
-      <TaxAuthoritySection />
+      <div id="tax-authority" className="scroll-mt-6">
+        <TaxAuthoritySection />
+      </div>
 
       <DunningSettingsSection />
 

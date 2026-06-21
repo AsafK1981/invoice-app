@@ -21,6 +21,7 @@ import {
   Moon,
   Sun,
   ShieldAlert,
+  Landmark,
 } from "lucide-react";
 import { useBusiness } from "@/lib/business-store";
 import { signOut } from "@/lib/auth";
@@ -82,6 +83,13 @@ export function Sidebar() {
       <nav className="flex-1 p-3 space-y-1">
         {[
           ...navItems,
+          // חשבונית ישראל (allocation numbers) only applies to VAT-charging
+          // businesses — surface a dedicated, easy-to-find entry for them so
+          // connecting isn't buried inside the settings page.
+          ...(business?.businessType === "authorized" ||
+          business?.businessType === "company"
+            ? [{ href: "/settings#tax-authority", label: "חשבונית ישראל", icon: Landmark }]
+            : []),
           ...(isAdmin
             ? [{ href: "/admin", label: "ניהול מערכת", icon: ShieldAlert }]
             : []),
