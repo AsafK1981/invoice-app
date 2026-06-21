@@ -12,7 +12,7 @@ interface Props {
   doc: InvoiceDocument;
 }
 
-const GOV_PORTAL_URL = "https://invoices.gov.il";
+const GOV_PORTAL_URL = "https://www.gov.il/he/pages/invoices-israel";
 
 /**
  * Surfaces מספר הקצאה (Tax Authority allocation number) status on the doc

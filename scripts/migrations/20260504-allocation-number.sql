@@ -2,7 +2,7 @@
 -- required on חשבונית מס above the annual threshold (חשבונית ישראל system).
 --
 -- Phase 1: manual entry. User submits the doc on the gov portal
--- (https://invoices.gov.il), gets back an allocation number, pastes
+-- (https://www.gov.il/he/pages/invoices-israel), gets back an allocation number, pastes
 -- it into the app. App stores + prints it on the doc.
 --
 -- Phase 2 (future, not yet built): API integration with the gov system
