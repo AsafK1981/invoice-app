@@ -203,7 +203,7 @@ export default function LandingPage() {
         <div className="mt-20 max-w-5xl mx-auto animate-fade-in-up stagger-3">
           {/* Caption above the mockup — sets context before the visual. */}
           <p className="text-center text-sm sm:text-base text-stone-700 mb-5 font-medium">
-            ככה נראית חשבונית לדוגמא — נקייה, מקצועית, מוכנה לשלוח 👇
+            ככה נראית חשבונית לדוגמה — נקייה, מקצועית, מוכנה לשלוח 👇
           </p>
           <div className="rounded-3xl bg-white border border-orange-200 shadow-2xl shadow-orange-200/40 overflow-hidden">
             {/* Browser chrome — clean: just the traffic-light dots, no URL bar.

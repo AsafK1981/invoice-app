@@ -184,7 +184,7 @@ export default function SettingsPage() {
           </div>
           <p className="text-sm text-stone-700 leading-relaxed">
             עוסק מורשה חייב במספר הקצאה (חשבונית ישראל) על חשבוניות מס מעל לסף השנתי שקבעה רשות המסים.
-            המערכת מקפצת אזהרה אדומה על מסמכים שדורשים הקצאה ולא תאפשר שליחה ללקוח לפני שהמספר משויך אליהם.
+            המערכת מציגה אזהרה אדומה על מסמכים שדורשים הקצאה, ואינה מאפשרת שליחה ללקוח לפני שהמספר משויך אליהם.
           </p>
           <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
             <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-3">
