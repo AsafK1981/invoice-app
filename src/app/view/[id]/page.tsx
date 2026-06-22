@@ -101,6 +101,19 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
           notes: docRow.notes || undefined,
           approvedAt: docRow.approved_at || undefined,
           approvalSignature: docRow.approval_signature || undefined,
+          // מספר הקצאה (חשבונית ישראל) — must render on the document the client
+          // sees, exactly as on the owner's copy. Without this mapping the
+          // public view silently dropped it.
+          allocationNumber: docRow.allocation_number || undefined,
+          allocationSetAt: docRow.allocation_set_at || undefined,
+          // Multi-currency fields — so foreign-currency invoices display in
+          // their currency (and the ₪ equivalent) on the client-facing view too.
+          currency: docRow.currency || undefined,
+          exchangeRate: docRow.exchange_rate != null ? Number(docRow.exchange_rate) : undefined,
+          subtotalIls: docRow.subtotal_ils != null ? Number(docRow.subtotal_ils) : undefined,
+          vatIls: docRow.vat_ils != null ? Number(docRow.vat_ils) : undefined,
+          totalIls: docRow.total_ils != null ? Number(docRow.total_ils) : undefined,
+          zeroRated: docRow.zero_rated || undefined,
         });
 
         if (data.business) {
