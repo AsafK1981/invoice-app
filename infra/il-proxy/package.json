@@ -1,0 +1,14 @@
+{
+  "name": "il-tax-proxy",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Israeli-egress reverse proxy for Israel Tax Authority API calls (gov.il geo-blocks non-IL IPs; Vercel has no IL region). Deployed to Cloud Run me-west1 (Tel Aviv).",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

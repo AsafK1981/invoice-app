@@ -5,6 +5,10 @@ import { encryptColumn } from "@/lib/crypto";
 import { emitSecurityEvent } from "@/lib/security-events";
 import { clientIp } from "@/lib/rate-limit";
 
+// The token exchange goes through the Israeli egress proxy (Cloud Run
+// me-west1) — allow headroom for proxy cold-start + the gov.il round trip.
+export const maxDuration = 30;
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 

@@ -45,6 +45,43 @@ const ITA_BASE =
 
 const CALLBACK_URL = `${APP_ORIGIN}/api/tax-authority/callback`;
 
+/**
+ * Israeli-egress proxy. gov.il geo-blocks non-Israeli source IPs and Vercel
+ * has no Israel region, so server-to-server calls (token exchange/refresh +
+ * allocation) time out from Vercel. When TAX_AUTHORITY_PROXY_BASE is set we
+ * route those calls through a reverse proxy on Cloud Run me-west1 (Tel Aviv),
+ * whose Israeli egress IP gov.il accepts. Browser-facing URLs (the authorize
+ * redirect) must NOT be proxied — the user's own Israeli IP reaches gov fine.
+ */
+const PROXY_BASE = (process.env.TAX_AUTHORITY_PROXY_BASE || "").replace(/\/$/, "");
+const PROXY_KEY = process.env.TAX_AUTHORITY_PROXY_KEY || "";
+
+const GOV_HOSTS: Record<string, string> = {
+  "https://openapi.taxes.gov.il/": "openapi",
+  "https://ita-api.taxes.gov.il/": "ita",
+};
+
+/**
+ * Rewrite a direct gov.il URL to go through the Israeli proxy and attach the
+ * shared-secret header. No-op (returns the direct URL) when the proxy is not
+ * configured, so local dev from an Israeli IP still works unchanged.
+ */
+function viaProxy(
+  url: string,
+  headers: Record<string, string>,
+): { url: string; headers: Record<string, string> } {
+  if (!PROXY_BASE) return { url, headers };
+  for (const [prefix, slug] of Object.entries(GOV_HOSTS)) {
+    if (url.startsWith(prefix)) {
+      return {
+        url: `${PROXY_BASE}/${slug}/${url.slice(prefix.length)}`,
+        headers: { ...headers, "x-proxy-key": PROXY_KEY },
+      };
+    }
+  }
+  return { url, headers };
+}
+
 export function isTaxAuthorityConfigured(): boolean {
   return !!(CLIENT_ID && CLIENT_SECRET && SOFTWARE_NUMBER);
 }
@@ -131,14 +168,11 @@ export async function exchangeCodeForTokens(code: string): Promise<TokenResponse
     code,
     redirect_uri: CALLBACK_URL,
   });
-  const r = await fetch(`${SHAAM_BASE}/longtimetoken/oauth2/token`, {
-    method: "POST",
-    headers: {
-      Authorization: `Basic ${basic}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body,
+  const { url, headers } = viaProxy(`${SHAAM_BASE}/longtimetoken/oauth2/token`, {
+    Authorization: `Basic ${basic}`,
+    "Content-Type": "application/x-www-form-urlencoded",
   });
+  const r = await fetch(url, { method: "POST", headers, body });
   if (!r.ok) {
     throw new Error(`Tax Authority token exchange failed: ${r.status} ${await r.text()}`);
   }
@@ -151,14 +185,11 @@ export async function refreshAccessToken(refreshToken: string): Promise<TokenRes
     grant_type: "refresh_token",
     refresh_token: refreshToken,
   });
-  const r = await fetch(`${SHAAM_BASE}/longtimetoken/oauth2/token`, {
-    method: "POST",
-    headers: {
-      Authorization: `Basic ${basic}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body,
+  const { url, headers } = viaProxy(`${SHAAM_BASE}/longtimetoken/oauth2/token`, {
+    Authorization: `Basic ${basic}`,
+    "Content-Type": "application/x-www-form-urlencoded",
   });
+  const r = await fetch(url, { method: "POST", headers, body });
   if (!r.ok) {
     throw new Error(`Tax Authority token refresh failed: ${r.status} ${await r.text()}`);
   }
@@ -233,12 +264,13 @@ export async function requestAllocation(
     })),
   };
 
-  const r = await fetch(`${ITA_BASE}/Invoices/v1/Approval`, {
+  const { url, headers } = viaProxy(`${ITA_BASE}/Invoices/v1/Approval`, {
+    Authorization: `Bearer ${accessToken}`,
+    "Content-Type": "application/json",
+  });
+  const r = await fetch(url, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-    },
+    headers,
     body: JSON.stringify(body),
   });
 

@@ -13,6 +13,10 @@ import { emitSecurityEvent } from "@/lib/security-events";
 import { clientIp } from "@/lib/rate-limit";
 import { round2, deriveVatRate } from "@/lib/vat";
 
+// Token refresh + allocation go through the Israeli egress proxy (Cloud Run
+// me-west1) — allow headroom for proxy cold-start + the gov.il round trip.
+export const maxDuration = 30;
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;

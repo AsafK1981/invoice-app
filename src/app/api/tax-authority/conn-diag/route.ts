@@ -26,14 +26,14 @@ function keyOk(provided: string | null): boolean {
   return timingSafeEqual(a, b);
 }
 
-async function probe(label: string, url: string) {
+async function probe(label: string, url: string, extraHeaders: Record<string, string> = {}) {
   const started = Date.now();
   try {
     const r = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      headers: { "Content-Type": "application/x-www-form-urlencoded", ...extraHeaders },
       body: "grant_type=authorization_code&code=dummy&redirect_uri=https://mysuperfriendlyinvoiceapp.vercel.app/api/tax-authority/callback",
-      signal: AbortSignal.timeout(20_000),
+      signal: AbortSignal.timeout(25_000),
     });
     const text = await r.text();
     return { label, url, ok: true, status: r.status, ms: Date.now() - started, body: text.slice(0, 300) };
@@ -59,14 +59,26 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
-  const results = await Promise.all([
-    probe("prod-token", "https://openapi.taxes.gov.il/shaam/production/longtimetoken/oauth2/token"),
-    probe("sandbox-token", "https://openapi.taxes.gov.il/shaam/tsandbox/longtimetoken/oauth2/token"),
-  ]);
+  const proxyBase = (process.env.TAX_AUTHORITY_PROXY_BASE || "").replace(/\/$/, "");
+  const proxyKey = process.env.TAX_AUTHORITY_PROXY_KEY || "";
+
+  const probes: Array<Promise<unknown>> = [
+    probe("direct-prod-token", "https://openapi.taxes.gov.il/shaam/production/longtimetoken/oauth2/token"),
+  ];
+  if (proxyBase) {
+    probes.push(
+      probe(
+        "via-proxy-prod-token",
+        `${proxyBase}/openapi/shaam/production/longtimetoken/oauth2/token`,
+        { "x-proxy-key": proxyKey },
+      ),
+    );
+  }
+  const results = await Promise.all(probes);
 
   return NextResponse.json({
     region: process.env.VERCEL_REGION ?? null,
-    deploymentUrl: process.env.VERCEL_URL ?? null,
+    proxyConfigured: !!proxyBase,
     results,
   });
 }
