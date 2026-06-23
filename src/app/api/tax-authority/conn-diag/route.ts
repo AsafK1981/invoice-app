@@ -12,6 +12,10 @@ import { timingSafeEqual } from "node:crypto";
  * once the connectivity root cause is confirmed.
  */
 export const dynamic = "force-dynamic";
+// Run from Frankfurt — closest Vercel region to Israel. iad1 (US East)
+// can't complete the TCP handshake to gov.il within undici's 10s connect
+// timeout; fra1's ~60ms RTT does.
+export const preferredRegion = "fra1";
 
 function keyOk(provided: string | null): boolean {
   const expected = process.env.TAX_DIAG_KEY;
