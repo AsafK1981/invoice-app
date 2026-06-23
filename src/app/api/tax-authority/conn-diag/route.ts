@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { timingSafeEqual } from "node:crypto";
 
 /**
  * TEMPORARY diagnostic — probes Vercel→gov.il token-endpoint reachability.
@@ -6,10 +7,20 @@ import { NextRequest, NextResponse } from "next/server";
  * server replies 400/401 if reachable, or the fetch throws a network error
  * (ETIMEDOUT / ECONNRESET / ENETUNREACH …) we surface via err.cause.
  *
- * Gated behind ?key=<CRON_SECRET>. Delete this route once the connectivity
- * root cause is confirmed.
+ * Auth: x-diag-key header (never the URL, so it can't leak via access logs)
+ * compared constant-time against TAX_DIAG_KEY. Delete this route + env var
+ * once the connectivity root cause is confirmed.
  */
 export const dynamic = "force-dynamic";
+
+function keyOk(provided: string | null): boolean {
+  const expected = process.env.TAX_DIAG_KEY;
+  if (!expected || !provided) return false;
+  const a = Buffer.from(provided);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length) return false;
+  return timingSafeEqual(a, b);
+}
 
 async function probe(label: string, url: string) {
   const started = Date.now();
@@ -40,8 +51,7 @@ async function probe(label: string, url: string) {
 }
 
 export async function GET(req: NextRequest) {
-  const key = new URL(req.url).searchParams.get("key");
-  if (!key || key !== process.env.CRON_SECRET) {
+  if (!keyOk(req.headers.get("x-diag-key"))) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
