@@ -7,6 +7,7 @@ import { getBusinessId, onBusinessReady } from "./business-init";
 export type AuditAction =
   | "document.created"
   | "document.status_changed"
+  | "document.number_changed"
   | "document.deleted"
   | "client.deleted"
   | "product.deleted"
@@ -105,6 +106,7 @@ export function useAuditLog(limit = 100) {
 const ACTION_LABELS: Record<AuditAction, string> = {
   "document.created": "מסמך נוצר",
   "document.status_changed": "סטטוס מסמך עודכן",
+  "document.number_changed": "מספר מסמך שונה",
   "document.deleted": "מסמך נמחק",
   "client.deleted": "לקוח נמחק",
   "product.deleted": "מוצר נמחק",

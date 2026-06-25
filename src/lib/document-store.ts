@@ -323,6 +323,12 @@ export async function updateDocumentNumber(id: string, newNumber: number) {
   if (!Number.isInteger(newNumber) || newNumber < 1) {
     throw new Error("יש להזין מספר שלם חיובי");
   }
+  // Snapshot the prior number/type for the audit trail before mutating.
+  const { data: before } = await supabase
+    .from("documents")
+    .select("type, number")
+    .eq("id", id)
+    .maybeSingle();
   const { data, error } = await supabase
     .from("documents")
     .update({ number: newNumber })
@@ -337,6 +343,15 @@ export async function updateDocumentNumber(id: string, newNumber: number) {
   if (!data || data.length === 0) {
     throw new Error("עדכון לא עבר — ייתכן שאין הרשאה (RLS) או שהמסמך לא קיים");
   }
+  // Audit trail — renumbering a finalized document is sensitive (tax-relevant).
+  const type = (data[0].type as DocumentType) ?? (before?.type as DocumentType);
+  logAudit({
+    action: "document.number_changed",
+    targetType: "document",
+    targetId: id,
+    targetLabel: `${type ? DOCUMENT_TYPE_LABELS[type] : "מסמך"} #${before?.number ?? "?"} → #${newNumber}`,
+    payload: { from: before?.number ?? null, to: newNumber, type },
+  });
   window.dispatchEvent(new Event(CHANGE_EVENT));
 }
 
