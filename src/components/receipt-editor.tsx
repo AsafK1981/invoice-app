@@ -49,6 +49,12 @@ import {
   isDraftEmpty,
   type EditorDraft,
 } from "@/lib/draft-storage";
+import {
+  saveDraftToServer,
+  getServerDraft,
+  deleteServerDraft,
+  type DraftPayload,
+} from "@/lib/draft-store";
 
 interface EditorItem {
   id: string;
@@ -69,6 +75,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   const router = useRouter();
   const searchParams = useSearchParams();
   const fromDocId = searchParams.get("from");
+  const resumeDraftId = searchParams.get("draft");
   const isConvert = searchParams.get("convert") === "1";
   // Prefill client when arriving from a deep-link like /documents/new/quote?clientId=...
   // (typically from the client profile page's "מסמך חדש" button). Verify the
@@ -112,6 +119,10 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   const [toast, setToast] = useState<{ kind: "success" | "error"; text: string } | null>(null);
 
   const [allocationNumber, setAllocationNumber] = useState<string>("");
+  // Server-draft this editor is bound to (set when resuming, or after the first
+  // "שמור טיוטה"); subsequent saves update the same row, and finalizing deletes it.
+  const serverDraftIdRef = useRef<string | null>(resumeDraftId);
+  const [savingDraft, setSavingDraft] = useState<boolean>(false);
   const [currency, setCurrency] = useState("ILS");
   const [zeroRated, setZeroRated] = useState(false);
   const [rate, setRate] = useState(1);
@@ -142,7 +153,9 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   // discard. The hydration flag prevents the auto-save effect from overwriting
   // the draft before we've had a chance to read it.
   useEffect(() => {
-    if (fromDocId) {
+    if (fromDocId || resumeDraftId) {
+      // Copy/convert and resume-draft hydrate from their own sources; skip the
+      // localStorage autosave recovery so it doesn't clobber them.
       setDraftHydrated(true);
       return;
     }
@@ -170,7 +183,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   // saveable field changes. Only after hydration so we don't blow away the
   // saved draft on the very first render.
   useEffect(() => {
-    if (!draftHydrated || fromDocId) return;
+    if (!draftHydrated || fromDocId || resumeDraftId) return;
     const draft: EditorDraft = {
       clientId,
       adhocMode,
@@ -338,6 +351,45 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
     })();
   }, [fromDocId, isConvert]);
 
+  // Resume an unfinished document from a saved server draft (?draft=<id>).
+  useEffect(() => {
+    if (!resumeDraftId) return;
+    (async () => {
+      const draft = await getServerDraft(resumeDraftId);
+      if (!draft) {
+        setToast({ kind: "error", text: "הטיוטה לא נמצאה." });
+        return;
+      }
+      const p = draft.payload;
+      setClientId(p.clientId || "");
+      setAdhocMode(p.adhocMode);
+      setAdhocName(p.adhocName || "");
+      setAdhocTaxId(p.adhocTaxId || "");
+      setAdhocEmail(p.adhocEmail || "");
+      setDate(p.date || today);
+      setSubject(p.subject || "");
+      setValidUntil(p.validUntil || "");
+      setPaymentMethod(p.paymentMethod);
+      setNotes(p.notes || "");
+      setVatMode(p.vatMode);
+      if (Array.isArray(p.items) && p.items.length > 0) {
+        setItems(
+          p.items.map((it) => ({
+            id: it.id || crypto.randomUUID(),
+            productId: it.productId,
+            description: it.description,
+            quantity: it.quantity,
+            unitPrice: it.unitPrice,
+          }))
+        );
+      }
+      setCurrency(p.currency || "ILS");
+      setZeroRated(Boolean(p.zeroRated));
+      setRate(p.rate || 1);
+      setAllocationNumber(p.allocationNumber || "");
+    })();
+  }, [resumeDraftId]);
+
   const previewItems = useMemo(
     () =>
       items.map((i) => {
@@ -424,6 +476,53 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
     return selectedClient?.name || "";
   }
 
+  // Save the current (possibly incomplete) state as a server draft to finish
+  // later. No invoice number is allocated — that happens only on finalize.
+  async function handleSaveDraft() {
+    if (savingDraft) return;
+    setSavingDraft(true);
+    setToast(null);
+    try {
+      const payload: DraftPayload = {
+        clientId,
+        adhocMode,
+        adhocName,
+        adhocTaxId,
+        adhocEmail,
+        date,
+        subject,
+        validUntil,
+        paymentMethod,
+        notes,
+        vatMode,
+        items: items.map((i) => ({
+          id: i.id,
+          productId: i.productId,
+          description: i.description,
+          quantity: i.quantity,
+          unitPrice: i.unitPrice,
+        })),
+        documentType,
+        currency,
+        zeroRated,
+        rate,
+        allocationNumber,
+      };
+      const id = await saveDraftToServer({
+        id: serverDraftIdRef.current,
+        documentType,
+        title: buildClientName() || "ללא לקוח",
+        payload,
+      });
+      serverDraftIdRef.current = id;
+      setToast({ kind: "success", text: 'הטיוטה נשמרה. אפשר להמשיך אחר כך מלשונית "טיוטות".' });
+    } catch (e) {
+      setToast({ kind: "error", text: e instanceof Error ? e.message : "שמירת הטיוטה נכשלה" });
+    } finally {
+      setSavingDraft(false);
+    }
+  }
+
   async function handleSave() {
     if (!canSave) return;
     // Hard double-click guard. The disabled-button-via-state approach loses
@@ -488,6 +587,13 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
       // The doc actually persisted; clear the localStorage draft so it doesn't
       // come back to haunt the next "new document" session.
       clearDraft(documentType);
+
+      // If this was resumed from / saved as a server draft, remove it now that
+      // it's become a real numbered document.
+      if (serverDraftIdRef.current) {
+        await deleteServerDraft(serverDraftIdRef.current).catch(() => {});
+        serverDraftIdRef.current = null;
+      }
 
       // If this was a convert-from-quote flow, link the original quote to
       // this new receipt and mark it paid. Failures are logged but
@@ -1090,6 +1196,17 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                 </>
               )}
             </button>
+            <button
+              onClick={handleSaveDraft}
+              disabled={savingDraft || saving}
+              className="w-full inline-flex items-center justify-center gap-2 bg-white text-stone-700 border border-stone-300 py-2.5 rounded-2xl text-sm font-semibold hover:bg-stone-50 hover:border-stone-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
+              <Save className="w-4 h-4" />
+              {savingDraft ? "שומר טיוטה…" : "שמור טיוטה והמשך אחר כך"}
+            </button>
+            <p className="text-xs text-stone-500 text-center">
+              טיוטה נשמרת בלי מספר — תוכל להמשיך אותה מלשונית &quot;טיוטות&quot;.
+            </p>
           </div>
           {!canSave && (
             <div className="mt-3 flex items-start gap-2 text-xs text-amber-700 bg-amber-50 p-3 rounded-xl border border-amber-200">

@@ -4,13 +4,17 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { FileText, Plus, Upload, Banknote } from "lucide-react";
 import { useDocuments } from "@/lib/document-store";
+import { useDrafts } from "@/lib/draft-store";
 import { DocumentsTable } from "@/components/documents-table";
+import { DraftsList } from "@/components/drafts-list";
 import { CsvImportModal } from "@/components/csv-import-modal";
 import { BankImportModal } from "@/components/bank-import-modal";
 import { formatCurrency } from "@/lib/format";
 
 export default function DocumentsPage() {
   const { documents } = useDocuments();
+  const { drafts } = useDrafts();
+  const [tab, setTab] = useState<"documents" | "drafts">("documents");
   const [importOpen, setImportOpen] = useState(false);
   const [bankImportOpen, setBankImportOpen] = useState(false);
 
@@ -105,8 +109,40 @@ export default function DocumentsPage() {
         </div>
       </div>
 
+      <div className="flex items-center gap-1 border-b border-stone-200">
+        <button
+          onClick={() => setTab("documents")}
+          className={`px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors ${
+            tab === "documents"
+              ? "border-orange-500 text-orange-700"
+              : "border-transparent text-stone-500 hover:text-stone-800"
+          }`}
+        >
+          מסמכים
+        </button>
+        <button
+          onClick={() => setTab("drafts")}
+          className={`px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors inline-flex items-center gap-2 ${
+            tab === "drafts"
+              ? "border-orange-500 text-orange-700"
+              : "border-transparent text-stone-500 hover:text-stone-800"
+          }`}
+        >
+          טיוטות
+          {drafts.length > 0 && (
+            <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-amber-100 text-amber-700 text-xs font-bold">
+              {drafts.length}
+            </span>
+          )}
+        </button>
+      </div>
+
       <div className="card-soft overflow-hidden">
-        <DocumentsTable documents={documents} showExport />
+        {tab === "documents" ? (
+          <DocumentsTable documents={documents} showExport />
+        ) : (
+          <DraftsList />
+        )}
       </div>
 
       <CsvImportModal
