@@ -92,6 +92,7 @@ export default function InvoicesPeriodReportPage() {
         customerTaxId: d.clientTaxId || taxIdByClient[d.clientId] || "",
         clientName: d.clientName,
         net: d.subtotalIls ?? d.subtotal,
+        vat: d.vatIls ?? d.vat,
         total: d.totalIls ?? d.total,
         allocation: d.allocationNumber || "",
       }))
@@ -104,7 +105,11 @@ export default function InvoicesPeriodReportPage() {
       : rangeLabel(endMonth, lengthMonths);
 
   const totals = useMemo(
-    () => rows.reduce((acc, r) => ({ net: acc.net + r.net, total: acc.total + r.total }), { net: 0, total: 0 }),
+    () =>
+      rows.reduce(
+        (acc, r) => ({ net: acc.net + r.net, vat: acc.vat + r.vat, total: acc.total + r.total }),
+        { net: 0, vat: 0, total: 0 },
+      ),
     [rows],
   );
 
@@ -114,9 +119,9 @@ export default function InvoicesPeriodReportPage() {
   }
 
   function exportCsv() {
-    const headers = ["ת.ז / ח.פ", "מספר חשבונית", "תאריך", "סכום ללא מע\"מ", "סכום כולל מע\"מ", "מספר הקצאה"];
+    const headers = ["ת.ז / ח.פ", "מספר חשבונית", "תאריך", "סכום ללא מע\"מ", "מע\"מ", "סכום כולל מע\"מ", "מספר הקצאה"];
     const lines = rows.map((r) =>
-      [r.customerTaxId, r.number, fmtDate(r.date), r.net.toFixed(2), r.total.toFixed(2), r.allocation]
+      [r.customerTaxId, r.number, fmtDate(r.date), r.net.toFixed(2), r.vat.toFixed(2), r.total.toFixed(2), r.allocation]
         .map((v) => `"${String(v).replace(/"/g, '""')}"`)
         .join(","),
     );
@@ -270,6 +275,7 @@ export default function InvoicesPeriodReportPage() {
                   <th className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">מספר חשבונית</th>
                   <th className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">תאריך</th>
                   <th className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">סכום ללא מע״מ</th>
+                  <th className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">מע״מ</th>
                   <th className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">סכום כולל מע״מ</th>
                   <th className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap">מספר הקצאה</th>
                 </tr>
@@ -285,6 +291,7 @@ export default function InvoicesPeriodReportPage() {
                     </td>
                     <td className="px-4 py-3.5 text-center align-middle tabular-nums whitespace-nowrap text-stone-700 border-b border-l border-stone-200">{fmtDate(r.date)}</td>
                     <td className="px-4 py-3.5 text-center align-middle tabular-nums whitespace-nowrap text-stone-700 border-b border-l border-stone-200">{formatCurrency(r.net)}</td>
+                    <td className="px-4 py-3.5 text-center align-middle tabular-nums whitespace-nowrap text-stone-700 border-b border-l border-stone-200">{formatCurrency(r.vat)}</td>
                     <td className="px-4 py-3.5 text-center align-middle tabular-nums font-extrabold text-stone-900 whitespace-nowrap border-b border-l border-stone-200">{formatCurrency(r.total)}</td>
                     <td className="px-4 py-3.5 text-center align-middle tabular-nums whitespace-nowrap text-stone-700 border-b border-stone-200">{r.allocation || <span className="text-stone-300">—</span>}</td>
                   </tr>
@@ -294,6 +301,7 @@ export default function InvoicesPeriodReportPage() {
                 <tr className="bg-indigo-50 text-indigo-950 font-black">
                   <td className="px-4 py-4 text-center border-t-2 border-l border-indigo-200" colSpan={3}>סה״כ · {rows.length} חשבוניות</td>
                   <td className="px-4 py-4 text-center tabular-nums whitespace-nowrap border-t-2 border-l border-indigo-200">{formatCurrency(totals.net)}</td>
+                  <td className="px-4 py-4 text-center tabular-nums whitespace-nowrap border-t-2 border-l border-indigo-200">{formatCurrency(totals.vat)}</td>
                   <td className="px-4 py-4 text-center tabular-nums whitespace-nowrap border-t-2 border-l border-indigo-200">{formatCurrency(totals.total)}</td>
                   <td className="px-4 py-4 border-t-2 border-indigo-200"></td>
                 </tr>
