@@ -166,6 +166,20 @@ export async function createDocument(
   }
 
   const result = data as { id: string; number: number };
+
+  // A manually-entered allocation number isn't part of create_document_atomic
+  // (the number normally arrives later from the Tax Authority). Persist it in a
+  // follow-up update when the user typed one in the editor.
+  if (doc.allocationNumber?.trim()) {
+    await supabase
+      .from("documents")
+      .update({
+        allocation_number: doc.allocationNumber.trim(),
+        allocation_set_at: new Date().toISOString(),
+      })
+      .eq("id", result.id);
+  }
+
   logAudit({
     action: "document.created",
     targetType: "document",

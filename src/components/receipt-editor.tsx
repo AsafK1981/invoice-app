@@ -111,6 +111,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   const saveInFlightRef = useRef(false);
   const [toast, setToast] = useState<{ kind: "success" | "error"; text: string } | null>(null);
 
+  const [allocationNumber, setAllocationNumber] = useState<string>("");
   const [currency, setCurrency] = useState("ILS");
   const [zeroRated, setZeroRated] = useState(false);
   const [rate, setRate] = useState(1);
@@ -458,6 +459,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
         clientId: adhocMode ? "" : selectedClient?.id || "",
         clientName,
         clientTaxId: (adhocMode ? adhocTaxId.trim() : selectedClient?.taxId) || undefined,
+        allocationNumber: allocationNumber.trim() || undefined,
         subject: subject.trim() || undefined,
         status:
           documentType === "receipt" || documentType === "tax_invoice_receipt"
@@ -624,6 +626,8 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
           documentType={documentType}
           amountIls={currency === "ILS" ? total : round2(total * rate)}
           date={date}
+          allocationNumber={allocationNumber}
+          onAllocationNumberChange={setAllocationNumber}
         />
       </div>
     )}

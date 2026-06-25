@@ -12,6 +12,9 @@ interface Props {
   amountIls: number;
   /** Document date (YYYY-MM-DD) — the threshold is date-aware. */
   date: string;
+  /** Manually-entered allocation number (controlled by the editor). */
+  allocationNumber?: string;
+  onAllocationNumberChange?: (value: string) => void;
 }
 
 /**
@@ -21,7 +24,13 @@ interface Props {
  * was hard to find. Self-hides for עוסק פטור and for documents under the
  * threshold (where no allocation number is required).
  */
-export function AllocationConnectBanner({ documentType, amountIls, date }: Props) {
+export function AllocationConnectBanner({
+  documentType,
+  amountIls,
+  date,
+  allocationNumber = "",
+  onAllocationNumberChange,
+}: Props) {
   const [businessType, setBusinessType] = useState<string | null>(null);
   const [connected, setConnected] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -83,14 +92,44 @@ export function AllocationConnectBanner({ documentType, amountIls, date }: Props
     setConnecting(false);
   }
 
+  // The "מספר הקצאה" slot — always rendered when this document needs a number,
+  // so the user has a fixed place for it and a reminder that it's still missing.
+  // Editable: the number normally arrives automatically from the Tax Authority
+  // after saving, but the user can also type/paste one they obtained elsewhere.
+  const hasNumber = allocationNumber.trim().length > 0;
+  const allocField = (
+    <div className="mt-3 pt-3 border-t border-stone-200/70">
+      <label className="block text-xs font-bold text-stone-800 mb-1">מספר הקצאה</label>
+      <input
+        type="text"
+        inputMode="numeric"
+        dir="ltr"
+        value={allocationNumber}
+        onChange={(e) => onAllocationNumberChange?.(e.target.value.replace(/[^\d]/g, ""))}
+        placeholder="— טרם הוקצה"
+        className="input-warm text-left"
+      />
+      <p className="text-xs text-stone-600 mt-1">
+        {hasNumber
+          ? "מספר הקצאה הוזן ידנית — יודפס על המסמך."
+          : connected
+          ? "השאר ריק — יתקבל אוטומטית מרשות המסים לאחר שמירה. או הזן ידנית."
+          : "השאר ריק והפק לאחר חיבור, או הזן ידנית מספר שקיבלת."}
+      </p>
+    </div>
+  );
+
   if (connected) {
     return (
-      <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 px-4 py-3 flex items-center gap-3">
-        <ShieldCheck className="w-5 h-5 text-emerald-700 flex-shrink-0" />
-        <p className="text-sm text-emerald-900">
-          <span className="font-bold">מחובר לחשבונית ישראל.</span> מספר ההקצאה יתקבל אוטומטית
-          לאחר שמירת המסמך.
-        </p>
+      <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 px-4 py-3">
+        <div className="flex items-center gap-3">
+          <ShieldCheck className="w-5 h-5 text-emerald-700 flex-shrink-0" />
+          <p className="text-sm text-emerald-900">
+            <span className="font-bold">מחובר לחשבונית ישראל.</span> מספר ההקצאה יתקבל אוטומטית
+            לאחר שמירת המסמך.
+          </p>
+        </div>
+        {allocField}
       </div>
     );
   }
@@ -124,6 +163,7 @@ export function AllocationConnectBanner({ documentType, amountIls, date }: Props
           </button>
         </div>
       </div>
+      {allocField}
     </div>
   );
 }
