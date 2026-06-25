@@ -29,6 +29,7 @@ export function DocumentNumberingSettings() {
   const [editing, setEditing] = useState<DocumentType | null>(null);
   const [draftValue, setDraftValue] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
+  const [note, setNote] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   async function load() {
@@ -73,6 +74,7 @@ export function DocumentNumberingSettings() {
     setEditing(type);
     setDraftValue(String(counters[type]));
     setError(null);
+    setNote(null);
   }
 
   function cancelEdit() {
@@ -84,16 +86,13 @@ export function DocumentNumberingSettings() {
   async function saveEdit(type: DocumentType) {
     const value = parseInt(draftValue, 10);
     if (!Number.isFinite(value) || value < 1) {
-      setError("יש להזין מספר חיובי");
+      setError("יש להזין מספר שלם חיובי");
       return;
     }
-    const used = maxUsed[type];
-    if (used !== undefined && value <= used) {
-      setError(
-        `כבר קיים מסמך מסוג זה עם מספר ${used}. בחר מספר גבוה מ-${used}.`
-      );
-      return;
-    }
+    // No floor — the user can set any starting number (e.g. to continue a
+    // sequence from a previous system). We only NOTE, not block, when the
+    // value would collide with existing documents; a number already taken is
+    // rejected automatically at issue time by the DB unique index.
     const bid = getBusinessId();
     if (!bid) return;
     setSaving(true);
@@ -112,6 +111,14 @@ export function DocumentNumberingSettings() {
     setCounters((c) => ({ ...c, [type]: value }));
     setEditing(null);
     setDraftValue("");
+    const used = maxUsed[type];
+    if (used !== undefined && value <= used) {
+      setNote(
+        `נשמר. שים לב: כבר קיימים מסמכים מסוג זה עד מספר ${used}, כך שמספרים תפוסים ייחסמו אוטומטית בהפקה.`
+      );
+    } else {
+      setNote(`נשמר. המסמך הבא מסוג זה יקבל מספר ${value}.`);
+    }
   }
 
   return (
@@ -187,6 +194,12 @@ export function DocumentNumberingSettings() {
         <div className="flex items-start gap-2 text-sm text-rose-700 bg-rose-50 border border-rose-200 p-3 rounded-xl">
           <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
           <span>{error}</span>
+        </div>
+      )}
+      {note && (
+        <div className="flex items-start gap-2 text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 p-3 rounded-xl">
+          <Check className="w-4 h-4 flex-shrink-0 mt-0.5" />
+          <span>{note}</span>
         </div>
       )}
     </div>

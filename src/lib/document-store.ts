@@ -313,6 +313,33 @@ export async function setAllocationNumber(id: string, allocationNumber: string |
   window.dispatchEvent(new Event(CHANGE_EVENT));
 }
 
+/**
+ * Change a specific document's number to any positive integer. The only hard
+ * rule is uniqueness — the DB unique index (business_id, type, number) blocks a
+ * collision, which we surface as a friendly message. Gaps / non-sequential
+ * numbers are allowed (the user's call vs. their accountant).
+ */
+export async function updateDocumentNumber(id: string, newNumber: number) {
+  if (!Number.isInteger(newNumber) || newNumber < 1) {
+    throw new Error("יש להזין מספר שלם חיובי");
+  }
+  const { data, error } = await supabase
+    .from("documents")
+    .update({ number: newNumber })
+    .eq("id", id)
+    .select();
+  if (error) {
+    if (error.code === "23505" || /duplicate|unique/i.test(error.message)) {
+      throw new Error(`כבר קיים מסמך מאותו סוג עם מספר ${newNumber}. בחר מספר אחר.`);
+    }
+    throw new Error(error.message);
+  }
+  if (!data || data.length === 0) {
+    throw new Error("עדכון לא עבר — ייתכן שאין הרשאה (RLS) או שהמסמך לא קיים");
+  }
+  window.dispatchEvent(new Event(CHANGE_EVENT));
+}
+
 export async function markDocumentEmailed(id: string) {
   // Same defensive .select() pattern: detect 0-row updates from RLS gaps.
   const { data, error } = await supabase

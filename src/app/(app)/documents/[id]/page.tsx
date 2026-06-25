@@ -25,6 +25,7 @@ import { publicDocumentUrl } from "@/lib/public-url";
 import { DocumentAttachmentsSection } from "@/components/document-attachments-section";
 import { DocumentTimeline } from "@/components/document-timeline";
 import { AllocationNumberSection } from "@/components/allocation-number-section";
+import { DocumentNumberEditor } from "@/components/document-number-editor";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { useClients } from "@/lib/client-store";
 import { useBusiness } from "@/lib/business-store";
@@ -755,6 +756,8 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
           <span>{toast.text}</span>
         </div>
       )}
+
+      <DocumentNumberEditor doc={doc} />
 
       <AllocationNumberSection doc={doc} />
 
