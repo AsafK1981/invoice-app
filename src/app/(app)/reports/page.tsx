@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { TrendingUp, TrendingDown, PiggyBank, CalendarDays, Download, FileArchive, BookOpen, Calculator } from "lucide-react";
+import { TrendingUp, TrendingDown, PiggyBank, CalendarDays, Download, FileArchive, BookOpen, Calculator, FileSpreadsheet } from "lucide-react";
 import { useDocuments } from "@/lib/document-store";
 import { useExpenses } from "@/lib/expense-store";
 import { useBusiness } from "@/lib/business-store";
@@ -241,6 +241,14 @@ export default function ReportsPage() {
           >
             <Calculator className="w-4 h-4 text-teal-600" />
             צפי מס שנתי
+          </Link>
+          <Link
+            href="/reports/invoices-period"
+            title="דוח חשבוניות תקופתי (חודש / חודשיים / 3 / חצי שנה) — ת.ז/ח.פ, מספר, תאריך, סכום לפני ואחרי מע״מ, מספר הקצאה"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border-2 border-sky-200 text-stone-800 hover:bg-sky-50"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-sky-600" />
+            דוח חשבוניות תקופתי
           </Link>
         </div>
       </div>
