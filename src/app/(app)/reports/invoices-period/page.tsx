@@ -53,8 +53,11 @@ export default function InvoicesPeriodReportPage() {
   const { documents, ready } = useDocuments();
   const { items: clients } = useClients();
 
+  const [rangeMode, setRangeMode] = useState<"preset" | "custom">("preset");
   const [lengthMonths, setLengthMonths] = useState<number>(2);
   const [endMonth, setEndMonth] = useState<string>(() => ym(new Date()));
+  const [fromDate, setFromDate] = useState<string>(() => `${ym(new Date())}-01`);
+  const [toDate, setToDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
 
   const taxIdByClient = useMemo(() => {
     const map: Record<string, string> = {};
@@ -62,16 +65,24 @@ export default function InvoicesPeriodReportPage() {
     return map;
   }, [clients]);
 
-  const rows = useMemo(() => {
+  const inRange = useMemo(() => {
+    if (rangeMode === "custom") {
+      const lo = fromDate || "0000-00-00";
+      const hi = toDate || "9999-99-99";
+      return (date: string) => date >= lo && date <= hi;
+    }
     const start = startOfRange(endMonth, lengthMonths);
     const end = afterEnd(endMonth);
+    return (date: string) => date >= start && date < end;
+  }, [rangeMode, fromDate, toDate, endMonth, lengthMonths]);
+
+  const rows = useMemo(() => {
     return documents
       .filter(
         (d) =>
           REPORT_TYPES.includes(d.type) &&
           typeof d.date === "string" &&
-          d.date >= start &&
-          d.date < end,
+          inRange(d.date),
       )
       .map((d) => ({
         id: d.id,
@@ -85,7 +96,12 @@ export default function InvoicesPeriodReportPage() {
         allocation: d.allocationNumber || "",
       }))
       .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.number - b.number));
-  }, [documents, endMonth, lengthMonths, taxIdByClient]);
+  }, [documents, inRange, taxIdByClient]);
+
+  const currentLabel =
+    rangeMode === "custom"
+      ? `${fromDate ? fmtDate(fromDate) : "?"} – ${toDate ? fmtDate(toDate) : "?"}`
+      : rangeLabel(endMonth, lengthMonths);
 
   const totals = useMemo(
     () => rows.reduce((acc, r) => ({ net: acc.net + r.net, total: acc.total + r.total }), { net: 0, total: 0 }),
@@ -109,7 +125,9 @@ export default function InvoicesPeriodReportPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `דוח-חשבוניות-${endMonth}-${lengthMonths}ח.csv`;
+    a.download = `דוח-חשבוניות-${
+      rangeMode === "custom" ? `${fromDate}_עד_${toDate}` : `${endMonth}-${lengthMonths}ח`
+    }.csv`;
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -160,13 +178,16 @@ export default function InvoicesPeriodReportPage() {
 
       {/* Controls */}
       <div className="card-soft p-4 flex flex-wrap items-center gap-4 no-print">
-        <div className="flex items-center gap-1 bg-stone-100 rounded-xl p-1">
+        <div className="flex flex-wrap items-center gap-1 bg-stone-100 rounded-xl p-1">
           {LENGTHS.map((l) => (
             <button
               key={l.months}
-              onClick={() => setLengthMonths(l.months)}
+              onClick={() => {
+                setRangeMode("preset");
+                setLengthMonths(l.months);
+              }}
               className={`px-3.5 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                lengthMonths === l.months
+                rangeMode === "preset" && lengthMonths === l.months
                   ? "bg-white text-sky-700 shadow-sm"
                   : "text-stone-600 hover:text-stone-900"
               }`}
@@ -174,26 +195,65 @@ export default function InvoicesPeriodReportPage() {
               {l.label}
             </button>
           ))}
+          <button
+            onClick={() => setRangeMode("custom")}
+            className={`px-3.5 py-2 rounded-lg text-sm font-semibold transition-colors ${
+              rangeMode === "custom"
+                ? "bg-white text-sky-700 shadow-sm"
+                : "text-stone-600 hover:text-stone-900"
+            }`}
+          >
+            טווח מותאם
+          </button>
         </div>
-        <label className="flex items-center gap-2 text-sm text-stone-700">
-          חודש סיום:
-          <input
-            type="month"
-            value={endMonth}
-            onChange={(e) => setEndMonth(e.target.value || ym(new Date()))}
-            className="input-warm py-2 px-3 text-sm"
-            dir="ltr"
-          />
-        </label>
+
+        {rangeMode === "preset" ? (
+          <label className="flex items-center gap-2 text-sm text-stone-700">
+            חודש סיום:
+            <input
+              type="month"
+              value={endMonth}
+              onChange={(e) => setEndMonth(e.target.value || ym(new Date()))}
+              className="input-warm py-2 px-3 text-sm w-auto"
+              dir="ltr"
+            />
+          </label>
+        ) : (
+          <div className="flex flex-wrap items-center gap-2 text-sm text-stone-700">
+            <label className="flex items-center gap-2">
+              מתאריך:
+              <input
+                type="date"
+                value={fromDate}
+                max={toDate || undefined}
+                onChange={(e) => setFromDate(e.target.value)}
+                className="input-warm py-2 px-3 text-sm w-auto"
+                dir="ltr"
+              />
+            </label>
+            <label className="flex items-center gap-2">
+              עד תאריך:
+              <input
+                type="date"
+                value={toDate}
+                min={fromDate || undefined}
+                onChange={(e) => setToDate(e.target.value)}
+                className="input-warm py-2 px-3 text-sm w-auto"
+                dir="ltr"
+              />
+            </label>
+          </div>
+        )}
+
         <span className="text-sm text-stone-500">
-          מציג: <span className="font-semibold text-stone-800">{rangeLabel(endMonth, lengthMonths)}</span>
+          מציג: <span className="font-semibold text-stone-800">{currentLabel}</span>
         </span>
       </div>
 
       {/* Report */}
       <div className="card-soft overflow-hidden">
         <div className="px-4 py-3 border-b border-stone-100 flex items-baseline justify-between">
-          <h2 className="font-bold text-stone-900">{rangeLabel(endMonth, lengthMonths)}</h2>
+          <h2 className="font-bold text-stone-900">{currentLabel}</h2>
           <span className="text-sm text-stone-500">{rows.length} חשבוניות</span>
         </div>
         {ready && rows.length === 0 ? (
@@ -201,40 +261,40 @@ export default function InvoicesPeriodReportPage() {
             אין חשבוניות מס בתקופה שנבחרה.
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+          <div className="p-4 overflow-x-auto">
+            <table className="w-full text-sm border-collapse rounded-lg overflow-hidden">
               <thead>
-                <tr className="text-stone-600 bg-stone-50/70 text-right">
-                  <th className="px-4 py-2.5 font-semibold">ת.ז / ח.פ</th>
-                  <th className="px-4 py-2.5 font-semibold">מספר חשבונית</th>
-                  <th className="px-4 py-2.5 font-semibold">תאריך</th>
-                  <th className="px-4 py-2.5 font-semibold">סכום ללא מע״מ</th>
-                  <th className="px-4 py-2.5 font-semibold">סכום כולל מע״מ</th>
-                  <th className="px-4 py-2.5 font-semibold">מספר הקצאה</th>
+                <tr className="text-stone-700 text-right">
+                  <th className="border border-stone-200 bg-stone-100 px-3 py-2.5 font-semibold whitespace-nowrap">ת.ז / ח.פ</th>
+                  <th className="border border-stone-200 bg-stone-100 px-3 py-2.5 font-semibold whitespace-nowrap">מספר חשבונית</th>
+                  <th className="border border-stone-200 bg-stone-100 px-3 py-2.5 font-semibold whitespace-nowrap">תאריך</th>
+                  <th className="border border-stone-200 bg-stone-100 px-3 py-2.5 font-semibold whitespace-nowrap">סכום ללא מע״מ</th>
+                  <th className="border border-stone-200 bg-stone-100 px-3 py-2.5 font-semibold whitespace-nowrap">סכום כולל מע״מ</th>
+                  <th className="border border-stone-200 bg-stone-100 px-3 py-2.5 font-semibold whitespace-nowrap">מספר הקצאה</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-stone-100">
-                {rows.map((r) => (
-                  <tr key={r.id} className="hover:bg-orange-50/30">
-                    <td className="px-4 py-2.5 tabular-nums" dir="ltr">{r.customerTaxId || "—"}</td>
-                    <td className="px-4 py-2.5">
+              <tbody>
+                {rows.map((r, i) => (
+                  <tr key={r.id} className={i % 2 ? "bg-stone-50/50" : "bg-white"}>
+                    <td className="border border-stone-200 px-3 py-2.5 tabular-nums whitespace-nowrap" dir="ltr">{r.customerTaxId || "—"}</td>
+                    <td className="border border-stone-200 px-3 py-2.5 whitespace-nowrap">
                       <Link href={`/documents/${r.id}`} className="text-sky-700 hover:underline font-medium">
                         {DOCUMENT_TYPE_LABELS[r.type]} #{r.number}
                       </Link>
                     </td>
-                    <td className="px-4 py-2.5 tabular-nums" dir="ltr">{fmtDate(r.date)}</td>
-                    <td className="px-4 py-2.5 tabular-nums" dir="ltr">{formatCurrency(r.net)}</td>
-                    <td className="px-4 py-2.5 tabular-nums font-semibold" dir="ltr">{formatCurrency(r.total)}</td>
-                    <td className="px-4 py-2.5 tabular-nums" dir="ltr">{r.allocation || "—"}</td>
+                    <td className="border border-stone-200 px-3 py-2.5 tabular-nums whitespace-nowrap" dir="ltr">{fmtDate(r.date)}</td>
+                    <td className="border border-stone-200 px-3 py-2.5 tabular-nums whitespace-nowrap" dir="ltr">{formatCurrency(r.net)}</td>
+                    <td className="border border-stone-200 px-3 py-2.5 tabular-nums font-semibold whitespace-nowrap" dir="ltr">{formatCurrency(r.total)}</td>
+                    <td className="border border-stone-200 px-3 py-2.5 tabular-nums whitespace-nowrap" dir="ltr">{r.allocation || "—"}</td>
                   </tr>
                 ))}
               </tbody>
               <tfoot>
-                <tr className="bg-stone-50 font-bold text-stone-900 border-t-2 border-stone-200">
-                  <td className="px-4 py-3" colSpan={3}>סה״כ ({rows.length} חשבוניות)</td>
-                  <td className="px-4 py-3 tabular-nums" dir="ltr">{formatCurrency(totals.net)}</td>
-                  <td className="px-4 py-3 tabular-nums" dir="ltr">{formatCurrency(totals.total)}</td>
-                  <td className="px-4 py-3"></td>
+                <tr className="bg-stone-100 font-bold text-stone-900">
+                  <td className="border border-stone-300 px-3 py-3" colSpan={3}>סה״כ ({rows.length} חשבוניות)</td>
+                  <td className="border border-stone-300 px-3 py-3 tabular-nums whitespace-nowrap" dir="ltr">{formatCurrency(totals.net)}</td>
+                  <td className="border border-stone-300 px-3 py-3 tabular-nums whitespace-nowrap" dir="ltr">{formatCurrency(totals.total)}</td>
+                  <td className="border border-stone-300 px-3 py-3"></td>
                 </tr>
               </tfoot>
             </table>
