@@ -147,7 +147,7 @@ export default function InvoicesPeriodReportPage() {
       <div className="flex items-end justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-3xl font-bold text-stone-900 flex items-center gap-3">
-            <span className="w-11 h-11 rounded-2xl bg-gradient-to-br from-sky-400 to-blue-500 flex items-center justify-center shadow-sm">
+            <span className="w-11 h-11 rounded-2xl bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center shadow-sm">
               <FileSpreadsheet className="w-5 h-5 text-white" />
             </span>
             דוח חשבוניות תקופתי
@@ -177,8 +177,8 @@ export default function InvoicesPeriodReportPage() {
       </div>
 
       {/* Controls */}
-      <div className="card-soft p-4 flex flex-wrap items-center gap-4 no-print">
-        <div className="flex flex-wrap items-center gap-1 bg-stone-100 rounded-xl p-1">
+      <div className="card-soft p-4 space-y-3 no-print">
+        <div className="flex flex-wrap items-center gap-1 bg-stone-100 rounded-xl p-1 w-max max-w-full">
           {LENGTHS.map((l) => (
             <button
               key={l.months}
@@ -188,7 +188,7 @@ export default function InvoicesPeriodReportPage() {
               }}
               className={`px-3.5 py-2 rounded-lg text-sm font-semibold transition-colors ${
                 rangeMode === "preset" && lengthMonths === l.months
-                  ? "bg-white text-sky-700 shadow-sm"
+                  ? "bg-white text-indigo-700 shadow-sm"
                   : "text-stone-600 hover:text-stone-900"
               }`}
             >
@@ -199,7 +199,7 @@ export default function InvoicesPeriodReportPage() {
             onClick={() => setRangeMode("custom")}
             className={`px-3.5 py-2 rounded-lg text-sm font-semibold transition-colors ${
               rangeMode === "custom"
-                ? "bg-white text-sky-700 shadow-sm"
+                ? "bg-white text-indigo-700 shadow-sm"
                 : "text-stone-600 hover:text-stone-900"
             }`}
           >
@@ -207,53 +207,54 @@ export default function InvoicesPeriodReportPage() {
           </button>
         </div>
 
-        {rangeMode === "preset" ? (
-          <label className="flex items-center gap-2 text-sm text-stone-700">
-            חודש סיום:
-            <input
-              type="month"
-              value={endMonth}
-              onChange={(e) => setEndMonth(e.target.value || ym(new Date()))}
-              className="input-warm py-2 px-3 text-sm w-auto"
-              dir="ltr"
-            />
-          </label>
-        ) : (
-          <div className="flex flex-wrap items-center gap-2 text-sm text-stone-700">
-            <label className="flex items-center gap-2">
-              מתאריך:
+        <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-stone-100">
+          {rangeMode === "preset" ? (
+            <label className="flex items-center gap-2 text-sm font-medium text-stone-700">
+              חודש סיום:
               <input
-                type="date"
-                value={fromDate}
-                max={toDate || undefined}
-                onChange={(e) => setFromDate(e.target.value)}
+                type="month"
+                value={endMonth}
+                onChange={(e) => setEndMonth(e.target.value || ym(new Date()))}
                 className="input-warm py-2 px-3 text-sm w-auto"
                 dir="ltr"
               />
             </label>
-            <label className="flex items-center gap-2">
-              עד תאריך:
-              <input
-                type="date"
-                value={toDate}
-                min={fromDate || undefined}
-                onChange={(e) => setToDate(e.target.value)}
-                className="input-warm py-2 px-3 text-sm w-auto"
-                dir="ltr"
-              />
-            </label>
-          </div>
-        )}
-
-        <span className="text-sm text-stone-500">
-          מציג: <span className="font-semibold text-stone-800">{currentLabel}</span>
-        </span>
+          ) : (
+            <>
+              <label className="flex items-center gap-2 text-sm font-medium text-stone-700">
+                מתאריך:
+                <input
+                  type="date"
+                  value={fromDate}
+                  max={toDate || undefined}
+                  onChange={(e) => setFromDate(e.target.value)}
+                  className="input-warm py-2 px-3 text-sm w-auto"
+                  dir="ltr"
+                />
+              </label>
+              <label className="flex items-center gap-2 text-sm font-medium text-stone-700">
+                עד תאריך:
+                <input
+                  type="date"
+                  value={toDate}
+                  min={fromDate || undefined}
+                  onChange={(e) => setToDate(e.target.value)}
+                  className="input-warm py-2 px-3 text-sm w-auto"
+                  dir="ltr"
+                />
+              </label>
+            </>
+          )}
+          <span className="text-sm text-stone-500 sm:mr-auto">
+            מציג: <span className="font-bold text-indigo-700">{currentLabel}</span>
+          </span>
+        </div>
       </div>
 
       {/* Report */}
       <div className="card-soft overflow-hidden">
-        <div className="px-4 py-3 border-b border-stone-100 flex items-baseline justify-between">
-          <h2 className="font-bold text-stone-900">{currentLabel}</h2>
+        <div className="px-5 py-3.5 border-b border-stone-100 flex items-baseline justify-between">
+          <h2 className="font-bold text-stone-900 text-lg">{currentLabel}</h2>
           <span className="text-sm text-stone-500">{rows.length} חשבוניות</span>
         </div>
         {ready && rows.length === 0 ? (
@@ -261,40 +262,40 @@ export default function InvoicesPeriodReportPage() {
             אין חשבוניות מס בתקופה שנבחרה.
           </div>
         ) : (
-          <div className="p-4 overflow-x-auto">
-            <table className="w-full text-sm border-collapse rounded-lg overflow-hidden">
+          <div className="p-5 overflow-x-auto">
+            <table className="w-full text-sm border-separate border-spacing-0 rounded-xl overflow-hidden shadow-sm">
               <thead>
-                <tr className="text-stone-700 text-right">
-                  <th className="border border-stone-200 bg-stone-100 px-3 py-2.5 font-semibold whitespace-nowrap">ת.ז / ח.פ</th>
-                  <th className="border border-stone-200 bg-stone-100 px-3 py-2.5 font-semibold whitespace-nowrap">מספר חשבונית</th>
-                  <th className="border border-stone-200 bg-stone-100 px-3 py-2.5 font-semibold whitespace-nowrap">תאריך</th>
-                  <th className="border border-stone-200 bg-stone-100 px-3 py-2.5 font-semibold whitespace-nowrap">סכום ללא מע״מ</th>
-                  <th className="border border-stone-200 bg-stone-100 px-3 py-2.5 font-semibold whitespace-nowrap">סכום כולל מע״מ</th>
-                  <th className="border border-stone-200 bg-stone-100 px-3 py-2.5 font-semibold whitespace-nowrap">מספר הקצאה</th>
+                <tr className="bg-gradient-to-l from-sky-600 to-indigo-600 text-white">
+                  <th className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">ת.ז / ח.פ</th>
+                  <th className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">מספר חשבונית</th>
+                  <th className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">תאריך</th>
+                  <th className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">סכום ללא מע״מ</th>
+                  <th className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">סכום כולל מע״מ</th>
+                  <th className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap">מספר הקצאה</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((r, i) => (
-                  <tr key={r.id} className={i % 2 ? "bg-stone-50/50" : "bg-white"}>
-                    <td className="border border-stone-200 px-3 py-2.5 tabular-nums whitespace-nowrap" dir="ltr">{r.customerTaxId || "—"}</td>
-                    <td className="border border-stone-200 px-3 py-2.5 whitespace-nowrap">
-                      <Link href={`/documents/${r.id}`} className="text-sky-700 hover:underline font-medium">
+                  <tr key={r.id} className={`${i % 2 ? "bg-sky-50/50" : "bg-white"} hover:bg-amber-50/40 transition-colors`}>
+                    <td className="px-4 py-3.5 text-center align-middle tabular-nums whitespace-nowrap text-stone-700 border-b border-l border-stone-200">{r.customerTaxId || <span className="text-stone-300">—</span>}</td>
+                    <td className="px-4 py-3.5 text-center align-middle whitespace-nowrap border-b border-l border-stone-200">
+                      <Link href={`/documents/${r.id}`} className="text-sky-700 hover:underline font-bold">
                         {DOCUMENT_TYPE_LABELS[r.type]} #{r.number}
                       </Link>
                     </td>
-                    <td className="border border-stone-200 px-3 py-2.5 tabular-nums whitespace-nowrap" dir="ltr">{fmtDate(r.date)}</td>
-                    <td className="border border-stone-200 px-3 py-2.5 tabular-nums whitespace-nowrap" dir="ltr">{formatCurrency(r.net)}</td>
-                    <td className="border border-stone-200 px-3 py-2.5 tabular-nums font-semibold whitespace-nowrap" dir="ltr">{formatCurrency(r.total)}</td>
-                    <td className="border border-stone-200 px-3 py-2.5 tabular-nums whitespace-nowrap" dir="ltr">{r.allocation || "—"}</td>
+                    <td className="px-4 py-3.5 text-center align-middle tabular-nums whitespace-nowrap text-stone-700 border-b border-l border-stone-200">{fmtDate(r.date)}</td>
+                    <td className="px-4 py-3.5 text-center align-middle tabular-nums whitespace-nowrap text-stone-700 border-b border-l border-stone-200">{formatCurrency(r.net)}</td>
+                    <td className="px-4 py-3.5 text-center align-middle tabular-nums font-extrabold text-stone-900 whitespace-nowrap border-b border-l border-stone-200">{formatCurrency(r.total)}</td>
+                    <td className="px-4 py-3.5 text-center align-middle tabular-nums whitespace-nowrap text-stone-700 border-b border-stone-200">{r.allocation || <span className="text-stone-300">—</span>}</td>
                   </tr>
                 ))}
               </tbody>
               <tfoot>
-                <tr className="bg-stone-100 font-bold text-stone-900">
-                  <td className="border border-stone-300 px-3 py-3" colSpan={3}>סה״כ ({rows.length} חשבוניות)</td>
-                  <td className="border border-stone-300 px-3 py-3 tabular-nums whitespace-nowrap" dir="ltr">{formatCurrency(totals.net)}</td>
-                  <td className="border border-stone-300 px-3 py-3 tabular-nums whitespace-nowrap" dir="ltr">{formatCurrency(totals.total)}</td>
-                  <td className="border border-stone-300 px-3 py-3"></td>
+                <tr className="bg-indigo-50 text-indigo-950 font-black">
+                  <td className="px-4 py-4 text-center border-t-2 border-l border-indigo-200" colSpan={3}>סה״כ · {rows.length} חשבוניות</td>
+                  <td className="px-4 py-4 text-center tabular-nums whitespace-nowrap border-t-2 border-l border-indigo-200">{formatCurrency(totals.net)}</td>
+                  <td className="px-4 py-4 text-center tabular-nums whitespace-nowrap border-t-2 border-l border-indigo-200">{formatCurrency(totals.total)}</td>
+                  <td className="px-4 py-4 border-t-2 border-indigo-200"></td>
                 </tr>
               </tfoot>
             </table>
