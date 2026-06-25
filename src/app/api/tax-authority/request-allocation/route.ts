@@ -11,7 +11,6 @@ import {
 import { decryptColumn, encryptColumn } from "@/lib/crypto";
 import { emitSecurityEvent } from "@/lib/security-events";
 import { clientIp } from "@/lib/rate-limit";
-import { round2, deriveVatRate } from "@/lib/vat";
 
 // Token refresh + allocation go through the Israeli egress proxy (Cloud Run
 // me-west1) — allow headroom for proxy cold-start + the gov.il round trip.
@@ -85,7 +84,7 @@ export async function POST(req: NextRequest) {
   const { data: doc, error: docError } = await sb
     .from("documents")
     .select(
-      "id, business_id, type, number, date, total, subtotal, vat, client_name, allocation_number, total_ils, subtotal_ils, vat_ils, exchange_rate",
+      "id, business_id, type, number, date, total, subtotal, vat, client_id, client_name, client_tax_id, allocation_number, total_ils, subtotal_ils, vat_ils, exchange_rate",
     )
     .eq("id", body.documentId)
     .in("business_id", businessIds)
@@ -201,12 +200,34 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Pull line items for the request body
-  const { data: items } = await sb
-    .from("document_items")
-    .select("description, quantity, unit_price, total, sort_order")
-    .eq("document_id", doc.id)
-    .order("sort_order");
+  // v2 single-Approval requires the customer's עוסק number (mandatory, must be
+  // >= 10 — a 0/placeholder is rejected). Source it from the document's stored
+  // client_tax_id (captured in the editor), falling back to the linked client's
+  // tax_id. If neither yields a valid number, fail with an actionable message
+  // instead of letting the Tax Authority reject it with a cryptic code.
+  const normalizeVat = (v: unknown): string => {
+    const digits = String(v || "").replace(/\D/g, "");
+    return digits && !/^0+$/.test(digits) ? digits : "";
+  };
+  let customerVatNumber = normalizeVat(doc.client_tax_id);
+  if (!customerVatNumber && doc.client_id) {
+    const { data: client } = await sb
+      .from("clients")
+      .select("tax_id")
+      .eq("id", doc.client_id as string)
+      .maybeSingle();
+    customerVatNumber = normalizeVat(client?.tax_id);
+  }
+  if (!customerVatNumber) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error:
+          "חסר מספר עוסק/ח.פ של הלקוח. חשבונית ישראל מחייבת אותו. ערוך את המסמך והוסף את מספר העוסק של הלקוח, ואז בקש שוב מספר הקצאה.",
+      },
+      { status: 400 },
+    );
+  }
 
   const invoiceType =
     doc.type === "tax_invoice_receipt"
@@ -215,17 +236,16 @@ export async function POST(req: NextRequest) {
       ? 330
       : 305;
 
-  const rate = Number(doc.exchange_rate) || 1;
   const subtotalIls = Number(doc.subtotal_ils ?? doc.subtotal) || 0;
   const vatIls = Number(doc.vat_ils ?? doc.vat) || 0;
   const totalIls = Number(doc.total_ils ?? doc.total) || 0;
-
-  const vatRate = deriveVatRate(vatIls, subtotalIls);
 
   const allocRequest: AllocationRequest = {
     invoiceId: doc.id as string,
     invoiceType,
     vatNumber,
+    invoiceReferenceNumber: String(doc.number ?? ""),
+    customerVatNumber,
     invoiceDate: doc.date as string,
     issuanceDate: new Date().toISOString().slice(0, 10),
     amountBeforeDiscount: subtotalIls,
@@ -233,17 +253,6 @@ export async function POST(req: NextRequest) {
     paymentAmount: subtotalIls,
     vatAmount: vatIls,
     paymentAmountIncludingVat: totalIls,
-    items: (items || []).map((it, idx) => ({
-      index: idx + 1,
-      description: it.description as string,
-      quantity: Number(it.quantity) || 1,
-      pricePerUnit: Number(it.unit_price) || 0,
-      totalAmount: round2((Number(it.total) || 0) * rate),
-      vatRate,
-      // it.total is the NET (pre-VAT) line amount, so VAT is total*rate/100 —
-      // NOT the total*rate/(100+rate) extraction used for VAT-inclusive sums.
-      vatAmount: round2(((Number(it.total) || 0) * rate * vatRate) / 100),
-    })),
   };
 
   let result;

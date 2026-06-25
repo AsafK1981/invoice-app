@@ -204,7 +204,12 @@ export interface AllocationRequest {
   invoiceId: string;
   /** 305 = tax invoice; 320 = tax invoice receipt; 330 = credit note */
   invoiceType: 305 | 320 | 330;
+  /** Issuer's עוסק/company number (digits only). */
   vatNumber: string;
+  /** Human invoice number as printed on the document. */
+  invoiceReferenceNumber: string;
+  /** Customer's עוסק number (digits only); "0" when none (private customer). */
+  customerVatNumber: string;
   invoiceDate: string;
   issuanceDate: string;
   amountBeforeDiscount: number;
@@ -212,23 +217,13 @@ export interface AllocationRequest {
   paymentAmount: number;
   vatAmount: number;
   paymentAmountIncludingVat: number;
-  items: Array<{
-    index: number;
-    catalogId?: string;
-    description: string;
-    measureUnitDescription?: string;
-    quantity: number;
-    pricePerUnit: number;
-    discount?: number;
-    totalAmount: number;
-    vatRate: number;
-    vatAmount: number;
-  }>;
 }
 
 export interface AllocationResponse {
-  /** The 9-digit allocation number, or null on failure */
+  /** The 9-digit allocation number to print on the invoice, or null on failure */
   allocationNumber: string | null;
+  /** The full confirmation number returned by the Tax Authority, for audit. */
+  confirmationNumber?: string;
   resultCode?: string;
   resultMessage?: string;
   raw: unknown;
@@ -238,33 +233,28 @@ export async function requestAllocation(
   accessToken: string,
   req: AllocationRequest,
 ): Promise<AllocationResponse> {
+  // Israel Invoice "Israel Invoice Model" v2 (7/2024). The v2 single-Approval
+  // body is flat (no Items), field names are lowercase, and the VAT numbers
+  // are sent as NUMBERS (the published example showing strings is wrong — the
+  // production swagger rejects strings with a type error). The allocation
+  // number comes back as `confirmation_number`; print its 9 right-most digits.
   const body = {
-    Invoice_ID: req.invoiceId,
-    Invoice_Type: req.invoiceType,
-    Vat_Number: parseInt(req.vatNumber, 10),
-    Invoice_Date: req.invoiceDate,
-    Invoice_Issuance_Date: req.issuanceDate,
-    Accounting_Software_Number: SOFTWARE_NUMBER,
-    Amount_Before_Discount: req.amountBeforeDiscount,
-    Discount: req.discount,
-    Payment_Amount: req.paymentAmount,
-    VAT_Amount: req.vatAmount,
-    Payment_Amount_Including_VAT: req.paymentAmountIncludingVat,
-    Items: req.items.map((it) => ({
-      Index: it.index,
-      Catalog_ID: it.catalogId || "",
-      Description: it.description,
-      Measure_Unit_Description: it.measureUnitDescription || "",
-      Quantity: it.quantity,
-      Price_Per_Unit: it.pricePerUnit,
-      Discount: it.discount || 0,
-      Total_Amount: it.totalAmount,
-      VAT_Rate: it.vatRate,
-      VAT_Amount: it.vatAmount,
-    })),
+    invoice_id: req.invoiceId,
+    invoice_type: req.invoiceType,
+    vat_number: parseInt(req.vatNumber, 10),
+    invoice_reference_number: req.invoiceReferenceNumber,
+    customer_vat_number: parseInt(req.customerVatNumber || "0", 10) || 0,
+    invoice_date: req.invoiceDate,
+    invoice_issuance_date: req.issuanceDate,
+    accounting_software_number: SOFTWARE_NUMBER,
+    amount_before_discount: req.amountBeforeDiscount,
+    discount: req.discount,
+    payment_amount: req.paymentAmount,
+    vat_amount: req.vatAmount,
+    payment_amount_including_vat: req.paymentAmountIncludingVat,
   };
 
-  const { url, headers } = viaProxy(`${ITA_BASE}/Invoices/v1/Approval`, {
+  const { url, headers } = viaProxy(`${ITA_BASE}/Invoices/v2/Approval`, {
     Authorization: `Bearer ${accessToken}`,
     "Content-Type": "application/json",
   });
@@ -279,21 +269,41 @@ export async function requestAllocation(
     typeof v === "object" && v !== null ? (v as Record<string, unknown>) : null;
   const obj = asObj(raw);
 
-  if (!r.ok) {
+  // v2 rejection / gateway error message extraction. `message` is a string on
+  // success ("Invoice approved") and may be an object with `errors[]` on a
+  // business rejection; 4xx gateway errors use `moreInformation`.
+  const extractMessage = (): string | undefined => {
+    if (!obj) return undefined;
+    const msg = obj.message;
+    if (typeof msg === "string") return msg;
+    const msgObj = asObj(msg);
+    const errors = msgObj?.errors;
+    if (Array.isArray(errors) && errors.length) {
+      return errors.map((e) => (typeof e === "string" ? e : JSON.stringify(e))).join("; ");
+    }
+    if (typeof obj.moreInformation === "string") return obj.moreInformation;
+    return undefined;
+  };
+
+  const confirmation = obj?.confirmation_number ? String(obj.confirmation_number) : "";
+  const approved = obj?.approved === true;
+
+  if (!r.ok || !approved || !confirmation || confirmation === "0") {
     return {
       allocationNumber: null,
-      resultCode: String(r.status),
-      resultMessage: obj?.Result_Message ? String(obj.Result_Message) : "API error",
+      confirmationNumber: confirmation || undefined,
+      resultCode: String(obj?.status ?? r.status),
+      resultMessage: extractMessage() || (r.ok ? "rejected" : "API error"),
       raw,
     };
   }
 
-  const allocNum = obj?.Allocation_Num ? String(obj.Allocation_Num) : null;
-  const resultCode = obj?.Result_Code ? String(obj.Result_Code) : null;
   return {
-    allocationNumber: allocNum && resultCode === "0" ? allocNum : null,
-    resultCode: resultCode || undefined,
-    resultMessage: obj?.Result_Message ? String(obj.Result_Message) : undefined,
+    // Print the 9 right-most digits on the invoice (Mispar Haktzaa).
+    allocationNumber: confirmation.slice(-9),
+    confirmationNumber: confirmation,
+    resultCode: String(obj?.status ?? 200),
+    resultMessage: extractMessage(),
     raw,
   };
 }

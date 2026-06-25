@@ -65,6 +65,8 @@ export interface InvoiceDocument {
   date: string;
   clientId: string;
   clientName: string;
+  /** Customer's עוסק/ח.פ number — required for חשבונית ישראל allocation requests. */
+  clientTaxId?: string;
   subject?: string;
   status: DocumentStatus;
   items: DocumentItem[];

@@ -457,6 +457,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
         date,
         clientId: adhocMode ? "" : selectedClient?.id || "",
         clientName,
+        clientTaxId: (adhocMode ? adhocTaxId.trim() : selectedClient?.taxId) || undefined,
         subject: subject.trim() || undefined,
         status:
           documentType === "receipt" || documentType === "tax_invoice_receipt"
