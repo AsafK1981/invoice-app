@@ -99,7 +99,7 @@ export function AllocationConnectBanner({
   const hasNumber = allocationNumber.trim().length > 0;
   const allocField = (
     <div className="mt-3 pt-3 border-t border-stone-200/70">
-      <label className="block text-xs font-bold text-stone-800 mb-1">מספר הקצאה</label>
+      <label className="text-xs font-semibold text-stone-700 mb-1 block">מספר הקצאה</label>
       <input
         type="text"
         inputMode="numeric"
