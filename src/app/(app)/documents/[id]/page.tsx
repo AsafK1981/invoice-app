@@ -26,6 +26,7 @@ import { DocumentAttachmentsSection } from "@/components/document-attachments-se
 import { DocumentTimeline } from "@/components/document-timeline";
 import { AllocationNumberSection } from "@/components/allocation-number-section";
 import { DocumentNumberEditor } from "@/components/document-number-editor";
+import { DocumentCustomerTaxEditor } from "@/components/document-customer-tax-editor";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { useClients } from "@/lib/client-store";
 import { useBusiness } from "@/lib/business-store";
@@ -758,6 +759,10 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
       )}
 
       <DocumentNumberEditor doc={doc} />
+
+      {(doc.type === "tax_invoice" ||
+        doc.type === "tax_invoice_receipt" ||
+        doc.type === "credit_note") && <DocumentCustomerTaxEditor doc={doc} />}
 
       <AllocationNumberSection doc={doc} />
 

@@ -355,6 +355,26 @@ export async function updateDocumentNumber(id: string, newNumber: number) {
   window.dispatchEvent(new Event(CHANGE_EVENT));
 }
 
+/**
+ * Set/replace the customer's עוסק/ח.פ number on a document. Needed for the
+ * חשבונית ישראל allocation request (v2 mandates customer_vat_number), and it
+ * also fills the first column of the periodic invoices report. Stored digits-
+ * only; empty clears it.
+ */
+export async function updateDocumentClientTaxId(id: string, taxId: string) {
+  const clean = String(taxId || "").replace(/\D/g, "");
+  const { data, error } = await supabase
+    .from("documents")
+    .update({ client_tax_id: clean || null })
+    .eq("id", id)
+    .select();
+  if (error) throw new Error(error.message);
+  if (!data || data.length === 0) {
+    throw new Error("עדכון לא עבר — ייתכן שאין הרשאה (RLS) או שהמסמך לא קיים");
+  }
+  window.dispatchEvent(new Event(CHANGE_EVENT));
+}
+
 export async function markDocumentEmailed(id: string) {
   // Same defensive .select() pattern: detect 0-row updates from RLS gaps.
   const { data, error } = await supabase
