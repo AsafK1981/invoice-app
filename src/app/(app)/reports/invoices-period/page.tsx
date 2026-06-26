@@ -152,7 +152,7 @@ export default function InvoicesPeriodReportPage() {
       <div className="flex items-end justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-3xl font-bold text-stone-900 flex items-center gap-3">
-            <span className="w-11 h-11 rounded-2xl bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center shadow-sm">
+            <span className="w-11 h-11 rounded-2xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center shadow-sm">
               <FileSpreadsheet className="w-5 h-5 text-white" />
             </span>
             דוח חשבוניות תקופתי
@@ -193,7 +193,7 @@ export default function InvoicesPeriodReportPage() {
               }}
               className={`px-3.5 py-2 rounded-lg text-sm font-semibold transition-colors ${
                 rangeMode === "preset" && lengthMonths === l.months
-                  ? "bg-white text-indigo-700 shadow-sm"
+                  ? "bg-white text-orange-700 shadow-sm"
                   : "text-stone-600 hover:text-stone-900"
               }`}
             >
@@ -204,7 +204,7 @@ export default function InvoicesPeriodReportPage() {
             onClick={() => setRangeMode("custom")}
             className={`px-3.5 py-2 rounded-lg text-sm font-semibold transition-colors ${
               rangeMode === "custom"
-                ? "bg-white text-indigo-700 shadow-sm"
+                ? "bg-white text-orange-700 shadow-sm"
                 : "text-stone-600 hover:text-stone-900"
             }`}
           >
@@ -251,7 +251,7 @@ export default function InvoicesPeriodReportPage() {
             </>
           )}
           <span className="text-sm text-stone-500 sm:mr-auto">
-            מציג: <span className="font-bold text-indigo-700">{currentLabel}</span>
+            מציג: <span className="font-bold text-orange-700">{currentLabel}</span>
           </span>
         </div>
       </div>
@@ -270,7 +270,7 @@ export default function InvoicesPeriodReportPage() {
           <div className="p-5 overflow-x-auto">
             <table className="w-full text-sm border-separate border-spacing-0 rounded-xl overflow-hidden shadow-sm">
               <thead>
-                <tr className="bg-gradient-to-l from-sky-600 to-indigo-600 text-white">
+                <tr className="bg-gradient-to-l from-orange-500 to-rose-500 text-white">
                   <th className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">ת.ז / ח.פ</th>
                   <th className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">מספר חשבונית</th>
                   <th className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">תאריך</th>
@@ -282,10 +282,10 @@ export default function InvoicesPeriodReportPage() {
               </thead>
               <tbody>
                 {rows.map((r, i) => (
-                  <tr key={r.id} className={`${i % 2 ? "bg-sky-50/50" : "bg-white"} hover:bg-amber-50/40 transition-colors`}>
+                  <tr key={r.id} className={`${i % 2 ? "bg-orange-50/40" : "bg-white"} hover:bg-amber-50/40 transition-colors`}>
                     <td className="px-4 py-3.5 text-center align-middle tabular-nums whitespace-nowrap text-stone-700 border-b border-l border-stone-200">{r.customerTaxId || <span className="text-stone-300">—</span>}</td>
                     <td className="px-4 py-3.5 text-center align-middle whitespace-nowrap border-b border-l border-stone-200">
-                      <Link href={`/documents/${r.id}`} className="text-sky-700 hover:underline font-bold">
+                      <Link href={`/documents/${r.id}`} className="text-orange-700 hover:underline font-bold">
                         {DOCUMENT_TYPE_LABELS[r.type]} #{r.number}
                       </Link>
                     </td>
@@ -298,12 +298,12 @@ export default function InvoicesPeriodReportPage() {
                 ))}
               </tbody>
               <tfoot>
-                <tr className="bg-indigo-50 text-indigo-950 font-black">
-                  <td className="px-4 py-4 text-center border-t-2 border-l border-indigo-200" colSpan={3}>סה״כ · {rows.length} חשבוניות</td>
-                  <td className="px-4 py-4 text-center tabular-nums whitespace-nowrap border-t-2 border-l border-indigo-200">{formatCurrency(totals.net)}</td>
-                  <td className="px-4 py-4 text-center tabular-nums whitespace-nowrap border-t-2 border-l border-indigo-200">{formatCurrency(totals.vat)}</td>
-                  <td className="px-4 py-4 text-center tabular-nums whitespace-nowrap border-t-2 border-l border-indigo-200">{formatCurrency(totals.total)}</td>
-                  <td className="px-4 py-4 border-t-2 border-indigo-200"></td>
+                <tr className="bg-orange-50 text-stone-900 font-black">
+                  <td className="px-4 py-4 text-center border-t-2 border-l border-orange-200" colSpan={3}>סה״כ · {rows.length} חשבוניות</td>
+                  <td className="px-4 py-4 text-center tabular-nums whitespace-nowrap border-t-2 border-l border-orange-200">{formatCurrency(totals.net)}</td>
+                  <td className="px-4 py-4 text-center tabular-nums whitespace-nowrap border-t-2 border-l border-orange-200">{formatCurrency(totals.vat)}</td>
+                  <td className="px-4 py-4 text-center tabular-nums whitespace-nowrap border-t-2 border-l border-orange-200">{formatCurrency(totals.total)}</td>
+                  <td className="px-4 py-4 border-t-2 border-orange-200"></td>
                 </tr>
               </tfoot>
             </table>
