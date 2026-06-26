@@ -22,9 +22,13 @@ const emptyForm = {
 
 export function ProductFormModal({ open, onClose, product }: Props) {
   const [form, setForm] = useState(emptyForm);
+  const [saving, setSaving] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
 
   useEffect(() => {
     if (!open) return;
+    setSaving(false);
+    setJustSaved(false);
     if (product) {
       setForm({
         name: product.name,
@@ -52,8 +56,11 @@ export function ProductFormModal({ open, onClose, product }: Props) {
       price,
       unit: form.unit.trim() || "יחידה",
     };
+    setSaving(true);
     await productStore.save(record);
-    onClose();
+    setSaving(false);
+    setJustSaved(true);
+    setTimeout(onClose, 900);
   }
 
   const canSubmit = form.name.trim().length > 0 && parseFloat(form.price) >= 0;
@@ -75,10 +82,14 @@ export function ProductFormModal({ open, onClose, product }: Props) {
           </button>
           <button
             onClick={handleSubmit}
-            disabled={!canSubmit}
-            className="px-5 py-2 rounded-xl text-sm font-semibold bg-gradient-to-l from-orange-500 to-rose-500 text-white hover:shadow-md hover:shadow-orange-200 disabled:from-stone-300 disabled:to-stone-300 disabled:shadow-none"
+            disabled={!canSubmit || saving || justSaved}
+            className={`px-5 py-2 rounded-xl text-sm font-semibold text-white disabled:shadow-none ${
+              justSaved
+                ? "bg-emerald-600"
+                : "bg-gradient-to-l from-orange-500 to-rose-500 hover:shadow-md hover:shadow-orange-200 disabled:from-stone-300 disabled:to-stone-300"
+            }`}
           >
-            {product ? "שמור שינויים" : "הוסף פריט"}
+            {justSaved ? "נשמר ✓" : saving ? "שומר..." : product ? "שמור שינויים" : "הוסף פריט"}
           </button>
         </>
       }

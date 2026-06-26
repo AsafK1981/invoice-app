@@ -22,6 +22,7 @@ export function BusinessFormModal({ open, onClose, business }: Props) {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -111,7 +112,10 @@ export function BusinessFormModal({ open, onClose, business }: Props) {
         paymentNotes: form.paymentNotes?.trim() || undefined,
         defaultDocNotes: form.defaultDocNotes?.trim() || undefined,
       });
-      onClose();
+      setSaving(false);
+      setJustSaved(true);
+      setTimeout(onClose, 900);
+      return;
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : "שגיאה בשמירה");
     } finally {
@@ -139,10 +143,14 @@ export function BusinessFormModal({ open, onClose, business }: Props) {
           </button>
           <button
             onClick={handleSubmit}
-            disabled={!canSubmit || uploading || saving}
-            className="px-5 py-2 rounded-xl text-sm font-semibold bg-gradient-to-l from-orange-500 to-rose-500 text-white hover:shadow-md hover:shadow-orange-200 disabled:from-stone-300 disabled:to-stone-300 disabled:shadow-none"
+            disabled={!canSubmit || uploading || saving || justSaved}
+            className={`px-5 py-2 rounded-xl text-sm font-semibold text-white disabled:shadow-none ${
+              justSaved
+                ? "bg-emerald-600"
+                : "bg-gradient-to-l from-orange-500 to-rose-500 hover:shadow-md hover:shadow-orange-200 disabled:from-stone-300 disabled:to-stone-300"
+            }`}
           >
-            {saving ? "שומר..." : "שמור שינויים"}
+            {justSaved ? "נשמר ✓" : saving ? "שומר..." : "שמור שינויים"}
           </button>
         </>
       }

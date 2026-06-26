@@ -23,9 +23,13 @@ export function ClientFormModal({ open, onClose, client }: Props) {
     notes: "",
   });
   const [emails, setEmails] = useState<string[]>([""]);
+  const [saving, setSaving] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
 
   useEffect(() => {
     if (!open) return;
+    setSaving(false);
+    setJustSaved(false);
     if (client) {
       setForm({
         name: client.name,
@@ -74,8 +78,11 @@ export function ClientFormModal({ open, onClose, client }: Props) {
       notes: form.notes.trim() || undefined,
       createdAt: client?.createdAt ?? new Date().toISOString().slice(0, 10),
     };
+    setSaving(true);
     await clientStore.save(record);
-    onClose();
+    setSaving(false);
+    setJustSaved(true);
+    setTimeout(onClose, 900);
   }
 
   const invalidEmailCount = emails.filter(
@@ -100,10 +107,14 @@ export function ClientFormModal({ open, onClose, client }: Props) {
           </button>
           <button
             onClick={handleSubmit}
-            disabled={!canSubmit}
-            className="px-5 py-2 rounded-xl text-sm font-semibold bg-gradient-to-l from-orange-500 to-rose-500 text-white hover:shadow-md hover:shadow-orange-200 disabled:from-stone-300 disabled:to-stone-300 disabled:shadow-none"
+            disabled={!canSubmit || saving || justSaved}
+            className={`px-5 py-2 rounded-xl text-sm font-semibold text-white disabled:shadow-none ${
+              justSaved
+                ? "bg-emerald-600"
+                : "bg-gradient-to-l from-orange-500 to-rose-500 hover:shadow-md hover:shadow-orange-200 disabled:from-stone-300 disabled:to-stone-300"
+            }`}
           >
-            {client ? "שמור שינויים" : "הוסף לקוח"}
+            {justSaved ? "נשמר ✓" : saving ? "שומר..." : client ? "שמור שינויים" : "הוסף לקוח"}
           </button>
         </>
       }

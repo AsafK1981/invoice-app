@@ -53,9 +53,13 @@ export function ExpenseFormModal({ open, onClose, expense, prefill }: Props) {
     vatAmount: "",
     description: "",
   });
+  const [saving, setSaving] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
 
   useEffect(() => {
     if (!open) return;
+    setSaving(false);
+    setJustSaved(false);
     if (expense) {
       setForm({
         date: expense.date,
@@ -112,8 +116,11 @@ export function ExpenseFormModal({ open, onClose, expense, prefill }: Props) {
       vatAmount: vat,
       receiptPath: expense?.receiptPath || prefill?.receiptPath || undefined,
     };
+    setSaving(true);
     await expenseStore.save(record);
-    onClose();
+    setSaving(false);
+    setJustSaved(true);
+    setTimeout(onClose, 900);
   }
 
   const canSubmit = form.supplier.trim().length > 0 && parseFloat(form.amount) > 0;
@@ -141,10 +148,14 @@ export function ExpenseFormModal({ open, onClose, expense, prefill }: Props) {
           </button>
           <button
             onClick={handleSubmit}
-            disabled={!canSubmit}
-            className="px-5 py-2 rounded-xl text-sm font-semibold bg-gradient-to-l from-orange-500 to-rose-500 text-white hover:shadow-md hover:shadow-orange-200 disabled:from-stone-300 disabled:to-stone-300 disabled:shadow-none"
+            disabled={!canSubmit || saving || justSaved}
+            className={`px-5 py-2 rounded-xl text-sm font-semibold text-white disabled:shadow-none ${
+              justSaved
+                ? "bg-emerald-600"
+                : "bg-gradient-to-l from-orange-500 to-rose-500 hover:shadow-md hover:shadow-orange-200 disabled:from-stone-300 disabled:to-stone-300"
+            }`}
           >
-            {expense ? "שמור שינויים" : "הוסף הוצאה"}
+            {justSaved ? "נשמר ✓" : saving ? "שומר..." : expense ? "שמור שינויים" : "הוסף הוצאה"}
           </button>
         </>
       }
