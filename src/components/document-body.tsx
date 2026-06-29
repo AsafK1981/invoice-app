@@ -155,6 +155,9 @@ export function DocumentBody({
           </div>
         </div>
         <div className="text-left space-y-2">
+          <p className="text-xs font-bold tracking-[0.3em] text-stone-400 print:text-stone-500">
+            מקור
+          </p>
           <div
             className={`inline-block px-5 py-2 bg-gradient-to-br ${badge.bg} ${badge.print} text-white rounded-2xl font-bold text-lg shadow-sm`}
           >
