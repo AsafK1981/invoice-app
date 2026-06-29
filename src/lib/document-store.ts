@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "./supabase";
 import { getBusinessId, onBusinessReady } from "./business-init";
-import { DOCUMENT_STATUS_LABELS, DOCUMENT_TYPE_LABELS, type DocumentType, type InvoiceDocument, type DocumentItem } from "./types";
+import { DEFAULT_NEXT_NUMBER, DOCUMENT_STATUS_LABELS, DOCUMENT_TYPE_LABELS, type DocumentType, type InvoiceDocument, type DocumentItem } from "./types";
 import { logAudit } from "./audit-log";
 import { track } from "@vercel/analytics";
 
@@ -117,6 +117,23 @@ export function useDocument(id: string) {
  *
  * Pass `doc.number = 0` (or anything) — it's ignored; the RPC assigns the real number.
  */
+/**
+ * The number the next document of this type will get (the counter's value, or
+ * the type default if no counter row exists yet). Used by the editor to show
+ * the prospective number while drafting.
+ */
+export async function getNextDocumentNumber(type: DocumentType): Promise<number> {
+  const bid = getBusinessId();
+  if (!bid) return DEFAULT_NEXT_NUMBER[type];
+  const { data } = await supabase
+    .from("document_counters")
+    .select("next_number")
+    .eq("business_id", bid)
+    .eq("doc_type", type)
+    .maybeSingle();
+  return (data?.next_number as number) ?? DEFAULT_NEXT_NUMBER[type];
+}
+
 export async function createDocument(
   doc: Omit<InvoiceDocument, "number"> & { number?: number }
 ): Promise<{ id: string; number: number }> {
@@ -152,9 +169,15 @@ export async function createDocument(
     p_vat_ils: doc.vatIls ?? doc.vat,
     p_total_ils: doc.totalIls ?? doc.total,
     p_zero_rated: doc.zeroRated ?? false,
+    p_number: doc.number ?? null,
   });
 
-  if (error) throw new Error("שגיאה בשמירת המסמך: " + error.message);
+  if (error) {
+    if (error.code === "23505" || /duplicate|unique/i.test(error.message)) {
+      throw new Error(`כבר קיים מסמך מאותו סוג עם מספר ${doc.number}. בחר מספר אחר.`);
+    }
+    throw new Error("שגיאה בשמירת המסמך: " + error.message);
+  }
 
   if (
     !data ||

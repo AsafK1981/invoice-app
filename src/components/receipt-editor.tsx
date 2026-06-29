@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
 import { sendReceiptEmail } from "@/lib/email";
-import { createDocument, linkConvertedDocument, markDocumentEmailed, useDocuments } from "@/lib/document-store";
+import { createDocument, getNextDocumentNumber, linkConvertedDocument, markDocumentEmailed, useDocuments } from "@/lib/document-store";
 import { getBusinessId } from "@/lib/business-init";
 import { parseEmails, joinEmails, isValidEmail } from "@/lib/emails";
 import { getVatRate, computeAmounts, round2, canIssueTaxInvoices, type VatMode } from "@/lib/vat";
@@ -119,6 +119,9 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   const [toast, setToast] = useState<{ kind: "success" | "error"; text: string } | null>(null);
 
   const [allocationNumber, setAllocationNumber] = useState<string>("");
+  // The document's number, shown while drafting and editable before finalizing.
+  // Defaults to the next number for this type; the real number is reserved on save.
+  const [docNumber, setDocNumber] = useState<string>("");
   // Server-draft this editor is bound to (set when resuming, or after the first
   // "שמור טיוטה"); subsequent saves update the same row, and finalizing deletes it.
   const serverDraftIdRef = useRef<string | null>(resumeDraftId);
@@ -387,8 +390,22 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
       setZeroRated(Boolean(p.zeroRated));
       setRate(p.rate || 1);
       setAllocationNumber(p.allocationNumber || "");
+      setDocNumber(p.documentNumber || String(await getNextDocumentNumber(p.documentType || documentType)));
     })();
   }, [resumeDraftId]);
+
+  // Prospective document number for a fresh editor (also copy/convert).
+  // For a resumed server draft, the resume effect above sets it instead.
+  useEffect(() => {
+    if (resumeDraftId) return;
+    let cancelled = false;
+    getNextDocumentNumber(documentType).then((n) => {
+      if (!cancelled) setDocNumber((cur) => cur || String(n));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [documentType, resumeDraftId]);
 
   const previewItems = useMemo(
     () =>
@@ -507,6 +524,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
         zeroRated,
         rate,
         allocationNumber,
+        documentNumber: docNumber,
       };
       const id = await saveDraftToServer({
         id: serverDraftIdRef.current,
@@ -551,9 +569,10 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
       });
 
       const effectiveRate = currency === "ILS" ? 1 : rate;
-      const draft: Omit<InvoiceDocument, "number"> = {
+      const draft: Omit<InvoiceDocument, "number"> & { number?: number } = {
         id: crypto.randomUUID(),
         type: documentType,
+        number: parseInt(docNumber, 10) || undefined,
         date,
         clientId: adhocMode ? "" : selectedClient?.id || "",
         clientName,
@@ -833,6 +852,17 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
                 className="input-warm"
+              />
+            </FormField>
+
+            <FormField label={`מספר ${docLabel}`} hint="ישוריין בעת ההפקה — ניתן לשנות">
+              <input
+                type="number"
+                min={1}
+                value={docNumber}
+                onChange={(e) => setDocNumber(e.target.value)}
+                className="input-warm tabular-nums text-center"
+                dir="ltr"
               />
             </FormField>
 

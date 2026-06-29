@@ -20,6 +20,8 @@ export interface DraftPayload extends EditorDraft {
   zeroRated: boolean;
   rate: number;
   allocationNumber: string;
+  /** The chosen document number to use on finalize (defaults to the counter). */
+  documentNumber?: string;
 }
 
 export interface ServerDraft {
