@@ -876,6 +876,44 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
               />
             </FormField>
 
+            <FormField label="אימייל לשליחה" className="md:col-span-2">
+              <input
+                type="text"
+                dir="ltr"
+                value={emailTo}
+                onChange={(e) => {
+                  setEmailTo(e.target.value);
+                  setEmailOverridden(true);
+                }}
+                placeholder="email1@example.com, email2@example.com"
+                className="input-warm"
+              />
+              <div className="flex items-center justify-between mt-1">
+                <p className="text-xs text-stone-600">
+                  {emailRecipients.length > 0
+                    ? `${emailRecipients.length} נמענים · הפרד אימיילים בפסיק`
+                    : "לאן לשלוח את המסמך · הפרד כמה אימיילים בפסיק"}
+                </p>
+                {emailTo && emailOverridden && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEmailTo(adhocMode ? adhocEmail : selectedClient?.email || "");
+                      setEmailOverridden(false);
+                    }}
+                    className="text-xs text-orange-600 hover:underline"
+                  >
+                    שחזר מהלקוח
+                  </button>
+                )}
+              </div>
+              {!adhocMode && selectedClient && !selectedClient.email && (
+                <p className="text-xs text-amber-700 mt-1">
+                  ללקוח זה אין אימייל שמור — מלא ידנית או ערוך את פרטי הלקוח
+                </p>
+              )}
+            </FormField>
+
             {!isQuote && (
               <FormField label="אמצעי תשלום">
                 <select
@@ -1106,43 +1144,11 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
             <span className="text-stone-700">שלח את ה{docLabel} אוטומטית במייל ללקוח כשאני לוחץ שמור</span>
           </label>
           {sendEmail && (
-            <FormField label="נמענים">
-              <input
-                type="text"
-                dir="ltr"
-                value={emailTo}
-                onChange={(e) => {
-                  setEmailTo(e.target.value);
-                  setEmailOverridden(true);
-                }}
-                placeholder="email1@example.com, email2@example.com"
-                className="input-warm"
-              />
-              <div className="flex items-center justify-between mt-1">
-                <p className="text-xs text-stone-600">
-                  {emailRecipients.length > 0
-                    ? `יישלח ל-${emailRecipients.length} נמענים. הפרד אימיילים בפסיק.`
-                    : "הפרד כמה אימיילים בפסיק"}
-                </p>
-                {emailTo && emailOverridden && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEmailTo(adhocMode ? adhocEmail : selectedClient?.email || "");
-                      setEmailOverridden(false);
-                    }}
-                    className="text-xs text-orange-600 hover:underline"
-                  >
-                    שחזר מהלקוח
-                  </button>
-                )}
-              </div>
-              {!adhocMode && selectedClient && !selectedClient.email && (
-                <p className="text-xs text-amber-700 mt-1">
-                  ללקוח זה אין אימייל שמור - מלא ידנית או ערוך את פרטי הלקוח
-                </p>
-              )}
-            </FormField>
+            <p className="text-xs text-stone-600">
+              {emailRecipients.length > 0
+                ? `יישלח ל-${emailRecipients.length} נמענים: ${emailTo} (לעריכה — שדה "אימייל לשליחה" בפרטי המסמך).`
+                : 'מלא את הכתובת בשדה "אימייל לשליחה" בפרטי המסמך.'}
+            </p>
           )}
         </Section>
 
