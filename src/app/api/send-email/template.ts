@@ -8,12 +8,23 @@
 // because a regression in this file silently broke a real customer
 // once (2026-06-01).
 
+import { DOCUMENT_TYPE_LABELS, type DocumentType } from "@/lib/types";
+
 function escapeHtml(str: string): string {
   return String(str)
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+}
+
+// Name the actual document type in the email ("מצורפת חשבונית מס" / "מצורף
+// חשבון עסקה") instead of a generic "מסמך". Only "חשבון עסקה" (quote) is
+// grammatically masculine — the rest are feminine → "מצורפת".
+function docWording(type?: DocumentType): { attached: string; noun: string } {
+  if (!type || !DOCUMENT_TYPE_LABELS[type]) return { attached: "מצורף מסמך", noun: "מסמך" };
+  const label = DOCUMENT_TYPE_LABELS[type];
+  return { attached: `${type === "quote" ? "מצורף" : "מצורפת"} ${label}`, noun: label };
 }
 
 export function buildHtml(args: {
@@ -25,17 +36,20 @@ export function buildHtml(args: {
   logoUrl?: string;
   kind?: "initial" | "reminder";
   daysSinceSent?: number;
+  /** Document type — names the doc in the copy ("מצורפת חשבונית מס"). */
+  documentType?: DocumentType;
   /** 1×1 tracking-pixel URL — stamps email_opened_at when the recipient
    *  loads the message. Omit to disable tracking for a particular send. */
   trackingPixelUrl?: string;
 }): string {
-  const { businessName, clientName, receiptNumber, total, viewUrl, logoUrl, kind = "initial", daysSinceSent, trackingPixelUrl } = args;
+  const { businessName, clientName, receiptNumber, total, viewUrl, logoUrl, kind = "initial", daysSinceSent, documentType, trackingPixelUrl } = args;
   const isReminder = kind === "reminder";
+  const { attached, noun } = docWording(documentType);
   const introLine = isReminder
-    ? `מקווה שאתם בסדר. רק תזכורת קלה לגבי מסמך מספר <strong>#${escapeHtml(String(receiptNumber))}</strong> על סך <strong>₪${escapeHtml(String(Number(total).toLocaleString()))}</strong>${
+    ? `מקווה שאתם בסדר. רק תזכורת קלה לגבי ${escapeHtml(noun)} מספר <strong>#${escapeHtml(String(receiptNumber))}</strong> על סך <strong>₪${escapeHtml(String(Number(total).toLocaleString()))}</strong>${
         daysSinceSent ? ` ששלחנו לפני ${daysSinceSent} ימים` : ""
       } — אשמח לדעת אם הוא הגיע ומה דעתכם.`
-    : `מצורף מסמך מספר <strong>#${escapeHtml(String(receiptNumber))}</strong> על סך <strong>₪${escapeHtml(String(Number(total).toLocaleString()))}</strong>.`;
+    : `${escapeHtml(attached)} מספר <strong>#${escapeHtml(String(receiptNumber))}</strong> על סך <strong>₪${escapeHtml(String(Number(total).toLocaleString()))}</strong>.`;
   const ctaLine = isReminder
     ? "לצפייה חוזרת במסמך המלא:"
     : "לצפייה במסמך המלא והדפסה/הורדה כ-PDF, לחץ על הכפתור למטה.";
@@ -111,14 +125,16 @@ export function buildText(args: {
   viewUrl: string;
   kind?: "initial" | "reminder";
   daysSinceSent?: number;
+  documentType?: DocumentType;
 }): string {
-  const { businessName, clientName, receiptNumber, total, viewUrl, kind = "initial", daysSinceSent } = args;
+  const { businessName, clientName, receiptNumber, total, viewUrl, kind = "initial", daysSinceSent, documentType } = args;
   const isReminder = kind === "reminder";
+  const { attached, noun } = docWording(documentType);
   const intro = isReminder
-    ? `תזכורת קלה לגבי מסמך מספר #${receiptNumber} על סך ₪${Number(total).toLocaleString()}${
+    ? `תזכורת קלה לגבי ${noun} מספר #${receiptNumber} על סך ₪${Number(total).toLocaleString()}${
         daysSinceSent ? ` ששלחנו לפני ${daysSinceSent} ימים` : ""
       }.`
-    : `מצורף מסמך מספר #${receiptNumber} על סך ₪${Number(total).toLocaleString()}.`;
+    : `${attached} מספר #${receiptNumber} על סך ₪${Number(total).toLocaleString()}.`;
   return `שלום ${clientName},
 
 ${intro}

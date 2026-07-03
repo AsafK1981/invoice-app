@@ -4,6 +4,7 @@ import nodemailer from "nodemailer";
 import { createClient } from "@supabase/supabase-js";
 import { checkRate, clientIp } from "@/lib/rate-limit";
 import { sanitizeEmailSubject } from "@/lib/email-subject";
+import { DOCUMENT_TYPE_LABELS, type DocumentType } from "@/lib/types";
 import { buildHtml, buildText } from "./template";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -73,7 +74,7 @@ export async function POST(req: NextRequest) {
     });
     const { data: docRow } = await admin
       .from("documents")
-      .select("id, business_id, number, total, client_name")
+      .select("id, business_id, number, total, client_name, type")
       .eq("id", documentId)
       .maybeSingle();
     if (!docRow) {
@@ -94,6 +95,8 @@ export async function POST(req: NextRequest) {
     const receiptNumber = docRow.number as string | number;
     const total = docRow.total as number;
     const clientName = (docRow.client_name as string) || "";
+    const documentType = docRow.type as DocumentType | undefined;
+    const docLabel = (documentType && DOCUMENT_TYPE_LABELS[documentType]) || "מסמך";
 
     // Always use the canonical URL — never NEXT_PUBLIC_VERCEL_URL, which
     // is the immutable per-deploy hash and will decay into stale-code
@@ -116,7 +119,7 @@ export async function POST(req: NextRequest) {
     }
 
     const isReminder = kind === "reminder";
-    const baseSubject = sanitizeEmailSubject(subject, `${businessName} - מסמך #${receiptNumber}`);
+    const baseSubject = sanitizeEmailSubject(subject, `${businessName} - ${docLabel} #${receiptNumber}`);
     const emailSubject = isReminder ? `תזכורת: ${baseSubject}` : baseSubject;
     // Tracking pixel — only when we have a documentId to attribute the
     // open event to. Suffix `.gif` for mail clients that are picky about
@@ -135,6 +138,7 @@ export async function POST(req: NextRequest) {
       logoUrl,
       kind: isReminder ? "reminder" : "initial",
       daysSinceSent: typeof daysSinceSent === "number" ? daysSinceSent : undefined,
+      documentType,
       trackingPixelUrl,
     });
     const text = buildText({
@@ -145,6 +149,7 @@ export async function POST(req: NextRequest) {
       viewUrl,
       kind: isReminder ? "reminder" : "initial",
       daysSinceSent: typeof daysSinceSent === "number" ? daysSinceSent : undefined,
+      documentType,
     });
 
     // Pick Gmail credentials: prefer the user's own, fall back to global env vars
