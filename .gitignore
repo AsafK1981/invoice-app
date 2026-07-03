@@ -59,3 +59,7 @@ Rashot Hamisim/**/*סרוק*
 Rashot Hamisim/**/*filled*
 Rashot Hamisim/**/*מולא*
 .gstack/
+
+# local audit / scratch artifacts
+audit.json
+tmp_audit_local.json
