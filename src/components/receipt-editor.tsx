@@ -19,6 +19,8 @@ import {
   EyeOff,
   Percent,
   GripVertical,
+  X,
+  Plus,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
 import { sendReceiptEmail } from "@/lib/email";
@@ -110,7 +112,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   const [vatMode, setVatMode] = useState<VatMode>("exclusive");
 
   const [sendEmail, setSendEmail] = useState<boolean>(true);
-  const [emailTo, setEmailTo] = useState<string>("");
+  const [emails, setEmails] = useState<string[]>([""]);
   const [emailOverridden, setEmailOverridden] = useState<boolean>(false);
   const [paymentMethodTouched, setPaymentMethodTouched] = useState<boolean>(false);
   const [showPreviewMobile, setShowPreviewMobile] = useState<boolean>(false);
@@ -294,11 +296,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
 
   useEffect(() => {
     if (emailOverridden) return;
-    if (adhocMode) {
-      setEmailTo(adhocEmail);
-    } else {
-      setEmailTo(selectedClient?.email || "");
-    }
+    setEmails([(adhocMode ? adhocEmail : selectedClient?.email || "") || ""]);
   }, [selectedClient, emailOverridden, adhocMode, adhocEmail]);
 
   useEffect(() => {
@@ -423,7 +421,20 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
     [items, netUnitPriceFactor]
   );
 
+  const emailTo = useMemo(() => emails.map((e) => e.trim()).filter(Boolean).join(", "), [emails]);
   const emailRecipients = useMemo(() => parseEmails(emailTo), [emailTo]);
+  const updateEmail = (i: number, val: string) => {
+    setEmails((p) => p.map((e, idx) => (idx === i ? val : e)));
+    setEmailOverridden(true);
+  };
+  const addEmail = () => {
+    setEmails((p) => [...p, ""]);
+    setEmailOverridden(true);
+  };
+  const removeEmail = (i: number) => {
+    setEmails((p) => (p.length > 1 ? p.filter((_, idx) => idx !== i) : [""]));
+    setEmailOverridden(true);
+  };
   const allEmailsValid =
     emailRecipients.length > 0 && emailRecipients.every(isValidEmail);
 
@@ -877,28 +888,45 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
             </FormField>
 
             <FormField label="אימייל לשליחה" className="md:col-span-2">
-              <input
-                type="text"
-                dir="ltr"
-                value={emailTo}
-                onChange={(e) => {
-                  setEmailTo(e.target.value);
-                  setEmailOverridden(true);
-                }}
-                placeholder="email1@example.com, email2@example.com"
-                className="input-warm"
-              />
-              <div className="flex items-center justify-between mt-1">
-                <p className="text-xs text-stone-600">
-                  {emailRecipients.length > 0
-                    ? `${emailRecipients.length} נמענים · הפרד אימיילים בפסיק`
-                    : "לאן לשלוח את המסמך · הפרד כמה אימיילים בפסיק"}
-                </p>
-                {emailTo && emailOverridden && (
+              <div className="space-y-2">
+                {emails.map((em, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <input
+                      type="email"
+                      dir="ltr"
+                      value={em}
+                      onChange={(e) => updateEmail(i, e.target.value)}
+                      placeholder="name@example.com"
+                      className="input-warm flex-1"
+                    />
+                    {emails.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeEmail(i)}
+                        className="inline-flex items-center justify-center w-9 h-9 flex-shrink-0 rounded-xl bg-stone-100 text-stone-500 hover:bg-rose-50 hover:text-rose-600"
+                        title="הסר אימייל"
+                        aria-label="הסר אימייל"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center justify-between mt-2">
+                <button
+                  type="button"
+                  onClick={addEmail}
+                  className="inline-flex items-center gap-1.5 text-sm font-semibold text-orange-700 hover:text-orange-800"
+                >
+                  <Plus className="w-4 h-4" />
+                  הוסף עוד אימייל
+                </button>
+                {emailOverridden && (
                   <button
                     type="button"
                     onClick={() => {
-                      setEmailTo(adhocMode ? adhocEmail : selectedClient?.email || "");
+                      setEmails([(adhocMode ? adhocEmail : selectedClient?.email || "") || ""]);
                       setEmailOverridden(false);
                     }}
                     className="text-xs text-orange-600 hover:underline"
