@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Landmark, ShieldCheck, Loader2 } from "lucide-react";
+import { Landmark, ShieldCheck, Loader2, Info } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { requiresAllocationNumber } from "@/lib/tax-authority";
+import { requiresAllocationNumber, allocationRequiredThreshold } from "@/lib/tax-authority";
 import type { DocumentType } from "@/lib/types";
 
 interface Props {
@@ -71,7 +71,26 @@ export function AllocationConnectBanner({
     total: amountIls,
     totalIls: amountIls,
   } as never);
-  if (!needs) return null;
+
+  const isAllocatableType =
+    documentType === "tax_invoice" ||
+    documentType === "tax_invoice_receipt" ||
+    documentType === "credit_note";
+
+  // A tax invoice UNDER the threshold doesn't need an allocation number —
+  // reassure the user with a short note instead of showing nothing.
+  if (!needs) {
+    if (!isAllocatableType) return null;
+    const threshold = allocationRequiredThreshold(date ? new Date(date) : new Date());
+    return (
+      <div className="rounded-2xl border border-stone-200 bg-stone-50/70 px-4 py-3 flex items-start gap-3">
+        <Info className="w-5 h-5 text-stone-500 flex-shrink-0 mt-0.5" />
+        <p className="text-sm text-stone-700 leading-relaxed">
+          הסכום מתחת ל-₪{threshold.toLocaleString()} — <span className="font-semibold">אין צורך במספר הקצאה</span> מרשות המסים למסמך זה.
+        </p>
+      </div>
+    );
+  }
 
   async function connect() {
     setConnecting(true);
