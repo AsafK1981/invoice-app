@@ -134,12 +134,45 @@ export function allocationRequiredThreshold(date: Date = new Date()): number {
 
 export const ALLOCATION_THRESHOLD_NIS = getAllocationThresholdForYear(new Date().getFullYear());
 
-export function requiresAllocationNumber(doc: InvoiceDocument): boolean {
+/**
+ * Normalize a customer's business/VAT number to digits only, treating an
+ * empty value or an all-zeros placeholder ("000000000") as "no number"
+ * (returns ""). This is how we tell a business customer (deducts input VAT)
+ * apart from a private consumer (can't) for allocation-number purposes.
+ */
+export function normalizeCustomerVatNumber(v: unknown): string {
+  const digits = String(v ?? "").replace(/\D/g, "");
+  return digits && !/^0+$/.test(digits) ? digits : "";
+}
+
+/**
+ * Does this document legally require a חשבונית ישראל allocation number
+ * (מספר הקצאה)?
+ *
+ * The requirement only bites when the BUYER can deduct input VAT — i.e. a
+ * business customer with a valid עוסק/ח.פ number. A PRIVATE customer (no
+ * business number) can't deduct VAT, so חוק החשבוניות doesn't apply and no
+ * allocation number is required, regardless of amount. Hence: no customer
+ * number ⇒ not required.
+ *
+ * @param doc  partial document — type, date, pre-VAT amount, and clientTaxId.
+ * @param customerTaxId optional override for the buyer's business number,
+ *        already resolved by the caller (e.g. from the linked client). When
+ *        omitted, falls back to doc.clientTaxId.
+ */
+export function requiresAllocationNumber(
+  doc: InvoiceDocument,
+  customerTaxId?: string | null,
+): boolean {
   const isTaxDoc =
     doc.type === "tax_invoice" ||
     doc.type === "tax_invoice_receipt" ||
     doc.type === "credit_note";
   if (!isTaxDoc) return false;
+  // B2C carve-out: a private customer (no valid business/VAT number) can't
+  // deduct input VAT, so no allocation number is required no matter the sum.
+  const customerNumber = normalizeCustomerVatNumber(customerTaxId ?? doc.clientTaxId);
+  if (!customerNumber) return false;
   const docDate = doc.date ? new Date(doc.date) : new Date();
   // The law measures the threshold against the PRE-VAT amount (סכום לפני
   // מע"מ), not the VAT-inclusive total. Use the ₪ equivalent of a

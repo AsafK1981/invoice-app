@@ -11,6 +11,10 @@ import type { InvoiceDocument } from "@/lib/types";
 
 interface Props {
   doc: InvoiceDocument;
+  /** Buyer's business/VAT number, resolved by the page (doc's own client_tax_id
+   *  or the linked client's tax_id). Absent/empty ⇒ private customer (B2C),
+   *  which never needs an allocation number. */
+  customerTaxId?: string;
 }
 
 const GOV_PORTAL_URL = "https://www.gov.il/he/pages/invoices-israel";
@@ -29,7 +33,7 @@ const GOV_PORTAL_URL = "https://www.gov.il/he/pages/invoices-israel";
  *   3. Set — green "received" card with the number + when it was entered
  *      + a small edit button to replace it.
  */
-export function AllocationNumberSection({ doc }: Props) {
+export function AllocationNumberSection({ doc, customerTaxId }: Props) {
   // All hooks must run unconditionally — early return MUST come after.
   // Same trap that produced the React #310 bug yesterday.
   const [editing, setEditing] = useState(false);
@@ -43,7 +47,9 @@ export function AllocationNumberSection({ doc }: Props) {
     doc.type === "tax_invoice" ||
     doc.type === "tax_invoice_receipt" ||
     doc.type === "credit_note";
-  const required = requiresAllocationNumber(doc);
+  // Private customers (no business/VAT number) are never gated — the section
+  // stays hidden for B2C tax invoices regardless of amount.
+  const required = requiresAllocationNumber(doc, customerTaxId ?? doc.clientTaxId);
   if (!isTaxDoc || !required) return null;
 
   const docYear = parseInt(doc.date.slice(0, 4), 10) || new Date().getFullYear();

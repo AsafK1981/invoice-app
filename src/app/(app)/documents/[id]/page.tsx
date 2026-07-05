@@ -108,6 +108,10 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
   }
 
   const client = clients.find((c) => c.id === doc.clientId) ?? null;
+  // Buyer's business/VAT number: the doc's own snapshot, else the linked
+  // client's. Absent ⇒ private customer (B2C), for whom no allocation number
+  // is ever required.
+  const customerTaxId = doc.clientTaxId || client?.taxId || undefined;
   const isQuote = doc.type === "quote";
   const isProforma = doc.type === "proforma";
   // Price quote (הצעת מחיר) and proforma (חשבון עסקה) share the same
@@ -149,7 +153,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
   // True when the doc legally needs a מספר הקצאה but doesn't have one yet.
   // Used to disable any "send to client" button — sending without it would
   // be a regulatory violation.
-  const allocationGate = requiresAllocationNumber(doc) && !doc.allocationNumber;
+  const allocationGate = requiresAllocationNumber(doc, customerTaxId) && !doc.allocationNumber;
 
   function handlePrint() {
     window.print();
@@ -178,7 +182,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
     // Tax Authority gate: don't let the user send a tax invoice that
     // legally requires a מספר הקצאה without one. The law forbids
     // delivering the doc to the buyer until the allocation is in.
-    if (requiresAllocationNumber(doc) && !doc.allocationNumber) {
+    if (requiresAllocationNumber(doc, customerTaxId) && !doc.allocationNumber) {
       setToast({
         kind: "error",
         text: 'יש להוסיף מספר הקצאה לפני שליחה. גלול מטה לבלוק "נדרש מספר הקצאה".',
@@ -238,7 +242,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
 
   function handleWhatsApp() {
     if (!doc) return;
-    if (requiresAllocationNumber(doc) && !doc.allocationNumber) {
+    if (requiresAllocationNumber(doc, customerTaxId) && !doc.allocationNumber) {
       setToast({
         kind: "error",
         text: 'יש להוסיף מספר הקצאה לפני שליחה. גלול מטה לבלוק "נדרש מספר הקצאה".',
@@ -807,7 +811,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
         doc.type === "tax_invoice_receipt" ||
         doc.type === "credit_note") && <DocumentCustomerTaxEditor doc={doc} />}
 
-      <AllocationNumberSection doc={doc} />
+      <AllocationNumberSection doc={doc} customerTaxId={customerTaxId} />
 
       <ReceiptView business={business} client={client} document={doc} />
 

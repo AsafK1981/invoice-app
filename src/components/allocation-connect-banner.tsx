@@ -3,7 +3,11 @@
 import { useEffect, useState } from "react";
 import { Landmark, ShieldCheck, Loader2, Info } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { requiresAllocationNumber, allocationRequiredThreshold } from "@/lib/tax-authority";
+import {
+  requiresAllocationNumber,
+  allocationRequiredThreshold,
+  normalizeCustomerVatNumber,
+} from "@/lib/tax-authority";
 import type { DocumentType } from "@/lib/types";
 
 interface Props {
@@ -12,6 +16,9 @@ interface Props {
   amountIls: number;
   /** Document date (YYYY-MM-DD) — the threshold is date-aware. */
   date: string;
+  /** Buyer's business/VAT number. Absent/empty ⇒ private customer (B2C),
+   *  which never needs an allocation number. */
+  customerTaxId?: string;
   /** Manually-entered allocation number (controlled by the editor). */
   allocationNumber?: string;
   onAllocationNumberChange?: (value: string) => void;
@@ -28,6 +35,7 @@ export function AllocationConnectBanner({
   documentType,
   amountIls,
   date,
+  customerTaxId,
   allocationNumber = "",
   onAllocationNumberChange,
 }: Props) {
@@ -64,23 +72,40 @@ export function AllocationConnectBanner({
   // Allocation numbers apply only to VAT-charging businesses (עוסק מורשה / חברה).
   if (!loaded || businessType === "exempt" || businessType === null) return null;
   // Only when THIS document actually needs a number (right type + over the
-  // date-aware threshold). Pass amountIls as both — for ₪ docs they're equal.
-  const needs = requiresAllocationNumber({
-    type: documentType,
-    date,
-    total: amountIls,
-    totalIls: amountIls,
-  } as never);
+  // date-aware threshold + a BUSINESS customer). Pass amountIls as both — for
+  // ₪ docs they're equal. A private customer (no tax id) is never gated.
+  const needs = requiresAllocationNumber(
+    {
+      type: documentType,
+      date,
+      total: amountIls,
+      totalIls: amountIls,
+    } as never,
+    customerTaxId,
+  );
 
   const isAllocatableType =
     documentType === "tax_invoice" ||
     documentType === "tax_invoice_receipt" ||
     documentType === "credit_note";
 
-  // A tax invoice UNDER the threshold doesn't need an allocation number —
-  // reassure the user with a short note instead of showing nothing.
+  const isPrivateCustomer = !normalizeCustomerVatNumber(customerTaxId);
+
+  // A tax invoice that doesn't need an allocation number — reassure the user
+  // with a short note instead of showing nothing. Two reasons it may not need
+  // one: under the threshold, or a private (B2C) customer.
   if (!needs) {
     if (!isAllocatableType) return null;
+    if (isPrivateCustomer) {
+      return (
+        <div className="rounded-2xl border border-stone-200 bg-stone-50/70 px-4 py-3 flex items-start gap-3">
+          <Info className="w-5 h-5 text-stone-500 flex-shrink-0 mt-0.5" />
+          <p className="text-sm text-stone-700 leading-relaxed">
+            לקוח פרטי (ללא מספר עוסק/ח.פ) — <span className="font-semibold">אין צורך במספר הקצאה</span> מרשות המסים למסמך זה.
+          </p>
+        </div>
+      );
+    }
     const threshold = allocationRequiredThreshold(date ? new Date(date) : new Date());
     return (
       <div className="rounded-2xl border border-stone-200 bg-stone-50/70 px-4 py-3 flex items-start gap-3">

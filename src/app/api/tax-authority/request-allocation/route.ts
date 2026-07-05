@@ -6,6 +6,7 @@ import {
   isTaxAuthorityConfigured,
   taxAuthorityEnv,
   requiresAllocationNumber,
+  normalizeCustomerVatNumber,
   type AllocationRequest,
 } from "@/lib/tax-authority";
 import { decryptColumn, encryptColumn } from "@/lib/crypto";
@@ -123,17 +124,49 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Resolve the buyer's business/VAT number: the document's stored
+  // client_tax_id (captured in the editor), falling back to the linked
+  // client's tax_id.
+  let customerVatNumber = normalizeCustomerVatNumber(doc.client_tax_id);
+  if (!customerVatNumber && doc.client_id) {
+    const { data: client } = await sb
+      .from("clients")
+      .select("tax_id")
+      .eq("id", doc.client_id as string)
+      .maybeSingle();
+    customerVatNumber = normalizeCustomerVatNumber(client?.tax_id);
+  }
+
+  // B2C carve-out: a private customer has no business/VAT number and can't
+  // deduct input VAT, so חוק החשבוניות does not require an allocation number.
+  // The UI won't offer allocation for such a doc; if this route is reached
+  // anyway, answer with a clear, non-error "not applicable" rather than a 400
+  // that reads like a validation failure the user must fix.
+  if (!customerVatNumber) {
+    return NextResponse.json({
+      ok: true,
+      notApplicable: true,
+      allocationNumber: null,
+      message:
+        "לקוח פרטי (ללא מספר עוסק/ח.פ) — חשבונית זו אינה מחייבת מספר הקצאה מרשות המסים.",
+    });
+  }
+
   // Verify the doc actually needs an allocation (defense in depth — UI
-  // should also check, but we don't trust the UI)
+  // should also check, but we don't trust the UI). Pass the resolved
+  // customer number so the B2C carve-out is honoured here too.
   if (
-    !requiresAllocationNumber({
-      type: doc.type as never,
-      date: doc.date as string,
-      total: doc.total as number,
-      totalIls: (doc.total_ils ?? doc.total) as number,
-      subtotal: doc.subtotal as number,
-      subtotalIls: (doc.subtotal_ils ?? doc.subtotal) as number,
-    } as never)
+    !requiresAllocationNumber(
+      {
+        type: doc.type as never,
+        date: doc.date as string,
+        total: doc.total as number,
+        totalIls: (doc.total_ils ?? doc.total) as number,
+        subtotal: doc.subtotal as number,
+        subtotalIls: (doc.subtotal_ils ?? doc.subtotal) as number,
+      } as never,
+      customerVatNumber,
+    )
   ) {
     return NextResponse.json(
       { ok: false, error: "מסמך מסוג זה / סכום זה לא דורש מספר הקצאה" },
@@ -206,35 +239,8 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // v2 single-Approval requires the customer's עוסק number (mandatory, must be
-  // >= 10 — a 0/placeholder is rejected). Source it from the document's stored
-  // client_tax_id (captured in the editor), falling back to the linked client's
-  // tax_id. If neither yields a valid number, fail with an actionable message
-  // instead of letting the Tax Authority reject it with a cryptic code.
-  const normalizeVat = (v: unknown): string => {
-    const digits = String(v || "").replace(/\D/g, "");
-    return digits && !/^0+$/.test(digits) ? digits : "";
-  };
-  let customerVatNumber = normalizeVat(doc.client_tax_id);
-  if (!customerVatNumber && doc.client_id) {
-    const { data: client } = await sb
-      .from("clients")
-      .select("tax_id")
-      .eq("id", doc.client_id as string)
-      .maybeSingle();
-    customerVatNumber = normalizeVat(client?.tax_id);
-  }
-  if (!customerVatNumber) {
-    return NextResponse.json(
-      {
-        ok: false,
-        error:
-          "חסר מספר עוסק/ח.פ של הלקוח. חשבונית ישראל מחייבת אותו. ערוך את המסמך והוסף את מספר העוסק של הלקוח, ואז בקש שוב מספר הקצאה.",
-      },
-      { status: 400 },
-    );
-  }
-
+  // customerVatNumber was resolved above (B2C is already handled). The v2
+  // single-Approval body carries it as the buyer's mandatory עוסק number.
   const invoiceType =
     doc.type === "tax_invoice_receipt"
       ? 320

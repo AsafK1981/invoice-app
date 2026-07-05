@@ -5,7 +5,7 @@ import { createClient } from "@supabase/supabase-js";
 import { checkRate, clientIp } from "@/lib/rate-limit";
 import { sanitizeEmailSubject } from "@/lib/email-subject";
 import { DOCUMENT_TYPE_LABELS, type DocumentType } from "@/lib/types";
-import { requiresAllocationNumber } from "@/lib/tax-authority";
+import { requiresAllocationNumber, normalizeCustomerVatNumber } from "@/lib/tax-authority";
 import { canIssueTaxInvoicesByType } from "@/lib/vat";
 import { buildHtml, buildText } from "./template";
 
@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
     const { data: docRow } = await admin
       .from("documents")
       .select(
-        "id, business_id, number, total, client_name, type, currency, date, subtotal, subtotal_ils, total_ils, allocation_number",
+        "id, business_id, number, total, client_name, type, currency, date, subtotal, subtotal_ils, total_ils, allocation_number, client_id, client_tax_id",
       )
       .eq("id", documentId)
       .maybeSingle();
@@ -93,21 +93,39 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403 });
     }
 
+    // Resolve the buyer's business/VAT number: the doc's stored client_tax_id
+    // (snapshotted in the editor), falling back to the linked client's tax_id.
+    // A private customer (no number) is B2C — the allocation gate below doesn't
+    // apply to them (they can't deduct input VAT).
+    let customerTaxId = normalizeCustomerVatNumber(docRow.client_tax_id);
+    if (!customerTaxId && docRow.client_id) {
+      const { data: clientRow } = await admin
+        .from("clients")
+        .select("tax_id")
+        .eq("id", docRow.client_id as string)
+        .maybeSingle();
+      customerTaxId = normalizeCustomerVatNumber(clientRow?.tax_id);
+    }
+
     // Server-side allocation gate (defense in depth — the editor blocks this
     // too, but a crafted request must not bypass it). A tax document from an
-    // עוסק מורשה/חברה that is over the חשבונית ישראל threshold may not be sent
-    // until it carries an allocation number.
+    // עוסק מורשה/חברה to a BUSINESS customer that is over the חשבונית ישראל
+    // threshold may not be sent until it carries an allocation number. B2C
+    // (private customer) invoices are not gated.
     if (
       canIssueTaxInvoicesByType(bizRow.business_type as string) &&
       !docRow.allocation_number &&
-      requiresAllocationNumber({
-        type: docRow.type as never,
-        date: docRow.date as string,
-        total: docRow.total as number,
-        totalIls: (docRow.total_ils ?? docRow.total) as number,
-        subtotal: docRow.subtotal as number,
-        subtotalIls: (docRow.subtotal_ils ?? docRow.subtotal) as number,
-      } as never)
+      requiresAllocationNumber(
+        {
+          type: docRow.type as never,
+          date: docRow.date as string,
+          total: docRow.total as number,
+          totalIls: (docRow.total_ils ?? docRow.total) as number,
+          subtotal: docRow.subtotal as number,
+          subtotalIls: (docRow.subtotal_ils ?? docRow.subtotal) as number,
+        } as never,
+        customerTaxId,
+      )
     ) {
       return NextResponse.json(
         {

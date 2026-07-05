@@ -859,6 +859,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
           documentType={documentType}
           amountIls={currency === "ILS" ? total : round2(total * rate)}
           date={date}
+          customerTaxId={(adhocMode ? adhocTaxId.trim() : selectedClient?.taxId) || undefined}
           allocationNumber={allocationNumber}
           onAllocationNumberChange={setAllocationNumber}
         />
