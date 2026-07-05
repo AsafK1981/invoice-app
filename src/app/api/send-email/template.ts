@@ -9,6 +9,14 @@
 // once (2026-06-01).
 
 import { DOCUMENT_TYPE_LABELS, type DocumentType } from "@/lib/types";
+import { currencySymbol } from "@/lib/currencies";
+
+// Format a document total in its own currency. Defaults to ILS (₪) so
+// legacy/ILS documents render exactly as before; foreign-currency docs get
+// the correct symbol ($, €, …) instead of a hardcoded ₪.
+function formatDocTotal(total: number, currency?: string): string {
+  return `${currencySymbol(currency || "ILS")}${Number(total).toLocaleString()}`;
+}
 
 function escapeHtml(str: string): string {
   return String(str)
@@ -41,15 +49,18 @@ export function buildHtml(args: {
   /** 1×1 tracking-pixel URL — stamps email_opened_at when the recipient
    *  loads the message. Omit to disable tracking for a particular send. */
   trackingPixelUrl?: string;
+  /** ISO 4217 currency the document total is denominated in. Default "ILS". */
+  currency?: string;
 }): string {
-  const { businessName, clientName, receiptNumber, total, viewUrl, logoUrl, kind = "initial", daysSinceSent, documentType, trackingPixelUrl } = args;
+  const { businessName, clientName, receiptNumber, total, viewUrl, logoUrl, kind = "initial", daysSinceSent, documentType, trackingPixelUrl, currency } = args;
   const isReminder = kind === "reminder";
   const { attached, noun } = docWording(documentType);
+  const totalFormatted = escapeHtml(formatDocTotal(total, currency));
   const introLine = isReminder
-    ? `מקווה שאתם בסדר. רק תזכורת קלה לגבי ${escapeHtml(noun)} מספר <strong>#${escapeHtml(String(receiptNumber))}</strong> על סך <strong>₪${escapeHtml(String(Number(total).toLocaleString()))}</strong>${
+    ? `מקווה שאתם בסדר. רק תזכורת קלה לגבי ${escapeHtml(noun)} מספר <strong>#${escapeHtml(String(receiptNumber))}</strong> על סך <strong>${totalFormatted}</strong>${
         daysSinceSent ? ` ששלחנו לפני ${daysSinceSent} ימים` : ""
       } — אשמח לדעת אם הוא הגיע ומה דעתכם.`
-    : `${escapeHtml(attached)} מספר <strong>#${escapeHtml(String(receiptNumber))}</strong> על סך <strong>₪${escapeHtml(String(Number(total).toLocaleString()))}</strong>.`;
+    : `${escapeHtml(attached)} מספר <strong>#${escapeHtml(String(receiptNumber))}</strong> על סך <strong>${totalFormatted}</strong>.`;
   const ctaLine = isReminder
     ? "לצפייה חוזרת במסמך המלא:"
     : "לצפייה במסמך המלא והדפסה/הורדה כ-PDF, לחץ על הכפתור למטה.";
@@ -126,15 +137,18 @@ export function buildText(args: {
   kind?: "initial" | "reminder";
   daysSinceSent?: number;
   documentType?: DocumentType;
+  /** ISO 4217 currency the document total is denominated in. Default "ILS". */
+  currency?: string;
 }): string {
-  const { businessName, clientName, receiptNumber, total, viewUrl, kind = "initial", daysSinceSent, documentType } = args;
+  const { businessName, clientName, receiptNumber, total, viewUrl, kind = "initial", daysSinceSent, documentType, currency } = args;
   const isReminder = kind === "reminder";
   const { attached, noun } = docWording(documentType);
+  const totalFormatted = formatDocTotal(total, currency);
   const intro = isReminder
-    ? `תזכורת קלה לגבי ${noun} מספר #${receiptNumber} על סך ₪${Number(total).toLocaleString()}${
+    ? `תזכורת קלה לגבי ${noun} מספר #${receiptNumber} על סך ${totalFormatted}${
         daysSinceSent ? ` ששלחנו לפני ${daysSinceSent} ימים` : ""
       }.`
-    : `${attached} מספר #${receiptNumber} על סך ₪${Number(total).toLocaleString()}.`;
+    : `${attached} מספר #${receiptNumber} על סך ${totalFormatted}.`;
   return `שלום ${clientName},
 
 ${intro}

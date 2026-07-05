@@ -63,14 +63,27 @@ export function checkRate({ key, max, windowMs }: RateCheck): RateResult {
 }
 
 /**
- * Best-effort client-IP extraction from Vercel headers. x-forwarded-for
- * is set by Vercel's edge; the first IP is the original client.
- * Falls back to "unknown" so we don't crash on local dev.
+ * Best-effort client-IP extraction from Vercel headers.
+ *
+ * SECURITY: never trust the *leftmost* x-forwarded-for entry — it is
+ * attacker-supplied. A client can send any `X-Forwarded-For` header it
+ * likes, and Vercel *appends* the real connecting IP to the RIGHT of
+ * whatever the client sent. So the leftmost value is spoofable and would
+ * let an attacker poison rate-limit buckets / forge the IP on security
+ * events. Prefer `x-real-ip` (set by Vercel to the true client IP), and
+ * only fall back to the RIGHTMOST x-forwarded-for entry.
+ *
+ * Falls back to "unknown" so we don't crash on local dev where neither
+ * header is present.
  */
 export function clientIp(req: Request): string {
-  const fwd = req.headers.get("x-forwarded-for");
-  if (fwd) return fwd.split(",")[0]!.trim();
   const real = req.headers.get("x-real-ip");
-  if (real) return real;
+  if (real) return real.trim();
+  const fwd = req.headers.get("x-forwarded-for");
+  if (fwd) {
+    const parts = fwd.split(",");
+    const rightmost = parts[parts.length - 1]!.trim();
+    if (rightmost) return rightmost;
+  }
   return "unknown";
 }

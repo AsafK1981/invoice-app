@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Shield, Smartphone, Check, X, AlertTriangle, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { friendlyError } from "@/lib/error-message";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 type Factor = {
   id: string;
@@ -39,6 +41,7 @@ export function TwoFactorSection() {
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const confirm = useConfirm();
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -61,7 +64,7 @@ export function TwoFactorSection() {
       friendlyName: `Authenticator-${Date.now()}`,
     });
     if (error || !data) {
-      setError(error?.message || "שגיאה ביצירת המפתח");
+      setError(friendlyError(error, "שגיאה ביצירת המפתח"));
       setEnrolling(false);
       return;
     }
@@ -81,7 +84,7 @@ export function TwoFactorSection() {
       factorId: enrollData.factorId,
     });
     if (chErr || !ch) {
-      setError(chErr?.message || "שגיאה בעת אימות");
+      setError(friendlyError(chErr, "שגיאה בעת אימות"));
       setBusy(false);
       return;
     }
@@ -92,7 +95,7 @@ export function TwoFactorSection() {
       code: code.trim(),
     });
     if (vErr) {
-      setError(vErr.message);
+      setError(friendlyError(vErr, "הקוד שגוי או שפג תוקפו, נסה שוב"));
       setBusy(false);
       return;
     }
@@ -105,7 +108,13 @@ export function TwoFactorSection() {
   }
 
   async function disableFactor(factorId: string) {
-    if (!window.confirm("להסיר את האימות הדו-שלבי? יישאר רק סיסמה.")) return;
+    const ok = await confirm({
+      title: "להסיר את האימות הדו-שלבי?",
+      message: "לאחר ההסרה תישאר רק הסיסמה כאמצעי הגנה על החשבון.",
+      tone: "danger",
+      confirmLabel: "הסר",
+    });
+    if (!ok) return;
     setBusy(true);
     await supabase.auth.mfa.unenroll({ factorId });
     setBusy(false);

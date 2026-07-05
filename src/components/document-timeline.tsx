@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { formatDate } from "@/lib/format";
+import { toIsraelDate } from "@/lib/date";
 import type { InvoiceDocument } from "@/lib/types";
 
 interface Props {
@@ -51,7 +52,7 @@ const COLORS: Record<EventColor, { dot: string; ring: string; iconText: string }
 
 function fullTime(iso: string): string {
   const d = new Date(iso);
-  const date = formatDate(d.toISOString().slice(0, 10));
+  const date = formatDate(toIsraelDate(d));
   const time = d.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
   return `${date} · ${time}`;
 }

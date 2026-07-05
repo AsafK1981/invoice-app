@@ -19,6 +19,7 @@ interface PortalDoc {
   date: string;
   status: string;
   total: number;
+  total_ils?: number | null;
   business_id: string;
   paid_at?: string | null;
 }
@@ -90,10 +91,13 @@ export default function PortalDocumentsPage() {
 
   const totalPaid = docs
     .filter((d) => d.status === "paid")
-    .reduce((s, d) => s + (d.type === "credit_note" ? -d.total : d.total), 0);
+    .reduce((s, d) => {
+      const val = d.total_ils ?? d.total;
+      return s + (d.type === "credit_note" ? -val : val);
+    }, 0);
   const totalOpen = docs
     .filter((d) => d.status === "sent" && (d.type === "quote" || d.type === "tax_invoice"))
-    .reduce((s, d) => s + d.total, 0);
+    .reduce((s, d) => s + (d.total_ils ?? d.total), 0);
 
   if (loading) {
     return (

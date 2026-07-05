@@ -25,7 +25,9 @@ import { useConfirm } from "@/components/ui/confirm-dialog";
 import { useClients } from "@/lib/client-store";
 import { useBusiness } from "@/lib/business-store";
 import { createDocument } from "@/lib/document-store";
-import { getVatRate, calculateVat, canIssueTaxInvoices, round2 } from "@/lib/vat";
+import { getVatRate, computeAmounts, canIssueTaxInvoices, round2 } from "@/lib/vat";
+import { ilsEquivalents } from "@/lib/exchange-rate";
+import { todayInIsrael } from "@/lib/date";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { DOCUMENT_TYPE_LABELS, type InvoiceDocument } from "@/lib/types";
 
@@ -42,12 +44,20 @@ export default function RecurringPage() {
     setCreatingId(template.id);
     setToast(null);
     try {
-      const subtotal = round2(
-        template.items.reduce((s, i) => s + i.quantity * i.unitPrice, 0)
-      );
+      // Build the document through the SAME path the interactive editor uses
+      // on save (computeAmounts + per-line net prices + ₪ snapshot), so a
+      // generated recurring doc is identical to one created manually from the
+      // same template. Rounding the summed total instead of per-line — and
+      // omitting currency/exchangeRate/ILS fields — used to let the header
+      // subtotal drift from the sum of line totals, the exact line/header
+      // mismatch that gets a tax export rejected. Templates are ILS-only and
+      // exclusive-VAT today, so we mirror those defaults explicitly.
       const vatRate = getVatRate(business);
-      const vat = calculateVat(subtotal, vatRate);
-      const total = round2(subtotal + vat);
+      const { subtotal, vat, total, netUnitPriceFactor } = computeAmounts(
+        template.items,
+        vatRate,
+        "exclusive"
+      );
       const isPaidOnIssue =
         template.documentType === "receipt" ||
         template.documentType === "tax_invoice_receipt";
@@ -55,22 +65,29 @@ export default function RecurringPage() {
       const draft: Omit<InvoiceDocument, "number"> = {
         id: crypto.randomUUID(),
         type: template.documentType,
-        date: new Date().toISOString().slice(0, 10),
+        date: todayInIsrael(),
         clientId: template.clientId,
         clientName: template.clientName,
         subject: template.subject,
         status: isPaidOnIssue ? "paid" : "sent",
-        items: template.items.map((i) => ({
-          id: crypto.randomUUID(),
-          description: i.description,
-          quantity: i.quantity,
-          unitPrice: i.unitPrice,
-          total: round2(i.quantity * i.unitPrice),
-        })),
+        items: template.items.map((i) => {
+          const netUnitPrice = round2(i.unitPrice * netUnitPriceFactor);
+          return {
+            id: crypto.randomUUID(),
+            description: i.description,
+            quantity: i.quantity,
+            unitPrice: netUnitPrice,
+            total: round2(i.quantity * netUnitPrice),
+          };
+        }),
         subtotal,
         vat,
         total,
         paymentMethod: "bank_transfer",
+        currency: "ILS",
+        exchangeRate: 1,
+        zeroRated: false,
+        ...ilsEquivalents({ subtotal, vat, total }, 1),
       };
       const { id: docId, number: allocatedNumber } = await createDocument(draft);
 
@@ -117,7 +134,7 @@ export default function RecurringPage() {
     await deleteTemplate(id);
   }
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayInIsrael();
   const dueTemplates = templates.filter((t) => t.active && t.nextDue <= today);
 
   return (
@@ -184,9 +201,13 @@ export default function RecurringPage() {
       ) : (
         <div className="space-y-3">
           {templates.map((t) => {
-            const subtotal = t.items.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
-            const vat = calculateVat(subtotal, getVatRate(business));
-            const total = subtotal + vat;
+            // Preview through the same path used on generation so the shown
+            // total matches the document that will actually be created.
+            const { subtotal, vat, total } = computeAmounts(
+              t.items,
+              getVatRate(business),
+              "exclusive"
+            );
             const isDue = t.active && t.nextDue <= today;
 
             return (
@@ -297,7 +318,7 @@ function CreateTemplateCard({ clients }: { clients: { id: string; name: string }
         subject: subject.trim(),
         items: [{ description: description.trim(), quantity: 1, unitPrice: numAmount }],
         frequency,
-        nextDue: new Date().toISOString().slice(0, 10),
+        nextDue: todayInIsrael(),
         active: true,
         createdAt: new Date().toISOString(),
       });

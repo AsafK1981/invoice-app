@@ -35,7 +35,7 @@ export function ReceiptView({ business, client, document: doc }: Props) {
   const bodyClient = toBodyClient(client, doc.clientName);
 
   return (
-    <div className="receipt-view mx-auto max-w-[210mm] bg-white p-12 shadow-lg print:shadow-none print:p-8">
+    <div className="receipt-view mx-auto max-w-[210mm] bg-white p-6 sm:p-12 shadow-lg print:shadow-none print:p-8">
       <DocumentBody
         business={business}
         client={bodyClient}

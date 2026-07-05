@@ -190,19 +190,6 @@ export async function createDocument(
 
   const result = data as { id: string; number: number };
 
-  // A manually-entered allocation number isn't part of create_document_atomic
-  // (the number normally arrives later from the Tax Authority). Persist it in a
-  // follow-up update when the user typed one in the editor.
-  if (doc.allocationNumber?.trim()) {
-    await supabase
-      .from("documents")
-      .update({
-        allocation_number: doc.allocationNumber.trim(),
-        allocation_set_at: new Date().toISOString(),
-      })
-      .eq("id", result.id);
-  }
-
   logAudit({
     action: "document.created",
     targetType: "document",
@@ -213,6 +200,29 @@ export async function createDocument(
 
   window.dispatchEvent(new Event(CHANGE_EVENT));
   track("document_created", { type: doc.type });
+
+  // A manually-entered allocation number isn't part of create_document_atomic
+  // (the number normally arrives later from the Tax Authority). Persist it in a
+  // follow-up update when the user typed one in the editor. Same defensive
+  // .select() + 0-row check used elsewhere: a silently-failed write would
+  // otherwise lose the allocation number while the create looked successful.
+  if (doc.allocationNumber?.trim()) {
+    const { data: allocData, error: allocError } = await supabase
+      .from("documents")
+      .update({
+        allocation_number: doc.allocationNumber.trim(),
+        allocation_set_at: new Date().toISOString(),
+      })
+      .eq("id", result.id)
+      .select();
+    if (allocError || !allocData || allocData.length === 0) {
+      throw new Error(
+        "המסמך נשמר אך שמירת מספר ההקצאה נכשלה — עדכן אותו ידנית במסמך.",
+      );
+    }
+    window.dispatchEvent(new Event(CHANGE_EVENT));
+  }
+
   return result;
 }
 
@@ -220,9 +230,17 @@ export async function deleteDocument(id: string) {
   // Snapshot the doc for audit context BEFORE deleting
   const { data: snap } = await supabase
     .from("documents")
-    .select("type, number, client_name")
+    .select("type, number, client_name, status")
     .eq("id", id)
     .maybeSingle();
+
+  // Immutability: an issued tax document may not be hard-deleted (Israeli law
+  // — it can only be reversed with a credit note). Drafts may be deleted freely.
+  if (snap && snap.status !== "draft") {
+    throw new Error(
+      "לא ניתן למחוק מסמך שהופק. מסמך שהונפק ניתן לביטול רק באמצעות חשבונית זיכוי.",
+    );
+  }
 
   await supabase.from("document_items").delete().eq("document_id", id);
   await supabase.from("documents").delete().eq("id", id);
@@ -346,12 +364,19 @@ export async function updateDocumentNumber(id: string, newNumber: number) {
   if (!Number.isInteger(newNumber) || newNumber < 1) {
     throw new Error("יש להזין מספר שלם חיובי");
   }
-  // Snapshot the prior number/type for the audit trail before mutating.
+  // Snapshot the prior number/type/status for the audit trail before mutating.
   const { data: before } = await supabase
     .from("documents")
-    .select("type, number")
+    .select("type, number, status")
     .eq("id", id)
     .maybeSingle();
+  // Immutability: an issued document's number is final (Israeli law). Only a
+  // draft's number may be changed before it's issued.
+  if (before && before.status !== "draft") {
+    throw new Error(
+      "לא ניתן לשנות מספר של מסמך שהופק. רק טיוטה ניתנת לעריכה.",
+    );
+  }
   const { data, error } = await supabase
     .from("documents")
     .update({ number: newNumber })

@@ -5,6 +5,7 @@ import { Mail, Eye, EyeOff, ExternalLink, AlertCircle, CheckCircle2 } from "luci
 import { Modal } from "@/components/ui/modal";
 import { FormField } from "@/components/ui/form-field";
 import { supabase } from "@/lib/supabase";
+import { friendlyError } from "@/lib/error-message";
 
 interface Props {
   open: boolean;
@@ -39,7 +40,7 @@ export function EmailSettingsModal({ open, onClose }: Props) {
     });
     setSaving(false);
     if (error) {
-      setToast({ kind: "error", text: error.message });
+      setToast({ kind: "error", text: friendlyError(error, "שגיאה בשמירת ההגדרות") });
       return;
     }
     setToast({

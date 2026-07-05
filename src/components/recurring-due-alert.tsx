@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { RefreshCw, ArrowLeft } from "lucide-react";
 import { useRecurringTemplates } from "@/lib/recurring-store";
+import { todayInIsrael } from "@/lib/date";
 import { formatDate } from "@/lib/format";
 
 /**
@@ -18,7 +19,7 @@ export function RecurringDueAlert() {
   const { templates, ready } = useRecurringTemplates();
   if (!ready) return null;
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayInIsrael();
   const due = templates.filter((t) => t.active && t.nextDue <= today);
   if (due.length === 0) return null;
 

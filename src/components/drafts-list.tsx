@@ -6,6 +6,7 @@ import { FileClock, ArrowLeft, Trash2 } from "lucide-react";
 import { useDrafts, deleteServerDraft, DOC_TYPE_ROUTE } from "@/lib/draft-store";
 import { DOCUMENT_TYPE_LABELS } from "@/lib/types";
 import { formatCurrency } from "@/lib/format";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 function timeAgo(iso: string): string {
   const diffMs = Date.now() - new Date(iso).getTime();
@@ -21,6 +22,7 @@ function timeAgo(iso: string): string {
 export function DraftsList() {
   const { drafts, ready } = useDrafts();
   const [deleting, setDeleting] = useState<string | null>(null);
+  const confirm = useConfirm();
 
   if (ready && drafts.length === 0) {
     return (
@@ -37,7 +39,13 @@ export function DraftsList() {
   }
 
   async function remove(id: string) {
-    if (!window.confirm("למחוק את הטיוטה? לא ניתן לשחזר.")) return;
+    const ok = await confirm({
+      title: "למחוק את הטיוטה?",
+      message: "לא ניתן לשחזר טיוטה שנמחקה.",
+      tone: "danger",
+      confirmLabel: "מחק",
+    });
+    if (!ok) return;
     setDeleting(id);
     try {
       await deleteServerDraft(id);

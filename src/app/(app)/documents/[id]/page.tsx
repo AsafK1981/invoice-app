@@ -18,6 +18,7 @@ import {
   Link as LinkIcon,
   Download,
   MoreHorizontal,
+  Hash,
   X,
 } from "lucide-react";
 import { useDocument, useDocuments, deleteDocument, updateDocumentStatus, markDocumentEmailed } from "@/lib/document-store";
@@ -480,14 +481,19 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                 </button>
               );
             })()}
-          <button
-            onClick={handleDelete}
-            className="hidden sm:inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-white border border-rose-200 text-rose-700 hover:bg-rose-50"
-            title="מחק"
-          >
-            <Trash2 className="w-4 h-4" />
-            <span className="hidden sm:inline">מחק</span>
-          </button>
+          {/* #15: delete is only valid for drafts. `deleteDocument` throws
+              for any issued doc (immutable by law — cancel via credit note),
+              so we hide the affordance instead of surfacing a dead button. */}
+          {doc.status === "draft" && (
+            <button
+              onClick={handleDelete}
+              className="hidden sm:inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-white border border-rose-200 text-rose-700 hover:bg-rose-50"
+              title="מחק"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span className="hidden sm:inline">מחק</span>
+            </button>
+          )}
           <button
             onClick={handleDownloadPdf}
             className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-orange-500 border border-orange-600 text-white hover:bg-orange-600"
@@ -589,18 +595,22 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                   <Printer className="w-4 h-4 text-stone-500" />
                   הדפס
                 </button>
-                <div className="border-t border-stone-100 my-0.5" />
-                <button
-                  role="menuitem"
-                  onClick={() => {
-                    setMoreOpen(false);
-                    handleDelete();
-                  }}
-                  className="inline-flex items-center gap-2 px-3 py-2 min-h-[40px] rounded-xl text-sm font-medium text-rose-700 hover:bg-rose-50 text-right"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  מחק
-                </button>
+                {doc.status === "draft" && (
+                  <>
+                    <div className="border-t border-stone-100 my-0.5" />
+                    <button
+                      role="menuitem"
+                      onClick={() => {
+                        setMoreOpen(false);
+                        handleDelete();
+                      }}
+                      className="inline-flex items-center gap-2 px-3 py-2 min-h-[40px] rounded-xl text-sm font-medium text-rose-700 hover:bg-rose-50 text-right"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      מחק
+                    </button>
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -758,7 +768,34 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
         </div>
       )}
 
-      <DocumentNumberEditor doc={doc} />
+      {/* #15: a number is editable only while the doc is a draft.
+          `updateDocumentNumber` throws once issued (number is final by law),
+          so for issued docs we show the number read-only with guidance
+          instead of an editor that would only error. */}
+      {doc.status === "draft" ? (
+        <DocumentNumberEditor doc={doc} />
+      ) : (
+        <div className="no-print card-soft p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-stone-100 flex items-center justify-center flex-shrink-0">
+              <Hash className="w-4 h-4 text-stone-500" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-stone-900" dir="ltr">
+                {DOCUMENT_TYPE_LABELS[doc.type]} #{doc.number}
+              </p>
+              <p className="text-xs text-stone-600">
+                {doc.type === "receipt" ||
+                doc.type === "tax_invoice" ||
+                doc.type === "tax_invoice_receipt" ||
+                doc.type === "credit_note"
+                  ? "מסמך שהופק — מספרו סופי ואינו ניתן למחיקה. לביטול יש להפיק חשבונית זיכוי."
+                  : "מסמך שהופק — מספרו סופי ואינו ניתן לשינוי."}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {(doc.type === "tax_invoice" ||
         doc.type === "tax_invoice_receipt" ||

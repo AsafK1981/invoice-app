@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "./supabase";
 import { getBusinessId, onBusinessReady } from "./business-init";
 import { logAudit } from "./audit-log";
+import { todayInIsrael } from "./date";
 import type { Client } from "./types";
 
 const CHANGE_EVENT = "invoice-app:clients-changed";
@@ -17,7 +18,7 @@ function mapRow(row: Record<string, unknown>): Client {
     phone: (row.phone as string) || undefined,
     email: (row.email as string) || undefined,
     notes: (row.notes as string) || undefined,
-    createdAt: (row.created_at as string)?.slice(0, 10) || new Date().toISOString().slice(0, 10),
+    createdAt: (row.created_at as string)?.slice(0, 10) || todayInIsrael(),
   };
 }
 

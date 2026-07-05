@@ -36,7 +36,14 @@ export function calculateVat(subtotal: number, ratePercent: number): number {
 }
 
 export function round2(n: number): number {
-  return Math.round(n * 100) / 100;
+  // Round to 2 decimals (agorot), robust to float half-agora boundaries. A
+  // value like 1.005 is stored a hair below (100.4999…), so a plain
+  // Math.round(n * 100) drops it to 1.00. Nudge by a magnitude-scaled epsilon
+  // so x.xx5 rounds up even for large sums, symmetrically for negatives
+  // (credit notes) → |round2(-x)| === round2(x). Values already at 2 decimals
+  // round to themselves, so per-line reconciliation is unaffected.
+  const scaled = n * 100;
+  return Math.round(scaled + Math.sign(scaled) * Number.EPSILON * Math.abs(scaled)) / 100;
 }
 
 export type VatMode = "exclusive" | "inclusive";

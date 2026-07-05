@@ -89,10 +89,21 @@ export function DocumentNumberingSettings() {
       setError("יש להזין מספר שלם חיובי");
       return;
     }
-    // No floor — the user can set any starting number (e.g. to continue a
-    // sequence from a previous system). We only NOTE, not block, when the
-    // value would collide with existing documents; a number already taken is
-    // rejected automatically at issue time by the DB unique index.
+    // The legitimate "continue a previous series" case means we don't hard-
+    // block a custom start number. But setting the next number AT OR BELOW the
+    // highest already-issued document of this type invites gaps / duplicates /
+    // non-sequential numbering (a tax-audit red flag), so require an explicit
+    // confirmation rather than saving silently.
+    const used = maxUsed[type];
+    if (used !== undefined && value <= used) {
+      const ok = window.confirm(
+        `כבר קיימים מסמכים מסוג ${DOCUMENT_TYPE_LABELS[type]} עד מספר ${used}. ` +
+          `הגדרת המספר הבא ל-${value} עלולה ליצור כפילות או מספור לא רציף ` +
+          `(מספרים תפוסים ייחסמו בהפקה). מומלץ להגדיר מספר גדול מ-${used}. ` +
+          `להמשיך בכל זאת?`
+      );
+      if (!ok) return;
+    }
     const bid = getBusinessId();
     if (!bid) return;
     setSaving(true);
@@ -111,7 +122,6 @@ export function DocumentNumberingSettings() {
     setCounters((c) => ({ ...c, [type]: value }));
     setEditing(null);
     setDraftValue("");
-    const used = maxUsed[type];
     if (used !== undefined && value <= used) {
       setNote(
         `נשמר. שים לב: כבר קיימים מסמכים מסוג זה עד מספר ${used}, כך שמספרים תפוסים ייחסמו אוטומטית בהפקה.`

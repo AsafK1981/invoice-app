@@ -57,14 +57,14 @@ export function QuoteAging({ documents }: Props) {
 
   if (openQuotes.length === 0) return null;
 
-  const totalValue = openQuotes.reduce((s, q) => s + q.total, 0);
+  const totalValue = openQuotes.reduce((s, q) => s + (q.totalIls ?? q.total), 0);
 
   const buckets: Bucket[] = [
     {
       key: "fresh",
       label: "פחות משבוע",
       count: fresh.length,
-      value: fresh.reduce((s, q) => s + q.total, 0),
+      value: fresh.reduce((s, q) => s + (q.totalIls ?? q.total), 0),
       items: fresh,
       icon: CheckCircle2,
       color: "text-emerald-700",
@@ -76,7 +76,7 @@ export function QuoteAging({ documents }: Props) {
       key: "aging",
       label: "1–2 שבועות",
       count: aging.length,
-      value: aging.reduce((s, q) => s + q.total, 0),
+      value: aging.reduce((s, q) => s + (q.totalIls ?? q.total), 0),
       items: aging,
       icon: Clock,
       color: "text-amber-700",
@@ -88,7 +88,7 @@ export function QuoteAging({ documents }: Props) {
       key: "stale",
       label: "מעל שבועיים",
       count: stale.length,
-      value: stale.reduce((s, q) => s + q.total, 0),
+      value: stale.reduce((s, q) => s + (q.totalIls ?? q.total), 0),
       items: stale,
       icon: AlertTriangle,
       color: "text-rose-700",

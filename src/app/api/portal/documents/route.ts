@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
     admin
       .from("documents")
       .select(
-        "id, type, number, date, status, total, vat, subtotal, client_id, business_id, paid_at, allocation_number",
+        "id, type, number, date, status, total, total_ils, vat, subtotal, client_id, business_id, paid_at, allocation_number",
       )
       .in("client_id", clientIds)
       .neq("status", "draft")

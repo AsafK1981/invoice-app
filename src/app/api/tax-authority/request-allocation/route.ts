@@ -11,6 +11,7 @@ import {
 import { decryptColumn, encryptColumn } from "@/lib/crypto";
 import { emitSecurityEvent } from "@/lib/security-events";
 import { clientIp } from "@/lib/rate-limit";
+import { todayInIsrael } from "@/lib/date";
 
 // Token refresh + allocation go through the Israeli egress proxy (Cloud Run
 // me-west1) — allow headroom for proxy cold-start + the gov.il round trip.
@@ -130,6 +131,8 @@ export async function POST(req: NextRequest) {
       date: doc.date as string,
       total: doc.total as number,
       totalIls: (doc.total_ils ?? doc.total) as number,
+      subtotal: doc.subtotal as number,
+      subtotalIls: (doc.subtotal_ils ?? doc.subtotal) as number,
     } as never)
   ) {
     return NextResponse.json(
@@ -186,9 +189,12 @@ export async function POST(req: NextRequest) {
         })
         .eq("business_id", business.id);
     } catch (err) {
+      // Log the real cause server-side; persist/return only a generic message
+      // so no upstream gov.il body leaks to the client or the DB.
+      console.error("[request-allocation] token refresh failed", err);
       await sb
         .from("tax_authority_credentials")
-        .update({ last_error: err instanceof Error ? err.message : "refresh failed" })
+        .update({ last_error: "token refresh failed" })
         .eq("business_id", business.id);
       return NextResponse.json(
         {
@@ -247,7 +253,9 @@ export async function POST(req: NextRequest) {
     invoiceReferenceNumber: String(doc.number ?? ""),
     customerVatNumber,
     invoiceDate: doc.date as string,
-    issuanceDate: new Date().toISOString().slice(0, 10),
+    // Issuance date should be the document's own calendar date; fall back to
+    // today (in Israel time — the server runs UTC) only if the row lacks one.
+    issuanceDate: (doc.date as string) || todayInIsrael(),
     amountBeforeDiscount: subtotalIls,
     discount: 0,
     paymentAmount: subtotalIls,
@@ -259,8 +267,11 @@ export async function POST(req: NextRequest) {
   try {
     result = await requestAllocation(accessToken, allocRequest);
   } catch (err) {
+    // Full error (may carry gov.il body / network detail) stays in logs;
+    // client gets a generic Hebrew message.
+    console.error("[request-allocation] allocation request failed", err);
     return NextResponse.json(
-      { ok: false, error: err instanceof Error ? err.message : "API error" },
+      { ok: false, error: "אירעה שגיאה בפנייה לרשות המסים. נסה שוב מאוחר יותר." },
       { status: 500 },
     );
   }

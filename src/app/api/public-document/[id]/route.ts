@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { clientIp } from "@/lib/rate-limit";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -29,17 +30,11 @@ function checkRateLimit(ip: string): { allowed: boolean; retryAfter: number } {
   return { allowed: true, retryAfter: 0 };
 }
 
-function getClientIp(req: Request): string {
-  const xff = req.headers.get("x-forwarded-for");
-  if (xff) return xff.split(",")[0].trim();
-  return req.headers.get("x-real-ip") || "unknown";
-}
-
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const ip = getClientIp(req);
+  const ip = clientIp(req);
   const rl = checkRateLimit(ip);
   if (!rl.allowed) {
     return NextResponse.json(

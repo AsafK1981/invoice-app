@@ -9,6 +9,8 @@ import { useBusiness } from "@/lib/business-store";
 import { formatCurrency } from "@/lib/format";
 import { exportDocuments, exportExpenses } from "@/lib/csv-export";
 import { supabase } from "@/lib/supabase";
+import { useToast } from "@/components/ui/toast";
+import { friendlyError } from "@/lib/error-message";
 import { TaxYearDetail } from "@/components/tax-year-detail";
 import { VatPeriodReport } from "@/components/vat-period-report";
 import { Form1301Helper } from "@/components/form-1301-helper";
@@ -70,6 +72,7 @@ export default function ReportsPage() {
   const { items: expenses } = useExpenses();
   const { business } = useBusiness();
   const [period, setPeriod] = useState<Period>("all");
+  const showToast = useToast();
 
   const yearsWithData = useMemo(() => {
     const set = new Set<number>();
@@ -144,7 +147,7 @@ export default function ReportsPage() {
     const year = selectedYear ?? new Date().getFullYear();
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.access_token) {
-      alert("צריך להתחבר מחדש");
+      showToast("פג תוקף ההתחברות, התחבר מחדש");
       return;
     }
     const qs = `year=${year}${sample ? "&sample=true" : ""}`;
@@ -153,7 +156,7 @@ export default function ReportsPage() {
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: "שגיאה לא ידועה" }));
-      alert(`ייצוא נכשל: ${err.error || res.status}`);
+      showToast(friendlyError(err, `ייצוא נכשל (${res.status})`));
       return;
     }
     const blob = await res.blob();

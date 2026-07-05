@@ -21,6 +21,7 @@ import {
   type NotificationKind,
 } from "@/lib/notifications";
 import { formatDate } from "@/lib/format";
+import { toIsraelDate } from "@/lib/date";
 
 const KIND_STYLE: Record<
   NotificationKind,
@@ -36,7 +37,7 @@ const KIND_STYLE: Record<
 
 function fullTime(iso: string): string {
   const d = new Date(iso);
-  const date = formatDate(d.toISOString().slice(0, 10));
+  const date = formatDate(toIsraelDate(d));
   const time = d.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
   return `${date} · ${time}`;
 }

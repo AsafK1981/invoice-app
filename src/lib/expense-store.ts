@@ -5,6 +5,7 @@ import { supabase } from "./supabase";
 import { getBusinessId, onBusinessReady } from "./business-init";
 import { logAudit } from "./audit-log";
 import { formatCurrency } from "./format";
+import { todayInIsrael } from "./date";
 import type { Expense } from "./types";
 
 const CHANGE_EVENT = "invoice-app:expenses-changed";
@@ -12,7 +13,7 @@ const CHANGE_EVENT = "invoice-app:expenses-changed";
 function mapRow(row: Record<string, unknown>): Expense {
   return {
     id: row.id as string,
-    date: (row.date as string) || new Date().toISOString().slice(0, 10),
+    date: (row.date as string) || todayInIsrael(),
     category: row.category as string,
     supplier: row.supplier as string,
     amount: Number(row.amount) || 0,

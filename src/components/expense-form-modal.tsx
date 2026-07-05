@@ -6,6 +6,7 @@ import { Modal } from "@/components/ui/modal";
 import { FormField } from "@/components/ui/form-field";
 import { expenseStore } from "@/lib/expense-store";
 import { useBusiness } from "@/lib/business-store";
+import { todayInIsrael } from "@/lib/date";
 import type { Expense } from "@/lib/types";
 
 type PrefillFromScan = {
@@ -39,7 +40,7 @@ const COMMON_CATEGORIES = [
 ];
 
 export function ExpenseFormModal({ open, onClose, expense, prefill }: Props) {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayInIsrael();
   const { business } = useBusiness();
   // Only עוסק מורשה / company can claim input-VAT credit, so the field
   // is hidden for עוסק פטור (it'd just be confusion / clutter for them).

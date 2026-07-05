@@ -7,6 +7,7 @@ import { useClients } from "@/lib/client-store";
 import { useDocuments } from "@/lib/document-store";
 import { useBusiness } from "@/lib/business-store";
 import { formatCurrency, formatDate } from "@/lib/format";
+import { todayInIsrael } from "@/lib/date";
 import { DOCUMENT_TYPE_LABELS, BUSINESS_TYPE_LABELS } from "@/lib/types";
 
 export default function ClientStatementPage({
@@ -70,7 +71,7 @@ export default function ClientStatementPage({
     );
   }
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayInIsrael();
 
   return (
     <div className="space-y-6">

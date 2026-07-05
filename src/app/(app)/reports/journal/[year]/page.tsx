@@ -7,6 +7,7 @@ import { useDocuments } from "@/lib/document-store";
 import { useExpenses } from "@/lib/expense-store";
 import { useBusiness } from "@/lib/business-store";
 import { formatCurrency, formatDate } from "@/lib/format";
+import { todayInIsrael } from "@/lib/date";
 import { DOCUMENT_TYPE_LABELS, BUSINESS_TYPE_LABELS } from "@/lib/types";
 
 const MONTH_NAMES = [
@@ -269,7 +270,7 @@ export default function YearJournalPage({ params }: { params: Promise<{ year: st
         </section>
 
         <footer className="text-xs text-stone-500 text-center mt-8 pt-4 border-t border-stone-200">
-          הופק ב-{formatDate(new Date().toISOString().slice(0, 10))} ממערכת MySuperFriendlyInvoiceApp
+          הופק ב-{formatDate(todayInIsrael())} ממערכת MySuperFriendlyInvoiceApp
         </footer>
       </div>
     </div>

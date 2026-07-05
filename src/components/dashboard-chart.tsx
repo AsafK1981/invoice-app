@@ -35,7 +35,7 @@ export function DashboardChart({ documents, expenses }: Props) {
     return months.map((m) => {
       const income = documents
         .filter((doc) => doc.status === "paid" && doc.date.startsWith(m.key))
-        .reduce((sum, doc) => sum + doc.total, 0);
+        .reduce((sum, doc) => sum + (doc.totalIls ?? doc.total), 0);
 
       const monthExpenses = expenses
         .filter((e) => e.date.startsWith(m.key))

@@ -132,7 +132,7 @@ export function DocumentPreview(props: Props) {
               }}
             >
               <div ref={pageRef}>
-                <div className="bg-white rounded-2xl shadow-md p-10" dir="rtl">
+                <div className="receipt-view bg-white rounded-2xl shadow-md p-10" dir="rtl">
                   {body}
                 </div>
               </div>
@@ -172,7 +172,7 @@ export function DocumentPreview(props: Props) {
             </div>
             <div className="relative z-10 flex-1 overflow-auto py-6 px-4">
               <div
-                className="bg-white rounded-2xl shadow-2xl p-10 mx-auto"
+                className="receipt-view bg-white rounded-2xl shadow-2xl p-10 mx-auto"
                 style={{ width: PAGE_WIDTH_PX, maxWidth: "100%" }}
                 dir="rtl"
                 onClick={(e) => e.stopPropagation()}

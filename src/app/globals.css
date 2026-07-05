@@ -28,6 +28,27 @@ button:disabled,
   cursor: not-allowed;
 }
 
+/* ========== FOCUS-VISIBLE (accessibility) ==========
+   A single, consistent keyboard-focus ring in the warm brand palette.
+   Uses :focus-visible (not :focus) so the ring shows for keyboard/AT
+   navigation but never on mouse click. Applies to every interactive
+   control; .input-warm keeps its own dedicated focus ring so we exclude
+   it here to avoid a doubled outline. */
+a[href]:focus-visible,
+button:focus-visible,
+[role="button"]:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+input:not(.input-warm):focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid #f97316;
+  outline-offset: 2px;
+}
+.input-warm:focus-visible {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+
 body {
   background:
     url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23f97316' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"),
@@ -600,6 +621,28 @@ tr {
     max-width: none !important;
     margin: 0 !important;
     padding: 0 !important;
+  }
+  /* Force colored fills (doc-type badge gradient, orange total row,
+     table header, zebra rows, accent borders) to actually print. Chrome
+     "Save as PDF" has Background graphics OFF by default and would drop
+     every fill without this. Scoped to the document so it only affects
+     the invoice, not incidental print of other UI. */
+  .receipt-view,
+  .receipt-view * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  /* Page-break control for multi-page invoices: repeat the table header
+     on each page, never split a line-item row across a page break, and
+     keep the totals block intact. */
+  .receipt-view thead {
+    display: table-header-group;
+  }
+  .receipt-view tr {
+    break-inside: avoid;
+  }
+  .receipt-view .doc-totals {
+    break-inside: avoid;
   }
   @page {
     size: A4;

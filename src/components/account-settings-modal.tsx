@@ -6,6 +6,7 @@ import { Modal } from "@/components/ui/modal";
 import { FormField } from "@/components/ui/form-field";
 import { supabase } from "@/lib/supabase";
 import { signOut } from "@/lib/auth";
+import { friendlyError } from "@/lib/error-message";
 
 interface Props {
   open: boolean;
@@ -48,7 +49,7 @@ export function AccountSettingsModal({ open, onClose }: Props) {
     const { error } = await supabase.auth.updateUser({ password });
     setSaving(false);
     if (error) {
-      setToast({ kind: "error", text: error.message });
+      setToast({ kind: "error", text: friendlyError(error, "שגיאה בעדכון הסיסמה") });
       return;
     }
     setToast({ kind: "success", text: "הסיסמה עודכנה בהצלחה" });
@@ -81,7 +82,7 @@ export function AccountSettingsModal({ open, onClose }: Props) {
       URL.revokeObjectURL(url);
       setToast({ kind: "success", text: "קובץ הנתונים הורד" });
     } catch (err) {
-      setToast({ kind: "error", text: err instanceof Error ? err.message : "שגיאה" });
+      setToast({ kind: "error", text: friendlyError(err, "שגיאה בייצוא הנתונים") });
     } finally {
       setSaving(false);
     }
@@ -108,7 +109,7 @@ export function AccountSettingsModal({ open, onClose }: Props) {
       await signOut();
     } catch (err) {
       setSaving(false);
-      setToast({ kind: "error", text: err instanceof Error ? err.message : "שגיאה" });
+      setToast({ kind: "error", text: friendlyError(err, "שגיאה במחיקת החשבון") });
     }
   }
 

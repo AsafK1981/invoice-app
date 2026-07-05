@@ -5,6 +5,8 @@ import { createClient } from "@supabase/supabase-js";
 import { checkRate, clientIp } from "@/lib/rate-limit";
 import { sanitizeEmailSubject } from "@/lib/email-subject";
 import { DOCUMENT_TYPE_LABELS, type DocumentType } from "@/lib/types";
+import { requiresAllocationNumber } from "@/lib/tax-authority";
+import { canIssueTaxInvoicesByType } from "@/lib/vat";
 import { buildHtml, buildText } from "./template";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -74,7 +76,9 @@ export async function POST(req: NextRequest) {
     });
     const { data: docRow } = await admin
       .from("documents")
-      .select("id, business_id, number, total, client_name, type")
+      .select(
+        "id, business_id, number, total, client_name, type, currency, date, subtotal, subtotal_ils, total_ils, allocation_number",
+      )
       .eq("id", documentId)
       .maybeSingle();
     if (!docRow) {
@@ -82,11 +86,37 @@ export async function POST(req: NextRequest) {
     }
     const { data: bizRow } = await admin
       .from("businesses")
-      .select("id, user_id, name, logo_url")
+      .select("id, user_id, name, logo_url, business_type")
       .eq("id", docRow.business_id)
       .maybeSingle();
     if (!bizRow || bizRow.user_id !== user.id) {
       return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403 });
+    }
+
+    // Server-side allocation gate (defense in depth — the editor blocks this
+    // too, but a crafted request must not bypass it). A tax document from an
+    // עוסק מורשה/חברה that is over the חשבונית ישראל threshold may not be sent
+    // until it carries an allocation number.
+    if (
+      canIssueTaxInvoicesByType(bizRow.business_type as string) &&
+      !docRow.allocation_number &&
+      requiresAllocationNumber({
+        type: docRow.type as never,
+        date: docRow.date as string,
+        total: docRow.total as number,
+        totalIls: (docRow.total_ils ?? docRow.total) as number,
+        subtotal: docRow.subtotal as number,
+        subtotalIls: (docRow.subtotal_ils ?? docRow.subtotal) as number,
+      } as never)
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            "לא ניתן לשלוח חשבונית החייבת במספר הקצאה ללא מספר הקצאה. בקש מספר הקצאה מרשות המסים ואז שלח.",
+        },
+        { status: 422 },
+      );
     }
 
     // Authentic content, straight from the owned document.
@@ -95,6 +125,7 @@ export async function POST(req: NextRequest) {
     const receiptNumber = docRow.number as string | number;
     const total = docRow.total as number;
     const clientName = (docRow.client_name as string) || "";
+    const currency = (docRow.currency as string) || "ILS";
     const documentType = docRow.type as DocumentType | undefined;
     const docLabel = (documentType && DOCUMENT_TYPE_LABELS[documentType]) || "מסמך";
 
@@ -140,6 +171,7 @@ export async function POST(req: NextRequest) {
       daysSinceSent: typeof daysSinceSent === "number" ? daysSinceSent : undefined,
       documentType,
       trackingPixelUrl,
+      currency,
     });
     const text = buildText({
       businessName,
@@ -150,6 +182,7 @@ export async function POST(req: NextRequest) {
       kind: isReminder ? "reminder" : "initial",
       daysSinceSent: typeof daysSinceSent === "number" ? daysSinceSent : undefined,
       documentType,
+      currency,
     });
 
     // Pick Gmail credentials: prefer the user's own, fall back to global env vars
@@ -189,16 +222,62 @@ export async function POST(req: NextRequest) {
           },
         });
 
+        // nodemailer reports per-recipient outcome; a resolved sendMail does
+        // NOT mean every recipient was accepted. Surface partial failures so
+        // the caller/user knows which addresses bounced at handoff.
+        const addrList = (v: unknown): string[] =>
+          Array.isArray(v)
+            ? v.map((a) =>
+                typeof a === "string" ? a : (a as { address?: string })?.address || String(a),
+              )
+            : [];
+        const accepted = addrList((info as { accepted?: unknown }).accepted);
+        const rejected = addrList((info as { rejected?: unknown }).rejected);
+
+        // Every recipient rejected → treat as a hard failure.
+        if (accepted.length === 0 && rejected.length > 0) {
+          console.error("[send-email] gmail all recipients rejected", { rejected, documentId });
+          return NextResponse.json(
+            {
+              ok: false,
+              error: "כל הנמענים נדחו על ידי שרת הדואר. בדוק את כתובות המייל ונסה שוב.",
+              rejected,
+            },
+            { status: 502 },
+          );
+        }
+
         console.log("[send-email] gmail ok", {
           to: recipients,
+          accepted,
+          rejected,
           messageId: info.messageId,
           documentId,
         });
+
+        // Some (but not all) recipients rejected → partial success (207).
+        if (rejected.length > 0) {
+          return NextResponse.json(
+            {
+              ok: true,
+              partial: true,
+              error: `חלק מהנמענים נדחו: ${rejected.join(", ")}`,
+              messageId: info.messageId,
+              mocked: false,
+              provider: "gmail",
+              accepted,
+              rejected,
+            },
+            { status: 207 },
+          );
+        }
+
         return NextResponse.json({
           ok: true,
           messageId: info.messageId,
           mocked: false,
           provider: "gmail",
+          accepted,
         });
       } catch (gmailErr) {
         const msg = gmailErr instanceof Error ? gmailErr.message : String(gmailErr);
@@ -230,8 +309,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Resend's send API does not expose a per-recipient rejected[] list, so
+    // (unlike the Gmail path) we can only report the addresses we handed off.
     console.log("[send-email] resend ok", { to: recipients, messageId: data?.id, documentId });
-    return NextResponse.json({ ok: true, messageId: data?.id, mocked: false, provider: "resend" });
+    return NextResponse.json({
+      ok: true,
+      messageId: data?.id,
+      mocked: false,
+      provider: "resend",
+      accepted: recipients,
+    });
   } catch (err) {
     console.error("Send email error:", err);
     return NextResponse.json({ ok: false, error: "Internal server error" }, { status: 500 });

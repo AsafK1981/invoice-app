@@ -9,6 +9,7 @@ import { productStore } from "@/lib/product-store";
 import { expenseStore } from "@/lib/expense-store";
 import { supabase } from "@/lib/supabase";
 import { getBusinessId } from "@/lib/business-init";
+import { todayInIsrael } from "@/lib/date";
 import type { Client, Product, Expense, DocumentType } from "@/lib/types";
 
 type EntityType = "clients" | "products" | "expenses" | "documents";
@@ -129,7 +130,7 @@ export function CsvImportModal({ open, onClose, entityType }: Props) {
             phone: (row["טלפון"] || row["phone"] || "").trim() || undefined,
             email: (row["אימייל"] || row["email"] || "").trim() || undefined,
             notes: (row["הערות"] || row["notes"] || "").trim() || undefined,
-            createdAt: new Date().toISOString().slice(0, 10),
+            createdAt: todayInIsrael(),
           };
           await clientStore.save(client);
           imported++;
@@ -152,7 +153,7 @@ export function CsvImportModal({ open, onClose, entityType }: Props) {
           if (!supplier || isNaN(amount) || amount <= 0) continue;
           const expense: Expense = {
             id: crypto.randomUUID(),
-            date: (row["תאריך"] || row["date"] || new Date().toISOString().slice(0, 10)).trim(),
+            date: (row["תאריך"] || row["date"] || todayInIsrael()).trim(),
             category: (row["קטגוריה"] || row["category"] || "אחר").trim(),
             supplier,
             amount,
@@ -180,7 +181,7 @@ export function CsvImportModal({ open, onClose, entityType }: Props) {
           if (!clientName || !Number.isFinite(total) || total <= 0) continue;
 
           const type = resolveDocumentType(row["סוג"] || row["type"] || "");
-          const date = (row["תאריך"] || row["date"] || new Date().toISOString().slice(0, 10)).trim();
+          const date = (row["תאריך"] || row["date"] || todayInIsrael()).trim();
           const description = (row["תיאור"] || row["description"] || "").trim() || "שירות";
           const vatRaw = parseFloat((row['מע"מ'] || row["מעמ"] || row["vat"] || "0").replace(/[₪,\s]/g, "")) || 0;
           // Reject rows with VAT > total — almost always a typo or column

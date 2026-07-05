@@ -19,6 +19,7 @@ import { clientStore } from "@/lib/client-store";
 import { productStore } from "@/lib/product-store";
 import { expenseStore } from "@/lib/expense-store";
 import { getBusinessId } from "@/lib/business-init";
+import { todayInIsrael } from "@/lib/date";
 import type { Client, Product, Expense, DocumentType } from "@/lib/types";
 
 /**
@@ -238,7 +239,7 @@ export function BulkImportZone() {
           phone: pick(row, "טלפון", "phone") || undefined,
           email: pick(row, "אימייל", "email") || undefined,
           notes: pick(row, "הערות", "notes") || undefined,
-          createdAt: new Date().toISOString().slice(0, 10),
+          createdAt: todayInIsrael(),
         };
         await clientStore.save(client);
         imported++;
@@ -273,7 +274,7 @@ export function BulkImportZone() {
         }
         const expense: Expense = {
           id: crypto.randomUUID(),
-          date: pick(row, "תאריך", "date") || new Date().toISOString().slice(0, 10),
+          date: pick(row, "תאריך", "date") || todayInIsrael(),
           category: pick(row, "קטגוריה", "category") || "אחר",
           supplier,
           amount,
@@ -304,7 +305,7 @@ export function BulkImportZone() {
           continue;
         }
         const type = resolveDocumentType(pick(row, "סוג", "type"));
-        const date = pick(row, "תאריך", "date") || new Date().toISOString().slice(0, 10);
+        const date = pick(row, "תאריך", "date") || todayInIsrael();
         const description = pick(row, "תיאור", "description") || "שירות";
         const vatStr = pick(row, 'מע"מ', "מעמ", "vat").replace(/[₪,\s]/g, "");
         const vat = parseFloat(vatStr) || 0;

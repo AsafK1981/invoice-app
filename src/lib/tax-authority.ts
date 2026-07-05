@@ -1,9 +1,11 @@
 /**
  * Israel Tax Authority "Israel Invoice" (חשבונית ישראל) API client.
  *
- * The Tax Authority requires invoices above a threshold (₪10,000 in
- * 2026, ₪5,000 starting June 2026) to carry a 9-digit "allocation
- * number" obtained from this API before the invoice is finalized.
+ * The Tax Authority requires invoices above a threshold (measured on
+ * the PRE-VAT amount) to carry a 9-digit "allocation number" obtained
+ * from this API before the invoice is finalized. The threshold steps
+ * down over time: ₪20,000 in 2025, ₪10,000 from 2026-01-01, then
+ * ₪5,000 from 2026-06-01 onward.
  *
  * Without the allocation number the recipient cannot deduct VAT — so
  * for עוסק מורשה customers this integration is critical.
@@ -97,7 +99,10 @@ export function taxAuthorityEnv(): "sandbox" | "production" {
 const THRESHOLD_BY_YEAR: Record<number, number> = {
   2024: 25_000,
   2025: 20_000,
-  2026: 10_000, // drops to 5,000 in June 2026 — see allocationRequiredThreshold
+  // ₪10,000 until 2026-05-31, then ₪5,000 from 2026-06-01. This yearly
+  // table is a coarse legacy view; the date-aware allocationRequiredThreshold
+  // is the single source of truth for the mid-year step.
+  2026: 10_000,
 };
 const FALLBACK_THRESHOLD_NIS = 5_000;
 
@@ -106,15 +111,20 @@ export function getAllocationThresholdForYear(year: number): number {
 }
 
 /**
- * Threshold honoring the mid-year drop on 2026-06-01 → ₪5,000.
+ * Date-aware allocation threshold — the single source of truth for gating.
+ * The legislated schedule steps down mid-2026:
+ *   - 2025:                        ₪20,000
+ *   - 2026-01-01 .. 2026-05-31:    ₪10,000
+ *   - 2026-06-01 onward:           ₪5,000
+ *   - 2027 and later:              ₪5,000
  * Uses UTC so the invoice's calendar date determines the threshold
  * deterministically, regardless of the runtime timezone — a date string
- * like "2026-06-01" parses to UTC midnight, and reading the local month
- * on a UTC-negative host would otherwise mis-bucket it as May.
+ * like "2026-01-01" parses to UTC midnight, and reading the local month
+ * on a UTC-negative host would otherwise mis-bucket it into the prior year.
  */
 export function allocationRequiredThreshold(date: Date = new Date()): number {
   const y = date.getUTCFullYear();
-  const m = date.getUTCMonth() + 1;
+  const m = date.getUTCMonth() + 1; // 1-based month
   if (y >= 2027) return 5_000;
   if (y === 2026 && m >= 6) return 5_000;
   if (y === 2026) return 10_000;
@@ -131,9 +141,11 @@ export function requiresAllocationNumber(doc: InvoiceDocument): boolean {
     doc.type === "credit_note";
   if (!isTaxDoc) return false;
   const docDate = doc.date ? new Date(doc.date) : new Date();
-  // The Tax Authority threshold is in ₪ — use the ₪ equivalent of a
-  // foreign-currency document (falls back to total for legacy ILS docs).
-  const amountIls = Math.abs((doc.totalIls ?? doc.total) as number);
+  // The law measures the threshold against the PRE-VAT amount (סכום לפני
+  // מע"מ), not the VAT-inclusive total. Use the ₪ equivalent of a
+  // foreign-currency document (falls back to the raw subtotal for legacy
+  // ILS docs).
+  const amountIls = Math.abs((doc.subtotalIls ?? doc.subtotal) as number);
   return amountIls >= allocationRequiredThreshold(docDate);
 }
 
@@ -174,7 +186,10 @@ export async function exchangeCodeForTokens(code: string): Promise<TokenResponse
   });
   const r = await fetch(url, { method: "POST", headers, body });
   if (!r.ok) {
-    throw new Error(`Tax Authority token exchange failed: ${r.status} ${await r.text()}`);
+    // Full upstream body stays in server logs only — never surfaced to the
+    // client or persisted (gov.il bodies can carry internal detail).
+    console.error("[tax-authority] token exchange failed", r.status, await r.text().catch(() => ""));
+    throw new Error("שגיאה בהתחברות לרשות המסים. נסה שוב או חבר מחדש בהגדרות.");
   }
   return (await r.json()) as TokenResponse;
 }
@@ -191,7 +206,10 @@ export async function refreshAccessToken(refreshToken: string): Promise<TokenRes
   });
   const r = await fetch(url, { method: "POST", headers, body });
   if (!r.ok) {
-    throw new Error(`Tax Authority token refresh failed: ${r.status} ${await r.text()}`);
+    // Full upstream body stays in server logs only — never surfaced to the
+    // client or persisted (gov.il bodies can carry internal detail).
+    console.error("[tax-authority] token refresh failed", r.status, await r.text().catch(() => ""));
+    throw new Error("פג תוקף החיבור לרשות המסים. חבר מחדש בהגדרות.");
   }
   return (await r.json()) as TokenResponse;
 }

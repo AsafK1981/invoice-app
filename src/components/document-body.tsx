@@ -82,6 +82,13 @@ interface Props {
   totalIls?: number;
   /** Zero-rated export transaction (0% VAT, distinct from עוסק פטור). */
   zeroRated?: boolean;
+  /**
+   * Whether this render is a copy/reprint. `false` (default) prints the
+   * legally-required "מקור" (original) label; `true` prints "העתק" (copy).
+   * Owning pages should pass `copy` on any reprint/re-download of an
+   * already-issued document.
+   */
+  copy?: boolean;
 }
 
 export function DocumentBody({
@@ -104,6 +111,7 @@ export function DocumentBody({
   exchangeRate,
   totalIls,
   zeroRated = false,
+  copy = false,
 }: Props) {
   const currency = currencyProp || "ILS";
   const money = (n: number) => (currency === "ILS" ? formatCurrency(n) : formatMoney(n, currency));
@@ -119,7 +127,7 @@ export function DocumentBody({
     <>
       {/* Header: business identity on the right, doc identity on the left.
           Thicker accent border + slightly more breathing room than before. */}
-      <div className="flex items-start justify-between pb-7 border-b-[3px] border-orange-500 gap-6">
+      <div className="flex flex-col sm:flex-row items-start sm:justify-between pb-7 border-b-[3px] border-orange-500 gap-6">
         <div className="flex items-start gap-5">
           {business.logoUrl && (
             <img
@@ -156,7 +164,7 @@ export function DocumentBody({
         </div>
         <div className="text-left space-y-2">
           <p className="text-xs font-bold tracking-[0.3em] text-stone-400 print:text-stone-500">
-            מקור
+            {copy ? "העתק" : "מקור"}
           </p>
           <div
             className={`inline-block px-5 py-2 bg-gradient-to-br ${badge.bg} ${badge.print} text-white rounded-2xl font-bold text-lg shadow-sm`}
@@ -178,8 +186,10 @@ export function DocumentBody({
         </div>
       </div>
 
-      {/* Client + subject — two side-by-side blocks under the header */}
-      <div className="grid grid-cols-2 gap-8 mt-8">
+      {/* Client + subject — two side-by-side blocks under the header
+          (stacked on narrow phones, side-by-side from sm: up so print
+          keeps the full two-column layout). */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 mt-8">
         <div>
           <h3 className="text-[11px] font-bold text-stone-500 uppercase tracking-wider mb-2.5">
             ללקוח
@@ -226,16 +236,16 @@ export function DocumentBody({
         <table className="w-full">
           <thead>
             <tr className="bg-gradient-to-l from-orange-50 to-amber-50 print:bg-orange-50">
-              <th className="text-right px-5 py-3 font-bold text-[12px] uppercase tracking-wide text-stone-700">
+              <th className="text-right px-3 sm:px-5 py-3 font-bold text-[12px] uppercase tracking-wide text-stone-700">
                 תיאור
               </th>
-              <th className="text-center px-3 py-3 font-bold text-[12px] uppercase tracking-wide text-stone-700 w-20">
+              <th className="text-center px-2 sm:px-3 py-3 font-bold text-[12px] uppercase tracking-wide text-stone-700 w-12 sm:w-20">
                 כמות
               </th>
-              <th className="text-left px-4 py-3 font-bold text-[12px] uppercase tracking-wide text-stone-700 w-32">
+              <th className="text-left px-2 sm:px-4 py-3 font-bold text-[12px] uppercase tracking-wide text-stone-700 w-24 sm:w-32">
                 מחיר יחידה
               </th>
-              <th className="text-left px-4 py-3 font-bold text-[12px] uppercase tracking-wide text-stone-700 w-32">
+              <th className="text-left px-2 sm:px-4 py-3 font-bold text-[12px] uppercase tracking-wide text-stone-700 w-24 sm:w-32">
                 סה״כ
               </th>
             </tr>
@@ -257,16 +267,16 @@ export function DocumentBody({
                       : "bg-stone-50/60 print:bg-stone-50"
                   }
                 >
-                  <td className="px-5 py-3.5 text-sm text-stone-800 leading-relaxed">
+                  <td className="px-3 sm:px-5 py-3.5 text-sm text-stone-800 leading-relaxed break-words">
                     {item.description || (placeholders ? <span className="text-stone-400">—</span> : "")}
                   </td>
-                  <td className="px-3 py-3.5 text-sm text-center text-stone-800 tabular-nums">
+                  <td className="px-2 sm:px-3 py-3.5 text-sm text-center text-stone-800 tabular-nums">
                     {item.quantity}
                   </td>
-                  <td className="px-4 py-3.5 text-sm text-left text-stone-800 tabular-nums">
+                  <td className="px-2 sm:px-4 py-3.5 text-sm text-left text-stone-800 tabular-nums">
                     {money(item.unitPrice)}
                   </td>
-                  <td className="px-4 py-3.5 text-sm text-left font-semibold text-stone-900 tabular-nums">
+                  <td className="px-2 sm:px-4 py-3.5 text-sm text-left font-semibold text-stone-900 tabular-nums">
                     {money(item.total)}
                   </td>
                 </tr>
@@ -278,8 +288,8 @@ export function DocumentBody({
 
       {/* Totals block — right-aligned, highlighted background on the
           grand total row so it draws the eye instantly. */}
-      <div className="mt-6 flex justify-end">
-        <div className="w-80 space-y-2 text-stone-700">
+      <div className="doc-totals mt-6 flex justify-end">
+        <div className="w-full sm:w-80 space-y-2 text-stone-700">
           <div className="flex justify-between text-sm">
             <span>סכום ביניים</span>
             <span className="tabular-nums">{money(subtotal)}</span>
@@ -289,7 +299,7 @@ export function DocumentBody({
           ) : (
             vatRate > 0 && (
               <div className="flex justify-between text-sm">
-                <span>מע״מ ({vatRate}%)</span>
+                <span>מע״מ <bdi dir="ltr">({vatRate}%)</bdi></span>
                 <span className="tabular-nums">{money(vat)}</span>
               </div>
             )
@@ -302,7 +312,7 @@ export function DocumentBody({
           </div>
           {currency !== "ILS" && (
             <div className="mt-1 text-xs text-stone-500">
-              סה״כ ב-₪ (שער {Number(exchangeRate ?? 1).toFixed(4)}): {formatMoney(Number(totalIls ?? 0), "ILS")}
+              סה״כ ב-₪ <bdi dir="ltr">(שער {Number(exchangeRate ?? 1).toFixed(4)})</bdi>: {formatMoney(Number(totalIls ?? 0), "ILS")}
             </div>
           )}
         </div>

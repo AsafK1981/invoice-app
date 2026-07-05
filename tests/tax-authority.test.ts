@@ -6,9 +6,14 @@ import {
 } from "@/lib/tax-authority";
 import type { InvoiceDocument } from "@/lib/types";
 
-/** Minimal doc factory — requiresAllocationNumber only reads type/date/total. */
+/**
+ * Minimal doc factory — requiresAllocationNumber gates on the PRE-VAT amount
+ * (subtotalIls ?? subtotal). The `total` here is treated as the pre-VAT
+ * governing amount and mirrored into `subtotal` so the pre-VAT path evaluates
+ * it. Amounts in these tests are therefore pre-VAT figures.
+ */
 function doc(partial: { type: string; date: string; total: number }): InvoiceDocument {
-  return partial as unknown as InvoiceDocument;
+  return { ...partial, subtotal: partial.total } as unknown as InvoiceDocument;
 }
 
 describe("getAllocationThresholdForYear", () => {
@@ -74,12 +79,28 @@ describe("requiresAllocationNumber", () => {
 });
 
 describe("requiresAllocationNumber — ₪ equivalent governs the threshold", () => {
+  // Zero-VAT export: the pre-VAT ₪ equivalent (subtotalIls) governs, and for a
+  // zero-rated export it equals the total ₪ equivalent.
   it("a $2000 export doc worth ₪7400 (over the June-2026 ₪5,000 threshold) requires a number", () => {
-    const doc = { type: "tax_invoice", date: "2026-06-10", total: 2000, totalIls: 7400 } as never;
+    const doc = {
+      type: "tax_invoice",
+      date: "2026-06-10",
+      total: 2000,
+      totalIls: 7400,
+      subtotal: 2000,
+      subtotalIls: 7400,
+    } as never;
     expect(requiresAllocationNumber(doc)).toBe(true);
   });
   it("a $2000 doc worth only ₪4000 is below threshold", () => {
-    const doc = { type: "tax_invoice", date: "2026-06-10", total: 2000, totalIls: 4000 } as never;
+    const doc = {
+      type: "tax_invoice",
+      date: "2026-06-10",
+      total: 2000,
+      totalIls: 4000,
+      subtotal: 2000,
+      subtotalIls: 4000,
+    } as never;
     expect(requiresAllocationNumber(doc)).toBe(false);
   });
 });

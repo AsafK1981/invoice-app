@@ -16,6 +16,7 @@ import { useBusiness, saveBusiness } from "@/lib/business-store";
 import { clientStore } from "@/lib/client-store";
 import { supabase } from "@/lib/supabase";
 import { BusinessTypeHint } from "@/components/business-type-hint";
+import { todayInIsrael } from "@/lib/date";
 import type { Business, Client } from "@/lib/types";
 
 type Step = "welcome" | "business" | "client" | "done";
@@ -74,7 +75,7 @@ export default function OnboardingPage() {
         taxId: clientForm.taxId.trim() || undefined,
         email: clientForm.email.trim() || undefined,
         phone: clientForm.phone.trim() || undefined,
-        createdAt: new Date().toISOString().slice(0, 10),
+        createdAt: todayInIsrael(),
       };
       await clientStore.save(client);
       setStep("done");

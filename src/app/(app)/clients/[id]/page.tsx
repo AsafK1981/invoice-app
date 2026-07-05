@@ -34,10 +34,10 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
     // subtract). This is the "total business done with this client" number.
     const billed = mine
       .filter((d) => d.status !== "draft" && d.status !== "cancelled")
-      .reduce((s, d) => s + (d.type === "credit_note" ? -1 : 1) * d.total, 0);
+      .reduce((s, d) => s + (d.type === "credit_note" ? -1 : 1) * (d.totalIls ?? d.total), 0);
     const paid = mine
       .filter((d) => d.status === "paid")
-      .reduce((s, d) => s + (d.type === "credit_note" ? -1 : 1) * d.total, 0);
+      .reduce((s, d) => s + (d.type === "credit_note" ? -1 : 1) * (d.totalIls ?? d.total), 0);
     const last = mine.length > 0 ? mine.map((d) => d.date).sort().at(-1) : null;
     const open = mine.filter(
       (d) => d.status === "sent" && (d.type === "quote" || d.type === "tax_invoice"),

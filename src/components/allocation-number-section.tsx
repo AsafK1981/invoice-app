@@ -6,6 +6,7 @@ import { setAllocationNumber } from "@/lib/document-store";
 import { requiresAllocationNumber, allocationRequiredThreshold } from "@/lib/tax-authority";
 import { formatCurrency } from "@/lib/format";
 import { supabase } from "@/lib/supabase";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 import type { InvoiceDocument } from "@/lib/types";
 
 interface Props {
@@ -36,6 +37,7 @@ export function AllocationNumberSection({ doc }: Props) {
   const [saving, setSaving] = useState(false);
   const [fetching, setFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const confirm = useConfirm();
 
   const isTaxDoc =
     doc.type === "tax_invoice" ||
@@ -107,9 +109,13 @@ export function AllocationNumberSection({ doc }: Props) {
     // with a doc that cites a number we no longer have on record.
     // Require explicit confirmation in that case.
     if (doc.emailedAt) {
-      const ok = window.confirm(
-        "המסמך כבר נשלח ללקוח עם מספר ההקצאה הזה. ניקוי המספר אינו מבטל את החשבונית — אם זו טעות, צור חשבונית זיכוי במקום. להמשיך בכל זאת?",
-      );
+      const ok = await confirm({
+        title: "המסמך כבר נשלח ללקוח",
+        message:
+          "המסמך כבר נשלח ללקוח עם מספר ההקצאה הזה. ניקוי המספר אינו מבטל את החשבונית — אם זו טעות, צור חשבונית זיכוי במקום. להמשיך בכל זאת?",
+        tone: "danger",
+        confirmLabel: "נקה בכל זאת",
+      });
       if (!ok) return;
     }
     setSaving(true);

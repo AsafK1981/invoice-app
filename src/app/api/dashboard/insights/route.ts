@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import Anthropic from "@anthropic-ai/sdk";
 import { checkRate, clientIp } from "@/lib/rate-limit";
+import { todayInIsrael } from "@/lib/date";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -53,7 +54,7 @@ type Insight = { kind: "positive" | "warning" | "action" | "info"; text: string;
 
 function daysAgo(date: string): number {
   const d = new Date(date + "T00:00:00Z").getTime();
-  const today = new Date(new Date().toISOString().slice(0, 10) + "T00:00:00Z").getTime();
+  const today = new Date(todayInIsrael() + "T00:00:00Z").getTime();
   return Math.floor((today - d) / (24 * 60 * 60 * 1000));
 }
 
@@ -110,7 +111,7 @@ export async function POST(req: NextRequest) {
     const [{ data: docs }, { data: exps }] = await Promise.all([
       admin
         .from("documents")
-        .select("id, type, status, date, total, client_name, emailed_at, number")
+        .select("id, type, status, date, total, total_ils, client_name, emailed_at, number")
         .eq("business_id", biz.id)
         .gte("date", ytdLastYearStart)
         .order("date", { ascending: false }),
@@ -122,7 +123,7 @@ export async function POST(req: NextRequest) {
         .order("date", { ascending: false }),
     ]);
 
-    type Doc = { id: string; type: string; status: string; date: string; total: number; client_name: string; emailed_at: string | null; number: string };
+    type Doc = { id: string; type: string; status: string; date: string; total: number; total_ils: number | null; client_name: string; emailed_at: string | null; number: string };
     type Exp = { id: string; date: string; category: string; supplier: string; amount: number; description: string | null };
     const documents = (docs as Doc[] | null) || [];
     const expenses = (exps as Exp[] | null) || [];
@@ -147,7 +148,7 @@ export async function POST(req: NextRequest) {
       .map((d) => ({
         id: d.id,
         client: d.client_name,
-        total: Number(d.total || 0),
+        total: Number(d.total_ils ?? d.total ?? 0),
         days_ago: daysAgo(d.emailed_at ? d.emailed_at.slice(0, 10) : d.date),
       }))
       .filter((q) => q.days_ago >= 3)
@@ -158,12 +159,12 @@ export async function POST(req: NextRequest) {
       .map((d) => ({
         id: d.id,
         client: d.client_name,
-        total: Number(d.total || 0),
+        total: Number(d.total_ils ?? d.total ?? 0),
         days_ago: daysAgo(d.emailed_at ? d.emailed_at.slice(0, 10) : d.date),
       }))
       .slice(0, 8);
 
-    const ytdIncome = sumIf(documents, (d) => d.date >= yearStart && d.status === "paid", (d) => Number(d.total || 0));
+    const ytdIncome = sumIf(documents, (d) => d.date >= yearStart && d.status === "paid", (d) => Number(d.total_ils ?? d.total ?? 0));
     const ytdExpenses = sumIf(expenses, (e) => e.date >= yearStart, (e) => Number(e.amount || 0));
 
     const payload = {
@@ -171,13 +172,13 @@ export async function POST(req: NextRequest) {
       current_month: currentMonthStart.slice(0, 7),
       previous_month: previousMonthStart.slice(0, 7),
       current_month_stats: {
-        income: currentMonthPaidDocs.reduce((s, d) => s + Number(d.total || 0), 0),
+        income: currentMonthPaidDocs.reduce((s, d) => s + Number(d.total_ils ?? d.total ?? 0), 0),
         paid_doc_count: currentMonthPaidDocs.length,
         expenses: currentMonthExp.reduce((s, e) => s + Number(e.amount || 0), 0),
         expense_categories: expensesByCategoryCurrent,
       },
       previous_month_stats: {
-        income: previousMonthPaidDocs.reduce((s, d) => s + Number(d.total || 0), 0),
+        income: previousMonthPaidDocs.reduce((s, d) => s + Number(d.total_ils ?? d.total ?? 0), 0),
         paid_doc_count: previousMonthPaidDocs.length,
         expenses: previousMonthExp.reduce((s, e) => s + Number(e.amount || 0), 0),
         expense_categories: expensesByCategoryPrevious,
@@ -192,7 +193,7 @@ export async function POST(req: NextRequest) {
     };
 
     const anthropic = new Anthropic({ apiKey: anthropicKey });
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayInIsrael();
 
     const msg = await anthropic.messages.create({
       model: MODEL,

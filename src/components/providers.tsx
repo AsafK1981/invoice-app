@@ -6,6 +6,7 @@ import { Sparkles } from "lucide-react";
 import { useBusinessInit } from "@/lib/business-init";
 import { useRequireAuth } from "@/lib/auth";
 import { ConfirmProvider } from "@/components/ui/confirm-dialog";
+import { ToastProvider } from "@/components/ui/toast";
 
 const BusinessContext = createContext<string | null>(null);
 
@@ -50,7 +51,9 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
 
   return (
     <BusinessContext.Provider value={businessId}>
-      <ConfirmProvider>{children}</ConfirmProvider>
+      <ConfirmProvider>
+        <ToastProvider>{children}</ToastProvider>
+      </ConfirmProvider>
     </BusinessContext.Provider>
   );
 }

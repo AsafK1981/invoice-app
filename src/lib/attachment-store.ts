@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "./supabase";
 import { logAudit } from "./audit-log";
+import { friendlyError } from "./error-message";
 import type { DocumentAttachment } from "./types";
 
 const BUCKET = "document-attachments";
@@ -32,7 +33,7 @@ export function useAttachments(documentId: string) {
       .eq("document_id", documentId)
       .order("uploaded_at", { ascending: false });
     if (err) {
-      setError(err.message);
+      setError(friendlyError(err, "שגיאה בטעינת הקבצים"));
     } else {
       setAttachments((data || []).map(mapRow));
       setError(null);

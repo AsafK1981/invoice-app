@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import Anthropic from "@anthropic-ai/sdk";
 import { checkRate, clientIp } from "@/lib/rate-limit";
+import { todayInIsrael } from "@/lib/date";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -137,7 +138,7 @@ export async function POST(req: NextRequest) {
     }
 
     const anthropic = new Anthropic({ apiKey: anthropicKey });
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayInIsrael();
 
     const fileBlock = isPdf
       ? ({

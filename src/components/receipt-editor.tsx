@@ -25,11 +25,12 @@ import {
 import { formatCurrency } from "@/lib/format";
 import { sendReceiptEmail } from "@/lib/email";
 import { createDocument, getNextDocumentNumber, linkConvertedDocument, markDocumentEmailed, useDocuments } from "@/lib/document-store";
-import { getBusinessId } from "@/lib/business-init";
+import { getBusinessId, isPlaceholderBusinessName, isPlaceholderBusinessTaxId } from "@/lib/business-init";
 import { parseEmails, joinEmails, isValidEmail } from "@/lib/emails";
 import { getVatRate, computeAmounts, round2, canIssueTaxInvoices, type VatMode } from "@/lib/vat";
 import { CURRENCIES, formatMoney } from "@/lib/currencies";
 import { ilsEquivalents } from "@/lib/exchange-rate";
+import { todayInIsrael } from "@/lib/date";
 import { AllocationConnectBanner } from "@/components/allocation-connect-banner";
 import { getClientDefaults } from "@/lib/client-defaults";
 import {
@@ -73,6 +74,13 @@ interface Props {
   documentType?: DocumentType;
 }
 
+// Format a stored ISO date ("YYYY-MM-DD" or full timestamp) as DD/MM/YYYY
+// without going through Date() — avoids a UTC-vs-local off-by-one day.
+function formatDateHe(iso: string): string {
+  const [y, m, d] = iso.slice(0, 10).split("-");
+  return d && m && y ? `${d}/${m}/${y}` : iso;
+}
+
 export function ReceiptEditor({ business, clients, products, documentType = "receipt" }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -87,7 +95,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
     if (!qsClient) return "";
     return clients.some((c) => c.id === qsClient) ? qsClient : "";
   })();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayInIsrael();
   const isQuote = documentType === "quote";
   const docLabel = DOCUMENT_TYPE_LABELS[documentType];
 
@@ -132,6 +140,15 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   const [zeroRated, setZeroRated] = useState(false);
   const [rate, setRate] = useState(1);
   const [rateLoading, setRateLoading] = useState(false);
+
+  // Credit note (#17): a זיכוי must reference the original tax invoice it
+  // credits (Israeli law). The user either picks one of their issued tax
+  // invoices or enters the number+date manually (for invoices issued
+  // outside this app). Stored as a structured Hebrew line in the notes —
+  // a dedicated `original_document_id` column is a recommended follow-up.
+  const [creditRefDocId, setCreditRefDocId] = useState<string>("");
+  const [creditRefNumber, setCreditRefNumber] = useState<string>("");
+  const [creditRefDate, setCreditRefDate] = useState<string>("");
 
   const { documents: allDocuments } = useDocuments();
   const clientDefaults = useMemo(
@@ -277,7 +294,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   const effectiveVatRate = zeroRated ? 0 : baseVatRate;
 
   useEffect(() => {
-    if (currency === "ILS") { setRate(1); return; }
+    if (currency === "ILS") { setRate(1); setRateLoading(false); return; }
     let cancelled = false;
     setRateLoading(true);
     fetch(`/api/exchange-rate?currency=${currency}&date=${date}`)
@@ -494,10 +511,45 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   }
 
   const clientReady = adhocMode ? adhocName.trim().length > 0 : !!clientId;
+
+  // #18: hard gate — a legal document may not be issued while the business
+  // profile is still empty/placeholder (onboarding is skippable and
+  // business-init.ts auto-creates a blank business). Drafts are exempt.
+  const businessProfileIncomplete =
+    isPlaceholderBusinessName(business.name) || isPlaceholderBusinessTaxId(business.taxId);
+
+  // #17: resolve the original-invoice reference for a credit note. The user
+  // either picked one of their issued tax invoices (creditRefDocId) or chose
+  // manual entry (creditRefDocId === "__manual__").
+  const creditRefManual = creditRefDocId === "__manual__";
+  const creditRefPicked =
+    isCreditNote && creditRefDocId && !creditRefManual
+      ? allDocuments.find((d) => d.id === creditRefDocId)
+      : undefined;
+  const creditRefNum = creditRefPicked ? String(creditRefPicked.number) : creditRefNumber.trim();
+  const creditRefDateVal = creditRefPicked ? creditRefPicked.date : creditRefDate;
+  const creditRefValid =
+    !isCreditNote || (creditRefNum.length > 0 && Boolean(creditRefDateVal));
+  // Issued tax invoices this credit note can reference (newest first).
+  const creditableInvoices = useMemo(
+    () =>
+      isCreditNote
+        ? allDocuments
+            .filter(
+              (d) =>
+                (d.type === "tax_invoice" || d.type === "tax_invoice_receipt") &&
+                d.status !== "draft",
+            )
+            .sort((a, b) => b.number - a.number)
+        : [],
+    [isCreditNote, allDocuments],
+  );
+
   const canSave =
     clientReady &&
     items.every((i) => i.description.trim() && i.quantity > 0 && i.unitPrice >= 0) &&
-    (!sendEmail || allEmailsValid);
+    (!sendEmail || allEmailsValid) &&
+    creditRefValid;
 
   function buildClientName(): string {
     if (adhocMode) return adhocName.trim();
@@ -554,6 +606,19 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
 
   async function handleSave() {
     if (!canSave) return;
+    // #11: never persist while the exchange-rate fetch for a non-ILS currency
+    // is still in flight — `rate` still holds 1 / the previous currency's
+    // value, which would be stamped onto exchangeRate/subtotalIls/totalIls.
+    if (rateLoading) return;
+    // #18: block issuing a legal document with an empty/placeholder business
+    // profile. Draft-saving (handleSaveDraft) is intentionally exempt.
+    if (businessProfileIncomplete) {
+      setToast({
+        kind: "error",
+        text: "יש להשלים את שם העסק ומספר העוסק/ח.פ בהגדרות לפני הפקת מסמך.",
+      });
+      return;
+    }
     // Hard double-click guard. The disabled-button-via-state approach loses
     // a race on rapid taps because React batches the disabled re-render
     // until after the click handler returns; a fast double-tap on mobile
@@ -580,6 +645,21 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
       });
 
       const effectiveRate = currency === "ILS" ? 1 : rate;
+
+      // #17: stamp the original-invoice reference onto a credit note's notes
+      // so it renders on the document (no dedicated DB column — see follow-up).
+      const creditRefLine =
+        isCreditNote && creditRefNum && creditRefDateVal
+          ? `בגין חשבונית מס מספר ${creditRefNum} מתאריך ${formatDateHe(creditRefDateVal)}`
+          : "";
+      const baseNotes =
+        isQuote && validUntil
+          ? `${notes.trim() ? notes.trim() + "\n" : ""}הצעה בתוקף עד: ${validUntil}`
+          : notes.trim();
+      const finalNotes =
+        (creditRefLine ? `${creditRefLine}${baseNotes ? "\n" + baseNotes : ""}` : baseNotes) ||
+        undefined;
+
       const draft: Omit<InvoiceDocument, "number"> & { number?: number } = {
         id: crypto.randomUUID(),
         type: documentType,
@@ -599,9 +679,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
         vat: round2(sign * vat),
         total: round2(sign * total),
         paymentMethod: isQuote ? undefined : paymentMethod,
-        notes: isQuote && validUntil
-          ? `${notes.trim() ? notes.trim() + "\n" : ""}הצעה בתוקף עד: ${validUntil}`
-          : notes.trim() || undefined,
+        notes: finalNotes,
         currency,
         exchangeRate: effectiveRate,
         zeroRated,
@@ -629,13 +707,21 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
       // this new receipt and mark it paid. Failures are logged but
       // don't block the success toast — the receipt itself is already
       // created, the link is purely for navigation/UX.
+      let linkFailed = false;
       if (isConvert && fromDocId) {
         try {
           await linkConvertedDocument(fromDocId, docId);
         } catch (err) {
           console.warn("[convert] failed to link source quote", err);
+          linkFailed = true;
         }
       }
+      // #32: the new doc was created fine, but linking/marking the source quote
+      // failed — surface it so the user can reconcile (mark the quote paid
+      // manually) instead of silently believing the conversion fully closed.
+      const linkNote = linkFailed
+        ? " שים לב: קישור הצעת המחיר המקורית נכשל — סמן אותה כשולמה ידנית."
+        : "";
 
       if (sendEmail) {
         const result = await sendReceiptEmail({
@@ -667,17 +753,19 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
         setToast({
           kind: "success",
           text: result.mocked
-            ? `${docLabel} #${allocatedNumber} נשמרה. מייל מדומה נשלח ל-${emailTo}. פותח תצוגה...`
-            : `${docLabel} #${allocatedNumber} נשמרה ונשלחה ל-${emailTo}. פותח תצוגה...`,
+            ? `${docLabel} #${allocatedNumber} נשמרה. מייל מדומה נשלח ל-${emailTo}.${linkNote} פותח תצוגה...`
+            : `${docLabel} #${allocatedNumber} נשמרה ונשלחה ל-${emailTo}.${linkNote} פותח תצוגה...`,
         });
       } else {
         setToast({
           kind: "success",
-          text: `${docLabel} #${allocatedNumber} נשמרה. פותח תצוגה...`,
+          text: `${docLabel} #${allocatedNumber} נשמרה.${linkNote} פותח תצוגה...`,
         });
       }
 
-      setTimeout(() => router.push(`/documents/${doc.id}`), 1000);
+      // Give the user a beat longer to read the reconcile warning before we
+      // navigate away.
+      setTimeout(() => router.push(`/documents/${doc.id}`), linkFailed ? 3500 : 1000);
     } catch (err) {
       const message = err instanceof Error ? err.message : "שגיאה לא ידועה";
       setToast({ kind: "error", text: `שמירת המסמך נכשלה: ${message}` });
@@ -856,6 +944,48 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                 )}
               </div>
             </FormField>
+
+            {isCreditNote && (
+              <FormField label="בגין חשבונית מס מקורית" required className="md:col-span-2">
+                <div className="space-y-2">
+                  <select
+                    value={creditRefDocId}
+                    onChange={(e) => setCreditRefDocId(e.target.value)}
+                    className="input-warm"
+                  >
+                    <option value="">בחר את חשבונית המס המקורית...</option>
+                    {creditableInvoices.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        #{d.number} · {formatDateHe(d.date)} · {d.clientName}
+                      </option>
+                    ))}
+                    <option value="__manual__">אחר / הזנה ידנית</option>
+                  </select>
+                  {creditRefManual && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      <input
+                        type="number"
+                        min={1}
+                        value={creditRefNumber}
+                        onChange={(e) => setCreditRefNumber(e.target.value)}
+                        placeholder="מספר החשבונית המקורית *"
+                        className="input-warm tabular-nums"
+                        dir="ltr"
+                      />
+                      <input
+                        type="date"
+                        value={creditRefDate}
+                        onChange={(e) => setCreditRefDate(e.target.value)}
+                        className="input-warm"
+                      />
+                    </div>
+                  )}
+                  <p className="text-xs text-stone-600">
+                    חשבונית זיכוי חייבת להפנות לחשבונית המס המקורית שאותה היא מזכה. ההפניה תודפס על המסמך.
+                  </p>
+                </div>
+              </FormField>
+            )}
 
             <FormField label="תאריך">
               <input
@@ -1243,11 +1373,13 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
           <div className="mt-4 space-y-2">
             <button
               onClick={handleSave}
-              disabled={!canSave || saving}
+              disabled={!canSave || saving || rateLoading || businessProfileIncomplete}
               className="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white py-3 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200 disabled:from-stone-300 disabled:to-stone-300 disabled:cursor-not-allowed disabled:shadow-none transition-all"
             >
               {saving ? (
                 "שולח..."
+              ) : rateLoading ? (
+                "טוען שער חליפין…"
               ) : sendEmail ? (
                 <>
                   <Send className="w-4 h-4" />
@@ -1272,14 +1404,27 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
               טיוטה נשמרת בלי מספר — תוכל להמשיך אותה מלשונית &quot;טיוטות&quot;.
             </p>
           </div>
-          {!canSave && (
+          {businessProfileIncomplete && (
+            <div className="mt-3 flex items-start gap-2 text-xs text-rose-800 bg-rose-50 p-3 rounded-xl border border-rose-200">
+              <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-rose-600" />
+              <span>
+                לפני הפקת מסמך יש להשלים את שם העסק ומספר העוסק/ח.פ.{" "}
+                <a href="/settings" className="font-semibold underline hover:text-rose-900">
+                  להשלמת פרטי העסק בהגדרות ←
+                </a>
+              </span>
+            </div>
+          )}
+          {!canSave && !businessProfileIncomplete && (
             <div className="mt-3 flex items-start gap-2 text-xs text-amber-700 bg-amber-50 p-3 rounded-xl border border-amber-200">
               <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
               <span>
-                {sendEmail && clientReady && !allEmailsValid
-                  ? "יש להזין אימייל תקין לשליחה"
-                  : !clientReady
+                {!clientReady
                   ? "יש לבחור לקוח או למלא שם של לקוח מזדמן"
+                  : isCreditNote && !creditRefValid
+                  ? "יש לבחור/להזין את חשבונית המס המקורית שאותה מזכים"
+                  : sendEmail && !allEmailsValid
+                  ? "יש להזין אימייל תקין לשליחה"
                   : "כל פריט חייב תיאור, כמות חיובית ומחיר"}
               </span>
             </div>

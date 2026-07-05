@@ -6,6 +6,7 @@ import { ArrowRight, FileSpreadsheet, Download, Printer } from "lucide-react";
 import { useDocuments } from "@/lib/document-store";
 import { useClients } from "@/lib/client-store";
 import { formatCurrency } from "@/lib/format";
+import { todayInIsrael } from "@/lib/date";
 import { DOCUMENT_TYPE_LABELS, type DocumentType } from "@/lib/types";
 
 // VAT documents that carry a net/VAT breakdown and an allocation number.
@@ -57,7 +58,7 @@ export default function InvoicesPeriodReportPage() {
   const [lengthMonths, setLengthMonths] = useState<number>(2);
   const [endMonth, setEndMonth] = useState<string>(() => ym(new Date()));
   const [fromDate, setFromDate] = useState<string>(() => `${ym(new Date())}-01`);
-  const [toDate, setToDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
+  const [toDate, setToDate] = useState<string>(() => todayInIsrael());
 
   const taxIdByClient = useMemo(() => {
     const map: Record<string, string> = {};

@@ -6,6 +6,7 @@ import { Modal } from "@/components/ui/modal";
 import { FormField } from "@/components/ui/form-field";
 import { clientStore } from "@/lib/client-store";
 import { parseEmails, joinEmails, isValidEmail } from "@/lib/emails";
+import { todayInIsrael } from "@/lib/date";
 import type { Client } from "@/lib/types";
 
 interface Props {
@@ -76,7 +77,7 @@ export function ClientFormModal({ open, onClose, client }: Props) {
       phone: form.phone.trim() || undefined,
       email: cleanEmails.length > 0 ? joinEmails(cleanEmails) : undefined,
       notes: form.notes.trim() || undefined,
-      createdAt: client?.createdAt ?? new Date().toISOString().slice(0, 10),
+      createdAt: client?.createdAt ?? todayInIsrael(),
     };
     setSaving(true);
     await clientStore.save(record);

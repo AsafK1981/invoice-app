@@ -25,6 +25,8 @@ import { deleteDocument, updateDocumentStatus } from "@/lib/document-store";
 import { exportDocuments } from "@/lib/csv-export";
 import { matchDocument } from "@/lib/document-search";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { useToast } from "@/components/ui/toast";
+import { friendlyError } from "@/lib/error-message";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useBusiness } from "@/lib/business-store";
 import { canIssueTaxInvoices } from "@/lib/vat";
@@ -421,6 +423,7 @@ function RowActions({ doc }: { doc: InvoiceDocument }) {
     doc.status !== "cancelled" &&
     !doc.convertedToId;
   const confirm = useConfirm();
+  const showToast = useToast();
 
   // Mirrors the delete logic on the doc detail page: drafts delete cleanly;
   // quotes (non-draft) get a soft warning + force-delete; receipts and tax
@@ -458,7 +461,7 @@ function RowActions({ doc }: { doc: InvoiceDocument }) {
       try {
         await deleteDocument(doc.id);
       } catch (err) {
-        alert(err instanceof Error ? err.message : "שגיאה במחיקה");
+        showToast(friendlyError(err, "שגיאה במחיקה"));
       }
     }
   }
@@ -487,7 +490,7 @@ function RowActions({ doc }: { doc: InvoiceDocument }) {
             try {
               await updateDocumentStatus(doc.id, isPaid ? "sent" : "paid");
             } catch (err) {
-              alert(err instanceof Error ? err.message : "שגיאה בעדכון");
+              showToast(friendlyError(err, "שגיאה בעדכון"));
             }
           }}
           className={`p-1.5 rounded-lg transition-colors cursor-pointer ${

@@ -17,6 +17,7 @@ import {
 import { supabase } from "@/lib/supabase";
 import { isAdminEmail } from "@/lib/admin";
 import { formatDate } from "@/lib/format";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 // Friendly random suffix to keep "FOR-FRIENDS-ONLY-" codes unique on
 // repeated clicks. Avoids confusing chars (0/O, 1/I/L).
@@ -50,6 +51,7 @@ export default function AdminInvitesPage() {
   const [allowed, setAllowed] = useState(false);
   const [checked, setChecked] = useState(false);
   const [toast, setToast] = useState<{ kind: "success" | "error"; text: string } | null>(null);
+  const confirm = useConfirm();
 
   // Form — pre-filled with sensible defaults so creating a code is
   // literally one click. Each successful create rotates the suffix so
@@ -145,7 +147,12 @@ export default function AdminInvitesPage() {
   }
 
   async function handleDelete(invite: Invite) {
-    if (!confirm(`למחוק לצמיתות את הקוד "${invite.code}"?`)) return;
+    const ok = await confirm({
+      title: `למחוק לצמיתות את הקוד "${invite.code}"?`,
+      tone: "danger",
+      confirmLabel: "מחק",
+    });
+    if (!ok) return;
     const { data: { session } } = await supabase.auth.getSession();
     const res = await fetch(`/api/admin/invites/${invite.id}`, {
       method: "DELETE",

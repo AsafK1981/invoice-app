@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { canIssueTaxInvoicesByType } from "@/lib/vat";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 /**
  * Settings card for "חשבונית ישראל" — Israel Tax Authority allocation
@@ -73,6 +74,7 @@ export function TaxAuthoritySection() {
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState(false);
   const [toast, setToast] = useState<{ kind: "success" | "error"; text: string } | null>(null);
+  const confirm = useConfirm();
 
   useEffect(() => {
     // After OAuth callback, gov.il redirects to /settings?tax_authority=connected or =error
@@ -126,7 +128,13 @@ export function TaxAuthoritySection() {
   }
 
   async function handleDisconnect() {
-    if (!confirm("לנתק את החיבור לרשות המיסים? תוכל לחבר מחדש בכל עת.")) return;
+    const ok = await confirm({
+      title: "לנתק את החיבור לרשות המיסים?",
+      message: "תוכל לחבר מחדש בכל עת.",
+      tone: "danger",
+      confirmLabel: "נתק",
+    });
+    if (!ok) return;
     setActing(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();

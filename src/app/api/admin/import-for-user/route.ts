@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { isAdminEmail } from "@/lib/admin";
 import { checkRate } from "@/lib/rate-limit";
+import { todayInIsrael } from "@/lib/date";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -249,7 +250,7 @@ async function importExpenses(sb: SB, businessId: string, rows: ImportRow[]): Pr
     }
     toInsert.push({
       business_id: businessId,
-      date: pick(row, "תאריך", "date") || new Date().toISOString().slice(0, 10),
+      date: pick(row, "תאריך", "date") || todayInIsrael(),
       category: pick(row, "קטגוריה", "category") || "אחר",
       supplier,
       amount,
@@ -306,7 +307,7 @@ async function importDocuments(sb: SB, businessId: string, rows: ImportRow[]): P
     }
 
     const type = resolveDocumentType(pick(row, "סוג", "type"));
-    const date = pick(row, "תאריך", "date") || new Date().toISOString().slice(0, 10);
+    const date = pick(row, "תאריך", "date") || todayInIsrael();
     const subject = pick(row, "תיאור", "description", "subject") || "שירות";
     const vatStr = pick(row, 'מע"מ', "מעמ", "vat").replace(/[₪,\s]/g, "");
     const vat = parseFloat(vatStr) || 0;

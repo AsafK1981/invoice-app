@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { createNotificationForBusiness } from "@/lib/notifications-server";
+import { clientIp } from "@/lib/rate-limit";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -23,17 +24,11 @@ function checkRateLimit(ip: string): boolean {
   return true;
 }
 
-function getClientIp(req: Request): string {
-  const xff = req.headers.get("x-forwarded-for");
-  if (xff) return xff.split(",")[0].trim();
-  return req.headers.get("x-real-ip") || "unknown";
-}
-
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const ip = getClientIp(req);
+  const ip = clientIp(req);
   if (!checkRateLimit(ip)) {
     return NextResponse.json({ ok: false, error: "Too many requests" }, { status: 429 });
   }

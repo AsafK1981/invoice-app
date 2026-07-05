@@ -4,7 +4,11 @@ import { useMemo } from "react";
 import { AlertTriangle, TrendingUp, ShieldCheck } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
 import { getExemptCeiling } from "@/lib/tax-thresholds";
-import type { Business, InvoiceDocument } from "@/lib/types";
+import type { Business, DocumentType, InvoiceDocument } from "@/lib/types";
+
+// Types that represent actual revenue (מחזור עסקאות). Quotes (חשבון עסקה) are
+// NOT revenue; credit notes subtract (they're stored negative).
+const REVENUE_TYPES: DocumentType[] = ["receipt", "tax_invoice", "tax_invoice_receipt"];
 
 interface Props {
   business: Business | null;
@@ -16,13 +20,19 @@ export function ExemptCeilingTracker({ business, documents }: Props) {
   const ceiling = getExemptCeiling(year);
 
   const yearlyTurnover = useMemo(() => {
-    // Annual ceiling counts all issued documents (drafts and cancelled
-    // excluded — they don't represent real transactions). This matches the
-    // tax authority definition of מחזור עסקאות, not "money received".
-    // Credit notes subtract.
+    // Annual ceiling counts real revenue transactions only — the tax authority
+    // definition of מחזור עסקאות, not "money received". Excluded:
+    //   • drafts / cancelled — not real transactions
+    //   • quotes (חשבון עסקה) — an offer, not revenue
+    //   • any doc already converted into another (convertedToId set) — its
+    //     revenue is represented by the target, so counting both double-counts
+    //     (the source quote is marked "paid" on conversion).
+    // Credit notes subtract (stored negative). Revenue types add.
     return documents
       .filter((d) => d.date.startsWith(String(year)))
       .filter((d) => d.status !== "draft" && d.status !== "cancelled")
+      .filter((d) => !d.convertedToId)
+      .filter((d) => d.type === "credit_note" || REVENUE_TYPES.includes(d.type))
       .reduce((sum, d) => {
         const sign = d.type === "credit_note" ? -1 : 1;
         return sum + sign * (d.totalIls ?? d.total);
