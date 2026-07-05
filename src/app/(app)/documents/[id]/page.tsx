@@ -137,6 +137,13 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
   const sourceQuote = !isConvertible
     ? allDocuments.find((d) => d.convertedToId === doc.id)
     : null;
+  // For a credit note: the original invoice it reverses, resolved from the FK
+  // (originalDocumentId) among the already-loaded documents. Shown as a
+  // clickable "בגין: חשבונית מס #N" link. Manual/external references have no FK
+  // and rely on the notes line on the document body instead.
+  const originalDoc = doc.originalDocumentId
+    ? allDocuments.find((d) => d.id === doc.originalDocumentId)
+    : null;
   const isPaid = doc.status === "paid";
   // Always use the canonical origin for share links so they don't bake in
   // a per-deploy hash URL and decay into stale-code views.
@@ -408,6 +415,21 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
               <ArrowRight className="w-4 h-4 rotate-180" />
               <span className="hidden sm:inline">
                 מהצעה #{sourceQuote.number}
+              </span>
+            </Link>
+          )}
+          {/* On a credit note that references an in-app invoice, link back to
+              the original document it reverses (the notes-line reference on the
+              printed doc is retained separately — this is the interactive one). */}
+          {originalDoc && (
+            <Link
+              href={`/documents/${originalDoc.id}`}
+              className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-rose-50 border border-rose-200 text-rose-800 hover:bg-rose-100"
+              title={`בגין ${DOCUMENT_TYPE_LABELS[originalDoc.type]} #${originalDoc.number}`}
+            >
+              <ArrowRight className="w-4 h-4 rotate-180" />
+              <span className="hidden sm:inline">
+                בגין {DOCUMENT_TYPE_LABELS[originalDoc.type]} #{originalDoc.number}
               </span>
             </Link>
           )}

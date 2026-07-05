@@ -675,6 +675,11 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
         clientName,
         clientTaxId: (adhocMode ? adhocTaxId.trim() : selectedClient?.taxId) || undefined,
         allocationNumber: allocationNumber.trim() || undefined,
+        // Credit note: when the user picked an existing issued invoice from the
+        // picker, persist a real FK to it. Manual-entry (external invoice) stays
+        // null — its reference lives only in the notes line above. Additive to,
+        // not a replacement for, the human-readable creditRefLine.
+        originalDocumentId: creditRefPicked?.id || null,
         subject: subject.trim() || undefined,
         status:
           documentType === "receipt" || documentType === "tax_invoice_receipt"

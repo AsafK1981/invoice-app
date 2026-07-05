@@ -98,6 +98,14 @@ export interface InvoiceDocument {
    */
   convertedToId?: string;
   /**
+   * For a credit note (חשבונית זיכוי): FK to the original tax invoice it
+   * reverses, when that invoice exists as an app document (picked from the
+   * editor). NULL when the original was issued externally and entered manually
+   * — in that case the reference lives only in the notes line. Additive to the
+   * human-readable notes reference, not a replacement for it.
+   */
+  originalDocumentId?: string | null;
+  /**
    * When the document was marked paid (either manually or via the bank-
    * import matcher). Independent of status — historical docs that were
    * marked paid before this field existed have status=paid but null here.
