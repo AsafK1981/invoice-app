@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, FileText } from "lucide-react";
+import { ArrowRight, FileClock } from "lucide-react";
 import { ReceiptEditor } from "@/components/receipt-editor";
 import { useClients } from "@/lib/client-store";
 import { useProducts } from "@/lib/product-store";
 import { useBusiness } from "@/lib/business-store";
 
-export default function NewQuotePage() {
+export default function NewProformaPage() {
   const { business } = useBusiness();
   const { items: clients } = useClients();
   const { items: products } = useProducts();
@@ -23,10 +23,10 @@ export default function NewQuotePage() {
           חזרה לבחירת סוג מסמך
         </Link>
         <h1 className="text-3xl font-bold text-stone-900 mt-3 flex items-center gap-3">
-          <span className="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-sm">
-            <FileText className="w-5 h-5 text-white" />
+          <span className="w-11 h-11 rounded-2xl bg-gradient-to-br from-fuchsia-400 to-purple-500 flex items-center justify-center shadow-sm">
+            <FileClock className="w-5 h-5 text-white" />
           </span>
-          הצעת מחיר
+          חשבון עסקה
         </h1>
       </div>
 
@@ -34,7 +34,7 @@ export default function NewQuotePage() {
         business={business}
         clients={clients}
         products={products}
-        documentType="quote"
+        documentType="proforma"
       />
     </div>
   );

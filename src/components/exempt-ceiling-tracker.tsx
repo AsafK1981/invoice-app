@@ -6,8 +6,10 @@ import { formatCurrency } from "@/lib/format";
 import { getExemptCeiling } from "@/lib/tax-thresholds";
 import type { Business, DocumentType, InvoiceDocument } from "@/lib/types";
 
-// Types that represent actual revenue (מחזור עסקאות). Quotes (חשבון עסקה) are
-// NOT revenue; credit notes subtract (they're stored negative).
+// Types that represent actual revenue (מחזור עסקאות). Price quotes (הצעת מחיר)
+// and proforma invoices (חשבון עסקה) are NOT revenue — both are pre-payment
+// documents, so neither counts toward the exempt-dealer ceiling. Credit notes
+// subtract (they're stored negative).
 const REVENUE_TYPES: DocumentType[] = ["receipt", "tax_invoice", "tax_invoice_receipt"];
 
 interface Props {
@@ -23,7 +25,7 @@ export function ExemptCeilingTracker({ business, documents }: Props) {
     // Annual ceiling counts real revenue transactions only — the tax authority
     // definition of מחזור עסקאות, not "money received". Excluded:
     //   • drafts / cancelled — not real transactions
-    //   • quotes (חשבון עסקה) — an offer, not revenue
+    //   • price quotes (הצעת מחיר) / proforma (חשבון עסקה) — pre-payment, not revenue
     //   • any doc already converted into another (convertedToId set) — its
     //     revenue is represented by the target, so counting both double-counts
     //     (the source quote is marked "paid" on conversion).

@@ -37,8 +37,9 @@ function showPaymentInfo(type: DocumentType, business: Business): boolean {
 /**
  * Color scheme per document type — gives the recipient an instant visual
  * cue without having to read the Hebrew label. Receipts = emerald (paid /
- * positive), tax invoices = blue (formal / fiscal), quotes = amber
- * (pending), credit notes = rose (refund), tax-invoice-receipt = teal.
+ * positive), tax invoices = blue (formal / fiscal), price quotes (הצעת מחיר) =
+ * amber (pending), proforma (חשבון עסקה) = fuchsia (payment demand),
+ * credit notes = rose (refund), tax-invoice-receipt = teal.
  */
 function badgeStylesFor(type: DocumentType): { bg: string; print: string } {
   switch (type) {
@@ -50,6 +51,8 @@ function badgeStylesFor(type: DocumentType): { bg: string; print: string } {
       return { bg: "from-teal-500 to-cyan-600", print: "print:bg-teal-600" };
     case "quote":
       return { bg: "from-amber-500 to-orange-600", print: "print:bg-amber-600" };
+    case "proforma":
+      return { bg: "from-fuchsia-500 to-purple-600", print: "print:bg-fuchsia-600" };
     case "credit_note":
       return { bg: "from-rose-500 to-pink-600", print: "print:bg-rose-600" };
     default:

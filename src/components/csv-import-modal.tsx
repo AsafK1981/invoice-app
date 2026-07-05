@@ -24,7 +24,8 @@ function resolveDocumentType(raw: string): DocumentType {
   if (t === "tax_invoice_receipt" || t.includes("חשבונית מס/קבלה") || t.includes("חשבונית מס קבלה")) return "tax_invoice_receipt";
   if (t === "tax_invoice" || t === "invoice" || (t.includes("חשבונית") && t.includes("מס"))) return "tax_invoice";
   if (t === "credit_note" || t.includes("זיכוי")) return "credit_note";
-  if (t === "quote" || t.includes("חשבון עסקה") || t.includes("הצעת מחיר") || t.includes("הצעה")) return "quote";
+  if (t === "proforma" || t.includes("חשבון עסקה") || t.includes("חשבון עיסקה")) return "proforma";
+  if (t === "quote" || t.includes("הצעת מחיר") || t.includes("הצעה")) return "quote";
   return "receipt";
 }
 
@@ -198,7 +199,7 @@ export function CsvImportModal({ open, onClose, entityType }: Props) {
           else if (statusRaw === "sent" || statusRaw.includes("נשלח")) status = "sent";
           else if (statusRaw === "cancelled" || statusRaw.includes("בוטל")) status = "cancelled";
           else if (statusRaw === "paid" || statusRaw.includes("שולם")) status = "paid";
-          else if (type === "quote") status = "sent";
+          else if (type === "quote" || type === "proforma") status = "sent";
 
           // Skip duplicates: same business, same type, same number
           const { data: existing } = await supabase

@@ -8,6 +8,7 @@ import {
   Trash2,
   ReceiptText,
   FileText as FileTextIcon,
+  FileClock,
   FileCheck,
   FileMinus,
   FileSpreadsheet,
@@ -52,6 +53,7 @@ interface Props {
 const TYPE_ICONS: Record<DocumentType, typeof ReceiptText> = {
   receipt: ReceiptText,
   quote: FileTextIcon,
+  proforma: FileClock,
   tax_invoice: FileCheck,
   tax_invoice_receipt: FileSpreadsheet,
   credit_note: FileMinus,
@@ -67,6 +69,11 @@ const TYPE_THEMES: Record<DocumentType, { row: string; badge: string; icon: stri
     row: "hover:bg-amber-50/60",
     badge: "bg-amber-100 text-amber-800",
     icon: "text-amber-600 bg-amber-100",
+  },
+  proforma: {
+    row: "hover:bg-fuchsia-50/60",
+    badge: "bg-fuchsia-100 text-fuchsia-800",
+    icon: "text-fuchsia-600 bg-fuchsia-100",
   },
   tax_invoice: {
     row: "hover:bg-sky-50/60",
@@ -101,7 +108,7 @@ export function DocumentsTable({ documents, limit, showExport = false }: Props) 
   type EmailFilter = "all" | "emailed" | "not_emailed";
   const initialType: TypeFilter = (() => {
     const v = searchParams.get("type");
-    if (v === "receipt" || v === "quote" || v === "tax_invoice" || v === "tax_invoice_receipt" || v === "credit_note") return v;
+    if (v === "receipt" || v === "quote" || v === "proforma" || v === "tax_invoice" || v === "tax_invoice_receipt" || v === "credit_note") return v;
     return "all";
   })();
   const initialStatus: StatusFilter = (() => {
@@ -205,6 +212,7 @@ export function DocumentsTable({ documents, limit, showExport = false }: Props) 
             { value: "all", label: "כל הסוגים" },
             { value: "receipt", label: DOCUMENT_TYPE_LABELS.receipt },
             { value: "quote", label: DOCUMENT_TYPE_LABELS.quote },
+            { value: "proforma", label: DOCUMENT_TYPE_LABELS.proforma },
             { value: "tax_invoice", label: DOCUMENT_TYPE_LABELS.tax_invoice },
             { value: "tax_invoice_receipt", label: DOCUMENT_TYPE_LABELS.tax_invoice_receipt },
             { value: "credit_note", label: DOCUMENT_TYPE_LABELS.credit_note },
@@ -418,7 +426,7 @@ function RowActions({ doc }: { doc: InvoiceDocument }) {
   // receipt can be one-click converted. Mirrors handleConvert() on the doc
   // detail page so the table button behaves identically.
   const canConvertToReceipt =
-    doc.type === "quote" &&
+    (doc.type === "quote" || doc.type === "proforma") &&
     doc.status !== "draft" &&
     doc.status !== "cancelled" &&
     !doc.convertedToId;

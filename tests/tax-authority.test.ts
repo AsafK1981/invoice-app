@@ -74,6 +74,7 @@ describe("requiresAllocationNumber", () => {
   it("never requires a number for non-tax documents", () => {
     expect(requiresAllocationNumber(doc({ type: "receipt", date: "2026-06-10", total: 50_000 }))).toBe(false);
     expect(requiresAllocationNumber(doc({ type: "quote", date: "2026-06-10", total: 50_000 }))).toBe(false);
+    expect(requiresAllocationNumber(doc({ type: "proforma", date: "2026-06-10", total: 50_000 }))).toBe(false);
     expect(requiresAllocationNumber(doc({ type: "invoice", date: "2026-06-10", total: 50_000 }))).toBe(false);
   });
 });

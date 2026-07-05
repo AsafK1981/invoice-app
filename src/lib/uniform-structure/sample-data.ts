@@ -65,6 +65,7 @@ const PAYMENT_METHODS: PaymentMethod[] = ["bank_transfer", "cash", "check", "cre
 const DOC_TYPES: DocumentType[] = [
   "receipt",
   "quote",
+  "proforma",
   "tax_invoice",
   "tax_invoice_receipt",
   "credit_note",
@@ -132,6 +133,7 @@ export function generateSampleDataset(input: SampleInput): SampleDataset {
   const numberByType: Record<DocumentType, number> = {
     receipt: 1001,
     quote: 201,
+    proforma: 201,
     tax_invoice: 201,
     tax_invoice_receipt: 201,
     credit_note: 201,
@@ -168,7 +170,7 @@ export function generateSampleDataset(input: SampleInput): SampleDataset {
     const total = subtotal + vat;
 
     const status: InvoiceDocument["status"] =
-      type === "quote" && rng() < 0.3 ? "draft" : "paid";
+      (type === "quote" || type === "proforma") && rng() < 0.3 ? "draft" : "paid";
 
     const paymentMethod =
       type === "receipt" || type === "tax_invoice_receipt"

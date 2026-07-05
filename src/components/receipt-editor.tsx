@@ -97,6 +97,11 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   })();
   const today = todayInIsrael();
   const isQuote = documentType === "quote";
+  const isProforma = documentType === "proforma";
+  // Both price quote (הצעת מחיר) and proforma (חשבון עסקה) are pre-payment
+  // documents: no payment method is recorded at issue, and both can be
+  // converted into a receipt / tax-invoice once the client pays.
+  const isPrePayment = isQuote || isProforma;
   const docLabel = DOCUMENT_TYPE_LABELS[documentType];
 
   const baseVatRate = getVatRate(business);
@@ -348,7 +353,8 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
         setAdhocName(srcDoc.client_name);
       }
       if (isConvert) {
-        const noteText = `הומר מהצעת מחיר #${srcDoc.number}`;
+        const srcLabel = DOCUMENT_TYPE_LABELS[srcDoc.type as DocumentType] ?? "מסמך";
+        const noteText = `הומר מ${srcLabel} #${srcDoc.number}`;
         setSubject(srcDoc.subject || "");
         setNotes(srcDoc.notes ? `${srcDoc.notes}\n${noteText}` : noteText);
       } else {
@@ -678,7 +684,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
         subtotal: round2(sign * subtotal),
         vat: round2(sign * vat),
         total: round2(sign * total),
-        paymentMethod: isQuote ? undefined : paymentMethod,
+        paymentMethod: isPrePayment ? undefined : paymentMethod,
         notes: finalNotes,
         currency,
         exchangeRate: effectiveRate,
@@ -813,7 +819,10 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
         // (quote / tax_invoice), but the business has no bank/payment info
         // configured — so the client won't see how to pay you. Surface this
         // at the moment of creation, when a fix is most useful.
-        const docShowsPayment = documentType === "quote" || documentType === "tax_invoice";
+        const docShowsPayment =
+          documentType === "quote" ||
+          documentType === "proforma" ||
+          documentType === "tax_invoice";
         const hasPaymentInfo = Boolean(
           business.bankName || business.bankBranch || business.bankAccount || business.paymentNotes,
         );
@@ -1072,7 +1081,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
               )}
             </FormField>
 
-            {!isQuote && (
+            {!isPrePayment && (
               <FormField label="אמצעי תשלום">
                 <select
                   value={paymentMethod}
@@ -1341,7 +1350,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
               vat={vat}
               vatRate={effectiveVatRate}
               total={total}
-              paymentMethod={isQuote ? undefined : paymentMethod}
+              paymentMethod={isPrePayment ? undefined : paymentMethod}
               notes={notes || undefined}
             />
           </div>

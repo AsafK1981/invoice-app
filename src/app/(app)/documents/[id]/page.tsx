@@ -109,23 +109,28 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
 
   const client = clients.find((c) => c.id === doc.clientId) ?? null;
   const isQuote = doc.type === "quote";
+  const isProforma = doc.type === "proforma";
+  // Price quote (הצעת מחיר) and proforma (חשבון עסקה) share the same
+  // pre-payment lifecycle: both can be converted to a receipt/tax-invoice
+  // once the client pays.
+  const isConvertible = isQuote || isProforma;
   const isReceipt = doc.type === "receipt" || doc.type === "tax_invoice_receipt";
-  // Convert button only relevant for sent/paid quotes that haven't already
-  // been converted. Drafts can't be converted (haven't been issued to the
-  // client yet); cancelled and already-converted ones can't either.
+  // Convert button only relevant for sent/paid pre-payment docs that haven't
+  // already been converted. Drafts can't be converted (haven't been issued to
+  // the client yet); cancelled and already-converted ones can't either.
   const canConvert =
-    isQuote &&
+    isConvertible &&
     doc.status !== "cancelled" &&
     doc.status !== "draft" &&
     !doc.convertedToId;
-  // The doc this quote was converted into (if any) — used to render a
+  // The doc this quote/proforma was converted into (if any) — used to render a
   // "→ הומר לקבלה #N" link instead of the convert button.
   const convertedDoc = doc.convertedToId
     ? allDocuments.find((d) => d.id === doc.convertedToId)
     : null;
-  // The quote this receipt was created FROM (if it was a conversion) —
+  // The quote/proforma this receipt was created FROM (if it was a conversion) —
   // shown as a "← נוצר מהצעה #N" link.
-  const sourceQuote = !isQuote
+  const sourceQuote = !isConvertible
     ? allDocuments.find((d) => d.convertedToId === doc.id)
     : null;
   const isPaid = doc.status === "paid";
@@ -277,9 +282,10 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
     const isAuthorized = canIssueTaxInvoices(business);
     const targetType = isAuthorized ? "tax-invoice-receipt" : "receipt";
     const targetTypeLabel = isAuthorized ? "חשבונית מס/קבלה" : "קבלה";
+    const sourceLabel = DOCUMENT_TYPE_LABELS[doc.type];
     const ok = await confirm({
-      title: `להמיר את הצעה #${doc.number} ל${targetTypeLabel}?`,
-      message: `ייפתח טופס חדש עם פרטי ההצעה כבר ממולאים. לאחר שתשמור אותו, ההצעה המקורית תסומן כשולמה ותקושר ל${targetTypeLabel} שייווצר.`,
+      title: `להמיר את ${sourceLabel} #${doc.number} ל${targetTypeLabel}?`,
+      message: `ייפתח טופס חדש עם הפרטים כבר ממולאים. לאחר שתשמור אותו, המסמך המקורי יסומן כשולם ויקושר ל${targetTypeLabel} שייווצר.`,
       confirmLabel: "המשך",
     });
     if (!ok) return;
@@ -373,9 +379,9 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
               <span className="hidden sm:inline">המר ל{canIssueTaxInvoices(business) ? "חשבונית מס/קבלה" : "קבלה"}</span>
             </button>
           )}
-          {/* If this quote was already converted, show the receipt link
-              instead of the convert button so user can navigate over. */}
-          {isQuote && convertedDoc && (
+          {/* If this quote/proforma was already converted, show the receipt
+              link instead of the convert button so user can navigate over. */}
+          {isConvertible && convertedDoc && (
             <Link
               href={`/documents/${convertedDoc.id}`}
               className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-emerald-50 border border-emerald-200 text-emerald-800 hover:bg-emerald-100"
@@ -389,7 +395,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
           )}
           {/* On a receipt that was created via conversion, link back to
               the source quote so user can compare or audit. */}
-          {!isQuote && sourceQuote && (
+          {!isConvertible && sourceQuote && (
             <Link
               href={`/documents/${sourceQuote.id}`}
               className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-amber-50 border border-amber-200 text-amber-800 hover:bg-amber-100"
@@ -461,7 +467,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
               actually been emailed yet (no point reminding what was never
               sent). Hidden entirely for receipts and credit notes. */}
           {doc.status === "sent" &&
-            (doc.type === "quote" || doc.type === "tax_invoice") && (() => {
+            (doc.type === "quote" || doc.type === "proforma" || doc.type === "tax_invoice") && (() => {
               const notYetEmailed = !doc.emailedAt;
               const reminderDisabled = sending || !client?.email || notYetEmailed;
               const reminderTitle = !client?.email
@@ -570,7 +576,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                   WhatsApp
                 </button>
                 {doc.status === "sent" &&
-                  (doc.type === "quote" || doc.type === "tax_invoice") && (
+                  (doc.type === "quote" || doc.type === "proforma" || doc.type === "tax_invoice") && (
                     <button
                       role="menuitem"
                       disabled={sending || !client?.email || !doc.emailedAt}
@@ -836,6 +842,8 @@ function docTypeToRoute(type: string): string {
       return "receipt";
     case "quote":
       return "quote";
+    case "proforma":
+      return "proforma";
     case "tax_invoice":
       return "tax-invoice";
     case "tax_invoice_receipt":

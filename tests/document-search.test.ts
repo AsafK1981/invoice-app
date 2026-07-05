@@ -66,8 +66,13 @@ describe("matchDocument", () => {
     expect(matchDocument(paidDoc, "שולם")).toBe(true);
   });
 
-  it("matches Hebrew document type label (e.g. חשבון עסקה for quote)", () => {
-    expect(matchDocument(doc, "חשבון עסקה")).toBe(true);
+  it("matches Hebrew document type label (e.g. הצעת מחיר for quote)", () => {
+    expect(matchDocument(doc, "הצעת מחיר")).toBe(true);
+  });
+
+  it("matches Hebrew document type label for proforma (חשבון עסקה)", () => {
+    const proforma = makeDoc({ type: "proforma" });
+    expect(matchDocument(proforma, "חשבון עסקה")).toBe(true);
   });
 
   it("matches payment method label", () => {

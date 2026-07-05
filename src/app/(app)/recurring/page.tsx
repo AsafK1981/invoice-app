@@ -373,7 +373,8 @@ function CreateTemplateCard({ clients }: { clients: { id: string; name: string }
           <label className="text-xs font-semibold text-stone-700 mb-1 block">סוג מסמך</label>
           <select value={docType} onChange={(e) => setDocType(e.target.value)} className="input-warm">
             <option value="receipt">קבלה</option>
-            <option value="quote">חשבון עסקה</option>
+            <option value="quote">הצעת מחיר</option>
+            <option value="proforma">חשבון עסקה</option>
             {canTaxInvoice && <option value="tax_invoice">חשבונית מס</option>}
           </select>
         </div>

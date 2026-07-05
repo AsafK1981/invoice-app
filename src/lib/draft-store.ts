@@ -122,6 +122,7 @@ export function useDrafts() {
 export const DOC_TYPE_ROUTE: Record<DocumentType, string> = {
   receipt: "receipt",
   quote: "quote",
+  proforma: "proforma",
   tax_invoice: "tax-invoice",
   tax_invoice_receipt: "tax-invoice-receipt",
   credit_note: "credit-note",

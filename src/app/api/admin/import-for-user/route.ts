@@ -266,12 +266,13 @@ async function importExpenses(sb: SB, businessId: string, rows: ImportRow[]): Pr
   return out;
 }
 
-function resolveDocumentType(raw: string): "receipt" | "tax_invoice" | "tax_invoice_receipt" | "credit_note" | "quote" {
+function resolveDocumentType(raw: string): "receipt" | "tax_invoice" | "tax_invoice_receipt" | "credit_note" | "quote" | "proforma" {
   const t = raw.trim().toLowerCase();
   if (!t) return "receipt";
   if (t === "tax_invoice_receipt" || t.includes("חשבונית מס/קבלה") || t.includes("חשבונית מס קבלה")) return "tax_invoice_receipt";
   if (t === "credit_note" || t.includes("זיכוי")) return "credit_note";
-  if (t === "quote" || t.includes("חשבון עסקה") || t.includes("הצעת מחיר") || t.includes("הצעה")) return "quote";
+  if (t === "proforma" || t.includes("חשבון עסקה") || t.includes("חשבון עיסקה")) return "proforma";
+  if (t === "quote" || t.includes("הצעת מחיר") || t.includes("הצעה")) return "quote";
   if (t === "tax_invoice" || t === "invoice" || (t.includes("חשבונית") && t.includes("מס"))) return "tax_invoice";
   return "receipt";
 }
@@ -321,7 +322,7 @@ async function importDocuments(sb: SB, businessId: string, rows: ImportRow[]): P
     if (statusRaw === "draft" || statusRaw.includes("טיוטה")) status = "draft";
     else if (statusRaw === "sent" || statusRaw.includes("נשלח")) status = "sent";
     else if (statusRaw === "cancelled" || statusRaw.includes("בוטל")) status = "cancelled";
-    else if (type === "quote") status = "sent";
+    else if (type === "quote" || type === "proforma") status = "sent";
 
     // Find or create client by name.
     let clientId = clientByName.get(clientName.toLowerCase().trim());

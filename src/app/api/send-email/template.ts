@@ -27,12 +27,13 @@ function escapeHtml(str: string): string {
 }
 
 // Name the actual document type in the email ("מצורפת חשבונית מס" / "מצורף
-// חשבון עסקה") instead of a generic "מסמך". Only "חשבון עסקה" (quote) is
-// grammatically masculine — the rest are feminine → "מצורפת".
+// חשבון עסקה") instead of a generic "מסמך". Only "חשבון עסקה" (proforma) is
+// grammatically masculine — the rest, including "הצעת מחיר" (quote), are
+// feminine → "מצורפת".
 function docWording(type?: DocumentType): { attached: string; noun: string } {
   if (!type || !DOCUMENT_TYPE_LABELS[type]) return { attached: "מצורף מסמך", noun: "מסמך" };
   const label = DOCUMENT_TYPE_LABELS[type];
-  return { attached: `${type === "quote" ? "מצורף" : "מצורפת"} ${label}`, noun: label };
+  return { attached: `${type === "proforma" ? "מצורף" : "מצורפת"} ${label}`, noun: label };
 }
 
 export function buildHtml(args: {

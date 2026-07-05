@@ -1,6 +1,7 @@
 export type DocumentType =
   | "receipt"
   | "quote"
+  | "proforma"
   | "tax_invoice"
   | "tax_invoice_receipt"
   | "credit_note";
@@ -145,7 +146,8 @@ export interface DocumentAttachment {
 
 export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
   receipt: "קבלה",
-  quote: "חשבון עסקה",
+  quote: "הצעת מחיר",
+  proforma: "חשבון עסקה",
   tax_invoice: "חשבונית מס",
   tax_invoice_receipt: "חשבונית מס/קבלה",
   credit_note: "חשבונית זיכוי",
@@ -154,6 +156,7 @@ export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
 export const DOCUMENT_TYPE_ROW_COLORS: Record<DocumentType, string> = {
   receipt: "bg-emerald-50/60 hover:bg-emerald-100/70",
   quote: "bg-amber-50/60 hover:bg-amber-100/70",
+  proforma: "bg-fuchsia-50/60 hover:bg-fuchsia-100/70",
   tax_invoice: "bg-blue-50/60 hover:bg-blue-100/70",
   tax_invoice_receipt: "bg-violet-50/60 hover:bg-violet-100/70",
   credit_note: "bg-rose-50/60 hover:bg-rose-100/70",
@@ -162,6 +165,7 @@ export const DOCUMENT_TYPE_ROW_COLORS: Record<DocumentType, string> = {
 export const DOCUMENT_TYPE_BADGE_COLORS: Record<DocumentType, string> = {
   receipt: "bg-emerald-100 text-emerald-800",
   quote: "bg-amber-100 text-amber-800",
+  proforma: "bg-fuchsia-100 text-fuchsia-800",
   tax_invoice: "bg-blue-100 text-blue-800",
   tax_invoice_receipt: "bg-violet-100 text-violet-800",
   credit_note: "bg-rose-100 text-rose-800",
@@ -192,6 +196,7 @@ export const BUSINESS_TYPE_LABELS: Record<Business["businessType"], string> = {
 export const DEFAULT_NEXT_NUMBER: Record<DocumentType, number> = {
   receipt: 1001,
   quote: 201,
+  proforma: 201,
   tax_invoice: 201,
   tax_invoice_receipt: 201,
   credit_note: 201,
@@ -200,6 +205,7 @@ export const DEFAULT_NEXT_NUMBER: Record<DocumentType, number> = {
 export const DOC_SUM_LABEL: Record<DocumentType, string> = {
   receipt: "סה״כ לתשלום",
   quote: "סה״כ הצעה",
+  proforma: "סה״כ לתשלום",
   tax_invoice: "סה״כ לתשלום",
   tax_invoice_receipt: "סה״כ לתשלום",
   credit_note: "סה״כ זיכוי",

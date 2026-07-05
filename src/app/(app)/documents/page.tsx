@@ -22,7 +22,7 @@ export default function DocumentsPage() {
     () =>
       documents.filter(
         (d) =>
-          (d.type === "tax_invoice" || d.type === "quote") &&
+          (d.type === "tax_invoice" || d.type === "quote" || d.type === "proforma") &&
           (d.status === "sent" || d.status === "draft"),
       ),
     [documents],
@@ -35,7 +35,7 @@ export default function DocumentsPage() {
       if (d.status === "draft" || d.status === "cancelled") continue;
       const sign = d.type === "credit_note" ? -1 : 1;
       if (d.status === "paid") paid += sign * d.total;
-      else if (d.status === "sent" && (d.type === "quote" || d.type === "tax_invoice")) {
+      else if (d.status === "sent" && (d.type === "quote" || d.type === "proforma" || d.type === "tax_invoice")) {
         // "outstanding" = sent but unpaid quotes/invoices → money potentially
         // owed to you. Receipts and tax_invoice_receipts are paid by definition
         // and aren't double-counted here.

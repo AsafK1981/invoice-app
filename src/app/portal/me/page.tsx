@@ -35,7 +35,8 @@ interface PortalBusiness {
 
 const TYPE_LABELS: Record<string, string> = {
   receipt: "קבלה",
-  quote: "חשבון עסקה",
+  quote: "הצעת מחיר",
+  proforma: "חשבון עסקה",
   tax_invoice: "חשבונית מס",
   tax_invoice_receipt: "חשבונית מס/קבלה",
   credit_note: "חשבונית זיכוי",
@@ -96,7 +97,7 @@ export default function PortalDocumentsPage() {
       return s + (d.type === "credit_note" ? -val : val);
     }, 0);
   const totalOpen = docs
-    .filter((d) => d.status === "sent" && (d.type === "quote" || d.type === "tax_invoice"))
+    .filter((d) => d.status === "sent" && (d.type === "quote" || d.type === "proforma" || d.type === "tax_invoice"))
     .reduce((s, d) => s + (d.total_ils ?? d.total), 0);
 
   if (loading) {

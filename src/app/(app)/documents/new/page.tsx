@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowRight, ReceiptText, FileText, FileCheck, FileMinus, FileSpreadsheet, Lock } from "lucide-react";
+import { ArrowRight, ReceiptText, FileText, FileClock, FileCheck, FileMinus, FileSpreadsheet, Lock } from "lucide-react";
 import { useBusiness } from "@/lib/business-store";
 import { canIssueTaxInvoices } from "@/lib/vat";
 
@@ -26,12 +26,20 @@ export default function NewDocumentPage() {
       bgGradient: "from-emerald-50 to-teal-50",
     },
     {
-      title: "חשבון עסקה",
-      desc: "מסמך שנשלח ללקוח לפני התשלום",
+      title: "הצעת מחיר",
+      desc: "הצעה לא מחייבת ללקוח לפני סגירת העסקה",
       icon: FileText,
       href: `/documents/new/quote${suffix}`,
       gradient: "from-amber-400 to-orange-500",
       bgGradient: "from-amber-50 to-orange-50",
+    },
+    {
+      title: "חשבון עסקה",
+      desc: "דרישת תשלום לפני הפקת חשבונית מס — לכל סוגי העסקים",
+      icon: FileClock,
+      href: `/documents/new/proforma${suffix}`,
+      gradient: "from-fuchsia-400 to-purple-500",
+      bgGradient: "from-fuchsia-50 to-purple-50",
     },
     {
       title: "חשבונית מס",

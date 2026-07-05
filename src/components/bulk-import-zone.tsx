@@ -87,7 +87,8 @@ function resolveDocumentType(raw: string): DocumentType {
   if (!t) return "receipt";
   if (t === "tax_invoice_receipt" || t.includes("חשבונית מס/קבלה") || t.includes("חשבונית מס קבלה")) return "tax_invoice_receipt";
   if (t === "credit_note" || t.includes("זיכוי")) return "credit_note";
-  if (t === "quote" || t.includes("חשבון עסקה") || t.includes("הצעת מחיר") || t.includes("הצעה")) return "quote";
+  if (t === "proforma" || t.includes("חשבון עסקה") || t.includes("חשבון עיסקה")) return "proforma";
+  if (t === "quote" || t.includes("הצעת מחיר") || t.includes("הצעה")) return "quote";
   if (t === "tax_invoice" || t === "invoice" || (t.includes("חשבונית") && t.includes("מס"))) return "tax_invoice";
   return "receipt";
 }
@@ -319,7 +320,7 @@ export function BulkImportZone() {
         if (statusRaw === "draft" || statusRaw.includes("טיוטה")) status = "draft";
         else if (statusRaw === "sent" || statusRaw.includes("נשלח")) status = "sent";
         else if (statusRaw === "cancelled" || statusRaw.includes("בוטל")) status = "cancelled";
-        else if (type === "quote") status = "sent";
+        else if (type === "quote" || type === "proforma") status = "sent";
 
         // Find or create client (same pattern as csv-import-modal)
         let clientId: string | undefined = clientCache.get(clientName);

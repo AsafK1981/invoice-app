@@ -40,7 +40,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
       .reduce((s, d) => s + (d.type === "credit_note" ? -1 : 1) * (d.totalIls ?? d.total), 0);
     const last = mine.length > 0 ? mine.map((d) => d.date).sort().at(-1) : null;
     const open = mine.filter(
-      (d) => d.status === "sent" && (d.type === "quote" || d.type === "tax_invoice"),
+      (d) => d.status === "sent" && (d.type === "quote" || d.type === "proforma" || d.type === "tax_invoice"),
     ).length;
     return { docs: mine, totalBilled: billed, totalPaid: paid, lastDocDate: last ?? null, openCount: open };
   }, [client, documents]);

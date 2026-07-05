@@ -67,7 +67,7 @@ function CopyValue({
 
 export function PaymentOptionsCard({ business, document: doc }: Props) {
   const showCard =
-    (doc.type === "quote" || doc.type === "tax_invoice") &&
+    (doc.type === "quote" || doc.type === "proforma" || doc.type === "tax_invoice") &&
     doc.status !== "paid" &&
     doc.status !== "cancelled";
 

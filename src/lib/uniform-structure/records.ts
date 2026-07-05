@@ -27,7 +27,11 @@ import {
 import type { Business, Client, DocumentItem, Expense, InvoiceDocument, PaymentMethod } from "../types";
 
 export const DOC_TYPE_CODE: Record<InvoiceDocument["type"], string> = {
+  // 100 = order/proposal family in the uniform structure (מבנה אחיד). Both
+  // price quotes (הצעת מחיר) and proforma invoices (חשבון עסקה) are pre-tax
+  // commercial documents with no dedicated code, so both map to 100.
   quote: "100",
+  proforma: "100",
   tax_invoice: "305",
   tax_invoice_receipt: "320",
   credit_note: "330",

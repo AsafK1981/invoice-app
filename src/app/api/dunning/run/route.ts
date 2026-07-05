@@ -217,7 +217,7 @@ export async function POST(req: NextRequest) {
       .from("documents")
       .select("id, business_id, client_id, client_name, number, date, total, type, status, paid_at")
       .eq("business_id", biz.id)
-      .in("type", ["quote", "tax_invoice"])
+      .in("type", ["quote", "proforma", "tax_invoice"])
       .eq("status", "sent")
       // Defensive: never dun a doc that's been paid, even if its status
       // wasn't flipped to "paid" (status/paid_at can desync via the bank

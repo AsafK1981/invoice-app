@@ -53,7 +53,7 @@ export function AgingReport({ documents }: Props) {
     const open = documents.filter(
       (d) =>
         d.status === "sent" &&
-        (d.type === "quote" || d.type === "tax_invoice"),
+        (d.type === "quote" || d.type === "proforma" || d.type === "tax_invoice"),
     );
 
     const byClient = new Map<string, AgingRow>();

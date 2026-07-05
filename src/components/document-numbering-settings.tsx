@@ -13,6 +13,7 @@ import {
 const TYPE_ORDER: DocumentType[] = [
   "receipt",
   "quote",
+  "proforma",
   "tax_invoice",
   "tax_invoice_receipt",
   "credit_note",
