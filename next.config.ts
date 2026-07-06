@@ -35,6 +35,16 @@ const nextConfig: NextConfig = {
   // (which breaks its executablePath resolution on Vercel). Both are already
   // on Next's built-in externals list; listing them here is explicit + safe.
   serverExternalPackages: ["puppeteer-core", "@sparticuz/chromium"],
+  // @sparticuz/chromium loads its brotli-compressed binaries (bin/chromium.br,
+  // etc.) dynamically at runtime, so @vercel/nft's static file tracer never
+  // copies them into the serverless function — the JS is externalized but the
+  // bin/ blobs are missing, causing a 500 ("input directory .../bin does not
+  // exist") on Vercel. Force-include them for the PDF route. Only one route
+  // lives under /api/documents (the pdf route), so this broad glob is precise
+  // in practice and sidesteps picomatch treating "[id]" as a character class.
+  outputFileTracingIncludes: {
+    "/api/documents/**": ["./node_modules/@sparticuz/chromium/bin/**/*"],
+  },
   async headers() {
     return [
       {
