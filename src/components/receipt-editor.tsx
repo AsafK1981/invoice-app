@@ -359,6 +359,10 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
       } else if (srcDoc.client_name) {
         setAdhocMode(true);
         setAdhocName(srcDoc.client_name);
+        // Restore the ad-hoc customer tax id too — without it a duplicated
+        // B2B tax invoice looks B2C (empty tax id) and the allocation banner
+        // wrongly shows "no allocation number needed".
+        setAdhocTaxId(srcDoc.client_tax_id || "");
       }
       if (isConvert) {
         const srcLabel = DOCUMENT_TYPE_LABELS[srcDoc.type as DocumentType] ?? "מסמך";
