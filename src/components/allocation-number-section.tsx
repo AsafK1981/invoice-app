@@ -273,7 +273,12 @@ export function AllocationNumberSection({ doc, customerTaxId }: Props) {
             </button>
           )}
           {error && (
-            <p className="mt-2 text-xs text-rose-700 font-medium">{error}</p>
+            <p
+              className="mt-2 text-xs text-rose-700 font-medium break-words"
+              dir="rtl"
+            >
+              {error}
+            </p>
           )}
         </div>
       </div>

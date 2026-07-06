@@ -257,6 +257,16 @@ export interface AllocationRequest {
   invoiceType: 305 | 320 | 330;
   /** Issuer's עוסק/company number (digits only). */
   vatNumber: string;
+  /**
+   * ID (ת.ז) of the human user performing the allocation — the API's
+   * `user_id` field (N9, mandatory unless `user_name` is sent). The v2 spec
+   * (§Table 2.1, field 6) demands "the ID of the user performing the actual
+   * allocation"; without it the gateway rejects with code 446 ("Requeried one
+   * of the two fields: user ID or user name"). Our users are solo freelancers
+   * (עוסק פטור/מורשה), so the operator == the business owner and the issuer's
+   * own number is the correct identifier. Digits only; defaults to vatNumber.
+   */
+  userId?: string;
   /** Human invoice number as printed on the document. */
   invoiceReferenceNumber: string;
   /** Customer's עוסק number (digits only); "0" when none (private customer). */
@@ -289,10 +299,17 @@ export async function requestAllocation(
   // are sent as NUMBERS (the published example showing strings is wrong — the
   // production swagger rejects strings with a type error). The allocation
   // number comes back as `confirmation_number`; print its 9 right-most digits.
+  // `user_id` (N9): the ID of the user performing the allocation. Mandatory
+  // unless `user_name` is sent — the gateway returns code 446 without it. For
+  // our solo-freelancer users the operator is the business owner, so we send
+  // the issuer's own number (a 9-digit numeric, matching the N9 spec and the
+  // "numbers not strings" convention above). See AllocationRequest.userId.
+  const userId = (req.userId || req.vatNumber).replace(/\D/g, "");
   const body = {
     invoice_id: req.invoiceId,
     invoice_type: req.invoiceType,
     vat_number: parseInt(req.vatNumber, 10),
+    user_id: parseInt(userId, 10),
     invoice_reference_number: req.invoiceReferenceNumber,
     customer_vat_number: parseInt(req.customerVatNumber || "0", 10) || 0,
     invoice_date: req.invoiceDate,
@@ -320,17 +337,36 @@ export async function requestAllocation(
     typeof v === "object" && v !== null ? (v as Record<string, unknown>) : null;
   const obj = asObj(raw);
 
-  // v2 rejection / gateway error message extraction. `message` is a string on
-  // success ("Invoice approved") and may be an object with `errors[]` on a
-  // business rejection; 4xx gateway errors use `moreInformation`.
-  const extractMessage = (): string | undefined => {
+  // Pull the most specific ITA error code out of the response. A flat 4xx
+  // gateway error carries `code` at the top level (e.g. 446); a per-invoice
+  // business rejection nests it under message.errors[].code; success carries
+  // `status`.
+  const extractCode = (): string | undefined => {
+    if (!obj) return undefined;
+    if (obj.code != null) return String(obj.code);
+    const errs = asObj(obj.message)?.errors;
+    if (Array.isArray(errs) && errs.length) {
+      const first = asObj(errs[0]);
+      if (first?.code != null) return String(first.code);
+    }
+    if (obj.status != null) return String(obj.status);
+    return undefined;
+  };
+
+  // The raw English/technical `message` string, dug out of whichever shape the
+  // response uses. Kept only as a fallback / for logs — never shown verbatim.
+  const extractRawMessage = (): string | undefined => {
     if (!obj) return undefined;
     const msg = obj.message;
     if (typeof msg === "string") return msg;
-    const msgObj = asObj(msg);
-    const errors = msgObj?.errors;
+    const errors = asObj(msg)?.errors;
     if (Array.isArray(errors) && errors.length) {
-      return errors.map((e) => (typeof e === "string" ? e : JSON.stringify(e))).join("; ");
+      return errors
+        .map((e) => {
+          const eo = asObj(e);
+          return typeof e === "string" ? e : String(eo?.message ?? JSON.stringify(e));
+        })
+        .join("; ");
     }
     if (typeof obj.moreInformation === "string") return obj.moreInformation;
     return undefined;
@@ -340,11 +376,23 @@ export async function requestAllocation(
   const approved = obj?.approved === true;
 
   if (!r.ok || !approved || !confirmation || confirmation === "0") {
+    const resultCode = extractCode() ?? String(r.status);
+    const rawMessage = extractRawMessage();
+    // Full upstream body (may carry gov.il internal detail) stays in server
+    // logs only — never surfaced to the client as a raw JSON blob.
+    console.error(
+      "[tax-authority] allocation rejected",
+      "http=", r.status,
+      "code=", resultCode,
+      "raw=", JSON.stringify(raw),
+    );
     return {
       allocationNumber: null,
       confirmationNumber: confirmation || undefined,
-      resultCode: String(obj?.status ?? r.status),
-      resultMessage: extractMessage() || (r.ok ? "rejected" : "API error"),
+      resultCode,
+      // A clean, human Hebrew reason — mapped from the ITA code where known,
+      // otherwise a generic line. The technical English string is dropped.
+      resultMessage: hebrewForItaCode(resultCode, rawMessage),
       raw,
     };
   }
@@ -354,7 +402,32 @@ export async function requestAllocation(
     allocationNumber: confirmation.slice(-9),
     confirmationNumber: confirmation,
     resultCode: String(obj?.status ?? 200),
-    resultMessage: extractMessage(),
+    resultMessage: undefined,
     raw,
   };
+}
+
+/**
+ * Map an Israel-Tax-Authority error code to a concise, user-facing Hebrew
+ * reason. The gateway/business messages come back in technical English (or a
+ * JSON blob), which reads terribly inside our RTL Hebrew card — so we translate
+ * the codes we know and fall back to a generic Hebrew line for the rest. The
+ * raw English is never shown to the user (it stays in server logs).
+ */
+export function hebrewForItaCode(code: string | undefined, _rawMessage?: string): string {
+  switch (code) {
+    case "446":
+      return "חסר שדה מזהה משתמש (ת.ז מבצע ההקצאה) בבקשה";
+    case "460":
+      return "החשבונית לא אושרה על ידי רשות המסים";
+    case "461":
+      return "פרטי החשבונית אינם תקינים";
+    case "462":
+      return "קיימת כבר החלטה עבור חשבונית זו";
+    case "401":
+    case "403":
+      return "החיבור לרשות המסים אינו מורשה — חבר מחדש בהגדרות";
+    default:
+      return "הבקשה נדחתה על ידי רשות המסים";
+  }
 }

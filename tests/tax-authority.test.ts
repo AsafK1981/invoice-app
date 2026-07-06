@@ -3,6 +3,7 @@ import {
   getAllocationThresholdForYear,
   allocationRequiredThreshold,
   requiresAllocationNumber,
+  hebrewForItaCode,
 } from "@/lib/tax-authority";
 import type { InvoiceDocument } from "@/lib/types";
 
@@ -118,6 +119,23 @@ describe("requiresAllocationNumber", () => {
     expect(requiresAllocationNumber(doc({ type: "quote", date: "2026-06-10", total: 50_000 }), BUSINESS_CUSTOMER)).toBe(false);
     expect(requiresAllocationNumber(doc({ type: "proforma", date: "2026-06-10", total: 50_000 }), BUSINESS_CUSTOMER)).toBe(false);
     expect(requiresAllocationNumber(doc({ type: "invoice", date: "2026-06-10", total: 50_000 }), BUSINESS_CUSTOMER)).toBe(false);
+  });
+});
+
+describe("hebrewForItaCode — maps ITA error codes to clean Hebrew (no raw JSON)", () => {
+  it("maps 446 (missing user id/name) to a Hebrew reason", () => {
+    const msg = hebrewForItaCode("446");
+    expect(msg).toContain("מזהה משתמש");
+    // Never leaks the English technical string or JSON punctuation.
+    expect(msg).not.toMatch(/[{}"]|user_id|Requeried/);
+  });
+
+  it("maps known business/auth codes and falls back to a generic Hebrew line", () => {
+    expect(hebrewForItaCode("460")).toContain("לא אושר");
+    expect(hebrewForItaCode("401")).toContain("מורשה");
+    expect(hebrewForItaCode("403")).toContain("מורשה");
+    expect(hebrewForItaCode(undefined)).toBe("הבקשה נדחתה על ידי רשות המסים");
+    expect(hebrewForItaCode("99999")).toBe("הבקשה נדחתה על ידי רשות המסים");
   });
 });
 

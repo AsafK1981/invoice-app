@@ -292,12 +292,16 @@ export async function POST(req: NextRequest) {
     .eq("business_id", business.id);
 
   if (!result.allocationNumber) {
+    // resultMessage is already a clean Hebrew reason (mapped from the ITA code
+    // in tax-authority.ts) — never the raw upstream JSON. Compose it with the
+    // code for reference so the user sees actionable RTL Hebrew, not a blob.
+    const hebrewReason = result.resultMessage || "הבקשה נדחתה על ידי רשות המסים";
     return NextResponse.json(
       {
         ok: false,
-        error:
-          result.resultMessage ||
-          `רשות המיסים דחתה את הבקשה (קוד ${result.resultCode || "לא ידוע"})`,
+        error: result.resultCode
+          ? `רשות המסים דחתה את הבקשה (קוד ${result.resultCode}): ${hebrewReason}`
+          : hebrewReason,
         resultCode: result.resultCode,
       },
       { status: 422 },
