@@ -8,12 +8,13 @@ import {
   allocationRequiredThreshold,
   normalizeCustomerVatNumber,
 } from "@/lib/tax-authority";
-import type { DocumentType } from "@/lib/types";
+import type { DocumentType, InvoiceDocument } from "@/lib/types";
 
 interface Props {
   documentType: DocumentType;
-  /** Document total in ₪ (foreign docs: total × exchange rate). */
-  amountIls: number;
+  /** Pre-VAT subtotal in ₪ (foreign docs: subtotal × exchange rate). The
+   *  allocation threshold is measured on the PRE-VAT amount, not the total. */
+  subtotalIls: number;
   /** Document date (YYYY-MM-DD) — the threshold is date-aware. */
   date: string;
   /** Buyer's business/VAT number. Absent/empty ⇒ private customer (B2C),
@@ -33,7 +34,7 @@ interface Props {
  */
 export function AllocationConnectBanner({
   documentType,
-  amountIls,
+  subtotalIls,
   date,
   customerTaxId,
   allocationNumber = "",
@@ -72,15 +73,16 @@ export function AllocationConnectBanner({
   // Allocation numbers apply only to VAT-charging businesses (עוסק מורשה / חברה).
   if (!loaded || businessType === "exempt" || businessType === null) return null;
   // Only when THIS document actually needs a number (right type + over the
-  // date-aware threshold + a BUSINESS customer). Pass amountIls as both — for
-  // ₪ docs they're equal. A private customer (no tax id) is never gated.
+  // date-aware threshold + a BUSINESS customer). requiresAllocationNumber
+  // gates on the PRE-VAT amount (subtotalIls ?? subtotal), so feed the ₪
+  // subtotal under BOTH keys. A private customer (no tax id) is never gated.
   const needs = requiresAllocationNumber(
     {
       type: documentType,
       date,
-      total: amountIls,
-      totalIls: amountIls,
-    } as never,
+      subtotal: subtotalIls,
+      subtotalIls,
+    } as Pick<InvoiceDocument, "type" | "date" | "subtotal" | "subtotalIls"> as InvoiceDocument,
     customerTaxId,
   );
 

@@ -125,6 +125,35 @@ export interface InvoiceDocument {
   zeroRated?: boolean;
 }
 
+/**
+ * Document types that represent actual revenue (מחזור עסקאות). Price quotes
+ * (הצעת מחיר) and proforma invoices (חשבון עסקה) are pre-payment documents and
+ * are NOT revenue. Credit notes (חשבונית זיכוי) subtract — they're stored
+ * negative — and are handled separately from this list.
+ */
+export const REVENUE_DOCUMENT_TYPES: DocumentType[] = [
+  "receipt",
+  "tax_invoice",
+  "tax_invoice_receipt",
+];
+
+/**
+ * Should this document count toward revenue / income totals?
+ *
+ * Counts revenue types and credit notes (which subtract), but EXCLUDES any
+ * document that has been converted into another one (`convertedToId` set):
+ * on conversion the source (e.g. a quote/proforma) is marked "paid" while the
+ * target receipt is also created, so counting both double-counts the same
+ * revenue. Callers keep their own status filter (e.g. `paid`) and credit-note
+ * sign handling.
+ */
+export function isCountableRevenue(
+  doc: Pick<InvoiceDocument, "type" | "convertedToId">,
+): boolean {
+  if (doc.convertedToId) return false;
+  return doc.type === "credit_note" || REVENUE_DOCUMENT_TYPES.includes(doc.type);
+}
+
 export interface Expense {
   id: string;
   date: string;

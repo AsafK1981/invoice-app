@@ -3,7 +3,12 @@
 import { useMemo } from "react";
 import { Printer, FileText, Users, Tag, TrendingUp, TrendingDown } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
-import { DOCUMENT_TYPE_LABELS, type InvoiceDocument, type Expense } from "@/lib/types";
+import {
+  DOCUMENT_TYPE_LABELS,
+  isCountableRevenue,
+  type InvoiceDocument,
+  type Expense,
+} from "@/lib/types";
 
 interface Props {
   year: number;
@@ -16,7 +21,11 @@ interface Props {
 
 export function TaxYearDetail({ year, documents, expenses, allDocuments, allExpenses }: Props) {
   const stats = useMemo(() => {
-    const paid = documents.filter((d) => d.status === "paid");
+    // Count only real revenue documents: exclude price quotes / proformas and
+    // any doc already converted into another (its revenue lives in the target,
+    // so counting both double-counts). Credit notes stay in (stored negative,
+    // so they subtract). Status filter (paid) is unchanged.
+    const paid = documents.filter((d) => d.status === "paid" && isCountableRevenue(d));
     const totalIncome = paid.reduce((s, d) => s + (d.totalIls ?? d.total), 0);
     const totalExpenses = expenses.reduce((s, e) => s + e.amount, 0);
     const totalVat = paid.reduce((s, d) => s + Math.abs(d.vatIls ?? d.vat), 0);
@@ -57,7 +66,7 @@ export function TaxYearDetail({ year, documents, expenses, allDocuments, allExpe
     // Prior year comparison
     const priorYear = year - 1;
     const priorPaid = allDocuments.filter(
-      (d) => d.status === "paid" && d.date.startsWith(`${priorYear}-`)
+      (d) => d.status === "paid" && isCountableRevenue(d) && d.date.startsWith(`${priorYear}-`)
     );
     const priorIncome = priorPaid.reduce((s, d) => s + (d.totalIls ?? d.total), 0);
     const priorExpensesTotal = allExpenses

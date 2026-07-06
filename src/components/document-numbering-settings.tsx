@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Hash, Pencil, Check, X, AlertTriangle } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 import { getBusinessId } from "@/lib/business-init";
 import {
   DEFAULT_NEXT_NUMBER,
@@ -32,6 +33,7 @@ export function DocumentNumberingSettings() {
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const confirm = useConfirm();
 
   async function load() {
     const bid = getBusinessId();
@@ -97,12 +99,16 @@ export function DocumentNumberingSettings() {
     // confirmation rather than saving silently.
     const used = maxUsed[type];
     if (used !== undefined && value <= used) {
-      const ok = window.confirm(
-        `כבר קיימים מסמכים מסוג ${DOCUMENT_TYPE_LABELS[type]} עד מספר ${used}. ` +
+      const ok = await confirm({
+        title: `להגדיר מספר הבא ל-${value}?`,
+        message:
+          `כבר קיימים מסמכים מסוג ${DOCUMENT_TYPE_LABELS[type]} עד מספר ${used}. ` +
           `הגדרת המספר הבא ל-${value} עלולה ליצור כפילות או מספור לא רציף ` +
           `(מספרים תפוסים ייחסמו בהפקה). מומלץ להגדיר מספר גדול מ-${used}. ` +
-          `להמשיך בכל זאת?`
-      );
+          `להמשיך בכל זאת?`,
+        tone: "danger",
+        confirmLabel: "המשך בכל זאת",
+      });
       if (!ok) return;
     }
     const bid = getBusinessId();

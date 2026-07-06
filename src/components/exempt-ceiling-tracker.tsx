@@ -4,13 +4,8 @@ import { useMemo } from "react";
 import { AlertTriangle, TrendingUp, ShieldCheck } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
 import { getExemptCeiling } from "@/lib/tax-thresholds";
-import type { Business, DocumentType, InvoiceDocument } from "@/lib/types";
-
-// Types that represent actual revenue (מחזור עסקאות). Price quotes (הצעת מחיר)
-// and proforma invoices (חשבון עסקה) are NOT revenue — both are pre-payment
-// documents, so neither counts toward the exempt-dealer ceiling. Credit notes
-// subtract (they're stored negative).
-const REVENUE_TYPES: DocumentType[] = ["receipt", "tax_invoice", "tax_invoice_receipt"];
+import { isCountableRevenue } from "@/lib/types";
+import type { Business, InvoiceDocument } from "@/lib/types";
 
 interface Props {
   business: Business | null;
@@ -33,8 +28,7 @@ export function ExemptCeilingTracker({ business, documents }: Props) {
     return documents
       .filter((d) => d.date.startsWith(String(year)))
       .filter((d) => d.status !== "draft" && d.status !== "cancelled")
-      .filter((d) => !d.convertedToId)
-      .filter((d) => d.type === "credit_note" || REVENUE_TYPES.includes(d.type))
+      .filter((d) => isCountableRevenue(d))
       .reduce((sum, d) => {
         const sign = d.type === "credit_note" ? -1 : 1;
         return sum + sign * (d.totalIls ?? d.total);

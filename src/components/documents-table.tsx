@@ -433,37 +433,17 @@ function RowActions({ doc }: { doc: InvoiceDocument }) {
   const confirm = useConfirm();
   const showToast = useToast();
 
-  // Mirrors the delete logic on the doc detail page: drafts delete cleanly;
-  // quotes (non-draft) get a soft warning + force-delete; receipts and tax
-  // docs get a strong "this should be a credit note" warning + force-delete
-  // escape hatch for test data. Numbering counters are not rolled back.
-  const isLegallyProtected =
-    doc.type === "receipt" ||
-    doc.type === "tax_invoice" ||
-    doc.type === "tax_invoice_receipt" ||
-    doc.type === "credit_note";
-
+  // #15: delete is only valid for drafts. `deleteDocument` throws for any
+  // issued doc (immutable by law — cancel via credit note), so the button is
+  // rendered only for drafts (mirrors the doc detail page) and this handler
+  // only ever runs on a draft.
   async function handleRowDelete(e: React.MouseEvent) {
     e.stopPropagation();
-    let message: string;
-    let confirmLabel: string;
-    if (doc.status === "draft") {
-      message = "פעולה זו לא ניתנת לביטול.";
-      confirmLabel = "מחק";
-    } else if (!isLegallyProtected) {
-      message =
-        "המסמך כבר הופק. המחיקה היא סופית והמספור לא יוחזר — תהיה רצף חסר במספרי המסמכים.";
-      confirmLabel = "מחק בכל זאת";
-    } else {
-      message =
-        "מסמכי מס וקבלות הם רשומות חשבונאיות — הדרך הנכונה לבטל היא הפקת חשבונית זיכוי. אם זה היה ניסיון בלבד שלא נשלח ללקוח אמיתי, אפשר למחוק בכפייה.";
-      confirmLabel = "מחק בכפייה (היה ניסיון)";
-    }
     const ok = await confirm({
       title: `למחוק את ${DOCUMENT_TYPE_LABELS[doc.type]} #${doc.number}?`,
-      message,
+      message: "פעולה זו לא ניתנת לביטול.",
       tone: "danger",
-      confirmLabel,
+      confirmLabel: "מחק",
     });
     if (ok) {
       try {
@@ -513,15 +493,17 @@ function RowActions({ doc }: { doc: InvoiceDocument }) {
           </Tooltip>
         </button>
       )}
-      <button
-        onClick={handleRowDelete}
-        className="text-stone-300 hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer"
-        aria-label="מחק מסמך"
-      >
-        <Tooltip label="מחק מסמך" side="left">
-          <Trash2 className="w-4 h-4" />
-        </Tooltip>
-      </button>
+      {doc.status === "draft" && (
+        <button
+          onClick={handleRowDelete}
+          className="text-stone-300 hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer"
+          aria-label="מחק טיוטה"
+        >
+          <Tooltip label="מחק טיוטה" side="left">
+            <Trash2 className="w-4 h-4" />
+          </Tooltip>
+        </button>
+      )}
     </div>
   );
 }

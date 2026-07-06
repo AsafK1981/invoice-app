@@ -149,8 +149,9 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   // Credit note (#17): a זיכוי must reference the original tax invoice it
   // credits (Israeli law). The user either picks one of their issued tax
   // invoices or enters the number+date manually (for invoices issued
-  // outside this app). Stored as a structured Hebrew line in the notes —
-  // a dedicated `original_document_id` column is a recommended follow-up.
+  // outside this app). Rendered as a structured Hebrew line in the notes; when
+  // a picked invoice is used, a real FK is also persisted to the
+  // `original_document_id` column (see originalDocumentId below).
   const [creditRefDocId, setCreditRefDocId] = useState<string>("");
   const [creditRefNumber, setCreditRefNumber] = useState<string>("");
   const [creditRefDate, setCreditRefDate] = useState<string>("");
@@ -652,11 +653,17 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
 
       const effectiveRate = currency === "ILS" ? 1 : rate;
 
-      // #17: stamp the original-invoice reference onto a credit note's notes
-      // so it renders on the document (no dedicated DB column — see follow-up).
+      // #17: stamp the original-invoice reference onto a credit note's notes so
+      // it renders on the document. The structured FK (when a doc was picked) is
+      // persisted separately in originalDocumentId below.
+      // Name the credited source by its actual type (a מס-קבלה credits differently
+      // from a מס). Manual entry has no known type → default to "חשבונית מס".
+      const creditRefTypeLabel = creditRefPicked
+        ? DOCUMENT_TYPE_LABELS[creditRefPicked.type]
+        : "חשבונית מס";
       const creditRefLine =
         isCreditNote && creditRefNum && creditRefDateVal
-          ? `בגין חשבונית מס מספר ${creditRefNum} מתאריך ${formatDateHe(creditRefDateVal)}`
+          ? `בגין ${creditRefTypeLabel} מספר ${creditRefNum} מתאריך ${formatDateHe(creditRefDateVal)}`
           : "";
       const baseNotes =
         isQuote && validUntil
@@ -862,7 +869,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
       <div className="mb-4">
         <AllocationConnectBanner
           documentType={documentType}
-          amountIls={currency === "ILS" ? total : round2(total * rate)}
+          subtotalIls={currency === "ILS" ? subtotal : round2(subtotal * rate)}
           date={date}
           customerTaxId={(adhocMode ? adhocTaxId.trim() : selectedClient?.taxId) || undefined}
           allocationNumber={allocationNumber}
