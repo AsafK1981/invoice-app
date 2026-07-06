@@ -48,6 +48,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
 
   const [sending, setSending] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [toast, setToast] = useState<{ kind: "success" | "error"; text: string } | null>(null);
   // Mobile-only overflow menu state. The action row has too many buttons
   // to fit on a phone width; on mobile, secondary actions collapse into
@@ -166,21 +167,34 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
     window.print();
   }
 
-  function handleDownloadPdf() {
-    if (!doc) return;
-    // We tried html2canvas + jspdf and html2canvas-pro — both throw on
-    // modern Tailwind colors (oklch, lab, lch). The native browser print
-    // dialog has "Save as PDF" built in and works in every browser, every
-    // OS, every CSS color function. Swap document.title temporarily so
-    // the suggested filename is sensible instead of "Document.pdf".
+  async function handleDownloadPdf() {
+    if (!doc || downloadingPdf) return;
+    // One-click real .pdf download. The server route renders the public
+    // /view page with headless Chrome (full print CSS: RTL, colors,
+    // page-breaks, allocation number) and streams back a PDF — no more
+    // "switch the print destination to Save as PDF" dance.
     const docLabel = DOCUMENT_TYPE_LABELS[doc.type];
-    const filename = `${docLabel}-${doc.number}-${doc.clientName}`.replace(/[\\/:*?"<>|]/g, "-");
-    const original = document.title;
-    document.title = filename;
+    const filename =
+      `${docLabel}-${doc.number}-${doc.clientName}`.replace(/[\\/:*?"<>|]/g, "-") + ".pdf";
+    setDownloadingPdf(true);
     try {
+      const res = await fetch(`/api/documents/${doc.id}/pdf`);
+      if (!res.ok) throw new Error("PDF generation failed");
+      const blob = await res.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = objectUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(objectUrl);
+    } catch {
+      // Fall back to the browser print dialog if the server render fails,
+      // so the user always has a way to get the document out.
       window.print();
     } finally {
-      document.title = original;
+      setDownloadingPdf(false);
     }
   }
 
@@ -528,11 +542,12 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
           )}
           <button
             onClick={handleDownloadPdf}
-            className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-orange-500 border border-orange-600 text-white hover:bg-orange-600"
-            title='הורד PDF — בחר "Save as PDF" בחלון ההדפסה'
+            disabled={downloadingPdf}
+            className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-orange-500 border border-orange-600 text-white hover:bg-orange-600 disabled:opacity-60 disabled:cursor-not-allowed"
+            title="הורד את המסמך כקובץ PDF"
           >
             <Download className="w-4 h-4" />
-            <span className="hidden sm:inline">הורד PDF</span>
+            <span className="hidden sm:inline">{downloadingPdf ? "מכין PDF..." : "הורד PDF"}</span>
           </button>
           <button
             onClick={handlePrint}
@@ -846,7 +861,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
       {!tipDismissed && (
         <div className="no-print card-soft p-4 bg-blue-50 border-blue-200 max-w-[210mm] mx-auto flex items-start gap-3">
           <p className="text-sm text-blue-900 flex-1">
-            <strong>טיפ:</strong> &quot;הורד PDF&quot; פותח את חלון ההדפסה — בחר &quot;Save as PDF&quot; כיעד. &quot;הדפס&quot; עושה את אותו דבר.
+            <strong>טיפ:</strong> &quot;הורד PDF&quot; שומר את המסמך כקובץ PDF בלחיצה אחת. &quot;הדפס&quot; פותח את חלון ההדפסה של הדפדפן.
           </p>
           <button
             onClick={dismissTip}

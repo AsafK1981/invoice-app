@@ -30,6 +30,11 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // Keep the headless-Chrome deps out of the Server Components bundle so the
+  // native chromium binary is loaded via require() rather than traced/bundled
+  // (which breaks its executablePath resolution on Vercel). Both are already
+  // on Next's built-in externals list; listing them here is explicit + safe.
+  serverExternalPackages: ["puppeteer-core", "@sparticuz/chromium"],
   async headers() {
     return [
       {

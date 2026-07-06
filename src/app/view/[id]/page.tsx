@@ -18,6 +18,34 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
   const [signatureName, setSignatureName] = useState("");
   const [approving, setApproving] = useState(false);
   const [approveError, setApproveError] = useState<string | null>(null);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+
+  async function handleDownloadPdf() {
+    if (!doc || downloadingPdf) return;
+    const docLabel = DOCUMENT_TYPE_LABELS[doc.type];
+    const filename =
+      `${docLabel}-${doc.number}-${doc.clientName}`.replace(/[\\/:*?"<>|]/g, "-") + ".pdf";
+    setDownloadingPdf(true);
+    try {
+      const res = await fetch(`/api/documents/${id}/pdf`);
+      if (!res.ok) throw new Error("PDF generation failed");
+      const blob = await res.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = objectUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(objectUrl);
+    } catch {
+      // Fall back to the browser print dialog ("Save as PDF") if the
+      // server-side render fails for any reason, so the user is never stuck.
+      window.print();
+    } finally {
+      setDownloadingPdf(false);
+    }
+  }
 
   async function handleApprove() {
     const name = signatureName.trim();
@@ -184,26 +212,13 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-50 py-8 px-4">
       <div className="no-print max-w-[210mm] mx-auto mb-6 flex items-center justify-end gap-3">
         <button
-          onClick={() => {
-            if (!doc) return;
-            const docLabel = DOCUMENT_TYPE_LABELS[doc.type];
-            const filename = `${docLabel}-${doc.number}-${doc.clientName}`.replace(
-              /[\\/:*?"<>|]/g,
-              "-",
-            );
-            const original = document.title;
-            document.title = filename;
-            try {
-              window.print();
-            } finally {
-              document.title = original;
-            }
-          }}
-          className="inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-5 py-2.5 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200 transition-all"
-          title='הורד PDF — בחר "Save as PDF" בחלון ההדפסה'
+          onClick={handleDownloadPdf}
+          disabled={downloadingPdf}
+          className="inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-5 py-2.5 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+          title="הורד את המסמך כקובץ PDF"
         >
           <Download className="w-4 h-4" />
-          הורד PDF
+          {downloadingPdf ? "מכין PDF..." : "הורד PDF"}
         </button>
         <button
           onClick={() => window.print()}
