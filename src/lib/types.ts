@@ -29,6 +29,8 @@ export interface Business {
   dunningEnabled?: boolean;
   /** Optional friendly From name on dunning emails (defaults to name). */
   dunningFromName?: string;
+  /** Default state for the per-document "round total to whole shekel" toggle. */
+  roundTotalDefault?: boolean;
 }
 
 export interface Client {
@@ -74,6 +76,14 @@ export interface InvoiceDocument {
   subtotal: number;
   vat: number;
   total: number;
+  /**
+   * הפרש עיגול — signed rounding adjustment absorbing the difference when the
+   * final total is rounded to a whole unit of the document currency. 0 (default)
+   * when rounding is off. Invariant: total = subtotal + vat + rounding.
+   */
+  rounding?: number;
+  /** Whether the final total was rounded to a whole shekel (עגל סכום לתשלום). */
+  roundTotal?: boolean;
   paymentMethod?: PaymentMethod;
   notes?: string;
   approvedAt?: string;

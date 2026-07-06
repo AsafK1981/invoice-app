@@ -211,6 +211,72 @@ describe("computeAmounts", () => {
   });
 });
 
+describe("computeAmounts — optional final-total rounding (הפרש עיגול)", () => {
+  it("rounding OFF (default): total unchanged, rounding = 0", () => {
+    const off = computeAmounts([{ quantity: 3, unitPrice: 33.33 }], 18, "exclusive");
+    expect(off.subtotal).toBe(99.99);
+    expect(off.vat).toBe(18);
+    expect(off.total).toBe(117.99);
+    expect(off.rounding).toBe(0);
+    // Explicit false behaves identically to the default.
+    const offExplicit = computeAmounts([{ quantity: 3, unitPrice: 33.33 }], 18, "exclusive", false);
+    expect(offExplicit.total).toBe(117.99);
+    expect(offExplicit.rounding).toBe(0);
+  });
+
+  it("rounding ON: rounds the total to a whole number, keeps subtotal + vat exact", () => {
+    const on = computeAmounts([{ quantity: 3, unitPrice: 33.33 }], 18, "exclusive", true);
+    // subtotal + vat untouched (99.99 + 18.00 = 117.99) → rounds up to 118.
+    expect(on.subtotal).toBe(99.99);
+    expect(on.vat).toBe(18);
+    expect(on.total).toBe(118);
+    expect(Number.isInteger(on.total)).toBe(true);
+    expect(on.rounding).toBe(0.01); // signed diff: 118 - 117.99
+  });
+
+  it("rounding is the correct signed diff (rounds down when < .5)", () => {
+    const on = computeAmounts([{ quantity: 1, unitPrice: 100.4 }], 18, "exclusive", true);
+    // subtotal 100.40, vat round2(18.072)=18.07 → 118.47 → rounds down to 118.
+    expect(on.subtotal).toBe(100.4);
+    expect(on.vat).toBe(18.07);
+    expect(on.total).toBe(118);
+    expect(on.rounding).toBe(-0.47);
+  });
+
+  it("invariant total = subtotal + vat + rounding holds", () => {
+    for (const items of [
+      [{ quantity: 3, unitPrice: 33.33 }],
+      [{ quantity: 1, unitPrice: 100.4 }],
+      [{ quantity: 7, unitPrice: 13.7 }, { quantity: 3, unitPrice: 99.9 }],
+    ]) {
+      const on = computeAmounts(items, 18, "exclusive", true);
+      expect(round2(on.subtotal + on.vat + on.rounding)).toBe(on.total);
+    }
+  });
+
+  it("exempt (vat = 0): rounds the subtotal-only total", () => {
+    const on = computeAmounts([{ quantity: 1, unitPrice: 100.4 }], 0, "exclusive", true);
+    expect(on.subtotal).toBe(100.4);
+    expect(on.vat).toBe(0);
+    expect(on.total).toBe(100);
+    expect(on.rounding).toBe(-0.4);
+    expect(round2(on.subtotal + on.vat + on.rounding)).toBe(on.total);
+  });
+
+  it("rounds half up, robust to float drift on the .50 boundary", () => {
+    // 100.10 + 18.40 = 118.50 (both terms float-imprecise) → must round UP to 119.
+    const on = computeAmounts(
+      [{ quantity: 1, unitPrice: 100.1 }, { quantity: 1, unitPrice: 18.4 }],
+      0,
+      "exclusive",
+      true,
+    );
+    expect(on.subtotal).toBe(118.5);
+    expect(on.total).toBe(119);
+    expect(on.rounding).toBe(0.5);
+  });
+});
+
 describe("canIssueTaxInvoicesByType", () => {
   it("is true for VAT-charging types (authorized / company)", () => {
     expect(canIssueTaxInvoicesByType("authorized")).toBe(true);

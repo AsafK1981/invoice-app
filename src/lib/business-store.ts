@@ -43,6 +43,7 @@ export function useBusiness() {
             defaultDocNotes: data.default_doc_notes ?? undefined,
             dunningEnabled: data.dunning_enabled ?? false,
             dunningFromName: data.dunning_from_name ?? undefined,
+            roundTotalDefault: data.round_total_default ?? false,
           }
         : defaultBusiness
     );
@@ -77,6 +78,7 @@ export async function saveBusiness(business: Business): Promise<void> {
       default_doc_notes: business.defaultDocNotes || null,
       dunning_enabled: business.dunningEnabled ?? false,
       dunning_from_name: business.dunningFromName || null,
+      round_total_default: business.roundTotalDefault ?? false,
     })
     .eq("id", business.id)
     .select();

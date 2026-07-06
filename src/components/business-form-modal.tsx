@@ -342,6 +342,23 @@ export function BusinessFormModal({ open, onClose, business }: Props) {
             />
           </FormField>
         </div>
+
+        <div className="pt-2 border-t border-orange-100">
+          <label className="flex items-start gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={form.roundTotalDefault ?? false}
+              onChange={(e) => update("roundTotalDefault", e.target.checked)}
+              className="w-4 h-4 accent-orange-500 mt-0.5"
+            />
+            <span className="text-sm text-stone-700">
+              עגל סכום לתשלום לשקל שלם כברירת מחדל
+              <span className="block text-xs text-stone-500 mt-0.5">
+                המע״מ נשאר מדויק; הפרש העיגול מוצג כשורה נפרדת. ניתן לשנות לכל מסמך בנפרד.
+              </span>
+            </span>
+          </label>
+        </div>
       </div>
     </Modal>
   );

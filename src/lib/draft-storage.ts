@@ -21,6 +21,9 @@ export interface EditorDraft {
   paymentMethod: PaymentMethod;
   notes: string;
   vatMode: VatMode;
+  /** Round the final total to a whole shekel (הפרש עיגול). Optional for
+   *  backward compatibility with drafts saved before the feature existed. */
+  roundTotal?: boolean;
   items: DraftItem[];
 }
 

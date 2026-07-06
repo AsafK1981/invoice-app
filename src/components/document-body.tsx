@@ -72,6 +72,8 @@ interface Props {
   vat: number;
   vatRate: number;
   total: number;
+  /** הפרש עיגול — signed rounding adjustment; a summary line renders when non-zero. */
+  rounding?: number;
   paymentMethod?: PaymentMethod;
   notes?: string;
   placeholders?: boolean;
@@ -106,6 +108,7 @@ export function DocumentBody({
   vat,
   vatRate,
   total,
+  rounding = 0,
   paymentMethod,
   notes,
   placeholders = false,
@@ -306,6 +309,12 @@ export function DocumentBody({
                 <span className="tabular-nums">{money(vat)}</span>
               </div>
             )
+          )}
+          {rounding !== 0 && (
+            <div className="flex justify-between text-sm">
+              <span>עיגול</span>
+              <span className="tabular-nums">{money(rounding)}</span>
+            </div>
           )}
           <div className="flex justify-between items-baseline pt-3 border-t-[3px] border-orange-500 mt-1 rounded-b-xl bg-orange-50/60 print:bg-orange-50 -mx-3 px-3 py-2.5">
             <span className="font-bold text-stone-900 text-base">{DOC_SUM_LABEL[documentType]}</span>

@@ -53,7 +53,35 @@ interface AmountInput {
   unitPrice: number;
 }
 
-export function computeAmounts(items: AmountInput[], vatRate: number, vatMode: VatMode) {
+/**
+ * Optionally round a computed total to a whole unit of the document currency
+ * using the Israeli הפרש עיגול method: the subtotal and VAT stay EXACTLY as
+ * computed; a signed rounding adjustment (between -0.5 and +0.5) absorbs the
+ * difference so VAT is never distorted. Invariant: total = subtotal + vat +
+ * rounding. When `roundTotal` is false, rounding is 0 and the total is left
+ * unchanged (identical to the pre-feature behavior).
+ *
+ * `base.subtotal`/`base.vat` are assumed already round2'd; round2 on the raw
+ * sum guards against half-shekel float drift (e.g. 100.10 + 18.40) so the
+ * whole-unit rounding lands on the correct side.
+ */
+function withRounding<T extends { subtotal: number; vat: number; total: number }>(
+  base: T,
+  roundTotal: boolean,
+): T & { rounding: number } {
+  if (!roundTotal) return { ...base, rounding: 0 };
+  const target = base.subtotal + base.vat;
+  const roundedTotal = Math.round(round2(target));
+  const rounding = round2(roundedTotal - target);
+  return { ...base, rounding, total: roundedTotal };
+}
+
+export function computeAmounts(
+  items: AmountInput[],
+  vatRate: number,
+  vatMode: VatMode,
+  roundTotal = false,
+) {
   // Header figures are summed from the SAME per-line rounded amounts the
   // document persists (receipt-editor stores round2(qty × round2(unit ×
   // factor)) per line). Rounding the per-line nets and summing those —
@@ -66,7 +94,7 @@ export function computeAmounts(items: AmountInput[], vatRate: number, vatMode: V
   if (vatRate === 0) {
     const lineTotals = items.map((i) => round2(i.quantity * round2(i.unitPrice)));
     const subtotal = sum(lineTotals);
-    return { subtotal, vat: 0, total: subtotal, netUnitPriceFactor: 1 };
+    return withRounding({ subtotal, vat: 0, total: subtotal, netUnitPriceFactor: 1 }, roundTotal);
   }
   if (vatMode === "inclusive") {
     const factor = 1 / (1 + vatRate / 100);
@@ -74,12 +102,18 @@ export function computeAmounts(items: AmountInput[], vatRate: number, vatMode: V
     const lineGross = items.map((i) => round2(i.quantity * i.unitPrice));
     const subtotal = sum(lineNets);
     const total = sum(lineGross);
-    return { subtotal, vat: round2(total - subtotal), total, netUnitPriceFactor: factor };
+    return withRounding(
+      { subtotal, vat: round2(total - subtotal), total, netUnitPriceFactor: factor },
+      roundTotal,
+    );
   }
   const lineNets = items.map((i) => round2(i.quantity * round2(i.unitPrice)));
   const subtotal = sum(lineNets);
   const vat = calculateVat(subtotal, vatRate);
-  return { subtotal, vat, total: round2(subtotal + vat), netUnitPriceFactor: 1 };
+  return withRounding(
+    { subtotal, vat, total: round2(subtotal + vat), netUnitPriceFactor: 1 },
+    roundTotal,
+  );
 }
 
 /**

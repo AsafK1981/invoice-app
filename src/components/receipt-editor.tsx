@@ -123,6 +123,9 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
     { id: crypto.randomUUID(), description: "", quantity: 1, unitPrice: 0 },
   ]);
   const [vatMode, setVatMode] = useState<VatMode>("exclusive");
+  // Round the final total to a whole shekel (הפרש עיגול). Defaults from the
+  // business setting; overridable per document.
+  const [roundTotal, setRoundTotal] = useState<boolean>(business.roundTotalDefault ?? false);
 
   const [sendEmail, setSendEmail] = useState<boolean>(true);
   const [emails, setEmails] = useState<string[]>([""]);
@@ -201,6 +204,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
       setPaymentMethod(d.paymentMethod);
       setNotes(d.notes);
       setVatMode(d.vatMode);
+      setRoundTotal(d.roundTotal ?? business.roundTotalDefault ?? false);
       setItems(d.items);
       setDraftRecovered({ savedAt: stored.savedAt });
     }
@@ -224,6 +228,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
       paymentMethod,
       notes,
       vatMode,
+      roundTotal,
       items,
     };
     if (isDraftEmpty(draft)) {
@@ -246,6 +251,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
     paymentMethod,
     notes,
     vatMode,
+    roundTotal,
     items,
   ]);
 
@@ -262,6 +268,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
     setPaymentMethod("bank_transfer");
     setNotes("");
     setVatMode("exclusive");
+    setRoundTotal(business.roundTotalDefault ?? false);
     setItems([{ id: crypto.randomUUID(), description: "", quantity: 1, unitPrice: 0 }]);
     setDraftRecovered(null);
     setDraftDismissed(true);
@@ -312,10 +319,10 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   }, [currency, date]);
 
   const amounts = useMemo(
-    () => computeAmounts(items, effectiveVatRate, vatMode),
-    [items, effectiveVatRate, vatMode]
+    () => computeAmounts(items, effectiveVatRate, vatMode, roundTotal),
+    [items, effectiveVatRate, vatMode, roundTotal]
   );
-  const { subtotal, vat, total, netUnitPriceFactor } = amounts;
+  const { subtotal, vat, total, rounding, netUnitPriceFactor } = amounts;
 
   useEffect(() => {
     if (emailOverridden) return;
@@ -397,6 +404,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
       setPaymentMethod(p.paymentMethod);
       setNotes(p.notes || "");
       setVatMode(p.vatMode);
+      setRoundTotal(p.roundTotal ?? business.roundTotalDefault ?? false);
       if (Array.isArray(p.items) && p.items.length > 0) {
         setItems(
           p.items.map((it) => ({
@@ -582,6 +590,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
         paymentMethod,
         notes,
         vatMode,
+        roundTotal,
         items: items.map((i) => ({
           id: i.id,
           productId: i.productId,
@@ -696,13 +705,20 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
         subtotal: round2(sign * subtotal),
         vat: round2(sign * vat),
         total: round2(sign * total),
+        rounding: round2(sign * rounding),
+        roundTotal,
         paymentMethod: isPrePayment ? undefined : paymentMethod,
         notes: finalNotes,
         currency,
         exchangeRate: effectiveRate,
         zeroRated,
         ...ilsEquivalents(
-          { subtotal: round2(sign * subtotal), vat: round2(sign * vat), total: round2(sign * total) },
+          {
+            subtotal: round2(sign * subtotal),
+            vat: round2(sign * vat),
+            total: round2(sign * total),
+            rounding: round2(sign * rounding),
+          },
           effectiveRate
         ),
       };
@@ -1152,6 +1168,18 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
               </div>
             )}
 
+            <div className="flex items-center gap-2 text-sm">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={roundTotal}
+                  onChange={(e) => setRoundTotal(e.target.checked)}
+                  className="w-4 h-4 accent-orange-500"
+                />
+                <span className="text-stone-700">עגל סכום לתשלום (לשקל שלם)</span>
+              </label>
+            </div>
+
             {currency !== "ILS" && (
               <FormField label={`שער ${currency}→₪${rateLoading ? " …" : ""}`}>
                 <input
@@ -1363,6 +1391,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
               vat={vat}
               vatRate={effectiveVatRate}
               total={total}
+              rounding={rounding}
               paymentMethod={isPrePayment ? undefined : paymentMethod}
               notes={notes || undefined}
             />
@@ -1382,6 +1411,9 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                 <SummaryRow label="סכום ביניים" value={formatCurrency(subtotal)} />
                 <SummaryRow label={`מע״מ (${effectiveVatRate}%)`} value={formatCurrency(vat)} />
               </>
+            )}
+            {rounding !== 0 && (
+              <SummaryRow label="עיגול" value={formatCurrency(rounding)} />
             )}
             <div className="flex justify-between items-baseline pt-2">
               <span className="text-stone-800 font-semibold">
@@ -1485,6 +1517,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
             vat={vat}
             vatRate={effectiveVatRate}
             total={total}
+            rounding={rounding}
             paymentMethod={isQuote ? undefined : paymentMethod}
             notes={notes || undefined}
           />

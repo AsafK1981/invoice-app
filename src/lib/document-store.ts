@@ -24,6 +24,8 @@ function mapDocRow(row: Record<string, unknown>, items: DocumentItem[]): Invoice
     subtotal: Number(row.subtotal) || 0,
     vat: Number(row.vat) || 0,
     total: Number(row.total) || 0,
+    rounding: row.rounding != null ? Number(row.rounding) : 0,
+    roundTotal: Boolean(row.round_total),
     paymentMethod: (row.payment_method as InvoiceDocument["paymentMethod"]) || undefined,
     notes: (row.notes as string) || undefined,
     approvedAt: (row.approved_at as string) || undefined,
@@ -154,6 +156,8 @@ export async function createDocument(
     p_subtotal: doc.subtotal,
     p_vat: doc.vat,
     p_total: doc.total,
+    p_rounding: doc.rounding ?? 0,
+    p_round_total: doc.roundTotal ?? false,
     p_payment_method: doc.paymentMethod || null,
     p_notes: doc.notes || null,
     p_items: doc.items.map((item) => ({

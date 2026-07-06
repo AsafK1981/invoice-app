@@ -97,6 +97,8 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
           subtotal: Number(docRow.subtotal),
           vat: Number(docRow.vat),
           total: Number(docRow.total),
+          rounding: docRow.rounding != null ? Number(docRow.rounding) : 0,
+          roundTotal: Boolean(docRow.round_total),
           paymentMethod: docRow.payment_method || undefined,
           notes: docRow.notes || undefined,
           approvedAt: docRow.approved_at || undefined,

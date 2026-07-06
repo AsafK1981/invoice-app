@@ -28,6 +28,7 @@ interface Props {
   vat: number;
   vatRate: number;
   total: number;
+  rounding?: number;
   paymentMethod?: PaymentMethod;
   notes?: string;
   currency?: string;
@@ -99,6 +100,7 @@ export function DocumentPreview(props: Props) {
       vat={props.vat}
       vatRate={props.vatRate}
       total={props.total}
+      rounding={props.rounding}
       paymentMethod={props.paymentMethod}
       notes={props.notes}
       currency={props.currency}

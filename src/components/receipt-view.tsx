@@ -48,6 +48,7 @@ export function ReceiptView({ business, client, document: doc }: Props) {
         vat={doc.vat}
         vatRate={vatRate}
         total={doc.total}
+        rounding={doc.rounding}
         paymentMethod={doc.paymentMethod}
         notes={doc.notes}
         allocationNumber={doc.allocationNumber}

@@ -4,6 +4,8 @@ export interface MoneyTriple {
   subtotal: number;
   vat: number;
   total: number;
+  /** Optional הפרש עיגול in the document currency (default 0). */
+  rounding?: number;
 }
 export interface IlsTriple {
   subtotalIls: number;
@@ -13,14 +15,16 @@ export interface IlsTriple {
 
 /**
  * Snapshot the ₪ equivalent of a document's amounts at a given exchange
- * rate (₪ per 1 currency unit). Derives totalIls from the rounded parts so
- * the ₪ figures reconcile internally. For ILS docs the caller passes rate=1
- * → identical numbers.
+ * rate (₪ per 1 currency unit). The own-currency total is already rounded (the
+ * הפרש עיגול lives in `m.rounding`); we derive the ₪ figures from the rounded
+ * parts so they reconcile internally: totalIls = subtotalIls + vatIls +
+ * roundingIls. For ILS docs the caller passes rate=1 → identical numbers.
  */
 export function ilsEquivalents(m: MoneyTriple, rate: number): IlsTriple {
   const subtotalIls = round2(m.subtotal * rate);
   const vatIls = round2(m.vat * rate);
-  return { subtotalIls, vatIls, totalIls: round2(subtotalIls + vatIls) };
+  const roundingIls = round2((m.rounding ?? 0) * rate);
+  return { subtotalIls, vatIls, totalIls: round2(subtotalIls + vatIls + roundingIls) };
 }
 
 // BoI representative rate fetcher. Swappable for tests. Returns ₪ per 1 unit.
