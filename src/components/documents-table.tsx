@@ -19,6 +19,7 @@ import {
   Circle,
   Download,
   Mail,
+  MailX,
   FilePlus2,
 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/format";
@@ -301,6 +302,7 @@ export function DocumentsTable({ documents, limit, showExport = false }: Props) 
                 />
               </th>
               <th className="text-right px-3 sm:px-6 py-3 font-semibold">סטטוס</th>
+              <th className="text-right px-3 sm:px-6 py-3 font-semibold">נשלח</th>
               <SortableHeader
                 label="סכום"
                 sortKey="total"
@@ -315,7 +317,7 @@ export function DocumentsTable({ documents, limit, showExport = false }: Props) 
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-6 py-16 text-center">
+                <td colSpan={9} className="px-6 py-16 text-center">
                   <div className="text-4xl mb-2">🔍</div>
                   <div className="text-sm text-stone-500">
                     {filtersActive ? "אין מסמכים העונים לסינון הנבחר" : "אין מסמכים עדיין"}
@@ -359,27 +361,11 @@ export function DocumentsTable({ documents, limit, showExport = false }: Props) 
                     <td className="px-6 py-3 text-sm text-stone-600 hidden md:table-cell">{formatDate(d.date)}</td>
                     <td className="px-3 sm:px-6 py-3 text-sm">
                       <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-1.5">
-                          <span
-                            className={`inline-block px-2.5 py-1 rounded-full text-xs font-medium ${STATUS_THEMES[d.status]}`}
-                          >
-                            {DOCUMENT_STATUS_LABELS[d.status]}
-                          </span>
-                          {/* Only show the green Mail icon when we positively
-                              know the doc was emailed (emailed_at is set).
-                              Absence is intentionally silent rather than a
-                              MailX — many docs predate the emailed_at column,
-                              so a "not sent" badge would be misleading on
-                              clearly-already-delivered legacy docs. */}
-                          {d.emailedAt && (
-                            <span
-                              title={`נשלח במייל ב-${new Date(d.emailedAt).toLocaleString("he-IL")}`}
-                              className="inline-flex"
-                            >
-                              <Mail className="w-3.5 h-3.5 text-emerald-600 shrink-0" aria-label="נשלח במייל" />
-                            </span>
-                          )}
-                        </div>
+                        <span
+                          className={`inline-block w-fit px-2.5 py-1 rounded-full text-xs font-medium ${STATUS_THEMES[d.status]}`}
+                        >
+                          {DOCUMENT_STATUS_LABELS[d.status]}
+                        </span>
                         {d.status === "sent" &&
                           d.type !== "receipt" &&
                           d.type !== "tax_invoice_receipt" &&
@@ -397,6 +383,22 @@ export function DocumentsTable({ documents, limit, showExport = false }: Props) 
                             return null;
                           })()}
                       </div>
+                    </td>
+                    <td className="px-3 sm:px-6 py-3 text-sm">
+                      {d.emailedAt ? (
+                        <span
+                          title={`נשלח במייל ב-${formatDate(d.emailedAt)}`}
+                          className="inline-flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800"
+                        >
+                          <Mail className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline">נשלח</span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-full text-xs font-medium bg-stone-100 text-stone-500">
+                          <MailX className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline">לא נשלח</span>
+                        </span>
+                      )}
                     </td>
                     <td className="px-3 sm:px-6 py-3 text-sm font-bold text-left text-stone-900 whitespace-nowrap">
                       {formatCurrency(d.total)}
