@@ -237,15 +237,18 @@ export async function deleteDocument(id: string) {
   // Snapshot the doc for audit context BEFORE deleting
   const { data: snap } = await supabase
     .from("documents")
-    .select("type, number, client_name, status")
+    .select("type, number, client_name, status, emailed_at")
     .eq("id", id)
     .maybeSingle();
 
-  // Immutability: an issued tax document may not be hard-deleted (Israeli law
-  // — it can only be reversed with a credit note). Drafts may be deleted freely.
-  if (snap && snap.status !== "draft") {
+  // Deletable iff the document was NEVER emailed to the customer — this covers
+  // drafts AND issued-but-unsent docs (e.g. a mistaken/test issue). A document
+  // that WAS delivered (emailed_at set) is a real record given to the customer
+  // and can only be reversed with a credit note (mirrors the DB immutability
+  // trigger's DELETE rule).
+  if (snap && snap.emailed_at) {
     throw new Error(
-      "לא ניתן למחוק מסמך שהופק. מסמך שהונפק ניתן לביטול רק באמצעות חשבונית זיכוי.",
+      "מסמך שנשלח ללקוח אינו ניתן למחיקה — לביטול הפק חשבונית זיכוי",
     );
   }
 

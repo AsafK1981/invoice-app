@@ -366,45 +366,31 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
   async function handleDelete() {
     if (!doc) return;
 
-    // Quotes (חשבון עסקה / הצעת מחיר) aren't tax-recognized documents —
-    // deleting one is fine. Tax invoices and receipts ARE legally
-    // protected: the prescribed flow is a credit note, not deletion.
-    // For the latter we still allow a force-delete escape hatch (it's
-    // the user's own books, and "this was a test" is a real case),
-    // just with a much sterner confirm dialog.
-    const isLegallyProtected =
-      doc.type === "receipt" ||
-      doc.type === "tax_invoice" ||
-      doc.type === "tax_invoice_receipt" ||
-      doc.type === "credit_note";
-
-    let message: string;
-    let confirmLabel: string;
-    if (doc.status === "draft") {
-      message = "פעולה זו לא ניתנת לביטול.";
-      confirmLabel = "מחק מסמך";
-    } else if (!isLegallyProtected) {
-      // Non-draft quote
-      message =
-        "המסמך כבר הופק. המחיקה היא סופית והמספור לא יוחזר — תהיה רצף חסר במספרי המסמכים.";
-      confirmLabel = "מחק בכל זאת";
-    } else {
-      // Non-draft receipt/tax invoice/credit note: legally should be a
-      // credit note. Force-delete is allowed but only for true test data.
-      message =
-        "מסמכי מס וקבלות הם רשומות חשבונאיות — הדרך הנכונה לבטל היא הפקת חשבונית זיכוי. אם זה היה ניסיון בלבד שלא נשלח ללקוח אמיתי, אפשר למחוק בכפייה. המחיקה לא תוחזר ולא יישאר תיעוד למסמך.";
-      confirmLabel = "מחק בכפייה (היה ניסיון)";
-    }
+    // A document is deletable iff it was never emailed to the customer
+    // (drafts AND issued-but-unsent docs). An emailed doc is a real record the
+    // customer holds — it must be reversed with a credit note, not deleted — so
+    // the button isn't rendered for those. Issued-but-unsent docs still leave a
+    // numbering gap when removed, so we warn about it.
+    const message =
+      doc.status === "draft"
+        ? "למחוק את המסמך? פעולה זו אינה הפיכה."
+        : "למחוק את המסמך? המספר לא יוחזר — ייתכן רצף חסר במספור. פעולה זו אינה הפיכה.";
 
     const ok = await confirm({
       title: `למחוק את מסמך #${doc.number}?`,
       message,
       tone: "danger",
-      confirmLabel,
+      confirmLabel: "מחק מסמך",
     });
-    if (ok) {
+    if (!ok) return;
+    try {
       await deleteDocument(doc.id);
       router.push("/documents");
+    } catch (err) {
+      setToast({
+        kind: "error",
+        text: err instanceof Error ? err.message : "שגיאה במחיקה",
+      });
     }
   }
 
@@ -480,6 +466,20 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
             <Copy className="w-4 h-4" />
             <span className="hidden sm:inline">שכפל</span>
           </button>
+          {/* Delete is offered for any doc that was never emailed to the
+              customer (drafts AND issued-but-unsent). `deleteDocument` throws
+              for an emailed doc (must be cancelled via credit note), so the
+              affordance is hidden for those rather than shown as a dead button. */}
+          {!doc.emailedAt && (
+            <button
+              onClick={handleDelete}
+              className="hidden sm:inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-white border border-rose-200 text-rose-700 hover:bg-rose-50"
+              title="מחק מסמך"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span className="hidden sm:inline">מחק מסמך</span>
+            </button>
+          )}
           <button
             onClick={handleCopyLink}
             className="hidden sm:inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-white border border-orange-200 text-stone-800 hover:bg-orange-50"
@@ -552,19 +552,6 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                 </button>
               );
             })()}
-          {/* #15: delete is only valid for drafts. `deleteDocument` throws
-              for any issued doc (immutable by law — cancel via credit note),
-              so we hide the affordance instead of surfacing a dead button. */}
-          {doc.status === "draft" && (
-            <button
-              onClick={handleDelete}
-              className="hidden sm:inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-white border border-rose-200 text-rose-700 hover:bg-rose-50"
-              title="מחק"
-            >
-              <Trash2 className="w-4 h-4" />
-              <span className="hidden sm:inline">מחק</span>
-            </button>
-          )}
           <button
             onClick={handleDownloadPdf}
             disabled={downloadingPdf}
@@ -667,7 +654,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                   <Printer className="w-4 h-4 text-stone-500" />
                   הדפס
                 </button>
-                {doc.status === "draft" && (
+                {!doc.emailedAt && (
                   <>
                     <div className="border-t border-stone-100 my-0.5" />
                     <button
@@ -679,7 +666,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                       className="inline-flex items-center gap-2 px-3 py-2 min-h-[40px] rounded-xl text-sm font-medium text-rose-700 hover:bg-rose-50 text-right"
                     >
                       <Trash2 className="w-4 h-4" />
-                      מחק
+                      מחק מסמך
                     </button>
                   </>
                 )}
@@ -857,11 +844,17 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                 {DOCUMENT_TYPE_LABELS[doc.type]} #{doc.number}
               </p>
               <p className="text-xs text-stone-600">
-                {doc.type === "receipt" ||
-                doc.type === "tax_invoice" ||
-                doc.type === "tax_invoice_receipt" ||
-                doc.type === "credit_note"
-                  ? "מסמך שהופק — מספרו סופי ואינו ניתן למחיקה. לביטול יש להפיק חשבונית זיכוי."
+                {/* The "cannot be deleted / cancel via credit note" line only
+                    applies once the doc was actually delivered to the customer
+                    (emailed). An issued-but-unsent doc is still deletable, so we
+                    show only the number-immutability note for it and avoid a
+                    line that would contradict the delete button. */}
+                {doc.emailedAt &&
+                (doc.type === "receipt" ||
+                  doc.type === "tax_invoice" ||
+                  doc.type === "tax_invoice_receipt" ||
+                  doc.type === "credit_note")
+                  ? "מסמך שנשלח ללקוח — מספרו סופי ואינו ניתן למחיקה. לביטול יש להפיק חשבונית זיכוי."
                   : "מסמך שהופק — מספרו סופי ואינו ניתן לשינוי."}
               </p>
             </div>

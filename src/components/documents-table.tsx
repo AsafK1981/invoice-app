@@ -21,6 +21,7 @@ import {
   Mail,
   MailX,
   FilePlus2,
+  Pencil,
 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { deleteDocument, updateDocumentStatus } from "@/lib/document-store";
@@ -435,15 +436,19 @@ function RowActions({ doc }: { doc: InvoiceDocument }) {
   const confirm = useConfirm();
   const showToast = useToast();
 
-  // #15: delete is only valid for drafts. `deleteDocument` throws for any
-  // issued doc (immutable by law — cancel via credit note), so the button is
-  // rendered only for drafts (mirrors the doc detail page) and this handler
-  // only ever runs on a draft.
+  // Delete is offered for any doc that was never emailed to the customer
+  // (drafts AND issued-but-unsent). `deleteDocument` throws for an emailed doc
+  // (must be cancelled via credit note), so the button is hidden for those and
+  // this handler only ever runs on a deletable doc.
+  const isDeletable = !doc.emailedAt;
   async function handleRowDelete(e: React.MouseEvent) {
     e.stopPropagation();
     const ok = await confirm({
       title: `למחוק את ${DOCUMENT_TYPE_LABELS[doc.type]} #${doc.number}?`,
-      message: "פעולה זו לא ניתנת לביטול.",
+      message:
+        doc.status === "draft"
+          ? "פעולה זו לא ניתנת לביטול."
+          : "המספר לא יוחזר — ייתכן רצף חסר במספור. פעולה זו לא ניתנת לביטול.",
       tone: "danger",
       confirmLabel: "מחק",
     });
@@ -495,13 +500,25 @@ function RowActions({ doc }: { doc: InvoiceDocument }) {
           </Tooltip>
         </button>
       )}
-      {doc.status === "draft" && (
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          router.push(`/documents/${doc.id}`);
+        }}
+        className="text-stone-300 hover:text-orange-600 p-1.5 rounded-lg hover:bg-orange-50 transition-colors cursor-pointer"
+        aria-label="ערוך מסמך"
+      >
+        <Tooltip label="ערוך" side="left">
+          <Pencil className="w-4 h-4" />
+        </Tooltip>
+      </button>
+      {isDeletable && (
         <button
           onClick={handleRowDelete}
           className="text-stone-300 hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer"
-          aria-label="מחק טיוטה"
+          aria-label="מחק מסמך"
         >
-          <Tooltip label="מחק טיוטה" side="left">
+          <Tooltip label="מחק" side="left">
             <Trash2 className="w-4 h-4" />
           </Tooltip>
         </button>
