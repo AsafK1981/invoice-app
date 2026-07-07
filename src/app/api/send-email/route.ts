@@ -74,6 +74,21 @@ export async function POST(req: NextRequest) {
     const admin = createClient(supabaseUrl, serviceKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
+    // הוראות ניהול ספרים סעיף 18ב: a successful send is the first authoritative
+    // delivery of the מקור. Stamp original_issued_at once (idempotent — only
+    // while NULL) so every later render is העתק. Best-effort: a failure here must
+    // NOT fail the (already-sent) email.
+    const stampOriginalIssued = async () => {
+      try {
+        await admin
+          .from("documents")
+          .update({ original_issued_at: new Date().toISOString() })
+          .eq("id", documentId)
+          .is("original_issued_at", null);
+      } catch (err) {
+        console.error("[send-email] failed to stamp original_issued_at", { documentId, err });
+      }
+    };
     const { data: docRow } = await admin
       .from("documents")
       .select(
@@ -273,6 +288,10 @@ export async function POST(req: NextRequest) {
           documentId,
         });
 
+        // At least one recipient accepted → the מקור has been delivered. Stamp
+        // original_issued_at once (18ב) so future renders become העתק.
+        await stampOriginalIssued();
+
         // Some (but not all) recipients rejected → partial success (207).
         if (rejected.length > 0) {
           return NextResponse.json(
@@ -330,6 +349,10 @@ export async function POST(req: NextRequest) {
     // Resend's send API does not expose a per-recipient rejected[] list, so
     // (unlike the Gmail path) we can only report the addresses we handed off.
     console.log("[send-email] resend ok", { to: recipients, messageId: data?.id, documentId });
+
+    // מקור delivered via Resend → stamp original_issued_at once (18ב).
+    await stampOriginalIssued();
+
     return NextResponse.json({
       ok: true,
       messageId: data?.id,

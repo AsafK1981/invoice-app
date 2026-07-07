@@ -56,6 +56,10 @@ export function ReceiptView({ business, client, document: doc }: Props) {
         exchangeRate={doc.exchangeRate}
         totalIls={doc.totalIls}
         zeroRated={doc.zeroRated}
+        // הוראות ניהול ספרים 18ב: once the מקור has been emitted
+        // (original_issued_at set), every render is a reproduction → "העתק".
+        // While NULL (un-issued) it stays "מקור".
+        copy={Boolean(doc.originalIssuedAt)}
       />
     </div>
   );

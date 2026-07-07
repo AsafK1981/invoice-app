@@ -31,6 +31,7 @@ function mapDocRow(row: Record<string, unknown>, items: DocumentItem[]): Invoice
     approvedAt: (row.approved_at as string) || undefined,
     approvalSignature: (row.approval_signature as string) || undefined,
     emailedAt: (row.emailed_at as string) || undefined,
+    originalIssuedAt: (row.original_issued_at as string) || null,
     emailOpenedAt: (row.email_opened_at as string) || undefined,
     emailOpenCount: row.email_open_count != null ? Number(row.email_open_count) : undefined,
     allocationNumber: (row.allocation_number as string) || undefined,
@@ -440,5 +441,26 @@ export async function markDocumentEmailed(id: string) {
   if (!data || data.length === 0) {
     throw new Error("עדכון לא עבר — ייתכן שאין הרשאה (RLS) או שהמסמך לא קיים");
   }
+  window.dispatchEvent(new Event(CHANGE_EVENT));
+}
+
+/**
+ * Records the FIRST authoritative emission of the document's מקור (original).
+ * הוראות ניהול ספרים סעיף 18ב: the first output delivered to the customer is
+ * "מקור"; every reproduction after it is "העתק". Setting original_issued_at
+ * flips the printed label from מקור → העתק on all subsequent renders.
+ *
+ * IDEMPOTENT: guarded by `.is("original_issued_at", null)` so a re-print /
+ * re-send never resets the timestamp. A 0-row result (already set) is the
+ * expected no-op — NOT an error — so we don't apply the usual 0-row RLS check.
+ * The immutability trigger deliberately permits this column post-issue.
+ */
+export async function markDocumentIssued(id: string) {
+  const { error } = await supabase
+    .from("documents")
+    .update({ original_issued_at: new Date().toISOString() })
+    .eq("id", id)
+    .is("original_issued_at", null);
+  if (error) throw new Error(error.message);
   window.dispatchEvent(new Event(CHANGE_EVENT));
 }

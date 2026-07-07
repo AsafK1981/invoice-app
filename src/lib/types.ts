@@ -89,6 +89,14 @@ export interface InvoiceDocument {
   approvedAt?: string;
   approvalSignature?: string;
   emailedAt?: string;
+  /**
+   * When the document's מקור (original) was first emitted to the customer —
+   * first email send / PDF download / print. NULL ⇒ the doc still renders the
+   * legally-required "מקור" label; once set, every reprint/re-download/re-send
+   * renders "העתק" (הוראות ניהול ספרים סעיף 18ב). A שכפול creates a fresh row
+   * with this NULL again → its own new "מקור".
+   */
+  originalIssuedAt?: string | null;
   /** When the recipient first opened the email (loaded the 1×1 tracking pixel). */
   emailOpenedAt?: string;
   /** Total number of times the tracking pixel has loaded (open + later re-reads). */

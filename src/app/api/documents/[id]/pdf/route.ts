@@ -147,6 +147,20 @@ export async function GET(
       preferCSSPageSize: true,
     });
 
+    // הוראות ניהול ספרים סעיף 18ב — render-then-set ordering: the PDF above was
+    // rendered from /view while original_issued_at was still NULL, so THIS first
+    // download reads "מקור". Now stamp it (idempotent, only while NULL) so the
+    // NEXT download reads "העתק". Best-effort: never fail an already-produced PDF.
+    try {
+      await admin
+        .from("documents")
+        .update({ original_issued_at: new Date().toISOString() })
+        .eq("id", id)
+        .is("original_issued_at", null);
+    } catch (stampErr) {
+      console.error("[pdf] failed to stamp original_issued_at", { id, stampErr });
+    }
+
     const filename = await buildFilename(id);
     const encoded = encodeURIComponent(filename);
 

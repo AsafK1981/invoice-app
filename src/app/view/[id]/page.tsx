@@ -131,6 +131,9 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
           notes: docRow.notes || undefined,
           approvedAt: docRow.approved_at || undefined,
           approvalSignature: docRow.approval_signature || undefined,
+          // הוראות ניהול ספרים 18ב — drives the מקור/העתק label. Once the
+          // original has been emitted (set), the public view renders "העתק".
+          originalIssuedAt: docRow.original_issued_at || null,
           // מספר הקצאה (חשבונית ישראל) — must render on the document the client
           // sees, exactly as on the owner's copy. Without this mapping the
           // public view silently dropped it.

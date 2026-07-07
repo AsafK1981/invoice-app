@@ -21,7 +21,7 @@ import {
   Hash,
   X,
 } from "lucide-react";
-import { useDocument, useDocuments, deleteDocument, updateDocumentStatus, markDocumentEmailed } from "@/lib/document-store";
+import { useDocument, useDocuments, deleteDocument, updateDocumentStatus, markDocumentEmailed, markDocumentIssued } from "@/lib/document-store";
 import { publicDocumentUrl } from "@/lib/public-url";
 import { DocumentAttachmentsSection } from "@/components/document-attachments-section";
 import { DocumentTimeline } from "@/components/document-timeline";
@@ -163,8 +163,18 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
   // be a regulatory violation.
   const allocationGate = requiresAllocationNumber(doc, customerTaxId) && !doc.allocationNumber;
 
-  function handlePrint() {
+  async function handlePrint() {
+    // Render-then-set (18ב): window.print() blocks until the print dialog is
+    // dismissed, so the printed sheet reflects the CURRENT flag (מקור while
+    // NULL). Only AFTER it returns do we stamp original_issued_at — making this
+    // first print the מקור and every later print/download/send an העתק.
     window.print();
+    if (!doc) return;
+    try {
+      await markDocumentIssued(doc.id);
+    } catch {
+      // Non-fatal: a failed stamp must not disrupt the print UX.
+    }
   }
 
   async function handleDownloadPdf() {
