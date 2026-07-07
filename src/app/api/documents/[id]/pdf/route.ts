@@ -4,6 +4,7 @@ import chromium from "@sparticuz/chromium";
 import puppeteer from "puppeteer-core";
 import { CANONICAL_ORIGIN } from "@/lib/public-url";
 import { DOCUMENT_TYPE_LABELS } from "@/lib/types";
+import { clientIp } from "@/lib/rate-limit";
 
 // Headless-Chrome cold start + a full page render can take a while — give the
 // serverless function real headroom so a slow cold boot doesn't 504.
@@ -14,6 +15,34 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// PDF generation spins up headless Chrome (~10s, memory-heavy), so it's far
+// more expensive than a plain read. Keep the per-IP budget tight — a handful
+// per minute is plenty for a human downloading their own documents, while a
+// scripted abuser can't pin our function memory / rack up compute. Mirrors the
+// inline per-IP limiter the other public routes use (public-document/approve).
+const RATE_WINDOW_MS = 60_000;
+const RATE_LIMIT = 10;
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+
+function checkRateLimit(ip: string): { allowed: boolean; retryAfter: number } {
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+  if (!entry || entry.resetAt < now) {
+    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_WINDOW_MS });
+    if (rateLimitMap.size > 5000) {
+      for (const [k, v] of rateLimitMap) {
+        if (v.resetAt < now) rateLimitMap.delete(k);
+      }
+    }
+    return { allowed: true, retryAfter: 0 };
+  }
+  if (entry.count >= RATE_LIMIT) {
+    return { allowed: false, retryAfter: Math.ceil((entry.resetAt - now) / 1000) };
+  }
+  entry.count++;
+  return { allowed: true, retryAfter: 0 };
+}
 
 // Local dev / non-Vercel: fall back to a locally-installed Chrome so the route
 // can be exercised without the bundled @sparticuz binary (which only ships a
@@ -34,17 +63,51 @@ export async function GET(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  // Rate-limit before doing any work — PDF generation is the most expensive
+  // public operation we expose, so cap it per-IP up front.
+  const ip = clientIp(req);
+  const rl = checkRateLimit(ip);
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { ok: false, error: "יותר מדי בקשות. נסה שוב עוד רגע." },
+      { status: 429, headers: { "Retry-After": String(rl.retryAfter) } },
+    );
+  }
+
   const { id } = await params;
   if (!UUID_RE.test(id)) {
     return NextResponse.json({ ok: false, error: "Invalid id" }, { status: 400 });
   }
 
+  const isVercel = !!process.env.VERCEL;
+
+  // Cheap existence pre-check BEFORE launching Chrome. Any random UUID would
+  // otherwise cold-boot headless Chrome (~10s, memory-heavy) just to render a
+  // 404 /view page — a trivial DoS lever. A service-role SELECT id short-
+  // circuits nonexistent ids in milliseconds. No new data exposure: the /view
+  // page this PDF renders is already public by UUID.
+  const admin = createClient(supabaseUrl, serviceKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  const existsRes = await admin
+    .from("documents")
+    .select("id")
+    .eq("id", id)
+    .maybeSingle();
+  if (existsRes.error || !existsRes.data) {
+    return NextResponse.json({ ok: false, error: "המסמך לא נמצא." }, { status: 404 });
+  }
+
   // Navigate Chrome to the app's own public /view page so the PDF reuses the
   // exact print CSS (RTL, print-color-adjust, page breaks, allocation number).
-  // Prefer the canonical production origin; fall back to the request origin so
-  // this still works on preview deploys / local dev.
+  // SSRF guard: on Vercel (production AND preview) always use the trusted
+  // canonical origin — NEVER a request Host/X-Forwarded-Host header, which is
+  // attacker-controllable and could point Chrome at an arbitrary host. Only
+  // truly-local dev (no VERCEL env) falls back to the request origin. Combined
+  // with the validated UUID, Chrome can only ever navigate to our own
+  // canonical /view/<uuid> path.
   const base = (() => {
-    if (process.env.VERCEL_ENV === "production") return CANONICAL_ORIGIN;
+    if (isVercel) return CANONICAL_ORIGIN;
     try {
       return new URL(req.url).origin;
     } catch {
@@ -52,8 +115,6 @@ export async function GET(
     }
   })();
   const url = `${base}/view/${id}`;
-
-  const isVercel = !!process.env.VERCEL;
 
   let browser: Awaited<ReturnType<typeof puppeteer.launch>> | null = null;
   try {
@@ -98,8 +159,12 @@ export async function GET(
       },
     });
   } catch (err) {
+    // Log the full error server-side only. NEVER leak internal detail to the
+    // client — a past failure exposed the bundled chromium filesystem path.
+    // The client-side caller falls back to window.print on any non-OK response.
+    console.error("[pdf] generation failed", err);
     return NextResponse.json(
-      { ok: false, error: err instanceof Error ? err.message : "PDF generation failed" },
+      { ok: false, error: "אירעה שגיאה ביצירת ה-PDF. נסה שוב." },
       { status: 500 },
     );
   } finally {
