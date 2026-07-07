@@ -847,7 +847,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
       {doc.status === "draft" ? (
         <DocumentNumberEditor doc={doc} />
       ) : (
-        <div className="no-print card-soft p-4">
+        <div className="no-print card-soft p-4 max-w-[210mm] mx-auto">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-stone-100 flex items-center justify-center flex-shrink-0">
               <Hash className="w-4 h-4 text-stone-500" />

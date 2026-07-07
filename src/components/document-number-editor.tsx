@@ -49,7 +49,7 @@ export function DocumentNumberEditor({ doc }: { doc: InvoiceDocument }) {
   }
 
   return (
-    <div className="no-print card-soft p-4">
+    <div className="no-print card-soft p-4 max-w-[210mm] mx-auto">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-3 min-w-0">
           <div className="w-9 h-9 rounded-xl bg-orange-50 flex items-center justify-center flex-shrink-0">

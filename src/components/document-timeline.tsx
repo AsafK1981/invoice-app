@@ -186,7 +186,7 @@ export function DocumentTimeline({ document: doc }: Props) {
   if (events.length === 0) return null;
 
   return (
-    <div className="card-soft p-5">
+    <div className="card-soft p-5 max-w-[210mm] mx-auto">
       <h3 className="font-bold text-stone-900 mb-4 flex items-baseline gap-2">
         ציר זמן
         <span className="text-xs font-normal text-stone-500">
