@@ -3,6 +3,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { isAdminEmail } from "@/lib/admin";
 import { checkRate } from "@/lib/rate-limit";
 import { todayInIsrael } from "@/lib/date";
+import { resolveDocumentType, resolveImportDate } from "@/lib/import-mapping";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -37,6 +38,7 @@ type EntityType = "clients" | "products" | "expenses" | "documents";
 type ImportSummary = {
   imported: number;
   skipped: number;
+  skippedInvalidDate?: number;
   errors: string[];
 };
 
@@ -266,19 +268,8 @@ async function importExpenses(sb: SB, businessId: string, rows: ImportRow[]): Pr
   return out;
 }
 
-function resolveDocumentType(raw: string): "receipt" | "tax_invoice" | "tax_invoice_receipt" | "credit_note" | "quote" | "proforma" {
-  const t = raw.trim().toLowerCase();
-  if (!t) return "receipt";
-  if (t === "tax_invoice_receipt" || t.includes("חשבונית מס/קבלה") || t.includes("חשבונית מס קבלה")) return "tax_invoice_receipt";
-  if (t === "credit_note" || t.includes("זיכוי")) return "credit_note";
-  if (t === "proforma" || t.includes("חשבון עסקה") || t.includes("חשבון עיסקה")) return "proforma";
-  if (t === "quote" || t.includes("הצעת מחיר") || t.includes("הצעה")) return "quote";
-  if (t === "tax_invoice" || t === "invoice" || (t.includes("חשבונית") && t.includes("מס"))) return "tax_invoice";
-  return "receipt";
-}
-
 async function importDocuments(sb: SB, businessId: string, rows: ImportRow[]): Promise<ImportSummary> {
-  const out: ImportSummary = { imported: 0, skipped: 0, errors: [] };
+  const out: ImportSummary = { imported: 0, skipped: 0, skippedInvalidDate: 0, errors: [] };
 
   // Cache clients by name → id (we'll create missing ones inline).
   const { data: existingClients } = await sb.from("clients").select("id, name").eq("business_id", businessId);
@@ -308,7 +299,12 @@ async function importDocuments(sb: SB, businessId: string, rows: ImportRow[]): P
     }
 
     const type = resolveDocumentType(pick(row, "סוג", "type"));
-    const date = pick(row, "תאריך", "date") || todayInIsrael();
+    const date = resolveImportDate(pick(row, "תאריך", "date"), todayInIsrael());
+    if (!date) {
+      out.skipped++;
+      out.skippedInvalidDate = (out.skippedInvalidDate ?? 0) + 1;
+      continue;
+    }
     const subject = pick(row, "תיאור", "description", "subject") || "שירות";
     const vatStr = pick(row, 'מע"מ', "מעמ", "vat").replace(/[₪,\s]/g, "");
     const vat = parseFloat(vatStr) || 0;

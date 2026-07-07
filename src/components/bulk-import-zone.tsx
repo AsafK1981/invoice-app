@@ -20,7 +20,8 @@ import { productStore } from "@/lib/product-store";
 import { expenseStore } from "@/lib/expense-store";
 import { getBusinessId } from "@/lib/business-init";
 import { todayInIsrael } from "@/lib/date";
-import type { Client, Product, Expense, DocumentType } from "@/lib/types";
+import { resolveDocumentType, resolveImportDate } from "@/lib/import-mapping";
+import type { Client, Product, Expense } from "@/lib/types";
 
 /**
  * One-click bulk import. The user drops multiple CSV files OR a
@@ -80,17 +81,6 @@ function detectEntity(headers: string[]): EntityType | null {
     return "clients";
   }
   return null;
-}
-
-function resolveDocumentType(raw: string): DocumentType {
-  const t = (raw || "").trim().toLowerCase();
-  if (!t) return "receipt";
-  if (t === "tax_invoice_receipt" || t.includes("חשבונית מס/קבלה") || t.includes("חשבונית מס קבלה")) return "tax_invoice_receipt";
-  if (t === "credit_note" || t.includes("זיכוי")) return "credit_note";
-  if (t === "proforma" || t.includes("חשבון עסקה") || t.includes("חשבון עיסקה")) return "proforma";
-  if (t === "quote" || t.includes("הצעת מחיר") || t.includes("הצעה")) return "quote";
-  if (t === "tax_invoice" || t === "invoice" || (t.includes("חשבונית") && t.includes("מס"))) return "tax_invoice";
-  return "receipt";
 }
 
 export function BulkImportZone() {
@@ -306,7 +296,11 @@ export function BulkImportZone() {
           continue;
         }
         const type = resolveDocumentType(pick(row, "סוג", "type"));
-        const date = pick(row, "תאריך", "date") || todayInIsrael();
+        const date = resolveImportDate(pick(row, "תאריך", "date"), todayInIsrael());
+        if (!date) {
+          skipped++;
+          continue;
+        }
         const description = pick(row, "תיאור", "description") || "שירות";
         const vatStr = pick(row, 'מע"מ', "מעמ", "vat").replace(/[₪,\s]/g, "");
         const vat = parseFloat(vatStr) || 0;

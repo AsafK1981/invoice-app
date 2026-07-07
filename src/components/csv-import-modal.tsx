@@ -10,24 +10,10 @@ import { expenseStore } from "@/lib/expense-store";
 import { supabase } from "@/lib/supabase";
 import { getBusinessId } from "@/lib/business-init";
 import { todayInIsrael } from "@/lib/date";
-import type { Client, Product, Expense, DocumentType } from "@/lib/types";
+import { resolveDocumentType, resolveImportDate } from "@/lib/import-mapping";
+import type { Client, Product, Expense } from "@/lib/types";
 
 type EntityType = "clients" | "products" | "expenses" | "documents";
-
-// Maps Hebrew (and English) document-type labels seen in invoice4u/Morning/etc.
-// exports to our internal DocumentType. Anything we don't recognize falls
-// through to "receipt" — historical imports usually skew that way.
-function resolveDocumentType(raw: string): DocumentType {
-  const t = raw.trim().toLowerCase();
-  if (!t) return "receipt";
-  if (t === "receipt" || t.includes("קבלה") && !t.includes("חשבונית")) return "receipt";
-  if (t === "tax_invoice_receipt" || t.includes("חשבונית מס/קבלה") || t.includes("חשבונית מס קבלה")) return "tax_invoice_receipt";
-  if (t === "tax_invoice" || t === "invoice" || (t.includes("חשבונית") && t.includes("מס"))) return "tax_invoice";
-  if (t === "credit_note" || t.includes("זיכוי")) return "credit_note";
-  if (t === "proforma" || t.includes("חשבון עסקה") || t.includes("חשבון עיסקה")) return "proforma";
-  if (t === "quote" || t.includes("הצעת מחיר") || t.includes("הצעה")) return "quote";
-  return "receipt";
-}
 
 interface Props {
   open: boolean;
@@ -101,6 +87,7 @@ export function CsvImportModal({ open, onClose, entityType }: Props) {
       let imported = 0;
       let skippedNonNumeric = 0;
       let skippedInvalidVat = 0;
+      let skippedInvalidDate = 0;
       // Cache of clients we've already created in this batch — avoids
       // creating the same client twice when two rows share a name and
       // the supabase select hasn't seen the in-flight insert yet.
@@ -182,7 +169,11 @@ export function CsvImportModal({ open, onClose, entityType }: Props) {
           if (!clientName || !Number.isFinite(total) || total <= 0) continue;
 
           const type = resolveDocumentType(row["סוג"] || row["type"] || "");
-          const date = (row["תאריך"] || row["date"] || todayInIsrael()).trim();
+          const date = resolveImportDate(row["תאריך"] || row["date"], todayInIsrael());
+          if (!date) {
+            skippedInvalidDate++;
+            continue;
+          }
           const description = (row["תיאור"] || row["description"] || "").trim() || "שירות";
           const vatRaw = parseFloat((row['מע"מ'] || row["מעמ"] || row["vat"] || "0").replace(/[₪,\s]/g, "")) || 0;
           // Reject rows with VAT > total — almost always a typo or column
@@ -301,6 +292,7 @@ export function CsvImportModal({ open, onClose, entityType }: Props) {
       const skipNotes: string[] = [];
       if (skippedNonNumeric > 0) skipNotes.push(`${skippedNonNumeric} עם מספר לא מספרי`);
       if (skippedInvalidVat > 0) skipNotes.push(`${skippedInvalidVat} עם מע"מ גדול מהסכום`);
+      if (skippedInvalidDate > 0) skipNotes.push(`${skippedInvalidDate} עם תאריך לא תקין`);
       const skipSuffix = skipNotes.length > 0 ? ` (דילוג על ${skipNotes.join(" · ")})` : "";
       setSuccess(`יובאו ${imported} רשומות בהצלחה${skipSuffix}`);
       setPreview([]);
