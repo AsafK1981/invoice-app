@@ -203,6 +203,17 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
       a.click();
       a.remove();
       URL.revokeObjectURL(objectUrl);
+      // Mirror handlePrint (18ב): the route stamps original_issued_at AFTER
+      // producing the bytes, but doesn't notify the client, so our local
+      // doc.originalIssuedAt stays stale and a second download would re-send
+      // מקור. Stamp it here too — refetch propagates the flag so the NEXT
+      // download appends ?copy=1 → העתק. This first download already rendered
+      // מקור (copyParam was empty at click time).
+      try {
+        await markDocumentIssued(doc.id);
+      } catch {
+        // Non-fatal: a failed stamp must not disrupt the download UX.
+      }
     } catch {
       // Fall back to the browser print dialog if the server render fails,
       // so the user always has a way to get the document out.
