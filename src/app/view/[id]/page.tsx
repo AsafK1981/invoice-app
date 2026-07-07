@@ -19,6 +19,17 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
   const [approving, setApproving] = useState(false);
   const [approveError, setApproveError] = useState<string | null>(null);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
+  // מקור/העתק: the customer link is ALWAYS מקור (VAT rule — the buyer must
+  // receive the original). Only when the owner's PDF route explicitly requests
+  // ?copy=1 (for the owner's retained reprint) do we render "העתק". Read from
+  // the URL directly (not useSearchParams) so the page needs no Suspense
+  // boundary — it is fully client-rendered behind a loader anyway.
+  const [copy, setCopy] = useState(false);
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setCopy(new URLSearchParams(window.location.search).get("copy") === "1");
+    }
+  }, []);
 
   async function handleDownloadPdf() {
     if (!doc || downloadingPdf) return;
@@ -233,7 +244,7 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
         </button>
       </div>
 
-      <ReceiptView business={business} client={client} document={doc} />
+      <ReceiptView business={business} client={client} document={doc} copy={copy} />
 
       <PaymentOptionsCard business={business} document={doc} />
 

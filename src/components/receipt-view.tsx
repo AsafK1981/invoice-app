@@ -11,6 +11,11 @@ interface Props {
   business: Business;
   client: Client | null;
   document: InvoiceDocument;
+  // מקור/העתק is decided by the caller, not here. הוראות ניהול ספרים 18ב says the
+  // customer must always receive the מקור, while the owner's retained/reprinted
+  // copy is an העתק once the doc has been issued. Only the owner-facing pages
+  // pass copy=true; the public customer view defaults to false (מקור).
+  copy?: boolean;
 }
 
 function toBodyClient(client: Client | null, fallbackName: string): DocumentBodyClient | null {
@@ -29,7 +34,7 @@ function toBodyClient(client: Client | null, fallbackName: string): DocumentBody
   return null;
 }
 
-export function ReceiptView({ business, client, document: doc }: Props) {
+export function ReceiptView({ business, client, document: doc, copy = false }: Props) {
   const vatRate =
     doc.subtotal !== 0 ? Math.round((doc.vat / doc.subtotal) * 100) : 0;
   const bodyClient = toBodyClient(client, doc.clientName);
@@ -56,10 +61,7 @@ export function ReceiptView({ business, client, document: doc }: Props) {
         exchangeRate={doc.exchangeRate}
         totalIls={doc.totalIls}
         zeroRated={doc.zeroRated}
-        // הוראות ניהול ספרים 18ב: once the מקור has been emitted
-        // (original_issued_at set), every render is a reproduction → "העתק".
-        // While NULL (un-issued) it stays "מקור".
-        copy={Boolean(doc.originalIssuedAt)}
+        copy={copy}
       />
     </div>
   );

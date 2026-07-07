@@ -188,7 +188,11 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
       `${docLabel}-${doc.number}-${doc.clientName}`.replace(/[\\/:*?"<>|]/g, "-") + ".pdf";
     setDownloadingPdf(true);
     try {
-      const res = await fetch(`/api/documents/${doc.id}/pdf`);
+      // Owner reprint: once the doc has been issued/delivered (original_issued_at
+      // set) the owner's retained copy is an העתק; before that it's the מקור.
+      // The customer-facing /view download stays מקור unconditionally.
+      const copyParam = doc.originalIssuedAt ? "?copy=1" : "";
+      const res = await fetch(`/api/documents/${doc.id}/pdf${copyParam}`);
       if (!res.ok) throw new Error("PDF generation failed");
       const blob = await res.blob();
       const objectUrl = URL.createObjectURL(blob);
@@ -860,7 +864,14 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
 
       <AllocationNumberSection doc={doc} customerTaxId={customerTaxId} />
 
-      <ReceiptView business={business} client={client} document={doc} />
+      <ReceiptView
+        business={business}
+        client={client}
+        document={doc}
+        // Owner on-screen view: העתק once the doc has been issued/delivered
+        // (original_issued_at set), else מקור. handlePrint prints THIS view.
+        copy={Boolean(doc.originalIssuedAt)}
+      />
 
       <DocumentAttachmentsSection documentId={doc.id} />
 

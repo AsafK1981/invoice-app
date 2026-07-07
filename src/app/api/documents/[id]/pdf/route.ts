@@ -114,7 +114,13 @@ export async function GET(
       return CANONICAL_ORIGIN;
     }
   })();
-  const url = `${base}/view/${id}`;
+  // מקור/העתק passthrough: the caller decides which label the rendered PDF
+  // should carry. Owner reprints request ?copy=1 (→ "העתק"); the customer's
+  // download omits it (→ "מקור"). We only ever forward the boolean as an
+  // explicit ?copy=1 onto our own validated canonical /view URL — no other part
+  // of the request is trusted, so the SSRF guard above is unaffected.
+  const wantCopy = new URL(req.url).searchParams.get("copy") === "1";
+  const url = `${base}/view/${id}${wantCopy ? "?copy=1" : ""}`;
 
   let browser: Awaited<ReturnType<typeof puppeteer.launch>> | null = null;
   try {
