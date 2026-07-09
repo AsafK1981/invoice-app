@@ -277,7 +277,7 @@ export function DocumentsTable({ documents, limit, showExport = false }: Props) 
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="w-full [&_tr]:divide-x [&_tr]:divide-stone-200/60">
           <thead className="text-xs text-stone-600 bg-stone-50 border-b border-stone-200">
             <tr>
               <SortableHeader
@@ -341,7 +341,7 @@ export function DocumentsTable({ documents, limit, showExport = false }: Props) 
                   <tr
                     key={d.id}
                     onClick={() => router.push(`/documents/${d.id}`)}
-                    className={`border-t border-orange-50 transition-colors cursor-pointer ${theme.row}`}
+                    className={`border-t border-stone-200/60 transition-colors cursor-pointer ${theme.row}`}
                   >
                     <td className="px-3 sm:px-6 py-3 text-sm font-bold text-stone-900 whitespace-nowrap tabular-nums">
                       #{d.number}
