@@ -265,11 +265,11 @@ export function DocumentsTable({ documents, limit, showExport = false }: Props) 
               onClick={() =>
                 exportDocuments(filtered, filtersActive ? "filtered" : undefined)
               }
-              className="inline-flex items-center gap-1.5 min-h-[36px] px-3 rounded-xl text-sm font-medium text-stone-700 bg-white border border-orange-200 hover:bg-orange-50"
-              title="ייצוא לקובץ CSV"
+              className="inline-flex items-center gap-1.5 min-h-[36px] px-4 rounded-xl text-sm font-bold text-white bg-gradient-to-l from-emerald-500 to-teal-500 shadow-sm shadow-emerald-200/70 hover:shadow-md hover:shadow-emerald-300/70 hover:brightness-105 transition-all"
+              title="ייצוא לקובץ CSV / Excel"
             >
-              <Download className="w-3.5 h-3.5" />
-              ייצוא ({filtered.length})
+              <Download className="w-4 h-4" />
+              ייצוא ל-Excel ({filtered.length})
             </button>
           )}
           <span>{filtered.length} מסמכים</span>
@@ -278,7 +278,7 @@ export function DocumentsTable({ documents, limit, showExport = false }: Props) 
 
       <div className="overflow-x-auto">
         <table className="w-full">
-          <thead className="text-xs text-stone-700 bg-white">
+          <thead className="text-xs text-stone-600 bg-stone-50 border-b border-stone-200">
             <tr>
               <SortableHeader
                 label="מספר"
@@ -343,7 +343,7 @@ export function DocumentsTable({ documents, limit, showExport = false }: Props) 
                     onClick={() => router.push(`/documents/${d.id}`)}
                     className={`border-t border-orange-50 transition-colors cursor-pointer ${theme.row}`}
                   >
-                    <td className="px-3 sm:px-6 py-3 text-sm font-bold text-stone-900 whitespace-nowrap">
+                    <td className="px-3 sm:px-6 py-3 text-sm font-bold text-stone-900 whitespace-nowrap tabular-nums">
                       #{d.number}
                       <div className="text-[10px] font-normal text-stone-500 md:hidden mt-0.5">
                         {formatDate(d.date)}
@@ -401,7 +401,7 @@ export function DocumentsTable({ documents, limit, showExport = false }: Props) 
                         </span>
                       )}
                     </td>
-                    <td className="px-3 sm:px-6 py-3 text-sm font-bold text-left text-stone-900 whitespace-nowrap">
+                    <td className="px-3 sm:px-6 py-3 text-sm font-bold text-left text-stone-900 whitespace-nowrap tabular-nums">
                       {formatCurrency(d.total)}
                     </td>
                     <td className="px-2 sm:px-2 py-3 text-center">
