@@ -1,0 +1,448 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import Link from "next/link";
+import { ArrowRight, SlidersHorizontal, Download, Printer } from "lucide-react";
+import { useDocuments } from "@/lib/document-store";
+import { useClients } from "@/lib/client-store";
+import { formatCurrency } from "@/lib/format";
+import {
+  DOCUMENT_STATUS_LABELS,
+  DOCUMENT_TYPE_LABELS,
+  type DocumentStatus,
+  type DocumentType,
+} from "@/lib/types";
+import { filterDocuments, summarize, type ReportFilters } from "@/lib/report-filters";
+
+const ALL_TYPES: DocumentType[] = [
+  "tax_invoice",
+  "tax_invoice_receipt",
+  "receipt",
+  "credit_note",
+  "proforma",
+  "quote",
+];
+
+const STATUS_OPTIONS: ("all" | DocumentStatus)[] = ["all", "paid", "sent", "draft", "cancelled"];
+
+const MONTH_NAMES = [
+  "ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יוני",
+  "יולי", "אוגוסט", "ספטמבר", "אוקטובר", "נובמבר", "דצמבר",
+];
+
+type Preset = string; // "all" | "2026" | "2026-Q1" | "2026-01"
+
+interface PresetBounds {
+  from: string | null;
+  to: string | null;
+}
+
+function lastDayOfMonth(year: number, month1: number): string {
+  const d = new Date(year, month1, 0); // day 0 of next month = last day of this month
+  return `${year}-${String(month1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/** Turn a preset value into inclusive from/to ISO bounds (null = open). */
+function presetBounds(preset: Preset): PresetBounds {
+  if (preset === "all") return { from: null, to: null };
+  if (preset.includes("-Q")) {
+    const [y, q] = preset.split("-Q");
+    const startMonth = (Number(q) - 1) * 3 + 1;
+    return {
+      from: `${y}-${String(startMonth).padStart(2, "0")}-01`,
+      to: lastDayOfMonth(Number(y), startMonth + 2),
+    };
+  }
+  if (/^\d{4}-\d{2}$/.test(preset)) {
+    const [y, m] = preset.split("-");
+    return { from: `${preset}-01`, to: lastDayOfMonth(Number(y), Number(m)) };
+  }
+  // year
+  return { from: `${preset}-01-01`, to: `${preset}-12-31` };
+}
+
+function buildPresetOptions(years: number[]): { value: Preset; label: string }[] {
+  const opts: { value: Preset; label: string }[] = [{ value: "all", label: "כל הזמנים" }];
+  for (const y of years) {
+    opts.push({ value: String(y), label: `שנת ${y}` });
+    opts.push({ value: `${y}-Q1`, label: `${y} · רבעון 1 (ינו-מרץ)` });
+    opts.push({ value: `${y}-Q2`, label: `${y} · רבעון 2 (אפר-יונ)` });
+    opts.push({ value: `${y}-Q3`, label: `${y} · רבעון 3 (יול-ספט)` });
+    opts.push({ value: `${y}-Q4`, label: `${y} · רבעון 4 (אוק-דצמ)` });
+    for (let m = 1; m <= 12; m++) {
+      opts.push({ value: `${y}-${String(m).padStart(2, "0")}`, label: `${MONTH_NAMES[m - 1]} ${y}` });
+    }
+  }
+  return opts;
+}
+
+function fmtDate(iso: string): string {
+  const [y, m, d] = iso.split("-");
+  return `${d}/${m}/${y}`;
+}
+
+export default function CustomReportPage() {
+  const { documents, ready } = useDocuments();
+  const { items: clients } = useClients();
+
+  const [rangeMode, setRangeMode] = useState<"preset" | "custom">("preset");
+  const [preset, setPreset] = useState<Preset>("all");
+  const [fromDate, setFromDate] = useState<string>("");
+  const [toDate, setToDate] = useState<string>("");
+  const [allocation, setAllocation] = useState<ReportFilters["allocation"]>("all");
+  const [clientId, setClientId] = useState<string>("all");
+  const [types, setTypes] = useState<DocumentType[]>(ALL_TYPES);
+  const [status, setStatus] = useState<"all" | DocumentStatus>("all");
+
+  const taxIdByClient = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const c of clients) if (c.taxId) map[c.id] = c.taxId;
+    return map;
+  }, [clients]);
+
+  const yearsWithData = useMemo(() => {
+    const set = new Set<number>();
+    documents.forEach((d) => {
+      const y = parseInt(d.date.slice(0, 4), 10);
+      if (!Number.isNaN(y)) set.add(y);
+    });
+    if (set.size === 0) set.add(new Date().getFullYear());
+    return Array.from(set).sort((a, b) => b - a);
+  }, [documents]);
+
+  const presetOptions = useMemo(() => buildPresetOptions(yearsWithData), [yearsWithData]);
+
+  const filters = useMemo<ReportFilters>(() => {
+    const bounds =
+      rangeMode === "custom"
+        ? { from: fromDate || null, to: toDate || null }
+        : presetBounds(preset);
+    return {
+      from: bounds.from,
+      to: bounds.to,
+      allocation,
+      clientId,
+      types,
+      status,
+    };
+  }, [rangeMode, fromDate, toDate, preset, allocation, clientId, types, status]);
+
+  const rows = useMemo(() => {
+    return filterDocuments(documents, filters)
+      .slice()
+      .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.number - b.number));
+  }, [documents, filters]);
+
+  const totals = useMemo(() => summarize(rows), [rows]);
+
+  function toggleType(t: DocumentType) {
+    setTypes((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
+  }
+
+  function exportCsv() {
+    const headers = [
+      "תאריך",
+      "מספר",
+      "סוג מסמך",
+      "לקוח",
+      "ת.ז / ח.פ",
+      "סכום",
+      "מספר הקצאה",
+      "סטטוס",
+    ];
+    const lines = rows.map((d) =>
+      [
+        fmtDate(d.date),
+        d.number,
+        DOCUMENT_TYPE_LABELS[d.type],
+        d.clientName,
+        d.clientTaxId || taxIdByClient[d.clientId] || "",
+        (d.totalIls ?? d.total).toFixed(2),
+        d.allocationNumber || "",
+        DOCUMENT_STATUS_LABELS[d.status],
+      ]
+        .map((v) => `"${String(v).replace(/"/g, '""')}"`)
+        .join(","),
+    );
+    const csv = "﻿" + [headers.join(","), ...lines].join("\r\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "דוח-מותאם.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="no-print">
+        <Link
+          href="/reports"
+          className="inline-flex items-center gap-1 text-sm text-orange-600 hover:text-orange-700 font-medium"
+        >
+          <ArrowRight className="w-4 h-4" />
+          חזרה לדוחות
+        </Link>
+      </div>
+
+      <div className="flex items-end justify-between flex-wrap gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-stone-900 flex items-center gap-3">
+            <span className="w-11 h-11 rounded-2xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center shadow-sm">
+              <SlidersHorizontal className="w-5 h-5 text-white" />
+            </span>
+            דוח מותאם
+          </h1>
+          <p className="text-sm text-stone-600 mt-2 mr-14">
+            שלב מסננים חופשי — תאריך, הקצאה, לקוח, סוג מסמך וסטטוס — כדי להפיק כל חתך שתרצה.
+          </p>
+        </div>
+        <div className="flex items-center gap-2 no-print">
+          <button
+            onClick={exportCsv}
+            disabled={rows.length === 0}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-white border-2 border-emerald-200 text-stone-800 hover:bg-emerald-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Download className="w-4 h-4 text-emerald-600" />
+            ייצוא Excel/CSV
+          </button>
+          <button
+            onClick={() => window.print()}
+            disabled={rows.length === 0}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-white border-2 border-orange-200 text-stone-800 hover:bg-orange-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Printer className="w-4 h-4 text-orange-600" />
+            הדפסה / PDF
+          </button>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="card-soft p-4 space-y-4 no-print">
+        {/* Date range */}
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center gap-1 bg-stone-100 rounded-xl p-1 w-max max-w-full">
+            <button
+              onClick={() => setRangeMode("preset")}
+              className={`px-3.5 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                rangeMode === "preset" ? "bg-white text-orange-700 shadow-sm" : "text-stone-600 hover:text-stone-900"
+              }`}
+            >
+              תקופה
+            </button>
+            <button
+              onClick={() => setRangeMode("custom")}
+              className={`px-3.5 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                rangeMode === "custom" ? "bg-white text-orange-700 shadow-sm" : "text-stone-600 hover:text-stone-900"
+              }`}
+            >
+              טווח מותאם
+            </button>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            {rangeMode === "preset" ? (
+              <label className="flex items-center gap-2 text-sm font-medium text-stone-700">
+                תקופה:
+                <select
+                  value={preset}
+                  onChange={(e) => setPreset(e.target.value)}
+                  className="input-warm py-2 px-3 text-sm w-auto"
+                >
+                  {presetOptions.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : (
+              <>
+                <label className="flex items-center gap-2 text-sm font-medium text-stone-700">
+                  מתאריך:
+                  <input
+                    type="date"
+                    value={fromDate}
+                    max={toDate || undefined}
+                    onChange={(e) => setFromDate(e.target.value)}
+                    className="input-warm py-2 px-3 text-sm w-auto"
+                    dir="ltr"
+                  />
+                </label>
+                <label className="flex items-center gap-2 text-sm font-medium text-stone-700">
+                  עד תאריך:
+                  <input
+                    type="date"
+                    value={toDate}
+                    min={fromDate || undefined}
+                    onChange={(e) => setToDate(e.target.value)}
+                    className="input-warm py-2 px-3 text-sm w-auto"
+                    dir="ltr"
+                  />
+                </label>
+              </>
+            )}
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-3 pt-3 border-t border-stone-100">
+          {/* Allocation */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-stone-700">הקצאה:</span>
+            <div className="flex items-center gap-1 bg-stone-100 rounded-xl p-1">
+              {([
+                { value: "all", label: "הכל" },
+                { value: "with", label: "עם הקצאה" },
+                { value: "without", label: "ללא הקצאה" },
+              ] as const).map((o) => (
+                <button
+                  key={o.value}
+                  onClick={() => setAllocation(o.value)}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
+                    allocation === o.value ? "bg-white text-orange-700 shadow-sm" : "text-stone-600 hover:text-stone-900"
+                  }`}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Client */}
+          <label className="flex items-center gap-2 text-sm font-medium text-stone-700">
+            לקוח:
+            <select
+              value={clientId}
+              onChange={(e) => setClientId(e.target.value)}
+              className="input-warm py-2 px-3 text-sm w-auto max-w-[16rem]"
+            >
+              <option value="all">כל הלקוחות</option>
+              {clients.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          {/* Status */}
+          <label className="flex items-center gap-2 text-sm font-medium text-stone-700">
+            סטטוס:
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value as "all" | DocumentStatus)}
+              className="input-warm py-2 px-3 text-sm w-auto"
+            >
+              {STATUS_OPTIONS.map((s) => (
+                <option key={s} value={s}>
+                  {s === "all" ? "כל הסטטוסים" : DOCUMENT_STATUS_LABELS[s]}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        {/* Document types */}
+        <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-stone-100">
+          <span className="text-sm font-medium text-stone-700 ml-1">סוגי מסמכים:</span>
+          {ALL_TYPES.map((t) => {
+            const active = types.includes(t);
+            return (
+              <button
+                key={t}
+                onClick={() => toggleType(t)}
+                className={`px-3 py-1.5 rounded-full text-sm font-semibold border-2 transition-colors ${
+                  active
+                    ? "bg-orange-50 border-orange-300 text-orange-800"
+                    : "bg-white border-stone-200 text-stone-500 hover:border-stone-300"
+                }`}
+              >
+                {DOCUMENT_TYPE_LABELS[t]}
+              </button>
+            );
+          })}
+          <div className="flex items-center gap-2 mr-2">
+            <button
+              onClick={() => setTypes(ALL_TYPES)}
+              className="text-xs font-semibold text-orange-600 hover:text-orange-700"
+            >
+              הכל
+            </button>
+            <span className="text-stone-300">·</span>
+            <button
+              onClick={() => setTypes([])}
+              className="text-xs font-semibold text-stone-500 hover:text-stone-700"
+            >
+              נקה
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Report */}
+      <div className="card-soft overflow-hidden">
+        <div className="px-5 py-3.5 border-b border-stone-100 flex items-baseline justify-between">
+          <h2 className="font-bold text-stone-900 text-lg">תוצאות</h2>
+          <span className="text-sm text-stone-600">
+            {totals.count} מסמכים · סה״כ{" "}
+            <span className="font-bold text-orange-700">{formatCurrency(totals.total)}</span>
+          </span>
+        </div>
+        {ready && rows.length === 0 ? (
+          <div className="p-12 text-center text-stone-500">
+            אין מסמכים התואמים למסננים שנבחרו.
+          </div>
+        ) : (
+          <div className="p-5 overflow-x-auto">
+            <table className="w-full text-sm border-separate border-spacing-0 rounded-xl overflow-hidden shadow-sm">
+              <thead>
+                <tr className="bg-gradient-to-l from-orange-500 to-rose-500 text-white">
+                  <th className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">תאריך</th>
+                  <th className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">מספר</th>
+                  <th className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">סוג</th>
+                  <th className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">לקוח</th>
+                  <th className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">ת.ז / ח.פ</th>
+                  <th className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">סכום</th>
+                  <th className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">מספר הקצאה</th>
+                  <th className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap">סטטוס</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((d, i) => {
+                  const taxId = d.clientTaxId || taxIdByClient[d.clientId] || "";
+                  return (
+                    <tr key={d.id} className={`${i % 2 ? "bg-orange-50/40" : "bg-white"} hover:bg-amber-50/40 transition-colors`}>
+                      <td className="px-4 py-3.5 text-center align-middle tabular-nums whitespace-nowrap text-stone-700 border-b border-l border-stone-200">{fmtDate(d.date)}</td>
+                      <td className="px-4 py-3.5 text-center align-middle whitespace-nowrap border-b border-l border-stone-200">
+                        <Link href={`/documents/${d.id}`} className="text-orange-700 hover:underline font-bold">
+                          #{d.number}
+                        </Link>
+                      </td>
+                      <td className="px-4 py-3.5 text-center align-middle whitespace-nowrap text-stone-700 border-b border-l border-stone-200">{DOCUMENT_TYPE_LABELS[d.type]}</td>
+                      <td className="px-4 py-3.5 text-center align-middle text-stone-700 border-b border-l border-stone-200">{d.clientName}</td>
+                      <td className="px-4 py-3.5 text-center align-middle tabular-nums whitespace-nowrap text-stone-700 border-b border-l border-stone-200">{taxId || <span className="text-stone-300">—</span>}</td>
+                      <td className="px-4 py-3.5 text-center align-middle tabular-nums font-extrabold text-stone-900 whitespace-nowrap border-b border-l border-stone-200">{formatCurrency(d.totalIls ?? d.total)}</td>
+                      <td className="px-4 py-3.5 text-center align-middle tabular-nums whitespace-nowrap text-stone-700 border-b border-l border-stone-200">{d.allocationNumber || <span className="text-stone-300">—</span>}</td>
+                      <td className="px-4 py-3.5 text-center align-middle whitespace-nowrap text-stone-700 border-b border-stone-200">{DOCUMENT_STATUS_LABELS[d.status]}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+              <tfoot>
+                <tr className="bg-orange-50 text-stone-900 font-black">
+                  <td className="px-4 py-4 text-center border-t-2 border-l border-orange-200" colSpan={5}>
+                    סה״כ · {totals.count} מסמכים
+                  </td>
+                  <td className="px-4 py-4 text-center tabular-nums whitespace-nowrap border-t-2 border-l border-orange-200">{formatCurrency(totals.total)}</td>
+                  <td className="px-4 py-4 border-t-2 border-l border-orange-200"></td>
+                  <td className="px-4 py-4 border-t-2 border-orange-200"></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

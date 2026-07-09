@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { TrendingUp, TrendingDown, PiggyBank, CalendarDays, Download, FileArchive, BookOpen, Calculator, FileSpreadsheet } from "lucide-react";
+import { TrendingUp, TrendingDown, PiggyBank, CalendarDays, Download, FileArchive, BookOpen, Calculator, FileSpreadsheet, SlidersHorizontal } from "lucide-react";
 import { useDocuments } from "@/lib/document-store";
 import { useExpenses } from "@/lib/expense-store";
 import { useBusiness } from "@/lib/business-store";
@@ -252,6 +252,14 @@ export default function ReportsPage() {
           >
             <FileSpreadsheet className="w-4 h-4 text-sky-600" />
             דוח חשבוניות תקופתי
+          </Link>
+          <Link
+            href="/reports/custom"
+            title="דוח מותאם — שלב מסננים חופשי (תאריך, הקצאה, לקוח, סוג מסמך, סטטוס) והפק כל חתך"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border-2 border-rose-200 text-stone-800 hover:bg-rose-50"
+          >
+            <SlidersHorizontal className="w-4 h-4 text-rose-600" />
+            דוח מותאם
           </Link>
         </div>
       </div>
