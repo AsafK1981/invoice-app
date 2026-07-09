@@ -3,7 +3,14 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { isAdminEmail } from "@/lib/admin";
 import { checkRate } from "@/lib/rate-limit";
 import { todayInIsrael } from "@/lib/date";
-import { resolveDocumentType, resolveImportDate } from "@/lib/import-mapping";
+import { parseAmount } from "@/lib/import-mapping";
+import { mapHeaders } from "@/lib/import-headers";
+import {
+  mapDocumentRow,
+  createSkipAccumulator,
+  createUnmappedTypeCollector,
+  type SkipSummaryEntry,
+} from "@/lib/import-documents";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -38,7 +45,11 @@ type EntityType = "clients" | "products" | "expenses" | "documents";
 type ImportSummary = {
   imported: number;
   skipped: number;
-  skippedInvalidDate?: number;
+  /** Per-reason labelled skip breakdown (documents import only). */
+  skipSummary?: SkipSummaryEntry[];
+  /** Rows whose document-type cell wasn't recognized — imported as receipt but flagged for review. */
+  unmappedType?: number;
+  unmappedTypeSamples?: string[];
   errors: string[];
 };
 
@@ -210,9 +221,8 @@ async function importProducts(sb: SB, businessId: string, rows: ImportRow[]): Pr
   const toInsert: Array<Record<string, string | number | null>> = [];
   for (const row of rows) {
     const name = pick(row, "שם", "name");
-    const priceStr = pick(row, "מחיר", "price").replace(/[₪,\s]/g, "");
-    const price = parseFloat(priceStr);
-    if (!name || !Number.isFinite(price)) {
+    const price = parseAmount(pick(row, "מחיר", "price"));
+    if (!name || price == null) {
       out.skipped++;
       continue;
     }
@@ -241,18 +251,18 @@ async function importProducts(sb: SB, businessId: string, rows: ImportRow[]): Pr
 
 async function importExpenses(sb: SB, businessId: string, rows: ImportRow[]): Promise<ImportSummary> {
   const out: ImportSummary = { imported: 0, skipped: 0, errors: [] };
+  const today = todayInIsrael();
   const toInsert: Array<Record<string, string | number | null>> = [];
   for (const row of rows) {
     const supplier = pick(row, "ספק", "supplier");
-    const amountStr = pick(row, "סכום", "amount").replace(/[₪,\s]/g, "");
-    const amount = parseFloat(amountStr);
-    if (!supplier || !Number.isFinite(amount) || amount <= 0) {
+    const amount = parseAmount(pick(row, "סכום", "amount"));
+    if (!supplier || amount == null || amount <= 0) {
       out.skipped++;
       continue;
     }
     toInsert.push({
       business_id: businessId,
-      date: pick(row, "תאריך", "date") || todayInIsrael(),
+      date: pick(row, "תאריך", "date") || today,
       category: pick(row, "קטגוריה", "category") || "אחר",
       supplier,
       amount,
@@ -269,7 +279,15 @@ async function importExpenses(sb: SB, businessId: string, rows: ImportRow[]): Pr
 }
 
 async function importDocuments(sb: SB, businessId: string, rows: ImportRow[]): Promise<ImportSummary> {
-  const out: ImportSummary = { imported: 0, skipped: 0, skippedInvalidDate: 0, errors: [] };
+  const out: ImportSummary = { imported: 0, skipped: 0, errors: [] };
+  const skips = createSkipAccumulator();
+  const unmappedTypes = createUnmappedTypeCollector();
+  const today = todayInIsrael();
+
+  // Resolve columns once via the shared cross-vendor header-alias layer, so a
+  // Morning / iCount / Rivhit / Hashavshevet / generic-Excel export lands on
+  // the same internal fields as an Invoice4U one.
+  const headersMap = mapHeaders(Object.keys(rows[0] ?? {}));
 
   // Cache clients by name → id (we'll create missing ones inline).
   const { data: existingClients } = await sb.from("clients").select("id, name").eq("business_id", businessId);
@@ -281,46 +299,23 @@ async function importDocuments(sb: SB, businessId: string, rows: ImportRow[]): P
   // pick a number that already exists in the DB.
   const maxByType = new Map<string, number>();
   const docsToInsert: Array<Record<string, unknown>> = [];
+  // Rows dropped because their client couldn't be created (not a mapDocumentRow
+  // skip reason) — folded into the skipped total but not the per-reason summary.
+  let clientErrorSkips = 0;
 
   for (const row of rows) {
-    const numberRaw = pick(row, "מספר", "number");
-    const clientName = pick(row, "לקוח", "client", "client_name");
-    const totalStr = pick(row, "סכום", "total").replace(/[₪,\s]/g, "");
-    const total = parseFloat(totalStr);
+    const mapped = mapDocumentRow(row, headersMap, today);
+    if (!mapped.ok) {
+      skips.add(mapped.skipReason);
+      continue;
+    }
+    const { record, typeMatched, typeRaw } = mapped;
+    const { description, ...docFields } = record;
 
-    if (!/^\d+$/.test(numberRaw)) {
-      out.skipped++;
-      continue;
-    }
-    const number = parseInt(numberRaw, 10);
-    if (!clientName || !Number.isFinite(total) || total <= 0) {
-      out.skipped++;
-      continue;
-    }
-
-    const type = resolveDocumentType(pick(row, "סוג", "type"));
-    const date = resolveImportDate(pick(row, "תאריך", "date"), todayInIsrael());
-    if (!date) {
-      out.skipped++;
-      out.skippedInvalidDate = (out.skippedInvalidDate ?? 0) + 1;
-      continue;
-    }
-    const subject = pick(row, "תיאור", "description", "subject") || "שירות";
-    const vatStr = pick(row, 'מע"מ', "מעמ", "vat").replace(/[₪,\s]/g, "");
-    const vat = parseFloat(vatStr) || 0;
-    if (vat > total) {
-      out.skipped++;
-      continue;
-    }
-    const subtotal = total - vat;
-    const statusRaw = pick(row, "סטטוס", "status").toLowerCase();
-    let status: "draft" | "sent" | "paid" | "cancelled" = "paid";
-    if (statusRaw === "draft" || statusRaw.includes("טיוטה")) status = "draft";
-    else if (statusRaw === "sent" || statusRaw.includes("נשלח")) status = "sent";
-    else if (statusRaw === "cancelled" || statusRaw.includes("בוטל")) status = "cancelled";
-    else if (type === "quote" || type === "proforma") status = "sent";
+    if (!typeMatched) unmappedTypes.add(typeRaw);
 
     // Find or create client by name.
+    const clientName = record.client_name;
     let clientId = clientByName.get(clientName.toLowerCase().trim());
     if (!clientId) {
       const { data: newClient, error: clientErr } = await sb
@@ -330,26 +325,19 @@ async function importDocuments(sb: SB, businessId: string, rows: ImportRow[]): P
         .single();
       if (clientErr) {
         out.errors.push(`קליינט ${clientName}: ${clientErr.message}`);
-        out.skipped++;
+        clientErrorSkips++;
         continue;
       }
       clientId = newClient.id;
       clientByName.set(clientName.toLowerCase().trim(), clientId!);
     }
 
-    maxByType.set(type, Math.max(maxByType.get(type) ?? 0, number));
+    maxByType.set(record.type, Math.max(maxByType.get(record.type) ?? 0, record.number));
     docsToInsert.push({
       business_id: businessId,
-      type,
-      number,
-      date,
       client_id: clientId,
-      client_name: clientName,
-      subject,
-      status,
-      subtotal,
-      vat,
-      total,
+      subject: description,
+      ...docFields,
     });
   }
 
@@ -392,5 +380,9 @@ async function importDocuments(sb: SB, businessId: string, rows: ImportRow[]): P
     }
   }
 
+  out.skipped = skips.total + clientErrorSkips;
+  out.skipSummary = skips.toSkipSummary();
+  out.unmappedType = unmappedTypes.count;
+  out.unmappedTypeSamples = unmappedTypes.samples;
   return out;
 }

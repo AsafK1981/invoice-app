@@ -1,7 +1,6 @@
 "use client";
 
 import { useRef, useState } from "react";
-import Papa from "papaparse";
 import { Upload, Users, Package, Wallet, FileText, AlertCircle, CheckCircle2 } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 import { clientStore } from "@/lib/client-store";
@@ -10,7 +9,13 @@ import { expenseStore } from "@/lib/expense-store";
 import { supabase } from "@/lib/supabase";
 import { getBusinessId } from "@/lib/business-init";
 import { todayInIsrael } from "@/lib/date";
-import { resolveDocumentType, resolveImportDate } from "@/lib/import-mapping";
+import { mapHeaders } from "@/lib/import-headers";
+import {
+  mapDocumentRow,
+  createSkipAccumulator,
+  createUnmappedTypeCollector,
+} from "@/lib/import-documents";
+import { parseCsvFile } from "@/lib/import-decode";
 import type { Client, Product, Expense } from "@/lib/types";
 
 type EntityType = "clients" | "products" | "expenses" | "documents";
@@ -51,6 +56,7 @@ const labels: Record<EntityType, { title: string; icon: typeof Users; columns: s
 export function CsvImportModal({ open, onClose, entityType }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<ParsedRow[]>([]);
+  const [headers, setHeaders] = useState<string[]>([]);
   const [importing, setImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -58,23 +64,19 @@ export function CsvImportModal({ open, onClose, entityType }: Props) {
   const config = labels[entityType];
   const Icon = config.icon;
 
-  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     setError(null);
     setSuccess(null);
 
-    Papa.parse<ParsedRow>(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: (results) => {
-        if (results.errors.length > 0) {
-          setError("שגיאה בקריאת הקובץ: " + results.errors[0].message);
-          return;
-        }
-        setPreview(results.data);
-      },
-    });
+    try {
+      const { rows, headers: parsedHeaders } = await parseCsvFile(file);
+      setPreview(rows);
+      setHeaders(parsedHeaders);
+    } catch (err) {
+      setError("שגיאה בקריאת הקובץ: " + (err instanceof Error ? err.message : String(err)));
+    }
   }
 
   async function handleImport() {
@@ -85,9 +87,14 @@ export function CsvImportModal({ open, onClose, entityType }: Props) {
 
     try {
       let imported = 0;
-      let skippedNonNumeric = 0;
-      let skippedInvalidVat = 0;
-      let skippedInvalidDate = 0;
+      const today = todayInIsrael();
+      const skips = createSkipAccumulator();
+      const unmappedTypes = createUnmappedTypeCollector();
+      // Resolve document columns once via the shared cross-vendor header-alias
+      // layer, so exports from any Israeli invoicing app map to the same fields.
+      // Use the headers returned by parseCsvFile (they include columns that are
+      // empty in the first data row, which Object.keys(preview[0]) would miss).
+      const docHeadersMap = mapHeaders(headers);
       // Cache of clients we've already created in this batch — avoids
       // creating the same client twice when two rows share a name and
       // the supabase select hasn't seen the in-flight insert yet.
@@ -151,46 +158,15 @@ export function CsvImportModal({ open, onClose, entityType }: Props) {
           imported++;
         } else if (entityType === "documents") {
           const businessId = importBusinessId!;
-          const numberRaw = (row["מספר"] || row["number"] || "").trim();
-          const clientName = (row["לקוח"] || row["client"] || row["client_name"] || "").trim();
-          const totalRaw = (row["סכום"] || row["total"] || "0").replace(/[₪,\s]/g, "");
-          const total = parseFloat(totalRaw);
-          // Strict integer: reject "INV-0042", "2024-001", etc. rather than
-          // silently truncating with parseInt (which would mangle the
-          // original number the import explicitly promises to preserve).
-          // If anyone needs alphanumeric numbers, they need a schema change
-          // (documents.number is currently int).
-          const isIntNumber = /^\d+$/.test(numberRaw);
-          if (!isIntNumber) {
-            skippedNonNumeric++;
+          const mapped = mapDocumentRow(row, docHeadersMap, today);
+          if (!mapped.ok) {
+            skips.add(mapped.skipReason);
             continue;
           }
-          const number = parseInt(numberRaw, 10);
-          if (!clientName || !Number.isFinite(total) || total <= 0) continue;
-
-          const type = resolveDocumentType(row["סוג"] || row["type"] || "");
-          const date = resolveImportDate(row["תאריך"] || row["date"], todayInIsrael());
-          if (!date) {
-            skippedInvalidDate++;
-            continue;
-          }
-          const description = (row["תיאור"] || row["description"] || "").trim() || "שירות";
-          const vatRaw = parseFloat((row['מע"מ'] || row["מעמ"] || row["vat"] || "0").replace(/[₪,\s]/g, "")) || 0;
-          // Reject rows with VAT > total — almost always a typo or column
-          // misalignment, and would otherwise insert a negative subtotal.
-          if (vatRaw > total) {
-            skippedInvalidVat++;
-            continue;
-          }
-          const vat = vatRaw;
-          const subtotal = total - vat;
-          const statusRaw = (row["סטטוס"] || row["status"] || "").trim().toLowerCase();
-          let status: "draft" | "sent" | "paid" | "cancelled" = "paid";
-          if (statusRaw === "draft" || statusRaw.includes("טיוטה")) status = "draft";
-          else if (statusRaw === "sent" || statusRaw.includes("נשלח")) status = "sent";
-          else if (statusRaw === "cancelled" || statusRaw.includes("בוטל")) status = "cancelled";
-          else if (statusRaw === "paid" || statusRaw.includes("שולם")) status = "paid";
-          else if (type === "quote" || type === "proforma") status = "sent";
+          const { record, typeMatched } = mapped;
+          const { description, ...docFields } = record;
+          const { type, number, client_name: clientName, subtotal } = record;
+          if (!typeMatched) unmappedTypes.add(mapped.typeRaw);
 
           // Skip duplicates: same business, same type, same number
           const { data: existing } = await supabase
@@ -234,15 +210,8 @@ export function CsvImportModal({ open, onClose, entityType }: Props) {
           const { error: dErr } = await supabase.from("documents").insert({
             id: docId,
             business_id: businessId,
-            type,
-            number,
-            date,
             client_id: clientId,
-            client_name: clientName,
-            status,
-            subtotal,
-            vat,
-            total,
+            ...docFields,
           });
           if (dErr) continue;
 
@@ -289,13 +258,17 @@ export function CsvImportModal({ open, onClose, entityType }: Props) {
         }
       }
 
-      const skipNotes: string[] = [];
-      if (skippedNonNumeric > 0) skipNotes.push(`${skippedNonNumeric} עם מספר לא מספרי`);
-      if (skippedInvalidVat > 0) skipNotes.push(`${skippedInvalidVat} עם מע"מ גדול מהסכום`);
-      if (skippedInvalidDate > 0) skipNotes.push(`${skippedInvalidDate} עם תאריך לא תקין`);
+      // Build the skip summary from the canonical per-reason labels so the
+      // wording can never drift from the analyzer / other import paths.
+      const skipNotes = skips.toSkipSummary().map((s) => `${s.count} ${s.label}`);
       const skipSuffix = skipNotes.length > 0 ? ` (דילוג על ${skipNotes.join(" · ")})` : "";
-      setSuccess(`יובאו ${imported} רשומות בהצלחה${skipSuffix}`);
+      // Rows whose document-type cell wasn't recognized are still imported (as
+      // קבלה) rather than dropped — surface the count so the user can review.
+      const typeWarn =
+        unmappedTypes.count > 0 ? ` · ${unmappedTypes.count} עם סוג לא מזוהה (יובאו כקבלה)` : "";
+      setSuccess(`יובאו ${imported} רשומות בהצלחה${skipSuffix}${typeWarn}`);
       setPreview([]);
+      setHeaders([]);
       if (fileInputRef.current) fileInputRef.current.value = "";
       setTimeout(() => onClose(), 1500);
     } catch (err) {

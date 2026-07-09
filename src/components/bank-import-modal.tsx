@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import Papa from "papaparse";
 import {
   Upload,
   AlertCircle,
@@ -17,6 +16,8 @@ import { createNotificationClient } from "@/lib/notifications-store";
 import type { InvoiceDocument } from "@/lib/types";
 import { DOCUMENT_TYPE_LABELS } from "@/lib/types";
 import { formatCurrency, formatDate } from "@/lib/format";
+import { parseCsvFile } from "@/lib/import-decode";
+import { parseAmount } from "@/lib/import-mapping";
 
 interface Props {
   open: boolean;
@@ -62,6 +63,10 @@ const DEBIT_COLS = [/^חובה$/i, /^debit$/i];
 const DESC_COLS = [/^תיאור\s*פעולה$/i, /^פרטים$/i, /^תיאור$/i, /^description$/i, /^memo$/i];
 const REF_COLS = [/^אסמכתא$/i, /^reference$/i, /^ref$/i, /^transaction\s*id$/i];
 
+// Deliberately local, NOT the shared normalizeImportDate: bank/credit-card
+// statements are historical, so a 2-digit year pivots >50 → 19xx (an old
+// statement from '98), whereas the shared importer always assumes 20xx. Do not
+// replace this with normalizeImportDate.
 function parseDate(raw: string): string | null {
   const s = raw.trim();
   // ISO format already
@@ -76,12 +81,6 @@ function parseDate(raw: string): string | null {
     return `${year}-${month}-${day}`;
   }
   return null;
-}
-
-function parseAmount(raw: string): number {
-  if (!raw) return NaN;
-  const s = String(raw).replace(/[₪,\s]/g, "");
-  return parseFloat(s);
 }
 
 const TOLERANCE_AMOUNT = 1.0;
@@ -128,96 +127,95 @@ export function BankImportModal({ open, onClose, unpaidDocuments, onPaid }: Prop
     onClose();
   };
 
-  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     setError(null);
 
-    Papa.parse<Record<string, string>>(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: (results) => {
-        if (results.errors.length > 0) {
-          setError("שגיאה בקריאת הקובץ: " + results.errors[0].message);
-          return;
-        }
-        const rows = results.data;
-        if (rows.length === 0) {
-          setError("הקובץ ריק");
-          return;
-        }
+    // Decode with encoding detection (cp1255 Israeli bank exports) before
+    // parsing — a raw Papa.parse(file) would mojibake Hebrew column headers.
+    let rows: Record<string, string>[];
+    try {
+      ({ rows } = await parseCsvFile(file));
+    } catch (err) {
+      setError("שגיאה בקריאת הקובץ: " + (err instanceof Error ? err.message : String(err)));
+      return;
+    }
 
-        const headers = Object.keys(rows[0] || {});
-        const dateCol = detectColumn(headers, DATE_COLS);
-        const amountCol = detectColumn(headers, AMOUNT_COLS);
-        const creditCol = detectColumn(headers, CREDIT_COLS);
-        const debitCol = detectColumn(headers, DEBIT_COLS);
-        const descCol = detectColumn(headers, DESC_COLS);
-        const refCol = detectColumn(headers, REF_COLS);
+    if (rows.length === 0) {
+      setError("הקובץ ריק");
+      return;
+    }
 
-        if (!dateCol) {
-          setError(
-            `לא זוהה עמודת תאריך. עמודות בקובץ: ${headers.join(", ")}. שמרו את הקובץ מהבנק כ-CSV עם כותרות סטנדרטיות.`,
-          );
-          return;
-        }
-        if (!amountCol && !creditCol) {
-          setError(
-            `לא זוהתה עמודת סכום. עמודות: ${headers.join(", ")}. צריך עמודה "סכום", "Amount" או "זכות".`,
-          );
-          return;
-        }
+    const headers = Object.keys(rows[0] || {});
+    const dateCol = detectColumn(headers, DATE_COLS);
+    const amountCol = detectColumn(headers, AMOUNT_COLS);
+    const creditCol = detectColumn(headers, CREDIT_COLS);
+    const debitCol = detectColumn(headers, DEBIT_COLS);
+    const descCol = detectColumn(headers, DESC_COLS);
+    const refCol = detectColumn(headers, REF_COLS);
 
-        const parsed: ParsedTx[] = [];
-        rows.forEach((row, idx) => {
-          const dateStr = parseDate(row[dateCol] || "");
-          if (!dateStr) return;
+    if (!dateCol) {
+      setError(
+        `לא זוהה עמודת תאריך. עמודות בקובץ: ${headers.join(", ")}. שמרו את הקובץ מהבנק כ-CSV עם כותרות סטנדרטיות.`,
+      );
+      return;
+    }
+    if (!amountCol && !creditCol) {
+      setError(
+        `לא זוהתה עמודת סכום. עמודות: ${headers.join(", ")}. צריך עמודה "סכום", "Amount" או "זכות".`,
+      );
+      return;
+    }
 
-          let amount = NaN;
-          if (creditCol && row[creditCol]) {
-            amount = parseAmount(row[creditCol]);
-          } else if (amountCol) {
-            const raw = parseAmount(row[amountCol] || "");
-            if (!Number.isNaN(raw)) {
-              if (debitCol && row[debitCol] && parseAmount(row[debitCol]) > 0) {
-                return; // it's a debit row
-              }
-              amount = raw;
-            }
+    const parsed: ParsedTx[] = [];
+    rows.forEach((row, idx) => {
+      const dateStr = parseDate(row[dateCol] || "");
+      if (!dateStr) return;
+
+      let amount: number | null = null;
+      if (creditCol && row[creditCol]) {
+        amount = parseAmount(row[creditCol]);
+      } else if (amountCol) {
+        const raw = parseAmount(row[amountCol] || "");
+        if (raw != null) {
+          if (debitCol && row[debitCol] && (parseAmount(row[debitCol]) ?? 0) > 0) {
+            return; // it's a debit row
           }
-
-          if (Number.isNaN(amount) || amount <= 0) return;
-
-          parsed.push({
-            rowIndex: idx,
-            date: dateStr,
-            description: descCol ? row[descCol] || "" : "",
-            amount,
-            reference: refCol ? row[refCol] || undefined : undefined,
-          });
-        });
-
-        if (parsed.length === 0) {
-          setError(
-            "לא נמצאו תנועות זכות (כסף נכנס) בקובץ. בדקו שהקובץ כולל את העמודות הנכונות.",
-          );
-          return;
+          amount = raw;
         }
+      }
 
-        const newMatches: MatchRow[] = parsed.map((tx) => {
-          const candidates = findCandidates(tx, unpaidDocuments);
-          return {
-            tx,
-            candidates,
-            selectedDocId: candidates[0]?.id ?? null,
-            confirmed: candidates.length > 0,
-          };
-        });
+      if (amount == null || amount <= 0) return;
 
-        setMatches(newMatches);
-        setStep("review");
-      },
+      parsed.push({
+        rowIndex: idx,
+        date: dateStr,
+        description: descCol ? row[descCol] || "" : "",
+        amount,
+        reference: refCol ? row[refCol] || undefined : undefined,
+      });
     });
+
+    if (parsed.length === 0) {
+      setError(
+        "לא נמצאו תנועות זכות (כסף נכנס) בקובץ. בדקו שהקובץ כולל את העמודות הנכונות.",
+      );
+      return;
+    }
+
+    const newMatches: MatchRow[] = parsed.map((tx) => {
+      const candidates = findCandidates(tx, unpaidDocuments);
+      return {
+        tx,
+        candidates,
+        selectedDocId: candidates[0]?.id ?? null,
+        confirmed: candidates.length > 0,
+      };
+    });
+
+    setMatches(newMatches);
+    setStep("review");
   }
 
   async function handleImport() {

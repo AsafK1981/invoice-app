@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import Papa from "papaparse";
 import {
   Upload,
   Users as UsersIcon,
@@ -19,6 +18,7 @@ import {
 import { supabase } from "@/lib/supabase";
 import { isAdminEmail } from "@/lib/admin";
 import { formatDate } from "@/lib/format";
+import { parseCsvFile } from "@/lib/import-decode";
 
 interface AppUser {
   id: string;
@@ -100,22 +100,18 @@ export default function AdminImportForUserPage() {
     if (allowed) loadUsers();
   }, [allowed, loadUsers]);
 
-  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     setError(null);
     setResult(null);
     setFileName(file.name);
-    Papa.parse<Row>(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: (results) => {
-        setRows(results.data);
-      },
-      error: (err) => {
-        setError(`שגיאה בקריאת הקובץ: ${err.message}`);
-      },
-    });
+    try {
+      const { rows } = await parseCsvFile(file);
+      setRows(rows);
+    } catch (err) {
+      setError(`שגיאה בקריאת הקובץ: ${err instanceof Error ? err.message : String(err)}`);
+    }
   }
 
   async function handleImport() {

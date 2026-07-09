@@ -8,11 +8,13 @@ export default defineConfig({
     },
   },
   test: {
-    // Node 24 + Vitest 4 default `forks` pool fails to locate the runner on
-    // this environment ("Vitest failed to find the runner") before any test
-    // runs. Pin to `threads` so the default `npm test` / `npx vitest run`
-    // works without a --pool flag.
-    pool: "threads",
+    // Vitest 4's worker-pool selection is environment-sensitive here: on the
+    // current Node 24 / Vitest 4.1.5 / Vite 8 combo BOTH `threads` and `forks`
+    // fail to locate the runner ("Vitest failed to find the runner") before any
+    // test runs, while the VM-isolated `vmForks` pool works. (Earlier
+    // environments needed `threads`, then `forks`.) Pin to `vmForks` so the
+    // default `npm test` / `npx vitest run` works without a --pool flag.
+    pool: "vmForks",
     environment: "node",
     globals: false,
     setupFiles: ["./vitest.setup.ts"],

@@ -1,7 +1,6 @@
 "use client";
 
 import { useRef, useState } from "react";
-import Papa from "papaparse";
 import * as XLSX from "xlsx";
 import {
   Upload,
@@ -20,7 +19,15 @@ import { productStore } from "@/lib/product-store";
 import { expenseStore } from "@/lib/expense-store";
 import { getBusinessId } from "@/lib/business-init";
 import { todayInIsrael } from "@/lib/date";
-import { resolveDocumentType, resolveImportDate } from "@/lib/import-mapping";
+import { mapHeaders, isDocumentsHeaderSet } from "@/lib/import-headers";
+import {
+  mapDocumentRow,
+  createSkipAccumulator,
+  type SkipAccumulator,
+  type SkipSummaryEntry,
+} from "@/lib/import-documents";
+import { parseAmount } from "@/lib/import-mapping";
+import { parseCsvFile } from "@/lib/import-decode";
 import type { Client, Product, Expense } from "@/lib/types";
 
 /**
@@ -38,6 +45,14 @@ import type { Client, Product, Expense } from "@/lib/types";
 
 type EntityType = "clients" | "products" | "expenses" | "documents";
 type ParsedRow = Record<string, string>;
+
+interface EntityTotals {
+  imported: number;
+  skipped: number;
+  unmappedType: number;
+  /** Per-reason labelled skip breakdown (documents only; empty otherwise). */
+  skipSummary: SkipSummaryEntry[];
+}
 
 interface DetectedFile {
   /** Display name shown to the user — could be the file name or "<file>: <sheet>" for xlsx sheets */
@@ -64,8 +79,11 @@ function detectEntity(headers: string[]): EntityType | null {
   const set = new Set(headers.map((h) => h.toLowerCase().trim()));
   const has = (...keys: string[]) => keys.some((k) => set.has(k.toLowerCase()));
 
-  // Documents — must have a number + a client + a total
-  if (has("מספר", "number") && has("לקוח", "client", "client_name") && has("סכום", "total")) {
+  // Documents — must have a number + a client + a total. Uses the shared
+  // cross-vendor header-alias layer so a Morning / iCount / Rivhit /
+  // Hashavshevet export (ספרור / שם חשבון / סה"כ / Document Number …) is
+  // detected, not just the Invoice4U short keys.
+  if (isDocumentsHeaderSet(headers)) {
     return "documents";
   }
   // Expenses — supplier + amount
@@ -88,28 +106,19 @@ export function BulkImportZone() {
   const [detected, setDetected] = useState<DetectedFile[]>([]);
   const [importing, setImporting] = useState(false);
   const [progress, setProgress] = useState<string | null>(null);
-  const [result, setResult] = useState<Record<EntityType, { imported: number; skipped: number }> | null>(null);
+  const [result, setResult] = useState<Record<EntityType, EntityTotals> | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function parseCsv(file: File): Promise<DetectedFile[]> {
-    return new Promise((resolve, reject) => {
-      Papa.parse<ParsedRow>(file, {
-        header: true,
-        skipEmptyLines: true,
-        complete: (results) => {
-          const headers = results.meta.fields || [];
-          resolve([
-            {
-              label: file.name,
-              entity: detectEntity(headers),
-              rows: results.data,
-              headers,
-            },
-          ]);
-        },
-        error: (err) => reject(err),
-      });
-    });
+    const { rows, headers } = await parseCsvFile(file);
+    return [
+      {
+        label: file.name,
+        entity: detectEntity(headers),
+        rows,
+        headers,
+      },
+    ];
   }
 
   async function parseXlsx(file: File): Promise<DetectedFile[]> {
@@ -168,12 +177,15 @@ export function BulkImportZone() {
     if (usable.length === 0) return;
     setImporting(true);
     setError(null);
-    const totals: Record<EntityType, { imported: number; skipped: number }> = {
-      clients: { imported: 0, skipped: 0 },
-      products: { imported: 0, skipped: 0 },
-      expenses: { imported: 0, skipped: 0 },
-      documents: { imported: 0, skipped: 0 },
+    const totals: Record<EntityType, EntityTotals> = {
+      clients: { imported: 0, skipped: 0, unmappedType: 0, skipSummary: [] },
+      products: { imported: 0, skipped: 0, unmappedType: 0, skipSummary: [] },
+      expenses: { imported: 0, skipped: 0, unmappedType: 0, skipSummary: [] },
+      documents: { imported: 0, skipped: 0, unmappedType: 0, skipSummary: [] },
     };
+    // One shared accumulator for every document file's skip reasons, so the
+    // final breakdown uses the canonical labels from import-documents.
+    const docSkips = createSkipAccumulator();
 
     // Import in a sensible order: clients first (so docs can find them),
     // then products, expenses, finally documents.
@@ -185,10 +197,12 @@ export function BulkImportZone() {
     try {
       for (const file of ordered) {
         setProgress(`מייבא ${ENTITY_META[file.entity!].label} מ-${file.label}...`);
-        const result = await importOneFile(file);
+        const result = await importOneFile(file, docSkips);
         totals[file.entity!].imported += result.imported;
         totals[file.entity!].skipped += result.skipped;
+        totals[file.entity!].unmappedType += result.unmappedType;
       }
+      totals.documents.skipSummary = docSkips.toSkipSummary();
       setProgress(null);
       setResult(totals);
       setDetected([]);
@@ -202,9 +216,14 @@ export function BulkImportZone() {
 
   async function importOneFile(
     file: DetectedFile,
-  ): Promise<{ imported: number; skipped: number }> {
+    docSkips: SkipAccumulator,
+  ): Promise<{ imported: number; skipped: number; unmappedType: number }> {
     let imported = 0;
     let skipped = 0;
+    // Rows whose document-type cell wasn't recognized — imported as receipt but
+    // flagged so the count is surfaced (previously dropped on the floor here).
+    let unmappedType = 0;
+    const today = todayInIsrael();
     const businessId = getBusinessId();
 
     const pick = (row: ParsedRow, ...keys: string[]): string => {
@@ -238,9 +257,8 @@ export function BulkImportZone() {
     } else if (file.entity === "products") {
       for (const row of file.rows) {
         const name = pick(row, "שם", "name");
-        const priceStr = pick(row, "מחיר", "price").replace(/[₪,\s]/g, "");
-        const price = parseFloat(priceStr);
-        if (!name || !Number.isFinite(price)) {
+        const price = parseAmount(pick(row, "מחיר", "price"));
+        if (!name || price == null) {
           skipped++;
           continue;
         }
@@ -257,15 +275,14 @@ export function BulkImportZone() {
     } else if (file.entity === "expenses") {
       for (const row of file.rows) {
         const supplier = pick(row, "ספק", "supplier");
-        const amountStr = pick(row, "סכום", "amount").replace(/[₪,\s]/g, "");
-        const amount = parseFloat(amountStr);
-        if (!supplier || !Number.isFinite(amount) || amount <= 0) {
+        const amount = parseAmount(pick(row, "סכום", "amount"));
+        if (!supplier || amount == null || amount <= 0) {
           skipped++;
           continue;
         }
         const expense: Expense = {
           id: crypto.randomUUID(),
-          date: pick(row, "תאריך", "date") || todayInIsrael(),
+          date: pick(row, "תאריך", "date") || today,
           category: pick(row, "קטגוריה", "category") || "אחר",
           supplier,
           amount,
@@ -280,41 +297,20 @@ export function BulkImportZone() {
       }
       const clientCache = new Map<string, string>();
       const maxNumberByType = new Map<string, number>();
+      // Resolve document columns once via the shared cross-vendor alias layer.
+      const headersMap = mapHeaders(file.headers);
 
       for (const row of file.rows) {
-        const numberRaw = pick(row, "מספר", "number");
-        const clientName = pick(row, "לקוח", "client", "client_name");
-        const totalStr = pick(row, "סכום", "total").replace(/[₪,\s]/g, "");
-        const total = parseFloat(totalStr);
-        if (!/^\d+$/.test(numberRaw)) {
+        const mapped = mapDocumentRow(row, headersMap, today);
+        if (!mapped.ok) {
+          docSkips.add(mapped.skipReason);
           skipped++;
           continue;
         }
-        const number = parseInt(numberRaw, 10);
-        if (!clientName || !Number.isFinite(total) || total <= 0) {
-          skipped++;
-          continue;
-        }
-        const type = resolveDocumentType(pick(row, "סוג", "type"));
-        const date = resolveImportDate(pick(row, "תאריך", "date"), todayInIsrael());
-        if (!date) {
-          skipped++;
-          continue;
-        }
-        const description = pick(row, "תיאור", "description") || "שירות";
-        const vatStr = pick(row, 'מע"מ', "מעמ", "vat").replace(/[₪,\s]/g, "");
-        const vat = parseFloat(vatStr) || 0;
-        if (vat > total) {
-          skipped++;
-          continue;
-        }
-        const subtotal = total - vat;
-        const statusRaw = pick(row, "סטטוס", "status").toLowerCase();
-        let status: "draft" | "sent" | "paid" | "cancelled" = "paid";
-        if (statusRaw === "draft" || statusRaw.includes("טיוטה")) status = "draft";
-        else if (statusRaw === "sent" || statusRaw.includes("נשלח")) status = "sent";
-        else if (statusRaw === "cancelled" || statusRaw.includes("בוטל")) status = "cancelled";
-        else if (type === "quote" || type === "proforma") status = "sent";
+        const { record, typeMatched } = mapped;
+        const { description, ...docFields } = record;
+        const { type, number, client_name: clientName, subtotal } = record;
+        if (!typeMatched) unmappedType++;
 
         // Find or create client (same pattern as csv-import-modal)
         let clientId: string | undefined = clientCache.get(clientName);
@@ -344,15 +340,8 @@ export function BulkImportZone() {
         const { error: dErr } = await supabase.from("documents").insert({
           id: docId,
           business_id: businessId,
-          type,
-          number,
-          date,
           client_id: clientId,
-          client_name: clientName,
-          status,
-          subtotal,
-          vat,
-          total,
+          ...docFields,
         });
         if (dErr) {
           skipped++;
@@ -395,7 +384,7 @@ export function BulkImportZone() {
         }
       }
     }
-    return { imported, skipped };
+    return { imported, skipped, unmappedType };
   }
 
   const usable = detected.filter((d) => d.entity !== null);
@@ -542,6 +531,14 @@ export function BulkImportZone() {
                   <p className="text-xl font-bold text-stone-900">{t.imported}</p>
                   {t.skipped > 0 && (
                     <p className="text-xs text-amber-700">+{t.skipped} דולגו</p>
+                  )}
+                  {t.skipSummary.map((s) => (
+                    <p key={s.reason} className="text-[11px] text-amber-600">
+                      {s.count} {s.label}
+                    </p>
+                  ))}
+                  {t.unmappedType > 0 && (
+                    <p className="text-xs text-amber-700">{t.unmappedType} סוג לא מזוהה (כקבלה)</p>
                   )}
                 </div>
               );
