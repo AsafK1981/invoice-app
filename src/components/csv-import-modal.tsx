@@ -1,8 +1,10 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Upload, Users, Package, Wallet, FileText, AlertCircle, CheckCircle2 } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
+import { ImportAnalysisPanel } from "@/components/import-analysis-panel";
+import { analyzeRows } from "@/lib/import-analyze";
 import { clientStore } from "@/lib/client-store";
 import { productStore } from "@/lib/product-store";
 import { expenseStore } from "@/lib/expense-store";
@@ -63,6 +65,16 @@ export function CsvImportModal({ open, onClose, entityType }: Props) {
 
   const config = labels[entityType];
   const Icon = config.icon;
+
+  // Documents-only dry-run preview. analyzeRows defers every decision to the
+  // shared mapDocumentRow, so these numbers equal the real import outcome.
+  const analysis = useMemo(
+    () =>
+      entityType === "documents" && preview.length > 0
+        ? analyzeRows(preview, mapHeaders(headers))
+        : null,
+    [entityType, preview, headers],
+  );
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -339,6 +351,8 @@ export function CsvImportModal({ open, onClose, entityType }: Props) {
             <span>{success}</span>
           </div>
         )}
+
+        {analysis && <ImportAnalysisPanel analysis={analysis} />}
 
         {preview.length > 0 && (
           <div>

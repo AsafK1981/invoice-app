@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   Upload,
@@ -19,6 +19,9 @@ import { supabase } from "@/lib/supabase";
 import { isAdminEmail } from "@/lib/admin";
 import { formatDate } from "@/lib/format";
 import { parseCsvFile } from "@/lib/import-decode";
+import { mapHeaders } from "@/lib/import-headers";
+import { analyzeRows } from "@/lib/import-analyze";
+import { ImportAnalysisPanel } from "@/components/import-analysis-panel";
 
 interface AppUser {
   id: string;
@@ -68,6 +71,7 @@ export default function AdminImportForUserPage() {
   const [selectedUser, setSelectedUser] = useState<AppUser | null>(null);
   const [entityType, setEntityType] = useState<EntityType>("clients");
   const [rows, setRows] = useState<Row[]>([]);
+  const [headers, setHeaders] = useState<string[]>([]);
   const [fileName, setFileName] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<{
@@ -100,6 +104,16 @@ export default function AdminImportForUserPage() {
     if (allowed) loadUsers();
   }, [allowed, loadUsers]);
 
+  // Documents-only dry-run preview — gives the admin the per-row/per-reason
+  // detail the server route's aggregate response doesn't return.
+  const analysis = useMemo(
+    () =>
+      entityType === "documents" && rows.length > 0
+        ? analyzeRows(rows, mapHeaders(headers))
+        : null,
+    [entityType, rows, headers],
+  );
+
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -107,8 +121,9 @@ export default function AdminImportForUserPage() {
     setResult(null);
     setFileName(file.name);
     try {
-      const { rows } = await parseCsvFile(file);
+      const { rows, headers: parsedHeaders } = await parseCsvFile(file);
       setRows(rows);
+      setHeaders(parsedHeaders);
     } catch (err) {
       setError(`שגיאה בקריאת הקובץ: ${err instanceof Error ? err.message : String(err)}`);
     }
@@ -146,6 +161,7 @@ export default function AdminImportForUserPage() {
       });
       // Reset for the next import
       setRows([]);
+      setHeaders([]);
       setFileName(null);
       if (fileInput.current) fileInput.current.value = "";
       loadUsers();
@@ -372,6 +388,11 @@ export default function AdminImportForUserPage() {
               אוטומטית. הפעולה תירשם ב-audit log של המשתמש.
             </p>
           </div>
+          {analysis && (
+            <div className="mt-4">
+              <ImportAnalysisPanel analysis={analysis} />
+            </div>
+          )}
           <div className="flex gap-2 mt-4">
             <button
               onClick={handleImport}
@@ -384,6 +405,7 @@ export default function AdminImportForUserPage() {
             <button
               onClick={() => {
                 setRows([]);
+                setHeaders([]);
                 setFileName(null);
                 if (fileInput.current) fileInput.current.value = "";
               }}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import * as XLSX from "xlsx";
 import {
   Upload,
@@ -28,6 +28,8 @@ import {
 } from "@/lib/import-documents";
 import { parseAmount } from "@/lib/import-mapping";
 import { parseCsvFile } from "@/lib/import-decode";
+import { analyzeRows, type AnalyzeResult } from "@/lib/import-analyze";
+import { ImportAnalysisPanel } from "@/components/import-analysis-panel";
 import type { Client, Product, Expense } from "@/lib/types";
 
 /**
@@ -390,6 +392,19 @@ export function BulkImportZone() {
   const usable = detected.filter((d) => d.entity !== null);
   const unknown = detected.filter((d) => d.entity === null);
 
+  // Documents-only dry-run previews, keyed by the detected-file index. Computed
+  // lazily here (rather than widening DetectedFile) so we don't re-run
+  // analyzeRows on every render. Each equals its file's real import outcome.
+  const analyses = useMemo(() => {
+    const out: Record<number, AnalyzeResult> = {};
+    detected.forEach((d, idx) => {
+      if (d.entity === "documents") {
+        out[idx] = analyzeRows(d.rows, mapHeaders(d.headers));
+      }
+    });
+    return out;
+  }, [detected]);
+
   return (
     <div className="space-y-4">
       {/* Drop zone */}
@@ -462,6 +477,11 @@ export function BulkImportZone() {
                         </>
                       )}
                     </p>
+                    {analyses[idx] && (
+                      <div className="mt-2">
+                        <ImportAnalysisPanel analysis={analyses[idx]} />
+                      </div>
+                    )}
                     {!d.entity && (
                       <div className="flex gap-1 mt-2">
                         {(Object.keys(ENTITY_META) as EntityType[]).map((e) => (
