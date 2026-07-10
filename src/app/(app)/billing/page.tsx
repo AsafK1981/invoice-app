@@ -241,7 +241,7 @@ export default function BillingPage() {
             <div
               key={tier}
               className={`card-soft p-6 relative ${
-                isProCard ? "bg-gradient-to-br from-violet-50/50 to-purple-50/50 border-violet-200" : ""
+                isProCard ? "gk-plan-featured bg-gradient-to-br from-violet-50/50 to-purple-50/50 border-violet-200" : ""
               }`}
             >
               {isProCard && (

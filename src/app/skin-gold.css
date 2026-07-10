@@ -797,3 +797,70 @@ html[data-skin="gold"] .bg-rose-50\/80 { background-color: rgba(170, 90, 60, 0.1
 
 /* ---------- printable statement (/clients/[id]/statement): white paper like the journal ---------- */
 html[data-skin="gold"] .gk-paper .bg-stone-50\/60 { background-color: #fafaf9 !important; }
+
+/* =====================================================================
+   ONBOARDING + BILLING + AUTH — bespoke polish
+   Covers /onboarding (welcome → business → client → done wizard: the
+   step-progress rail + numbered dots, the four gradient icon tiles, the
+   form cards and skip/next CTAs), /billing (plan cards, the recommended-
+   plan highlight, the monthly/yearly toggle, the active-subscription
+   card, the Polar confirm modal + "checkout is in English" notice) and
+   the (auth)/login page (signup/login/forgot; inputs, submit CTA, error/
+   success banners). All three render under the root layout, so the
+   pre-hydration skin script applies and these screens ARE skinned.
+
+   Most of onboarding + login already inherit correctly from the sections
+   above: every icon tile (from-*-400.to-*-500) resolves to the obsidian
+   tile + gold glyph, the coral CTAs (from-orange-500.to-rose-500) become
+   the gold gradient, .input-warm / .card-soft / status banners are all
+   handled, and the login page's full-bleed from-orange-50 wash resolves
+   to obsidian. What remains is the billing screen's violet/purple "Pro"
+   family — the one palette the coral→gold remap never touches — plus a
+   few opacity-variant surfaces the base lists miss. The coral skin stays
+   byte-for-byte untouched.
+   ===================================================================== */
+
+/* ---------- Pro plan: violet CTA + "מומלץ" ribbon → gold like every primary ----------
+   The recommended-plan button and its floating ribbon use
+   from-violet-500→to-purple-500 (bright violet), which no earlier list
+   catches — they'd glare on the obsidian card. Repaint to the gold
+   gradient with dark ink, matching the free-tier's from-orange-500 CTA. */
+html[data-skin="gold"] .from-violet-500.to-purple-500 {
+  background: var(--gold-grad) !important;
+  color: #191206 !important;
+  box-shadow:
+    0 12px 28px -12px rgba(190, 158, 78, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28) !important;
+}
+html[data-skin="gold"] .from-violet-500.to-purple-500 svg,
+html[data-skin="gold"] .from-violet-500.to-purple-500 span { color: #191206 !important; }
+
+/* ---------- recommended plan card: gold-washed highlight so it reads as "the one" ----------
+   On the coral skin the Pro card is set apart by a violet tint + border;
+   both flatten to the same obsidian/hairline as the free card here, so
+   the recommendation would read only from the ribbon. Give the featured
+   card a faint gold top-wash, a firmer gold hairline, and stronger deco
+   corners — a tasteful lift (glow kept low per the "halve any gold glow"
+   rule). Marker class is inert on the coral skin. */
+html[data-skin="gold"] .gk-plan-featured.card-soft {
+  border-color: var(--line) !important;
+  background:
+    radial-gradient(120% 78% at 50% -12%, rgba(190, 158, 78, 0.09), transparent 60%),
+    linear-gradient(160deg, #191207, #0e0a05) !important;
+  box-shadow:
+    0 26px 60px -30px rgba(0, 0, 0, 0.85),
+    inset 0 1px 0 rgba(255, 236, 180, 0.06),
+    0 0 0 1px rgba(190, 158, 78, 0.1) !important;
+}
+html[data-skin="gold"] .gk-plan-featured.card-soft::before,
+html[data-skin="gold"] .gk-plan-featured.card-soft::after {
+  opacity: 0.8 !important;
+}
+
+/* ---------- opacity-variant surfaces + white hovers the base lists miss ---------- */
+/* manage-subscription button hover (violet) → gold tint */
+html[data-skin="gold"] .hover\:bg-violet-50:hover { background-color: rgba(190, 158, 78, 0.12) !important; }
+/* confirm-modal "checkout is in English" notice box */
+html[data-skin="gold"] .bg-amber-50\/60 { background-color: rgba(190, 158, 78, 0.1) !important; }
+/* generic white hover (modal cancel button etc.) → gold tint, not a white flash */
+html[data-skin="gold"] .hover\:bg-white:hover { background-color: rgba(190, 158, 78, 0.1) !important; }
