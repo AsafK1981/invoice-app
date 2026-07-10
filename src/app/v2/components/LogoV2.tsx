@@ -26,10 +26,10 @@ function Mark({ small }: { small?: boolean }) {
     >
       <defs>
         <linearGradient id="v2-logo-gold" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#FCEFB6" />
-          <stop offset="0.4" stopColor="#EACB6E" />
-          <stop offset="0.74" stopColor="#C1912F" />
-          <stop offset="1" stopColor="#F2DE93" />
+          <stop offset="0" stopColor="#D8BE77" />
+          <stop offset="0.4" stopColor="#BE9E4E" />
+          <stop offset="0.74" stopColor="#8F6F2A" />
+          <stop offset="1" stopColor="#CBB061" />
         </linearGradient>
       </defs>
       <rect

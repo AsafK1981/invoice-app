@@ -93,7 +93,7 @@ export default function V2Landing() {
               <svg
                 viewBox="0 0 24 24"
                 fill="none"
-                stroke="#EACB6E"
+                stroke="#BE9E4E"
                 strokeWidth="1.6"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -106,7 +106,7 @@ export default function V2Landing() {
               <svg
                 viewBox="0 0 24 24"
                 fill="none"
-                stroke="#EACB6E"
+                stroke="#BE9E4E"
                 strokeWidth="1.6"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -120,7 +120,7 @@ export default function V2Landing() {
               <svg
                 viewBox="0 0 24 24"
                 fill="none"
-                stroke="#EACB6E"
+                stroke="#BE9E4E"
                 strokeWidth="1.6"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -148,7 +148,7 @@ export default function V2Landing() {
 
           <div className="v2-credit">
             <i className="ln" />
-            <span>נבנה באהבה לעוסקים הפטורים בישראל</span>
+            <span>נבנה באהבה לעסקים עצמאיים בישראל</span>
             <i className="ln r" />
           </div>
         </div>
