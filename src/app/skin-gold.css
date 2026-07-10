@@ -313,6 +313,26 @@ html[data-skin="gold"] .card-soft.p-1 {
 /* ---------- misc: bar-track fills that use white/60 ---------- */
 html[data-skin="gold"] .bg-white\/60 { background-color: rgba(214, 178, 108, 0.12) !important; }
 
+/* ---------- dashboard "תובנות AI" insight cards ---------- */
+/* On the default skin each insight renders on a status-tinted LIGHT surface
+   (emerald/amber/sky/stone). Under gold the body text is remapped to
+   off-white, which would leave off-white-on-pale — no contrast. Remap every
+   insight card to the obsidian card surface with off-white text, and keep the
+   per-insight status meaning as a subtle coloured inline-start (right, RTL)
+   edge only — the bright gradient icon chip already carries the status hue. */
+html[data-skin="gold"] .gk-insight {
+  background: linear-gradient(160deg, #171106, #0e0a05) !important;
+  border: 1px solid var(--line) !important;
+  border-right-width: 3px !important;
+}
+html[data-skin="gold"] .gk-insight p {
+  color: #d6d0c2 !important;
+}
+html[data-skin="gold"] .gk-insight.border-emerald-200 { border-right-color: rgba(120, 210, 150, 0.8) !important; }
+html[data-skin="gold"] .gk-insight.border-amber-200   { border-right-color: rgba(214, 178, 108, 0.85) !important; }
+html[data-skin="gold"] .gk-insight.border-sky-200     { border-right-color: rgba(140, 170, 220, 0.8) !important; }
+html[data-skin="gold"] .gk-insight.border-stone-200   { border-right-color: rgba(175, 163, 140, 0.55) !important; }
+
 /* ---------- scrollbar ---------- */
 html[data-skin="gold"] ::-webkit-scrollbar-thumb {
   background: rgba(190, 158, 78, 0.28);

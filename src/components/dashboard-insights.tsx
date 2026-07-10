@@ -130,7 +130,7 @@ export function DashboardInsights() {
               : null;
           const body = (
             <div
-              className={`flex items-start gap-3 p-3 rounded-2xl border ${style.bg} ${style.border} ${
+              className={`gk-insight flex items-start gap-3 p-3 rounded-2xl border ${style.bg} ${style.border} ${
                 safeHref ? "hover:shadow-sm transition-shadow cursor-pointer" : ""
               }`}
             >
