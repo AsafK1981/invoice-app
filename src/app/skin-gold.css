@@ -350,3 +350,150 @@ html[data-skin="gold"] .receipt-view {
 html[data-skin="gold"] .receipt-view * { color: inherit; }
 html[data-skin="gold"] .receipt-view::before,
 html[data-skin="gold"] .receipt-view::after { display: none !important; }
+
+/* =====================================================================
+   DOCUMENTS EDITOR — bespoke polish
+   Covers: the type picker (/documents/new), every type-specific editor
+   (receipt / quote / proforma / tax-invoice / tax-invoice-receipt /
+   credit-note) via <ReceiptEditor>, and the document view/edit page
+   (/documents/[id]) with its shared sections (number editor, customer-tax
+   editor, allocation section, timeline, attachments) + the live
+   <DocumentPreview> paper. All scoped under html[data-skin="gold"] — the
+   coral skin is untouched.
+   ===================================================================== */
+
+/* ---------- accent icons/text the base remap misses (orange-500/400) ---------- */
+html[data-skin="gold"] .text-orange-500,
+html[data-skin="gold"] .text-orange-400,
+html[data-skin="gold"] .text-amber-500 { color: #c9b885 !important; }
+
+/* ---------- opacity-variant light surfaces (e.g. bg-orange-50/60) ---------- */
+html[data-skin="gold"] .bg-orange-50\/60,
+html[data-skin="gold"] .bg-orange-50\/50 { background-color: rgba(190, 158, 78, 0.1) !important; }
+/* the sticky "סיכום ושליחה" card + per-row total cell use half-opacity
+   coral gradients that dodge the -50 gradient remap → force obsidian */
+html[data-skin="gold"] .from-orange-50\/50,
+html[data-skin="gold"] .from-orange-50\/60,
+html[data-skin="gold"] .to-amber-50\/50,
+html[data-skin="gold"] .to-amber-50\/60 {
+  --tw-gradient-from: #171106 !important;
+  --tw-gradient-to: #0e0a05 !important;
+  background: linear-gradient(160deg, #171106, #0e0a05) !important;
+}
+/* fuchsia card background (חשבון עסקה picker card) missing from base list */
+html[data-skin="gold"] .bg-gradient-to-br.from-fuchsia-50 {
+  background: linear-gradient(160deg, #171106, #0e0a05) !important;
+  border-color: var(--line) !important;
+}
+
+/* ---------- bright icon-tile gradients (-400→-500) → obsidian tile + gold glyph ----------
+   The picker cards and each editor header render a coloured rounded tile with a
+   white lucide icon. Remap every family to a dark tile with a gold hairline and
+   recolour the enclosed icon to antique gold. */
+html[data-skin="gold"] .from-emerald-400.to-teal-500,
+html[data-skin="gold"] .from-amber-400.to-orange-500,
+html[data-skin="gold"] .from-fuchsia-400.to-purple-500,
+html[data-skin="gold"] .from-sky-400.to-blue-500,
+html[data-skin="gold"] .from-violet-400.to-purple-500,
+html[data-skin="gold"] .from-rose-400.to-pink-500 {
+  background: linear-gradient(160deg, #191308, #0f0b06) !important;
+  border: 1px solid var(--line) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 236, 180, 0.05) !important;
+}
+html[data-skin="gold"] .from-emerald-400.to-teal-500 svg,
+html[data-skin="gold"] .from-amber-400.to-orange-500 svg,
+html[data-skin="gold"] .from-fuchsia-400.to-purple-500 svg,
+html[data-skin="gold"] .from-sky-400.to-blue-500 svg,
+html[data-skin="gold"] .from-violet-400.to-purple-500 svg,
+html[data-skin="gold"] .from-rose-400.to-pink-500 svg { color: var(--g1) !important; }
+/* solid success tile (approved-quote banner) → muted emerald on obsidian */
+html[data-skin="gold"] .bg-emerald-500 {
+  background: rgba(79, 196, 122, 0.18) !important;
+  border: 1px solid rgba(79, 196, 122, 0.32) !important;
+}
+html[data-skin="gold"] .bg-emerald-500 svg { color: #8fd9a8 !important; }
+
+/* ---------- total amount: gold-gradient clipped text ----------
+   The summary "total" is bg-clip-text with the coral CTA gradient; the CTA
+   remap would paint it solid dark. Keep it transparent so the gold gradient
+   shows through the glyphs. Higher specificity than the CTA rule. */
+html[data-skin="gold"] .bg-clip-text.from-orange-500.to-rose-500 {
+  background: var(--gold-grad) !important;
+  color: transparent !important;
+  -webkit-text-fill-color: transparent;
+  box-shadow: none !important;
+  filter: drop-shadow(0 2px 10px rgba(190, 158, 78, 0.11));
+}
+
+/* ---------- primary "הורד PDF" button (solid coral, not a gradient) ---------- */
+html[data-skin="gold"] .bg-orange-500.text-white {
+  background: var(--gold-grad) !important;
+  color: #191206 !important;
+  border-color: var(--g3) !important;
+  box-shadow: 0 12px 28px -14px rgba(190, 158, 78, 0.35) !important;
+}
+html[data-skin="gold"] .bg-orange-500.text-white:hover { filter: brightness(1.06); }
+html[data-skin="gold"] .bg-orange-500.text-white svg { color: #191206 !important; }
+
+/* ---------- customer/catalog segmented toggle: active pill reads "selected" ----------
+   Active tab is .bg-white.text-orange-700; the plain bg-white remap would make it
+   darker than its own track. Give it a gold-tinted pill instead. */
+html[data-skin="gold"] .bg-white.text-orange-700 {
+  background: linear-gradient(90deg, rgba(233, 200, 107, 0.18), rgba(233, 200, 107, 0.05)) !important;
+  border: 1px solid var(--line) !important;
+}
+
+/* ---------- borders the base remap misses ---------- */
+html[data-skin="gold"] .border-stone-300,
+html[data-skin="gold"] .border-stone-400,
+html[data-skin="gold"] .border-emerald-100,
+html[data-skin="gold"] .border-amber-100,
+html[data-skin="gold"] .border-sky-100,
+html[data-skin="gold"] .border-blue-100 { border-color: var(--line-soft) !important; }
+
+/* ---------- hover backgrounds (family-tinted, muted) ---------- */
+html[data-skin="gold"] .hover\:bg-orange-50:hover,
+html[data-skin="gold"] .hover\:bg-orange-100:hover { background-color: rgba(190, 158, 78, 0.14) !important; }
+html[data-skin="gold"] .hover\:bg-stone-50:hover,
+html[data-skin="gold"] .hover\:bg-stone-100:hover,
+html[data-skin="gold"] .hover\:bg-stone-200:hover { background-color: rgba(175, 163, 140, 0.12) !important; }
+html[data-skin="gold"] .hover\:bg-emerald-50:hover,
+html[data-skin="gold"] .hover\:bg-emerald-100:hover { background-color: rgba(79, 196, 122, 0.16) !important; }
+html[data-skin="gold"] .hover\:bg-amber-100:hover,
+html[data-skin="gold"] .hover\:bg-amber-200:hover { background-color: rgba(190, 158, 78, 0.18) !important; }
+html[data-skin="gold"] .hover\:bg-rose-50:hover,
+html[data-skin="gold"] .hover\:bg-rose-100:hover { background-color: rgba(170, 90, 60, 0.16) !important; }
+html[data-skin="gold"] .hover\:bg-sky-50:hover,
+html[data-skin="gold"] .hover\:bg-blue-100:hover { background-color: rgba(120, 150, 200, 0.16) !important; }
+
+/* ---------- form checkboxes → gold accent ---------- */
+html[data-skin="gold"] .accent-orange-500 { accent-color: var(--g2); }
+
+/* ---------- disabled CTA (was left gold by the CTA background !important) ---------- */
+html[data-skin="gold"] button:disabled.from-orange-500,
+html[data-skin="gold"] button:disabled.from-emerald-500 {
+  background: linear-gradient(160deg, #241d10, #17130b) !important;
+  color: #6f685a !important;
+  box-shadow: none !important;
+}
+html[data-skin="gold"] button:disabled.from-orange-500 * { color: #6f685a !important; }
+
+/* ---------- timeline: soften pastel dot rings + connector line ---------- */
+html[data-skin="gold"] .ring-stone-200,
+html[data-skin="gold"] .ring-blue-200,
+html[data-skin="gold"] .ring-emerald-200,
+html[data-skin="gold"] .ring-amber-200,
+html[data-skin="gold"] .ring-sky-200,
+html[data-skin="gold"] .ring-violet-200,
+html[data-skin="gold"] .ring-orange-200,
+html[data-skin="gold"] .ring-rose-200 { --tw-ring-color: rgba(214, 178, 108, 0.2) !important; }
+html[data-skin="gold"] .bg-stone-200 { background-color: rgba(214, 178, 108, 0.16) !important; }
+
+/* ---------- live document preview: white paper keeps a gold hairline frame ----------
+   The printed-sheet simulation stays white on purpose (premium paper-on-obsidian);
+   ring it in a gold hairline so it reads as an intentional framed artifact. */
+html[data-skin="gold"] .receipt-view {
+  box-shadow:
+    0 0 0 1px var(--line),
+    0 30px 60px -28px rgba(0, 0, 0, 0.8) !important;
+}
