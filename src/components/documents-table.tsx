@@ -340,6 +340,8 @@ export function DocumentsTable({ documents, limit, showExport = false }: Props) 
                 return (
                   <tr
                     key={d.id}
+                    data-status={d.status}
+                    data-type={d.type}
                     onClick={() => router.push(`/documents/${d.id}`)}
                     className={`border-t border-stone-200/60 transition-colors cursor-pointer ${theme.row}`}
                   >

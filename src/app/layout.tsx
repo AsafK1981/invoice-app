@@ -4,12 +4,19 @@ import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { SwRegister } from "@/components/sw-register";
 import "./globals.css";
+// Opt-in "gold" skin (obsidian + antique gold, art-deco). ALL rules inside
+// are scoped under html[data-skin="gold"], so importing it here is inert for
+// the default coral app — it only takes effect once the skin flag is set.
+// Imported AFTER globals.css on purpose: keeps gold rules later in source
+// order so they win ties against the html.dark block.
+import "./skin-gold.css";
 
-// Inline pre-hydration theme script — applies the user's persisted theme
-// choice to <html class="dark"> BEFORE first paint, avoiding a flash of
-// light when the user has chosen dark. The string is hardcoded (no user
-// input flows into it), so it's safe.
-const themeInitScript = `(function(){try{var t=localStorage.getItem("invoice-app:theme");if(t==="dark"){document.documentElement.classList.add("dark");}}catch(e){}})();`;
+// Inline pre-hydration script — applies the user's persisted theme + skin
+// choices to <html> BEFORE first paint, avoiding a flash of the wrong look.
+// Also honours ?skin=gold / ?skin=coral in the URL (writes it to localStorage
+// and applies immediately) so the gold skin can be demoed with a single link.
+// The string is hardcoded (no user input flows into it), so it's safe.
+const themeInitScript = `(function(){try{var d=document.documentElement;var p=new URLSearchParams(location.search);var qs=p.get("skin");if(qs==="gold"||qs==="coral"){localStorage.setItem("invoice-app:skin",qs);}var s=localStorage.getItem("invoice-app:skin");if(s==="gold"){d.setAttribute("data-skin","gold");}else{d.removeAttribute("data-skin");}var t=localStorage.getItem("invoice-app:theme");if(t==="dark"){d.classList.add("dark");}}catch(e){}})();`;
 
 const SITE_URL = "https://mysuperfriendlyinvoiceapp.vercel.app";
 
@@ -74,6 +81,13 @@ export default function RootLayout({
       <head>
         <link
           href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap"
+          rel="stylesheet"
+        />
+        {/* Fonts for the opt-in gold skin: Frank Ruhl Libre (art-deco serif
+            headings) + Assistant (body). Small extra download, only used when
+            html[data-skin="gold"] is active; inert for the default app. */}
+        <link
+          href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700;900&family=Assistant:wght@300;400;600;700;800&display=swap"
           rel="stylesheet"
         />
         <Script

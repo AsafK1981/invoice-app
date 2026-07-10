@@ -1,0 +1,332 @@
+/* =====================================================================
+   GOLD SKIN — opt-in obsidian + antique-gold, art-deco re-skin.
+
+   EVERY selector in this file is scoped under html[data-skin="gold"], so
+   with the skin flag unset (the default) NONE of these rules can match —
+   the coral app renders 100% unchanged. The flag is set by the
+   pre-hydration script in layout.tsx (localStorage["invoice-app:skin"] or
+   ?skin=gold) and toggled from the sidebar footer.
+
+   Mirrors the "sweeping utility override" strategy of the html.dark block
+   in globals.css, but remaps the palette to obsidian/gold. Uses
+   html[data-skin="gold"] specificity + !important so it wins ties against
+   the dark block (and this file is imported AFTER globals.css).
+   Tokens match the approved mockup (dashboard-gold.html).
+   ===================================================================== */
+
+html[data-skin="gold"] {
+  --g1: #d8be77; /* highlight */
+  --g2: #be9e4e; /* mid */
+  --g3: #8f6f2a; /* deep */
+  --gold-grad: linear-gradient(177deg, #d8be77 0%, #be9e4e 38%, #8f6f2a 72%, #cbb061 100%);
+  --line: rgba(214, 178, 108, 0.32);
+  --line-soft: rgba(214, 178, 108, 0.14);
+  --ink: #d6d0c2;
+  --muted: #a79f90;
+  --card: #151109;
+}
+
+/* ---------- base surface + typography ---------- */
+html[data-skin="gold"],
+html[data-skin="gold"] body {
+  color: var(--ink);
+}
+html[data-skin="gold"] body {
+  background:
+    radial-gradient(120% 60% at 78% -6%, rgba(190, 158, 78, 0.05), transparent 44%),
+    radial-gradient(110% 120% at 50% 30%, #1a1510 0%, #0d0a07 55%, #070504 100%) !important;
+  background-attachment: fixed !important;
+  color: var(--ink) !important;
+  font-family: "Assistant", "Heebo", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+html[data-skin="gold"] h1,
+html[data-skin="gold"] h2,
+html[data-skin="gold"] h3 {
+  font-family: "Frank Ruhl Libre", serif;
+  color: #e2dccd;
+  letter-spacing: -0.01em;
+}
+
+/* gold gradient text helper (applied to KPI numbers / headings via markers) */
+html[data-skin="gold"] .gold-text,
+html[data-skin="gold"] .gk-value {
+  background: var(--gold-grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent !important;
+  filter: drop-shadow(0 2px 10px rgba(190, 158, 78, 0.11));
+  font-family: "Frank Ruhl Libre", serif;
+}
+
+/* ---------- text-colour remaps (Tailwind utilities) ---------- */
+html[data-skin="gold"] .text-stone-900,
+html[data-skin="gold"] .text-stone-800 { color: #e2dccd !important; }
+html[data-skin="gold"] .text-stone-700,
+html[data-skin="gold"] .text-stone-600 { color: var(--muted) !important; }
+html[data-skin="gold"] .text-stone-500,
+html[data-skin="gold"] .text-stone-400 { color: #8f8676 !important; }
+
+/* accent value text (secondary tiles etc.) → antique gold */
+html[data-skin="gold"] .text-orange-600,
+html[data-skin="gold"] .text-amber-600,
+html[data-skin="gold"] .text-orange-700,
+html[data-skin="gold"] .text-amber-700,
+html[data-skin="gold"] .text-orange-800,
+html[data-skin="gold"] .text-amber-800,
+html[data-skin="gold"] .text-violet-600,
+html[data-skin="gold"] .text-fuchsia-600,
+html[data-skin="gold"] .text-violet-700,
+html[data-skin="gold"] .text-violet-800 { color: #c9b885 !important; }
+
+/* status-family text kept legible & colour-matched */
+html[data-skin="gold"] .text-emerald-600,
+html[data-skin="gold"] .text-emerald-700,
+html[data-skin="gold"] .text-emerald-800,
+html[data-skin="gold"] .text-emerald-900 { color: #8fd9a8 !important; }
+html[data-skin="gold"] .text-blue-600,
+html[data-skin="gold"] .text-blue-700,
+html[data-skin="gold"] .text-sky-600,
+html[data-skin="gold"] .text-sky-700 { color: #a9bee0 !important; }
+html[data-skin="gold"] .text-rose-600,
+html[data-skin="gold"] .text-rose-700,
+html[data-skin="gold"] .text-rose-800,
+html[data-skin="gold"] .text-rose-900 { color: #e6b8a8 !important; }
+
+/* ---------- cards: dark surface + gold hairline + deco corners ---------- */
+html[data-skin="gold"] .card-soft {
+  position: relative;
+  background: linear-gradient(160deg, #171106, #0e0a05) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 15px !important;
+  box-shadow:
+    0 26px 60px -30px rgba(0, 0, 0, 0.85),
+    inset 0 1px 0 rgba(255, 236, 180, 0.05) !important;
+}
+/* two diagonal art-deco corner brackets (no extra DOM) */
+html[data-skin="gold"] .card-soft::before,
+html[data-skin="gold"] .card-soft::after {
+  content: "";
+  position: absolute;
+  width: 15px;
+  height: 15px;
+  border: 1.3px solid var(--g2);
+  opacity: 0.5;
+  pointer-events: none;
+  z-index: 1;
+}
+html[data-skin="gold"] .card-soft::before {
+  top: 9px;
+  right: 9px;
+  border-left: none;
+  border-bottom: none;
+}
+html[data-skin="gold"] .card-soft::after {
+  bottom: 9px;
+  left: 9px;
+  border-right: none;
+  border-top: none;
+}
+
+/* light Tailwind gradient card backgrounds → obsidian card gradient */
+html[data-skin="gold"] .bg-gradient-to-br.from-orange-50,
+html[data-skin="gold"] .bg-gradient-to-br.from-emerald-50,
+html[data-skin="gold"] .bg-gradient-to-br.from-rose-50,
+html[data-skin="gold"] .bg-gradient-to-br.from-amber-50,
+html[data-skin="gold"] .bg-gradient-to-br.from-yellow-50,
+html[data-skin="gold"] .bg-gradient-to-br.from-teal-50,
+html[data-skin="gold"] .bg-gradient-to-br.from-blue-50,
+html[data-skin="gold"] .bg-gradient-to-br.from-violet-50,
+html[data-skin="gold"] .bg-gradient-to-br.from-sky-50,
+html[data-skin="gold"] .bg-gradient-to-br.from-pink-50,
+html[data-skin="gold"] .bg-gradient-to-br.from-stone-50 {
+  background: linear-gradient(160deg, #171106, #0e0a05) !important;
+  border-color: var(--line) !important;
+}
+
+/* generic solid light backgrounds */
+html[data-skin="gold"] .bg-white { background-color: #12100a !important; }
+html[data-skin="gold"] .bg-stone-50,
+html[data-skin="gold"] .bg-stone-100 { background-color: #17130b !important; }
+html[data-skin="gold"] .bg-white\/80,
+html[data-skin="gold"] .bg-white\/95,
+html[data-skin="gold"] .bg-white\/60,
+html[data-skin="gold"] .bg-white\/70,
+html[data-skin="gold"] .bg-white\/40 {
+  background-color: rgba(20, 15, 8, 0.82) !important;
+}
+
+/* ---------- coloured chip / badge backgrounds → muted, family-matched ---------- */
+html[data-skin="gold"] .bg-emerald-100,
+html[data-skin="gold"] .bg-emerald-50 { background-color: rgba(79, 196, 122, 0.12) !important; }
+html[data-skin="gold"] .bg-sky-100,
+html[data-skin="gold"] .bg-blue-100,
+html[data-skin="gold"] .bg-sky-50,
+html[data-skin="gold"] .bg-blue-50 { background-color: rgba(120, 150, 200, 0.14) !important; }
+html[data-skin="gold"] .bg-amber-100,
+html[data-skin="gold"] .bg-yellow-100,
+html[data-skin="gold"] .bg-amber-50,
+html[data-skin="gold"] .bg-orange-100,
+html[data-skin="gold"] .bg-orange-50 { background-color: rgba(190, 158, 78, 0.12) !important; }
+html[data-skin="gold"] .bg-rose-100,
+html[data-skin="gold"] .bg-pink-100,
+html[data-skin="gold"] .bg-rose-50 { background-color: rgba(170, 90, 60, 0.14) !important; }
+html[data-skin="gold"] .bg-violet-100,
+html[data-skin="gold"] .bg-fuchsia-100,
+html[data-skin="gold"] .bg-purple-100,
+html[data-skin="gold"] .bg-violet-50 { background-color: rgba(190, 158, 78, 0.1) !important; }
+html[data-skin="gold"] .bg-stone-100.text-stone-700,
+html[data-skin="gold"] .bg-stone-100.text-stone-500 { background-color: rgba(175, 163, 140, 0.12) !important; }
+
+/* ---------- borders ---------- */
+html[data-skin="gold"] .border-orange-100,
+html[data-skin="gold"] .border-orange-100\/60,
+html[data-skin="gold"] .border-orange-200,
+html[data-skin="gold"] .border-amber-200,
+html[data-skin="gold"] .border-amber-300,
+html[data-skin="gold"] .border-stone-100,
+html[data-skin="gold"] .border-stone-200,
+html[data-skin="gold"] .border-emerald-200,
+html[data-skin="gold"] .border-rose-200,
+html[data-skin="gold"] .border-rose-400,
+html[data-skin="gold"] .border-sky-200,
+html[data-skin="gold"] .border-blue-200,
+html[data-skin="gold"] .border-violet-200 {
+  border-color: var(--line-soft) !important;
+}
+
+/* ---------- primary gold-pill buttons (coral CTA gradients) ---------- */
+html[data-skin="gold"] .from-orange-500.to-rose-500,
+html[data-skin="gold"] .from-emerald-500.to-teal-500 {
+  background: var(--gold-grad) !important;
+  color: #191206 !important;
+  box-shadow:
+    0 12px 28px -12px rgba(190, 158, 78, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28) !important;
+}
+html[data-skin="gold"] .from-orange-500.to-rose-500 *,
+html[data-skin="gold"] .from-emerald-500.to-teal-500 * {
+  color: #191206 !important;
+}
+/* icon tiles that use bright coral gradients → dark tile, gold icon */
+html[data-skin="gold"] .from-orange-400.to-rose-400,
+html[data-skin="gold"] .from-orange-300.to-rose-300 {
+  background: linear-gradient(160deg, #191308, #0f0b06) !important;
+  border: 1px solid var(--line) !important;
+}
+
+/* ---------- inputs ---------- */
+html[data-skin="gold"] .input-warm {
+  background: #14100a !important;
+  border: 1.5px solid var(--line) !important;
+  color: #ede6d6 !important;
+}
+html[data-skin="gold"] .input-warm::placeholder { color: #7d7466 !important; }
+html[data-skin="gold"] .input-warm:focus {
+  background: #191309 !important;
+  border-color: var(--g2) !important;
+  box-shadow: 0 0 0 3px rgba(190, 158, 78, 0.18) !important;
+}
+html[data-skin="gold"] select.input-warm option {
+  background: #14100a;
+  color: #ede6d6;
+}
+
+/* focus ring recolour */
+html[data-skin="gold"] a[href]:focus-visible,
+html[data-skin="gold"] button:focus-visible,
+html[data-skin="gold"] [role="button"]:focus-visible,
+html[data-skin="gold"] select:focus-visible,
+html[data-skin="gold"] textarea:focus-visible,
+html[data-skin="gold"] input:not(.input-warm):focus-visible,
+html[data-skin="gold"] [tabindex]:focus-visible {
+  outline-color: var(--g2) !important;
+}
+
+/* ---------- sidebar ---------- */
+html[data-skin="gold"] aside {
+  background: linear-gradient(200deg, rgba(25, 19, 9, 0.6), rgba(9, 7, 4, 0.45)) !important;
+  border-color: var(--line-soft) !important;
+}
+/* active nav item: coral gradient pill → gold-tinted with gold hairline */
+html[data-skin="gold"] .from-orange-100.to-amber-50,
+html[data-skin="gold"] .dark\:from-orange-900\/35 {
+  background: linear-gradient(90deg, rgba(233, 200, 107, 0.16), rgba(233, 200, 107, 0.03)) !important;
+  border: 1px solid var(--line) !important;
+}
+/* nav hover */
+html[data-skin="gold"] nav a:hover { color: var(--ink) !important; }
+/* logo fallback tile */
+html[data-skin="gold"] aside .from-orange-400.to-rose-400 {
+  background: linear-gradient(160deg, #191308, #0f0b06) !important;
+  border: 1px solid var(--line);
+}
+
+/* ---------- KPI label pill + gold number (dashboard markers) ---------- */
+html[data-skin="gold"] .gk-label {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 8px;
+  background: rgba(190, 158, 78, 0.09);
+  border: 1px solid rgba(190, 158, 78, 0.14);
+  color: #b7ae9f !important;
+  font-weight: 600;
+}
+html[data-skin="gold"] .gk-value {
+  font-size: 2rem;
+  font-weight: 900;
+}
+html[data-skin="gold"] .gk-icon {
+  background: rgba(233, 200, 107, 0.05) !important;
+  border: 1px solid var(--line) !important;
+  box-shadow: none !important;
+}
+html[data-skin="gold"] .gk-icon svg { color: var(--g2) !important; }
+
+/* ---------- recent-documents table: status-tinted rows + chips ---------- */
+html[data-skin="gold"] table thead {
+  background: transparent !important;
+}
+html[data-skin="gold"] table thead th {
+  color: #8f8676 !important;
+  border-color: var(--line-soft) !important;
+}
+html[data-skin="gold"] tbody tr[data-status] td { color: #dcd3c4; }
+html[data-skin="gold"] tbody tr[data-status="paid"] { background: rgba(79, 196, 122, 0.13) !important; }
+html[data-skin="gold"] tbody tr[data-status="sent"] { background: rgba(120, 150, 200, 0.14) !important; }
+html[data-skin="gold"] tbody tr[data-status="draft"] { background: rgba(175, 163, 140, 0.12) !important; }
+html[data-skin="gold"] tbody tr[data-status="cancelled"] { background: rgba(170, 90, 60, 0.12) !important; }
+html[data-skin="gold"] tbody tr[data-status="paid"]:hover { background: rgba(79, 196, 122, 0.19) !important; }
+html[data-skin="gold"] tbody tr[data-status="sent"]:hover { background: rgba(120, 150, 200, 0.2) !important; }
+html[data-skin="gold"] tbody tr[data-status="draft"]:hover { background: rgba(175, 163, 140, 0.17) !important; }
+html[data-skin="gold"] tbody tr[data-status="cancelled"]:hover { background: rgba(170, 90, 60, 0.18) !important; }
+html[data-skin="gold"] table tbody td { border-color: rgba(214, 178, 108, 0.13) !important; }
+/* document number cell in muted gold */
+html[data-skin="gold"] tbody tr[data-status] td:first-child { color: #c9b885 !important; }
+
+/* ---------- segmented range control track ---------- */
+html[data-skin="gold"] .card-soft.p-1 {
+  background: rgba(20, 15, 8, 0.5) !important;
+  border: 1px solid var(--line-soft) !important;
+}
+
+/* ---------- misc: bar-track fills that use white/60 ---------- */
+html[data-skin="gold"] .bg-white\/60 { background-color: rgba(214, 178, 108, 0.12) !important; }
+
+/* ---------- scrollbar ---------- */
+html[data-skin="gold"] ::-webkit-scrollbar-thumb {
+  background: rgba(190, 158, 78, 0.28);
+}
+html[data-skin="gold"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(190, 158, 78, 0.45);
+}
+
+/* The receipt/PDF preview must stay white paper even under the gold skin,
+   same rationale as dark mode. */
+html[data-skin="gold"] .receipt-view {
+  background: #ffffff !important;
+  color: #44403c !important;
+}
+html[data-skin="gold"] .receipt-view * { color: inherit; }
+html[data-skin="gold"] .receipt-view::before,
+html[data-skin="gold"] .receipt-view::after { display: none !important; }

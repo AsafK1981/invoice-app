@@ -9,8 +9,10 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
+  LabelList,
   ResponsiveContainer,
 } from "recharts";
+import { useSkin } from "@/lib/skin";
 import type { InvoiceDocument, Expense } from "@/lib/types";
 
 interface Props {
@@ -18,7 +20,27 @@ interface Props {
   expenses: Expense[];
 }
 
+/** Compact ₪k label for value-labels above the income bars (gold skin).
+ * Typed loosely to match recharts' LabelFormatter (string | number | undefined). */
+function kLabel(v: unknown): string {
+  const n = typeof v === "number" ? v : Number(v);
+  if (!n || Number.isNaN(n)) return "";
+  return `₪${Math.round(n / 1000)}k`;
+}
+
 export function DashboardChart({ documents, expenses }: Props) {
+  const { skin } = useSkin();
+  const gold = skin === "gold";
+
+  // Palette swaps for the gold skin. Coral values are the originals so the
+  // default look is byte-for-byte unchanged.
+  const gridStroke = gold ? "rgba(214,178,108,0.12)" : "#fed7aa";
+  const axisStroke = gold ? "#a79f90" : "#78716c";
+  const incomeFill = gold ? "url(#goldBar)" : "#10b981";
+  const expenseFill = gold ? "rgba(180,150,95,0.42)" : "#f43f5e";
+  const tooltipBg = gold ? "#171106" : "#fffaf5";
+  const tooltipBorder = gold ? "1px solid rgba(214,178,108,0.32)" : "1px solid #fed7aa";
+
   const data = useMemo(() => {
     const now = new Date();
     const months: { key: string; label: string }[] = [];
@@ -65,20 +87,31 @@ export function DashboardChart({ documents, expenses }: Props) {
   return (
     <div style={{ width: "100%", height: 288 }}>
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#fed7aa" />
-          <XAxis dataKey="month" stroke="#78716c" fontSize={12} />
+        <BarChart data={data} margin={{ top: gold ? 22 : 10, right: 10, left: 10, bottom: 10 }}>
+          {gold && (
+            <defs>
+              <linearGradient id="goldBar" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stopColor="#d8be77" />
+                <stop offset="0.5" stopColor="#be9e4e" />
+                <stop offset="1" stopColor="#8f6f2a" />
+              </linearGradient>
+            </defs>
+          )}
+          <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={!gold} />
+          <XAxis dataKey="month" stroke={axisStroke} fontSize={12} />
           <YAxis
-            stroke="#78716c"
+            stroke={axisStroke}
             fontSize={12}
             tickFormatter={(v) => `₪${(v / 1000).toFixed(0)}k`}
           />
           <Tooltip
+            cursor={gold ? { fill: "rgba(190,158,78,0.08)" } : undefined}
             contentStyle={{
-              backgroundColor: "#fffaf5",
-              border: "1px solid #fed7aa",
+              backgroundColor: tooltipBg,
+              border: tooltipBorder,
               borderRadius: "12px",
               direction: "rtl",
+              color: gold ? "#e2dccd" : undefined,
             }}
             formatter={(value) =>
               new Intl.NumberFormat("he-IL", {
@@ -89,8 +122,19 @@ export function DashboardChart({ documents, expenses }: Props) {
             }
           />
           <Legend wrapperStyle={{ direction: "rtl" }} />
-          <Bar dataKey="הכנסות" fill="#10b981" radius={[8, 8, 0, 0]} />
-          <Bar dataKey="הוצאות" fill="#f43f5e" radius={[8, 8, 0, 0]} />
+          <Bar dataKey="הכנסות" fill={incomeFill} radius={[8, 8, 0, 0]}>
+            {gold && (
+              <LabelList
+                dataKey="הכנסות"
+                position="top"
+                formatter={kLabel}
+                fill="#cdb477"
+                fontSize={12}
+                fontWeight={700}
+              />
+            )}
+          </Bar>
+          <Bar dataKey="הוצאות" fill={expenseFill} radius={[8, 8, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </div>

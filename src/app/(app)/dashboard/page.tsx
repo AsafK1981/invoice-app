@@ -351,11 +351,11 @@ export default function DashboardPage() {
             >
               <div className="flex items-start justify-between">
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-stone-700 flex items-center gap-1">
+                  <p className="gk-label text-sm font-medium text-stone-700 flex items-center gap-1">
                     {s.label}
                     <ArrowLeft className="w-3 h-3 opacity-0 group-hover:opacity-50 -translate-x-1 group-hover:translate-x-0 transition-all" />
                   </p>
-                  <p className="text-2xl font-bold mt-2 text-stone-900 truncate">
+                  <p className="gk-value text-2xl font-bold mt-2 text-stone-900 truncate">
                     {ready ? s.value : "..."}
                   </p>
                   <div className="flex items-baseline gap-2 mt-1 flex-wrap">
@@ -366,7 +366,7 @@ export default function DashboardPage() {
                   </div>
                 </div>
                 <div
-                  className={`w-11 h-11 rounded-2xl bg-gradient-to-br ${s.gradient} flex items-center justify-center shadow-lg ${s.iconBg} flex-shrink-0`}
+                  className={`gk-icon w-11 h-11 rounded-2xl bg-gradient-to-br ${s.gradient} flex items-center justify-center shadow-lg ${s.iconBg} flex-shrink-0`}
                 >
                   <Icon className="w-5 h-5 text-white" />
                 </div>

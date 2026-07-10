@@ -22,10 +22,12 @@ import {
   Sun,
   ShieldAlert,
   Landmark,
+  Gem,
 } from "lucide-react";
 import { useBusiness } from "@/lib/business-store";
 import { signOut } from "@/lib/auth";
 import { useTheme } from "@/lib/theme";
+import { useSkin } from "@/lib/skin";
 import { isAdminEmail } from "@/lib/admin";
 import { supabase } from "@/lib/supabase";
 import { AccountSettingsModal } from "@/components/account-settings-modal";
@@ -45,6 +47,7 @@ export function Sidebar() {
   const pathname = usePathname();
   const { business } = useBusiness();
   const { theme, toggle: toggleTheme } = useTheme();
+  const { skin, toggle: toggleSkin } = useSkin();
   const [mobileOpen, setMobileOpen] = useState(false);
   // Show the "/admin" nav item only when the logged-in user's email
   // appears in the admin allow-list. Computed client-side; the API
@@ -148,6 +151,15 @@ export function Sidebar() {
               עבור למצב כהה
             </>
           )}
+        </button>
+        {/* Opt-in gold skin toggle (obsidian + antique gold, art-deco).
+            Default is the classic coral look; this flips <html data-skin>. */}
+        <button
+          onClick={toggleSkin}
+          className="flex items-center gap-2 w-full px-3 py-2 rounded-xl text-sm text-stone-700 hover:bg-amber-50 hover:text-amber-700 transition-colors"
+        >
+          <Gem className="w-4 h-4" />
+          {skin === "gold" ? "עיצוב קלאסי" : "עיצוב זהב (בטא)"}
         </button>
         <a
           href={(() => {
