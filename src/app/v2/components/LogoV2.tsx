@@ -1,0 +1,80 @@
+/**
+ * LogoV2 — the gold "document" mark (from icon-app.svg) + "חשבונית"
+ * wordmark in Frank Ruhl Libre gold, with a small "סופר ידידותית"
+ * kicker. Two variants:
+ *   - "full" (default): mark + wordmark + kicker
+ *   - "mark": just the gold document mark
+ *
+ * The inline SVG uses a fixed gradient id ("v2-logo-gold"). If the logo
+ * is rendered more than once on a page the id repeats, but every
+ * definition is identical so `url(#v2-logo-gold)` resolves the same gold
+ * fill everywhere — visually correct.
+ */
+
+type LogoV2Props = {
+  variant?: "full" | "mark";
+  className?: string;
+};
+
+function Mark({ small }: { small?: boolean }) {
+  return (
+    <svg
+      className={`v2-logo-mark${small ? " sm" : ""}`}
+      viewBox="0 0 100 100"
+      role="img"
+      aria-label="חשבונית"
+    >
+      <defs>
+        <linearGradient id="v2-logo-gold" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#FCEFB6" />
+          <stop offset="0.4" stopColor="#EACB6E" />
+          <stop offset="0.74" stopColor="#C1912F" />
+          <stop offset="1" stopColor="#F2DE93" />
+        </linearGradient>
+      </defs>
+      <rect
+        x="5"
+        y="5"
+        width="90"
+        height="90"
+        rx="24"
+        fill="#120D07"
+        stroke="url(#v2-logo-gold)"
+        strokeWidth="2.2"
+      />
+      <g
+        stroke="url(#v2-logo-gold)"
+        strokeWidth="2.6"
+        fill="none"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      >
+        <path d="M37 28h18l10 10v34H37z" />
+        <path d="M55 28v10h10" />
+      </g>
+      <g stroke="url(#v2-logo-gold)" strokeWidth="2.2" strokeLinecap="round">
+        <path d="M43 42h8M43 50h16M43 58h16" />
+      </g>
+    </svg>
+  );
+}
+
+export default function LogoV2({ variant = "full", className }: LogoV2Props) {
+  if (variant === "mark") {
+    return (
+      <span className={`v2-logo${className ? ` ${className}` : ""}`}>
+        <Mark />
+      </span>
+    );
+  }
+
+  return (
+    <span className={`v2-logo${className ? ` ${className}` : ""}`}>
+      <Mark />
+      <span className="v2-logo-text">
+        <span className="v2-logo-word v2-gold">חשבונית</span>
+        <span className="v2-logo-sub">סופר ידידותית</span>
+      </span>
+    </span>
+  );
+}

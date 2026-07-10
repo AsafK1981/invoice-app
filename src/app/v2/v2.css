@@ -1,0 +1,1369 @@
+/* ============================================================
+   v2 marketing theme — gold metallic on obsidian (design "F").
+   EVERY selector is prefixed with `.v2-theme` so nothing here can
+   ever match an element outside the /v2 subtree. This also lets us
+   win, on specificity, over the inherited globals.css rules (warm
+   body gradient, #f97316 focus ring, the html.dark utility block)
+   that would otherwise bleed into /v2.
+   ============================================================ */
+
+.v2-theme {
+  /* gold design tokens */
+  --v2-g1: #fbeeb8;
+  --v2-g2: #e9c86b;
+  --v2-g3: #c79a34;
+  --v2-gold-grad: linear-gradient(177deg, #fcefb6 0%, #eacb6e 38%, #c1912f 72%, #f2de93 100%);
+  --v2-line: rgba(214, 178, 108, 0.32);
+  --v2-line-soft: rgba(214, 178, 108, 0.14);
+  --v2-ink: #f0ece3;
+  --v2-muted: #9c948a;
+  --v2-card: #151109;
+  --v2-obsidian: #070504;
+
+  position: relative;
+  min-height: 100vh;
+  color: var(--v2-ink);
+  /* Cover the inherited warm body gradient completely with the obsidian
+     radial field from design-F. Opaque bottom stop (#070504) guarantees
+     no coral shows through, in light OR dark mode. */
+  background:
+    radial-gradient(120% 70% at 50% -8%, rgba(233, 200, 107, 0.1), transparent 45%),
+    radial-gradient(100% 120% at 50% 30%, #1a1510 0%, #0d0a07 55%, #070504 100%);
+  font-family: "Assistant", var(--font-assistant), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* Reset the box-model quirks design-F relied on, but ONLY inside v2. */
+.v2-theme *,
+.v2-theme *::before,
+.v2-theme *::after {
+  box-sizing: border-box;
+}
+
+/* Neutralize the inherited #f97316 keyboard focus ring; use gold instead.
+   `.v2-theme a:focus-visible` (class + type + pseudo) outranks the bare
+   `a[href]:focus-visible` global. */
+.v2-theme a:focus-visible,
+.v2-theme button:focus-visible,
+.v2-theme [role="button"]:focus-visible,
+.v2-theme [tabindex]:focus-visible {
+  outline: 2px solid var(--v2-g2);
+  outline-offset: 3px;
+}
+
+.v2-theme a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Gold metallic text (background-clip). */
+.v2-theme .v2-gold {
+  background: var(--v2-gold-grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 2px 12px rgba(226, 186, 96, 0.25));
+}
+
+/* ---------- deco outer frame ---------- */
+.v2-theme .v2-frame {
+  position: fixed;
+  inset: 16px;
+  border: 1px solid var(--v2-line-soft);
+  border-radius: 6px;
+  pointer-events: none;
+  z-index: 0;
+}
+.v2-theme .v2-frame i {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  border: 1.5px solid var(--v2-g2);
+  opacity: 0.7;
+}
+.v2-theme .v2-frame .tl { top: -1px; right: -1px; border-left: none; border-bottom: none; }
+.v2-theme .v2-frame .tr { top: -1px; left: -1px; border-right: none; border-bottom: none; }
+.v2-theme .v2-frame .bl { bottom: -1px; right: -1px; border-left: none; border-top: none; }
+.v2-theme .v2-frame .br { bottom: -1px; left: -1px; border-right: none; border-top: none; }
+
+/* ---------- header ---------- */
+.v2-theme .v2-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px clamp(16px, 5vw, 40px);
+  background: rgba(9, 7, 4, 0.72);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--v2-line-soft);
+}
+.v2-theme .v2-header-nav {
+  display: flex;
+  align-items: center;
+  gap: clamp(14px, 3vw, 28px);
+}
+.v2-theme .v2-navlink {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #cbc2b3;
+  transition: color 0.2s ease;
+}
+.v2-theme .v2-navlink:hover { color: var(--v2-g1); }
+
+/* gold pill button (used in header + inline CTAs) */
+.v2-theme .v2-btn-gold {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Assistant", var(--font-assistant), system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  color: #191206;
+  padding: 9px 22px;
+  border-radius: 999px;
+  background: var(--v2-gold-grad);
+  box-shadow: 0 10px 24px -12px rgba(226, 186, 96, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+.v2-theme .v2-btn-gold:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 30px -12px rgba(226, 186, 96, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+/* ---------- logo ---------- */
+.v2-theme .v2-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.v2-theme .v2-logo-mark {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  display: block;
+}
+.v2-theme .v2-logo-mark.sm { width: 30px; height: 30px; }
+.v2-theme .v2-logo-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1;
+}
+.v2-theme .v2-logo-word {
+  font-family: "Frank Ruhl Libre", var(--font-frank), serif;
+  font-weight: 700;
+  font-size: 22px;
+  letter-spacing: 0.01em;
+}
+.v2-theme .v2-logo-sub {
+  font-family: "Assistant", var(--font-assistant), system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 9.5px;
+  letter-spacing: 0.28em;
+  color: var(--v2-muted);
+  margin-top: 3px;
+}
+
+/* ---------- hero wrap ---------- */
+.v2-theme .v2-main {
+  position: relative;
+  z-index: 1;
+  padding: clamp(40px, 7vw, 64px) 20px 40px;
+}
+.v2-theme .v2-wrap {
+  max-width: 680px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+  text-align: center;
+}
+
+.v2-theme .v2-eyebrow-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.v2-theme .v2-eyebrow-row .ln {
+  height: 1px;
+  width: 40px;
+  background: linear-gradient(90deg, transparent, var(--v2-g2));
+}
+.v2-theme .v2-eyebrow-row .ln.r {
+  background: linear-gradient(90deg, var(--v2-g2), transparent);
+}
+.v2-theme .v2-eyebrow-row span {
+  font-size: 11px;
+  letter-spacing: 0.4em;
+  color: #c9b885;
+}
+
+.v2-theme h1.v2-h1 {
+  font-family: "Frank Ruhl Libre", var(--font-frank), serif;
+  font-weight: 900;
+  font-size: clamp(38px, 7vw, 62px);
+  line-height: 1.04;
+  letter-spacing: -0.01em;
+}
+.v2-theme .v2-lede {
+  margin-top: 14px;
+  font-size: 16px;
+  color: var(--v2-muted);
+  max-width: 44ch;
+  margin-inline: auto;
+  line-height: 1.7;
+}
+
+/* ---------- golden invoice card ---------- */
+.v2-theme .v2-card {
+  position: relative;
+  margin: 34px auto 0;
+  width: min(430px, 100%);
+  text-align: right;
+  background: linear-gradient(160deg, #191308, #0f0b06);
+  border: 1px solid var(--v2-line);
+  border-radius: 16px;
+  padding: 26px 24px 22px;
+  box-shadow:
+    0 30px 70px -28px rgba(0, 0, 0, 0.85),
+    inset 0 1px 0 rgba(255, 236, 180, 0.06),
+    0 0 0 1px rgba(233, 200, 107, 0.06);
+}
+.v2-theme .v2-card .corner {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border: 1.4px solid var(--v2-g2);
+  opacity: 0.75;
+}
+.v2-theme .v2-card .c1 { top: 10px; right: 10px; border-left: none; border-bottom: none; }
+.v2-theme .v2-card .c2 { top: 10px; left: 10px; border-right: none; border-bottom: none; }
+.v2-theme .v2-card .c3 { bottom: 10px; right: 10px; border-left: none; border-top: none; }
+.v2-theme .v2-card .c4 { bottom: 10px; left: 10px; border-right: none; border-top: none; }
+.v2-theme .v2-card .chd {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.v2-theme .v2-card .biz {
+  font-family: "Frank Ruhl Libre", var(--font-frank), serif;
+  font-weight: 700;
+  font-size: 19px;
+}
+.v2-theme .v2-card .biz small {
+  display: block;
+  font-family: "Assistant", var(--font-assistant), system-ui, sans-serif;
+  font-weight: 400;
+  font-size: 11px;
+  color: var(--v2-muted);
+  letter-spacing: 0.06em;
+  margin-top: 2px;
+}
+.v2-theme .v2-card .chd-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+.v2-theme .v2-card .doclbl {
+  font-size: 10.5px;
+  letter-spacing: 0.24em;
+  color: #c9b885;
+  border: 1px solid var(--v2-line);
+  border-radius: 999px;
+  padding: 4px 10px;
+  white-space: nowrap;
+}
+.v2-theme .v2-card .paid {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--v2-g2);
+  transform: rotate(-4deg);
+  font-family: "Frank Ruhl Libre", var(--font-frank), serif;
+  font-weight: 700;
+  border: 1px solid var(--v2-line);
+  border-radius: 6px;
+  padding: 3px 9px;
+}
+.v2-theme .v2-card .paid i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--v2-g2);
+  box-shadow: 0 0 6px rgba(233, 200, 107, 0.8);
+}
+.v2-theme .v2-card .meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--v2-muted);
+  margin-top: 16px;
+  border-top: 1px solid var(--v2-line-soft);
+  padding-top: 12px;
+}
+.v2-theme .v2-card .rows { margin-top: 12px; }
+.v2-theme .v2-card .r {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  padding: 7px 0;
+  border-bottom: 1px dashed rgba(214, 178, 108, 0.14);
+}
+.v2-theme .v2-card .r span:last-child {
+  font-variant-numeric: tabular-nums;
+  color: #e7e0d2;
+}
+.v2-theme .v2-card .tot {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-top: 14px;
+}
+.v2-theme .v2-card .tot .lbl {
+  font-size: 12.5px;
+  color: var(--v2-muted);
+  letter-spacing: 0.08em;
+}
+.v2-theme .v2-card .tot .amt {
+  font-family: "Frank Ruhl Libre", var(--font-frank), serif;
+  font-weight: 900;
+  font-size: 30px;
+}
+
+/* ---------- tagline ---------- */
+.v2-theme .v2-tag {
+  margin-top: 34px;
+  font-size: clamp(20px, 3.6vw, 26px);
+  font-weight: 700;
+}
+
+/* ---------- features row ---------- */
+.v2-theme .v2-feats {
+  display: flex;
+  justify-content: center;
+  gap: 0;
+  margin-top: 30px;
+  flex-wrap: wrap;
+}
+.v2-theme .v2-ft {
+  padding: 2px 22px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  position: relative;
+}
+.v2-theme .v2-ft + .v2-ft::before {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 14%;
+  height: 72%;
+  width: 1px;
+  background: var(--v2-line-soft);
+}
+.v2-theme .v2-ft svg { width: 20px; height: 20px; }
+.v2-theme .v2-ft b { font-size: 13.5px; font-weight: 600; color: #dcd3c4; }
+
+/* ---------- pricing ---------- */
+.v2-theme .v2-pricetop {
+  margin-top: 48px;
+  font-size: 12px;
+  letter-spacing: 0.36em;
+  color: #c9b885;
+}
+.v2-theme .v2-price {
+  margin-top: 2px;
+  font-family: "Frank Ruhl Libre", var(--font-frank), serif;
+  font-weight: 900;
+  font-size: clamp(40px, 8vw, 68px);
+  line-height: 1;
+}
+.v2-theme .v2-price .per {
+  font-size: 0.36em;
+  font-weight: 700;
+  font-family: "Assistant", var(--font-assistant), system-ui, sans-serif;
+  color: #cbb98a;
+  letter-spacing: 0.02em;
+  -webkit-text-fill-color: #cbb98a;
+}
+.v2-theme .v2-fdiv {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+.v2-theme .v2-fdiv .ln {
+  height: 1px;
+  width: 52px;
+  background: linear-gradient(90deg, transparent, var(--v2-line));
+}
+.v2-theme .v2-fdiv .ln.r {
+  background: linear-gradient(90deg, var(--v2-line), transparent);
+}
+.v2-theme .v2-fdiv span {
+  font-size: 11.5px;
+  letter-spacing: 0.36em;
+  color: #bcb19c;
+}
+
+/* ---------- primary CTA ---------- */
+.v2-theme .v2-cta {
+  display: inline-block;
+  margin-top: 34px;
+  font-weight: 700;
+  font-size: 16px;
+  color: #191206;
+  padding: 15px 42px;
+  border-radius: 999px;
+  background: var(--v2-gold-grad);
+  box-shadow: 0 14px 32px -12px rgba(226, 186, 96, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+.v2-theme .v2-cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 20px 40px -12px rgba(226, 186, 96, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+.v2-theme .v2-fine {
+  margin-top: 13px;
+  font-size: 12px;
+  letter-spacing: 0.26em;
+  color: var(--v2-muted);
+}
+
+/* ---------- inline hero credit line ---------- */
+.v2-theme .v2-credit {
+  margin-top: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+.v2-theme .v2-credit .ln {
+  height: 1px;
+  width: 44px;
+  background: linear-gradient(90deg, transparent, var(--v2-line));
+}
+.v2-theme .v2-credit .ln.r {
+  background: linear-gradient(90deg, var(--v2-line), transparent);
+}
+.v2-theme .v2-credit span {
+  font-size: 11px;
+  letter-spacing: 0.28em;
+  color: #786f63;
+}
+
+/* ---------- footer ---------- */
+.v2-theme .v2-footer {
+  position: relative;
+  z-index: 1;
+  margin-top: 24px;
+  padding: 32px clamp(16px, 5vw, 40px) 40px;
+}
+.v2-theme .v2-footer-hair {
+  height: 1px;
+  width: 100%;
+  max-width: 680px;
+  margin: 0 auto 24px;
+  background: linear-gradient(90deg, transparent, var(--v2-line), transparent);
+}
+.v2-theme .v2-footer-inner {
+  max-width: 680px;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.v2-theme .v2-footer-links {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.v2-theme .v2-footer-links a {
+  font-size: 13px;
+  color: #948a7c;
+  transition: color 0.2s ease;
+}
+.v2-theme .v2-footer-links a:hover { color: var(--v2-g1); }
+
+/* ============================================================
+   Sub-pages: legal documents (terms / privacy) + system status.
+   All still scoped to .v2-theme, gold-on-obsidian, RTL prose.
+   ============================================================ */
+
+/* ---------- shared sub-page shell ---------- */
+.v2-theme .v2-doc {
+  max-width: 720px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+/* back-to-home link */
+.v2-theme .v2-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #c9b885;
+  margin-bottom: 26px;
+  transition: color 0.2s ease;
+}
+.v2-theme .v2-back:hover { color: var(--v2-g1); }
+.v2-theme .v2-back svg { width: 15px; height: 15px; }
+
+/* document header block */
+.v2-theme .v2-doc-head {
+  padding-bottom: 22px;
+  margin-bottom: 30px;
+  border-bottom: 1px solid var(--v2-line);
+}
+.v2-theme .v2-doc-head .v2-eyebrow-row {
+  justify-content: flex-start;
+  margin-bottom: 16px;
+}
+.v2-theme h1.v2-doc-title {
+  font-family: "Frank Ruhl Libre", var(--font-frank), serif;
+  font-weight: 900;
+  font-size: clamp(30px, 5.6vw, 46px);
+  line-height: 1.08;
+  letter-spacing: -0.01em;
+}
+.v2-theme .v2-doc-updated {
+  margin-top: 12px;
+  font-size: 12.5px;
+  letter-spacing: 0.16em;
+  color: var(--v2-muted);
+}
+.v2-theme .v2-doc-lead {
+  margin-top: 12px;
+  font-size: 15px;
+  color: #cbc2b3;
+  line-height: 1.7;
+}
+
+/* ---------- legal prose ---------- */
+.v2-theme .v2-prose {
+  text-align: right;
+}
+.v2-theme .v2-prose section + section {
+  margin-top: 26px;
+}
+.v2-theme .v2-prose h2 {
+  font-family: "Frank Ruhl Libre", var(--font-frank), serif;
+  font-weight: 700;
+  font-size: 19px;
+  color: var(--v2-g1);
+  margin-bottom: 9px;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.v2-theme .v2-prose h2::before {
+  content: "";
+  flex: none;
+  width: 16px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--v2-g2));
+  transform: translateY(-5px);
+}
+.v2-theme .v2-prose p {
+  font-size: 15px;
+  line-height: 1.8;
+  color: #c4bbad;
+  max-width: 66ch;
+}
+.v2-theme .v2-prose a {
+  color: var(--v2-g1);
+  border-bottom: 1px solid var(--v2-line);
+  transition: border-color 0.2s ease;
+}
+.v2-theme .v2-prose a:hover { border-color: var(--v2-g2); }
+
+/* ---------- status page ---------- */
+.v2-theme .v2-status-head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-bottom: 22px;
+  margin-bottom: 26px;
+  border-bottom: 1px solid var(--v2-line);
+}
+.v2-theme .v2-status-badge {
+  width: 52px;
+  height: 52px;
+  flex: none;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--v2-line);
+  background: linear-gradient(160deg, #191308, #0f0b06);
+}
+.v2-theme .v2-status-badge svg { width: 24px; height: 24px; }
+.v2-theme .v2-status-badge.is-ok { color: var(--v2-g2); }
+.v2-theme .v2-status-badge.is-down { color: #e6a15a; }
+.v2-theme .v2-status-badge.is-loading { color: var(--v2-muted); }
+.v2-theme .v2-status-badge .spin { animation: v2-spin 1s linear infinite; }
+.v2-theme .v2-status-badge .pulse { animation: v2-pulse 1.4s ease-in-out infinite; }
+.v2-theme h1.v2-status-title {
+  font-family: "Frank Ruhl Libre", var(--font-frank), serif;
+  font-weight: 900;
+  font-size: clamp(26px, 4.6vw, 38px);
+  line-height: 1.1;
+}
+.v2-theme .v2-status-sub {
+  margin-top: 6px;
+  font-size: 14px;
+  color: var(--v2-muted);
+}
+
+.v2-theme .v2-status-error {
+  border: 1px solid rgba(230, 161, 90, 0.4);
+  background: rgba(230, 161, 90, 0.06);
+  border-radius: 12px;
+  padding: 14px 16px;
+  font-size: 14px;
+  color: #e7c9a6;
+  margin-bottom: 22px;
+}
+
+.v2-theme .v2-status-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.v2-theme .v2-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border: 1px solid var(--v2-line-soft);
+  border-radius: 12px;
+  padding: 14px 16px;
+  background: linear-gradient(160deg, #17110a, #0e0a06);
+}
+.v2-theme .v2-status-row.is-ok { border-color: rgba(214, 178, 108, 0.28); }
+.v2-theme .v2-status-row.is-down { border-color: rgba(230, 161, 90, 0.42); }
+.v2-theme .v2-status-row .name {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  font-size: 14.5px;
+  color: #e7e0d2;
+}
+.v2-theme .v2-status-row .name svg { width: 18px; height: 18px; }
+.v2-theme .v2-status-row.is-ok .name svg { color: var(--v2-g2); }
+.v2-theme .v2-status-row.is-down .name svg { color: #e6a15a; }
+.v2-theme .v2-status-row .val {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.v2-theme .v2-status-row.is-ok .val {
+  color: var(--v2-g2);
+  font-family: "Frank Ruhl Libre", var(--font-frank), serif;
+}
+.v2-theme .v2-status-row.is-down .val { color: #e6a15a; }
+
+.v2-theme .v2-status-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--v2-line-soft);
+  font-size: 12px;
+  color: var(--v2-muted);
+}
+.v2-theme .v2-status-refresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #c9b885;
+  transition: color 0.2s ease;
+}
+.v2-theme .v2-status-refresh:hover { color: var(--v2-g1); }
+.v2-theme .v2-status-refresh:disabled { opacity: 0.5; cursor: default; }
+.v2-theme .v2-status-refresh svg { width: 14px; height: 14px; }
+.v2-theme .v2-status-refresh .spin { animation: v2-spin 1s linear infinite; }
+
+.v2-theme .v2-status-note {
+  margin-top: 22px;
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: var(--v2-muted);
+}
+.v2-theme .v2-status-note a {
+  color: var(--v2-g1);
+  border-bottom: 1px solid var(--v2-line);
+}
+
+@keyframes v2-spin { to { transform: rotate(360deg); } }
+@keyframes v2-pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+
+@media (max-width: 520px) {
+  .v2-theme .v2-ft { padding: 2px 12px; }
+  .v2-theme .v2-ft + .v2-ft::before { display: none; }
+  .v2-theme .v2-footer-inner { justify-content: center; }
+}
+
+/* ============================================================
+   Auth (login / signup / forgot) — /v2/login
+   ============================================================ */
+.v2-theme .v2-auth-main {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(24px, 6vw, 56px) 20px;
+}
+.v2-theme .v2-auth-shell {
+  width: min(430px, 100%);
+  position: relative;
+  z-index: 1;
+}
+.v2-theme .v2-auth-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 22px;
+  text-align: center;
+}
+.v2-theme .v2-auth-title {
+  font-family: "Frank Ruhl Libre", var(--font-frank), serif;
+  font-weight: 700;
+  font-size: 24px;
+  line-height: 1.1;
+}
+.v2-theme .v2-auth-sub {
+  font-size: 13.5px;
+  color: var(--v2-muted);
+  letter-spacing: 0.02em;
+}
+
+/* card — reuses the golden invoice-card treatment */
+.v2-theme .v2-auth-card {
+  position: relative;
+  background: linear-gradient(160deg, #191308, #0f0b06);
+  border: 1px solid var(--v2-line);
+  border-radius: 16px;
+  padding: 30px 26px 26px;
+  box-shadow:
+    0 30px 70px -28px rgba(0, 0, 0, 0.85),
+    inset 0 1px 0 rgba(255, 236, 180, 0.06),
+    0 0 0 1px rgba(233, 200, 107, 0.06);
+}
+.v2-theme .v2-auth-card .corner {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border: 1.4px solid var(--v2-g2);
+  opacity: 0.75;
+  pointer-events: none;
+}
+.v2-theme .v2-auth-card .c1 { top: 10px; right: 10px; border-left: none; border-bottom: none; }
+.v2-theme .v2-auth-card .c2 { top: 10px; left: 10px; border-right: none; border-bottom: none; }
+.v2-theme .v2-auth-card .c3 { bottom: 10px; right: 10px; border-left: none; border-top: none; }
+.v2-theme .v2-auth-card .c4 { bottom: 10px; left: 10px; border-right: none; border-top: none; }
+
+.v2-theme .v2-auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.v2-theme .v2-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.v2-theme .v2-field-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.v2-theme .v2-label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #cbc2b3;
+}
+.v2-theme .v2-input-wrap {
+  position: relative;
+}
+.v2-theme .v2-input {
+  width: 100%;
+  font-family: "Assistant", var(--font-assistant), system-ui, sans-serif;
+  font-size: 14px;
+  color: var(--v2-ink);
+  background: rgba(9, 7, 4, 0.6);
+  border: 1px solid var(--v2-line);
+  border-radius: 10px;
+  padding: 12px 40px 12px 14px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.v2-theme .v2-input::placeholder {
+  color: #6f675c;
+}
+.v2-theme .v2-input:focus {
+  outline: none;
+  border-color: var(--v2-g2);
+  box-shadow: 0 0 0 3px rgba(233, 200, 107, 0.14);
+}
+.v2-theme .v2-input-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  color: #8a8072;
+  pointer-events: none;
+}
+.v2-theme .v2-input-toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  color: #8a8072;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+.v2-theme .v2-input-toggle:hover { color: var(--v2-g1); }
+.v2-theme .v2-input-toggle svg { width: 16px; height: 16px; }
+
+.v2-theme .v2-link {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--v2-g2);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+.v2-theme .v2-link:hover { color: var(--v2-g1); text-decoration: underline; }
+
+.v2-theme .v2-auth-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  font-family: "Assistant", var(--font-assistant), system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 15px;
+  color: #191206;
+  padding: 13px 22px;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  background: var(--v2-gold-grad);
+  box-shadow: 0 14px 32px -12px rgba(226, 186, 96, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+.v2-theme .v2-auth-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 20px 40px -12px rgba(226, 186, 96, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+.v2-theme .v2-auth-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.v2-theme .v2-auth-btn svg { width: 16px; height: 16px; }
+
+.v2-theme .v2-alert {
+  font-size: 13px;
+  line-height: 1.5;
+  border-radius: 10px;
+  padding: 11px 13px;
+}
+.v2-theme .v2-alert.err {
+  color: #f4b7a8;
+  background: rgba(120, 40, 30, 0.22);
+  border: 1px solid rgba(200, 90, 70, 0.4);
+}
+.v2-theme .v2-alert.ok {
+  color: #d7e2b6;
+  background: rgba(60, 80, 30, 0.2);
+  border: 1px solid rgba(150, 180, 90, 0.35);
+}
+
+.v2-theme .v2-auth-switch {
+  margin-top: 20px;
+  text-align: center;
+  font-size: 13.5px;
+  color: var(--v2-muted);
+}
+.v2-theme .v2-auth-switch .v2-link {
+  font-size: 13.5px;
+}
+.v2-theme .v2-auth-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.v2-theme .v2-auth-back svg { width: 13px; height: 13px; }
+
+/* divider + google (kept for parity with the original page) */
+.v2-theme .v2-auth-or {
+  position: relative;
+  margin: 22px 0;
+  text-align: center;
+}
+.v2-theme .v2-auth-or::before {
+  content: "";
+  position: absolute;
+  inset: 50% 0 auto;
+  height: 1px;
+  background: var(--v2-line-soft);
+}
+.v2-theme .v2-auth-or span {
+  position: relative;
+  background: #130e07;
+  padding: 0 12px;
+  font-size: 12px;
+  color: var(--v2-muted);
+}
+.v2-theme .v2-google-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  font-family: "Assistant", var(--font-assistant), system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--v2-ink);
+  padding: 12px 22px;
+  border: 1px solid var(--v2-line);
+  border-radius: 999px;
+  cursor: pointer;
+  background: rgba(9, 7, 4, 0.5);
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+.v2-theme .v2-google-btn:hover {
+  border-color: var(--v2-g2);
+  background: rgba(20, 16, 9, 0.7);
+}
+.v2-theme .v2-google-btn svg { width: 18px; height: 18px; }
+
+.v2-theme .v2-auth-home {
+  margin-top: 20px;
+  text-align: center;
+}
+.v2-theme .v2-auth-home a {
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: #786f63;
+  transition: color 0.2s ease;
+}
+.v2-theme .v2-auth-home a:hover { color: var(--v2-g1); }
+
+/* ============================================================
+   COMPARISON pages (/v2/vs + /v2/vs/[competitor]).
+   Every selector stays under `.v2-theme`. Semantic yes/no colors
+   are deliberately NOT brand-gold: green = supported, red = not
+   supported, amber = partial — so a scanning eye never confuses
+   "gold accent" with "yes". (Reuses the existing `.v2-back` link.)
+   ============================================================ */
+
+/* semantic tokens for the feature matrix */
+.v2-theme {
+  --v2-yes: #4fc47a;   /* unambiguous green — supported */
+  --v2-no: #e5544b;    /* true red — not supported */
+  --v2-partial: #d9a441; /* amber — partial (distinct minus glyph) */
+}
+
+/* ---------- shared comparison shell ---------- */
+.v2-theme .v2-cmp {
+  position: relative;
+  z-index: 1;
+  max-width: 940px;
+  margin: 0 auto;
+  padding: clamp(28px, 5vw, 48px) 20px 40px;
+  text-align: right;
+}
+
+/* ---------- comparison hero ---------- */
+.v2-theme .v2-cmp-hero { text-align: center; margin-bottom: clamp(32px, 6vw, 52px); }
+.v2-theme .v2-cmp-hero h1 {
+  font-family: "Frank Ruhl Libre", var(--font-frank), serif;
+  font-weight: 900;
+  font-size: clamp(30px, 5.5vw, 48px);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+.v2-theme .v2-cmp-hero .vs {
+  display: inline-block;
+  margin: 0 14px;
+  font-family: "Assistant", var(--font-assistant), system-ui, sans-serif;
+  font-weight: 400;
+  font-size: 0.62em;
+  color: var(--v2-muted);
+}
+.v2-theme .v2-cmp-hero .verdict {
+  margin: 16px auto 0;
+  max-width: 60ch;
+  font-size: 16px;
+  line-height: 1.75;
+  color: #cbc2b3;
+}
+.v2-theme .v2-cmp-hero .src {
+  margin-top: 12px;
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+  color: var(--v2-muted);
+}
+
+/* ---------- section heading (deco hairline) ---------- */
+.v2-theme .v2-cmp-sec { margin-bottom: clamp(26px, 5vw, 40px); }
+.v2-theme .v2-cmp-h {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.v2-theme .v2-cmp-h h2 {
+  font-family: "Frank Ruhl Libre", var(--font-frank), serif;
+  font-weight: 700;
+  font-size: clamp(20px, 3.4vw, 26px);
+  white-space: nowrap;
+}
+.v2-theme .v2-cmp-h .ln {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--v2-line), transparent);
+}
+
+/* ---------- dark panel (reused across comparison sections) ---------- */
+.v2-theme .v2-panel {
+  position: relative;
+  background: linear-gradient(160deg, #16110a, #0e0a06);
+  border: 1px solid var(--v2-line);
+  border-radius: 14px;
+  padding: 22px 22px 20px;
+  box-shadow: 0 24px 60px -30px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 236, 180, 0.05);
+}
+
+/* ---------- pricing grid ---------- */
+.v2-theme .v2-price-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px;
+}
+.v2-theme .v2-price-card {
+  position: relative;
+  border-radius: 14px;
+  padding: 22px 20px 20px;
+  border: 1px solid var(--v2-line-soft);
+  background: linear-gradient(160deg, #16110a, #0e0a06);
+}
+/* highlighted winner — gold border + faint gold wash */
+.v2-theme .v2-price-card.win {
+  border: 1px solid var(--v2-line);
+  background:
+    radial-gradient(120% 80% at 50% -10%, rgba(233, 200, 107, 0.08), transparent 55%),
+    linear-gradient(160deg, #1a1408, #100b06);
+  box-shadow: 0 24px 60px -28px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(233, 200, 107, 0.1);
+}
+.v2-theme .v2-price-card .badge {
+  position: absolute;
+  top: -11px;
+  right: 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: #191206;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--v2-gold-grad);
+  box-shadow: 0 8px 18px -10px rgba(226, 186, 96, 0.6);
+}
+.v2-theme .v2-price-card .badge svg { width: 12px; height: 12px; }
+.v2-theme .v2-price-card h3 {
+  font-family: "Frank Ruhl Libre", var(--font-frank), serif;
+  font-weight: 700;
+  font-size: 17px;
+  margin-bottom: 14px;
+}
+.v2-theme .v2-price-card ul { display: flex; flex-direction: column; gap: 9px; }
+.v2-theme .v2-price-card li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 13.5px;
+}
+.v2-theme .v2-price-card li .plan { color: var(--v2-muted); }
+.v2-theme .v2-price-card li .val {
+  font-weight: 700;
+  color: #e7e0d2;
+  font-variant-numeric: tabular-nums;
+  text-align: left;
+}
+.v2-theme .v2-price-card li.trial {
+  margin-top: 6px;
+  padding-top: 11px;
+  border-top: 1px solid var(--v2-line-soft);
+}
+.v2-theme .v2-price-card li.trial .val { color: var(--v2-g2); font-weight: 700; }
+.v2-theme .v2-price-note {
+  margin-top: 18px;
+  font-size: 13.5px;
+  line-height: 1.7;
+  color: #cbc2b3;
+  border: 1px solid var(--v2-line-soft);
+  border-radius: 12px;
+  padding: 14px 16px;
+  background: rgba(233, 200, 107, 0.04);
+}
+.v2-theme .v2-price-note strong { color: var(--v2-g1); }
+
+/* ---------- feature matrix ---------- */
+.v2-theme .v2-matrix { overflow: hidden; padding: 0; }
+.v2-theme .v2-matrix-scroll { overflow-x: auto; }
+.v2-theme table.v2-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+.v2-theme table.v2-table thead th {
+  position: sticky;
+  top: 0;
+  background: #120d07;
+  color: #cbc2b3;
+  font-weight: 700;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--v2-line);
+}
+.v2-theme table.v2-table thead th.feat { text-align: right; }
+.v2-theme table.v2-table thead th.col {
+  text-align: center;
+  min-width: 96px;
+  font-size: 12px;
+  line-height: 1.3;
+}
+.v2-theme table.v2-table thead th.col.us { color: var(--v2-g1); }
+/* section grouping row */
+.v2-theme table.v2-table tr.grp td {
+  padding: 12px 18px 8px;
+  font-family: "Frank Ruhl Libre", var(--font-frank), serif;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  color: var(--v2-g2);
+  background: #100b06;
+  border-bottom: 1px solid var(--v2-line-soft);
+}
+.v2-theme table.v2-table tbody td {
+  padding: 12px 18px;
+  vertical-align: top;
+  border-bottom: 1px solid var(--v2-line-soft);
+}
+/* zebra striping — subtle warm tint on alternate feature rows */
+.v2-theme table.v2-table tr.row:nth-of-type(even) {
+  background: rgba(233, 200, 107, 0.025);
+}
+.v2-theme table.v2-table tr.row:hover { background: rgba(233, 200, 107, 0.07); }
+.v2-theme table.v2-table td.feat { color: #e2dacb; }
+.v2-theme table.v2-table td.feat .note {
+  margin-top: 3px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--v2-muted);
+}
+.v2-theme table.v2-table td.mark { text-align: center; }
+/* semantic marks */
+.v2-theme .v2-mk {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+}
+.v2-theme .v2-mk svg { width: 16px; height: 16px; }
+.v2-theme .v2-mk.yes { color: var(--v2-yes); background: rgba(79, 196, 122, 0.12); }
+.v2-theme .v2-mk.no { color: var(--v2-no); background: rgba(229, 84, 75, 0.12); }
+.v2-theme .v2-mk.partial { color: var(--v2-partial); background: rgba(217, 164, 65, 0.12); }
+
+/* legend */
+.v2-theme .v2-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  padding: 14px 18px;
+  border-top: 1px solid var(--v2-line);
+  font-size: 12px;
+  color: var(--v2-muted);
+}
+.v2-theme .v2-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.v2-theme .v2-legend svg { width: 14px; height: 14px; }
+.v2-theme .v2-legend .yes { color: var(--v2-yes); }
+.v2-theme .v2-legend .no { color: var(--v2-no); }
+.v2-theme .v2-legend .partial { color: var(--v2-partial); }
+
+/* ---------- strengths columns ---------- */
+.v2-theme .v2-str-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px;
+}
+.v2-theme .v2-str h3 {
+  font-family: "Frank Ruhl Libre", var(--font-frank), serif;
+  font-weight: 700;
+  font-size: 17px;
+  margin-bottom: 14px;
+}
+.v2-theme .v2-str.win { border-color: var(--v2-line); }
+.v2-theme .v2-str.win h3 { color: var(--v2-g1); }
+.v2-theme .v2-str ul { display: flex; flex-direction: column; gap: 11px; }
+.v2-theme .v2-str li {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: #dcd3c4;
+}
+.v2-theme .v2-str li svg { width: 16px; height: 16px; margin-top: 2px; flex: none; }
+.v2-theme .v2-str.them li svg { color: var(--v2-muted); }
+.v2-theme .v2-str.win li svg { color: var(--v2-yes); }
+
+/* ---------- founder note ---------- */
+.v2-theme .v2-note-panel { display: flex; gap: 16px; align-items: flex-start; }
+.v2-theme .v2-note-panel .ic {
+  width: 46px;
+  height: 46px;
+  flex: none;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--v2-gold-grad);
+  color: #191206;
+  box-shadow: 0 12px 26px -14px rgba(226, 186, 96, 0.55);
+}
+.v2-theme .v2-note-panel .ic svg { width: 24px; height: 24px; }
+.v2-theme .v2-note-panel h3 {
+  font-family: "Frank Ruhl Libre", var(--font-frank), serif;
+  font-weight: 700;
+  font-size: 18px;
+}
+.v2-theme .v2-note-panel p {
+  margin-top: 10px;
+  font-size: 14px;
+  line-height: 1.75;
+  color: #cbc2b3;
+}
+
+/* ---------- comparison CTA ---------- */
+.v2-theme .v2-cmp-cta { text-align: center; padding: 8px 0 20px; }
+.v2-theme .v2-cmp-cta h2 {
+  font-family: "Frank Ruhl Libre", var(--font-frank), serif;
+  font-weight: 900;
+  font-size: clamp(24px, 4vw, 34px);
+}
+.v2-theme .v2-cmp-cta p {
+  margin: 12px auto 0;
+  max-width: 46ch;
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--v2-muted);
+}
+.v2-theme .v2-cmp-cta .row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 24px;
+}
+.v2-theme .v2-cmp-cta .ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #c9b885;
+  padding: 13px 8px;
+  transition: color 0.2s ease;
+}
+.v2-theme .v2-cmp-cta .ghost:hover { color: var(--v2-g1); }
+.v2-theme .v2-cmp-cta .ghost svg { width: 16px; height: 16px; }
+
+/* ---------- /v2/vs index ---------- */
+.v2-theme .v2-vs-head {
+  text-align: center;
+  margin-bottom: clamp(28px, 5vw, 44px);
+}
+.v2-theme .v2-vs-list { display: flex; flex-direction: column; gap: 16px; }
+.v2-theme .v2-vs-card {
+  display: block;
+  border-radius: 14px;
+  padding: 24px;
+  border: 1px solid var(--v2-line-soft);
+  background: linear-gradient(160deg, #16110a, #0e0a06);
+  transition: transform 0.16s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.v2-theme .v2-vs-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--v2-line);
+  box-shadow: 0 26px 60px -30px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(233, 200, 107, 0.08);
+}
+.v2-theme .v2-vs-card h2 {
+  font-family: "Frank Ruhl Libre", var(--font-frank), serif;
+  font-weight: 700;
+  font-size: 20px;
+  line-height: 1.25;
+}
+.v2-theme .v2-vs-card p {
+  margin-top: 10px;
+  font-size: 14px;
+  line-height: 1.7;
+  color: #cbc2b3;
+}
+.v2-theme .v2-vs-card .more {
+  margin-top: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--v2-g2);
+}
+.v2-theme .v2-vs-card .more svg {
+  width: 15px;
+  height: 15px;
+  transition: transform 0.2s ease;
+}
+.v2-theme .v2-vs-card:hover .more svg { transform: translateX(-4px); }
+
+@media (max-width: 720px) {
+  .v2-theme .v2-price-grid,
+  .v2-theme .v2-str-grid { grid-template-columns: 1fr; }
+}
