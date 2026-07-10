@@ -112,7 +112,7 @@ export default function ClientStatementPage({
         </button>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-orange-100 p-6 sm:p-8 print:shadow-none print:border-0 print:rounded-none print:p-0">
+      <div className="gk-paper bg-white rounded-2xl shadow-sm border border-orange-100 p-6 sm:p-8 print:shadow-none print:border-0 print:rounded-none print:p-0">
         <header className="pb-6 mb-6 border-b border-stone-200 flex flex-wrap items-start justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold text-stone-900">כרטסת לקוח</h1>

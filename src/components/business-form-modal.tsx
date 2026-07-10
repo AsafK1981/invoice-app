@@ -164,7 +164,7 @@ export function BusinessFormModal({ open, onClose, business }: Props) {
 
         <FormField label="לוגו העסק" hint="יופיע על כל מסמך שמופק. מומלץ PNG עם רקע שקוף, עד 2MB">
           <div className="flex items-start gap-4">
-            <div className="w-24 h-24 rounded-2xl border-2 border-dashed border-orange-200 flex items-center justify-center overflow-hidden bg-white flex-shrink-0">
+            <div className="gk-logo-chip w-24 h-24 rounded-2xl border-2 border-dashed border-orange-200 flex items-center justify-center overflow-hidden bg-white flex-shrink-0">
               {form.logoUrl ? (
                 <img src={form.logoUrl} alt="Logo" className="w-full h-full object-contain" />
               ) : (

@@ -345,7 +345,7 @@ export default function ExpensesPage() {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[640px]">
+            <table className="gk-etable w-full min-w-[640px]">
               <thead className="text-xs text-stone-700 bg-white">
                 <tr>
                   <th className="text-right px-6 py-3 font-semibold">תאריך</th>

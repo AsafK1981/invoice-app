@@ -125,7 +125,7 @@ export function DangerZoneSection() {
 
   return (
     <>
-      <div className="card-soft p-5 border-rose-200 bg-rose-50/40">
+      <div className="gk-danger card-soft p-5 border-rose-200 bg-rose-50/40">
         <div className="flex items-start gap-3">
           <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center flex-shrink-0 shadow-sm">
             <AlertTriangle className="w-4 h-4 text-rose-500" />

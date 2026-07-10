@@ -635,3 +635,165 @@ html[data-skin="gold"] .gk-paper .border-stone-200 { border-color: #e7e5e4 !impo
     border: 0 !important;
   }
 }
+
+/* =====================================================================
+   SETTINGS + ENTITIES — bespoke polish
+   Covers /settings (business details, payment block, חשבונית-ישראל info,
+   document numbering, email, tax-authority medallion, dunning, 2FA,
+   audit log, danger zone) and the /clients, /products, /expenses list
+   screens + their add/edit modals, CSV import, empty states, and the
+   client detail (/clients/[id]) + printable statement pages. All scoped
+   under html[data-skin="gold"]; the coral skin is byte-for-byte untouched.
+   ===================================================================== */
+
+/* ---------- page-title icon tile the base -400→-500 list misses (settings h1) ---------- */
+html[data-skin="gold"] .from-stone-400.to-stone-600 {
+  background: linear-gradient(160deg, #191308, #0f0b06) !important;
+  border: 1px solid var(--line) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 236, 180, 0.05) !important;
+}
+html[data-skin="gold"] .from-stone-400.to-stone-600 svg { color: var(--g1) !important; }
+
+/* ---------- soft pastel avatar / product / dunning tiles (-100→-200 gradients) ----------
+   These render a light two-tone rounded chip with a dark-ink glyph. Under the
+   coral remap the -100/-200 pair dodges every list, so they'd stay pink/amber.
+   Remap to the obsidian tile + gold glyph used everywhere else. */
+html[data-skin="gold"] .from-orange-200.to-rose-200,
+html[data-skin="gold"] .from-amber-100.to-orange-200,
+html[data-skin="gold"] .from-amber-100.to-orange-100 {
+  background: linear-gradient(160deg, #191308, #0f0b06) !important;
+  border: 1px solid var(--line) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 236, 180, 0.05) !important;
+}
+/* dark-ink glyphs inside those tiles → antique gold */
+html[data-skin="gold"] .from-orange-200.to-rose-200 svg,
+html[data-skin="gold"] .from-amber-100.to-orange-200 svg { color: var(--g1) !important; }
+html[data-skin="gold"] .text-orange-900 { color: #d0b878 !important; }
+html[data-skin="gold"] .ring-orange-300\/40 { --tw-ring-color: rgba(214, 178, 108, 0.28) !important; }
+
+/* ---------- modal chrome (portal-rendered at <body>, still inside html[skin]) ----------
+   The <Modal> header uses a bg-gradient-to-l coral wash the base only catches
+   in -to-br; footer + a few hover states use -50/30 opacity variants missing
+   from the base list. */
+html[data-skin="gold"] .bg-gradient-to-l.from-orange-50 {
+  background: linear-gradient(90deg, #171106, #0e0a05) !important;
+  border-color: var(--line-soft) !important;
+}
+html[data-skin="gold"] .bg-orange-50\/30 { background-color: rgba(190, 158, 78, 0.07) !important; }
+html[data-skin="gold"] .hover\:bg-orange-50\/30:hover { background-color: rgba(190, 158, 78, 0.11) !important; }
+/* portal tooltips get a faint gold hairline so they read as part of the skin */
+html[data-skin="gold"] [role="tooltip"] {
+  border: 1px solid var(--line-soft);
+  background: #1a1409 !important;
+  color: #ede6d6 !important;
+}
+
+/* ---------- logo / signature upload preview: keep a LIGHT paper chip ----------
+   An uploaded logo is often dark ink on transparency; on the obsidian bg-white
+   remap it would vanish. Give the preview a warm paper background (like the
+   document-sheet treatment) so any logo stays visible. */
+html[data-skin="gold"] .gk-logo-chip {
+  background: #f4efe3 !important;
+  border-color: var(--line) !important;
+}
+
+/* ---------- entity search + row hovers the base list misses ---------- */
+html[data-skin="gold"] .hover\:bg-rose-50\/40:hover { background-color: rgba(170, 90, 60, 0.13) !important; }
+/* expenses "העלה קבלה" scan button (sky family, -300 border / -800 text) */
+html[data-skin="gold"] .border-sky-300 { border-color: var(--line-soft) !important; }
+html[data-skin="gold"] .text-sky-800 { color: #a9bee0 !important; }
+/* audit-log divider */
+html[data-skin="gold"] .divide-orange-50 > :not([hidden]) ~ :not([hidden]) {
+  border-color: var(--line-soft) !important;
+}
+
+/* ---------- expenses table: distinct dark header + gold caption (mirrors reports) ---------- */
+html[data-skin="gold"] .gk-etable thead {
+  background: linear-gradient(180deg, #1e1609, #14100a) !important;
+}
+html[data-skin="gold"] .gk-etable thead th {
+  color: #cdb477 !important;
+  border-color: var(--line-soft) !important;
+}
+
+/* ---------- danger zone: keep RED semantics, tuned for the dark surface ----------
+   The base card-soft remap would paint the "delete everything" card the same
+   obsidian as every other card, erasing its warning colour. Re-assert a muted
+   rose hairline + a rose inline-start (right, RTL) accent + rose deco corners
+   so it still reads as dangerous without glaring on the dark bg. */
+html[data-skin="gold"] .gk-danger.card-soft {
+  border-color: rgba(190, 90, 70, 0.42) !important;
+  border-right-width: 3px !important;
+  border-right-color: rgba(200, 100, 80, 0.6) !important;
+  background: linear-gradient(160deg, #1c1108, #120a06) !important;
+}
+html[data-skin="gold"] .gk-danger.card-soft::before,
+html[data-skin="gold"] .gk-danger.card-soft::after {
+  border-color: rgba(200, 100, 80, 0.55) !important;
+}
+/* the "התחל תהליך מחיקה" button keeps its rose outline */
+html[data-skin="gold"] .gk-danger .border-rose-200 { border-color: rgba(190, 90, 70, 0.4) !important; }
+
+/* =====================================================================
+   TAX-AUTHORITY MEDALLION (חשבונית ישראל) — institutional indigo/blue
+   This settings card is the one place in the app painted in an indigo/blue
+   "official government" palette, which the coral→gold remap never touches.
+   Remap the family: bright gradient tiles → obsidian + gold glyph, the
+   Connect CTA → gold gradient, light indigo surfaces → obsidian, and every
+   indigo/blue text tone → the muted blue used for the "sent" status.
+   ===================================================================== */
+
+/* indigo/blue text (incl. opacity variants) → muted institutional blue */
+html[data-skin="gold"] .text-indigo-500,
+html[data-skin="gold"] .text-indigo-600,
+html[data-skin="gold"] .text-indigo-600\/90,
+html[data-skin="gold"] .text-indigo-600\/80,
+html[data-skin="gold"] .text-blue-700\/80 { color: #a9bee0 !important; }
+
+/* medallion + connect-step badges (from-indigo-500 …to-blue-600) → obsidian + gold */
+html[data-skin="gold"] .from-indigo-500.to-blue-600 {
+  background: linear-gradient(160deg, #191308, #0f0b06) !important;
+  border: 1px solid var(--line) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 236, 180, 0.05) !important;
+}
+html[data-skin="gold"] .from-indigo-500.to-blue-600 svg { color: var(--g1) !important; }
+/* step badges carry a plain number child — keep it legible gold, not white */
+html[data-skin="gold"] .from-indigo-500.to-blue-600 { color: #e2dccd !important; }
+
+/* Connect CTA (from-indigo-600 to-blue-600) → gold gradient like every primary */
+html[data-skin="gold"] .from-indigo-600.to-blue-600 {
+  background: var(--gold-grad) !important;
+  color: #191206 !important;
+  box-shadow:
+    0 12px 28px -12px rgba(190, 158, 78, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28) !important;
+}
+html[data-skin="gold"] .from-indigo-600.to-blue-600 span:not([aria-hidden]) { color: #191206 !important; }
+html[data-skin="gold"] .from-indigo-600.to-blue-600 svg { color: #191206 !important; }
+
+/* light indigo surfaces + the top accent line → obsidian / gold hairline */
+html[data-skin="gold"] .from-indigo-50\/60,
+html[data-skin="gold"] .bg-indigo-50 {
+  background: linear-gradient(180deg, #171106, #0e0a05) !important;
+}
+html[data-skin="gold"] .bg-gradient-to-l.from-indigo-500 {
+  background: linear-gradient(90deg, var(--g2), rgba(190, 158, 78, 0.05), transparent) !important;
+}
+html[data-skin="gold"] .border-indigo-100,
+html[data-skin="gold"] .border-indigo-100\/80,
+html[data-skin="gold"] .border-indigo-100\/90,
+html[data-skin="gold"] .border-indigo-200,
+html[data-skin="gold"] .border-emerald-200\/90,
+html[data-skin="gold"] .border-stone-200\/70 { border-color: var(--line-soft) !important; }
+
+/* halo / corner glows → faint gold instead of indigo bloom */
+html[data-skin="gold"] .bg-indigo-300\/20,
+html[data-skin="gold"] .bg-indigo-400\/30 { background-color: rgba(190, 158, 78, 0.06) !important; }
+
+/* status pill + connected-card opacity tints the base list misses */
+html[data-skin="gold"] .bg-stone-100\/80 { background-color: rgba(175, 163, 140, 0.12) !important; }
+html[data-skin="gold"] .bg-emerald-100\/40 { background-color: rgba(79, 196, 122, 0.1) !important; }
+html[data-skin="gold"] .bg-rose-50\/80 { background-color: rgba(170, 90, 60, 0.14) !important; }
+
+/* ---------- printable statement (/clients/[id]/statement): white paper like the journal ---------- */
+html[data-skin="gold"] .gk-paper .bg-stone-50\/60 { background-color: #fafaf9 !important; }
