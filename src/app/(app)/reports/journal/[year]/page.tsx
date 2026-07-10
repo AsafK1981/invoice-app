@@ -139,7 +139,7 @@ export default function YearJournalPage({ params }: { params: Promise<{ year: st
         </button>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-orange-100 p-6 sm:p-8 print:shadow-none print:border-0 print:rounded-none print:p-0">
+      <div className="gk-paper bg-white rounded-2xl shadow-sm border border-orange-100 p-6 sm:p-8 print:shadow-none print:border-0 print:rounded-none print:p-0">
         <header className="text-center pb-6 mb-6 border-b border-stone-200">
           <h1 className="text-2xl font-bold text-stone-900">
             יומן הוצאות והכנסות

@@ -497,3 +497,141 @@ html[data-skin="gold"] .receipt-view {
     0 0 0 1px var(--line),
     0 30px 60px -28px rgba(0, 0, 0, 0.8) !important;
 }
+
+/* =====================================================================
+   REPORTS — bespoke polish
+   Covers /reports (index: summary tiles, monthly table, aging report,
+   VAT-period, annual detail, form-1301 helper, capital declaration),
+   /reports/tax-projection, /reports/invoices-period, /reports/custom
+   (flexible filter report + coral-gradient data table), and the printable
+   /reports/journal/[year] sheet. All scoped under html[data-skin="gold"];
+   the coral skin is byte-for-byte untouched. No charts here — every graph
+   is a div-bar, so no skin-aware JS was needed.
+   ===================================================================== */
+
+/* ---------- accent icons the base remap misses ---------- */
+html[data-skin="gold"] .text-teal-600 { color: #8fd9a8 !important; }
+html[data-skin="gold"] .text-blue-500 { color: #a9bee0 !important; }
+html[data-skin="gold"] .text-rose-500 { color: #e6b8a8 !important; }
+html[data-skin="gold"] .text-purple-500,
+html[data-skin="gold"] .text-purple-600 { color: #c9b885 !important; }
+
+/* ---------- dark-on-light body text on status-tinted boxes (-900 shades) ----------
+   These render as the MAIN text of a coloured info/warning tile. The base
+   remap only reaches -600/-700/-800; the -900 shades would stay near-black on
+   the now-dark tint. Lift each to its family's legible light tone (≥4.5:1). */
+html[data-skin="gold"] .text-blue-900 { color: #a9bee0 !important; }
+html[data-skin="gold"] .text-amber-900 { color: #d8c08a !important; }
+html[data-skin="gold"] .text-purple-900 { color: #cbb8dd !important; }
+/* faint em-dash / separator placeholders — mute so they don't read as data */
+html[data-skin="gold"] .text-stone-300 { color: #6f685a !important; }
+
+/* ---------- purple family (capital-declaration report) ---------- */
+html[data-skin="gold"] .bg-purple-50 { background-color: #17130b !important; }
+html[data-skin="gold"] .border-purple-50,
+html[data-skin="gold"] .border-purple-100,
+html[data-skin="gold"] .border-purple-200,
+html[data-skin="gold"] .border-blue-50,
+html[data-skin="gold"] .border-teal-200,
+html[data-skin="gold"] .border-fuchsia-200,
+html[data-skin="gold"] .border-orange-50 { border-color: var(--line-soft) !important; }
+/* active document-type chip gets a slightly firmer hairline */
+html[data-skin="gold"] .border-orange-300 { border-color: var(--line) !important; }
+
+/* ---------- opacity-variant light surfaces the base list misses ---------- */
+html[data-skin="gold"] .bg-orange-50\/40 { background-color: rgba(190, 158, 78, 0.08) !important; }
+html[data-skin="gold"] .bg-emerald-50\/60 { background-color: rgba(79, 196, 122, 0.1) !important; }
+html[data-skin="gold"] .bg-rose-50\/60 { background-color: rgba(170, 90, 60, 0.12) !important; }
+html[data-skin="gold"] .bg-stone-50\/40 { background-color: rgba(175, 163, 140, 0.08) !important; }
+html[data-skin="gold"] .bg-stone-50\/60 { background-color: rgba(175, 163, 140, 0.1) !important; }
+html[data-skin="gold"] .bg-blue-50\/30 { background-color: rgba(120, 150, 200, 0.08) !important; }
+html[data-skin="gold"] .bg-purple-50\/30 { background-color: rgba(190, 158, 78, 0.06) !important; }
+html[data-skin="gold"] .bg-purple-100\/60 { background-color: rgba(190, 158, 78, 0.14) !important; }
+
+/* ---------- hover backgrounds (opacity + extra families) ---------- */
+html[data-skin="gold"] .hover\:bg-orange-50\/40:hover,
+html[data-skin="gold"] .hover\:bg-amber-50\/40:hover { background-color: rgba(190, 158, 78, 0.13) !important; }
+html[data-skin="gold"] .hover\:bg-purple-50:hover,
+html[data-skin="gold"] .hover\:bg-fuchsia-50:hover { background-color: rgba(190, 158, 78, 0.14) !important; }
+html[data-skin="gold"] .hover\:bg-teal-50:hover { background-color: rgba(79, 196, 122, 0.14) !important; }
+
+/* ---------- icon tiles the base -400→-500 list misses → obsidian + gold glyph ---------- */
+html[data-skin="gold"] .from-teal-400.to-emerald-500,
+html[data-skin="gold"] .from-orange-400.to-amber-500,
+html[data-skin="gold"] .from-orange-400.to-rose-500,
+html[data-skin="gold"] .from-stone-400.to-stone-500 {
+  background: linear-gradient(160deg, #191308, #0f0b06) !important;
+  border: 1px solid var(--line) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 236, 180, 0.05) !important;
+}
+html[data-skin="gold"] .from-teal-400.to-emerald-500 svg,
+html[data-skin="gold"] .from-orange-400.to-amber-500 svg,
+html[data-skin="gold"] .from-orange-400.to-rose-500 svg,
+html[data-skin="gold"] .from-stone-400.to-stone-500 svg { color: var(--g1) !important; }
+
+/* ---------- tax-projection progress bars: recolour bright fills, muted & family-matched ---------- */
+html[data-skin="gold"] .from-blue-400.to-blue-500 {
+  background: linear-gradient(to left, rgba(120, 150, 200, 0.55), rgba(120, 150, 200, 0.32)) !important;
+}
+html[data-skin="gold"] .from-violet-400.to-violet-500 {
+  background: linear-gradient(to left, rgba(178, 150, 200, 0.5), rgba(178, 150, 200, 0.28)) !important;
+}
+
+/* ---------- "איך לא להישרף" tip section uses bg-gradient-to-l (base only catches -to-br) ---------- */
+html[data-skin="gold"] .bg-gradient-to-l.from-emerald-50 {
+  background: linear-gradient(160deg, #171106, #0e0a05) !important;
+  border-color: var(--line) !important;
+}
+
+/* ---------- custom / invoices-period data table ----------
+   The coral thead is a loud from-orange-500→rose-500 gradient; the CTA remap
+   would repaint it as a bright gold bar. Override to a distinct dark header
+   with gold caption text (matches the subtle documents-table header and the
+   "halve any gold glow" rule). Extra class in the selector beats the CTA rule.
+   Row zebra/hover + cell gridlines already resolve to gold hairlines via the
+   base table rules; only the header needed bespoke handling. */
+html[data-skin="gold"] .gk-rtable thead tr.from-orange-500.to-rose-500 {
+  background: linear-gradient(180deg, #1e1609, #14100a) !important;
+  box-shadow: none !important;
+}
+html[data-skin="gold"] .gk-rtable thead tr.from-orange-500 th {
+  color: #cdb477 !important;
+  border-color: var(--line-soft) !important;
+}
+/* footer summary row + its gold hairlines */
+html[data-skin="gold"] .gk-rtable tfoot td { border-color: var(--line) !important; }
+
+/* ---------- printable annual journal: keep it white paper (like the PDF preview) ----------
+   /reports/journal/[year] is a print-first A4 sheet. Rather than invert it to
+   obsidian (which would also print dark and waste ink), keep it as intentional
+   white paper on the obsidian page, framed in a gold hairline — same rationale
+   as .receipt-view. The extra .gk-paper ancestor out-specifies the base dark
+   remaps so the sheet's own light palette shows through unchanged. */
+html[data-skin="gold"] .gk-paper {
+  background: #ffffff !important;
+  border-color: #ffedd5 !important;
+  color: #44403c !important;
+  box-shadow:
+    0 0 0 1px var(--line),
+    0 30px 60px -28px rgba(0, 0, 0, 0.8) !important;
+}
+html[data-skin="gold"] .gk-paper .text-stone-900 { color: #1c1917 !important; }
+html[data-skin="gold"] .gk-paper .text-stone-700 { color: #44403c !important; }
+html[data-skin="gold"] .gk-paper .text-stone-600 { color: #57534e !important; }
+html[data-skin="gold"] .gk-paper .text-stone-500 { color: #78716c !important; }
+html[data-skin="gold"] .gk-paper .text-emerald-700 { color: #047857 !important; }
+html[data-skin="gold"] .gk-paper .text-rose-700 { color: #be123c !important; }
+html[data-skin="gold"] .gk-paper .bg-stone-100 { background-color: #f5f5f4 !important; }
+html[data-skin="gold"] .gk-paper .even\:bg-stone-50\/60:nth-child(even) { background-color: #fafaf9 !important; }
+html[data-skin="gold"] .gk-paper .bg-emerald-50 { background-color: #ecfdf5 !important; }
+html[data-skin="gold"] .gk-paper .bg-rose-50 { background-color: #fff1f2 !important; }
+html[data-skin="gold"] .gk-paper .bg-orange-100 { background-color: #ffedd5 !important; }
+html[data-skin="gold"] .gk-paper .border-stone-300 { border-color: #d6d3d1 !important; }
+html[data-skin="gold"] .gk-paper .border-stone-200 { border-color: #e7e5e4 !important; }
+/* print the journal as clean white paper without the on-screen gold frame */
+@media print {
+  html[data-skin="gold"] .gk-paper {
+    box-shadow: none !important;
+    border: 0 !important;
+  }
+}
