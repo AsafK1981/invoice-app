@@ -1,6 +1,7 @@
 import Link from "next/link";
 import HeaderV2 from "./components/HeaderV2";
 import FooterV2 from "./components/FooterV2";
+import RedirectIfAuthed from "./components/RedirectIfAuthed";
 
 /**
  * /v2 landing — faithful React port of design-F.html (gold on obsidian,
@@ -11,6 +12,7 @@ import FooterV2 from "./components/FooterV2";
 export default function V2Landing() {
   return (
     <>
+      <RedirectIfAuthed />
       {/* deco outer frame */}
       <div className="v2-frame" aria-hidden="true">
         <i className="tl" />
