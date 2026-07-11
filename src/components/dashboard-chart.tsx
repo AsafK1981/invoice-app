@@ -98,10 +98,10 @@ export function DashboardChart({ documents, expenses }: Props) {
             </defs>
           )}
           <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={!gold} />
-          <XAxis dataKey="month" stroke={axisStroke} fontSize={gold ? 14 : 12} />
+          <XAxis dataKey="month" stroke={axisStroke} fontSize={gold ? 15 : 12} />
           <YAxis
             stroke={axisStroke}
-            fontSize={gold ? 14 : 12}
+            fontSize={gold ? 15 : 12}
             tickFormatter={(v) => `₪${(v / 1000).toFixed(0)}k`}
           />
           <Tooltip
@@ -129,7 +129,7 @@ export function DashboardChart({ documents, expenses }: Props) {
                 position="top"
                 formatter={kLabel}
                 fill="#cdb477"
-                fontSize={14}
+                fontSize={15}
                 fontWeight={700}
               />
             )}

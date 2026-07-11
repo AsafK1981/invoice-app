@@ -947,3 +947,38 @@ html[data-skin="gold"] .hover\:bg-white:hover { background-color: rgba(190, 158,
     padding-bottom: 0.9rem;
   }
 }
+
+/* =====================================================================
+   GLOBAL TYPE SCALE-UP — gold skin only
+   Asaf asked (2026-07-11) for all copy across the app to read a touch
+   larger now that the shell is wider. Tailwind 4 sizes are rem-based and
+   the root <html> carries no explicit font-size (browser default 16px),
+   so lifting the root size under the gold flag scales every text utility
+   uniformly — headings, body, inputs, labels, table cells, chips — with
+   no per-component edits. Layout dims in rem (sidebar, max-w-7xl) grow by
+   the same modest %, which is fine; the dashboard container is px-capped
+   (1560px) so it is unaffected. A tiered bump keeps mobile comfortable
+   and lets very wide screens breathe. The coral skin (no data-skin) keeps
+   the untouched 16px default. rem sizes set in the DASHBOARD SCALE-UP
+   block above are also rem, so they ride this bump — desired, not doubled.
+   ===================================================================== */
+html[data-skin="gold"] {
+  font-size: 16.5px;
+}
+@media (min-width: 1024px) {
+  html[data-skin="gold"] {
+    font-size: 17px;
+  }
+}
+@media (min-width: 1536px) {
+  html[data-skin="gold"] {
+    font-size: 17.5px;
+  }
+}
+
+/* Micro status/delta chips are hard-coded text-[10px] (px, not rem) so the
+   root bump skips them; nudge up a touch so they don't read tiny beside the
+   now-larger copy (dashboard KPI delta chips, invite/billing status pills). */
+html[data-skin="gold"] .text-\[10px\] {
+  font-size: 11px;
+}
