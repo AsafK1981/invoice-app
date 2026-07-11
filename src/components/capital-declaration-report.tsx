@@ -195,7 +195,7 @@ export function CapitalDeclarationReport({ documents, expenses }: Props) {
             {formatCurrency(rows.length > 0 ? totals.expenses / rows.length : 0)}
           </div>
         </div>
-        <div className="rounded-xl bg-stone-50 border border-stone-200 p-3">
+        <div className="gk-avg-profit rounded-xl bg-stone-50 border border-stone-200 p-3">
           <div className="text-xs text-stone-700">ממוצע רווח שנתי</div>
           <div className="text-lg font-bold text-stone-900 mt-0.5">
             {formatCurrency(rows.length > 0 ? totals.profit / rows.length : 0)}

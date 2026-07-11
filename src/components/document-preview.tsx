@@ -113,7 +113,7 @@ export function DocumentPreview(props: Props) {
 
   return (
     <>
-      <div ref={wrapRef} className="w-full">
+      <div ref={wrapRef} className="gk-doc-preview w-full">
         <button
           type="button"
           onClick={() => setZoomed(true)}

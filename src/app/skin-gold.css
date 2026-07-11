@@ -30,6 +30,12 @@ html[data-skin="gold"] {
 html[data-skin="gold"],
 html[data-skin="gold"] body {
   color: var(--ink);
+  /* Solid obsidian floor. The body paints the radial gradient with
+     background-attachment:fixed, which only covers the viewport — on tall
+     pages (and in full-page captures / overscroll / print) the raw <html>
+     would otherwise show through WHITE below the fold. This guarantees the
+     page is never white behind/below the fixed gradient. */
+  background-color: #0d0a07;
 }
 html[data-skin="gold"] body {
   background:
@@ -303,6 +309,17 @@ html[data-skin="gold"] tbody tr[data-status="cancelled"]:hover { background: rgb
 html[data-skin="gold"] table tbody td { border-color: rgba(214, 178, 108, 0.13) !important; }
 /* document number cell in muted gold */
 html[data-skin="gold"] tbody tr[data-status] td:first-child { color: #c9b885 !important; }
+/* Cancelled status chip (bg-rose-100 text-rose-700): the default rose remap
+   leaves the chip's rose tint ≈ the cancelled ROW's rose tint, so it blends
+   into the row and reads dark-on-dark. Give it the muted-taupe "dead document"
+   treatment (mirrors the draft chip, a touch dimmer) so it stays readable.
+   Scoped to a cancelled row so unrelated rose-100/text-700 pills elsewhere are
+   untouched; .text-rose-700 excludes the credit-note type badge (text-rose-800). */
+html[data-skin="gold"] tbody tr[data-status="cancelled"] .bg-rose-100.text-rose-700 {
+  background-color: rgba(175, 163, 140, 0.16) !important;
+  border: 1px solid rgba(175, 163, 140, 0.32) !important;
+  color: #cfc4ae !important;
+}
 
 /* ---------- segmented range control track ---------- */
 html[data-skin="gold"] .card-soft.p-1 {
@@ -339,6 +356,16 @@ html[data-skin="gold"] ::-webkit-scrollbar-thumb {
 }
 html[data-skin="gold"] ::-webkit-scrollbar-thumb:hover {
   background: rgba(190, 158, 78, 0.45);
+}
+
+/* The live-preview wrapper (editor + doc view). The scaled paper sits in a
+   fixed-height clipping box; any region of that box the white paper doesn't
+   fill (and the column's stretched empty space) exposed the raw page backdrop
+   as a flat GRAY/white block under the paper. Paint the wrapper obsidian so the
+   preview column reads as paper-on-obsidian; the .receipt-view stays white
+   below (its own !important bg wins as a descendant). */
+html[data-skin="gold"] .gk-doc-preview {
+  background-color: #0d0a07 !important;
 }
 
 /* The receipt/PDF preview must stay white paper even under the gold skin,
@@ -528,6 +555,18 @@ html[data-skin="gold"] .text-stone-300 { color: #6f685a !important; }
 
 /* ---------- purple family (capital-declaration report) ---------- */
 html[data-skin="gold"] .bg-purple-50 { background-color: #17130b !important; }
+/* yearly-average "ממוצע רווח שנתי" tile: the income tile is emerald-tinted and
+   the expense tile rose-tinted, but the profit tile is a plain bg-stone-50 that
+   reads flat/pale next to them. Give it its own dark surface with a subtle gold
+   tint + light text (marker class is inert on the coral skin) so all three
+   summary tiles read as an intentional, legible set. Two-class specificity beats
+   the generic .bg-stone-50 remap. */
+html[data-skin="gold"] .gk-avg-profit.bg-stone-50 {
+  background-color: rgba(190, 158, 78, 0.1) !important;
+  border-color: rgba(214, 178, 108, 0.28) !important;
+}
+html[data-skin="gold"] .gk-avg-profit .text-stone-900 { color: #e2dccd !important; }
+html[data-skin="gold"] .gk-avg-profit .text-stone-700 { color: #b7ae9f !important; }
 html[data-skin="gold"] .border-purple-50,
 html[data-skin="gold"] .border-purple-100,
 html[data-skin="gold"] .border-purple-200,
