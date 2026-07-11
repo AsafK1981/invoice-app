@@ -260,8 +260,28 @@ html[data-skin="gold"] .dark\:from-orange-900\/35 {
   background: linear-gradient(90deg, rgba(233, 200, 107, 0.16), rgba(233, 200, 107, 0.03)) !important;
   border: 1px solid var(--line) !important;
 }
-/* nav hover */
-html[data-skin="gold"] nav a:hover { color: var(--ink) !important; }
+/* nav hover — the rest→hover nav pill uses `hover:bg-orange-50/80`, an OPACITY
+   variant the base hover list never remaps, so under gold it painted a light
+   cream pill; layered with the light hover text below that read light-on-light
+   (user-reported: hovering "מסמכים" washed out). Remap that specific pill to a
+   subtle gold tint on obsidian, keep every sidebar hover label + glyph a
+   readable light tone, and darken the icon tile's coral group-hover gradient so
+   it stays on-theme. Covers the nav items AND the bottom utility links. */
+html[data-skin="gold"] aside a.hover\:bg-orange-50\/80:hover {
+  background-color: rgba(190, 158, 78, 0.12) !important;
+}
+html[data-skin="gold"] aside a:hover,
+html[data-skin="gold"] aside a:hover span,
+html[data-skin="gold"] aside a:hover svg,
+html[data-skin="gold"] aside button:hover,
+html[data-skin="gold"] aside button:hover svg {
+  color: #ede6d6 !important;
+}
+/* nav icon tile on hover: coral group-hover gradient (orange-300→rose-300) →
+   dark on-theme tile so it doesn't flash light next to the gold pill */
+html[data-skin="gold"] aside a:hover > div:first-child {
+  background: linear-gradient(160deg, #201810, #120d07) !important;
+}
 /* logo fallback tile */
 html[data-skin="gold"] aside .from-orange-400.to-rose-400 {
   background: linear-gradient(160deg, #191308, #0f0b06) !important;
