@@ -18,16 +18,11 @@ import {
   User,
   RefreshCw,
   Bug,
-  Moon,
-  Sun,
   ShieldAlert,
   Landmark,
-  Gem,
 } from "lucide-react";
 import { useBusiness } from "@/lib/business-store";
 import { signOut } from "@/lib/auth";
-import { useTheme } from "@/lib/theme";
-import { useSkin } from "@/lib/skin";
 import { isAdminEmail } from "@/lib/admin";
 import { supabase } from "@/lib/supabase";
 import { AccountSettingsModal } from "@/components/account-settings-modal";
@@ -46,8 +41,6 @@ const navItems = [
 export function Sidebar() {
   const pathname = usePathname();
   const { business } = useBusiness();
-  const { theme, toggle: toggleTheme } = useTheme();
-  const { skin, toggle: toggleSkin } = useSkin();
   const [mobileOpen, setMobileOpen] = useState(false);
   // Show the "/admin" nav item only when the logged-in user's email
   // appears in the admin allow-list. Computed client-side; the API
@@ -132,35 +125,14 @@ export function Sidebar() {
         })}
       </nav>
       <div className="p-3 border-t border-orange-100/60 space-y-1">
+        {/* Black-gold is now the default (and only) skin, so the beta
+            skin toggle and the coral-era light/dark toggle were removed —
+            both only made sense for the old coral theme. The internal coral
+            fallback stays reachable via ?skin=coral. */}
         {/* Beta feedback button — pre-fills a WhatsApp message to Asaf
             with the current page URL so testing friends can report
             something they hit in one tap. The phone number is the
             user's real WhatsApp; if you fork this app, change it. */}
-        <button
-          onClick={toggleTheme}
-          className="flex items-center gap-2 w-full px-3 py-2 rounded-xl text-sm text-stone-700 hover:bg-orange-50 hover:text-orange-700 transition-colors"
-        >
-          {theme === "dark" ? (
-            <>
-              <Sun className="w-4 h-4" />
-              עבור למצב בהיר
-            </>
-          ) : (
-            <>
-              <Moon className="w-4 h-4" />
-              עבור למצב כהה
-            </>
-          )}
-        </button>
-        {/* Opt-in gold skin toggle (obsidian + antique gold, art-deco).
-            Default is the classic coral look; this flips <html data-skin>. */}
-        <button
-          onClick={toggleSkin}
-          className="flex items-center gap-2 w-full px-3 py-2 rounded-xl text-sm text-stone-700 hover:bg-amber-50 hover:text-amber-700 transition-colors"
-        >
-          <Gem className="w-4 h-4" />
-          {skin === "gold" ? "עיצוב קלאסי" : "עיצוב זהב (בטא)"}
-        </button>
         <a
           href={(() => {
             const PHONE = "972549000684"; // +972 549000684 (international format)

@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import Script from "next/script";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { SwRegister } from "@/components/sw-register";
@@ -11,12 +10,14 @@ import "./globals.css";
 // order so they win ties against the html.dark block.
 import "./skin-gold.css";
 
-// Inline pre-hydration script — applies the user's persisted theme + skin
-// choices to <html> BEFORE first paint, avoiding a flash of the wrong look.
-// Also honours ?skin=gold / ?skin=coral in the URL (writes it to localStorage
-// and applies immediately) so the gold skin can be demoed with a single link.
-// The string is hardcoded (no user input flows into it), so it's safe.
-const themeInitScript = `(function(){try{var d=document.documentElement;var p=new URLSearchParams(location.search);var qs=p.get("skin");if(qs==="gold"||qs==="coral"){localStorage.setItem("invoice-app:skin",qs);}var s=localStorage.getItem("invoice-app:skin");if(s==="gold"){d.setAttribute("data-skin","gold");}else{d.removeAttribute("data-skin");}var t=localStorage.getItem("invoice-app:theme");if(t==="dark"){d.classList.add("dark");}}catch(e){}})();`;
+// Inline pre-hydration script — applies the black-gold skin to <html> BEFORE
+// first paint, avoiding any flash of the old coral look. The gold skin is now
+// the DEFAULT for everyone: with no override, <html data-skin="gold"> is set.
+// A one-time migration clears any beta-era stored skin preference so every
+// user lands on gold. Internal escape hatch: ?skin=coral forces (and persists)
+// the classic coral look; ?skin=gold flips back. The string is hardcoded (no
+// user input flows into it), so it's safe.
+const themeInitScript = `(function(){try{var d=document.documentElement;var p=new URLSearchParams(location.search);var qs=p.get("skin");if(!localStorage.getItem("invoice-app:skin-default-gold")){localStorage.removeItem("invoice-app:skin");localStorage.setItem("invoice-app:skin-default-gold","1");}if(qs==="gold"||qs==="coral"){localStorage.setItem("invoice-app:skin",qs);}var s=localStorage.getItem("invoice-app:skin");if(s==="coral"){d.removeAttribute("data-skin");}else{d.setAttribute("data-skin","gold");}var t=localStorage.getItem("invoice-app:theme");if(t==="dark"){d.classList.add("dark");}}catch(e){}})();`;
 
 const SITE_URL = "https://mysuperfriendlyinvoiceapp.vercel.app";
 
@@ -68,7 +69,8 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#f97316",
+  // Obsidian to match the black-gold default skin (was coral #f97316).
+  themeColor: "#0d0a07",
 };
 
 export default function RootLayout({
@@ -90,12 +92,15 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700;900&family=Assistant:wght@300;400;600;700;800&display=swap"
           rel="stylesheet"
         />
-        <Script
+        {/* Raw SYNCHRONOUS inline script — must run before the body paints so
+            there's zero flash of the old coral look before the gold default is
+            applied. next/script's beforeInteractive is NOT synchronous in the
+            App Router (it defers execution to the async runtime bootstrap, i.e.
+            after first paint), so we inline it directly in <head> instead. */}
+        <script
           id="theme-init"
-          strategy="beforeInteractive"
-        >
-          {themeInitScript}
-        </Script>
+          dangerouslySetInnerHTML={{ __html: themeInitScript }}
+        />
       </head>
       <body className="min-h-full flex flex-col font-sans text-stone-800">
         {children}
