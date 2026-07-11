@@ -287,7 +287,7 @@ function GoldLineChart({ data }: { data: MonthDatum[] }) {
         >
           <span
             className="inline-block w-2 h-2 rounded-full"
-            style={{ background: "#d08b72", boxShadow: "0 0 0 2px rgba(200,120,90,.16)" }}
+            style={{ background: "#e39b7e", boxShadow: "0 0 0 2px rgba(215,140,105,.18)" }}
           />
           הוצאות
         </span>
@@ -325,8 +325,8 @@ function GoldLineChart({ data }: { data: MonthDatum[] }) {
                 <stop offset="1" stopColor="rgba(190,158,78,0)" />
               </linearGradient>
               <linearGradient id="gcExpFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stopColor="rgba(200,120,90,.10)" />
-                <stop offset="1" stopColor="rgba(200,120,90,0)" />
+                <stop offset="0" stopColor="rgba(215,140,105,.16)" />
+                <stop offset="1" stopColor="rgba(215,140,105,0)" />
               </linearGradient>
               {/* fade the right edge so the closed-area drop has no hard vertical seam */}
               <linearGradient id="gcFadeRight" x1="0" y1="0" x2="1" y2="0">
@@ -374,6 +374,30 @@ function GoldLineChart({ data }: { data: MonthDatum[] }) {
               );
             })}
 
+            {/* monthly profit-gap connectors — barely-there dashed gold,
+                drawn BEHIND areas/lines. Skip when the two points nearly touch. */}
+            {months.map((_, i) => {
+              const incY = inc.ys[i];
+              const expY = exp.ys[i];
+              const yHi = Math.min(incY, expY);
+              const yLo = Math.max(incY, expY);
+              if (yLo - yHi < 14) return null;
+              const gap = 6;
+              const hot = hover === i;
+              return (
+                <line
+                  key={`gap${i}`}
+                  x1={xAt(i)}
+                  y1={yHi + gap}
+                  x2={xAt(i)}
+                  y2={yLo - gap}
+                  stroke={hot ? "rgba(190,158,78,.32)" : "rgba(190,158,78,.18)"}
+                  strokeWidth={1}
+                  strokeDasharray="2 4"
+                />
+              );
+            })}
+
             {/* area fills (expense under income); right edge faded via mask */}
             <path d={areaFrom(exp)} fill="url(#gcExpFill)" mask="url(#gcAreaMask)" />
             <path d={areaFrom(inc)} fill="url(#gcIncFill)" mask="url(#gcAreaMask)" />
@@ -395,8 +419,8 @@ function GoldLineChart({ data }: { data: MonthDatum[] }) {
             <path
               d={exp.d}
               fill="none"
-              stroke="#D08B72"
-              strokeWidth={2}
+              stroke="#E39B7E"
+              strokeWidth={2.5}
               strokeLinecap="round"
               strokeLinejoin="round"
             />
@@ -438,13 +462,14 @@ function GoldLineChart({ data }: { data: MonthDatum[] }) {
               const hot = hover === i;
               return (
                 <g key={`e${i}`}>
-                  <circle cx={x} cy={y} r={hot ? 4.2 : 3.2} fill="#D08B72" />
+                  <circle cx={x} cy={y} r={hot ? 4.4 : 3.6} fill="#E39B7E" />
+                  <circle cx={x} cy={y} r={1.5} fill="#171106" />
                   {label && (
                     <text
                       x={x}
                       y={ly}
-                      fill="#C99078"
-                      fontSize={12}
+                      fill="#E8B29B"
+                      fontSize={13}
                       fontWeight={600}
                       textAnchor="middle"
                     >
@@ -517,7 +542,7 @@ function GoldLineChart({ data }: { data: MonthDatum[] }) {
               הכנסות: {ils.format(income[hover] || 0)}
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="inline-block w-2 h-2 rounded-full" style={{ background: "#d08b72" }} />
+              <span className="inline-block w-2 h-2 rounded-full" style={{ background: "#e39b7e" }} />
               הוצאות: {ils.format(expenses[hover] || 0)}
             </div>
           </div>
