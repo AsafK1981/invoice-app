@@ -53,6 +53,16 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  // The black-gold marketing site was promoted from /v2 to the root domain
+  // (it IS the published site now). Permanently redirect the old /v2 URLs to
+  // their new root equivalents so any external/bookmarked /v2 link + old
+  // /v2/login land on the real pages and consolidate SEO on the root.
+  async redirects() {
+    return [
+      { source: "/v2", destination: "/", permanent: true },
+      { source: "/v2/:path*", destination: "/:path*", permanent: true },
+    ];
+  },
 };
 
 export default withSentryConfig(nextConfig, {

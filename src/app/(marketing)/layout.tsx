@@ -16,15 +16,15 @@ const assistant = Assistant({
   display: "swap",
 });
 
+// This is now the REAL public marketing site (promoted from /v2). No noindex —
+// it should be indexed. Titles/description are inherited from the root layout
+// (its title template + OG), except where a child page sets its own; that keeps
+// the root domain's existing metadata intact.
 export const metadata: Metadata = {
-  title: "חשבונית — סופר ידידותית",
-  description:
-    "המערכת הכי ידידותית לעוסקים פטורים בישראל — עברית מלאה, עומדת בדרישות רשות המסים, במחיר הוגן.",
-  robots: { index: false, follow: false },
   icons: { icon: "/logo-v2.svg" },
 };
 
-export default function V2Layout({
+export default function MarketingLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (

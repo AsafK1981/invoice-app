@@ -10,12 +10,12 @@ export default function FooterV2() {
     <footer className="v2-footer">
       <div className="v2-footer-hair" />
       <div className="v2-footer-inner">
-        <Link href="/v2" aria-label="חשבונית — לדף הבית">
+        <Link href="/" aria-label="חשבונית — לדף הבית">
           <LogoV2 variant="mark" />
         </Link>
         <nav className="v2-footer-links">
-          <Link href="/v2/terms">תנאי שימוש</Link>
-          <Link href="/v2/privacy">פרטיות</Link>
+          <Link href="/terms">תנאי שימוש</Link>
+          <Link href="/privacy">פרטיות</Link>
           <Link href="/login">התחברות</Link>
         </nav>
       </div>

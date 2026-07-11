@@ -9,6 +9,7 @@ export const metadata: Metadata = {
   title: "השוואות מול תוכנות חשבוניות אחרות",
   description:
     "השוואות הוגנות מול Invoice4U, חשבונית ירוקה, ו-iFreelance — מחירים, פיצ׳רים, יתרונות וחסרונות.",
+  alternates: { canonical: "/vs" },
 };
 
 export default function V2VsIndex() {
@@ -26,7 +27,7 @@ export default function V2VsIndex() {
       <HeaderV2 />
 
       <main className="v2-cmp">
-        <Link href="/v2" className="v2-back">
+        <Link href="/" className="v2-back">
           <ArrowRight />
           חזרה לעמוד הבית
         </Link>
@@ -50,7 +51,7 @@ export default function V2VsIndex() {
 
         <div className="v2-vs-list">
           {list.map((c) => (
-            <Link key={c.slug} href={`/v2/vs/${c.slug}`} className="v2-vs-card">
+            <Link key={c.slug} href={`/vs/${c.slug}`} className="v2-vs-card">
               <h2>
                 <span className="v2-gold">חשבונית סופר ידידותית</span> מול {c.name}
               </h2>

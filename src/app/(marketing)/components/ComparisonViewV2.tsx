@@ -99,7 +99,7 @@ export function ComparisonViewV2({ competitor }: { competitor: Competitor }) {
       <HeaderV2 />
 
       <main className="v2-cmp">
-        <Link href="/v2/vs" className="v2-back">
+        <Link href="/vs" className="v2-back">
           <ArrowRight />
           חזרה לכל ההשוואות
         </Link>

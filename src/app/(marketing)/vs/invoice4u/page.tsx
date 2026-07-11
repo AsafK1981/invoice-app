@@ -16,6 +16,7 @@ export const metadata: Metadata = {
     "חשבוניות אונליין",
     "עוסק פטור",
   ],
+  alternates: { canonical: "/vs/invoice4u" },
 };
 
 export default function V2VsInvoice4U() {

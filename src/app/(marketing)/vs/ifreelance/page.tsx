@@ -17,6 +17,7 @@ export const metadata: Metadata = {
     "עוסק פטור",
     "פרילנסר חשבוניות",
   ],
+  alternates: { canonical: "/vs/ifreelance" },
 };
 
 export default function V2VsIFreelance() {

@@ -16,6 +16,7 @@ export const metadata: Metadata = {
     "חשבוניות אונליין",
     "עוסק פטור",
   ],
+  alternates: { canonical: "/vs/greeninvoice" },
 };
 
 export default function V2VsGreenInvoice() {

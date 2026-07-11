@@ -25,7 +25,7 @@ export default function V2TermsPage() {
 
       <main className="v2-main">
         <div className="v2-doc">
-          <Link href="/v2" className="v2-back">
+          <Link href="/" className="v2-back">
             <ArrowRight />
             חזרה לעמוד הבית
           </Link>
