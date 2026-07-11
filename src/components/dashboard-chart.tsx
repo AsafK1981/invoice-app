@@ -85,9 +85,9 @@ export function DashboardChart({ documents, expenses }: Props) {
   }
 
   return (
-    <div style={{ width: "100%", height: 288 }}>
+    <div style={{ width: "100%", height: gold ? 360 : 288 }}>
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: gold ? 22 : 10, right: 10, left: 10, bottom: 10 }}>
+        <BarChart data={data} margin={{ top: gold ? 24 : 10, right: 10, left: 10, bottom: 10 }}>
           {gold && (
             <defs>
               <linearGradient id="goldBar" x1="0" y1="0" x2="0" y2="1">
@@ -98,10 +98,10 @@ export function DashboardChart({ documents, expenses }: Props) {
             </defs>
           )}
           <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={!gold} />
-          <XAxis dataKey="month" stroke={axisStroke} fontSize={12} />
+          <XAxis dataKey="month" stroke={axisStroke} fontSize={gold ? 14 : 12} />
           <YAxis
             stroke={axisStroke}
-            fontSize={12}
+            fontSize={gold ? 14 : 12}
             tickFormatter={(v) => `₪${(v / 1000).toFixed(0)}k`}
           />
           <Tooltip
@@ -129,7 +129,7 @@ export function DashboardChart({ documents, expenses }: Props) {
                 position="top"
                 formatter={kLabel}
                 fill="#cdb477"
-                fontSize={12}
+                fontSize={14}
                 fontWeight={700}
               />
             )}

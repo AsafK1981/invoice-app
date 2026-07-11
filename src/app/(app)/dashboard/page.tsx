@@ -267,7 +267,7 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="gk-dashboard space-y-8">
       <div className="flex items-start justify-between flex-wrap gap-4 animate-fade-in-up">
         <div>
           <h1 className="text-3xl font-bold text-stone-900 flex items-center gap-2">
