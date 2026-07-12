@@ -296,12 +296,11 @@ export function GlobalSearch() {
           )}
         </div>
 
-        <div className="px-5 py-2.5 border-t border-orange-100 bg-orange-50/30 text-xs text-stone-400 flex items-center justify-between">
-          <span>אפשר לנווט עם החיצים ו-Enter</span>
-          {query.trim() && results.length > 0 && (
+        {query.trim() && results.length > 0 && (
+          <div className="px-5 py-2.5 border-t border-orange-100 bg-orange-50/30 text-xs text-stone-400 flex items-center justify-end">
             <span className="hidden sm:inline">{results.length} תוצאות</span>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
