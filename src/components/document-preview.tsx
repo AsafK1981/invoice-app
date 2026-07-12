@@ -143,7 +143,7 @@ export function DocumentPreview(props: Props) {
           <div
             className="absolute inset-0 rounded-2xl bg-stone-900/0 group-hover:bg-stone-900/15 transition-colors flex items-start justify-end p-3 pointer-events-none"
           >
-            <span className="inline-flex items-center gap-1.5 bg-stone-900/80 text-white text-xs font-medium px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
+            <span className="inline-flex items-center gap-1.5 bg-stone-900/80 text-white text-xs font-medium px-3 py-1.5 rounded-full opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity shadow-lg">
               <Maximize2 className="w-3.5 h-3.5" />
               לחץ לתצוגה מוגדלת
             </span>

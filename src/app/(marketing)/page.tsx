@@ -139,11 +139,11 @@ export default function V2Landing() {
           </div>
           <div className="v2-fdiv">
             <i className="ln" />
-            <span>כל הפיצ׳רים · ללא הגבלה · ביטול בכל עת</span>
+            <span>Pro — כל הפיצ׳רים ללא הגבלה ב־₪29 · ביטול בכל עת</span>
             <i className="ln r" />
           </div>
 
-          <Link className="v2-cta" href="/login">
+          <Link className="v2-cta" href="/login?mode=signup">
             התחילו 14 יום ניסיון
           </Link>
           <div className="v2-fine">ללא כרטיס אשראי · ביטול בכל עת</div>

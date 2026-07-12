@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Sparkles, Mail, Lock, LogIn, UserPlus, Eye, EyeOff, ArrowRight } from "lucide-react";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Sparkles, Mail, LogIn, UserPlus, Eye, EyeOff, ArrowRight } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { track } from "@vercel/analytics";
 
@@ -15,20 +15,53 @@ type Mode = "login" | "signup" | "forgot";
 // and/or a Supabase custom auth domain is set up. Email signup is unaffected.
 const GOOGLE_SIGNIN_ENABLED = false;
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [mode, setMode] = useState<Mode>("login");
+  // Deep-link support: the marketing trial CTAs point at /login?mode=signup
+  // so the register form opens directly instead of the login form.
+  const [mode, setMode] = useState<Mode>(
+    searchParams.get("mode") === "signup" ? "signup" : "login"
+  );
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  // Resend-confirmation state for the post-signup screen.
+  const [signupEmailSent, setSignupEmailSent] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setTimeout(() => setResendCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendCooldown]);
 
   function switchMode(next: Mode) {
     setMode(next);
     setError(null);
     setSuccess(null);
+    setSignupEmailSent(false);
+  }
+
+  async function handleResend() {
+    if (resending || resendCooldown > 0) return;
+    setResending(true);
+    setError(null);
+    const { error: resendError } = await supabase.auth.resend({
+      type: "signup",
+      email,
+    });
+    setResending(false);
+    if (resendError) {
+      setError(resendError.message);
+    } else {
+      setResendCooldown(60);
+      setSuccess(`שלחנו שוב אימייל אישור אל ${email}. בדוק את תיבת הדואר (וגם ספאם).`);
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -47,6 +80,8 @@ export default function LoginPage() {
         setError(signUpError.message);
       } else {
         track("sign_up");
+        setSignupEmailSent(true);
+        setResendCooldown(30);
         setSuccess(
           `שלחנו אימייל אישור אל ${email}. פתח את ההודעה (אולי בתיקיית הספאם) ולחץ על "אשר את הרישום".`
         );
@@ -165,6 +200,24 @@ export default function LoginPage() {
               </div>
             )}
 
+            {mode === "signup" && signupEmailSent && (
+              <div className="text-center text-sm text-stone-600">
+                לא קיבלת את המייל?{" "}
+                <button
+                  type="button"
+                  onClick={handleResend}
+                  disabled={resending || resendCooldown > 0}
+                  className="text-orange-600 font-semibold hover:underline disabled:opacity-50 disabled:no-underline disabled:cursor-not-allowed"
+                >
+                  {resending
+                    ? "שולח..."
+                    : resendCooldown > 0
+                      ? `שלח שוב בעוד ${resendCooldown} שנ׳`
+                      : "שלח שוב את המייל"}
+                </button>
+              </div>
+            )}
+
             <button
               type="submit"
               disabled={loading}
@@ -251,5 +304,13 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
   );
 }

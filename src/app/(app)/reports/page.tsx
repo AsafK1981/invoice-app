@@ -317,6 +317,7 @@ export default function ReportsPage() {
           <CalendarDays className="w-5 h-5 text-orange-500" />
           <h2 className="font-semibold text-stone-900">פירוט חודשי</h2>
         </div>
+        <div className="overflow-x-auto">
         <table className="w-full">
           <thead className="text-xs text-stone-700 bg-orange-50/50">
             <tr>
@@ -356,6 +357,7 @@ export default function ReportsPage() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );

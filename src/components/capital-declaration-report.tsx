@@ -130,6 +130,7 @@ export function CapitalDeclarationReport({ documents, expenses }: Props) {
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-purple-100">
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-purple-50 text-stone-700">
             <tr>
@@ -180,6 +181,7 @@ export function CapitalDeclarationReport({ documents, expenses }: Props) {
             </tr>
           </tbody>
         </table>
+        </div>
       </div>
 
       <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Search,
@@ -319,17 +320,25 @@ export function DocumentsTable({ documents, limit, showExport = false }: Props) 
             {filtered.length === 0 ? (
               <tr>
                 <td colSpan={9} className="px-6 py-16 text-center">
-                  <div className="text-4xl mb-2">🔍</div>
+                  <div className="text-4xl mb-2">{filtersActive ? "🔍" : "📄"}</div>
                   <div className="text-sm text-stone-500">
                     {filtersActive ? "אין מסמכים העונים לסינון הנבחר" : "אין מסמכים עדיין"}
                   </div>
-                  {filtersActive && (
+                  {filtersActive ? (
                     <button
                       onClick={clearFilters}
                       className="text-sm text-orange-600 hover:underline mt-2"
                     >
                       נקה את כל הסינונים
                     </button>
+                  ) : (
+                    <Link
+                      href="/documents/new"
+                      className="btn-glow inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-5 py-2.5 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200/60 hover:-translate-y-0.5 transition-all mt-4"
+                    >
+                      <FilePlus2 className="w-4 h-4" />
+                      צור מסמך ראשון
+                    </Link>
                   )}
                 </td>
               </tr>

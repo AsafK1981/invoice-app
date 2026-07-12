@@ -118,6 +118,7 @@ export function Form1301Helper({ year, business, documents, expenses }: Props) {
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-blue-100">
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-blue-50 text-stone-700">
             <tr>
@@ -158,6 +159,7 @@ export function Form1301Helper({ year, business, documents, expenses }: Props) {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       <div className="mt-4 rounded-xl bg-amber-50 border border-amber-200 p-3 text-xs text-amber-900">

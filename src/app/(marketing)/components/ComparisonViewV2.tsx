@@ -301,7 +301,7 @@ export function ComparisonViewV2({ competitor }: { competitor: Competitor }) {
             לתקופה הזו.
           </p>
           <div className="row">
-            <Link href="/login" className="v2-cta">
+            <Link href="/login?mode=signup" className="v2-cta">
               התחילו ניסיון חינם
             </Link>
             <Link href="/invite/FOR-FRIENDS-ONLY" className="ghost">

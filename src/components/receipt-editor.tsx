@@ -1282,7 +1282,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                     </div>
                   </div>
                 </div>
-                <div className="col-span-4 md:col-span-2">
+                <div className="col-span-6 md:col-span-2">
                   {idx === 0 && <label className="text-xs font-semibold text-stone-700 mb-1 block">כמות</label>}
                   <input
                     type="number"
@@ -1293,7 +1293,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                     className="input-warm"
                   />
                 </div>
-                <div className="col-span-4 md:col-span-2">
+                <div className="col-span-6 md:col-span-2">
                   {idx === 0 && (
                     <label className="text-xs font-semibold text-stone-700 mb-1 block">
                       מחיר יחידה
@@ -1308,20 +1308,20 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                     className="input-warm"
                   />
                 </div>
-                <div className="col-span-3 md:col-span-2">
+                <div className="col-span-10 md:col-span-2">
                   {idx === 0 && <label className="text-xs font-semibold text-stone-700 mb-1 block">סה״כ</label>}
                   <div className="input-warm bg-gradient-to-br from-orange-50 to-amber-50 border-orange-200 text-stone-900 font-bold text-left">
                     {formatCurrency(item.quantity * item.unitPrice)}
                   </div>
                 </div>
-                <div className="col-span-1 flex items-end h-full">
+                <div className="col-span-2 md:col-span-1 flex items-end justify-end md:justify-start h-full">
                   <button
                     onClick={() => removeItem(item.id)}
                     disabled={items.length === 1}
-                    className="text-stone-300 hover:text-rose-500 disabled:opacity-30 disabled:cursor-not-allowed p-2 rounded-lg hover:bg-rose-50 transition-colors"
+                    className="text-stone-300 hover:text-rose-500 disabled:opacity-30 disabled:cursor-not-allowed p-2.5 md:p-2 rounded-lg hover:bg-rose-50 transition-colors"
                     title="הסר פריט"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-5 h-5 md:w-4 md:h-4" />
                   </button>
                 </div>
               </div>

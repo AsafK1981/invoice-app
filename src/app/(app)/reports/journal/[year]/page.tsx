@@ -163,6 +163,7 @@ export default function YearJournalPage({ params }: { params: Promise<{ year: st
               אין הכנסות לשנת {year}
             </p>
           ) : (
+            <div className="overflow-x-auto">
             <table className="w-full text-sm border-collapse">
               <thead>
                 <tr className="bg-stone-100">
@@ -195,6 +196,7 @@ export default function YearJournalPage({ params }: { params: Promise<{ year: st
                 </tr>
               </tbody>
             </table>
+            </div>
           )}
         </section>
 
@@ -207,6 +209,7 @@ export default function YearJournalPage({ params }: { params: Promise<{ year: st
               אין הוצאות לשנת {year}
             </p>
           ) : (
+            <div className="overflow-x-auto">
             <table className="w-full text-sm border-collapse">
               <thead>
                 <tr className="bg-stone-100">
@@ -235,11 +238,13 @@ export default function YearJournalPage({ params }: { params: Promise<{ year: st
                 </tr>
               </tbody>
             </table>
+            </div>
           )}
         </section>
 
         <section className="journal-section mt-10">
           <h2 className="text-lg font-bold text-stone-900 mb-3">סיכום חודשי</h2>
+          <div className="overflow-x-auto">
           <table className="w-full text-sm border-collapse">
             <thead>
               <tr className="bg-stone-100">
@@ -271,6 +276,7 @@ export default function YearJournalPage({ params }: { params: Promise<{ year: st
               </tr>
             </tbody>
           </table>
+          </div>
         </section>
 
         <footer className="text-xs text-stone-500 text-center mt-8 pt-4 border-t border-stone-200">

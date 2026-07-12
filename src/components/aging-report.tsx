@@ -134,6 +134,7 @@ export function AgingReport({ documents }: Props) {
           </span>
         </p>
       </div>
+      <div className="overflow-x-auto">
       <table className="w-full">
         <thead className="text-xs text-stone-700 bg-orange-50/50">
           <tr>
@@ -174,6 +175,7 @@ export function AgingReport({ documents }: Props) {
           </tr>
         </tbody>
       </table>
+      </div>
     </div>
   );
 }

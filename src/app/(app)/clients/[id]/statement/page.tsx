@@ -171,6 +171,7 @@ export default function ClientStatementPage({
               אין מסמכים ללקוח זה
             </p>
           ) : (
+            <div className="overflow-x-auto">
             <table className="w-full text-sm border-collapse">
               <thead>
                 <tr className="bg-stone-100">
@@ -200,6 +201,7 @@ export default function ClientStatementPage({
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </section>
 
