@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { Download, X } from "lucide-react";
 
 interface BeforeInstallPromptEvent extends Event {
@@ -15,6 +16,13 @@ const SESSION_KEY = "invoice-app:install-dismissed-this-session";
 const DISMISS_DAYS = 60; // bumped from 14 — popping up every 2 weeks is still annoying
 
 export function InstallPrompt() {
+  const pathname = usePathname();
+  // On the single-document view (/documents/<id>) the paper sits bottom-right,
+  // where this prompt would otherwise land and cover it. Shift to bottom-left
+  // there so the reading content stays clear. The list (/documents) and the
+  // creation routes (/documents/new/...) are unaffected.
+  const overDocumentPaper =
+    /^\/documents\/[^/]+$/.test(pathname || "") && !/^\/documents\/new/.test(pathname || "");
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [visible, setVisible] = useState(false);
   // Set to true once the user has chosen ANY option in this session — prevents
@@ -87,7 +95,11 @@ export function InstallPrompt() {
   if (!visible) return null;
 
   return (
-    <div className="fixed bottom-4 inset-x-4 z-50 lg:bottom-6 lg:right-6 lg:inset-x-auto lg:max-w-sm no-print">
+    <div
+      className={`fixed bottom-4 inset-x-4 z-50 lg:bottom-6 lg:inset-x-auto lg:max-w-sm no-print ${
+        overDocumentPaper ? "lg:left-6" : "lg:right-6"
+      }`}
+    >
       <div className="card-soft p-4 bg-white shadow-xl shadow-orange-200/40 border-orange-200 flex items-start gap-3 animate-fade-in-up">
         <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center flex-shrink-0">
           <Download className="w-5 h-5 text-white" />

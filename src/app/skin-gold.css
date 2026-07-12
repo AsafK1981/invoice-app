@@ -509,6 +509,11 @@ html[data-skin="gold"] .bg-emerald-500 svg { color: #8fd9a8 !important; }
    shows through the glyphs. Higher specificity than the CTA rule. */
 html[data-skin="gold"] .bg-clip-text.from-orange-500.to-rose-500 {
   background: var(--gold-grad) !important;
+  /* The `background` shorthand above resets background-clip to border-box;
+     re-assert text-clip AFTER it or the gradient paints a solid gold block
+     over the (transparent) glyphs, rendering the number invisible. */
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
   color: transparent !important;
   -webkit-text-fill-color: transparent;
   box-shadow: none !important;

@@ -91,6 +91,10 @@ export async function POST(req: NextRequest) {
   const deleted: Record<string, number> = {};
   const errors: Array<{ step: string; message: string }> = [];
 
+  // Wrap a step so any thrown error is captured as an honest partial-failure
+  // entry instead of crashing the whole wipe. `assertOk` inside each step turns
+  // a Supabase `{ error }` response (which does NOT throw on its own) into a
+  // throw — the previous version ignored these and reported ok:true / count 0.
   async function step<T>(name: string, fn: () => Promise<T>): Promise<T | null> {
     try {
       return await fn();
@@ -100,114 +104,143 @@ export async function POST(req: NextRequest) {
       return null;
     }
   }
+  function assertOk(res: { error: { message: string } | null }, what: string) {
+    if (res.error) throw new Error(`${what}: ${res.error.message}`);
+  }
 
-  // 1) Collect doc ids first — we need them to clean up child rows + storage.
-  const { data: docRows } = await admin
+  // 1) Collect doc ids first — we need them to count child rows + purge storage.
+  const { data: docRows, error: docListErr } = await admin
     .from("documents")
     .select("id")
     .eq("business_id", businessId);
+  if (docListErr) {
+    errors.push({ step: "documents_list", message: docListErr.message });
+  }
   const docIds = (docRows || []).map((r) => r.id as string);
-  deleted.documents = docIds.length;
 
-  // 2) Notifications scoped to this business.
-  await step("notifications", async () => {
-    const { count } = await admin
-      .from("notifications")
-      .delete({ count: "exact" })
-      .eq("business_id", businessId);
-    deleted.notifications = count || 0;
-  });
-
-  // 3) Dunning log (FK on documents would CASCADE, but explicit is clearer).
-  await step("dunning_log", async () => {
-    const { count } = await admin
-      .from("dunning_log")
-      .delete({ count: "exact" })
-      .eq("business_id", businessId);
-    deleted.dunning_log = count || 0;
-  });
-
-  // 4) Document attachments — both DB rows and storage objects.
+  // 2) Gather attachment paths + child counts BEFORE any delete, so the counts
+  //    we report stay accurate even though deleting the parent documents row
+  //    cascades the children away (document_items / document_attachments /
+  //    dunning_log all have ON DELETE CASCADE on documents.id).
   let attachmentPaths: string[] = [];
-  await step("document_attachments_db", async () => {
+  await step("document_attachments_scan", async () => {
     if (docIds.length === 0) {
       deleted.document_attachments = 0;
       return;
     }
-    const { data: rows } = await admin
+    const res = await admin
       .from("document_attachments")
       .select("file_path")
       .in("document_id", docIds);
-    attachmentPaths = (rows || [])
+    assertOk(res, "scan attachments");
+    attachmentPaths = (res.data || [])
       .map((r) => r.file_path as string)
       .filter(Boolean);
-    const { count } = await admin
-      .from("document_attachments")
-      .delete({ count: "exact" })
-      .in("document_id", docIds);
-    deleted.document_attachments = count || 0;
+    deleted.document_attachments = res.data?.length || 0;
   });
-
-  // 5) Document items (FK on documents would CASCADE; explicit anyway).
-  await step("document_items", async () => {
+  await step("document_items_scan", async () => {
     if (docIds.length === 0) {
       deleted.document_items = 0;
       return;
     }
-    const { count } = await admin
+    const res = await admin
       .from("document_items")
-      .delete({ count: "exact" })
+      .select("*", { count: "exact", head: true })
       .in("document_id", docIds);
-    deleted.document_items = count || 0;
+    assertOk(res, "scan items");
+    deleted.document_items = res.count || 0;
   });
 
-  // 6) The documents themselves.
+  // 3) Notifications scoped to this business (independent of documents order).
+  await step("notifications", async () => {
+    const res = await admin
+      .from("notifications")
+      .delete({ count: "exact" })
+      .eq("business_id", businessId);
+    assertOk(res, "delete notifications");
+    deleted.notifications = res.count || 0;
+  });
+
+  // 4) Clear delivery markers, THEN delete the parent documents.
+  //    A DB trigger (enforce_document_immutability) blocks DELETE of any row
+  //    with emailed_at set ("delivered documents cannot be deleted"). This is
+  //    a full account wipe behind a forced backup + exact-name confirmation, so
+  //    that guard should not apply here. emailed_at is NOT in the trigger's
+  //    immutable-field list, so nulling it is permitted even for issued docs.
+  //    We delete the PARENT first: the ON DELETE CASCADE FKs remove
+  //    document_items / document_attachments / dunning_log atomically, so a
+  //    failure here can never leave orphaned children.
   await step("documents", async () => {
-    const { count } = await admin
+    if (docIds.length > 0) {
+      const cleared = await admin
+        .from("documents")
+        .update({ emailed_at: null })
+        .eq("business_id", businessId)
+        .not("emailed_at", "is", null);
+      assertOk(cleared, "clear delivery markers");
+    }
+    const res = await admin
       .from("documents")
       .delete({ count: "exact" })
       .eq("business_id", businessId);
-    deleted.documents = count || 0;
+    assertOk(res, "delete documents");
+    deleted.documents = res.count || 0;
+  });
+
+  // 5) Dunning log — most rows cascade-deleted with their documents above; this
+  //    sweeps any business-scoped rows not tied to a (now-gone) document.
+  await step("dunning_log", async () => {
+    const res = await admin
+      .from("dunning_log")
+      .delete({ count: "exact" })
+      .eq("business_id", businessId);
+    assertOk(res, "delete dunning_log");
+    deleted.dunning_log = res.count || 0;
   });
 
   // 7) Expenses — also capture receipt paths first so we can purge storage.
   let receiptPaths: string[] = [];
   await step("expenses", async () => {
-    const { data: rows } = await admin
+    const scan = await admin
       .from("expenses")
       .select("receipt_path")
       .eq("business_id", businessId);
-    receiptPaths = (rows || [])
+    assertOk(scan, "scan expenses");
+    receiptPaths = (scan.data || [])
       .map((r) => r.receipt_path as string)
       .filter(Boolean);
-    const { count } = await admin
+    const res = await admin
       .from("expenses")
       .delete({ count: "exact" })
       .eq("business_id", businessId);
-    deleted.expenses = count || 0;
+    assertOk(res, "delete expenses");
+    deleted.expenses = res.count || 0;
   });
 
   // 8-10) Clients, products, counters.
   await step("clients", async () => {
-    const { count } = await admin
+    const res = await admin
       .from("clients")
       .delete({ count: "exact" })
       .eq("business_id", businessId);
-    deleted.clients = count || 0;
+    assertOk(res, "delete clients");
+    deleted.clients = res.count || 0;
   });
   await step("products", async () => {
-    const { count } = await admin
+    const res = await admin
       .from("products")
       .delete({ count: "exact" })
       .eq("business_id", businessId);
-    deleted.products = count || 0;
+    assertOk(res, "delete products");
+    deleted.products = res.count || 0;
   });
   await step("document_counters", async () => {
-    const { count } = await admin
+    const res = await admin
       .from("document_counters")
       .delete({ count: "exact" })
       .eq("business_id", businessId);
-    deleted.document_counters = count || 0;
+    assertOk(res, "delete document_counters");
+    deleted.document_counters = res.count || 0;
   });
 
   // 11) Storage cleanup — delete in chunks so we don't blow past Supabase's
@@ -258,13 +291,14 @@ export async function POST(req: NextRequest) {
 
   // 13) Append the data.cleared audit entry — survives the wipe.
   await step("audit_log_append", async () => {
-    await admin.from("audit_log").insert({
+    const res = await admin.from("audit_log").insert({
       business_id: businessId,
       action: "data.cleared",
       target_type: "all",
       target_label: "כל הנתונים",
       payload: { deleted, errors },
     });
+    assertOk(res, "append audit log");
   });
 
   return NextResponse.json({

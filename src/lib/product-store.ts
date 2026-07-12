@@ -53,7 +53,7 @@ export const productStore = {
       .from("products")
       .select("id")
       .eq("id", product.id)
-      .single();
+      .maybeSingle();
 
     if (existing) {
       await supabase

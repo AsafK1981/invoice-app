@@ -63,3 +63,6 @@ Rashot Hamisim/**/*מולא*
 # local audit / scratch artifacts
 audit.json
 tmp_audit_local.json
+
+# QA / design screenshots (local only)
+design-shots/
