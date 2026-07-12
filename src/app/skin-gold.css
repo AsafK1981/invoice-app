@@ -398,6 +398,49 @@ html[data-skin="gold"] .receipt-view * { color: inherit; }
 html[data-skin="gold"] .receipt-view::before,
 html[data-skin="gold"] .receipt-view::after { display: none !important; }
 
+/* PAPER SCOPE — the printable document sheet must render its OWN print-faithful
+   light palette under the gold skin, identically on the doc view, the editor
+   live-preview, the public /view page (gold is the default skin, so anonymous
+   recipients get data-skin="gold" too) and the server-rendered PDF (which
+   navigates headless Chrome to /view). The global gold remaps (table thead/td,
+   .text-stone-*, .bg-* , .bg-gradient-to-l.from-orange-50) are single-class
+   !important rules that were bleeding into the paper — turning the line-items
+   table dark with light text. Re-assert every utility the paper uses at
+   two-class (.receipt-view .x) specificity + !important so none of them can
+   leak in. Same strategy as the .gk-paper block below (journal / statement). */
+html[data-skin="gold"] .receipt-view .text-stone-900 { color: #1c1917 !important; }
+html[data-skin="gold"] .receipt-view .text-stone-800 { color: #292524 !important; }
+html[data-skin="gold"] .receipt-view .text-stone-700 { color: #44403c !important; }
+html[data-skin="gold"] .receipt-view .text-stone-600 { color: #57534e !important; }
+html[data-skin="gold"] .receipt-view .text-stone-500 { color: #78716c !important; }
+html[data-skin="gold"] .receipt-view .text-stone-400 { color: #a8a29e !important; }
+/* line-items table: coral-on-cream header + clean body, never the dark remap */
+html[data-skin="gold"] .receipt-view table thead { background: transparent !important; }
+html[data-skin="gold"] .receipt-view table thead th { color: #44403c !important; border-color: #fed7aa !important; }
+html[data-skin="gold"] .receipt-view table tbody td { color: inherit; border-color: transparent !important; }
+html[data-skin="gold"] .receipt-view .bg-gradient-to-l.from-orange-50 {
+  background: linear-gradient(to left, #fff7ed, #fffbeb) !important;
+}
+html[data-skin="gold"] .receipt-view .bg-white { background-color: #ffffff !important; }
+html[data-skin="gold"] .receipt-view .bg-stone-50\/60 { background-color: rgba(250, 250, 249, 0.6) !important; }
+html[data-skin="gold"] .receipt-view .bg-stone-100 { background-color: #f5f5f4 !important; }
+html[data-skin="gold"] .receipt-view .bg-orange-50\/60 { background-color: rgba(255, 247, 237, 0.6) !important; }
+html[data-skin="gold"] .receipt-view .border-stone-200 { border-color: #e7e5e4 !important; }
+
+/* PRINT / PDF — the server PDF route navigates headless Chrome to /view under
+   the (now-default) gold skin and prints with printBackground. On screen the
+   page keeps its obsidian chrome, but the printed sheet must be clean white
+   paper: strip the gold body/html gradient in print so only the white
+   .receipt-view shows (mirrors the html.dark print reset in globals.css). */
+@media print {
+  html[data-skin="gold"],
+  html[data-skin="gold"] body {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    color: #1c1917 !important;
+  }
+}
+
 /* =====================================================================
    DOCUMENTS EDITOR — bespoke polish
    Covers: the type picker (/documents/new), every type-specific editor

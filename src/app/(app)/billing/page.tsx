@@ -300,7 +300,7 @@ export default function BillingPage() {
 
       <p className="text-xs text-center text-stone-500 mt-4">
         {!isPaying && `${TRIAL_DAYS} ימי ניסיון, ללא חיוב במשך התקופה. `}
-        תשלום מאובטח דרך Polar (Stripe). ניתן לבטל בכל עת.
+        תשלום מאובטח דרך Polar. ניתן לבטל בכל עת.
       </p>
 
       {/* Confirm-before-redirect modal. Shows plan summary in Hebrew
