@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search, X, Building2, Package, ReceiptText, Wallet } from "lucide-react";
+import { Search, X, Building2, Package, ReceiptText, Wallet, Plus, BarChart3 } from "lucide-react";
 import { useDocuments } from "@/lib/document-store";
 import { useClients } from "@/lib/client-store";
 import { useProducts } from "@/lib/product-store";
@@ -25,24 +25,11 @@ export function GlobalSearch() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
-  // Default to the Windows/Linux hint (most users); switch to ⌘ on Mac after mount to avoid hydration mismatch
-  const [isMac, setIsMac] = useState(false);
 
   const { documents } = useDocuments();
   const { items: clients } = useClients();
   const { items: products } = useProducts();
   const { items: expenses } = useExpenses();
-
-  // Detect Mac client-side so the shortcut badge shows ⌘K only on Mac, Ctrl K elsewhere
-  useEffect(() => {
-    const platform =
-      (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData?.platform ||
-      navigator.platform ||
-      navigator.userAgent;
-    setIsMac(/mac|iphone|ipad/i.test(platform));
-  }, []);
-
-  const shortcutLabel = isMac ? "⌘K" : "Ctrl K";
 
   // Cmd+K / Ctrl+K to open search; "N" for new doc; Escape to close
   useEffect(() => {
@@ -158,6 +145,36 @@ export function GlobalSearch() {
     setOpen(false);
   }
 
+  function goTo(href: string) {
+    router.push(href);
+    setOpen(false);
+  }
+
+  const quickActions = [
+    { label: "מסמך חדש", icon: Plus, href: "/documents/new" },
+    { label: "כל המסמכים", icon: ReceiptText, href: "/documents" },
+    { label: "לקוחות", icon: Building2, href: "/clients" },
+    { label: "דוחות", icon: BarChart3, href: "/reports" },
+  ];
+
+  const quickActionsRow = (
+    <div className="mt-5 flex flex-wrap justify-center gap-2">
+      {quickActions.map((a) => {
+        const Icon = a.icon;
+        return (
+          <button
+            key={a.href}
+            onClick={() => goTo(a.href)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full border border-orange-100 bg-white/60 text-sm text-stone-700 hover:bg-orange-50 hover:border-orange-200 hover:text-orange-700 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-200"
+          >
+            <Icon className="w-3.5 h-3.5" />
+            {a.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+
   function onKeyDown(e: React.KeyboardEvent) {
     if (e.key === "ArrowDown") {
       e.preventDefault();
@@ -177,13 +194,10 @@ export function GlobalSearch() {
         onClick={() => setOpen(true)}
         className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/70 border border-orange-100 hover:bg-white hover:border-orange-200 text-sm text-stone-600 transition-colors"
         aria-label="חיפוש"
-        title={`חיפוש (${shortcutLabel}) · מסמך חדש (N)`}
+        title="חיפוש"
       >
         <Search className="w-3.5 h-3.5" />
         <span className="hidden sm:inline">חיפוש</span>
-        <kbd className="hidden md:inline-block text-xs bg-stone-100 text-stone-500 px-1.5 py-0.5 rounded border border-stone-200 font-mono">
-          {shortcutLabel}
-        </kbd>
       </button>
     );
   }
@@ -217,20 +231,20 @@ export function GlobalSearch() {
 
         <div className="max-h-[60vh] overflow-y-auto">
           {!query.trim() && (
-            <div className="px-5 py-10 text-center text-stone-500">
-              <p className="text-sm">התחל להקליד כדי לחפש</p>
-              <p className="text-xs mt-2">חפש לפי מספר, סכום, לקוח, פריט, סטטוס, תאריך...</p>
-              <div className="mt-5 inline-flex items-center gap-2 text-xs text-stone-500">
-                <span>טיפ:</span>
-                <kbd className="bg-stone-100 border border-stone-200 px-1.5 py-0.5 rounded font-mono text-[10px]">N</kbd>
-                <span>למסמך חדש</span>
-              </div>
+            <div className="px-5 py-10 text-center">
+              <p className="text-base font-semibold text-stone-800">מה תרצה למצוא?</p>
+              <p className="text-sm mt-1.5 text-stone-500">חפש לפי מספר מסמך, לקוח, סכום או תאריך</p>
+              {quickActionsRow}
             </div>
           )}
 
           {query.trim() && results.length === 0 && (
-            <div className="px-5 py-10 text-center text-stone-500">
-              <p className="text-sm">לא נמצאו תוצאות עבור &quot;{query}&quot;</p>
+            <div className="px-5 py-10 text-center">
+              <p className="text-sm text-stone-600">
+                לא נמצא כלום עבור &rsquo;{query}&rsquo;
+              </p>
+              <p className="text-xs mt-1.5 text-stone-400">אפשר לנסות חיפוש אחר, או לקפוץ ישר אל:</p>
+              {quickActionsRow}
             </div>
           )}
 
@@ -259,7 +273,7 @@ export function GlobalSearch() {
                     key={r.id}
                     onClick={() => selectResult(r)}
                     onMouseEnter={() => setActiveIndex(idx)}
-                    className={`w-full text-right px-5 py-3 flex items-center gap-3 transition-colors ${
+                    className={`w-full text-right px-5 py-3 flex items-center gap-3 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-orange-200 ${
                       isActive ? "bg-orange-50" : "hover:bg-orange-50/50"
                     }`}
                   >
@@ -282,22 +296,11 @@ export function GlobalSearch() {
           )}
         </div>
 
-        <div className="px-5 py-2.5 border-t border-orange-100 bg-orange-50/30 text-xs text-stone-500 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1">
-              <kbd className="bg-white border border-stone-200 px-1.5 py-0.5 rounded font-mono text-[10px]">↑↓</kbd>
-              ניווט
-            </span>
-            <span className="flex items-center gap-1">
-              <kbd className="bg-white border border-stone-200 px-1.5 py-0.5 rounded font-mono text-[10px]">↵</kbd>
-              פתח
-            </span>
-            <span className="flex items-center gap-1">
-              <kbd className="bg-white border border-stone-200 px-1.5 py-0.5 rounded font-mono text-[10px]">esc</kbd>
-              סגור
-            </span>
-          </div>
-          <span className="hidden sm:inline">{results.length} תוצאות</span>
+        <div className="px-5 py-2.5 border-t border-orange-100 bg-orange-50/30 text-xs text-stone-400 flex items-center justify-between">
+          <span>אפשר לנווט עם החיצים ו-Enter</span>
+          {query.trim() && results.length > 0 && (
+            <span className="hidden sm:inline">{results.length} תוצאות</span>
+          )}
         </div>
       </div>
     </div>
