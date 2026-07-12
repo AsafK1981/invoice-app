@@ -25,11 +25,24 @@ export function GlobalSearch() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
+  // Default to the Windows/Linux hint (most users); switch to ⌘ on Mac after mount to avoid hydration mismatch
+  const [isMac, setIsMac] = useState(false);
 
   const { documents } = useDocuments();
   const { items: clients } = useClients();
   const { items: products } = useProducts();
   const { items: expenses } = useExpenses();
+
+  // Detect Mac client-side so the shortcut badge shows ⌘K only on Mac, Ctrl K elsewhere
+  useEffect(() => {
+    const platform =
+      (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData?.platform ||
+      navigator.platform ||
+      navigator.userAgent;
+    setIsMac(/mac|iphone|ipad/i.test(platform));
+  }, []);
+
+  const shortcutLabel = isMac ? "⌘K" : "Ctrl K";
 
   // Cmd+K / Ctrl+K to open search; "N" for new doc; Escape to close
   useEffect(() => {
@@ -164,12 +177,12 @@ export function GlobalSearch() {
         onClick={() => setOpen(true)}
         className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/70 border border-orange-100 hover:bg-white hover:border-orange-200 text-sm text-stone-600 transition-colors"
         aria-label="חיפוש"
-        title="חיפוש (⌘K) · מסמך חדש (N)"
+        title={`חיפוש (${shortcutLabel}) · מסמך חדש (N)`}
       >
         <Search className="w-3.5 h-3.5" />
         <span className="hidden sm:inline">חיפוש</span>
         <kbd className="hidden md:inline-block text-xs bg-stone-100 text-stone-500 px-1.5 py-0.5 rounded border border-stone-200 font-mono">
-          ⌘K
+          {shortcutLabel}
         </kbd>
       </button>
     );
