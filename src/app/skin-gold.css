@@ -83,7 +83,8 @@ html[data-skin="gold"] .text-amber-800,
 html[data-skin="gold"] .text-violet-600,
 html[data-skin="gold"] .text-fuchsia-600,
 html[data-skin="gold"] .text-violet-700,
-html[data-skin="gold"] .text-violet-800 { color: #c9b885 !important; }
+html[data-skin="gold"] .text-violet-800,
+html[data-skin="gold"] .text-violet-900 { color: #c9b885 !important; }
 
 /* status-family text kept legible & colour-matched */
 html[data-skin="gold"] .text-emerald-600,
@@ -92,12 +93,18 @@ html[data-skin="gold"] .text-emerald-800,
 html[data-skin="gold"] .text-emerald-900 { color: #8fd9a8 !important; }
 html[data-skin="gold"] .text-blue-600,
 html[data-skin="gold"] .text-blue-700,
+html[data-skin="gold"] .text-blue-800,
 html[data-skin="gold"] .text-sky-600,
 html[data-skin="gold"] .text-sky-700 { color: #a9bee0 !important; }
 html[data-skin="gold"] .text-rose-600,
 html[data-skin="gold"] .text-rose-700,
 html[data-skin="gold"] .text-rose-800,
 html[data-skin="gold"] .text-rose-900 { color: #e6b8a8 !important; }
+/* pink shares the rose-tinted pill remap (bg-pink-100, above) but its dark
+   Tailwind text (#be185d) was never remapped → ~2.5:1 on the pill. Lift to a
+   light pink, same lightness as the rose text but a pinker hue, so the expense
+   icon tile (global search) reads ≥4.5:1. */
+html[data-skin="gold"] .text-pink-700 { color: #e6b8c8 !important; }
 
 /* ---------- cards: dark surface + gold hairline + deco corners ---------- */
 html[data-skin="gold"] .card-soft {
@@ -339,6 +346,19 @@ html[data-skin="gold"] tbody tr[data-status="cancelled"] .bg-rose-100.text-rose-
   background-color: rgba(175, 163, 140, 0.16) !important;
   border: 1px solid rgba(175, 163, 140, 0.32) !important;
   color: #cfc4ae !important;
+}
+/* Proforma (חשבון עסקה) type badge (bg-fuchsia-100 text-fuchsia-800): text-fuchsia-800
+   is the ONE type-badge text tone the base remap never caught (fuchsia-600 is
+   listed, -800 is not), so it stayed dark Tailwind purple (#86198f) on the
+   near-black gold-tinted fuchsia pill — the user-reported purple-on-purple
+   (~1.6:1, unreadable). Give the proforma pill its own violet-tinted surface +
+   a light-purple label so it keeps a DISTINCT purple hue family (vs the gold
+   quote / tax-invoice-receipt pills) and reads clearly (~7:1), matching how the
+   readable emerald/sky/rose badges resolve. Two-class selector out-specifies the
+   single-class .bg-fuchsia-100 remap and touches nothing but this badge. */
+html[data-skin="gold"] .bg-fuchsia-100.text-fuchsia-800 {
+  background-color: rgba(178, 130, 200, 0.18) !important;
+  color: #d8bce6 !important;
 }
 
 /* ---------- segmented range control track ---------- */
