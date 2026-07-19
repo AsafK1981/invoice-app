@@ -10,6 +10,33 @@ export type DocumentStatus = "draft" | "sent" | "paid" | "cancelled";
 
 export type PaymentMethod = "bank_transfer" | "cash" | "check" | "credit_card" | "bit" | "paypal";
 
+/**
+ * Structured payment detail captured per payment method on receipts /
+ * tax-invoice-receipts (פירוט אמצעי תשלום). All fields optional — only the
+ * ones relevant to the chosen method are filled. The primary human reference
+ * (bank/Bit/PayPal reference, or the check number, or the card approval) is
+ * also mirrored into the document's `paymentReference` so the bank-import
+ * matcher / timeline keep working.
+ */
+export interface PaymentDetails {
+  /** העברה בנקאית / Bit / PayPal — אסמכתא. */
+  reference?: string;
+  /** צ'ק — מספר שיק. */
+  checkNumber?: string;
+  /** צ'ק — בנק. */
+  checkBank?: string;
+  /** צ'ק — סניף. */
+  checkBranch?: string;
+  /** צ'ק — מספר חשבון. */
+  checkAccount?: string;
+  /** צ'ק — תאריך פירעון (ז"פ), ISO date. */
+  checkDueDate?: string;
+  /** אשראי — 4 ספרות אחרונות. */
+  cardLast4?: string;
+  /** אשראי — מספר אישור. */
+  cardApproval?: string;
+}
+
 export interface Business {
   id: string;
   name: string;
@@ -131,6 +158,27 @@ export interface InvoiceDocument {
   paidAt?: string;
   /** Free-form payment reference — bank transaction id, Bit ref, etc. */
   paymentReference?: string;
+  /**
+   * Structured payment detail per method (check/bank/card). Only meaningful on
+   * receipts / tax-invoice-receipts. See {@link PaymentDetails}.
+   */
+  paymentDetails?: PaymentDetails;
+  /**
+   * ניכוי מס במקור — withholding tax the customer deducts from the payment and
+   * remits to the Tax Authority on the supplier's behalf. Computed on the TOTAL
+   * including VAT. This does NOT change subtotal/vat/total — it's a split of the
+   * payment (total = actually-paid + withholding). Applies to עוסק פטור too
+   * (it's income tax, not VAT). Only recorded on receipts / tax-invoice-receipts.
+   */
+  withholdingRate?: number;
+  withholdingAmount?: number;
+  /**
+   * Document-level discount (הנחה) in the document currency, applied BEFORE VAT.
+   * The stored `subtotal` is the DISCOUNTED subtotal (lines subtotal − discount);
+   * this field carries the discount itself so the pre-discount subtotal and the
+   * "amount before discount" tax-export field can be reconstructed.
+   */
+  discountAmount?: number;
   /** ISO 4217 currency the document is denominated in. Default "ILS". */
   currency?: string;
   /** ₪ per 1 unit of `currency`, snapshotted at issue. ILS → 1. */

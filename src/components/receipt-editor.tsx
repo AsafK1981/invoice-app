@@ -38,6 +38,7 @@ import {
   type Client,
   type Product,
   type PaymentMethod,
+  type PaymentDetails,
   type DocumentType,
   type InvoiceDocument,
   PAYMENT_METHOD_LABELS,
@@ -107,6 +108,13 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   const baseVatRate = getVatRate(business);
   const isCreditNote = documentType === "credit_note";
   const sign = isCreditNote ? -1 : 1;
+  // Payment-recording documents (a קבלה or a חשבונית מס/קבלה) are the only ones
+  // that record HOW the money arrived — so withholding-tax and payment-detail
+  // controls appear only for them. Discount (הנחה) applies to any priced doc
+  // except a credit note (which stores negative amounts).
+  const isPaymentRecording =
+    documentType === "receipt" || documentType === "tax_invoice_receipt";
+  const allowDiscount = !isCreditNote;
 
   const [adhocMode, setAdhocMode] = useState<boolean>(false);
   const [clientId, setClientId] = useState<string>(prefilledClientId);
@@ -126,6 +134,25 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   // Round the final total to a whole shekel (הפרש עיגול). Defaults from the
   // business setting; overridable per document.
   const [roundTotal, setRoundTotal] = useState<boolean>(business.roundTotalDefault ?? false);
+
+  // הנחה (document-level discount) — collapsed by default. User enters a % or a
+  // ₪ amount; we persist the resolved ₪ amount. Applied BEFORE VAT.
+  const [showDiscount, setShowDiscount] = useState<boolean>(false);
+  const [discountMode, setDiscountMode] = useState<"amount" | "percent">("amount");
+  const [discountInput, setDiscountInput] = useState<string>("");
+
+  // ניכוי מס במקור (withholding tax) — collapsed by default, payment docs only.
+  // Rate % drives an auto-computed amount (on the total incl. VAT); the amount
+  // stays editable for a manual override.
+  const [showWithholding, setShowWithholding] = useState<boolean>(false);
+  const [withholdingRateInput, setWithholdingRateInput] = useState<string>("");
+  const [withholdingAmountInput, setWithholdingAmountInput] = useState<string>("");
+  const [withholdingTouched, setWithholdingTouched] = useState<boolean>(false);
+
+  // פירוט אמצעי תשלום — structured detail for the selected payment method.
+  const [payDetails, setPayDetails] = useState<PaymentDetails>({});
+  const updatePayDetails = (patch: Partial<PaymentDetails>) =>
+    setPayDetails((p) => ({ ...p, ...patch }));
 
   const [sendEmail, setSendEmail] = useState<boolean>(true);
   const [emails, setEmails] = useState<string[]>([""]);
@@ -206,6 +233,14 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
       setVatMode(d.vatMode);
       setRoundTotal(d.roundTotal ?? business.roundTotalDefault ?? false);
       setItems(d.items);
+      setShowDiscount(d.showDiscount ?? false);
+      setDiscountMode(d.discountMode ?? "amount");
+      setDiscountInput(d.discountInput ?? "");
+      setShowWithholding(d.showWithholding ?? false);
+      setWithholdingRateInput(d.withholdingRateInput ?? "");
+      setWithholdingAmountInput(d.withholdingAmountInput ?? "");
+      setWithholdingTouched(d.withholdingTouched ?? false);
+      setPayDetails(d.payDetails ?? {});
       setDraftRecovered({ savedAt: stored.savedAt });
     }
     setDraftHydrated(true);
@@ -230,6 +265,14 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
       vatMode,
       roundTotal,
       items,
+      showDiscount,
+      discountMode,
+      discountInput,
+      showWithholding,
+      withholdingRateInput,
+      withholdingAmountInput,
+      withholdingTouched,
+      payDetails,
     };
     if (isDraftEmpty(draft)) {
       clearDraft(documentType);
@@ -253,6 +296,14 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
     vatMode,
     roundTotal,
     items,
+    showDiscount,
+    discountMode,
+    discountInput,
+    showWithholding,
+    withholdingRateInput,
+    withholdingAmountInput,
+    withholdingTouched,
+    payDetails,
   ]);
 
   function discardDraft() {
@@ -270,6 +321,14 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
     setVatMode("exclusive");
     setRoundTotal(business.roundTotalDefault ?? false);
     setItems([{ id: crypto.randomUUID(), description: "", quantity: 1, unitPrice: 0 }]);
+    setShowDiscount(false);
+    setDiscountMode("amount");
+    setDiscountInput("");
+    setShowWithholding(false);
+    setWithholdingRateInput("");
+    setWithholdingAmountInput("");
+    setWithholdingTouched(false);
+    setPayDetails({});
     setDraftRecovered(null);
     setDraftDismissed(true);
   }
@@ -318,11 +377,58 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
     return () => { cancelled = true; };
   }, [currency, date]);
 
+  // Lines subtotal BEFORE any discount — drives the % calculation and validation.
+  const linesSubtotal = useMemo(
+    () => computeAmounts(items, effectiveVatRate, vatMode, false, 0).subtotal,
+    [items, effectiveVatRate, vatMode]
+  );
+
+  const discountEntered =
+    allowDiscount && showDiscount && discountInput.trim() !== "";
+  const discountRaw = parseFloat(discountInput);
+  const discountValid =
+    !discountEntered ||
+    (Number.isFinite(discountRaw) &&
+      discountRaw > 0 &&
+      (discountMode === "percent"
+        ? discountRaw < 100
+        : round2(discountRaw) < linesSubtotal));
+  const discountAmount =
+    discountEntered && discountValid
+      ? discountMode === "percent"
+        ? round2((linesSubtotal * discountRaw) / 100)
+        : round2(discountRaw)
+      : 0;
+
   const amounts = useMemo(
-    () => computeAmounts(items, effectiveVatRate, vatMode, roundTotal),
-    [items, effectiveVatRate, vatMode, roundTotal]
+    () => computeAmounts(items, effectiveVatRate, vatMode, roundTotal, discountAmount),
+    [items, effectiveVatRate, vatMode, roundTotal, discountAmount]
   );
   const { subtotal, vat, total, rounding, netUnitPriceFactor } = amounts;
+
+  // ניכוי מס במקור — computed on the total incl. VAT. Keep the amount synced to
+  // (rate × total) until the user manually edits the amount field.
+  const withholdingEntered =
+    isPaymentRecording && showWithholding && withholdingRateInput.trim() !== "";
+  const withholdingRate = parseFloat(withholdingRateInput);
+  useEffect(() => {
+    if (withholdingTouched || !withholdingEntered) return;
+    const c =
+      Number.isFinite(withholdingRate) && withholdingRate > 0
+        ? round2((total * withholdingRate) / 100)
+        : 0;
+    setWithholdingAmountInput(c > 0 ? String(c) : "");
+  }, [total, withholdingRate, withholdingTouched, withholdingEntered]);
+  const withholdingAmount = withholdingEntered
+    ? round2(parseFloat(withholdingAmountInput) || 0)
+    : 0;
+  const withholdingValid =
+    !withholdingEntered ||
+    (Number.isFinite(withholdingRate) &&
+      withholdingRate >= 0 &&
+      withholdingRate <= 50 &&
+      withholdingAmount > 0 &&
+      withholdingAmount <= total);
 
   useEffect(() => {
     if (emailOverridden) return;
@@ -409,6 +515,14 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
       setNotes(p.notes || "");
       setVatMode(p.vatMode);
       setRoundTotal(p.roundTotal ?? business.roundTotalDefault ?? false);
+      setShowDiscount(p.showDiscount ?? false);
+      setDiscountMode(p.discountMode ?? "amount");
+      setDiscountInput(p.discountInput ?? "");
+      setShowWithholding(p.showWithholding ?? false);
+      setWithholdingRateInput(p.withholdingRateInput ?? "");
+      setWithholdingAmountInput(p.withholdingAmountInput ?? "");
+      setWithholdingTouched(p.withholdingTouched ?? false);
+      setPayDetails(p.payDetails ?? {});
       if (Array.isArray(p.items) && p.items.length > 0) {
         setItems(
           p.items.map((it) => ({
@@ -568,7 +682,46 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
     clientReady &&
     items.every((i) => i.description.trim() && i.quantity > 0 && i.unitPrice >= 0) &&
     (!sendEmail || allEmailsValid) &&
-    creditRefValid;
+    creditRefValid &&
+    discountValid &&
+    withholdingValid;
+
+  // Build the persisted PaymentDetails, keeping only the fields relevant to the
+  // chosen method and dropping empties. Returns undefined when nothing was set.
+  function buildPaymentDetails(): PaymentDetails | undefined {
+    if (!isPaymentRecording || isPrePayment) return undefined;
+    const clean: PaymentDetails = {};
+    if (paymentMethod === "check") {
+      if (payDetails.checkNumber?.trim()) clean.checkNumber = payDetails.checkNumber.trim();
+      if (payDetails.checkBank?.trim()) clean.checkBank = payDetails.checkBank.trim();
+      if (payDetails.checkBranch?.trim()) clean.checkBranch = payDetails.checkBranch.trim();
+      if (payDetails.checkAccount?.trim()) clean.checkAccount = payDetails.checkAccount.trim();
+      if (payDetails.checkDueDate?.trim()) clean.checkDueDate = payDetails.checkDueDate.trim();
+    } else if (paymentMethod === "credit_card") {
+      if (payDetails.cardLast4?.trim()) clean.cardLast4 = payDetails.cardLast4.trim();
+      if (payDetails.cardApproval?.trim()) clean.cardApproval = payDetails.cardApproval.trim();
+    } else if (
+      paymentMethod === "bank_transfer" ||
+      paymentMethod === "bit" ||
+      paymentMethod === "paypal"
+    ) {
+      if (payDetails.reference?.trim()) clean.reference = payDetails.reference.trim();
+    }
+    return Object.keys(clean).length > 0 ? clean : undefined;
+  }
+
+  // The primary human reference mirrored into payment_reference so the bank-
+  // import matcher / timeline keep working.
+  function primaryPaymentReference(pd: PaymentDetails | undefined): string | undefined {
+    if (!pd) return undefined;
+    return (
+      pd.reference ||
+      pd.checkNumber ||
+      pd.cardApproval ||
+      pd.cardLast4 ||
+      undefined
+    );
+  }
 
   function buildClientName(): string {
     if (adhocMode) return adhocName.trim();
@@ -602,6 +755,14 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
           quantity: i.quantity,
           unitPrice: i.unitPrice,
         })),
+        showDiscount,
+        discountMode,
+        discountInput,
+        showWithholding,
+        withholdingRateInput,
+        withholdingAmountInput,
+        withholdingTouched,
+        payDetails,
         documentType,
         currency,
         zeroRated,
@@ -651,6 +812,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
 
     try {
       const clientName = buildClientName();
+      const paymentDetails = buildPaymentDetails();
 
       const persistItems = items.map((i) => {
         const netUnitPrice = round2(i.unitPrice * netUnitPriceFactor);
@@ -712,6 +874,11 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
         rounding: round2(sign * rounding),
         roundTotal,
         paymentMethod: isPrePayment ? undefined : paymentMethod,
+        paymentDetails,
+        paymentReference: primaryPaymentReference(paymentDetails),
+        withholdingRate: withholdingEntered ? withholdingRate : undefined,
+        withholdingAmount: withholdingEntered ? withholdingAmount : undefined,
+        discountAmount: discountAmount > 0 ? discountAmount : undefined,
         notes: finalNotes,
         currency,
         exchangeRate: effectiveRate,
@@ -1133,6 +1300,177 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
               </FormField>
             )}
 
+            {isPaymentRecording && (
+              <div className="md:col-span-2 space-y-3">
+                {/* פירוט אמצעי תשלום — per-method optional detail. */}
+                {(paymentMethod === "bank_transfer" ||
+                  paymentMethod === "bit" ||
+                  paymentMethod === "paypal") && (
+                  <FormField label="אסמכתא (אופציונלי)">
+                    <input
+                      type="text"
+                      value={payDetails.reference || ""}
+                      onChange={(e) => updatePayDetails({ reference: e.target.value })}
+                      placeholder="מספר אסמכתא / העברה"
+                      className="input-warm"
+                      dir="ltr"
+                    />
+                  </FormField>
+                )}
+                {paymentMethod === "check" && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <input
+                      type="text"
+                      value={payDetails.checkNumber || ""}
+                      onChange={(e) => updatePayDetails({ checkNumber: e.target.value })}
+                      placeholder="מס' שיק"
+                      className="input-warm"
+                      dir="ltr"
+                    />
+                    <input
+                      type="text"
+                      value={payDetails.checkBank || ""}
+                      onChange={(e) => updatePayDetails({ checkBank: e.target.value })}
+                      placeholder="בנק"
+                      className="input-warm"
+                    />
+                    <input
+                      type="text"
+                      value={payDetails.checkBranch || ""}
+                      onChange={(e) => updatePayDetails({ checkBranch: e.target.value })}
+                      placeholder="סניף"
+                      className="input-warm"
+                      dir="ltr"
+                    />
+                    <input
+                      type="text"
+                      value={payDetails.checkAccount || ""}
+                      onChange={(e) => updatePayDetails({ checkAccount: e.target.value })}
+                      placeholder="מס' חשבון"
+                      className="input-warm"
+                      dir="ltr"
+                    />
+                    <div className="md:col-span-2">
+                      <label className="text-xs font-semibold text-stone-700 mb-1 block">
+                        תאריך פירעון (ז״פ)
+                      </label>
+                      <input
+                        type="date"
+                        value={payDetails.checkDueDate || ""}
+                        onChange={(e) => updatePayDetails({ checkDueDate: e.target.value })}
+                        className="input-warm"
+                      />
+                    </div>
+                  </div>
+                )}
+                {paymentMethod === "credit_card" && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={4}
+                      value={payDetails.cardLast4 || ""}
+                      onChange={(e) =>
+                        updatePayDetails({ cardLast4: e.target.value.replace(/\D/g, "").slice(0, 4) })
+                      }
+                      placeholder="4 ספרות אחרונות"
+                      className="input-warm"
+                      dir="ltr"
+                    />
+                    <input
+                      type="text"
+                      value={payDetails.cardApproval || ""}
+                      onChange={(e) => updatePayDetails({ cardApproval: e.target.value })}
+                      placeholder="מס' אישור"
+                      className="input-warm"
+                      dir="ltr"
+                    />
+                  </div>
+                )}
+
+                {/* ניכוי מס במקור — collapsed by default. */}
+                {!showWithholding ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowWithholding(true)}
+                    className="inline-flex items-center gap-1.5 text-sm font-semibold text-orange-700 hover:text-orange-800"
+                  >
+                    <Plus className="w-4 h-4" />
+                    ניכוי מס במקור
+                  </button>
+                ) : (
+                  <div className="rounded-xl border border-orange-100 bg-orange-50/50 p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-semibold text-stone-800">ניכוי מס במקור</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowWithholding(false);
+                          setWithholdingRateInput("");
+                          setWithholdingAmountInput("");
+                          setWithholdingTouched(false);
+                        }}
+                        className="text-xs text-stone-500 hover:text-rose-600"
+                      >
+                        הסר
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-xs font-semibold text-stone-700 mb-1 block">
+                          שיעור (%)
+                        </label>
+                        <input
+                          type="number"
+                          min={0}
+                          max={50}
+                          step="0.01"
+                          value={withholdingRateInput}
+                          onChange={(e) => {
+                            setWithholdingRateInput(e.target.value);
+                            setWithholdingTouched(false);
+                          }}
+                          className="input-warm tabular-nums"
+                          dir="ltr"
+                          placeholder="35"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold text-stone-700 mb-1 block">
+                          סכום הניכוי
+                        </label>
+                        <input
+                          type="number"
+                          min={0}
+                          step="0.01"
+                          value={withholdingAmountInput}
+                          onChange={(e) => {
+                            setWithholdingAmountInput(e.target.value);
+                            setWithholdingTouched(true);
+                          }}
+                          className="input-warm tabular-nums"
+                          dir="ltr"
+                        />
+                      </div>
+                    </div>
+                    <p className="text-xs text-stone-600">
+                      מחושב על הסכום כולל מע״מ. סכום המסמך אינו משתנה — זהו פיצול של התשלום.
+                    </p>
+                    {withholdingEntered && withholdingValid && withholdingAmount > 0 && (
+                      <p className="text-sm font-semibold text-stone-800">
+                        שולם בפועל: {formatCurrency(total - withholdingAmount)}
+                      </p>
+                    )}
+                    {withholdingEntered && !withholdingValid && (
+                      <p className="text-xs text-rose-700">
+                        סכום הניכוי חייב להיות בין 0 לסכום המסמך, והשיעור עד 50%.
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
             {isQuote && (
               <FormField label="תוקף ההצעה (אופציונלי)">
                 <input
@@ -1333,6 +1671,86 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
               + הוסף פריט
             </button>
           </div>
+
+          {allowDiscount && (
+            <div className="mt-4 pt-4 border-t border-stone-100">
+              {!showDiscount ? (
+                <button
+                  type="button"
+                  onClick={() => setShowDiscount(true)}
+                  className="inline-flex items-center gap-1.5 text-sm font-semibold text-orange-700 hover:text-orange-800"
+                >
+                  <Plus className="w-4 h-4" />
+                  הוסף הנחה
+                </button>
+              ) : (
+                <div className="rounded-xl border border-orange-100 bg-orange-50/50 p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold text-stone-800">הנחה</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowDiscount(false);
+                        setDiscountInput("");
+                      }}
+                      className="text-xs text-stone-500 hover:text-rose-600"
+                    >
+                      הסר
+                    </button>
+                  </div>
+                  <div className="flex items-stretch gap-2">
+                    <div className="inline-flex bg-white rounded-xl p-1 text-xs font-semibold gap-1 border border-orange-100">
+                      <button
+                        type="button"
+                        onClick={() => setDiscountMode("amount")}
+                        className={`inline-flex items-center justify-center min-h-[36px] px-3 rounded-lg transition-colors ${
+                          discountMode === "amount"
+                            ? "bg-gradient-to-l from-orange-500 to-rose-500 text-white shadow-sm"
+                            : "text-stone-700 hover:text-stone-900"
+                        }`}
+                      >
+                        ₪
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDiscountMode("percent")}
+                        className={`inline-flex items-center justify-center min-h-[36px] px-3 rounded-lg transition-colors ${
+                          discountMode === "percent"
+                            ? "bg-gradient-to-l from-orange-500 to-rose-500 text-white shadow-sm"
+                            : "text-stone-700 hover:text-stone-900"
+                        }`}
+                      >
+                        %
+                      </button>
+                    </div>
+                    <input
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      value={discountInput}
+                      onChange={(e) => setDiscountInput(e.target.value)}
+                      placeholder={discountMode === "percent" ? "שיעור הנחה" : "סכום הנחה"}
+                      className="input-warm tabular-nums flex-1"
+                      dir="ltr"
+                    />
+                  </div>
+                  {discountEntered && discountValid && discountAmount > 0 && (
+                    <p className="text-sm font-semibold text-stone-800">
+                      הנחה: {formatCurrency(discountAmount)}
+                      {discountMode === "percent" && <> ({discountRaw}%)</>}
+                    </p>
+                  )}
+                  {discountEntered && !discountValid && (
+                    <p className="text-xs text-rose-700">
+                      {discountMode === "percent"
+                        ? "שיעור ההנחה חייב להיות בין 0 ל-100."
+                        : "ההנחה חייבת להיות חיובית ונמוכה מסכום הפריטים."}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </Section>
 
         <Section title="הערות" icon={StickyNote}>
@@ -1397,6 +1815,10 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
               total={total}
               rounding={rounding}
               paymentMethod={isPrePayment ? undefined : paymentMethod}
+              paymentDetails={buildPaymentDetails()}
+              discount={discountAmount}
+              withholdingRate={withholdingEntered && withholdingValid ? withholdingRate : undefined}
+              withholdingAmount={withholdingEntered && withholdingValid ? withholdingAmount : undefined}
               notes={notes || undefined}
             />
           </div>
@@ -1410,6 +1832,12 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
             סיכום ושליחה
           </h3>
           <div className="space-y-1.5 text-sm">
+            {discountAmount > 0 && (
+              <>
+                <SummaryRow label="סה״כ לפני הנחה" value={formatCurrency(subtotal + discountAmount)} />
+                <SummaryRow label="הנחה" value={`-${formatCurrency(discountAmount)}`} />
+              </>
+            )}
             {effectiveVatRate > 0 && (
               <>
                 <SummaryRow label="סכום ביניים" value={formatCurrency(subtotal)} />
@@ -1427,6 +1855,14 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                 {formatCurrency(total)}
               </span>
             </div>
+            {withholdingEntered && withholdingValid && withholdingAmount > 0 && (
+              <div className="flex justify-between items-baseline pt-2 mt-1 border-t border-orange-100">
+                <span className="text-stone-800 font-semibold">שולם בפועל</span>
+                <span className="text-lg font-bold text-stone-900">
+                  {formatCurrency(total - withholdingAmount)}
+                </span>
+              </div>
+            )}
           </div>
           <div className="mt-4 space-y-2">
             <button
@@ -1481,6 +1917,10 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                   ? "יש לבחור לקוח או למלא שם של לקוח מזדמן"
                   : isCreditNote && !creditRefValid
                   ? "יש לבחור/להזין את חשבונית המס המקורית שאותה מזכים"
+                  : !discountValid
+                  ? "יש לתקן את סכום ההנחה"
+                  : !withholdingValid
+                  ? "יש לתקן את סכום ניכוי המס במקור"
                   : sendEmail && !allEmailsValid
                   ? "יש להזין אימייל תקין לשליחה"
                   : "כל פריט חייב תיאור, כמות חיובית ומחיר"}
@@ -1522,7 +1962,11 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
             vatRate={effectiveVatRate}
             total={total}
             rounding={rounding}
-            paymentMethod={isQuote ? undefined : paymentMethod}
+            paymentMethod={isPrePayment ? undefined : paymentMethod}
+            paymentDetails={buildPaymentDetails()}
+            discount={discountAmount}
+            withholdingRate={withholdingEntered && withholdingValid ? withholdingRate : undefined}
+            withholdingAmount={withholdingEntered && withholdingValid ? withholdingAmount : undefined}
             notes={notes || undefined}
           />
         </div>

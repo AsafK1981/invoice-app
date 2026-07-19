@@ -10,6 +10,7 @@ import {
   type Business,
   type DocumentItem,
   type DocumentType,
+  type PaymentDetails,
   type PaymentMethod,
 } from "@/lib/types";
 
@@ -19,6 +20,32 @@ export interface DocumentBodyClient {
   address?: string;
   phone?: string;
   email?: string;
+}
+
+/**
+ * Human-readable pieces of the structured payment detail, per method, to render
+ * discreetly next to the payment-method label (e.g. "אסמכתא 13094",
+ * "שיק 4521 · בנק לאומי · ז\"פ 01/08/2026").
+ */
+function paymentDetailsParts(
+  method: PaymentMethod,
+  d: PaymentDetails | undefined,
+): string[] {
+  if (!d) return [];
+  const parts: string[] = [];
+  if (method === "check") {
+    if (d.checkNumber) parts.push(`שיק ${d.checkNumber}`);
+    if (d.checkBank) parts.push(d.checkBank);
+    if (d.checkBranch) parts.push(`סניף ${d.checkBranch}`);
+    if (d.checkAccount) parts.push(`חשבון ${d.checkAccount}`);
+    if (d.checkDueDate) parts.push(`ז״פ ${formatDate(d.checkDueDate)}`);
+  } else if (method === "credit_card") {
+    if (d.cardLast4) parts.push(`מסתיים ב-${d.cardLast4}`);
+    if (d.cardApproval) parts.push(`אישור ${d.cardApproval}`);
+  } else if (method === "bank_transfer" || method === "bit" || method === "paypal") {
+    if (d.reference) parts.push(`אסמכתא ${d.reference}`);
+  }
+  return parts;
 }
 
 function showPaymentInfo(type: DocumentType, business: Business): boolean {
@@ -75,6 +102,17 @@ interface Props {
   /** הפרש עיגול — signed rounding adjustment; a summary line renders when non-zero. */
   rounding?: number;
   paymentMethod?: PaymentMethod;
+  /** Structured payment detail (check/bank/card), shown next to the payment method. */
+  paymentDetails?: PaymentDetails;
+  /**
+   * Document-level discount (הנחה) in the document currency. When > 0 the totals
+   * block shows a pre-discount total and a discount line; `subtotal` is expected
+   * to already be the DISCOUNTED subtotal.
+   */
+  discount?: number;
+  /** ניכוי מס במקור — withholding rate (%) and amount; renders a payment-split block. */
+  withholdingRate?: number;
+  withholdingAmount?: number;
   notes?: string;
   placeholders?: boolean;
   /** מספר הקצאה (Tax Authority allocation), shown on tax-invoice docs that have one. */
@@ -110,6 +148,10 @@ export function DocumentBody({
   total,
   rounding = 0,
   paymentMethod,
+  paymentDetails,
+  discount = 0,
+  withholdingRate,
+  withholdingAmount,
   notes,
   placeholders = false,
   allocationNumber,
@@ -296,6 +338,20 @@ export function DocumentBody({
           grand total row so it draws the eye instantly. */}
       <div className="doc-totals mt-6 flex justify-end">
         <div className="w-full sm:w-80 space-y-2 text-stone-700">
+          {discount > 0 && (
+            <>
+              <div className="flex justify-between text-sm">
+                <span>סה״כ לפני הנחה</span>
+                <span className="tabular-nums">{money(subtotal + discount)}</span>
+              </div>
+              <div className="flex justify-between text-sm text-emerald-700">
+                <span>הנחה</span>
+                <span className="tabular-nums">
+                  <bdi dir="ltr">-{money(discount)}</bdi>
+                </span>
+              </div>
+            </>
+          )}
           <div className="flex justify-between text-sm">
             <span>סכום ביניים</span>
             <span className="tabular-nums">{money(subtotal)}</span>
@@ -327,6 +383,27 @@ export function DocumentBody({
               סה״כ ב-₪ <bdi dir="ltr">(שער {Number(exchangeRate ?? 1).toFixed(4)})</bdi>: {formatMoney(Number(totalIls ?? 0), "ILS")}
             </div>
           )}
+          {withholdingAmount != null && withholdingAmount > 0 && (
+            <div className="mt-2 pt-2 space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>
+                  ניכוי מס במקור
+                  {withholdingRate != null && withholdingRate > 0 && (
+                    <> <bdi dir="ltr">({withholdingRate}%)</bdi></>
+                  )}
+                </span>
+                <span className="tabular-nums">
+                  <bdi dir="ltr">-{money(withholdingAmount)}</bdi>
+                </span>
+              </div>
+              <div className="flex justify-between items-baseline pt-2 border-t border-stone-200">
+                <span className="font-bold text-stone-900 text-sm">שולם בפועל</span>
+                <span className="text-lg font-bold text-stone-900 tabular-nums">
+                  {money(total - withholdingAmount)}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -335,6 +412,16 @@ export function DocumentBody({
           <p className="text-sm text-stone-700">
             <span className="font-semibold text-stone-900">אמצעי תשלום: </span>
             {PAYMENT_METHOD_LABELS[paymentMethod]}
+            {(() => {
+              const parts = paymentDetailsParts(paymentMethod, paymentDetails);
+              if (parts.length === 0) return null;
+              return (
+                <>
+                  {" · "}
+                  <span className="text-stone-700">{parts.join(" · ")}</span>
+                </>
+              );
+            })()}
           </p>
         </div>
       )}

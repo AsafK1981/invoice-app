@@ -139,6 +139,12 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
           rounding: docRow.rounding != null ? Number(docRow.rounding) : 0,
           roundTotal: Boolean(docRow.round_total),
           paymentMethod: docRow.payment_method || undefined,
+          // Payment split / discount / structured payment detail — must render on
+          // the client-facing view and PDF exactly as on the owner's copy.
+          paymentDetails: docRow.payment_details || undefined,
+          withholdingRate: docRow.withholding_rate != null ? Number(docRow.withholding_rate) : undefined,
+          withholdingAmount: docRow.withholding_amount != null ? Number(docRow.withholding_amount) : undefined,
+          discountAmount: docRow.discount_amount != null ? Number(docRow.discount_amount) : undefined,
           notes: docRow.notes || undefined,
           approvedAt: docRow.approved_at || undefined,
           approvalSignature: docRow.approval_signature || undefined,

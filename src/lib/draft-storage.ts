@@ -1,4 +1,4 @@
-import type { DocumentType, PaymentMethod } from "./types";
+import type { DocumentType, PaymentDetails, PaymentMethod } from "./types";
 import type { VatMode } from "./vat";
 
 export interface DraftItem {
@@ -25,6 +25,17 @@ export interface EditorDraft {
    *  backward compatibility with drafts saved before the feature existed. */
   roundTotal?: boolean;
   items: DraftItem[];
+  // הנחה / ניכוי מס במקור / פירוט אמצעי תשלום — all optional (backward compatible
+  // with drafts saved before these features). Raw editor inputs are stored so a
+  // resumed draft round-trips exactly to the same UI state.
+  showDiscount?: boolean;
+  discountMode?: "amount" | "percent";
+  discountInput?: string;
+  showWithholding?: boolean;
+  withholdingRateInput?: string;
+  withholdingAmountInput?: string;
+  withholdingTouched?: boolean;
+  payDetails?: PaymentDetails;
 }
 
 interface StoredDraft {

@@ -194,12 +194,15 @@ export function buildC100(args: {
     formatDate(doc.date), // 1216: value date — pos 262-269
     formatSignedAmount(0, 12, 2), // 1217: foreign-currency total (15) — pos 270-284
     padStr("", 3), // 1218: foreign-currency code — pos 285-287
-    formatSignedAmount(doc.subtotal, 12, 2), // 1219: amount before discount (15) — pos 288-302
-    formatSignedAmount(0, 12, 2), // 1220: doc discount (15) — pos 303-317
+    // Document-level discount (הנחה): the stored subtotal is already the
+    // DISCOUNTED subtotal, so "amount before discount" = subtotal + discount.
+    formatSignedAmount(doc.subtotal + (doc.discountAmount ?? 0), 12, 2), // 1219: amount before discount (15) — pos 288-302
+    formatSignedAmount(doc.discountAmount ?? 0, 12, 2), // 1220: doc discount (15) — pos 303-317
     formatSignedAmount(doc.subtotal, 12, 2), // 1221: amount after discount, before VAT (15) — pos 318-332
     formatSignedAmount(doc.vat, 12, 2), // 1222: VAT amount (15) — pos 333-347
     formatSignedAmount(doc.total, 12, 2), // 1223: amount inc. VAT (15) — pos 348-362
-    formatSignedAmount(0, 9, 2), // 1224: source deduction (12) — pos 363-374
+    // ניכוי מס במקור (withholding tax) deducted at source by the customer.
+    formatSignedAmount(doc.withholdingAmount ?? 0, 9, 2), // 1224: source deduction (12) — pos 363-374
     padStr(client?.id?.slice(0, 15) || "", 15), // 1225: customer/supplier key — pos 375-389
     padStr("", 10), // 1226: matching field — pos 390-399
     // 1227: 0-length cancelled
@@ -267,6 +270,11 @@ export function buildD120(args: {
   const { recordNum, meta, doc, lineNumber } = args;
   const payCode = doc.paymentMethod ? PAYMENT_TYPE_CODE[doc.paymentMethod] : "9";
   const linkField = doc.number % 10_000_000;
+  // For a check payment, carry the structured detail (bank/branch/account/check
+  // number + due date) into the numeric D120 fields. padNum strips non-digits,
+  // so a numeric code lands correctly and a free-text bank name degrades to 0.
+  const pd = doc.paymentMethod === "check" ? doc.paymentDetails : undefined;
+  const dueDate = pd?.checkDueDate || doc.date;
 
   return buildLine([
     "D120", // 1300 — pos 1-4
@@ -276,11 +284,11 @@ export function buildD120(args: {
     padStr(String(doc.number), 20), // 1304: doc number — pos 26-45
     padNum(lineNumber, 4), // 1305: line in doc — pos 46-49
     payCode, // 1306: payment method — pos 50
-    padNum(0, 10), // 1307: bank # — pos 51-60
-    padNum(0, 10), // 1308: branch # — pos 61-70
-    padNum(0, 15), // 1309: account # — pos 71-85
-    padNum(0, 10), // 1310: check # — pos 86-95
-    formatDate(doc.date), // 1311: due date — pos 96-103
+    padNum(pd?.checkBank || 0, 10), // 1307: bank # — pos 51-60
+    padNum(pd?.checkBranch || 0, 10), // 1308: branch # — pos 61-70
+    padNum(pd?.checkAccount || 0, 15), // 1309: account # — pos 71-85
+    padNum(pd?.checkNumber || 0, 10), // 1310: check # — pos 86-95
+    formatDate(dueDate), // 1311: due date — pos 96-103
     formatSignedAmount(doc.total, 12, 2), // 1312: row amount — pos 104-118
     padStr("", 1), // 1313: clearing company code — pos 119
     padStr("", 20), // 1314: cleared card name — pos 120-139

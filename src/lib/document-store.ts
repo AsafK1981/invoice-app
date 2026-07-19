@@ -40,6 +40,10 @@ function mapDocRow(row: Record<string, unknown>, items: DocumentItem[]): Invoice
     originalDocumentId: (row.original_document_id as string) || undefined,
     paidAt: (row.paid_at as string) || undefined,
     paymentReference: (row.payment_reference as string) || undefined,
+    paymentDetails: (row.payment_details as InvoiceDocument["paymentDetails"]) || undefined,
+    withholdingRate: row.withholding_rate != null ? Number(row.withholding_rate) : undefined,
+    withholdingAmount: row.withholding_amount != null ? Number(row.withholding_amount) : undefined,
+    discountAmount: row.discount_amount != null ? Number(row.discount_amount) : undefined,
     currency: (row.currency as string) || "ILS",
     exchangeRate: row.exchange_rate != null ? Number(row.exchange_rate) : 1,
     subtotalIls: row.subtotal_ils != null ? Number(row.subtotal_ils) : Number(row.subtotal) || 0,
@@ -177,6 +181,11 @@ export async function createDocument(
     p_zero_rated: doc.zeroRated ?? false,
     p_number: doc.number ?? null,
     p_original_document_id: doc.originalDocumentId ?? null,
+    p_withholding_rate: doc.withholdingRate ?? null,
+    p_withholding_amount: doc.withholdingAmount ?? null,
+    p_discount_amount: doc.discountAmount ?? null,
+    p_payment_details: doc.paymentDetails ?? null,
+    p_payment_reference: doc.paymentReference ?? null,
   });
 
   if (error) {

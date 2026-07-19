@@ -7,6 +7,7 @@ import {
   type Business,
   type DocumentItem,
   type DocumentType,
+  type PaymentDetails,
   type PaymentMethod,
 } from "@/lib/types";
 import { DocumentBody, type DocumentBodyClient } from "./document-body";
@@ -30,6 +31,10 @@ interface Props {
   total: number;
   rounding?: number;
   paymentMethod?: PaymentMethod;
+  paymentDetails?: PaymentDetails;
+  discount?: number;
+  withholdingRate?: number;
+  withholdingAmount?: number;
   notes?: string;
   currency?: string;
   exchangeRate?: number;
@@ -102,6 +107,10 @@ export function DocumentPreview(props: Props) {
       total={props.total}
       rounding={props.rounding}
       paymentMethod={props.paymentMethod}
+      paymentDetails={props.paymentDetails}
+      discount={props.discount}
+      withholdingRate={props.withholdingRate}
+      withholdingAmount={props.withholdingAmount}
       notes={props.notes}
       currency={props.currency}
       exchangeRate={props.exchangeRate}

@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
   const { data: doc, error: docError } = await sb
     .from("documents")
     .select(
-      "id, business_id, type, number, date, total, subtotal, vat, client_id, client_name, client_tax_id, allocation_number, total_ils, subtotal_ils, vat_ils, exchange_rate",
+      "id, business_id, type, number, date, total, subtotal, vat, client_id, client_name, client_tax_id, allocation_number, total_ils, subtotal_ils, vat_ils, exchange_rate, discount_amount",
     )
     .eq("id", body.documentId)
     .in("business_id", businessIds)
@@ -251,6 +251,12 @@ export async function POST(req: NextRequest) {
   const subtotalIls = Number(doc.subtotal_ils ?? doc.subtotal) || 0;
   const vatIls = Number(doc.vat_ils ?? doc.vat) || 0;
   const totalIls = Number(doc.total_ils ?? doc.total) || 0;
+  // Document-level discount (הנחה): the stored subtotal is already the DISCOUNTED
+  // subtotal, so the pre-discount amount = discounted subtotal + discount. The
+  // discount is stored in the document currency; convert to ₪ with the same rate
+  // used for the other ILS-equivalent figures (1 for ILS docs).
+  const discountIls =
+    (Number(doc.discount_amount ?? 0) || 0) * (Number(doc.exchange_rate ?? 1) || 1);
 
   const allocRequest: AllocationRequest = {
     invoiceId: doc.id as string,
@@ -262,8 +268,8 @@ export async function POST(req: NextRequest) {
     // Issuance date should be the document's own calendar date; fall back to
     // today (in Israel time — the server runs UTC) only if the row lacks one.
     issuanceDate: (doc.date as string) || todayInIsrael(),
-    amountBeforeDiscount: subtotalIls,
-    discount: 0,
+    amountBeforeDiscount: Math.round((subtotalIls + discountIls) * 100) / 100,
+    discount: Math.round(discountIls * 100) / 100,
     paymentAmount: subtotalIls,
     vatAmount: vatIls,
     paymentAmountIncludingVat: totalIls,
