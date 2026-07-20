@@ -1,17 +1,7 @@
 "use client";
 
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
-import dynamic from "next/dynamic";
-import { useSkin } from "@/lib/skin";
 import type { InvoiceDocument, Expense } from "@/lib/types";
-
-/** Coral-only recharts bar chart — see dashboard-chart-coral.tsx for why it is
- *  split out. `ssr: false` because it never renders for the default skin. */
-const CoralBarChart = dynamic(() => import("./dashboard-chart-coral"), {
-  ssr: false,
-  // same box the chart occupies, so nothing reflows while it loads
-  loading: () => <div style={{ width: "100%", height: 288 }} />,
-});
 
 interface Props {
   documents: InvoiceDocument[];
@@ -21,7 +11,7 @@ interface Props {
 type MonthDatum = { month: string; הכנסות: number; הוצאות: number };
 
 /**
- * The gold-skin chart palette, single-sourced. Every place a series is painted
+ * The chart palette, single-sourced. Every place a series is painted
  * — legend pill, area fill, stroke, point, value label, hover tooltip key —
  * reads from here. (Before this existed the tooltip's colour dots still carried
  * the pre-redesign obsidian values, so the same series was drawn in three
@@ -52,7 +42,7 @@ const SERIES = {
   },
 } as const;
 
-/** Compact ₪k label for value-labels above the income bars (gold skin).
+/** Compact ₪k label for the value-labels above the income points.
  * Typed loosely to match recharts' LabelFormatter (string | number | undefined). */
 function kLabel(v: unknown): string {
   const n = typeof v === "number" ? v : Number(v);
@@ -60,7 +50,7 @@ function kLabel(v: unknown): string {
   return `₪${Math.round(n / 1000)}k`;
 }
 
-/** Full ILS currency (used in the gold hover tooltip — exact, not rounded to k). */
+/** Full ILS currency (used in the hover tooltip — exact, not rounded to k). */
 const ils = new Intl.NumberFormat("he-IL", {
   style: "currency",
   currency: "ILS",
@@ -68,9 +58,6 @@ const ils = new Intl.NumberFormat("he-IL", {
 });
 
 export function DashboardChart({ documents, expenses }: Props) {
-  const { skin } = useSkin();
-  const gold = skin === "gold";
-
   const data = useMemo<MonthDatum[]>(() => {
     const now = new Date();
     const months: { key: string; label: string }[] = [];
@@ -114,17 +101,12 @@ export function DashboardChart({ documents, expenses }: Props) {
     );
   }
 
-  // Gold skin: Robinhood-style dual monotone-cubic line chart (custom SVG).
-  if (gold) {
-    return <GoldLineChart data={data} />;
-  }
-
-  // Coral (default-off) skin — unchanged recharts bar chart, lazily fetched.
-  return <CoralBarChart data={data} />;
+  // Robinhood-style dual monotone-cubic line chart (custom SVG).
+  return <MonthlyLineChart data={data} />;
 }
 
 /* ------------------------------------------------------------------ */
-/* Gold skin: custom SVG line chart                                    */
+/* Custom SVG line chart                                               */
 /* ------------------------------------------------------------------ */
 
 /** Pick a "nice" y-axis ceiling + 4 equal ticks (top tick is headroom). */
@@ -206,7 +188,7 @@ function monotonePath(
   return { d, xs, ys };
 }
 
-function GoldLineChart({ data }: { data: MonthDatum[] }) {
+function MonthlyLineChart({ data }: { data: MonthDatum[] }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
   const [hover, setHover] = useState<number | null>(null);

@@ -1,21 +1,26 @@
 /* =====================================================================
    APP SKIN — "בהיר וחמים" (light & warm), approved 2026-07-20.
 
-   HISTORY / WHY THE SELECTOR IS STILL `html[data-skin="gold"]`
-   This file used to hold the obsidian + antique-gold skin. That skin is
-   gone; the palette approved by Asaf (mockup `shell-1.html`) is a LIGHT,
-   warm-sand shell with white cards and gold demoted to an accent. The
-   attribute name is deliberately UNCHANGED so the pre-hydration script in
-   layout.tsx, `src/lib/skin.ts`, the `?skin=coral` escape hatch and every
-   stored preference keep working exactly as before. Read it as "the
-   branded skin" — it is the default for all users.
+   This is THE app skin — unconditional, the only look the app has. It used
+   to be gated behind `html[data-skin="gold"]` (with a `?skin=coral` escape
+   hatch back to the legacy design); the gate was retired 2026-07-20 because
+   the fallback was an untested second visual state that every new feature
+   silently had to satisfy. Every selector is now prefixed with a bare `html`
+   — kept rather than dropped so the file's internal specificity ordering is
+   unchanged from the gated version.
+
+   The palette approved by Asaf (mockup `shell-1.html`) is a LIGHT, warm-sand
+   shell with white cards and gold demoted to an accent. "gold" in token and
+   class names below (`--gold-text`, `.gk-*`) is historical: the design began
+   as obsidian + antique gold.
 
    THEMING APPROACH
    1. All colour decisions live in ONE token block below. Nothing else in
       this file should contain a raw hex that isn't a token or a
       one-off gradient stop.
-   2. The underlying app is a LIGHT app already (the legacy "coral" design),
-      so this skin does NOT need to invert anything. It only:
+   2. The markup underneath is still the LIGHT legacy design (Tailwind
+      orange/amber/rose utilities, "coral" below), so this file does NOT
+      need to invert anything. It only:
         a. repaints the page surface warm sand instead of the coral wash,
         b. re-tints the CORAL brand family (orange / amber, and rose only
            where rose is the coral gradient's partner) to the gold family,
@@ -29,6 +34,11 @@
    3. Consequence: the huge "lift every dark-on-dark text tone" section the
       obsidian skin needed is DELETED rather than retargeted. Re-adding
       per-utility text overrides here should be a last resort.
+   4. Because this file is unlayered author CSS and Tailwind's utilities sit
+      in `@layer utilities`, every rule here beats a competing utility no
+      matter what the specificity numbers say. The `html` prefix therefore
+      only matters against the other UNLAYERED sheets — globals.css (earlier)
+      and document-paper.css (later, and deliberately immune, see its header).
 
    CONTRAST (measured, not eyeballed — sRGB WCAG 2.x):
      --ink   #241e16 on card #ffffff  16.5:1   on page #f7f4ed  15.0:1
@@ -47,7 +57,7 @@
    last. Nothing here may target it.
    ===================================================================== */
 
-html[data-skin="gold"] {
+html {
   /* --- brand gold (surfaces / gradients) — UNCHANGED from the old skin --- */
   --g1: #d8be77; /* highlight */
   --g2: #be9e4e; /* mid */
@@ -96,14 +106,14 @@ html[data-skin="gold"] {
 }
 
 /* ---------- base surface + typography ---------- */
-html[data-skin="gold"],
-html[data-skin="gold"] body {
+html,
+html body {
   /* Solid floor on <html> too: the app is taller than the viewport and any
      overscroll / full-page capture would otherwise expose raw white. */
   background-color: var(--bg);
   color: var(--ink);
 }
-html[data-skin="gold"] body {
+html body {
   /* Flat warm sand — replaces globals.css's coral radial wash + dot pattern. */
   background: var(--bg) !important;
   background-attachment: scroll !important;
@@ -111,9 +121,9 @@ html[data-skin="gold"] body {
   font-family: var(--font-assistant), var(--font-heebo), "Assistant", "Heebo", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
-html[data-skin="gold"] h1,
-html[data-skin="gold"] h2,
-html[data-skin="gold"] h3 {
+html h1,
+html h2,
+html h3 {
   font-family: var(--font-frank), "Frank Ruhl Libre", serif;
   color: var(--ink);
   letter-spacing: -0.01em;
@@ -121,9 +131,9 @@ html[data-skin="gold"] h3 {
 /* The marketing site (`/`, `/vs/*`) renders inside `.v2-theme`, which paints
    its own opaque obsidian field and light ink. Its headings must NOT inherit
    the app's dark ink. Class in the selector beats the bare-element rule. */
-html[data-skin="gold"] .v2-theme h1,
-html[data-skin="gold"] .v2-theme h2,
-html[data-skin="gold"] .v2-theme h3 {
+html .v2-theme h1,
+html .v2-theme h2,
+html .v2-theme h3 {
   color: inherit;
   font-family: "Frank Ruhl Libre", var(--font-frank), serif;
 }
@@ -135,49 +145,49 @@ html[data-skin="gold"] .v2-theme h3 {
    white. `color: transparent` + `-webkit-text-fill-color: transparent` are
    both part of the background-clip:text technique, not a specificity
    workaround. One recipe, two subjects; the per-selector extras below. */
-html[data-skin="gold"] .gk-value,
-html[data-skin="gold"] .bg-clip-text.from-orange-500.to-rose-500 {
+html .gk-value,
+html .bg-clip-text.from-orange-500.to-rose-500 {
   background: var(--gold-text-grad) !important;
   -webkit-background-clip: text !important;
   background-clip: text !important;
   color: transparent !important;
   -webkit-text-fill-color: transparent !important;
 }
-html[data-skin="gold"] .gk-value {
+html .gk-value {
   font-family: var(--font-frank), "Frank Ruhl Libre", serif;
 }
 /* the coral totals sit on a `.from-orange-500.to-rose-500` CTA ramp rule that
    also paints a drop shadow — text has no business carrying one */
-html[data-skin="gold"] .bg-clip-text.from-orange-500.to-rose-500 {
+html .bg-clip-text.from-orange-500.to-rose-500 {
   box-shadow: none !important;
 }
 
 /* ---------- ink remaps (warm the stock cool-grey stone scale) ---------- */
-html[data-skin="gold"] .text-stone-900,
-html[data-skin="gold"] .text-stone-800 { color: var(--ink) !important; }
-html[data-skin="gold"] .text-stone-700,
-html[data-skin="gold"] .text-stone-600 { color: var(--ink2) !important; }
-html[data-skin="gold"] .text-stone-500,
-html[data-skin="gold"] .text-stone-400 { color: var(--muted) !important; }
+html .text-stone-900,
+html .text-stone-800 { color: var(--ink) !important; }
+html .text-stone-700,
+html .text-stone-600 { color: var(--ink2) !important; }
+html .text-stone-500,
+html .text-stone-400 { color: var(--muted) !important; }
 
 /* ---------- coral brand text → gold text ----------
    Only the orange/amber family. rose/emerald/sky/violet keep their stock
    light-mode tones (danger, status, document-type semantics). */
-html[data-skin="gold"] .text-orange-400,
-html[data-skin="gold"] .text-orange-500,
-html[data-skin="gold"] .text-orange-600,
-html[data-skin="gold"] .text-orange-700,
-html[data-skin="gold"] .text-orange-800,
-html[data-skin="gold"] .text-orange-900,
-html[data-skin="gold"] .text-amber-600,
-html[data-skin="gold"] .text-amber-700,
-html[data-skin="gold"] .text-amber-800,
-html[data-skin="gold"] .text-amber-900 { color: var(--gold-text) !important; }
+html .text-orange-400,
+html .text-orange-500,
+html .text-orange-600,
+html .text-orange-700,
+html .text-orange-800,
+html .text-orange-900,
+html .text-amber-600,
+html .text-amber-700,
+html .text-amber-800,
+html .text-amber-900 { color: var(--gold-text) !important; }
 /* faint decorative glyphs only (separators, watermark icons) */
-html[data-skin="gold"] .text-orange-300 { color: var(--goldline) !important; }
+html .text-orange-300 { color: var(--goldline) !important; }
 
 /* ---------- cards ---------- */
-html[data-skin="gold"] .card-soft {
+html .card-soft {
   background: var(--card) !important;
   border: 1px solid var(--line) !important;
   border-radius: 16px !important;
@@ -185,76 +195,76 @@ html[data-skin="gold"] .card-soft {
 }
 
 /* light coral gradient washes (card headers, tiles, banners) → warm gold wash */
-html[data-skin="gold"] .bg-gradient-to-br.from-orange-50,
-html[data-skin="gold"] .bg-gradient-to-l.from-orange-50,
-html[data-skin="gold"] .bg-gradient-to-r.from-orange-50,
-html[data-skin="gold"] .bg-gradient-to-br.from-amber-50,
-html[data-skin="gold"] .bg-gradient-to-l.from-amber-50 {
+html .bg-gradient-to-br.from-orange-50,
+html .bg-gradient-to-l.from-orange-50,
+html .bg-gradient-to-r.from-orange-50,
+html .bg-gradient-to-br.from-amber-50,
+html .bg-gradient-to-l.from-amber-50 {
   background: linear-gradient(160deg, #fdf8ec, #fffdf8) !important;
   border-color: var(--goldtintline) !important;
 }
 /* opacity-variant coral washes (sticky summary card, per-row total cell) */
-html[data-skin="gold"] .from-orange-50\/50,
-html[data-skin="gold"] .from-orange-50\/60,
-html[data-skin="gold"] .from-orange-50\/70,
-html[data-skin="gold"] .from-orange-50\/80,
-html[data-skin="gold"] .to-amber-50\/50,
-html[data-skin="gold"] .to-amber-50\/60,
-html[data-skin="gold"] .to-amber-50\/70 {
+html .from-orange-50\/50,
+html .from-orange-50\/60,
+html .from-orange-50\/70,
+html .from-orange-50\/80,
+html .to-amber-50\/50,
+html .to-amber-50\/60,
+html .to-amber-50\/70 {
   --tw-gradient-from: #fdf8ec !important;
   --tw-gradient-to: #fffdf8 !important;
   background: linear-gradient(160deg, #fdf8ec, #fffdf8) !important;
 }
 
 /* ---------- flat coral tints → warm gold tints ---------- */
-html[data-skin="gold"] .bg-orange-50,
-html[data-skin="gold"] .bg-amber-50,
-html[data-skin="gold"] .bg-orange-50\/30,
-html[data-skin="gold"] .bg-orange-50\/40,
-html[data-skin="gold"] .bg-orange-50\/50,
-html[data-skin="gold"] .bg-orange-50\/60,
-html[data-skin="gold"] .bg-orange-50\/80,
-html[data-skin="gold"] .bg-amber-50\/40,
-html[data-skin="gold"] .bg-amber-50\/50,
-html[data-skin="gold"] .bg-amber-50\/60,
-html[data-skin="gold"] .bg-amber-50\/70,
-html[data-skin="gold"] .bg-amber-50\/80 { background-color: var(--goldtint) !important; }
-html[data-skin="gold"] .bg-orange-100,
-html[data-skin="gold"] .bg-amber-100,
-html[data-skin="gold"] .bg-yellow-100,
-html[data-skin="gold"] .bg-amber-200 { background-color: #f4ead2 !important; }
+html .bg-orange-50,
+html .bg-amber-50,
+html .bg-orange-50\/30,
+html .bg-orange-50\/40,
+html .bg-orange-50\/50,
+html .bg-orange-50\/60,
+html .bg-orange-50\/80,
+html .bg-amber-50\/40,
+html .bg-amber-50\/50,
+html .bg-amber-50\/60,
+html .bg-amber-50\/70,
+html .bg-amber-50\/80 { background-color: var(--goldtint) !important; }
+html .bg-orange-100,
+html .bg-amber-100,
+html .bg-yellow-100,
+html .bg-amber-200 { background-color: #f4ead2 !important; }
 /* stone greys are cool against warm sand — warm them a notch */
-html[data-skin="gold"] .bg-stone-50 { background-color: #faf8f2 !important; }
-html[data-skin="gold"] .bg-stone-100 { background-color: var(--icotile) !important; }
-html[data-skin="gold"] .bg-stone-200 { background-color: #e5dfd2 !important; }
+html .bg-stone-50 { background-color: #faf8f2 !important; }
+html .bg-stone-100 { background-color: var(--icotile) !important; }
+html .bg-stone-200 { background-color: #e5dfd2 !important; }
 
 /* ---------- borders / rings ---------- */
-html[data-skin="gold"] .border-stone-100,
-html[data-skin="gold"] .border-stone-200,
-html[data-skin="gold"] .border-orange-50,
-html[data-skin="gold"] .border-amber-50,
-html[data-skin="gold"] .border-orange-100,
-html[data-skin="gold"] .border-orange-100\/60,
-html[data-skin="gold"] .border-amber-100 { border-color: var(--line) !important; }
-html[data-skin="gold"] .border-orange-200,
-html[data-skin="gold"] .border-amber-200,
-html[data-skin="gold"] .border-orange-300,
-html[data-skin="gold"] .border-amber-300,
-html[data-skin="gold"] .border-orange-400,
-html[data-skin="gold"] .border-orange-500,
-html[data-skin="gold"] .border-orange-600 { border-color: var(--goldline) !important; }
-html[data-skin="gold"] .divide-orange-50 > :not([hidden]) ~ :not([hidden]) {
+html .border-stone-100,
+html .border-stone-200,
+html .border-orange-50,
+html .border-amber-50,
+html .border-orange-100,
+html .border-orange-100\/60,
+html .border-amber-100 { border-color: var(--line) !important; }
+html .border-orange-200,
+html .border-amber-200,
+html .border-orange-300,
+html .border-amber-300,
+html .border-orange-400,
+html .border-orange-500,
+html .border-orange-600 { border-color: var(--goldline) !important; }
+html .divide-orange-50 > :not([hidden]) ~ :not([hidden]) {
   border-color: var(--line) !important;
 }
-html[data-skin="gold"] .ring-orange-100,
-html[data-skin="gold"] .ring-orange-200,
-html[data-skin="gold"] .ring-amber-200,
-html[data-skin="gold"] .ring-orange-300\/40,
-html[data-skin="gold"] .ring-orange-400\/60,
-html[data-skin="gold"] .ring-orange-500 { --tw-ring-color: rgba(190, 158, 78, 0.4) !important; }
+html .ring-orange-100,
+html .ring-orange-200,
+html .ring-amber-200,
+html .ring-orange-300\/40,
+html .ring-orange-400\/60,
+html .ring-orange-500 { --tw-ring-color: rgba(190, 158, 78, 0.4) !important; }
 /* peach drop-shadow tint under CTAs → gold */
-html[data-skin="gold"] [class*="shadow-orange-"],
-html[data-skin="gold"] [class*="shadow-rose-"] {
+html [class*="shadow-orange-"],
+html [class*="shadow-rose-"] {
   --tw-shadow-color: rgba(160, 120, 40, 0.28) !important;
 }
 
@@ -262,30 +272,30 @@ html[data-skin="gold"] [class*="shadow-rose-"] {
    Anything painted with the gold gradient gets --gold-ink for its own text
    AND every descendant: the components hardcode `text-white`, which is ~1.5:1
    on the gradient's highlight stop. */
-html[data-skin="gold"] .from-orange-500.to-rose-500 {
+html .from-orange-500.to-rose-500 {
   background: var(--gold-grad-cta) !important;
   color: var(--gold-ink) !important;
   box-shadow:
     0 10px 22px -12px rgba(160, 120, 40, 0.65),
     inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
 }
-html[data-skin="gold"] .from-orange-500.to-rose-500 *:not([class*="bg-"]) {
+html .from-orange-500.to-rose-500 *:not([class*="bg-"]) {
   color: var(--gold-ink) !important;
 }
-html[data-skin="gold"] .from-orange-500.to-rose-500:hover { filter: brightness(1.05); }
+html .from-orange-500.to-rose-500:hover { filter: brightness(1.05); }
 /* solid coral primary ("הורד PDF") */
-html[data-skin="gold"] .bg-orange-500,
-html[data-skin="gold"] .bg-orange-600 {
+html .bg-orange-500,
+html .bg-orange-600 {
   background: var(--gold-grad-cta) !important;
   color: var(--gold-ink) !important;
   border-color: var(--g3) !important;
 }
-html[data-skin="gold"] .bg-orange-500 svg,
-html[data-skin="gold"] .bg-orange-600 svg,
-html[data-skin="gold"] .bg-orange-500.text-white,
-html[data-skin="gold"] .bg-orange-600.text-white { color: var(--gold-ink) !important; }
+html .bg-orange-500 svg,
+html .bg-orange-600 svg,
+html .bg-orange-500.text-white,
+html .bg-orange-600.text-white { color: var(--gold-ink) !important; }
 /* small solid coral dot/marker */
-html[data-skin="gold"] .bg-orange-400 { background-color: var(--g2) !important; }
+html .bg-orange-400 { background-color: var(--g2) !important; }
 
 /* Disabled CTA is handled once, in CONTRAST REPAIRS below — the !important
    background above would otherwise keep it gold. */
@@ -296,81 +306,81 @@ html[data-skin="gold"] .bg-orange-400 { background-color: var(--g2) !important; 
 /* ---------- coral icon tiles → brand gold tile + dark glyph ----------
    Only the coral family; emerald / violet / sky / rose tiles keep their stock
    colours because they encode document type + status. */
-html[data-skin="gold"] .from-orange-400.to-rose-500,
-html[data-skin="gold"] .from-orange-400.to-rose-400,
-html[data-skin="gold"] .from-orange-400.to-amber-500,
-html[data-skin="gold"] .from-amber-400.to-orange-500,
-html[data-skin="gold"] .from-amber-400.to-yellow-500,
-html[data-skin="gold"] .from-amber-500.to-orange-500,
-html[data-skin="gold"] .from-rose-400.to-orange-500,
-html[data-skin="gold"] .from-orange-300.to-rose-300 {
+html .from-orange-400.to-rose-500,
+html .from-orange-400.to-rose-400,
+html .from-orange-400.to-amber-500,
+html .from-amber-400.to-orange-500,
+html .from-amber-400.to-yellow-500,
+html .from-amber-500.to-orange-500,
+html .from-rose-400.to-orange-500,
+html .from-orange-300.to-rose-300 {
   background: var(--gold-grad) !important;
   color: var(--gold-ink) !important;
   border: 0 !important;
 }
-html[data-skin="gold"] .from-orange-400.to-rose-500 svg,
-html[data-skin="gold"] .from-orange-400.to-rose-400 svg,
-html[data-skin="gold"] .from-orange-400.to-amber-500 svg,
-html[data-skin="gold"] .from-amber-400.to-orange-500 svg,
-html[data-skin="gold"] .from-amber-400.to-yellow-500 svg,
-html[data-skin="gold"] .from-amber-500.to-orange-500 svg,
-html[data-skin="gold"] .from-rose-400.to-orange-500 svg,
-html[data-skin="gold"] .from-orange-300.to-rose-300 svg { color: var(--gold-ink) !important; }
+html .from-orange-400.to-rose-500 svg,
+html .from-orange-400.to-rose-400 svg,
+html .from-orange-400.to-amber-500 svg,
+html .from-amber-400.to-orange-500 svg,
+html .from-amber-400.to-yellow-500 svg,
+html .from-amber-500.to-orange-500 svg,
+html .from-rose-400.to-orange-500 svg,
+html .from-orange-300.to-rose-300 svg { color: var(--gold-ink) !important; }
 /* neutral stone page-head tiles (settings, admin, migrate) read as a grey
    slab on the warm shell — bring them into the brand set. */
-html[data-skin="gold"] .from-stone-400.to-stone-500,
-html[data-skin="gold"] .from-stone-400.to-stone-600,
-html[data-skin="gold"] .from-stone-500.to-stone-700,
-html[data-skin="gold"] .from-stone-700.to-stone-900 {
+html .from-stone-400.to-stone-500,
+html .from-stone-400.to-stone-600,
+html .from-stone-500.to-stone-700,
+html .from-stone-700.to-stone-900 {
   background: var(--gold-grad) !important;
   color: var(--gold-ink) !important;
 }
-html[data-skin="gold"] .from-stone-400.to-stone-500 svg,
-html[data-skin="gold"] .from-stone-400.to-stone-600 svg,
-html[data-skin="gold"] .from-stone-500.to-stone-700 svg,
-html[data-skin="gold"] .from-stone-700.to-stone-900 svg { color: var(--gold-ink) !important; }
+html .from-stone-400.to-stone-500 svg,
+html .from-stone-400.to-stone-600 svg,
+html .from-stone-500.to-stone-700 svg,
+html .from-stone-700.to-stone-900 svg { color: var(--gold-ink) !important; }
 
 /* pale coral chips (avatars, product/dunning tiles) → pale gold + gold glyph */
-html[data-skin="gold"] .from-orange-200.to-rose-200,
-html[data-skin="gold"] .from-amber-100.to-orange-200,
-html[data-skin="gold"] .from-amber-100.to-orange-100,
-html[data-skin="gold"] .from-violet-100.to-purple-100 {
+html .from-orange-200.to-rose-200,
+html .from-amber-100.to-orange-200,
+html .from-amber-100.to-orange-100,
+html .from-violet-100.to-purple-100 {
   background: linear-gradient(160deg, #f6ecd4, #fdf7e9) !important;
   border: 1px solid var(--goldtintline) !important;
 }
-html[data-skin="gold"] .from-orange-200.to-rose-200 svg,
-html[data-skin="gold"] .from-amber-100.to-orange-200 svg,
-html[data-skin="gold"] .from-amber-100.to-orange-100 svg { color: var(--gold-text) !important; }
+html .from-orange-200.to-rose-200 svg,
+html .from-amber-100.to-orange-200 svg,
+html .from-amber-100.to-orange-100 svg { color: var(--gold-text) !important; }
 
 /* ---------- inputs ---------- */
-html[data-skin="gold"] .input-warm {
+html .input-warm {
   background: var(--input) !important;
   border: 1.5px solid var(--inputline) !important;
   border-radius: 10px !important;
   color: var(--ink) !important;
 }
-html[data-skin="gold"] .input-warm::placeholder { color: var(--muted) !important; opacity: 0.8; }
-html[data-skin="gold"] .input-warm:hover:not(:focus) { border-color: var(--g3) !important; }
-html[data-skin="gold"] .input-warm:focus {
+html .input-warm::placeholder { color: var(--muted) !important; opacity: 0.8; }
+html .input-warm:hover:not(:focus) { border-color: var(--g3) !important; }
+html .input-warm:focus {
   background: var(--card) !important;
   border-color: var(--inputfocusline) !important;
   box-shadow: 0 0 0 3px rgba(190, 158, 78, 0.28) !important;
   transform: none !important;
 }
-html[data-skin="gold"] select.input-warm option {
+html select.input-warm option {
   background: var(--card);
   color: var(--ink);
 }
-html[data-skin="gold"] .accent-orange-500 { accent-color: var(--g3); }
+html .accent-orange-500 { accent-color: var(--g3); }
 
 /* focus ring recolour (globals uses coral #f97316) */
-html[data-skin="gold"] a[href]:focus-visible,
-html[data-skin="gold"] button:focus-visible,
-html[data-skin="gold"] [role="button"]:focus-visible,
-html[data-skin="gold"] select:focus-visible,
-html[data-skin="gold"] textarea:focus-visible,
-html[data-skin="gold"] input:not(.input-warm):focus-visible,
-html[data-skin="gold"] [tabindex]:focus-visible {
+html a[href]:focus-visible,
+html button:focus-visible,
+html [role="button"]:focus-visible,
+html select:focus-visible,
+html textarea:focus-visible,
+html input:not(.input-warm):focus-visible,
+html [tabindex]:focus-visible {
   outline-color: var(--g3) !important;
 }
 
@@ -387,44 +397,44 @@ html[data-skin="gold"] [tabindex]:focus-visible {
    and every statistic (min / p25 / median). Class-bucketed is free.
    Do NOT write these unscoped (`.hover\:bg-orange-50:hover { … }` on its own):
    Tailwind v4 owns those class names and drops duplicate bare-class rules from
-   the emitted sheet. Under the `html[data-skin="gold"]` ancestor they survive
-   (verified in the built CSS chunk). */
-html[data-skin="gold"] .hover\:bg-orange-50:hover,
-html[data-skin="gold"] .hover\:bg-orange-50\/30:hover,
-html[data-skin="gold"] .hover\:bg-orange-50\/40:hover,
-html[data-skin="gold"] .hover\:bg-orange-50\/50:hover,
-html[data-skin="gold"] .hover\:bg-orange-50\/80:hover,
-html[data-skin="gold"] .hover\:bg-amber-50:hover,
-html[data-skin="gold"] .hover\:bg-amber-50\/40:hover,
-html[data-skin="gold"] .hover\:bg-amber-50\/60:hover { background-color: var(--goldtint) !important; }
-html[data-skin="gold"] .hover\:bg-orange-100:hover,
-html[data-skin="gold"] .hover\:bg-amber-100:hover,
-html[data-skin="gold"] .hover\:bg-amber-100\/70:hover,
-html[data-skin="gold"] .hover\:bg-amber-200:hover { background-color: #f4ead2 !important; }
-html[data-skin="gold"] .hover\:bg-stone-50:hover { background-color: #f7f4ec !important; }
-html[data-skin="gold"] .hover\:bg-stone-100:hover { background-color: var(--icotile) !important; }
-html[data-skin="gold"] .hover\:bg-stone-200:hover { background-color: #e5dfd2 !important; }
+   the emitted sheet. Under the `html` ancestor they survive (verified in the
+   built CSS chunk) — one more reason the prefix stays. */
+html .hover\:bg-orange-50:hover,
+html .hover\:bg-orange-50\/30:hover,
+html .hover\:bg-orange-50\/40:hover,
+html .hover\:bg-orange-50\/50:hover,
+html .hover\:bg-orange-50\/80:hover,
+html .hover\:bg-amber-50:hover,
+html .hover\:bg-amber-50\/40:hover,
+html .hover\:bg-amber-50\/60:hover { background-color: var(--goldtint) !important; }
+html .hover\:bg-orange-100:hover,
+html .hover\:bg-amber-100:hover,
+html .hover\:bg-amber-100\/70:hover,
+html .hover\:bg-amber-200:hover { background-color: #f4ead2 !important; }
+html .hover\:bg-stone-50:hover { background-color: #f7f4ec !important; }
+html .hover\:bg-stone-100:hover { background-color: var(--icotile) !important; }
+html .hover\:bg-stone-200:hover { background-color: #e5dfd2 !important; }
 
 /* ---------- sidebar ---------- */
-html[data-skin="gold"] aside {
+html aside {
   background: var(--panel) !important;
   border-color: var(--line) !important;
 }
 /* active nav pill */
-html[data-skin="gold"] .from-orange-100.to-amber-50 {
+html .from-orange-100.to-amber-50 {
   background: linear-gradient(90deg, #f7eed8, var(--panel)) !important;
   box-shadow: inset 0 0 0 1px var(--goldtintline) !important;
 }
 /* rest-state nav icon tile */
-html[data-skin="gold"] aside a .bg-stone-100 { background-color: var(--icotile) !important; }
-html[data-skin="gold"] aside a:hover > div:first-child { background: var(--gold-grad) !important; }
-html[data-skin="gold"] aside a:hover > div:first-child svg { color: var(--gold-ink) !important; }
-html[data-skin="gold"] aside a:hover,
-html[data-skin="gold"] aside a:hover span { color: var(--gold-text) !important; }
+html aside a .bg-stone-100 { background-color: var(--icotile) !important; }
+html aside a:hover > div:first-child { background: var(--gold-grad) !important; }
+html aside a:hover > div:first-child svg { color: var(--gold-ink) !important; }
+html aside a:hover,
+html aside a:hover span { color: var(--gold-text) !important; }
 /* logo fallback tile keeps the brand gradient (handled by the tile block) */
 
 /* ---------- KPI markers (dashboard) ---------- */
-html[data-skin="gold"] .gk-label {
+html .gk-label {
   display: inline-block;
   padding: 3px 10px;
   border-radius: 8px;
@@ -433,61 +443,61 @@ html[data-skin="gold"] .gk-label {
   color: var(--ink2) !important;
   font-weight: 600;
 }
-html[data-skin="gold"] .gk-value {
+html .gk-value {
   font-size: 2rem;
   font-weight: 900;
 }
 /* The four KPI tiles read as one branded set: pale gold tile, gold glyph —
    the same pairing as `.gk-label` above. The component carries no colour of
    its own beyond a neutral `bg-stone-100`, so no override war here. */
-html[data-skin="gold"] .gk-icon {
+html .gk-icon {
   background: var(--goldtint) !important;
   border: 1px solid var(--goldtintline) !important;
 }
-html[data-skin="gold"] .gk-icon svg { color: var(--gold-text) !important; }
+html .gk-icon svg { color: var(--gold-text) !important; }
 
 /* ---------- tables ---------- */
-html[data-skin="gold"] table thead { background: transparent !important; }
-html[data-skin="gold"] table thead th {
+html table thead { background: transparent !important; }
+html table thead th {
   color: var(--muted) !important;
   border-color: var(--line) !important;
 }
-html[data-skin="gold"] table tbody td { border-color: var(--line) !important; }
+html table tbody td { border-color: var(--line) !important; }
 /* status-tinted document rows — light washes, ink stays default */
-html[data-skin="gold"] tbody tr[data-status="paid"] { background: rgba(63, 122, 85, 0.09) !important; }
-html[data-skin="gold"] tbody tr[data-status="sent"] { background: rgba(70, 110, 175, 0.09) !important; }
-html[data-skin="gold"] tbody tr[data-status="draft"] { background: rgba(140, 128, 105, 0.09) !important; }
-html[data-skin="gold"] tbody tr[data-status="cancelled"] { background: rgba(166, 60, 40, 0.08) !important; }
-html[data-skin="gold"] tbody tr[data-status="paid"]:hover { background: rgba(63, 122, 85, 0.15) !important; }
-html[data-skin="gold"] tbody tr[data-status="sent"]:hover { background: rgba(70, 110, 175, 0.15) !important; }
-html[data-skin="gold"] tbody tr[data-status="draft"]:hover { background: rgba(140, 128, 105, 0.15) !important; }
-html[data-skin="gold"] tbody tr[data-status="cancelled"]:hover { background: rgba(166, 60, 40, 0.14) !important; }
-html[data-skin="gold"] tbody tr[data-status] td:first-child { color: var(--gold-text) !important; }
+html tbody tr[data-status="paid"] { background: rgba(63, 122, 85, 0.09) !important; }
+html tbody tr[data-status="sent"] { background: rgba(70, 110, 175, 0.09) !important; }
+html tbody tr[data-status="draft"] { background: rgba(140, 128, 105, 0.09) !important; }
+html tbody tr[data-status="cancelled"] { background: rgba(166, 60, 40, 0.08) !important; }
+html tbody tr[data-status="paid"]:hover { background: rgba(63, 122, 85, 0.15) !important; }
+html tbody tr[data-status="sent"]:hover { background: rgba(70, 110, 175, 0.15) !important; }
+html tbody tr[data-status="draft"]:hover { background: rgba(140, 128, 105, 0.15) !important; }
+html tbody tr[data-status="cancelled"]:hover { background: rgba(166, 60, 40, 0.14) !important; }
+html tbody tr[data-status] td:first-child { color: var(--gold-text) !important; }
 /* Reports data table header (loud coral gradient row). The gold background and
    the gold ink on its <th>s already come from the `.from-orange-500.to-rose-500`
    CTA rules above (the <th>s carry no `bg-*` class, so the descendant rule
    catches them) — the only thing left to say here is that a table header row is
    not a button and must not carry the CTA's drop shadow. */
-html[data-skin="gold"] .gk-rtable thead tr.from-orange-500.to-rose-500 {
+html .gk-rtable thead tr.from-orange-500.to-rose-500 {
   box-shadow: none !important;
 }
-html[data-skin="gold"] .gk-rtable tfoot td { border-color: var(--line) !important; }
-html[data-skin="gold"] .gk-etable thead { background: var(--goldtint) !important; }
-html[data-skin="gold"] .gk-etable thead th {
+html .gk-rtable tfoot td { border-color: var(--line) !important; }
+html .gk-etable thead { background: var(--goldtint) !important; }
+html .gk-etable thead th {
   color: var(--ink2) !important;
   border-color: var(--goldtintline) !important;
 }
 
 /* ---------- marker-class cards: recommended plan + danger zone ----------
-   Both markers are inert on the coral fallback. On the light shell every
+   Two marker classes the components carry purely for this file. Every
    .card-soft is the same white slab, so the "recommended" plan and the
    "delete everything" card would lose the emphasis their layouts assume. */
-html[data-skin="gold"] .gk-plan-featured.card-soft {
+html .gk-plan-featured.card-soft {
   border-color: var(--goldtintline) !important;
   background: linear-gradient(180deg, var(--goldtint), var(--card) 45%) !important;
   box-shadow: 0 0 0 1px rgba(190, 158, 78, 0.28), var(--shadow-lg) !important;
 }
-html[data-skin="gold"] .gk-danger.card-soft {
+html .gk-danger.card-soft {
   border-color: #e3b3a8 !important;
   border-right-width: 3px !important;
   border-right-color: #a63c28 !important;
@@ -495,7 +505,7 @@ html[data-skin="gold"] .gk-danger.card-soft {
 }
 
 /* ---------- segmented control track ---------- */
-html[data-skin="gold"] .card-soft.p-1 {
+html .card-soft.p-1 {
   background: var(--goldtint) !important;
   border: 1px solid var(--goldtintline) !important;
   box-shadow: none !important;
@@ -505,41 +515,41 @@ html[data-skin="gold"] .card-soft.p-1 {
    The paper itself is frozen (`document-paper.css`). Only the frame around
    it is themed: a warm neutral so the cream sheet reads as an object on the
    shell rather than floating on it. */
-html[data-skin="gold"] .gk-doc-preview {
+html .gk-doc-preview {
   background-color: var(--paperframe) !important;
   border-radius: 14px;
 }
 @media screen {
-  html[data-skin="gold"] .receipt-view {
+  html .receipt-view {
     box-shadow:
       0 0 0 1px var(--line),
       var(--shadow-lg) !important;
   }
 }
 /* printable helper sheets (annual journal, client statement) */
-html[data-skin="gold"] .gk-paper {
+html .gk-paper {
   background: var(--card) !important;
   border-color: var(--line) !important;
   box-shadow: var(--shadow-lg) !important;
 }
 @media print {
-  html[data-skin="gold"] .gk-paper {
+  html .gk-paper {
     box-shadow: none !important;
     border: 0 !important;
   }
 }
 
 /* ---------- scrollbar ---------- */
-html[data-skin="gold"] ::-webkit-scrollbar-thumb { background: rgba(143, 111, 42, 0.28); }
-html[data-skin="gold"] ::-webkit-scrollbar-thumb:hover { background: rgba(143, 111, 42, 0.5); }
+html ::-webkit-scrollbar-thumb { background: rgba(143, 111, 42, 0.28); }
+html ::-webkit-scrollbar-thumb:hover { background: rgba(143, 111, 42, 0.5); }
 
 /* ---------- PRINT / PDF ----------
    The server PDF route drives headless Chrome to /view and prints with
    printBackground. Force a pure white page so the warm sand shell can never
    tint the printed sheet's margins. */
 @media print {
-  html[data-skin="gold"],
-  html[data-skin="gold"] body {
+  html,
+  html body {
     background: #ffffff !important;
     background-color: #ffffff !important;
     color: #1c1917 !important;
@@ -550,23 +560,22 @@ html[data-skin="gold"] ::-webkit-scrollbar-thumb:hover { background: rgba(143, 1
    CONTRAST REPAIR — the one that is genuinely palette-bound
    The generic stock-Tailwind repairs (emerald/rose/sky/teal accents, the
    white-on-gradient CTA ramps, the stone-300 placeholders) now live
-   UNSCOPED in globals.css: they are an accessibility floor, not a palette
-   decision, and every skin should get them. Only the rule below has to
-   stay theme-scoped — it exists to beat this file's own
-   `.bg-orange-500 { background: var(--gold-grad-cta) !important }`, so it
-   needs the `html[data-skin="gold"]` prefix to out-rank it.
+   in globals.css: they are an accessibility floor, not a palette decision.
+   The rule below has to live HERE instead — it exists to beat this file's
+   own `.bg-orange-500 { background: var(--gold-grad-cta) !important }`, and
+   only a later rule in the same sheet can do that.
    ===================================================================== */
 
 /* Disabled primary CTA. (WCAG exempts disabled controls, but a label you
    cannot read at all reads as "broken" rather than "not yet available" —
    #665f4e on #eae5d8 is 5.0:1: muted, still readable.) */
-html[data-skin="gold"] button:disabled.from-orange-500,
-html[data-skin="gold"] button:disabled.bg-orange-500 {
+html button:disabled.from-orange-500,
+html button:disabled.bg-orange-500 {
   background: #eae5d8 !important;
   color: #665f4e !important;
   box-shadow: none !important;
 }
-html[data-skin="gold"] button:disabled.from-orange-500 * { color: #665f4e !important; }
+html button:disabled.from-orange-500 * { color: #665f4e !important; }
 
 /* =====================================================================
    DASHBOARD SCALE-UP — desktop only (layout/size only, no colour)
@@ -577,17 +586,17 @@ html[data-skin="gold"] button:disabled.from-orange-500 * { color: #665f4e !impor
    skin — it is orthogonal to the palette.
    ===================================================================== */
 @media (min-width: 1280px) {
-  html[data-skin="gold"] main:has(.gk-dashboard) > div {
+  html main:has(.gk-dashboard) > div {
     max-width: 1560px !important;
   }
 }
 
 @media (min-width: 1024px) {
-  html[data-skin="gold"] .gk-dashboard h1 {
+  html .gk-dashboard h1 {
     font-size: 2.35rem;
     line-height: 1.15;
   }
-  html[data-skin="gold"] .gk-dashboard h2 {
+  html .gk-dashboard h2 {
     font-size: 1.3rem;
     line-height: 1.3;
   }
@@ -595,43 +604,43 @@ html[data-skin="gold"] button:disabled.from-orange-500 * { color: #665f4e !impor
      151px box) and the `truncate` utility ellipsised the amount — "6,200 ₪"
      rendered as "200,…". 2.15rem keeps the number display-sized with headroom
      for 7-figure amounts. */
-  html[data-skin="gold"] .gk-dashboard .gk-value {
+  html .gk-dashboard .gk-value {
     font-size: 2.15rem;
     line-height: 1.15;
     letter-spacing: -0.015em;
   }
-  html[data-skin="gold"] .gk-dashboard .gk-label {
+  html .gk-dashboard .gk-label {
     font-size: 0.95rem;
     padding: 4px 12px;
   }
-  html[data-skin="gold"] .gk-dashboard .card-soft.p-5 {
+  html .gk-dashboard .card-soft.p-5 {
     padding: 1.6rem 1.65rem;
   }
-  html[data-skin="gold"] .gk-dashboard .gk-icon {
+  html .gk-dashboard .gk-icon {
     width: 3.1rem;
     height: 3.1rem;
   }
-  html[data-skin="gold"] .gk-dashboard .gk-icon svg {
+  html .gk-dashboard .gk-icon svg {
     width: 1.5rem;
     height: 1.5rem;
   }
-  html[data-skin="gold"] .gk-dashboard .gk-value + div .text-xs {
+  html .gk-dashboard .gk-value + div .text-xs {
     font-size: 0.82rem;
   }
-  html[data-skin="gold"] .gk-dashboard .grid.sm\:grid-cols-3 .text-xl {
+  html .gk-dashboard .grid.sm\:grid-cols-3 .text-xl {
     font-size: 1.6rem;
     line-height: 1.15;
   }
-  html[data-skin="gold"] .gk-dashboard .grid.sm\:grid-cols-3 .text-xs {
+  html .gk-dashboard .grid.sm\:grid-cols-3 .text-xs {
     font-size: 0.8rem;
   }
-  html[data-skin="gold"] .gk-dashboard .grid.sm\:grid-cols-3 .rounded-2xl {
+  html .gk-dashboard .grid.sm\:grid-cols-3 .rounded-2xl {
     padding: 1.15rem;
   }
-  html[data-skin="gold"] .gk-dashboard table thead th {
+  html .gk-dashboard table thead th {
     font-size: 0.82rem;
   }
-  html[data-skin="gold"] .gk-dashboard table tbody td {
+  html .gk-dashboard table tbody td {
     font-size: 0.98rem;
     padding-top: 0.9rem;
     padding-bottom: 0.9rem;
@@ -644,12 +653,12 @@ html[data-skin="gold"] button:disabled.from-orange-500 * { color: #665f4e !impor
    so lifting the root size scales every text utility uniformly with no
    per-component edits.
    ===================================================================== */
-html[data-skin="gold"] { font-size: 16.5px; }
+html { font-size: 16.5px; }
 @media (min-width: 1024px) {
-  html[data-skin="gold"] { font-size: 17px; }
+  html { font-size: 17px; }
 }
 @media (min-width: 1536px) {
-  html[data-skin="gold"] { font-size: 17.5px; }
+  html { font-size: 17.5px; }
 }
 /* text-[10px] chips are px, so the root bump skips them — nudge manually. */
-html[data-skin="gold"] .text-\[10px\] { font-size: 11px; }
+html .text-\[10px\] { font-size: 11px; }

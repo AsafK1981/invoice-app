@@ -7,15 +7,15 @@
    the server PDF (headless Chrome navigates to /view and prints it).
 
    WHY ITS OWN STYLESHEET INSTEAD OF TAILWIND UTILITIES
-   The gold skin (default for everyone) remaps Tailwind utilities app-wide
-   with `!important` — `.text-stone-700`, `.bg-white`, `table thead th`,
-   even the root font-size. The old paper used those utilities and needed a
-   long "re-assert every utility" block in skin-gold.css to stay printable.
+   The app skin (`app-skin.css`) remaps Tailwind utilities app-wide with
+   `!important` — `.text-stone-700`, `.bg-white`, `table thead th`, even the
+   root font-size. The old paper used those utilities and needed a long
+   "re-assert every utility" block in the skin to stay printable.
    By giving the sheet its own vocabulary of `.doc-*` classes with explicit
-   colours and PX sizes, the paper is immune to every skin/dark/root-size
-   remap by construction. Only the bare element selectors the gold skin
-   targets (`table thead th`, `tbody td`) can still reach in, so those few
-   rules carry `!important` + higher specificity here.
+   colours and PX sizes, the paper is immune to every skin/root-size remap
+   by construction. Only the bare element selectors the skin targets
+   (`table thead th`, `tbody td`) can still reach in, so those few rules
+   carry `!important` + higher specificity here.
 
    This file is imported LAST in layout.tsx so it wins ties.
    ===================================================================== */

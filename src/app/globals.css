@@ -1,8 +1,7 @@
 @import "tailwindcss";
 
-/* The app ships light-only: the pre-hydration script in layout.tsx and
-   `applyDom()` in src/lib/skin.ts both strip `.dark` from <html>, and
-   nothing adds it. This line must STAY anyway — it re-points Tailwind's
+/* The app ships light-only: nothing ever puts `.dark` on <html>.
+   This line must STAY anyway — it re-points Tailwind's
    `dark:` variant (still used in a handful of components) at the class
    instead of Tailwind 4's default prefers-color-scheme, which would
    otherwise fire those utilities for anyone whose OS is in dark mode. */
@@ -55,16 +54,12 @@ input:not(.input-warm):focus-visible,
   outline-offset: 2px;
 }
 
-body {
-  background:
-    url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23f97316' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"),
-    radial-gradient(1100px 620px at 100% -10%, rgba(254, 196, 138, 0.46), transparent 60%),
-    radial-gradient(860px 520px at -8% 12%, rgba(253, 219, 110, 0.36), transparent 60%),
-    radial-gradient(820px 560px at 50% 118%, rgba(250, 132, 44, 0.17), transparent 62%),
-    linear-gradient(180deg, #fff8f0 0%, #fcebda 100%);
-  background-attachment: fixed;
-  color: #44403c;
-}
+/* The coral-era `body` rule (a fixed radial wash + a dotted SVG tile +
+   `color: #44403c`) lived here. It was dead weight: `app-skin.css` re-declares
+   the `background` SHORTHAND, `background-attachment` and `color` on
+   `html body` with `!important`, so every longhand it set was already being
+   thrown away on every page. Deleted with the coral skin, 2026-07-20. The
+   page surface is now stated once, in app-skin.css. */
 
 /* ========== LANDING PAGE DECORATIVE LAYER ==========
    Animated floating blobs + grid pattern + decorative mini-cards used
@@ -292,8 +287,8 @@ tr {
    Every rule below fixes a stock-Tailwind pair that an automated sweep of
    all 21 app routes measured BELOW its WCAG AA threshold (4.5:1 body /
    3:1 large text and graphics). These are an accessibility FLOOR, not a
-   palette decision, so they live here — unscoped, applying to every skin —
-   rather than inside skin-gold.css.
+   palette decision, so they live here — unscoped — rather than inside
+   app-skin.css.
 
    Why not override the source colours in `@theme`? Two of the three groups
    can't be expressed there. The ramps drop a -400/-500 gradient pair to its
