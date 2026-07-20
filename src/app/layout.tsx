@@ -4,11 +4,12 @@ import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { SwRegister } from "@/components/sw-register";
 import "./globals.css";
-// Opt-in "gold" skin (obsidian + antique gold, art-deco). ALL rules inside
-// are scoped under html[data-skin="gold"], so importing it here is inert for
-// the default coral app — it only takes effect once the skin flag is set.
-// Imported AFTER globals.css on purpose: keeps gold rules later in source
-// order so they win ties against the html.dark block.
+// The "gold" skin — now the warm light shell, and the default for everyone.
+// (The name is historical: it began as obsidian + antique gold. The attribute
+// value stayed "gold" so stored preferences and ?skin= keep working.) ALL rules
+// inside are scoped under html[data-skin="gold"], so the import is inert for
+// the coral fallback. Imported AFTER globals.css on purpose: keeps skin rules
+// later in source order so they win specificity ties against globals.css.
 import "./skin-gold.css";
 // The printable document sheet's own stylesheet. Imported LAST on purpose:
 // its `.doc-*` rules must win ties against the gold skin's utility remaps so
@@ -43,19 +44,20 @@ const assistant = Assistant({
   display: "swap",
 });
 
-// Inline pre-hydration script — applies the black-gold skin to <html> BEFORE
-// first paint, avoiding any flash of the old coral look. The gold skin is now
-// the DEFAULT for everyone: with no override, <html data-skin="gold"> is set.
+// Inline pre-hydration script — applies the skin to <html> BEFORE first paint,
+// avoiding any flash of the coral look. Mirrors applyDom() in src/lib/skin.ts,
+// which it cannot import (this runs before any module loads); keep the two in
+// step. The gold skin is the DEFAULT: with no override, data-skin="gold" is set.
 // A one-time migration clears any beta-era stored skin preference so every
 // user lands on gold. Internal escape hatch: ?skin=coral forces (and persists)
 // the classic coral look; ?skin=gold flips back. The string is hardcoded (no
 // user input flows into it), so it's safe.
-// NOTE (2026-07-20): the coral-era `invoice-app:theme=dark` opt-in is no
-// longer applied. Its UI toggle was removed long ago, but a value left in a
-// beta tester's localStorage would still add `html.dark` — and the html.dark
-// utility block in globals.css INVERTS the palette, which now collides head-on
-// with the light warm skin. Nothing sets `.dark` any more, so that block is
-// dead code kept only for reference.
+// NOTE (2026-07-20): the coral-era `invoice-app:theme=dark` opt-in is gone.
+// Its UI toggle was removed long ago, and the html.dark palette-inversion
+// block it drove has since been deleted from globals.css (git history is the
+// reference). The `classList.remove("dark")` below is the belt-and-braces
+// cleanup for a class left on the element by anything else — nothing in the
+// app adds it.
 const themeInitScript = `(function(){try{var d=document.documentElement;var p=new URLSearchParams(location.search);var qs=p.get("skin");if(!localStorage.getItem("invoice-app:skin-default-gold")){localStorage.removeItem("invoice-app:skin");localStorage.setItem("invoice-app:skin-default-gold","1");}if(qs==="gold"||qs==="coral"){localStorage.setItem("invoice-app:skin",qs);}var s=localStorage.getItem("invoice-app:skin");if(s==="coral"){d.removeAttribute("data-skin");}else{d.setAttribute("data-skin","gold");}d.classList.remove("dark");}catch(e){}})();`;
 
 const SITE_URL = "https://mysuperfriendlyinvoiceapp.vercel.app";

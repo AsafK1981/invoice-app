@@ -1,8 +1,11 @@
 @import "tailwindcss";
 
-/* Class-based dark mode. Tailwind 4 reads prefers-color-scheme by
-   default; we override with an explicit `dark` class on <html> so the
-   user can toggle independently of OS preference. */
+/* The app ships light-only: the pre-hydration script in layout.tsx and
+   `applyDom()` in src/lib/skin.ts both strip `.dark` from <html>, and
+   nothing adds it. This line must STAY anyway — it re-points Tailwind's
+   `dark:` variant (still used in a handful of components) at the class
+   instead of Tailwind 4's default prefers-color-scheme, which would
+   otherwise fire those utilities for anyone whose OS is in dark mode. */
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* Font families come from next/font (self-hosted, see layout.tsx) via CSS
@@ -136,318 +139,6 @@ body {
 }
 .landing-float-card {
   animation: float-card 6s ease-in-out infinite;
-}
-
-/* ========== DARK MODE ==========
-   Sweeping overrides applied when <html class="dark">. Tailwind utility
-   classes (bg-white, text-stone-900, etc.) compile to specific colors
-   that wouldn't auto-flip; instead of editing every component, we
-   override the most common surface colors here at the layer level.
-   Components that need fine-grained dark variants (e.g. specific
-   gradients or status colors) can still use `dark:` prefixed utilities. */
-
-html.dark body {
-  /* Less stark — was too close to pure black, made every transparent
-     surface read as also-black. This sits at stone-900 / stone-800
-     with a subtle orange ambience so the warm-orange brand stays. */
-  background:
-    radial-gradient(1200px 600px at 100% -10%, rgba(154, 52, 18, 0.18), transparent 60%),
-    radial-gradient(900px 500px at -10% 10%, rgba(120, 53, 15, 0.22), transparent 60%),
-    linear-gradient(180deg, #292524 0%, #1c1917 100%);
-  color: #e7e5e4;
-}
-
-/* Card surfaces — slightly lighter than body so cards "lift" off the
-   background, instead of being indistinguishable. */
-html.dark .card-soft {
-  background: #1c1917;
-  border: 1px solid rgba(87, 83, 78, 0.5);
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.4),
-    0 4px 20px rgba(0, 0, 0, 0.3);
-}
-
-/* Translucent whites used on cards over light gradients (e.g. the
-   onboarding checklist's per-row background) compose to near-black on
-   our dark body. Override to translucent stone so the rows are still
-   visually distinct without reverting to white. */
-html.dark .bg-white\/40 { background-color: rgba(120, 113, 108, 0.18); }
-html.dark .bg-white\/60 { background-color: rgba(120, 113, 108, 0.28); }
-html.dark .bg-white\/70 { background-color: rgba(120, 113, 108, 0.35); }
-html.dark .bg-white\/80,
-html.dark .bg-white\/95 { background-color: rgba(28, 25, 23, 0.85); }
-
-/* Multi-stop gradient backgrounds used on the onboarding card and stat
-   tiles compose from light Tailwind colors that aren't covered by the
-   sweeping bg-{color}-50 overrides because gradient-from/-to use CSS
-   variables. Override the gradient to a subtle dark version on the card
-   level so the inner content stays readable. */
-html.dark .bg-gradient-to-br.from-orange-50,
-html.dark .bg-gradient-to-br.from-emerald-50,
-html.dark .bg-gradient-to-br.from-rose-50,
-html.dark .bg-gradient-to-br.from-amber-50,
-html.dark .bg-gradient-to-br.from-blue-50,
-html.dark .bg-gradient-to-br.from-violet-50,
-html.dark .bg-gradient-to-br.from-sky-50,
-html.dark .bg-gradient-to-br.from-stone-50 {
-  background: linear-gradient(135deg, #292524 0%, #1c1917 100%) !important;
-}
-
-/* Coloured text in -700/-800 stays the same hex regardless of dark
-   mode, which on a near-black body becomes hard to read for warmer
-   colors. Lift the saturation/brightness so chip + body text both
-   read clearly. !important to win against Tailwind utilities at the
-   same cascade layer. */
-html.dark .text-orange-700  { color: #fed7aa !important; }
-html.dark .text-orange-800  { color: #ffedd5 !important; }
-html.dark .text-amber-700   { color: #fde68a !important; }
-html.dark .text-amber-800   { color: #fef3c7 !important; }
-html.dark .text-emerald-700 { color: #a7f3d0 !important; }
-html.dark .text-emerald-800 { color: #d1fae5 !important; }
-html.dark .text-emerald-900 { color: #ecfdf5 !important; }
-html.dark .text-rose-700    { color: #fecdd3 !important; }
-html.dark .text-rose-800    { color: #ffe4e6 !important; }
-html.dark .text-rose-900    { color: #fff1f2 !important; }
-html.dark .text-blue-700    { color: #bfdbfe !important; }
-html.dark .text-blue-800    { color: #dbeafe !important; }
-html.dark .text-blue-900    { color: #eff6ff !important; }
-html.dark .text-violet-700  { color: #ddd6fe !important; }
-html.dark .text-violet-800  { color: #ede9fe !important; }
-html.dark .text-violet-900  { color: #f5f3ff !important; }
-html.dark .text-sky-700     { color: #bae6fd !important; }
-html.dark .text-sky-800     { color: #e0f2fe !important; }
-
-/* Hover states. Tailwind compiles `hover:bg-emerald-50/60` to a class
-   like `hover\:bg-emerald-50\/60` (escaped colon and slash) plus a
-   :hover pseudo. Targeting that class via escaped selector turned
-   out to get stripped by the production build — the rules disappeared
-   from the served CSS even though they were in source.
-   Workaround: attribute selectors. `[class~="..."]` matches when the
-   element's class list contains exactly that word, no escaping needed,
-   and survives the build pipeline cleanly. */
-html.dark [class~="hover:bg-emerald-50/60"]:hover { background-color: rgba(6, 78, 59, 0.45) !important; }
-html.dark [class~="hover:bg-amber-50/60"]:hover   { background-color: rgba(120, 53, 15, 0.45) !important; }
-html.dark [class~="hover:bg-sky-50/60"]:hover     { background-color: rgba(7, 89, 133, 0.45) !important; }
-html.dark [class~="hover:bg-violet-50/60"]:hover  { background-color: rgba(76, 29, 149, 0.45) !important; }
-html.dark [class~="hover:bg-rose-50/60"]:hover    { background-color: rgba(136, 19, 55, 0.45) !important; }
-
-html.dark [class~="hover:bg-orange-50"]:hover,
-html.dark [class~="hover:bg-orange-50/30"]:hover,
-html.dark [class~="hover:bg-orange-50/40"]:hover,
-html.dark [class~="hover:bg-orange-50/50"]:hover,
-html.dark [class~="hover:bg-orange-50/80"]:hover { background-color: rgba(124, 45, 18, 0.35) !important; }
-
-html.dark [class~="hover:bg-rose-50"]:hover,
-html.dark [class~="hover:bg-rose-50/40"]:hover    { background-color: rgba(136, 19, 55, 0.3) !important; }
-
-html.dark [class~="hover:bg-violet-50"]:hover,
-html.dark [class~="hover:bg-violet-50/30"]:hover  { background-color: rgba(76, 29, 149, 0.3) !important; }
-
-html.dark [class~="hover:bg-emerald-50"]:hover    { background-color: rgba(6, 78, 59, 0.3) !important; }
-html.dark [class~="hover:bg-amber-50"]:hover      { background-color: rgba(120, 53, 15, 0.3) !important; }
-html.dark [class~="hover:bg-stone-50"]:hover      { background-color: rgba(68, 64, 60, 0.5) !important; }
-html.dark [class~="hover:bg-stone-100"]:hover     { background-color: rgba(87, 83, 78, 0.55) !important; }
-html.dark [class~="hover:bg-stone-200"]:hover     { background-color: rgba(120, 113, 108, 0.6) !important; }
-
-html.dark [class~="hover:bg-white"]:hover         { background-color: rgba(41, 37, 36, 1) !important; }
-html.dark [class~="hover:bg-white/60"]:hover      { background-color: rgba(120, 113, 108, 0.3) !important; }
-html.dark [class~="hover:bg-white/80"]:hover      { background-color: rgba(41, 37, 36, 0.85) !important; }
-
-/* -100 hover variants — used on gradient buttons, settings icons, etc. */
-html.dark [class~="hover:bg-emerald-100"]:hover    { background-color: #064e3b !important; }
-html.dark [class~="hover:bg-amber-100"]:hover      { background-color: #78350f !important; }
-html.dark [class~="hover:bg-orange-100"]:hover     { background-color: #7c2d12 !important; }
-html.dark [class~="hover:bg-emerald-200"]:hover    { background-color: #065f46 !important; }
-html.dark [class~="hover:bg-amber-200"]:hover      { background-color: #92400e !important; }
-html.dark [class~="hover:bg-emerald-100/70"]:hover { background-color: rgba(6, 78, 59, 0.7) !important; }
-html.dark [class~="hover:bg-amber-100/70"]:hover   { background-color: rgba(120, 53, 15, 0.7) !important; }
-html.dark [class~="hover:bg-rose-100/70"]:hover    { background-color: rgba(136, 19, 55, 0.7) !important; }
-html.dark [class~="hover:bg-blue-100/70"]:hover    { background-color: rgba(30, 58, 138, 0.7) !important; }
-html.dark [class~="hover:bg-violet-100/70"]:hover  { background-color: rgba(76, 29, 149, 0.7) !important; }
-
-/* text-stone-600 / -700 used heavily for secondary text (dates, etc.).
-   Lifted to lighter values with !important for legibility on dark. */
-html.dark .text-stone-600 { color: #d6d3d1 !important; }
-html.dark .text-stone-700 { color: #e7e5e4 !important; }
-
-/* The receipt preview inside the app should ALWAYS render light, even
-   when the surrounding app is in dark mode. It represents the final
-   PDF, which is white paper. Otherwise the user sees a dark "preview"
-   and a white "downloaded PDF" — confusing.
-   Since the 2026-07-19 redesign the sheet carries its own `.doc-paper`
-   stylesheet (explicit colours, no Tailwind utilities), so nothing needs to be
-   "un-darkened" here any more — only the generic dark table/element remaps are
-   neutralised, and document-paper.css already does that with !important. */
-html.dark .receipt-view * {
-  color: inherit;
-}
-
-/* Inputs */
-html.dark .input-warm {
-  background: #1c1917;
-  border-color: #44403c;
-  color: #f5f5f4;
-}
-html.dark .input-warm:focus {
-  background: #292524;
-  border-color: #fb923c;
-  box-shadow: 0 0 0 3px rgba(251, 146, 60, 0.18);
-}
-html.dark .input-warm::placeholder {
-  color: #78716c;
-}
-
-/* Common Tailwind backgrounds → dark equivalents.
-   Specific color classes used heavily throughout the app: */
-html.dark .bg-white {
-  background-color: #1c1917;
-}
-html.dark .bg-stone-50,
-html.dark .bg-stone-100 {
-  background-color: #292524;
-}
-html.dark .bg-orange-50 {
-  background-color: rgba(124, 45, 18, 0.25);
-}
-html.dark .bg-orange-50\/60,
-html.dark .bg-orange-50\/40,
-html.dark .bg-orange-50\/30,
-html.dark .bg-orange-50\/80 {
-  background-color: rgba(124, 45, 18, 0.18);
-}
-html.dark .bg-amber-50,
-html.dark .bg-amber-50\/40,
-html.dark .bg-amber-50\/30,
-html.dark .bg-amber-50\/50,
-html.dark .bg-amber-50\/60,
-html.dark .bg-amber-50\/70,
-html.dark .bg-amber-50\/80 {
-  background-color: rgba(120, 53, 15, 0.25);
-}
-html.dark .bg-emerald-50,
-html.dark .bg-emerald-50\/40,
-html.dark .bg-emerald-50\/30,
-html.dark .bg-emerald-50\/50,
-html.dark .bg-emerald-50\/60,
-html.dark .bg-emerald-50\/70,
-html.dark .bg-emerald-50\/80 {
-  background-color: rgba(6, 78, 59, 0.3);
-}
-html.dark .bg-rose-50,
-html.dark .bg-rose-50\/40,
-html.dark .bg-rose-50\/30,
-html.dark .bg-rose-50\/50,
-html.dark .bg-rose-50\/60,
-html.dark .bg-rose-50\/70,
-html.dark .bg-rose-50\/80 {
-  background-color: rgba(136, 19, 55, 0.25);
-}
-html.dark .bg-blue-50,
-html.dark .bg-blue-50\/40,
-html.dark .bg-blue-50\/30,
-html.dark .bg-blue-50\/50,
-html.dark .bg-blue-50\/60,
-html.dark .bg-blue-50\/70,
-html.dark .bg-blue-50\/80 {
-  background-color: rgba(30, 58, 138, 0.25);
-}
-html.dark .bg-violet-50,
-html.dark .bg-violet-50\/40,
-html.dark .bg-violet-50\/30,
-html.dark .bg-violet-50\/50,
-html.dark .bg-violet-50\/60,
-html.dark .bg-violet-50\/70,
-html.dark .bg-violet-50\/80 {
-  background-color: rgba(76, 29, 149, 0.25);
-}
-html.dark .bg-sky-50,
-html.dark .bg-sky-50\/40,
-html.dark .bg-sky-50\/30,
-html.dark .bg-sky-50\/50,
-html.dark .bg-sky-50\/60,
-html.dark .bg-sky-50\/70,
-html.dark .bg-sky-50\/80 {
-  background-color: rgba(7, 89, 133, 0.25);
-}
-
-/* -600 text variants used heavily for KPI card values and small accent
-   chips (text-rose-600 for client counts, text-amber-600 for quotes,
-   etc.). At their original hex they sit near the same lightness as the
-   dimmed -50 backgrounds above and the foreground vs background washes
-   out into "white on red". Lift to lighter values for readable contrast. */
-html.dark .text-orange-600  { color: #fdba74 !important; }
-html.dark .text-amber-600   { color: #fcd34d !important; }
-html.dark .text-emerald-600 { color: #6ee7b7 !important; }
-html.dark .text-rose-600    { color: #fda4af !important; }
-html.dark .text-blue-600    { color: #93c5fd !important; }
-html.dark .text-violet-600  { color: #c4b5fd !important; }
-html.dark .text-sky-600     { color: #7dd3fc !important; }
-html.dark .text-stone-800,
-html.dark .text-stone-900   { color: #f5f5f4 !important; }
-
-/* Border colors at the -200 tier disappear into the dark body — the
-   light pastels were calibrated for a white page and read as "no
-   border" once the surroundings flip dark. Lift to a higher-contrast
-   tier so action-bar buttons keep their outlined look. */
-html.dark .border-orange-200  { border-color: rgba(251, 146, 60, 0.55) !important; }
-html.dark .border-amber-200   { border-color: rgba(253, 186, 116, 0.55) !important; }
-html.dark .border-emerald-200 { border-color: rgba(110, 231, 183, 0.55) !important; }
-html.dark .border-rose-200    { border-color: rgba(253, 164, 175, 0.55) !important; }
-html.dark .border-sky-200     { border-color: rgba(125, 211, 252, 0.55) !important; }
-html.dark .border-violet-200  { border-color: rgba(196, 181, 253, 0.55) !important; }
-html.dark .border-blue-200    { border-color: rgba(147, 197, 253, 0.55) !important; }
-html.dark .border-stone-200   { border-color: rgba(120, 113, 108, 0.65) !important; }
-
-/* Badge backgrounds (-100 family) used on documents-table type/status
-   chips. Tailwind utilities live in the same cascade layer as our
-   custom rules, so we need !important to reliably win — without it
-   the result was inconsistent depending on stylesheet load order.
-   Solid (non-translucent) colors picked for clear contrast with the
-   bright text. */
-html.dark .bg-emerald-100 { background-color: #064e3b !important; }
-html.dark .bg-amber-100   { background-color: #78350f !important; }
-html.dark .bg-rose-100    { background-color: #881337 !important; }
-html.dark .bg-blue-100    { background-color: #1e3a8a !important; }
-html.dark .bg-violet-100  { background-color: #4c1d95 !important; }
-html.dark .bg-sky-100     { background-color: #075985 !important; }
-html.dark .bg-orange-100  { background-color: #7c2d12 !important; }
-html.dark .bg-teal-100    { background-color: #134e4a !important; }
-html.dark .bg-pink-100    { background-color: #831843 !important; }
-html.dark .bg-purple-100  { background-color: #581c87 !important; }
-html.dark .bg-indigo-100  { background-color: #312e81 !important; }
-html.dark .bg-yellow-100  { background-color: #713f12 !important; }
-html.dark .bg-cyan-100    { background-color: #164e63 !important; }
-
-/* Border darkening — most light-200 borders fade in dark */
-html.dark .border-orange-100,
-html.dark .border-orange-100\/60,
-html.dark .border-orange-200,
-html.dark .border-stone-100,
-html.dark .border-stone-200 {
-  border-color: rgba(68, 64, 60, 0.7);
-}
-
-/* Text — common stone scales. Body text colors. The -600 and -700
-   are reset to brighter values in the hover-states block below; do
-   NOT add a duplicate rule there or they'll dedupe and lose the
-   !important. */
-html.dark .text-stone-900 { color: #f5f5f4 !important; }
-html.dark .text-stone-800 { color: #e7e5e4 !important; }
-html.dark .text-stone-500 { color: #a8a29e !important; }
-html.dark .text-stone-400 { color: #78716c !important; }
-
-/* Sidebar (uses bg-white/80 + backdrop blur) */
-html.dark aside.bg-white\/80,
-html.dark .bg-white\/80,
-html.dark .bg-white\/95 {
-  background-color: rgba(28, 25, 23, 0.85);
-}
-
-/* Print: always force light. Tax-authority print rules + dark-mode
-   ink-saving combined to invisible PDFs would be a real bug. */
-@media print {
-  html.dark body { background: white !important; color: #1c1917 !important; }
-  html.dark .card-soft { background: white !important; color: #1c1917 !important; }
 }
 
 /* ========== CARDS ========== */
@@ -595,6 +286,64 @@ html.dark .bg-white\/95 {
 tr {
   transition: background-color 0.15s ease;
 }
+
+/* =====================================================================
+   CONTRAST REPAIRS — measured, not eyeballed
+   Every rule below fixes a stock-Tailwind pair that an automated sweep of
+   all 21 app routes measured BELOW its WCAG AA threshold (4.5:1 body /
+   3:1 large text and graphics). These are an accessibility FLOOR, not a
+   palette decision, so they live here — unscoped, applying to every skin —
+   rather than inside skin-gold.css.
+
+   Why not override the source colours in `@theme`? Two of the three groups
+   can't be expressed there. The ramps drop a -400/-500 gradient pair to its
+   -600/-700 pair, which as a token change would also repaint every solid
+   `bg-emerald-400`-style surface; and the badge rule is conditional on the
+   element also carrying `text-white`. Overriding `--color-emerald-600`
+   alone would additionally darken the 7 `bg-emerald-600` surfaces in the
+   app, which is a design change, not a contrast fix.
+   ===================================================================== */
+
+/* Tailwind's -600 accents are calibrated for chips, not for money figures
+   on a white card. Each drops one step to its -700 value. Measured on #fff:
+   emerald 3.65 → 5.48 · rose 4.12 → 6.29 · sky 4.16 → 5.74 · teal 3.74 → 5.47 */
+[class~="text-emerald-600"] { color: #047857 !important; }
+[class~="text-rose-600"] { color: #be123c !important; }
+[class~="text-sky-600"] { color: #0369a1 !important; }
+[class~="text-teal-600"] { color: #0f766e !important; }
+/* em-dash "no value" placeholders in the custom report: 1.49:1 → 4.6:1,
+   still clearly de-emphasised against the real figures beside them. */
+[class~="text-stone-300"] { color: #776e5d !important; }
+/* notification-count badge: white on rose-500 was 3.75:1 at 11px. */
+[class~="bg-rose-500"][class~="text-white"] { background-color: #be123c !important; }
+
+/* Secondary CTA gradients that carry WHITE labels (export-to-Excel, enable
+   2FA, beta invites, the Pro plan CTA). White measured 1.94–4.12:1 on the
+   stock -400/-500 stops. Drop each ramp to its -600/-700 pair: ≥5.4:1.
+   These same class pairs also paint document-type icon TILES, where the
+   darker ramp only helps the white glyph (3:1 → 5:1+). */
+[class~="from-emerald-400"][class~="to-teal-500"],
+[class~="from-emerald-500"][class~="to-teal-500"],
+[class~="from-teal-400"][class~="to-emerald-500"] {
+  background-image: linear-gradient(to left, #047857, #0f766e) !important;
+}
+[class~="from-violet-500"][class~="to-purple-500"],
+[class~="from-violet-400"][class~="to-purple-500"],
+[class~="from-fuchsia-400"][class~="to-purple-500"],
+[class~="from-violet-400"][class~="to-fuchsia-500"] {
+  background-image: linear-gradient(to left, #6d28d9, #7e22ce) !important;
+}
+[class~="from-rose-400"][class~="to-pink-500"],
+[class~="from-rose-500"][class~="to-pink-500"],
+[class~="from-rose-500"][class~="to-red-500"] {
+  background-image: linear-gradient(to left, #be123c, #9f1239) !important;
+}
+[class~="from-sky-400"][class~="to-blue-500"],
+[class~="from-blue-400"][class~="to-indigo-500"],
+[class~="from-blue-500"][class~="to-indigo-500"] {
+  background-image: linear-gradient(to left, #0369a1, #1d4ed8) !important;
+}
+[class~="bg-emerald-500"] { background-color: #047857 !important; }
 
 /* ========== PRINT ========== */
 

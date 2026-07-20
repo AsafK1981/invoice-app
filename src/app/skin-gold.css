@@ -128,11 +128,9 @@ html[data-skin="gold"] .v2-theme h3 {
 /* gold gradient display text (KPI numbers). The BRAND gradient is far too
    light for text on white (~2:1 at its highlight stop), so display text uses
    the dedicated dark-gold gradient — every stop ≥ 4.89:1 on white.
-   `html[data-skin]` twice on purpose: the element also carries
-   `.text-stone-900`, whose remap below has equal specificity and would
-   otherwise win on source order and repaint the glyphs solid ink. */
-html[data-skin="gold"][data-skin] .gold-text,
-html[data-skin="gold"][data-skin] .gk-value {
+   `color: transparent` + `-webkit-text-fill-color: transparent` are both part
+   of the background-clip:text technique, not a specificity workaround. */
+html[data-skin="gold"] .gk-value {
   background: var(--gold-text-grad);
   -webkit-background-clip: text;
   background-clip: text;
@@ -278,14 +276,8 @@ html[data-skin="gold"] .bg-orange-600.text-white { color: var(--gold-ink) !impor
 /* small solid coral dot/marker */
 html[data-skin="gold"] .bg-orange-400 { background-color: var(--g2) !important; }
 
-/* disabled CTA — the !important background above would otherwise keep it gold */
-html[data-skin="gold"] button:disabled.from-orange-500,
-html[data-skin="gold"] button:disabled.bg-orange-500 {
-  background: #e9e4d7 !important;
-  color: #8d8574 !important;
-  box-shadow: none !important;
-}
-html[data-skin="gold"] button:disabled.from-orange-500 * { color: #8d8574 !important; }
+/* Disabled CTA is handled once, in CONTRAST REPAIRS below — the !important
+   background above would otherwise keep it gold. */
 
 /* the summary total is bg-clip-text with the coral gradient → dark-gold gradient */
 html[data-skin="gold"] .bg-clip-text.from-orange-500.to-rose-500 {
@@ -427,17 +419,14 @@ html[data-skin="gold"] .gk-value {
   font-size: 2rem;
   font-weight: 900;
 }
-/* Doubled attribute for specificity: the four KPI tiles also carry the
-   per-metric Tailwind gradient classes that the CONTRAST REPAIRS block far
-   below re-paints via `background-image`. The KPI rail should read as one
-   branded set, so `.gk-icon` has to out-rank it and blank the image. */
-html[data-skin="gold"][data-skin] .gk-icon {
+/* The four KPI tiles read as one branded set: pale gold tile, gold glyph —
+   the same pairing as `.gk-label` above. The component carries no colour of
+   its own beyond a neutral `bg-stone-100`, so no override war here. */
+html[data-skin="gold"] .gk-icon {
   background: var(--goldtint) !important;
-  background-image: none !important;
   border: 1px solid var(--goldtintline) !important;
-  box-shadow: none !important;
 }
-html[data-skin="gold"][data-skin] .gk-icon svg { color: var(--gold-text) !important; }
+html[data-skin="gold"] .gk-icon svg { color: var(--gold-text) !important; }
 
 /* ---------- tables ---------- */
 html[data-skin="gold"] table thead { background: transparent !important; }
@@ -538,56 +527,15 @@ html[data-skin="gold"] ::-webkit-scrollbar-thumb:hover { background: rgba(143, 1
 }
 
 /* =====================================================================
-   CONTRAST REPAIRS — measured, not eyeballed
-   Every rule below fixes a pair that an automated sweep of all 21 app
-   routes measured BELOW its WCAG AA threshold (4.5:1 body / 3:1 large
-   text and graphics). Most are stock-Tailwind pairs that were already
-   failing on the legacy coral skin; the light shell makes them visible,
-   so they are fixed here rather than left as debt. Placed late in the
-   file on purpose — several need to win on source order against the
-   family remaps above.
+   CONTRAST REPAIR — the one that is genuinely palette-bound
+   The generic stock-Tailwind repairs (emerald/rose/sky/teal accents, the
+   white-on-gradient CTA ramps, the stone-300 placeholders) now live
+   UNSCOPED in globals.css: they are an accessibility floor, not a palette
+   decision, and every skin should get them. Only the rule below has to
+   stay theme-scoped — it exists to beat this file's own
+   `.bg-orange-500 { background: var(--gold-grad-cta) !important }`, so it
+   needs the `html[data-skin="gold"]` prefix to out-rank it.
    ===================================================================== */
-
-/* Tailwind's -600 accents are calibrated for chips, not for money figures
-   on a white card. Each drops one step to its -700 value. Measured on #fff:
-   emerald 3.65 → 5.48 · rose 4.12 → 6.29 · sky 4.16 → 5.74 · teal 3.74 → 5.47 */
-html[data-skin="gold"] .text-emerald-600 { color: #047857 !important; }
-html[data-skin="gold"] .text-rose-600 { color: #be123c !important; }
-html[data-skin="gold"] .text-sky-600 { color: #0369a1 !important; }
-html[data-skin="gold"] .text-teal-600 { color: #0f766e !important; }
-/* em-dash "no value" placeholders in the custom report: 1.49:1 → 4.6:1,
-   still clearly de-emphasised against the real figures beside them. */
-html[data-skin="gold"] .text-stone-300 { color: #776e5d !important; }
-/* notification-count badge: white on rose-500 was 3.75:1 at 11px. */
-html[data-skin="gold"] .bg-rose-500.text-white { background-color: #be123c !important; }
-
-/* Secondary CTA gradients that carry WHITE labels (export-to-Excel, enable
-   2FA, beta invites, the Pro plan CTA). White measured 1.94–4.12:1 on the
-   stock -400/-500 stops. Drop each ramp to its -600/-700 pair: ≥5.4:1.
-   These same class pairs also paint document-type icon TILES, where the
-   darker ramp only helps the white glyph (3:1 → 5:1+). */
-html[data-skin="gold"] .from-emerald-400.to-teal-500,
-html[data-skin="gold"] .from-emerald-500.to-teal-500,
-html[data-skin="gold"] .from-teal-400.to-emerald-500 {
-  background-image: linear-gradient(to left, #047857, #0f766e) !important;
-}
-html[data-skin="gold"] .from-violet-500.to-purple-500,
-html[data-skin="gold"] .from-violet-400.to-purple-500,
-html[data-skin="gold"] .from-fuchsia-400.to-purple-500,
-html[data-skin="gold"] .from-violet-400.to-fuchsia-500 {
-  background-image: linear-gradient(to left, #6d28d9, #7e22ce) !important;
-}
-html[data-skin="gold"] .from-rose-400.to-pink-500,
-html[data-skin="gold"] .from-rose-500.to-pink-500,
-html[data-skin="gold"] .from-rose-500.to-red-500 {
-  background-image: linear-gradient(to left, #be123c, #9f1239) !important;
-}
-html[data-skin="gold"] .from-sky-400.to-blue-500,
-html[data-skin="gold"] .from-blue-400.to-indigo-500,
-html[data-skin="gold"] .from-blue-500.to-indigo-500 {
-  background-image: linear-gradient(to left, #0369a1, #1d4ed8) !important;
-}
-html[data-skin="gold"] .bg-emerald-500 { background-color: #047857 !important; }
 
 /* Disabled primary CTA. (WCAG exempts disabled controls, but a label you
    cannot read at all reads as "broken" rather than "not yet available" —
@@ -596,6 +544,7 @@ html[data-skin="gold"] button:disabled.from-orange-500,
 html[data-skin="gold"] button:disabled.bg-orange-500 {
   background: #eae5d8 !important;
   color: #665f4e !important;
+  box-shadow: none !important;
 }
 html[data-skin="gold"] button:disabled.from-orange-500 * { color: #665f4e !important; }
 

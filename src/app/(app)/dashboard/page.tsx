@@ -184,9 +184,7 @@ export default function DashboardPage() {
       value: formatCurrency(stats.income),
       sub: `${stats.paidCount} ${stats.paidCount === 1 ? "מסמך" : "מסמכים"} שולמו`,
       icon: TrendingUp,
-      gradient: "from-emerald-400 to-teal-500",
       bgGradient: "from-emerald-50 to-teal-50",
-      iconBg: "shadow-emerald-200/50",
       href: `/documents?status=paid${monthQs}`,
       delta: stats.hasPrev ? stats.incomeDelta : null,
       /** Higher = better — for income, "up" is good (green) */
@@ -197,9 +195,7 @@ export default function DashboardPage() {
       value: formatCurrency(stats.expenseTotal),
       sub: `${stats.expensesInRange.length} פעולות`,
       icon: TrendingDown,
-      gradient: "from-rose-400 to-pink-500",
       bgGradient: "from-rose-50 to-pink-50",
-      iconBg: "shadow-rose-200/50",
       href: "/expenses",
       delta: stats.hasPrev ? stats.expenseDelta : null,
       /** Lower = better — for expenses, "down" is good (green) */
@@ -210,9 +206,7 @@ export default function DashboardPage() {
       value: formatCurrency(stats.profit),
       sub: stats.income > 0 ? `${((stats.profit / stats.income) * 100).toFixed(0)}% מההכנסות` : "—",
       icon: PiggyBank,
-      gradient: "from-orange-400 to-amber-500",
       bgGradient: "from-orange-50 to-amber-50",
-      iconBg: "shadow-orange-200/50",
       href: "/reports",
       delta: stats.hasPrev ? stats.profitDelta : null,
       higherIsBetter: true,
@@ -222,9 +216,7 @@ export default function DashboardPage() {
       value: formatCurrency(stats.avgInvoice),
       sub: "לפי מסמכים שולמו",
       icon: Receipt,
-      gradient: "from-violet-400 to-purple-500",
       bgGradient: "from-violet-50 to-purple-50",
-      iconBg: "shadow-violet-200/50",
       href: `/documents?status=paid${monthQs}`,
       delta: stats.hasPrev ? stats.avgDelta : null,
       higherIsBetter: true,
@@ -355,7 +347,7 @@ export default function DashboardPage() {
                     {s.label}
                     <ArrowLeft className="w-3 h-3 opacity-0 group-hover:opacity-50 -translate-x-1 group-hover:translate-x-0 transition-all" />
                   </p>
-                  <p className="gk-value text-2xl font-bold mt-2 text-stone-900 truncate">
+                  <p className="gk-value text-2xl font-bold mt-2 truncate">
                     {ready ? s.value : "..."}
                   </p>
                   <div className="flex items-baseline gap-2 mt-1 flex-wrap">
@@ -365,10 +357,9 @@ export default function DashboardPage() {
                     )}
                   </div>
                 </div>
-                <div
-                  className={`gk-icon w-11 h-11 rounded-2xl bg-gradient-to-br ${s.gradient} flex items-center justify-center shadow-lg ${s.iconBg} flex-shrink-0`}
-                >
-                  <Icon className="w-5 h-5 text-white" />
+                {/* Neutral tile; the skin paints it gold (see `.gk-icon`). */}
+                <div className="gk-icon w-11 h-11 rounded-2xl bg-stone-100 flex items-center justify-center flex-shrink-0">
+                  <Icon className="w-5 h-5 text-stone-600" />
                 </div>
               </div>
             </Link>

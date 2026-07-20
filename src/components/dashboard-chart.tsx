@@ -40,14 +40,14 @@ export function DashboardChart({ documents, expenses }: Props) {
   const { skin } = useSkin();
   const gold = skin === "gold";
 
-  // Palette swaps for the gold skin. Coral values are the originals so the
-  // default look is byte-for-byte unchanged.
-  const gridStroke = gold ? "rgba(214,178,108,0.12)" : "#fed7aa";
-  const axisStroke = gold ? "#a79f90" : "#78716c";
-  const incomeFill = gold ? "url(#goldBar)" : "#10b981";
-  const expenseFill = gold ? "rgba(180,150,95,0.42)" : "#f43f5e";
-  const tooltipBg = gold ? "#171106" : "#fffaf5";
-  const tooltipBorder = gold ? "1px solid rgba(214,178,108,0.32)" : "1px solid #fed7aa";
+  // Coral-skin recharts palette. The gold skin returns GoldLineChart before the
+  // recharts branch below, so these are only ever read on coral.
+  const gridStroke = "#fed7aa";
+  const axisStroke = "#78716c";
+  const incomeFill = "#10b981";
+  const expenseFill = "#f43f5e";
+  const tooltipBg = "#fffaf5";
+  const tooltipBorder = "1px solid #fed7aa";
 
   const data = useMemo<MonthDatum[]>(() => {
     const now = new Date();
