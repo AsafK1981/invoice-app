@@ -52,7 +52,7 @@ html[data-skin="gold"] {
   --g1: #d8be77; /* highlight */
   --g2: #be9e4e; /* mid */
   --g3: #8f6f2a; /* deep */
-  --gold-grad: linear-gradient(160deg, #d8be77 0%, #be9e4e 55%, #8f6f2a 100%);
+  --gold-grad: linear-gradient(160deg, var(--g1) 0%, var(--g2) 55%, var(--g3) 100%);
   /* CTA variant: same hue, deepest stop lifted #8f6f2a → #a8853a. Text-bearing
      gold surfaces must clear 4.5:1 at EVERY point of the gradient, and the
      mockup's deep stop measured only 3.66:1 under the ink below (4.48:1 even
@@ -63,14 +63,17 @@ html[data-skin="gold"] {
 
   /* --- gold as TEXT on a light surface (deliberately a different token) --- */
   --gold-text: #806426;
-  --gold-text-grad: linear-gradient(160deg, #8a6d24, #5f4a15);
+  /* Starts from --gold-text, not the mockup's #8a6d24: that value is the one
+     documented above as too light (4.89:1 on white vs 5.57:1 for --gold-text),
+     and carrying both the corrected and uncorrected gold in one file invites
+     re-introducing the reject. Both stops clear AA on white and on --card. */
+  --gold-text-grad: linear-gradient(160deg, var(--gold-text), #5f4a15);
 
   /* --- surfaces --- */
   --bg: #f7f4ed; /* app background — warm sand */
   --panel: #fffdf8; /* sidebar / topbar — near-white */
   --card: #ffffff;
   --line: #e9e1d0; /* card hairline */
-  --line-soft: #f0eade;
   --icotile: #f1ece0;
   --goldtint: #faf5e9;
   --goldtintline: #ecdfbe;
@@ -125,18 +128,28 @@ html[data-skin="gold"] .v2-theme h3 {
   font-family: "Frank Ruhl Libre", var(--font-frank), serif;
 }
 
-/* gold gradient display text (KPI numbers). The BRAND gradient is far too
-   light for text on white (~2:1 at its highlight stop), so display text uses
-   the dedicated dark-gold gradient — every stop ≥ 4.89:1 on white.
-   `color: transparent` + `-webkit-text-fill-color: transparent` are both part
-   of the background-clip:text technique, not a specificity workaround. */
-html[data-skin="gold"] .gk-value {
-  background: var(--gold-text-grad);
-  -webkit-background-clip: text;
-  background-clip: text;
+/* gold gradient display text — the KPI numbers (.gk-value) and the coral
+   bg-clip-text totals (products list, receipt editor summary). The BRAND
+   gradient is far too light for text on white (~2:1 at its highlight stop), so
+   display text uses the dedicated dark-gold gradient — every stop ≥ 5.5:1 on
+   white. `color: transparent` + `-webkit-text-fill-color: transparent` are
+   both part of the background-clip:text technique, not a specificity
+   workaround. One recipe, two subjects; the per-selector extras below. */
+html[data-skin="gold"] .gk-value,
+html[data-skin="gold"] .bg-clip-text.from-orange-500.to-rose-500 {
+  background: var(--gold-text-grad) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
   color: transparent !important;
   -webkit-text-fill-color: transparent !important;
+}
+html[data-skin="gold"] .gk-value {
   font-family: var(--font-frank), "Frank Ruhl Libre", serif;
+}
+/* the coral totals sit on a `.from-orange-500.to-rose-500` CTA ramp rule that
+   also paints a drop shadow — text has no business carrying one */
+html[data-skin="gold"] .bg-clip-text.from-orange-500.to-rose-500 {
+  box-shadow: none !important;
 }
 
 /* ---------- ink remaps (warm the stock cool-grey stone scale) ---------- */
@@ -156,7 +169,6 @@ html[data-skin="gold"] .text-orange-600,
 html[data-skin="gold"] .text-orange-700,
 html[data-skin="gold"] .text-orange-800,
 html[data-skin="gold"] .text-orange-900,
-html[data-skin="gold"] .text-amber-500,
 html[data-skin="gold"] .text-amber-600,
 html[data-skin="gold"] .text-amber-700,
 html[data-skin="gold"] .text-amber-800,
@@ -177,8 +189,7 @@ html[data-skin="gold"] .bg-gradient-to-br.from-orange-50,
 html[data-skin="gold"] .bg-gradient-to-l.from-orange-50,
 html[data-skin="gold"] .bg-gradient-to-r.from-orange-50,
 html[data-skin="gold"] .bg-gradient-to-br.from-amber-50,
-html[data-skin="gold"] .bg-gradient-to-l.from-amber-50,
-html[data-skin="gold"] .bg-gradient-to-br.from-yellow-50 {
+html[data-skin="gold"] .bg-gradient-to-l.from-amber-50 {
   background: linear-gradient(160deg, #fdf8ec, #fffdf8) !important;
   border-color: var(--goldtintline) !important;
 }
@@ -219,7 +230,7 @@ html[data-skin="gold"] .bg-stone-200 { background-color: #e5dfd2 !important; }
 
 /* ---------- borders / rings ---------- */
 html[data-skin="gold"] .border-stone-100,
-html[data-skin="gold"] .border-stone-200 { border-color: var(--line) !important; }
+html[data-skin="gold"] .border-stone-200,
 html[data-skin="gold"] .border-orange-50,
 html[data-skin="gold"] .border-amber-50,
 html[data-skin="gold"] .border-orange-100,
@@ -279,15 +290,8 @@ html[data-skin="gold"] .bg-orange-400 { background-color: var(--g2) !important; 
 /* Disabled CTA is handled once, in CONTRAST REPAIRS below — the !important
    background above would otherwise keep it gold. */
 
-/* the summary total is bg-clip-text with the coral gradient → dark-gold gradient */
-html[data-skin="gold"] .bg-clip-text.from-orange-500.to-rose-500 {
-  background: var(--gold-text-grad) !important;
-  -webkit-background-clip: text !important;
-  background-clip: text !important;
-  color: transparent !important;
-  -webkit-text-fill-color: transparent;
-  box-shadow: none !important;
-}
+/* (the bg-clip-text summary totals are handled by the shared gradient-text
+   recipe near the top of this file) */
 
 /* ---------- coral icon tiles → brand gold tile + dark glyph ----------
    Only the coral family; emerald / violet / sky / rose tiles keep their stock
@@ -370,22 +374,36 @@ html[data-skin="gold"] [tabindex]:focus-visible {
   outline-color: var(--g3) !important;
 }
 
-/* ---------- hover surfaces (coral family only) ---------- */
-html[data-skin="gold"] [class~="hover:bg-orange-50"]:hover,
-html[data-skin="gold"] [class~="hover:bg-orange-50/30"]:hover,
-html[data-skin="gold"] [class~="hover:bg-orange-50/40"]:hover,
-html[data-skin="gold"] [class~="hover:bg-orange-50/50"]:hover,
-html[data-skin="gold"] [class~="hover:bg-orange-50/80"]:hover,
-html[data-skin="gold"] [class~="hover:bg-amber-50"]:hover,
-html[data-skin="gold"] [class~="hover:bg-amber-50/40"]:hover,
-html[data-skin="gold"] [class~="hover:bg-amber-50/60"]:hover { background-color: var(--goldtint) !important; }
-html[data-skin="gold"] [class~="hover:bg-orange-100"]:hover,
-html[data-skin="gold"] [class~="hover:bg-amber-100"]:hover,
-html[data-skin="gold"] [class~="hover:bg-amber-100/70"]:hover,
-html[data-skin="gold"] [class~="hover:bg-amber-200"]:hover { background-color: #f4ead2 !important; }
-html[data-skin="gold"] [class~="hover:bg-stone-50"]:hover { background-color: #f7f4ec !important; }
-html[data-skin="gold"] [class~="hover:bg-stone-100"]:hover { background-color: var(--icotile) !important; }
-html[data-skin="gold"] [class~="hover:bg-stone-200"]:hover { background-color: #e5dfd2 !important; }
+/* ---------- hover surfaces (coral family only) ----------
+   These target Tailwind's `hover:bg-*` UTILITY CLASS by name, so the `:` and
+   `/` have to be CSS-escaped. They used to be written `[class~="hover:bg-…"]`,
+   which is functionally identical but buckets under the `class` ATTRIBUTE —
+   every element in the document has one, so Blink evaluated all 15 against
+   every element and the attribute-bearing ancestor also defeated the ancestor
+   bloom filter. Measured on this app (headless Chrome, full style recalc
+   forced 240× per arm, interleaved A/B in one page load): the attribute form
+   cost +3.4 to +7.4 ms per full recalc on /documents (3,034 elements) and
+   +1.0 to +2.6 ms on /dashboard and /reports/custom — positive on every page
+   and every statistic (min / p25 / median). Class-bucketed is free.
+   Do NOT write these unscoped (`.hover\:bg-orange-50:hover { … }` on its own):
+   Tailwind v4 owns those class names and drops duplicate bare-class rules from
+   the emitted sheet. Under the `html[data-skin="gold"]` ancestor they survive
+   (verified in the built CSS chunk). */
+html[data-skin="gold"] .hover\:bg-orange-50:hover,
+html[data-skin="gold"] .hover\:bg-orange-50\/30:hover,
+html[data-skin="gold"] .hover\:bg-orange-50\/40:hover,
+html[data-skin="gold"] .hover\:bg-orange-50\/50:hover,
+html[data-skin="gold"] .hover\:bg-orange-50\/80:hover,
+html[data-skin="gold"] .hover\:bg-amber-50:hover,
+html[data-skin="gold"] .hover\:bg-amber-50\/40:hover,
+html[data-skin="gold"] .hover\:bg-amber-50\/60:hover { background-color: var(--goldtint) !important; }
+html[data-skin="gold"] .hover\:bg-orange-100:hover,
+html[data-skin="gold"] .hover\:bg-amber-100:hover,
+html[data-skin="gold"] .hover\:bg-amber-100\/70:hover,
+html[data-skin="gold"] .hover\:bg-amber-200:hover { background-color: #f4ead2 !important; }
+html[data-skin="gold"] .hover\:bg-stone-50:hover { background-color: #f7f4ec !important; }
+html[data-skin="gold"] .hover\:bg-stone-100:hover { background-color: var(--icotile) !important; }
+html[data-skin="gold"] .hover\:bg-stone-200:hover { background-color: #e5dfd2 !important; }
 
 /* ---------- sidebar ---------- */
 html[data-skin="gold"] aside {
@@ -445,12 +463,14 @@ html[data-skin="gold"] tbody tr[data-status="sent"]:hover { background: rgba(70,
 html[data-skin="gold"] tbody tr[data-status="draft"]:hover { background: rgba(140, 128, 105, 0.15) !important; }
 html[data-skin="gold"] tbody tr[data-status="cancelled"]:hover { background: rgba(166, 60, 40, 0.14) !important; }
 html[data-skin="gold"] tbody tr[data-status] td:first-child { color: var(--gold-text) !important; }
-/* reports data table header (loud coral gradient row) */
+/* Reports data table header (loud coral gradient row). The gold background and
+   the gold ink on its <th>s already come from the `.from-orange-500.to-rose-500`
+   CTA rules above (the <th>s carry no `bg-*` class, so the descendant rule
+   catches them) — the only thing left to say here is that a table header row is
+   not a button and must not carry the CTA's drop shadow. */
 html[data-skin="gold"] .gk-rtable thead tr.from-orange-500.to-rose-500 {
-  background: var(--gold-grad-cta) !important;
   box-shadow: none !important;
 }
-html[data-skin="gold"] .gk-rtable thead tr.from-orange-500 th { color: var(--gold-ink) !important; }
 html[data-skin="gold"] .gk-rtable tfoot td { border-color: var(--line) !important; }
 html[data-skin="gold"] .gk-etable thead { background: var(--goldtint) !important; }
 html[data-skin="gold"] .gk-etable thead th {

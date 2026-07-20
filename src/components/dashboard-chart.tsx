@@ -1,18 +1,17 @@
 "use client";
 
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from "recharts";
+import dynamic from "next/dynamic";
 import { useSkin } from "@/lib/skin";
 import type { InvoiceDocument, Expense } from "@/lib/types";
+
+/** Coral-only recharts bar chart — see dashboard-chart-coral.tsx for why it is
+ *  split out. `ssr: false` because it never renders for the default skin. */
+const CoralBarChart = dynamic(() => import("./dashboard-chart-coral"), {
+  ssr: false,
+  // same box the chart occupies, so nothing reflows while it loads
+  loading: () => <div style={{ width: "100%", height: 288 }} />,
+});
 
 interface Props {
   documents: InvoiceDocument[];
@@ -20,6 +19,38 @@ interface Props {
 }
 
 type MonthDatum = { month: string; הכנסות: number; הוצאות: number };
+
+/**
+ * The gold-skin chart palette, single-sourced. Every place a series is painted
+ * — legend pill, area fill, stroke, point, value label, hover tooltip key —
+ * reads from here. (Before this existed the tooltip's colour dots still carried
+ * the pre-redesign obsidian values, so the same series was drawn in three
+ * different colours depending on where you looked.)
+ */
+const SERIES = {
+  income: {
+    label: "הכנסות",
+    /** points, legend dot; also the light end of the stroke gradient's family */
+    dot: "#8f6f2a",
+    strokeFrom: "#a8853a",
+    strokeTo: "#7d6122",
+    areaTop: "rgba(143,111,42,.20)",
+    areaBottom: "rgba(190,158,78,0)",
+    /** halo / legend-dot ring */
+    glow: "rgba(143,111,42,.20)",
+    valueText: "#241e16",
+  },
+  expense: {
+    label: "הוצאות",
+    dot: "#b8512f",
+    strokeFrom: "#b8512f",
+    strokeTo: "#b8512f",
+    areaTop: "rgba(184,81,47,.14)",
+    areaBottom: "rgba(184,81,47,0)",
+    glow: "rgba(184,81,47,.20)",
+    valueText: "#8f3d20",
+  },
+} as const;
 
 /** Compact ₪k label for value-labels above the income bars (gold skin).
  * Typed loosely to match recharts' LabelFormatter (string | number | undefined). */
@@ -39,15 +70,6 @@ const ils = new Intl.NumberFormat("he-IL", {
 export function DashboardChart({ documents, expenses }: Props) {
   const { skin } = useSkin();
   const gold = skin === "gold";
-
-  // Coral-skin recharts palette. The gold skin returns GoldLineChart before the
-  // recharts branch below, so these are only ever read on coral.
-  const gridStroke = "#fed7aa";
-  const axisStroke = "#78716c";
-  const incomeFill = "#10b981";
-  const expenseFill = "#f43f5e";
-  const tooltipBg = "#fffaf5";
-  const tooltipBorder = "1px solid #fed7aa";
 
   const data = useMemo<MonthDatum[]>(() => {
     const now = new Date();
@@ -97,40 +119,8 @@ export function DashboardChart({ documents, expenses }: Props) {
     return <GoldLineChart data={data} />;
   }
 
-  // Coral (default) skin — unchanged recharts bar chart.
-  return (
-    <div style={{ width: "100%", height: 288 }}>
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={true} />
-          <XAxis dataKey="month" stroke={axisStroke} fontSize={12} />
-          <YAxis
-            stroke={axisStroke}
-            fontSize={12}
-            tickFormatter={(v) => `₪${(v / 1000).toFixed(0)}k`}
-          />
-          <Tooltip
-            contentStyle={{
-              backgroundColor: tooltipBg,
-              border: tooltipBorder,
-              borderRadius: "12px",
-              direction: "rtl",
-            }}
-            formatter={(value) =>
-              new Intl.NumberFormat("he-IL", {
-                style: "currency",
-                currency: "ILS",
-                maximumFractionDigits: 0,
-              }).format(Number(value) || 0)
-            }
-          />
-          <Legend wrapperStyle={{ direction: "rtl" }} />
-          <Bar dataKey="הכנסות" fill={incomeFill} radius={[8, 8, 0, 0]} />
-          <Bar dataKey="הוצאות" fill={expenseFill} radius={[8, 8, 0, 0]} />
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
-  );
+  // Coral (default-off) skin — unchanged recharts bar chart, lazily fetched.
+  return <CoralBarChart data={data} />;
 }
 
 /* ------------------------------------------------------------------ */
@@ -263,34 +253,23 @@ function GoldLineChart({ data }: { data: MonthDatum[] }) {
     <div style={{ width: "100%", height: 360 }} className="flex flex-col gk-line-chart">
       {/* legend pills (RTL start = right) */}
       <div className="flex gap-2.5 justify-start mb-1" dir="rtl">
-        <span
-          className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[13px] font-medium"
-          style={{
-            background: "rgba(190,158,78,.10)",
-            border: "1px solid rgba(190,158,78,.32)",
-            color: "#5a5245",
-          }}
-        >
+        {Object.entries(SERIES).map(([key, s]) => (
           <span
-            className="inline-block w-2 h-2 rounded-full"
-            style={{ background: "#8f6f2a", boxShadow: "0 0 0 2px rgba(143,111,42,.20)" }}
-          />
-          הכנסות
-        </span>
-        <span
-          className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[13px] font-medium"
-          style={{
-            background: "rgba(190,158,78,.10)",
-            border: "1px solid rgba(190,158,78,.32)",
-            color: "#5a5245",
-          }}
-        >
-          <span
-            className="inline-block w-2 h-2 rounded-full"
-            style={{ background: "#b8512f", boxShadow: "0 0 0 2px rgba(184,81,47,.20)" }}
-          />
-          הוצאות
-        </span>
+            key={key}
+            className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[13px] font-medium"
+            style={{
+              background: "rgba(190,158,78,.10)",
+              border: "1px solid rgba(190,158,78,.32)",
+              color: "#5a5245",
+            }}
+          >
+            <span
+              className="inline-block w-2 h-2 rounded-full"
+              style={{ background: s.dot, boxShadow: `0 0 0 2px ${s.glow}` }}
+            />
+            {s.label}
+          </span>
+        ))}
       </div>
 
       <div ref={wrapRef} className="relative flex-1">
@@ -317,16 +296,16 @@ function GoldLineChart({ data }: { data: MonthDatum[] }) {
           >
             <defs>
               <linearGradient id="gcIncLine" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0" stopColor="#a8853a" />
-                <stop offset="1" stopColor="#7d6122" />
+                <stop offset="0" stopColor={SERIES.income.strokeFrom} />
+                <stop offset="1" stopColor={SERIES.income.strokeTo} />
               </linearGradient>
               <linearGradient id="gcIncFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stopColor="rgba(143,111,42,.20)" />
-                <stop offset="1" stopColor="rgba(190,158,78,0)" />
+                <stop offset="0" stopColor={SERIES.income.areaTop} />
+                <stop offset="1" stopColor={SERIES.income.areaBottom} />
               </linearGradient>
               <linearGradient id="gcExpFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stopColor="rgba(184,81,47,.14)" />
-                <stop offset="1" stopColor="rgba(184,81,47,0)" />
+                <stop offset="0" stopColor={SERIES.expense.areaTop} />
+                <stop offset="1" stopColor={SERIES.expense.areaBottom} />
               </linearGradient>
               {/* fade the right edge so the closed-area drop has no hard vertical seam */}
               <linearGradient id="gcFadeRight" x1="0" y1="0" x2="1" y2="0">
@@ -419,7 +398,7 @@ function GoldLineChart({ data }: { data: MonthDatum[] }) {
             <path
               d={exp.d}
               fill="none"
-              stroke="#b8512f"
+              stroke={SERIES.expense.dot}
               strokeWidth={2.5}
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -462,13 +441,13 @@ function GoldLineChart({ data }: { data: MonthDatum[] }) {
               const hot = hover === i;
               return (
                 <g key={`e${i}`}>
-                  <circle cx={x} cy={y} r={hot ? 4.4 : 3.6} fill="#b8512f" />
+                  <circle cx={x} cy={y} r={hot ? 4.4 : 3.6} fill={SERIES.expense.dot} />
                   <circle cx={x} cy={y} r={1.5} fill="#ffffff" />
                   {label && (
                     <text
                       x={x}
                       y={ly}
-                      fill="#8f3d20"
+                      fill={SERIES.expense.valueText}
                       fontSize={13}
                       fontWeight={600}
                       textAnchor="middle"
@@ -490,13 +469,13 @@ function GoldLineChart({ data }: { data: MonthDatum[] }) {
                 <g key={`i${i}`}>
                   {last ? (
                     <>
-                      <circle cx={x} cy={y} r={8} fill="rgba(143,111,42,.20)" filter="url(#gcHalo)" />
-                      <circle cx={x} cy={y} r={hot ? 6 : 5.2} fill="#8f6f2a" />
+                      <circle cx={x} cy={y} r={8} fill={SERIES.income.glow} filter="url(#gcHalo)" />
+                      <circle cx={x} cy={y} r={hot ? 6 : 5.2} fill={SERIES.income.dot} />
                       <circle cx={x} cy={y} r={2.2} fill="#ffffff" />
                     </>
                   ) : (
                     <>
-                      <circle cx={x} cy={y} r={hot ? 4.4 : 3.6} fill="#8f6f2a" />
+                      <circle cx={x} cy={y} r={hot ? 4.4 : 3.6} fill={SERIES.income.dot} />
                       <circle cx={x} cy={y} r={1.5} fill="#ffffff" />
                     </>
                   )}
@@ -504,7 +483,7 @@ function GoldLineChart({ data }: { data: MonthDatum[] }) {
                     <text
                       x={x}
                       y={y - 13}
-                      fill="#241e16"
+                      fill={SERIES.income.valueText}
                       fontSize={13.5}
                       fontWeight={700}
                       textAnchor="middle"
@@ -537,13 +516,21 @@ function GoldLineChart({ data }: { data: MonthDatum[] }) {
             <div className="font-semibold mb-1" style={{ color: "#e7d9ab" }}>
               {months[hover]}
             </div>
+            {/* The panel stays dark on purpose (it floats over the plot); only
+                the colour keys must match the lines they label. */}
             <div className="flex items-center gap-1.5">
-              <span className="inline-block w-2 h-2 rounded-full" style={{ background: "#cdb477" }} />
-              הכנסות: {ils.format(income[hover] || 0)}
+              <span
+                className="inline-block w-2 h-2 rounded-full"
+                style={{ background: SERIES.income.dot }}
+              />
+              {SERIES.income.label}: {ils.format(income[hover] || 0)}
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="inline-block w-2 h-2 rounded-full" style={{ background: "#e39b7e" }} />
-              הוצאות: {ils.format(expenses[hover] || 0)}
+              <span
+                className="inline-block w-2 h-2 rounded-full"
+                style={{ background: SERIES.expense.dot }}
+              />
+              {SERIES.expense.label}: {ils.format(expenses[hover] || 0)}
             </div>
           </div>
         )}
