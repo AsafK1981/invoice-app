@@ -48,6 +48,7 @@ import {
 } from "@/lib/types";
 import { DocumentPreview, type PreviewClient } from "./document-preview";
 import { FormField } from "./ui/form-field";
+import { NumberInput } from "./number-input";
 import {
   loadDraft,
   saveDraft,
@@ -1333,12 +1334,12 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
 
               {currency !== "ILS" && (
                 <FormField label={`שער ${currency}→₪${rateLoading ? " …" : ""}`}>
-                  <input
-                    type="number"
+                  <NumberInput
                     step="0.0001"
                     value={rate}
-                    onChange={(e) => setRate(Number(e.target.value) || 0)}
+                    onValueChange={setRate}
                     className="input-warm font-mono"
+                    aria-label={`שער ${currency}→₪`}
                   />
                   <span className="text-xs text-stone-500 block mt-1">
                     ≈ {formatMoney(round2(total * rate), "ILS")}
@@ -1480,13 +1481,13 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                 </div>
                 <div className="col-span-6 md:col-span-2">
                   {idx === 0 && <label className="text-xs font-semibold text-stone-700 mb-1 block">כמות</label>}
-                  <input
-                    type="number"
+                  <NumberInput
                     min="0"
                     step="0.5"
                     value={item.quantity}
-                    onChange={(e) => updateItem(item.id, { quantity: parseFloat(e.target.value) || 0 })}
+                    onValueChange={(v) => updateItem(item.id, { quantity: v })}
                     className="input-warm"
+                    placeholder="1"
                     aria-label="כמות"
                   />
                 </div>
@@ -1496,13 +1497,13 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                       מחיר יחידה
                     </label>
                   )}
-                  <input
-                    type="number"
+                  <NumberInput
                     min="0"
                     step="0.01"
                     value={item.unitPrice}
-                    onChange={(e) => updateItem(item.id, { unitPrice: parseFloat(e.target.value) || 0 })}
+                    onValueChange={(v) => updateItem(item.id, { unitPrice: v })}
                     className="input-warm"
+                    placeholder="0"
                     aria-label="מחיר יחידה"
                   />
                 </div>
