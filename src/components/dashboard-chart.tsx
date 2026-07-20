@@ -266,28 +266,28 @@ function GoldLineChart({ data }: { data: MonthDatum[] }) {
         <span
           className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[13px] font-medium"
           style={{
-            background: "rgba(190,158,78,.09)",
-            border: "1px solid rgba(190,158,78,.14)",
-            color: "#d6d0c2",
+            background: "rgba(190,158,78,.10)",
+            border: "1px solid rgba(190,158,78,.32)",
+            color: "#5a5245",
           }}
         >
           <span
             className="inline-block w-2 h-2 rounded-full"
-            style={{ background: "#cdb477", boxShadow: "0 0 0 2px rgba(190,158,78,.18)" }}
+            style={{ background: "#8f6f2a", boxShadow: "0 0 0 2px rgba(143,111,42,.20)" }}
           />
           הכנסות
         </span>
         <span
           className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[13px] font-medium"
           style={{
-            background: "rgba(190,158,78,.09)",
-            border: "1px solid rgba(190,158,78,.14)",
-            color: "#d6d0c2",
+            background: "rgba(190,158,78,.10)",
+            border: "1px solid rgba(190,158,78,.32)",
+            color: "#5a5245",
           }}
         >
           <span
             className="inline-block w-2 h-2 rounded-full"
-            style={{ background: "#e39b7e", boxShadow: "0 0 0 2px rgba(215,140,105,.18)" }}
+            style={{ background: "#b8512f", boxShadow: "0 0 0 2px rgba(184,81,47,.20)" }}
           />
           הוצאות
         </span>
@@ -317,16 +317,16 @@ function GoldLineChart({ data }: { data: MonthDatum[] }) {
           >
             <defs>
               <linearGradient id="gcIncLine" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0" stopColor="#D8BE77" />
-                <stop offset="1" stopColor="#BE9E4E" />
+                <stop offset="0" stopColor="#a8853a" />
+                <stop offset="1" stopColor="#7d6122" />
               </linearGradient>
               <linearGradient id="gcIncFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stopColor="rgba(190,158,78,.22)" />
+                <stop offset="0" stopColor="rgba(143,111,42,.20)" />
                 <stop offset="1" stopColor="rgba(190,158,78,0)" />
               </linearGradient>
               <linearGradient id="gcExpFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stopColor="rgba(215,140,105,.16)" />
-                <stop offset="1" stopColor="rgba(215,140,105,0)" />
+                <stop offset="0" stopColor="rgba(184,81,47,.14)" />
+                <stop offset="1" stopColor="rgba(184,81,47,0)" />
               </linearGradient>
               {/* fade the right edge so the closed-area drop has no hard vertical seam */}
               <linearGradient id="gcFadeRight" x1="0" y1="0" x2="1" y2="0">
@@ -356,14 +356,14 @@ function GoldLineChart({ data }: { data: MonthDatum[] }) {
                     y1={y}
                     x2={w - padR}
                     y2={y}
-                    stroke="rgba(190,158,78,.08)"
+                    stroke="rgba(60,45,20,.10)"
                     strokeWidth={1}
                   />
                   {v !== yMax && (
                     <text
                       x={w - padR + 12}
                       y={y + 4}
-                      fill="#A79F90"
+                      fill="#6f6757"
                       fontSize={12}
                       textAnchor="start"
                     >
@@ -391,7 +391,7 @@ function GoldLineChart({ data }: { data: MonthDatum[] }) {
                   y1={yHi + gap}
                   x2={xAt(i)}
                   y2={yLo - gap}
-                  stroke={hot ? "rgba(190,158,78,.32)" : "rgba(190,158,78,.18)"}
+                  stroke={hot ? "rgba(60,45,20,.28)" : "rgba(60,45,20,.14)"}
                   strokeWidth={1}
                   strokeDasharray="2 4"
                 />
@@ -409,7 +409,7 @@ function GoldLineChart({ data }: { data: MonthDatum[] }) {
                 y1={padT - 8}
                 x2={xAt(hover)}
                 y2={baseY}
-                stroke="rgba(190,158,78,.22)"
+                stroke="rgba(60,45,20,.18)"
                 strokeWidth={1}
                 strokeDasharray="3 3"
               />
@@ -419,7 +419,7 @@ function GoldLineChart({ data }: { data: MonthDatum[] }) {
             <path
               d={exp.d}
               fill="none"
-              stroke="#E39B7E"
+              stroke="#b8512f"
               strokeWidth={2.5}
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -439,7 +439,7 @@ function GoldLineChart({ data }: { data: MonthDatum[] }) {
                 key={`m${i}`}
                 x={xAt(i)}
                 y={h - 8}
-                fill="#A79F90"
+                fill="#6f6757"
                 fontSize={13}
                 textAnchor="middle"
               >
@@ -462,13 +462,13 @@ function GoldLineChart({ data }: { data: MonthDatum[] }) {
               const hot = hover === i;
               return (
                 <g key={`e${i}`}>
-                  <circle cx={x} cy={y} r={hot ? 4.4 : 3.6} fill="#E39B7E" />
-                  <circle cx={x} cy={y} r={1.5} fill="#171106" />
+                  <circle cx={x} cy={y} r={hot ? 4.4 : 3.6} fill="#b8512f" />
+                  <circle cx={x} cy={y} r={1.5} fill="#ffffff" />
                   {label && (
                     <text
                       x={x}
                       y={ly}
-                      fill="#E8B29B"
+                      fill="#8f3d20"
                       fontSize={13}
                       fontWeight={600}
                       textAnchor="middle"
@@ -490,21 +490,21 @@ function GoldLineChart({ data }: { data: MonthDatum[] }) {
                 <g key={`i${i}`}>
                   {last ? (
                     <>
-                      <circle cx={x} cy={y} r={8} fill="rgba(190,158,78,.18)" filter="url(#gcHalo)" />
-                      <circle cx={x} cy={y} r={hot ? 6 : 5.2} fill="#D8BE77" />
-                      <circle cx={x} cy={y} r={2.2} fill="#171106" />
+                      <circle cx={x} cy={y} r={8} fill="rgba(143,111,42,.20)" filter="url(#gcHalo)" />
+                      <circle cx={x} cy={y} r={hot ? 6 : 5.2} fill="#8f6f2a" />
+                      <circle cx={x} cy={y} r={2.2} fill="#ffffff" />
                     </>
                   ) : (
                     <>
-                      <circle cx={x} cy={y} r={hot ? 4.4 : 3.6} fill="#D8BE77" />
-                      <circle cx={x} cy={y} r={1.5} fill="#171106" />
+                      <circle cx={x} cy={y} r={hot ? 4.4 : 3.6} fill="#8f6f2a" />
+                      <circle cx={x} cy={y} r={1.5} fill="#ffffff" />
                     </>
                   )}
                   {label && (
                     <text
                       x={x}
                       y={y - 13}
-                      fill="#D6D0C2"
+                      fill="#241e16"
                       fontSize={13.5}
                       fontWeight={700}
                       textAnchor="middle"

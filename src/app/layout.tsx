@@ -50,7 +50,13 @@ const assistant = Assistant({
 // user lands on gold. Internal escape hatch: ?skin=coral forces (and persists)
 // the classic coral look; ?skin=gold flips back. The string is hardcoded (no
 // user input flows into it), so it's safe.
-const themeInitScript = `(function(){try{var d=document.documentElement;var p=new URLSearchParams(location.search);var qs=p.get("skin");if(!localStorage.getItem("invoice-app:skin-default-gold")){localStorage.removeItem("invoice-app:skin");localStorage.setItem("invoice-app:skin-default-gold","1");}if(qs==="gold"||qs==="coral"){localStorage.setItem("invoice-app:skin",qs);}var s=localStorage.getItem("invoice-app:skin");if(s==="coral"){d.removeAttribute("data-skin");}else{d.setAttribute("data-skin","gold");}var t=localStorage.getItem("invoice-app:theme");if(t==="dark"){d.classList.add("dark");}}catch(e){}})();`;
+// NOTE (2026-07-20): the coral-era `invoice-app:theme=dark` opt-in is no
+// longer applied. Its UI toggle was removed long ago, but a value left in a
+// beta tester's localStorage would still add `html.dark` — and the html.dark
+// utility block in globals.css INVERTS the palette, which now collides head-on
+// with the light warm skin. Nothing sets `.dark` any more, so that block is
+// dead code kept only for reference.
+const themeInitScript = `(function(){try{var d=document.documentElement;var p=new URLSearchParams(location.search);var qs=p.get("skin");if(!localStorage.getItem("invoice-app:skin-default-gold")){localStorage.removeItem("invoice-app:skin");localStorage.setItem("invoice-app:skin-default-gold","1");}if(qs==="gold"||qs==="coral"){localStorage.setItem("invoice-app:skin",qs);}var s=localStorage.getItem("invoice-app:skin");if(s==="coral"){d.removeAttribute("data-skin");}else{d.setAttribute("data-skin","gold");}d.classList.remove("dark");}catch(e){}})();`;
 
 const SITE_URL = "https://mysuperfriendlyinvoiceapp.vercel.app";
 
@@ -102,8 +108,8 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  // Obsidian to match the black-gold default skin (was coral #f97316).
-  themeColor: "#0d0a07",
+  // Warm sand — matches the light app shell's page background.
+  themeColor: "#f7f4ed",
 };
 
 export default function RootLayout({
