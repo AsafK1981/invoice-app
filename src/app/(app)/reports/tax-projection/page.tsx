@@ -15,6 +15,7 @@ import { useDocuments } from "@/lib/document-store";
 import { useExpenses } from "@/lib/expense-store";
 import { useBusiness } from "@/lib/business-store";
 import { formatCurrency } from "@/lib/format";
+import { NumberInput } from "@/components/number-input";
 import {
   projectAnnualTax,
   TAX_CREDIT_DEFAULT_POINTS,
@@ -149,13 +150,12 @@ export default function TaxProjectionPage() {
           <h2 className="font-bold text-stone-900 text-lg">חובת מס לתשלום</h2>
           <label className="text-xs text-stone-700 flex items-center gap-2">
             נקודות זיכוי:
-            <input
-              type="number"
+            <NumberInput
               step={0.25}
               min={0}
               max={20}
               value={points}
-              onChange={(e) => setPoints(parseFloat(e.target.value) || 0)}
+              onValueChange={setPoints}
               className="w-20 px-2 py-1 rounded-lg border border-stone-300 bg-white text-sm"
             />
           </label>
