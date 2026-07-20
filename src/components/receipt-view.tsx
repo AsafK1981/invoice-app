@@ -40,7 +40,7 @@ export function ReceiptView({ business, client, document: doc, copy = false }: P
   const bodyClient = toBodyClient(client, doc.clientName);
 
   return (
-    <div className="receipt-view mx-auto max-w-[210mm] bg-white p-6 sm:p-12 shadow-lg print:shadow-none print:p-8">
+    <div className="receipt-view doc-paper is-fluid mx-auto max-w-[210mm] shadow-lg print:shadow-none">
       <DocumentBody
         business={business}
         client={bodyClient}

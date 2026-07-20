@@ -1,0 +1,518 @@
+/* =====================================================================
+   DOCUMENT PAPER — the printable sheet (approved 2026-07-19 redesign).
+
+   Scope: everything here is scoped under `.doc-paper` (a class the three
+   paper wrappers add next to `.receipt-view`): the /view public page, the
+   owner's document page, the editor live-preview and — most importantly —
+   the server PDF (headless Chrome navigates to /view and prints it).
+
+   WHY ITS OWN STYLESHEET INSTEAD OF TAILWIND UTILITIES
+   The gold skin (default for everyone) remaps Tailwind utilities app-wide
+   with `!important` — `.text-stone-700`, `.bg-white`, `table thead th`,
+   even the root font-size. The old paper used those utilities and needed a
+   long "re-assert every utility" block in skin-gold.css to stay printable.
+   By giving the sheet its own vocabulary of `.doc-*` classes with explicit
+   colours and PX sizes, the paper is immune to every skin/dark/root-size
+   remap by construction. Only the bare element selectors the gold skin
+   targets (`table thead th`, `tbody td`) can still reach in, so those few
+   rules carry `!important` + higher specificity here.
+
+   This file is imported LAST in layout.tsx so it wins ties.
+   ===================================================================== */
+
+.doc-paper {
+  /* palette — warm near-black ink, thin antique-gold accents */
+  --d-ink: #211c15;
+  --d-ink2: #514a3d;
+  --d-soft: #6f6857;
+  --d-gold: #8a6d26;
+  --d-gold-line: #c9ab63;
+  --d-gold-faint: #e7dcbf;
+  --d-card: #ffffff;
+  --d-cardline: #e8e1d0;
+  --d-canvas: #efece4;
+  --d-grad: linear-gradient(177deg, #d8be77 0%, #be9e4e 42%, #8f6f2a 78%, #cbb061 100%);
+
+  position: relative;
+  background: var(--d-canvas) !important;
+  color: var(--d-ink) !important;
+  font-family: var(--font-heebo), "Heebo", system-ui, sans-serif !important;
+  /* 68px ≈ 18mm — matches the approved mockup's side margin at 96dpi, and
+     lines the on-screen 794px (=210mm) sheet up with the printed one. */
+  padding: 74px 68px 44px !important;
+  border-radius: 0 !important;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* hairline of gold along the top edge of the sheet */
+.doc-paper::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 4px;
+  background: var(--d-grad);
+}
+
+.doc-serif {
+  font-family: var(--font-frank), "Frank Ruhl Libre", Georgia, serif;
+}
+.doc-tab {
+  font-variant-numeric: tabular-nums;
+}
+.doc-mono {
+  direction: ltr;
+  unicode-bidi: isolate;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+/* ---------- the soft card each zone sits in ---------- */
+.doc-paper .doc-card {
+  background: var(--d-card);
+  border: 1px solid var(--d-cardline);
+  border-radius: 16px;
+  box-shadow: 0 1px 2px rgba(40, 30, 10, 0.03);
+  break-inside: avoid;
+}
+
+/* gold micro-label with a fading rule, used as every zone's caption */
+.doc-paper .doc-glabel {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--d-gold);
+  text-transform: uppercase;
+}
+.doc-paper .doc-glabel::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to left, var(--d-gold-faint), transparent);
+}
+
+/* ---------- header: business identity ↔ document identity ---------- */
+.doc-paper .doc-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  padding: 24px 26px;
+  margin-bottom: 12px;
+}
+.doc-paper .doc-biz {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  min-width: 0;
+}
+.doc-paper .doc-logo {
+  width: 74px;
+  height: 74px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+.doc-paper .doc-name {
+  font-size: 25px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.12;
+  color: var(--d-ink);
+}
+.doc-paper .doc-bizline {
+  font-size: 12.5px;
+  color: var(--d-ink2);
+  margin-top: 6px;
+  line-height: 1.6;
+}
+.doc-paper .doc-ident {
+  text-align: left;
+  flex-shrink: 0;
+}
+.doc-paper .doc-orig {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  color: var(--d-soft);
+}
+.doc-paper .doc-badge {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 5px 15px;
+  border-radius: 3px;
+  border: 1px solid var(--d-gold-line);
+  color: var(--d-gold);
+  font-weight: 600;
+  font-size: 13.5px;
+  white-space: nowrap;
+}
+/* a זיכוי stays visually distinct from an invoice — same language, rose ink */
+.doc-paper .doc-badge.is-credit {
+  border-color: #d0a49a;
+  color: #94402f;
+}
+.doc-paper .doc-num {
+  font-size: 30px;
+  font-weight: 700;
+  margin-top: 8px;
+  line-height: 1;
+}
+.doc-paper .doc-date {
+  font-size: 12.5px;
+  color: var(--d-ink2);
+  margin-top: 5px;
+}
+
+/* ---------- meta strip: allocation · client · subject ---------- */
+.doc-paper .doc-strip {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+  align-items: stretch;
+}
+.doc-paper .doc-strip > * {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.doc-paper .doc-mini {
+  padding: 15px 18px;
+}
+.doc-paper .doc-mini-v {
+  font-size: 16px;
+  font-weight: 700;
+  margin-top: 8px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.doc-paper .doc-mini-v.is-gold {
+  color: var(--d-gold);
+}
+.doc-paper .doc-mini-v.is-reg {
+  font-size: 13.5px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+.doc-paper .doc-mini-sub {
+  font-size: 11.5px;
+  color: var(--d-ink2);
+  line-height: 1.55;
+  margin-top: 3px;
+  overflow-wrap: anywhere;
+}
+.doc-paper .doc-mini-v.is-empty {
+  color: var(--d-soft);
+  font-weight: 400;
+}
+
+/* ---------- line items ---------- */
+.doc-paper .doc-items {
+  padding: 8px 20px 14px;
+  margin-bottom: 12px;
+}
+.doc-paper .doc-items .doc-glabel {
+  margin: 13px 0 2px;
+}
+.doc-paper .doc-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.doc-paper .doc-table thead {
+  background: transparent !important;
+}
+.doc-paper .doc-table th {
+  font-size: 10.5px !important;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--d-soft) !important;
+  text-transform: uppercase;
+  padding: 11px 2px;
+  border-bottom: 1.5px solid var(--d-gold-line) !important;
+  background: transparent !important;
+}
+.doc-paper .doc-table th.c-desc {
+  text-align: right;
+}
+.doc-paper .doc-table th.c-qty {
+  text-align: center;
+  width: 62px;
+}
+.doc-paper .doc-table th.c-num {
+  text-align: left;
+  width: 116px;
+}
+.doc-paper .doc-table td {
+  padding: 13px 2px;
+  font-size: 14px;
+  color: var(--d-ink) !important;
+  border: 0 !important;
+  border-bottom: 1px solid #f2eee4 !important;
+  vertical-align: top;
+}
+.doc-paper .doc-table tbody tr:last-child td {
+  border-bottom: 0 !important;
+}
+.doc-paper .doc-table td.c-desc {
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+.doc-paper .doc-table td.c-qty {
+  text-align: center;
+  color: var(--d-ink2) !important;
+}
+.doc-paper .doc-table td.c-num {
+  text-align: left;
+  color: var(--d-ink2) !important;
+}
+.doc-paper .doc-table td.c-total {
+  text-align: left;
+  font-weight: 600;
+  color: var(--d-ink) !important;
+}
+.doc-paper .doc-table td.c-empty {
+  text-align: center;
+  color: var(--d-soft) !important;
+  padding: 26px 2px;
+  font-size: 13px;
+}
+
+/* ---------- the money story: breakdown ↔ actually-paid ---------- */
+.doc-paper .doc-money {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+  align-items: stretch;
+}
+.doc-paper .doc-breakdown {
+  flex: 1.1 1 0;
+  padding: 18px 22px;
+  min-width: 0;
+}
+/* no withholding → the breakdown alone, pushed to the inline-end (left in RTL)
+   exactly like the totals column it replaces */
+.doc-paper .doc-money.is-solo .doc-breakdown {
+  flex: 0 1 62%;
+  margin-inline-start: auto;
+}
+.doc-paper .doc-brow {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 13.5px;
+  padding: 6px 0;
+  color: var(--d-ink2);
+}
+.doc-paper .doc-brow > span:last-child {
+  color: var(--d-ink);
+  font-weight: 500;
+  white-space: nowrap;
+}
+.doc-paper .doc-brow.is-grand {
+  border-top: 2px solid var(--d-ink);
+  margin-top: 6px;
+  padding-top: 12px;
+}
+.doc-paper .doc-brow.is-grand > span {
+  font-weight: 700;
+}
+.doc-paper .doc-brow.is-grand .doc-grand-val {
+  font-size: 21px;
+}
+.doc-paper .doc-brow.is-deduct > span:last-child {
+  color: var(--d-gold);
+  font-weight: 600;
+}
+.doc-paper .doc-brow.is-discount > span:last-child {
+  color: #3f6f56;
+}
+.doc-paper .doc-note-line {
+  font-size: 12px;
+  color: var(--d-soft);
+  padding-top: 6px;
+  line-height: 1.5;
+}
+.doc-paper .doc-paid {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 18px 22px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border: 1px solid var(--d-gold-line);
+  border-radius: 16px;
+  background: linear-gradient(160deg, #fdfaf1, #faf4e6);
+  break-inside: avoid;
+}
+.doc-paper .doc-paid-top {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  color: var(--d-gold);
+  text-transform: uppercase;
+}
+.doc-paper .doc-paid-amount {
+  font-size: 34px;
+  font-weight: 700;
+  margin-top: 6px;
+  letter-spacing: -0.01em;
+  line-height: 1.05;
+}
+.doc-paper .doc-paid-note {
+  font-size: 12px;
+  color: var(--d-soft);
+  margin-top: 6px;
+  line-height: 1.5;
+}
+
+/* ---------- payment / bank / notes cards ---------- */
+/* Two columns, so a lone card takes half the sheet instead of stretching into
+   an empty band — and a third wraps to a half-width slot on the next row. */
+.doc-paper .doc-infos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+  align-items: start;
+}
+.doc-paper .doc-info {
+  min-width: 0;
+  padding: 16px 20px;
+}
+.doc-paper .doc-info-body {
+  font-size: 13.5px;
+  margin-top: 9px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.doc-paper .doc-dim {
+  color: var(--d-soft);
+}
+
+/* ---------- footer ---------- */
+.doc-paper .doc-foot {
+  text-align: center;
+  padding: 18px 0 0;
+}
+.doc-paper .doc-foot-sig {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--d-soft);
+}
+.doc-paper .doc-foot-brand {
+  font-size: 10px;
+  color: #6b6353;
+  margin-top: 5px;
+}
+
+/* ---------- narrow screens ----------
+   Only the FLUID sheet (the public /view page, which really is as wide as the
+   phone) collapses. The editor's live preview renders at a fixed 794px and is
+   CSS-scaled down, so it must keep the exact print layout even on a phone —
+   hence `.is-fluid` rather than a bare viewport media query. */
+@media (max-width: 700px) {
+  .doc-paper.is-fluid {
+    padding: 34px 18px 26px !important;
+  }
+  .doc-paper.is-fluid .doc-head {
+    flex-direction: column;
+    padding: 18px;
+  }
+  .doc-paper.is-fluid .doc-ident {
+    text-align: right;
+  }
+  .doc-paper.is-fluid .doc-strip,
+  .doc-paper.is-fluid .doc-money {
+    flex-direction: column;
+  }
+  .doc-paper.is-fluid .doc-infos {
+    grid-template-columns: 1fr;
+  }
+  /* In a COLUMN flex container `flex-basis` sizes the HEIGHT — the desktop
+     bases would stretch each card into a tall empty band. Reset them, and drop
+     the auto inline-start margin that was suppressing the cross-axis stretch. */
+  .doc-paper.is-fluid .doc-strip > *,
+  .doc-paper.is-fluid .doc-breakdown,
+  .doc-paper.is-fluid .doc-paid {
+    flex: 0 0 auto;
+  }
+  .doc-paper.is-fluid .doc-money.is-solo .doc-breakdown {
+    margin-inline-start: 0;
+  }
+  .doc-paper.is-fluid .doc-name {
+    font-size: 22px;
+  }
+  .doc-paper.is-fluid .doc-num {
+    font-size: 26px;
+  }
+  .doc-paper.is-fluid .doc-paid-amount {
+    font-size: 30px;
+  }
+  .doc-paper.is-fluid .doc-items {
+    padding: 6px 14px 12px;
+  }
+  .doc-paper.is-fluid .doc-table th.c-num {
+    width: 74px;
+  }
+  .doc-paper.is-fluid .doc-table th.c-qty {
+    width: 42px;
+  }
+  .doc-paper.is-fluid .doc-table td,
+  .doc-paper.is-fluid .doc-table th {
+    font-size: 12px;
+  }
+  .doc-paper.is-fluid .doc-table td.c-num,
+  .doc-paper.is-fluid .doc-table th.c-num {
+    padding-inline-start: 6px;
+  }
+}
+
+/* ---------- print / PDF ----------
+   globals.css zeroes .receipt-view padding for print and @page adds 15mm
+   margins. Add back ~3mm so the cards don't touch the printable edge and the
+   sheet keeps the mockup's ≈18mm optical margin. This file is imported after
+   globals.css, so the later rule wins the !important tie. */
+@media print {
+  /* Kill every page-chrome surface around the sheet. The gold skin paints the
+     /view wrapper (and html/body) obsidian, and the PDF route prints with
+     printBackground:true — without this the PDF came out with a black frame
+     around the paper. Re-asserted here (last stylesheet) so it beats the skin's
+     own !important background rules. */
+  html,
+  body,
+  .doc-print-host {
+    background: #ffffff !important;
+    background-image: none !important;
+  }
+  .doc-print-host {
+    padding: 0 !important;
+    margin: 0 !important;
+    min-height: 0 !important;
+  }
+  .doc-paper {
+    padding: 5mm 3mm !important;
+    /* fill the first printed page so the sheet reads as paper, not as a card
+       floating on white (A4 297mm − 2×15mm @page margin) */
+    min-height: 267mm;
+    background: var(--d-canvas) !important;
+    box-shadow: none !important;
+    max-width: none !important;
+    margin: 0 !important;
+  }
+  .doc-paper::before {
+    top: 0;
+  }
+  .doc-paper .doc-card,
+  .doc-paper .doc-paid,
+  .doc-paper .doc-money,
+  .doc-paper .doc-strip,
+  .doc-paper .doc-foot {
+    break-inside: avoid;
+  }
+}

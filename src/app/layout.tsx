@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Heebo, Frank_Ruhl_Libre, Assistant } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { SwRegister } from "@/components/sw-register";
@@ -9,6 +10,38 @@ import "./globals.css";
 // Imported AFTER globals.css on purpose: keeps gold rules later in source
 // order so they win ties against the html.dark block.
 import "./skin-gold.css";
+// The printable document sheet's own stylesheet. Imported LAST on purpose:
+// its `.doc-*` rules must win ties against the gold skin's utility remaps so
+// the paper renders identically on screen, in the editor preview and in the
+// server-side PDF. See the header comment in document-paper.css.
+import "./document-paper.css";
+
+// SELF-HOSTED FONTS (was: two Google-Fonts <link> tags in <head>).
+// The PDF route drives headless Chrome on a serverless box to /view and prints
+// it — a third-party CDN fetch there is a real availability risk (a slow or
+// blocked fonts.gstatic.com would silently print the document in a fallback
+// face). next/font downloads the files at BUILD time and serves them from our
+// own origin, so the PDF can't lose its typography. Exposed as CSS variables
+// because globals.css / skin-gold.css / document-paper.css reference the
+// families by name.
+const heebo = Heebo({
+  weight: ["300", "400", "500", "600", "700", "800", "900"],
+  subsets: ["hebrew", "latin"],
+  variable: "--font-heebo",
+  display: "swap",
+});
+const frankRuhl = Frank_Ruhl_Libre({
+  weight: ["400", "500", "700", "900"],
+  subsets: ["hebrew", "latin"],
+  variable: "--font-frank",
+  display: "swap",
+});
+const assistant = Assistant({
+  weight: ["300", "400", "600", "700", "800"],
+  subsets: ["hebrew", "latin"],
+  variable: "--font-assistant",
+  display: "swap",
+});
 
 // Inline pre-hydration script — applies the black-gold skin to <html> BEFORE
 // first paint, avoiding any flash of the old coral look. The gold skin is now
@@ -79,19 +112,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="he" dir="rtl" className="h-full antialiased">
+    <html
+      lang="he"
+      dir="rtl"
+      className={`h-full antialiased ${heebo.variable} ${frankRuhl.variable} ${assistant.variable}`}
+    >
       <head>
-        <link
-          href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap"
-          rel="stylesheet"
-        />
-        {/* Fonts for the opt-in gold skin: Frank Ruhl Libre (art-deco serif
-            headings) + Assistant (body). Small extra download, only used when
-            html[data-skin="gold"] is active; inert for the default app. */}
-        <link
-          href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700;900&family=Assistant:wght@300;400;600;700;800&display=swap"
-          rel="stylesheet"
-        />
         {/* Raw SYNCHRONOUS inline script — must run before the body paints so
             there's zero flash of the old coral look before the gold default is
             applied. next/script's beforeInteractive is NOT synchronous in the

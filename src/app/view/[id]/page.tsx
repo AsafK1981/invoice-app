@@ -229,7 +229,11 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-50 py-8 px-4">
+    // doc-print-host: this tinted full-height panel is what the server PDF
+    // (headless Chrome + printBackground) would otherwise print as a coloured —
+    // under the gold skin, BLACK — frame around the sheet. document-paper.css
+    // flattens anything carrying this marker to white, zero-padding, in print.
+    <div className="doc-print-host min-h-screen bg-gradient-to-br from-orange-50 to-amber-50 py-8 px-4">
       <div className="no-print max-w-[210mm] mx-auto mb-6 flex items-center justify-end gap-3">
         <button
           onClick={handleDownloadPdf}

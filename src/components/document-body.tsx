@@ -61,32 +61,6 @@ function showPaymentInfo(type: DocumentType, business: Business): boolean {
   );
 }
 
-/**
- * Color scheme per document type — gives the recipient an instant visual
- * cue without having to read the Hebrew label. Receipts = emerald (paid /
- * positive), tax invoices = blue (formal / fiscal), price quotes (הצעת מחיר) =
- * amber (pending), proforma (חשבון עסקה) = fuchsia (payment demand),
- * credit notes = rose (refund), tax-invoice-receipt = teal.
- */
-function badgeStylesFor(type: DocumentType): { bg: string; print: string } {
-  switch (type) {
-    case "receipt":
-      return { bg: "from-emerald-500 to-teal-600", print: "print:bg-emerald-600" };
-    case "tax_invoice":
-      return { bg: "from-blue-500 to-indigo-600", print: "print:bg-blue-600" };
-    case "tax_invoice_receipt":
-      return { bg: "from-teal-500 to-cyan-600", print: "print:bg-teal-600" };
-    case "quote":
-      return { bg: "from-amber-500 to-orange-600", print: "print:bg-amber-600" };
-    case "proforma":
-      return { bg: "from-fuchsia-500 to-purple-600", print: "print:bg-fuchsia-600" };
-    case "credit_note":
-      return { bg: "from-rose-500 to-pink-600", print: "print:bg-rose-600" };
-    default:
-      return { bg: "from-stone-500 to-stone-700", print: "print:bg-stone-700" };
-  }
-}
-
 interface Props {
   business: Business;
   client: DocumentBodyClient | null;
@@ -164,169 +138,138 @@ export function DocumentBody({
   const currency = currencyProp || "ILS";
   const money = (n: number) => (currency === "ILS" ? formatCurrency(n) : formatMoney(n, currency));
 
-  const numberStr = number != null ? `#${number}` : "(אוטומטי)";
+  const numberStr = number != null ? String(number).padStart(4, "0") : "(אוטומטי)";
   const dateStr = date ? formatDate(date) : "—";
   const businessName = business.name || (placeholders ? "—" : "");
   const showItemsEmptyState =
     placeholders && (items.length === 0 || items.every((i) => !i.description));
-  const badge = badgeStylesFor(documentType);
+  const hasWithholding = withholdingAmount != null && withholdingAmount > 0;
+
+  // Business identity line: "עוסק מורשה 003244266" then address · phone · email.
+  const bizContact = [business.address, business.phone, business.email].filter(Boolean);
+
+  const paymentParts = paymentMethod
+    ? paymentDetailsParts(paymentMethod, paymentDetails)
+    : [];
+  const bankLine = [
+    business.bankName,
+    business.bankBranch ? `סניף ${business.bankBranch}` : "",
+    business.bankAccount ? `חשבון ${business.bankAccount}` : "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  const showBank = showPaymentInfo(documentType, business);
 
   return (
     <>
-      {/* Header: business identity on the right, doc identity on the left.
-          Thicker accent border + slightly more breathing room than before. */}
-      <div className="flex flex-col sm:flex-row items-start sm:justify-between pb-7 border-b-[3px] border-orange-500 gap-6">
-        <div className="flex items-start gap-5">
+      {/* ── Header: business identity (start side) ↔ document identity ── */}
+      <div className="doc-card doc-head">
+        <div className="doc-biz">
+          {/* Logo is OPTIONAL and there is deliberately NO placeholder/monogram
+              fallback — a business without a logo simply shows its name. */}
           {business.logoUrl && (
-            <img
-              src={business.logoUrl}
-              alt={business.name}
-              className="w-24 h-24 object-contain flex-shrink-0 rounded-xl"
-            />
+            <img src={business.logoUrl} alt={business.name} className="doc-logo" />
           )}
-          <div className="space-y-0.5">
-            <h1 className="text-[28px] leading-tight font-bold text-stone-900">{businessName}</h1>
-            <p className="text-sm text-stone-700 mt-1.5">
+          <div>
+            <h1 className="doc-name doc-serif">{businessName}</h1>
+            <p className="doc-bizline">
               {BUSINESS_TYPE_LABELS[business.businessType]}
               {business.taxId && (
                 <>
-                  {" · "}
-                  <span dir="ltr" className="font-mono">{business.taxId}</span>
+                  {" "}
+                  <span className="doc-mono">{business.taxId}</span>
+                </>
+              )}
+              {bizContact.length > 0 && (
+                <>
+                  <br />
+                  {bizContact.map((part, i) => (
+                    <span key={i}>
+                      {i > 0 && <>&nbsp;·&nbsp;</>}
+                      <span className={i === 0 ? undefined : "doc-mono"}>{part}</span>
+                    </span>
+                  ))}
                 </>
               )}
             </p>
-            {business.address && (
-              <p className="text-sm text-stone-700">{business.address}</p>
-            )}
-            {business.phone && (
-              <p className="text-sm text-stone-700" dir="ltr">
-                {business.phone}
-              </p>
-            )}
-            {business.email && (
-              <p className="text-sm text-stone-700" dir="ltr">
-                {business.email}
-              </p>
-            )}
           </div>
         </div>
-        <div className="text-left space-y-2">
-          <p className="text-xs font-bold tracking-[0.3em] text-stone-400 print:text-stone-500">
-            {copy ? "העתק" : "מקור"}
-          </p>
+        <div className="doc-ident">
+          <div className="doc-orig">{copy ? "העתק" : "מקור"}</div>
           <div
-            className={`inline-block px-5 py-2 bg-gradient-to-br ${badge.bg} ${badge.print} text-white rounded-2xl font-bold text-lg shadow-sm`}
+            className={`doc-badge${documentType === "credit_note" ? " is-credit" : ""}`}
           >
             {DOCUMENT_TYPE_LABELS[documentType]}
           </div>
-          <p className="text-3xl font-bold text-stone-900 leading-none">{numberStr}</p>
-          <p className="text-sm text-stone-700">{dateStr}</p>
-          {allocationNumber && (
-            <div className="mt-3 inline-block px-3 py-1.5 rounded-xl bg-stone-100 border border-stone-200 print:border-stone-400">
-              <p className="text-[10px] uppercase tracking-wide font-semibold text-stone-600">
-                מספר הקצאה — חשבונית ישראל
-              </p>
-              <p className="text-sm font-mono font-bold text-stone-900 mt-0.5" dir="ltr">
-                {allocationNumber}
-              </p>
-            </div>
-          )}
+          <div className="doc-num doc-serif doc-mono">{numberStr}</div>
+          <div className="doc-date doc-tab">{dateStr}</div>
         </div>
       </div>
 
-      {/* Client + subject — two side-by-side blocks under the header
-          (stacked on narrow phones, side-by-side from sm: up so print
-          keeps the full two-column layout). */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 mt-8">
-        <div>
-          <h3 className="text-[11px] font-bold text-stone-500 uppercase tracking-wider mb-2.5">
-            ללקוח
-          </h3>
+      {/* ── Meta strip: allocation number · client · subject ── */}
+      <div className="doc-strip">
+        {allocationNumber && (
+          <div className="doc-card doc-mini">
+            <div className="doc-glabel">מספר הקצאה · חשבונית ישראל</div>
+            <div className="doc-mini-v is-gold doc-mono">{allocationNumber}</div>
+          </div>
+        )}
+        <div className="doc-card doc-mini">
+          <div className="doc-glabel">לכבוד</div>
           {client ? (
             <>
-              <p className="font-bold text-stone-900 text-lg leading-tight">{client.name}</p>
+              <div className="doc-mini-v doc-serif">{client.name}</div>
               {client.taxId && (
-                <p className="text-sm text-stone-700 mt-1">
-                  <span className="text-stone-500">ח.פ / ת.ז: </span>
-                  <span dir="ltr" className="font-mono">{client.taxId}</span>
-                </p>
+                <div className="doc-mini-sub">
+                  ח.פ / ת.ז <span className="doc-mono">{client.taxId}</span>
+                </div>
               )}
-              {client.address && (
-                <p className="text-sm text-stone-700 mt-0.5">{client.address}</p>
-              )}
+              {client.address && <div className="doc-mini-sub">{client.address}</div>}
               {client.phone && (
-                <p className="text-sm text-stone-700 mt-0.5" dir="ltr">
-                  {client.phone}
-                </p>
+                <div className="doc-mini-sub doc-mono">{client.phone}</div>
               )}
               {client.email && (
-                <p className="text-sm text-stone-700 mt-0.5" dir="ltr">
-                  {client.email}
-                </p>
+                <div className="doc-mini-sub doc-mono">{client.email}</div>
               )}
             </>
           ) : (
-            <p className="font-bold text-stone-400 text-lg">לקוח לא נבחר</p>
+            <div className="doc-mini-v is-empty">לקוח לא נבחר</div>
           )}
         </div>
         {subject && (
-          <div>
-            <h3 className="text-[11px] font-bold text-stone-500 uppercase tracking-wider mb-2.5">
-              נושא
-            </h3>
-            <p className="text-stone-900 leading-relaxed">{subject}</p>
+          <div className="doc-card doc-mini">
+            <div className="doc-glabel">בגין</div>
+            <div className="doc-mini-v is-reg">{subject}</div>
           </div>
         )}
       </div>
 
-      {/* Items table — zebra rows, generous padding, no harsh borders */}
-      <div className="mt-10 overflow-hidden rounded-xl border border-stone-200 print:border-stone-300">
-        <table className="w-full">
+      {/* ── Line items ── */}
+      <div className="doc-card doc-items">
+        <div className="doc-glabel">פירוט</div>
+        <table className="doc-table">
           <thead>
-            <tr className="bg-gradient-to-l from-orange-50 to-amber-50 print:bg-orange-50">
-              <th className="text-right px-3 sm:px-5 py-3 font-bold text-[12px] uppercase tracking-wide text-stone-700">
-                תיאור
-              </th>
-              <th className="text-center px-2 sm:px-3 py-3 font-bold text-[12px] uppercase tracking-wide text-stone-700 w-12 sm:w-20">
-                כמות
-              </th>
-              <th className="text-left px-2 sm:px-4 py-3 font-bold text-[12px] uppercase tracking-wide text-stone-700 w-24 sm:w-32">
-                מחיר יחידה
-              </th>
-              <th className="text-left px-2 sm:px-4 py-3 font-bold text-[12px] uppercase tracking-wide text-stone-700 w-24 sm:w-32">
-                סה״כ
-              </th>
+            <tr>
+              <th className="c-desc">תיאור</th>
+              <th className="c-qty">כמות</th>
+              <th className="c-num">מחיר יחידה</th>
+              <th className="c-num">סכום</th>
             </tr>
           </thead>
           <tbody>
             {showItemsEmptyState ? (
               <tr>
-                <td colSpan={4} className="px-5 py-8 text-center text-sm text-stone-400">
+                <td colSpan={4} className="c-empty">
                   לא הוזנו פריטים עדיין
                 </td>
               </tr>
             ) : (
-              items.map((item, idx) => (
-                <tr
-                  key={item.id}
-                  className={
-                    idx % 2 === 0
-                      ? "bg-white"
-                      : "bg-stone-50/60 print:bg-stone-50"
-                  }
-                >
-                  <td className="px-3 sm:px-5 py-3.5 text-sm text-stone-800 leading-relaxed break-words">
-                    {item.description || (placeholders ? <span className="text-stone-400">—</span> : "")}
-                  </td>
-                  <td className="px-2 sm:px-3 py-3.5 text-sm text-center text-stone-800 tabular-nums">
-                    {item.quantity}
-                  </td>
-                  <td className="px-2 sm:px-4 py-3.5 text-sm text-left text-stone-800 tabular-nums">
-                    {money(item.unitPrice)}
-                  </td>
-                  <td className="px-2 sm:px-4 py-3.5 text-sm text-left font-semibold text-stone-900 tabular-nums">
-                    {money(item.total)}
-                  </td>
+              items.map((item) => (
+                <tr key={item.id}>
+                  <td className="c-desc">{item.description || (placeholders ? "—" : "")}</td>
+                  <td className="c-qty doc-tab">{item.quantity}</td>
+                  <td className="c-num doc-tab">{money(item.unitPrice)}</td>
+                  <td className="c-total doc-tab">{money(item.total)}</td>
                 </tr>
               ))
             )}
@@ -334,145 +277,143 @@ export function DocumentBody({
         </table>
       </div>
 
-      {/* Totals block — right-aligned, highlighted background on the
-          grand total row so it draws the eye instantly. */}
-      <div className="doc-totals mt-6 flex justify-end">
-        <div className="w-full sm:w-80 space-y-2 text-stone-700">
+      {/* ── Money: breakdown ↔ gold-framed "שולם בפועל" ── */}
+      <div className={`doc-money doc-totals${hasWithholding ? "" : " is-solo"}`}>
+        <div className="doc-card doc-breakdown">
           {discount > 0 && (
             <>
-              <div className="flex justify-between text-sm">
+              <div className="doc-brow">
                 <span>סה״כ לפני הנחה</span>
-                <span className="tabular-nums">{money(subtotal + discount)}</span>
+                <span className="doc-tab">{money(subtotal + discount)}</span>
               </div>
-              <div className="flex justify-between text-sm text-emerald-700">
+              <div className="doc-brow is-discount">
                 <span>הנחה</span>
-                <span className="tabular-nums">
+                <span className="doc-tab">
                   <bdi dir="ltr">-{money(discount)}</bdi>
                 </span>
               </div>
             </>
           )}
-          <div className="flex justify-between text-sm">
+          <div className="doc-brow">
             <span>סכום ביניים</span>
-            <span className="tabular-nums">{money(subtotal)}</span>
+            <span className="doc-tab">{money(subtotal)}</span>
           </div>
           {zeroRated ? (
-            <div className="text-sm text-stone-600">עסקה בשיעור אפס — ייצוא שירותים</div>
+            <div className="doc-brow">
+              <span>מע״מ</span>
+              <span>עסקה בשיעור אפס — ייצוא שירותים</span>
+            </div>
           ) : (
             vatRate > 0 && (
-              <div className="flex justify-between text-sm">
-                <span>מע״מ <bdi dir="ltr">({vatRate}%)</bdi></span>
-                <span className="tabular-nums">{money(vat)}</span>
+              <div className="doc-brow">
+                <span>
+                  מע״מ <bdi dir="ltr">{vatRate}%</bdi>
+                </span>
+                <span className="doc-tab">{money(vat)}</span>
               </div>
             )
           )}
           {rounding !== 0 && (
-            <div className="flex justify-between text-sm">
+            <div className="doc-brow">
               <span>עיגול</span>
-              <span className="tabular-nums">{money(rounding)}</span>
+              <span className="doc-tab">{money(rounding)}</span>
             </div>
           )}
-          <div className="flex justify-between items-baseline pt-3 border-t-[3px] border-orange-500 mt-1 rounded-b-xl bg-orange-50/60 print:bg-orange-50 -mx-3 px-3 py-2.5">
-            <span className="font-bold text-stone-900 text-base">{DOC_SUM_LABEL[documentType]}</span>
-            <span className="text-2xl font-bold text-stone-900 tabular-nums">
-              {money(total)}
-            </span>
+          <div className="doc-brow is-grand">
+            <span>{DOC_SUM_LABEL[documentType]}</span>
+            <span className="doc-grand-val doc-serif doc-tab">{money(total)}</span>
           </div>
           {currency !== "ILS" && (
-            <div className="mt-1 text-xs text-stone-500">
-              סה״כ ב-₪ <bdi dir="ltr">(שער {Number(exchangeRate ?? 1).toFixed(4)})</bdi>: {formatMoney(Number(totalIls ?? 0), "ILS")}
+            <div className="doc-note-line">
+              סה״כ ב-₪ <bdi dir="ltr">(שער {Number(exchangeRate ?? 1).toFixed(4)})</bdi>:{" "}
+              {formatMoney(Number(totalIls ?? 0), "ILS")}
             </div>
           )}
-          {withholdingAmount != null && withholdingAmount > 0 && (
-            <div className="mt-2 pt-2 space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>
-                  ניכוי מס במקור
-                  {withholdingRate != null && withholdingRate > 0 && (
-                    <> <bdi dir="ltr">({withholdingRate}%)</bdi></>
-                  )}
-                </span>
-                <span className="tabular-nums">
-                  <bdi dir="ltr">-{money(withholdingAmount)}</bdi>
-                </span>
-              </div>
-              <div className="flex justify-between items-baseline pt-2 border-t border-stone-200">
-                <span className="font-bold text-stone-900 text-sm">שולם בפועל</span>
-                <span className="text-lg font-bold text-stone-900 tabular-nums">
-                  {money(total - withholdingAmount)}
-                </span>
-              </div>
+          {hasWithholding && (
+            <div className="doc-brow is-deduct">
+              <span>
+                ניכוי מס במקור
+                {withholdingRate != null && withholdingRate > 0 && (
+                  <>
+                    {" "}
+                    <bdi dir="ltr">{withholdingRate}%</bdi>
+                  </>
+                )}
+              </span>
+              <span className="doc-tab">
+                <bdi dir="ltr">−{money(withholdingAmount as number)}</bdi>
+              </span>
             </div>
           )}
         </div>
+
+        {hasWithholding && (
+          <div className="doc-paid">
+            <div className="doc-paid-top">שולם בפועל</div>
+            <div className="doc-paid-amount doc-serif doc-tab">
+              {money(total - (withholdingAmount as number))}
+            </div>
+            <div className="doc-paid-note">
+              הסכום נטו שהתקבל, אחרי ניכוי מס במקור
+            </div>
+          </div>
+        )}
       </div>
 
-      {paymentMethod && (
-        <div className="mt-7 pt-5 border-t border-stone-200">
-          <p className="text-sm text-stone-700">
-            <span className="font-semibold text-stone-900">אמצעי תשלום: </span>
-            {PAYMENT_METHOD_LABELS[paymentMethod]}
-            {(() => {
-              const parts = paymentDetailsParts(paymentMethod, paymentDetails);
-              if (parts.length === 0) return null;
-              return (
-                <>
-                  {" · "}
-                  <span className="text-stone-700">{parts.join(" · ")}</span>
-                </>
-              );
-            })()}
-          </p>
+      {/* ── Payment method · bank details · notes ── */}
+      {(paymentMethod || showBank || notes) && (
+        <div className="doc-infos">
+          {paymentMethod && (
+            <div className="doc-card doc-info">
+              <div className="doc-glabel">אמצעי תשלום</div>
+              <div className="doc-info-body">
+                {PAYMENT_METHOD_LABELS[paymentMethod]}
+                {paymentParts.length > 0 && (
+                  <>
+                    <br />
+                    <span className="doc-dim">{paymentParts.join(" · ")}</span>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+          {showBank && (
+            <div className="doc-card doc-info">
+              <div className="doc-glabel">פרטי תשלום</div>
+              <div className="doc-info-body">
+                {bankLine && (
+                  <>
+                    העברה בנקאית
+                    <br />
+                    <span className="doc-dim doc-mono">{bankLine}</span>
+                  </>
+                )}
+                {business.paymentNotes && (
+                  <>
+                    {bankLine && <br />}
+                    <span className="doc-dim">{business.paymentNotes}</span>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+          {notes && (
+            <div className="doc-card doc-info">
+              <div className="doc-glabel">הערות</div>
+              <div className="doc-info-body">{notes}</div>
+            </div>
+          )}
         </div>
       )}
 
-      {showPaymentInfo(documentType, business) && (
-        <div className="mt-7 pt-5 border-t border-stone-200">
-          <h3 className="text-[11px] font-bold text-stone-500 uppercase tracking-wider mb-2.5">
-            פרטי תשלום
-          </h3>
-          <div className="text-sm text-stone-800 space-y-1.5">
-            {(business.bankName || business.bankBranch || business.bankAccount) && (
-              <p>
-                <span className="font-semibold text-stone-900">העברה בנקאית: </span>
-                <span dir="ltr" className="font-mono">
-                  {[
-                    business.bankName,
-                    business.bankBranch ? `סניף ${business.bankBranch}` : "",
-                    business.bankAccount ? `חשבון ${business.bankAccount}` : "",
-                  ]
-                    .filter(Boolean)
-                    .join(" · ")}
-                </span>
-              </p>
-            )}
-            {business.paymentNotes && (
-              <p className="text-stone-700 whitespace-pre-wrap">{business.paymentNotes}</p>
-            )}
-          </div>
+      {/* ── Footer: electronic-issuance statement + brand mark ── */}
+      <div className="doc-foot">
+        <div className="doc-foot-sig">
+          מסמך זה הופק אלקטרונית{business.name ? ` · ${business.name}` : ""}
         </div>
-      )}
-
-      {notes && (
-        <div className="mt-7 pt-5 border-t border-stone-200">
-          <h3 className="text-[11px] font-bold text-stone-500 uppercase tracking-wider mb-2.5">
-            הערות
-          </h3>
-          <p className="text-sm text-stone-800 whitespace-pre-wrap leading-relaxed">{notes}</p>
+        <div className="doc-foot-brand">
+          הופק באמצעות MySuperFriendlyInvoiceApp · mysuperfriendlyinvoiceapp.vercel.app
         </div>
-      )}
-
-      {/* Footer — soft separator, brand mark on the right, "thank you" on
-          the left. The mark doubles as a soft signal of which tool issued
-          the document. */}
-      <div className="mt-12 pt-5 border-t border-stone-200 flex items-center justify-between text-[11px] text-stone-500">
-        <div className="space-y-0.5">
-          <p>מסמך זה הופק אלקטרונית{business.name ? ` · ${business.name}` : ""}</p>
-          <p className="text-[10px] text-stone-400">
-            הופק באמצעות MySuperFriendlyInvoiceApp · mysuperfriendlyinvoiceapp.vercel.app
-          </p>
-        </div>
-        <p className="font-semibold text-stone-600">תודה על שיתוף הפעולה!</p>
       </div>
     </>
   );

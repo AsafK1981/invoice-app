@@ -5,12 +5,15 @@
    user can toggle independently of OS preference. */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Font families come from next/font (self-hosted, see layout.tsx) via CSS
+   variables on <html>. The literal names are kept as a fallback so anything
+   rendered outside the root layout still resolves sensibly. */
 @theme inline {
-  --font-sans: "Heebo", system-ui, sans-serif;
+  --font-sans: var(--font-heebo), "Heebo", system-ui, sans-serif;
 }
 
 html {
-  font-family: "Heebo", system-ui, sans-serif;
+  font-family: var(--font-heebo), "Heebo", system-ui, sans-serif;
   scroll-behavior: smooth;
 }
 
@@ -270,27 +273,13 @@ html.dark .text-stone-700 { color: #e7e5e4 !important; }
 /* The receipt preview inside the app should ALWAYS render light, even
    when the surrounding app is in dark mode. It represents the final
    PDF, which is white paper. Otherwise the user sees a dark "preview"
-   and a white "downloaded PDF" — confusing. */
-html.dark .receipt-view {
-  background: #ffffff !important;
-  color: #44403c !important;
-}
+   and a white "downloaded PDF" — confusing.
+   Since the 2026-07-19 redesign the sheet carries its own `.doc-paper`
+   stylesheet (explicit colours, no Tailwind utilities), so nothing needs to be
+   "un-darkened" here any more — only the generic dark table/element remaps are
+   neutralised, and document-paper.css already does that with !important. */
 html.dark .receipt-view * {
   color: inherit;
-}
-html.dark .receipt-view .bg-stone-100,
-html.dark .receipt-view .bg-stone-50,
-html.dark .receipt-view .bg-orange-50,
-html.dark .receipt-view .bg-amber-50,
-html.dark .receipt-view .bg-white {
-  background-color: revert !important;
-}
-html.dark .receipt-view .text-stone-900,
-html.dark .receipt-view .text-stone-800,
-html.dark .receipt-view .text-stone-700,
-html.dark .receipt-view .text-stone-600,
-html.dark .receipt-view .text-stone-500 {
-  color: revert !important;
 }
 
 /* Inputs */

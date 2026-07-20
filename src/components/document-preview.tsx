@@ -40,6 +40,8 @@ interface Props {
   exchangeRate?: number;
   totalIls?: number;
   zeroRated?: boolean;
+  /** מספר הקצאה — mirrors the live allocation-banner value onto the preview. */
+  allocationNumber?: string;
 }
 
 const PAGE_WIDTH_PX = 794;
@@ -116,6 +118,7 @@ export function DocumentPreview(props: Props) {
       exchangeRate={props.exchangeRate}
       totalIls={props.totalIls}
       zeroRated={props.zeroRated}
+      allocationNumber={props.allocationNumber}
       placeholders
     />
   );
@@ -143,7 +146,7 @@ export function DocumentPreview(props: Props) {
               }}
             >
               <div ref={pageRef}>
-                <div className="receipt-view bg-white rounded-2xl shadow-md p-10" dir="rtl">
+                <div className="receipt-view doc-paper shadow-md" dir="rtl">
                   {body}
                 </div>
               </div>
@@ -183,7 +186,7 @@ export function DocumentPreview(props: Props) {
             </div>
             <div className="relative z-10 flex-1 overflow-auto py-6 px-4">
               <div
-                className="receipt-view bg-white rounded-2xl shadow-2xl p-10 mx-auto"
+                className="receipt-view doc-paper shadow-2xl mx-auto"
                 style={{ width: PAGE_WIDTH_PX, maxWidth: "100%" }}
                 dir="rtl"
                 onClick={(e) => e.stopPropagation()}

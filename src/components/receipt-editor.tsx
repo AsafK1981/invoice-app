@@ -21,6 +21,8 @@ import {
   GripVertical,
   X,
   Plus,
+  CreditCard,
+  ChevronDown,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
 import { sendReceiptEmail } from "@/lib/email";
@@ -159,6 +161,10 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   const [emailOverridden, setEmailOverridden] = useState<boolean>(false);
   const [paymentMethodTouched, setPaymentMethodTouched] = useState<boolean>(false);
   const [showPreviewMobile, setShowPreviewMobile] = useState<boolean>(false);
+  // "הגדרות מתקדמות" disclosure inside פרטי המסמך (currency, exchange rate,
+  // zero-rated, rounding, logo). Collapsed by default — most documents never
+  // need any of it.
+  const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
   const [saving, setSaving] = useState<boolean>(false);
   const saveInFlightRef = useRef(false);
   const [toast, setToast] = useState<{ kind: "success" | "error"; text: string } | null>(null);
@@ -980,6 +986,37 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
     }
   }
 
+  // ONE set of props feeding ONE renderer (<DocumentPreview> → <DocumentBody>),
+  // shared by the desktop pane and the mobile sheet. Every value is derived
+  // from live form state, so the preview updates as the user types.
+  const previewProps = {
+    business,
+    client: previewClient,
+    documentType,
+    number: parseInt(docNumber, 10) || null,
+    date,
+    subject: subject || undefined,
+    items: previewItems,
+    subtotal,
+    vat,
+    vatRate: effectiveVatRate,
+    total,
+    rounding,
+    paymentMethod: isPrePayment ? undefined : paymentMethod,
+    paymentDetails: buildPaymentDetails(),
+    discount: discountAmount,
+    withholdingRate:
+      withholdingEntered && withholdingValid ? withholdingRate : undefined,
+    withholdingAmount:
+      withholdingEntered && withholdingValid ? withholdingAmount : undefined,
+    notes: notes || undefined,
+    allocationNumber: allocationNumber.trim() || undefined,
+    currency,
+    exchangeRate: currency === "ILS" ? 1 : rate,
+    totalIls: currency === "ILS" ? total : round2(total * rate),
+    zeroRated,
+  };
+
   return (
     <>
       {draftRecovered && !draftDismissed && (
@@ -1064,98 +1101,161 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
         />
       </div>
     )}
+    {/* NOTE: no `items-start` here on purpose — the grid's default stretch is
+        what gives the preview column a full-height track for `position:sticky`
+        to travel in. With items-start the aside collapses to content height and
+        the sticky pane scrolls away. */}
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-      <div className="lg:col-span-7 space-y-6">
-        <Section title="פרטי המסמך" icon={FileTextIcon}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField label="לקוח" required className="md:col-span-2">
-              <div className="space-y-2">
-                <div className="inline-flex bg-orange-50 rounded-xl p-1 text-xs font-semibold gap-1">
-                  <button
-                    type="button"
-                    onClick={() => setAdhocMode(false)}
-                    className={`inline-flex items-center justify-center min-h-[36px] px-3.5 rounded-lg transition-colors ${
-                      !adhocMode
-                        ? "bg-white text-orange-700 shadow-sm"
-                        : "text-stone-600 hover:text-stone-800"
-                    }`}
-                  >
-                    מהקטלוג
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setAdhocMode(true)}
-                    className={`inline-flex items-center justify-center gap-1 min-h-[36px] px-3.5 rounded-lg transition-colors ${
-                      adhocMode
-                        ? "bg-white text-orange-700 shadow-sm"
-                        : "text-stone-600 hover:text-stone-800"
-                    }`}
-                  >
-                    <UserPlus className="w-3 h-3" />
-                    לקוח מזדמן
-                  </button>
-                </div>
-                {adhocMode ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    <input
-                      type="text"
-                      value={adhocName}
-                      onChange={(e) => setAdhocName(e.target.value)}
-                      placeholder="שם הלקוח *"
-                      className="input-warm"
-                    />
-                    <input
-                      type="text"
-                      value={adhocTaxId}
-                      onChange={(e) => setAdhocTaxId(e.target.value)}
-                      placeholder="ח.פ / ת.ז (אופציונלי)"
-                      className="input-warm"
-                    />
-                    <input
-                      type="email"
-                      value={adhocEmail}
-                      onChange={(e) => setAdhocEmail(e.target.value)}
-                      placeholder="email@example.com (אופציונלי)"
-                      dir="ltr"
-                      className="input-warm md:col-span-2"
-                    />
-                    <p className="text-xs text-stone-600 md:col-span-2">
-                      הלקוח לא יישמר במאגר - שמו יופיע על המסמך הזה בלבד.
-                    </p>
-                  </div>
-                ) : (
-                  <>
-                    <select
-                      value={clientId}
-                      onChange={(e) => setClientId(e.target.value)}
-                      className="input-warm"
-                    >
-                      <option value="">בחר לקוח...</option>
-                      {clients.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name}
-                        </option>
-                      ))}
-                    </select>
-                    {clientId && clientDefaults.documentCount > 0 && (
-                      <p className="text-xs text-stone-600 mt-1">
-                        היסטוריה: {clientDefaults.documentCount}{" "}
-                        {clientDefaults.documentCount === 1 ? "מסמך" : "מסמכים"}
-                        {clientDefaults.averageTotal !== undefined && (
-                          <> · ממוצע {formatCurrency(clientDefaults.averageTotal)}</>
-                        )}
-                        {clientDefaults.paymentMethod && (
-                          <> · אמצעי תשלום אחרון: {PAYMENT_METHOD_LABELS[clientDefaults.paymentMethod]}</>
-                        )}
-                      </p>
-                    )}
-                  </>
-                )}
-              </div>
+      {/* ── FORM COLUMN (inline-start / right in RTL) ───────────────────── */}
+      <div className="lg:col-span-7 space-y-4">
+        {/* Mobile/tablet: the live preview lives behind a button. It renders the
+            very same <DocumentPreview> the desktop pane uses — one renderer. */}
+        <button
+          type="button"
+          onClick={() => setShowPreviewMobile((s) => !s)}
+          className="lg:hidden w-full inline-flex items-center justify-center gap-2 bg-white border-[1.5px] border-orange-300 text-orange-700 py-3 rounded-2xl text-sm font-semibold hover:bg-orange-50"
+        >
+          {showPreviewMobile ? (
+            <>
+              <EyeOff className="w-4 h-4" />
+              הסתר תצוגה מקדימה
+            </>
+          ) : (
+            <>
+              <Eye className="w-4 h-4" />
+              הצג תצוגה מקדימה חיה
+            </>
+          )}
+        </button>
+        {showPreviewMobile && (
+          <div className="lg:hidden">
+            <DocumentPreview {...previewProps} />
+          </div>
+        )}
+
+        {/* ── לקוח ── */}
+        <EditorCard title="לקוח" icon={UserPlus}>
+          <div className="inline-flex bg-orange-50 rounded-xl p-1 text-xs font-semibold gap-1 mb-3">
+            <button
+              type="button"
+              onClick={() => setAdhocMode(false)}
+              className={`inline-flex items-center justify-center min-h-[36px] px-3.5 rounded-lg transition-colors ${
+                !adhocMode
+                  ? "bg-white text-orange-700 shadow-sm"
+                  : "text-stone-600 hover:text-stone-800"
+              }`}
+            >
+              מהקטלוג
+            </button>
+            <button
+              type="button"
+              onClick={() => setAdhocMode(true)}
+              className={`inline-flex items-center justify-center gap-1 min-h-[36px] px-3.5 rounded-lg transition-colors ${
+                adhocMode
+                  ? "bg-white text-orange-700 shadow-sm"
+                  : "text-stone-600 hover:text-stone-800"
+              }`}
+            >
+              <UserPlus className="w-3 h-3" />
+              לקוח מזדמן
+            </button>
+          </div>
+          {adhocMode ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <input
+                type="text"
+                value={adhocName}
+                onChange={(e) => setAdhocName(e.target.value)}
+                placeholder="שם הלקוח *"
+                className="input-warm"
+              />
+              <input
+                type="text"
+                value={adhocTaxId}
+                onChange={(e) => setAdhocTaxId(e.target.value)}
+                placeholder="ח.פ / ת.ז (אופציונלי)"
+                className="input-warm"
+              />
+              <input
+                type="email"
+                value={adhocEmail}
+                onChange={(e) => setAdhocEmail(e.target.value)}
+                placeholder="email@example.com (אופציונלי)"
+                dir="ltr"
+                className="input-warm md:col-span-2"
+              />
+              <p className="text-xs text-stone-600 md:col-span-2">
+                הלקוח לא יישמר במאגר - שמו יופיע על המסמך הזה בלבד.
+              </p>
+            </div>
+          ) : (
+            <>
+              <select
+                value={clientId}
+                onChange={(e) => setClientId(e.target.value)}
+                className="input-warm"
+                aria-label="בחר לקוח"
+              >
+                <option value="">בחר לקוח...</option>
+                {clients.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+              {clientId && clientDefaults.documentCount > 0 && (
+                <p className="text-xs text-stone-600 mt-2">
+                  היסטוריה: {clientDefaults.documentCount}{" "}
+                  {clientDefaults.documentCount === 1 ? "מסמך" : "מסמכים"}
+                  {clientDefaults.averageTotal !== undefined && (
+                    <> · ממוצע {formatCurrency(clientDefaults.averageTotal)}</>
+                  )}
+                  {clientDefaults.paymentMethod && (
+                    <> · אמצעי תשלום אחרון: {PAYMENT_METHOD_LABELS[clientDefaults.paymentMethod]}</>
+                  )}
+                </p>
+              )}
+            </>
+          )}
+        </EditorCard>
+
+        {/* ── פרטי המסמך ── */}
+        <EditorCard title="פרטי המסמך" icon={FileTextIcon}>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <FormField label="תאריך">
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="input-warm"
+              />
             </FormField>
 
-            {isCreditNote && (
-              <FormField label="בגין חשבונית מס מקורית" required className="md:col-span-2">
+            <FormField label={`מספר ${docLabel}`} hint="ישוריין בעת ההפקה">
+              <input
+                type="number"
+                min={1}
+                value={docNumber}
+                onChange={(e) => setDocNumber(e.target.value)}
+                className="input-warm tabular-nums text-center"
+                dir="ltr"
+              />
+            </FormField>
+
+            <FormField label="נושא">
+              <input
+                type="text"
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                placeholder="למשל: ייעוץ - אפריל 2026"
+                className="input-warm"
+              />
+            </FormField>
+          </div>
+
+          {isCreditNote && (
+            <div className="mt-3">
+              <FormField label="בגין חשבונית מס מקורית" required>
                 <div className="space-y-2">
                   <select
                     value={creditRefDocId}
@@ -1194,114 +1294,350 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                   </p>
                 </div>
               </FormField>
-            )}
+            </div>
+          )}
 
-            <FormField label="תאריך">
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="input-warm"
-              />
-            </FormField>
+          {isQuote && (
+            <div className="mt-3">
+              <FormField label="תוקף ההצעה (אופציונלי)">
+                <input
+                  type="date"
+                  value={validUntil}
+                  onChange={(e) => setValidUntil(e.target.value)}
+                  className="input-warm"
+                />
+              </FormField>
+            </div>
+          )}
 
-            <FormField label={`מספר ${docLabel}`} hint="ישוריין בעת ההפקה — ניתן לשנות">
-              <input
-                type="number"
-                min={1}
-                value={docNumber}
-                onChange={(e) => setDocNumber(e.target.value)}
-                className="input-warm tabular-nums text-center"
-                dir="ltr"
-              />
-            </FormField>
-
-            <FormField label="נושא">
-              <input
-                type="text"
-                value={subject}
-                onChange={(e) => setSubject(e.target.value)}
-                placeholder="למשל: ייעוץ - אפריל 2026"
-                className="input-warm"
-              />
-            </FormField>
-
-            <FormField label="אימייל לשליחה" className="md:col-span-2">
-              <div className="space-y-2">
-                {emails.map((em, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <input
-                      type="email"
-                      dir="ltr"
-                      value={em}
-                      onChange={(e) => updateEmail(i, e.target.value)}
-                      placeholder="name@example.com"
-                      className="input-warm flex-1"
-                    />
-                    {emails.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removeEmail(i)}
-                        className="inline-flex items-center justify-center w-9 h-9 flex-shrink-0 rounded-xl bg-stone-100 text-stone-500 hover:bg-rose-50 hover:text-rose-600"
-                        title="הסר אימייל"
-                        aria-label="הסר אימייל"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-              <div className="flex items-center justify-between mt-2">
-                <button
-                  type="button"
-                  onClick={addEmail}
-                  className="inline-flex items-center gap-1.5 text-sm font-semibold text-orange-700 hover:text-orange-800"
-                >
-                  <Plus className="w-4 h-4" />
-                  הוסף עוד אימייל
-                </button>
-                {emailOverridden && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEmails([(adhocMode ? adhocEmail : selectedClient?.email || "") || ""]);
-                      setEmailOverridden(false);
-                    }}
-                    className="text-xs text-orange-600 hover:underline"
-                  >
-                    שחזר מהלקוח
-                  </button>
-                )}
-              </div>
-              {!adhocMode && selectedClient && !selectedClient.email && (
-                <p className="text-xs text-amber-700 mt-1">
-                  ללקוח זה אין אימייל שמור — מלא ידנית או ערוך את פרטי הלקוח
-                </p>
-              )}
-            </FormField>
-
-            {!isPrePayment && (
-              <FormField label="אמצעי תשלום">
+          {/* Quiet expander — everything most users never touch. */}
+          <Expander
+            label="הגדרות מתקדמות (מטבע, מע״מ, עיגול, לוגו)"
+            open={showAdvanced}
+            onToggle={() => setShowAdvanced((s) => !s)}
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <FormField label="מטבע">
                 <select
-                  value={paymentMethod}
-                  onChange={(e) => {
-                    setPaymentMethodTouched(true);
-                    setPaymentMethod(e.target.value as PaymentMethod);
-                  }}
+                  value={currency}
+                  onChange={(e) => setCurrency(e.target.value)}
                   className="input-warm"
                 >
-                  {Object.entries(PAYMENT_METHOD_LABELS).map(([k, v]) => (
-                    <option key={k} value={k}>
-                      {v}
+                  {CURRENCIES.map((c) => (
+                    <option key={c.code} value={c.code}>
+                      {c.code} · {c.name}
                     </option>
                   ))}
                 </select>
               </FormField>
-            )}
+
+              {currency !== "ILS" && (
+                <FormField label={`שער ${currency}→₪${rateLoading ? " …" : ""}`}>
+                  <input
+                    type="number"
+                    step="0.0001"
+                    value={rate}
+                    onChange={(e) => setRate(Number(e.target.value) || 0)}
+                    className="input-warm font-mono"
+                  />
+                  <span className="text-xs text-stone-500 block mt-1">
+                    ≈ {formatMoney(round2(total * rate), "ILS")}
+                  </span>
+                </FormField>
+              )}
+
+              <div className="md:col-span-2 flex items-center gap-3 flex-wrap">
+                {business.logoUrl ? (
+                  <span className="inline-flex items-center gap-2 text-xs text-stone-600">
+                    <img
+                      src={business.logoUrl}
+                      alt=""
+                      className="gk-logo-chip w-8 h-8 rounded-lg object-contain bg-white border border-stone-200"
+                    />
+                    הלוגו שלך יופיע על המסמך
+                  </span>
+                ) : (
+                  <span className="text-xs text-stone-600">
+                    ללא לוגו — המסמך יציג את שם העסק בלבד.
+                  </span>
+                )}
+                <a
+                  href="/settings"
+                  className="text-xs font-semibold text-orange-700 hover:text-orange-800 underline"
+                >
+                  {business.logoUrl ? "החלף לוגו בהגדרות ←" : "העלה לוגו בהגדרות ←"}
+                </a>
+              </div>
+            </div>
+
+            <div className="space-y-2.5 mt-3">
+              {canIssueTaxInvoices(business) && (
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={zeroRated}
+                    onChange={(e) => setZeroRated(e.target.checked)}
+                    className="w-4 h-4 accent-orange-500"
+                  />
+                  <span className="text-stone-700">עסקה בשיעור אפס (ייצוא)</span>
+                </label>
+              )}
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={roundTotal}
+                  onChange={(e) => setRoundTotal(e.target.checked)}
+                  className="w-4 h-4 accent-orange-500"
+                />
+                <span className="text-stone-700">עגל סכום לתשלום (לשקל שלם)</span>
+              </label>
+            </div>
+          </Expander>
+        </EditorCard>
+
+        {/* ── פריטים ── */}
+        <EditorCard title="פריטים" icon={Package}>
+          {effectiveVatRate > 0 && (
+            <div className="mb-4 flex items-center justify-between gap-3 p-3 rounded-xl bg-orange-50/60 border border-orange-100 flex-wrap">
+              <div className="flex items-center gap-2">
+                <Percent className="w-4 h-4 text-orange-500" />
+                <span className="text-sm font-medium text-stone-800">המחירים שאני מזין</span>
+              </div>
+              <div className="inline-flex bg-white rounded-xl p-1 text-xs font-semibold gap-1 border border-orange-100">
+                <button
+                  type="button"
+                  onClick={() => setVatMode("exclusive")}
+                  className={`inline-flex items-center justify-center min-h-[36px] px-3.5 rounded-lg transition-colors ${
+                    vatMode === "exclusive"
+                      ? "bg-gradient-to-l from-orange-500 to-rose-500 text-white shadow-sm"
+                      : "text-stone-700 hover:text-stone-900"
+                  }`}
+                >
+                  לפני מע״מ
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setVatMode("inclusive")}
+                  className={`inline-flex items-center justify-center min-h-[36px] px-3.5 rounded-lg transition-colors ${
+                    vatMode === "inclusive"
+                      ? "bg-gradient-to-l from-orange-500 to-rose-500 text-white shadow-sm"
+                      : "text-stone-700 hover:text-stone-900"
+                  }`}
+                >
+                  כולל מע״מ ({effectiveVatRate}%)
+                </button>
+              </div>
+            </div>
+          )}
+          <div className="space-y-3">
+            {items.map((item, idx) => (
+              <div
+                key={item.id}
+                onDragOver={(e) => handleDragOver(e, item.id)}
+                className={`grid grid-cols-12 gap-2 items-start transition-opacity ${
+                  draggedId === item.id ? "opacity-40" : ""
+                }`}
+              >
+                <div className="col-span-12 md:col-span-5">
+                  {idx === 0 && <label className="text-xs font-semibold text-stone-700 mb-1 block">תיאור</label>}
+                  <div className="flex gap-1 items-center">
+                    {items.length > 1 && (
+                      <div
+                        draggable
+                        onDragStart={() => handleDragStart(item.id)}
+                        onDragEnd={handleDragEnd}
+                        className="cursor-grab active:cursor-grabbing text-stone-300 hover:text-stone-600 p-1 -mr-1 hidden md:flex items-center self-stretch"
+                        title="גרור כדי לסדר מחדש"
+                      >
+                        <GripVertical className="w-4 h-4" />
+                      </div>
+                    )}
+                    <input
+                      type="text"
+                      value={item.description}
+                      onChange={(e) => updateItem(item.id, { description: e.target.value })}
+                      placeholder="תיאור השירות/מוצר"
+                      className="input-warm flex-1"
+                    />
+                    <div className="relative">
+                      <select
+                        value={item.productId || ""}
+                        onChange={(e) => pickProduct(item.id, e.target.value)}
+                        className="input-warm w-12 text-transparent cursor-pointer appearance-none"
+                        title="בחר מהקטלוג"
+                        aria-label="בחר מהקטלוג"
+                      >
+                        <option value=""></option>
+                        {products.map((p) => (
+                          <option key={p.id} value={p.id} className="text-stone-800">
+                            {p.name}
+                          </option>
+                        ))}
+                      </select>
+                      <Package className="w-4 h-4 absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 text-orange-500 pointer-events-none" />
+                    </div>
+                  </div>
+                </div>
+                <div className="col-span-6 md:col-span-2">
+                  {idx === 0 && <label className="text-xs font-semibold text-stone-700 mb-1 block">כמות</label>}
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.5"
+                    value={item.quantity}
+                    onChange={(e) => updateItem(item.id, { quantity: parseFloat(e.target.value) || 0 })}
+                    className="input-warm"
+                    aria-label="כמות"
+                  />
+                </div>
+                <div className="col-span-6 md:col-span-2">
+                  {idx === 0 && (
+                    <label className="text-xs font-semibold text-stone-700 mb-1 block">
+                      מחיר יחידה
+                    </label>
+                  )}
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={item.unitPrice}
+                    onChange={(e) => updateItem(item.id, { unitPrice: parseFloat(e.target.value) || 0 })}
+                    className="input-warm"
+                    aria-label="מחיר יחידה"
+                  />
+                </div>
+                <div className="col-span-10 md:col-span-2">
+                  {idx === 0 && <label className="text-xs font-semibold text-stone-700 mb-1 block">סה״כ</label>}
+                  <div className="input-warm bg-gradient-to-br from-orange-50 to-amber-50 border-orange-200 text-stone-900 font-bold text-left">
+                    {formatCurrency(item.quantity * item.unitPrice)}
+                  </div>
+                </div>
+                <div className="col-span-2 md:col-span-1 flex items-end justify-end md:justify-start h-full">
+                  <button
+                    onClick={() => removeItem(item.id)}
+                    disabled={items.length === 1}
+                    className="text-stone-400 hover:text-rose-500 disabled:opacity-30 disabled:cursor-not-allowed p-2.5 md:p-2 rounded-lg hover:bg-rose-50 transition-colors"
+                    title="הסר פריט"
+                    aria-label="הסר פריט"
+                  >
+                    <Trash2 className="w-5 h-5 md:w-4 md:h-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+            <button
+              onClick={addItem}
+              className="inline-flex items-center gap-1.5 min-h-[44px] text-sm text-blue-700 hover:text-blue-900 font-semibold"
+            >
+              <Plus className="w-4 h-4" />
+              הוסף פריט
+            </button>
+          </div>
+
+          {allowDiscount && (
+            <div className="mt-4 pt-4 border-t border-stone-100">
+              {!showDiscount ? (
+                <button
+                  type="button"
+                  onClick={() => setShowDiscount(true)}
+                  className="inline-flex items-center gap-1.5 min-h-[40px] rounded-xl border border-dashed border-orange-300 text-orange-700 hover:bg-orange-50 px-3.5 py-2 text-xs font-semibold"
+                >
+                  <Plus className="w-4 h-4" />
+                  הוסף הנחה
+                </button>
+              ) : (
+                <div className="rounded-xl border border-orange-100 bg-orange-50/50 p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold text-stone-800">הנחה</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowDiscount(false);
+                        setDiscountInput("");
+                      }}
+                      className="inline-flex items-center min-h-[36px] px-1 text-xs text-stone-600 hover:text-rose-600"
+                    >
+                      הסר
+                    </button>
+                  </div>
+                  <div className="flex items-stretch gap-2">
+                    <div className="inline-flex bg-white rounded-xl p-1 text-xs font-semibold gap-1 border border-orange-100">
+                      <button
+                        type="button"
+                        onClick={() => setDiscountMode("amount")}
+                        className={`inline-flex items-center justify-center min-h-[36px] px-3 rounded-lg transition-colors ${
+                          discountMode === "amount"
+                            ? "bg-gradient-to-l from-orange-500 to-rose-500 text-white shadow-sm"
+                            : "text-stone-700 hover:text-stone-900"
+                        }`}
+                      >
+                        ₪
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDiscountMode("percent")}
+                        className={`inline-flex items-center justify-center min-h-[36px] px-3 rounded-lg transition-colors ${
+                          discountMode === "percent"
+                            ? "bg-gradient-to-l from-orange-500 to-rose-500 text-white shadow-sm"
+                            : "text-stone-700 hover:text-stone-900"
+                        }`}
+                      >
+                        %
+                      </button>
+                    </div>
+                    <input
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      value={discountInput}
+                      onChange={(e) => setDiscountInput(e.target.value)}
+                      placeholder={discountMode === "percent" ? "שיעור הנחה" : "סכום הנחה"}
+                      className="input-warm tabular-nums flex-1"
+                      dir="ltr"
+                      aria-label="הנחה"
+                    />
+                  </div>
+                  {discountEntered && discountValid && discountAmount > 0 && (
+                    <p className="text-sm font-semibold text-stone-800">
+                      הנחה: {formatCurrency(discountAmount)}
+                      {discountMode === "percent" && <> ({discountRaw}%)</>}
+                    </p>
+                  )}
+                  {discountEntered && !discountValid && (
+                    <p className="text-xs text-rose-700">
+                      {discountMode === "percent"
+                        ? "שיעור ההנחה חייב להיות בין 0 ל-100."
+                        : "ההנחה חייבת להיות חיובית ונמוכה מסכום הפריטים."}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </EditorCard>
+
+        {/* ── תשלום ── */}
+        {!isPrePayment && (
+          <EditorCard title="תשלום" icon={CreditCard}>
+            <FormField label="אמצעי תשלום">
+              <select
+                value={paymentMethod}
+                onChange={(e) => {
+                  setPaymentMethodTouched(true);
+                  setPaymentMethod(e.target.value as PaymentMethod);
+                }}
+                className="input-warm"
+              >
+                {Object.entries(PAYMENT_METHOD_LABELS).map(([k, v]) => (
+                  <option key={k} value={k}>
+                    {v}
+                  </option>
+                ))}
+              </select>
+            </FormField>
 
             {isPaymentRecording && (
-              <div className="md:col-span-2 space-y-3">
+              <div className="space-y-3 mt-3">
                 {/* פירוט אמצעי תשלום — per-method optional detail. */}
                 {(paymentMethod === "bank_transfer" ||
                   paymentMethod === "bit" ||
@@ -1393,7 +1729,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                   <button
                     type="button"
                     onClick={() => setShowWithholding(true)}
-                    className="inline-flex items-center gap-1.5 text-sm font-semibold text-orange-700 hover:text-orange-800"
+                    className="inline-flex items-center gap-1.5 min-h-[40px] rounded-xl border border-dashed border-orange-300 text-orange-700 hover:bg-orange-50 px-3.5 py-2 text-xs font-semibold"
                   >
                     <Plus className="w-4 h-4" />
                     ניכוי מס במקור
@@ -1410,7 +1746,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                           setWithholdingAmountInput("");
                           setWithholdingTouched(false);
                         }}
-                        className="text-xs text-stone-500 hover:text-rose-600"
+                        className="inline-flex items-center min-h-[36px] px-1 text-xs text-stone-600 hover:text-rose-600"
                       >
                         הסר
                       </button>
@@ -1470,300 +1806,23 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                 )}
               </div>
             )}
+          </EditorCard>
+        )}
 
-            {isQuote && (
-              <FormField label="תוקף ההצעה (אופציונלי)">
-                <input
-                  type="date"
-                  value={validUntil}
-                  onChange={(e) => setValidUntil(e.target.value)}
-                  className="input-warm"
-                />
-              </FormField>
-            )}
-
-            <FormField label="מטבע">
-              <select
-                value={currency}
-                onChange={(e) => setCurrency(e.target.value)}
-                className="input-warm"
-              >
-                {CURRENCIES.map((c) => (
-                  <option key={c.code} value={c.code}>
-                    {c.code} · {c.name}
-                  </option>
-                ))}
-              </select>
-            </FormField>
-
-            {canIssueTaxInvoices(business) && (
-              <div className="flex items-center gap-2 text-sm">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={zeroRated}
-                    onChange={(e) => setZeroRated(e.target.checked)}
-                    className="w-4 h-4 accent-orange-500"
-                  />
-                  <span className="text-stone-700">עסקה בשיעור אפס (ייצוא)</span>
-                </label>
-              </div>
-            )}
-
-            <div className="flex items-center gap-2 text-sm">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={roundTotal}
-                  onChange={(e) => setRoundTotal(e.target.checked)}
-                  className="w-4 h-4 accent-orange-500"
-                />
-                <span className="text-stone-700">עגל סכום לתשלום (לשקל שלם)</span>
-              </label>
-            </div>
-
-            {currency !== "ILS" && (
-              <FormField label={`שער ${currency}→₪${rateLoading ? " …" : ""}`}>
-                <input
-                  type="number"
-                  step="0.0001"
-                  value={rate}
-                  onChange={(e) => setRate(Number(e.target.value) || 0)}
-                  className="input-warm font-mono"
-                />
-                <span className="text-xs text-stone-500 block mt-1">
-                  ≈ {formatMoney(round2(total * rate), "ILS")}
-                </span>
-              </FormField>
-            )}
-          </div>
-        </Section>
-
-        <Section title="פריטים" icon={Package}>
-          {effectiveVatRate > 0 && (
-            <div className="mb-4 flex items-center justify-between gap-3 p-3 rounded-xl bg-orange-50/60 border border-orange-100">
-              <div className="flex items-center gap-2">
-                <Percent className="w-4 h-4 text-orange-500" />
-                <span className="text-sm font-medium text-stone-800">המחירים שאני מזין</span>
-              </div>
-              <div className="inline-flex bg-white rounded-xl p-1 text-xs font-semibold gap-1 border border-orange-100">
-                <button
-                  type="button"
-                  onClick={() => setVatMode("exclusive")}
-                  className={`inline-flex items-center justify-center min-h-[36px] px-3.5 rounded-lg transition-colors ${
-                    vatMode === "exclusive"
-                      ? "bg-gradient-to-l from-orange-500 to-rose-500 text-white shadow-sm"
-                      : "text-stone-700 hover:text-stone-900"
-                  }`}
-                >
-                  לפני מע״מ
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setVatMode("inclusive")}
-                  className={`inline-flex items-center justify-center min-h-[36px] px-3.5 rounded-lg transition-colors ${
-                    vatMode === "inclusive"
-                      ? "bg-gradient-to-l from-orange-500 to-rose-500 text-white shadow-sm"
-                      : "text-stone-700 hover:text-stone-900"
-                  }`}
-                >
-                  כולל מע״מ ({effectiveVatRate}%)
-                </button>
-              </div>
-            </div>
-          )}
-          <div className="space-y-3">
-            {items.map((item, idx) => (
-              <div
-                key={item.id}
-                onDragOver={(e) => handleDragOver(e, item.id)}
-                className={`grid grid-cols-12 gap-2 items-start transition-opacity ${
-                  draggedId === item.id ? "opacity-40" : ""
-                }`}
-              >
-                <div className="col-span-12 md:col-span-5">
-                  {idx === 0 && <label className="text-xs font-semibold text-stone-700 mb-1 block">תיאור</label>}
-                  <div className="flex gap-1 items-center">
-                    {items.length > 1 && (
-                      <div
-                        draggable
-                        onDragStart={() => handleDragStart(item.id)}
-                        onDragEnd={handleDragEnd}
-                        className="cursor-grab active:cursor-grabbing text-stone-300 hover:text-stone-600 p-1 -mr-1 hidden md:flex items-center self-stretch"
-                        title="גרור כדי לסדר מחדש"
-                      >
-                        <GripVertical className="w-4 h-4" />
-                      </div>
-                    )}
-                    <input
-                      type="text"
-                      value={item.description}
-                      onChange={(e) => updateItem(item.id, { description: e.target.value })}
-                      placeholder="תיאור השירות/מוצר"
-                      className="input-warm flex-1"
-                    />
-                    <div className="relative">
-                      <select
-                        value={item.productId || ""}
-                        onChange={(e) => pickProduct(item.id, e.target.value)}
-                        className="input-warm w-12 text-transparent cursor-pointer appearance-none"
-                        title="בחר מהקטלוג"
-                      >
-                        <option value=""></option>
-                        {products.map((p) => (
-                          <option key={p.id} value={p.id} className="text-stone-800">
-                            {p.name}
-                          </option>
-                        ))}
-                      </select>
-                      <Package className="w-4 h-4 absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 text-orange-500 pointer-events-none" />
-                    </div>
-                  </div>
-                </div>
-                <div className="col-span-6 md:col-span-2">
-                  {idx === 0 && <label className="text-xs font-semibold text-stone-700 mb-1 block">כמות</label>}
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.5"
-                    value={item.quantity}
-                    onChange={(e) => updateItem(item.id, { quantity: parseFloat(e.target.value) || 0 })}
-                    className="input-warm"
-                  />
-                </div>
-                <div className="col-span-6 md:col-span-2">
-                  {idx === 0 && (
-                    <label className="text-xs font-semibold text-stone-700 mb-1 block">
-                      מחיר יחידה
-                    </label>
-                  )}
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={item.unitPrice}
-                    onChange={(e) => updateItem(item.id, { unitPrice: parseFloat(e.target.value) || 0 })}
-                    className="input-warm"
-                  />
-                </div>
-                <div className="col-span-10 md:col-span-2">
-                  {idx === 0 && <label className="text-xs font-semibold text-stone-700 mb-1 block">סה״כ</label>}
-                  <div className="input-warm bg-gradient-to-br from-orange-50 to-amber-50 border-orange-200 text-stone-900 font-bold text-left">
-                    {formatCurrency(item.quantity * item.unitPrice)}
-                  </div>
-                </div>
-                <div className="col-span-2 md:col-span-1 flex items-end justify-end md:justify-start h-full">
-                  <button
-                    onClick={() => removeItem(item.id)}
-                    disabled={items.length === 1}
-                    className="text-stone-300 hover:text-rose-500 disabled:opacity-30 disabled:cursor-not-allowed p-2.5 md:p-2 rounded-lg hover:bg-rose-50 transition-colors"
-                    title="הסר פריט"
-                  >
-                    <Trash2 className="w-5 h-5 md:w-4 md:h-4" />
-                  </button>
-                </div>
-              </div>
-            ))}
-            <button
-              onClick={addItem}
-              className="text-sm text-blue-600 hover:text-blue-800 font-semibold"
-            >
-              + הוסף פריט
-            </button>
-          </div>
-
-          {allowDiscount && (
-            <div className="mt-4 pt-4 border-t border-stone-100">
-              {!showDiscount ? (
-                <button
-                  type="button"
-                  onClick={() => setShowDiscount(true)}
-                  className="inline-flex items-center gap-1.5 text-sm font-semibold text-orange-700 hover:text-orange-800"
-                >
-                  <Plus className="w-4 h-4" />
-                  הוסף הנחה
-                </button>
-              ) : (
-                <div className="rounded-xl border border-orange-100 bg-orange-50/50 p-3 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-stone-800">הנחה</span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowDiscount(false);
-                        setDiscountInput("");
-                      }}
-                      className="text-xs text-stone-500 hover:text-rose-600"
-                    >
-                      הסר
-                    </button>
-                  </div>
-                  <div className="flex items-stretch gap-2">
-                    <div className="inline-flex bg-white rounded-xl p-1 text-xs font-semibold gap-1 border border-orange-100">
-                      <button
-                        type="button"
-                        onClick={() => setDiscountMode("amount")}
-                        className={`inline-flex items-center justify-center min-h-[36px] px-3 rounded-lg transition-colors ${
-                          discountMode === "amount"
-                            ? "bg-gradient-to-l from-orange-500 to-rose-500 text-white shadow-sm"
-                            : "text-stone-700 hover:text-stone-900"
-                        }`}
-                      >
-                        ₪
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setDiscountMode("percent")}
-                        className={`inline-flex items-center justify-center min-h-[36px] px-3 rounded-lg transition-colors ${
-                          discountMode === "percent"
-                            ? "bg-gradient-to-l from-orange-500 to-rose-500 text-white shadow-sm"
-                            : "text-stone-700 hover:text-stone-900"
-                        }`}
-                      >
-                        %
-                      </button>
-                    </div>
-                    <input
-                      type="number"
-                      min={0}
-                      step="0.01"
-                      value={discountInput}
-                      onChange={(e) => setDiscountInput(e.target.value)}
-                      placeholder={discountMode === "percent" ? "שיעור הנחה" : "סכום הנחה"}
-                      className="input-warm tabular-nums flex-1"
-                      dir="ltr"
-                    />
-                  </div>
-                  {discountEntered && discountValid && discountAmount > 0 && (
-                    <p className="text-sm font-semibold text-stone-800">
-                      הנחה: {formatCurrency(discountAmount)}
-                      {discountMode === "percent" && <> ({discountRaw}%)</>}
-                    </p>
-                  )}
-                  {discountEntered && !discountValid && (
-                    <p className="text-xs text-rose-700">
-                      {discountMode === "percent"
-                        ? "שיעור ההנחה חייב להיות בין 0 ל-100."
-                        : "ההנחה חייבת להיות חיובית ונמוכה מסכום הפריטים."}
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-        </Section>
-
-        <Section title="הערות" icon={StickyNote}>
+        {/* ── הערות ── */}
+        <EditorCard title="הערות" icon={StickyNote} optional>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="הערות אופציונליות שיופיעו על המסמך"
             rows={3}
             className="input-warm"
+            aria-label="הערות"
           />
-        </Section>
+        </EditorCard>
 
-        <Section title="שליחה ללקוח" icon={Mail}>
+        {/* ── שליחה ללקוח ── */}
+        <EditorCard title="שליחה ללקוח" icon={Mail}>
           <label className="flex items-center gap-2 text-sm mb-3 cursor-pointer">
             <input
               type="checkbox"
@@ -1771,204 +1830,202 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
               onChange={(e) => setSendEmail(e.target.checked)}
               className="w-4 h-4 accent-orange-500"
             />
-            <span className="text-stone-700">שלח את ה{docLabel} אוטומטית במייל ללקוח כשאני לוחץ שמור</span>
+            <span className="text-stone-700">
+              שלח את ה{docLabel} אוטומטית במייל ללקוח כשאני לוחץ שמור
+            </span>
           </label>
+          <FormField label="אימייל לשליחה">
+            <div className="space-y-2">
+              {emails.map((em, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <input
+                    type="email"
+                    dir="ltr"
+                    value={em}
+                    onChange={(e) => updateEmail(i, e.target.value)}
+                    placeholder="name@example.com"
+                    className="input-warm flex-1"
+                    aria-label={`אימייל לשליחה ${i + 1}`}
+                  />
+                  {emails.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeEmail(i)}
+                      className="inline-flex items-center justify-center w-9 h-9 flex-shrink-0 rounded-xl bg-stone-100 text-stone-600 hover:bg-rose-50 hover:text-rose-600"
+                      title="הסר אימייל"
+                      aria-label="הסר אימייל"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center justify-between mt-2 gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={addEmail}
+                className="inline-flex items-center gap-1.5 min-h-[44px] text-sm font-semibold text-orange-700 hover:text-orange-800"
+              >
+                <Plus className="w-4 h-4" />
+                הוסף עוד אימייל
+              </button>
+              {emailOverridden && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEmails([(adhocMode ? adhocEmail : selectedClient?.email || "") || ""]);
+                    setEmailOverridden(false);
+                  }}
+                  className="inline-flex items-center min-h-[44px] text-xs text-orange-700 hover:underline"
+                >
+                  שחזר מהלקוח
+                </button>
+              )}
+            </div>
+            {!adhocMode && selectedClient && !selectedClient.email && (
+              <p className="text-xs text-amber-700 mt-1">
+                ללקוח זה אין אימייל שמור — מלא ידנית או ערוך את פרטי הלקוח
+              </p>
+            )}
+          </FormField>
           {sendEmail && (
-            <p className="text-xs text-stone-600">
+            <p className="text-xs text-stone-600 mt-2">
               {emailRecipients.length > 0
-                ? `יישלח ל-${emailRecipients.length} נמענים: ${emailTo} (לעריכה — שדה "אימייל לשליחה" בפרטי המסמך).`
-                : 'מלא את הכתובת בשדה "אימייל לשליחה" בפרטי המסמך.'}
+                ? `יישלח ל-${emailRecipients.length} נמענים: ${emailTo}`
+                : "מלא כתובת אימייל אחת לפחות, או בטל את הסימון למעלה."}
             </p>
           )}
-        </Section>
-
-        <button
-          type="button"
-          onClick={() => setShowPreviewMobile((s) => !s)}
-          className="lg:hidden w-full inline-flex items-center justify-center gap-2 bg-white border-2 border-orange-200 text-stone-800 py-3 rounded-2xl text-sm font-semibold hover:bg-orange-50"
-        >
-          {showPreviewMobile ? (
-            <>
-              <EyeOff className="w-4 h-4" />
-              הסתר תצוגה מקדימה
-            </>
-          ) : (
-            <>
-              <Eye className="w-4 h-4" />
-              הצג תצוגה מקדימה
-            </>
-          )}
-        </button>
-
-        {showPreviewMobile && (
-          <div className="lg:hidden">
-            <DocumentPreview
-              business={business}
-              client={previewClient}
-              documentType={documentType}
-              date={date}
-              subject={subject || undefined}
-              items={previewItems}
-              subtotal={subtotal}
-              vat={vat}
-              vatRate={effectiveVatRate}
-              total={total}
-              rounding={rounding}
-              paymentMethod={isPrePayment ? undefined : paymentMethod}
-              paymentDetails={buildPaymentDetails()}
-              discount={discountAmount}
-              withholdingRate={withholdingEntered && withholdingValid ? withholdingRate : undefined}
-              withholdingAmount={withholdingEntered && withholdingValid ? withholdingAmount : undefined}
-              notes={notes || undefined}
-            />
-          </div>
-        )}
+        </EditorCard>
       </div>
 
-      <aside className="lg:col-span-5 space-y-4">
-        <div className="card-soft p-5 sticky top-4 bg-gradient-to-br from-orange-50/50 to-amber-50/50 border-orange-200">
-          <h3 className="font-semibold text-stone-900 mb-3 flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-orange-500" />
-            סיכום ושליחה
-          </h3>
-          <div className="space-y-1.5 text-sm">
-            {discountAmount > 0 && (
-              <>
-                <SummaryRow label="סה״כ לפני הנחה" value={formatCurrency(subtotal + discountAmount)} />
-                <SummaryRow label="הנחה" value={`-${formatCurrency(discountAmount)}`} />
-              </>
-            )}
-            {effectiveVatRate > 0 && (
-              <>
-                <SummaryRow label="סכום ביניים" value={formatCurrency(subtotal)} />
-                <SummaryRow label={`מע״מ (${effectiveVatRate}%)`} value={formatCurrency(vat)} />
-              </>
-            )}
-            {rounding !== 0 && (
-              <SummaryRow label="עיגול" value={formatCurrency(rounding)} />
-            )}
-            <div className="flex justify-between items-baseline pt-2">
-              <span className="text-stone-800 font-semibold">
-                {isQuote ? "סה״כ הצעה" : isCreditNote ? "סה״כ זיכוי" : "סה״כ לתשלום"}
-              </span>
-              <span className="text-2xl font-bold bg-gradient-to-l from-orange-500 to-rose-500 bg-clip-text text-transparent">
-                {formatCurrency(total)}
-              </span>
+      {/* ── PREVIEW + ACTION COLUMN (inline-end / left in RTL) ──────────── */}
+      <aside className="lg:col-span-5">
+        <div className="lg:sticky lg:top-4 space-y-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto lg:pl-1">
+          <div className="hidden lg:block">
+            <p className="flex items-center gap-2 text-xs font-semibold text-stone-700 mb-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-emerald-200" />
+              תצוגה חיה — מתעדכנת תוך כדי הקלדה
+            </p>
+            <DocumentPreview {...previewProps} />
+          </div>
+
+          <div className="card-soft p-5 bg-gradient-to-br from-orange-50/50 to-amber-50/50 border-orange-200">
+            <h3 className="font-semibold text-stone-900 mb-3 flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-orange-500" />
+              סיכום ושליחה
+            </h3>
+            <div className="space-y-1.5 text-sm">
+              {discountAmount > 0 && (
+                <>
+                  <SummaryRow label="סה״כ לפני הנחה" value={formatCurrency(subtotal + discountAmount)} />
+                  <SummaryRow label="הנחה" value={`-${formatCurrency(discountAmount)}`} />
+                </>
+              )}
+              {effectiveVatRate > 0 && (
+                <>
+                  <SummaryRow label="סכום ביניים" value={formatCurrency(subtotal)} />
+                  <SummaryRow label={`מע״מ (${effectiveVatRate}%)`} value={formatCurrency(vat)} />
+                </>
+              )}
+              {rounding !== 0 && <SummaryRow label="עיגול" value={formatCurrency(rounding)} />}
+              <div className="flex justify-between items-baseline pt-2">
+                <span className="text-stone-800 font-semibold">
+                  {isQuote ? "סה״כ הצעה" : isCreditNote ? "סה״כ זיכוי" : "סה״כ לתשלום"}
+                </span>
+                <span className="text-2xl font-bold bg-gradient-to-l from-orange-500 to-rose-500 bg-clip-text text-transparent">
+                  {formatCurrency(total)}
+                </span>
+              </div>
+              {withholdingEntered && withholdingValid && withholdingAmount > 0 && (
+                <div className="flex justify-between items-baseline pt-2 mt-1 border-t border-orange-100">
+                  <span className="text-stone-800 font-semibold">שולם בפועל</span>
+                  <span className="text-lg font-bold text-stone-900">
+                    {formatCurrency(total - withholdingAmount)}
+                  </span>
+                </div>
+              )}
             </div>
-            {withholdingEntered && withholdingValid && withholdingAmount > 0 && (
-              <div className="flex justify-between items-baseline pt-2 mt-1 border-t border-orange-100">
-                <span className="text-stone-800 font-semibold">שולם בפועל</span>
-                <span className="text-lg font-bold text-stone-900">
-                  {formatCurrency(total - withholdingAmount)}
+            <div className="mt-4 space-y-2">
+              <button
+                onClick={handleSave}
+                disabled={!canSave || saving || rateLoading || businessProfileIncomplete}
+                className="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white py-3 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200 disabled:from-stone-300 disabled:to-stone-300 disabled:cursor-not-allowed disabled:shadow-none transition-all"
+              >
+                {saving ? (
+                  "שולח..."
+                ) : rateLoading ? (
+                  "טוען שער חליפין…"
+                ) : sendEmail ? (
+                  <>
+                    <Send className="w-4 h-4" />
+                    שמור, הפק ושלח
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4" />
+                    שמור והפק {docLabel}
+                  </>
+                )}
+              </button>
+              <button
+                onClick={handleSaveDraft}
+                disabled={savingDraft || saving}
+                className="w-full inline-flex items-center justify-center gap-2 bg-white text-stone-700 border border-stone-300 py-2.5 rounded-2xl text-sm font-semibold hover:bg-stone-50 hover:border-stone-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              >
+                <Save className="w-4 h-4" />
+                {savingDraft ? "שומר טיוטה…" : "שמור טיוטה והמשך אחר כך"}
+              </button>
+              <p className="text-xs text-stone-600 text-center">
+                טיוטה נשמרת בלי מספר — תוכל להמשיך אותה מלשונית &quot;טיוטות&quot;.
+              </p>
+            </div>
+            {businessProfileIncomplete && (
+              <div className="mt-3 flex items-start gap-2 text-xs text-rose-800 bg-rose-50 p-3 rounded-xl border border-rose-200">
+                <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-rose-600" />
+                <span>
+                  לפני הפקת מסמך יש להשלים את שם העסק ומספר העוסק/ח.פ.{" "}
+                  <a href="/settings" className="font-semibold underline hover:text-rose-900">
+                    להשלמת פרטי העסק בהגדרות ←
+                  </a>
                 </span>
               </div>
             )}
+            {!canSave && !businessProfileIncomplete && (
+              <div className="mt-3 flex items-start gap-2 text-xs text-amber-800 bg-amber-50 p-3 rounded-xl border border-amber-200">
+                <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                <span>
+                  {!clientReady
+                    ? "יש לבחור לקוח או למלא שם של לקוח מזדמן"
+                    : isCreditNote && !creditRefValid
+                    ? "יש לבחור/להזין את חשבונית המס המקורית שאותה מזכים"
+                    : !discountValid
+                    ? "יש לתקן את סכום ההנחה"
+                    : !withholdingValid
+                    ? "יש לתקן את סכום ניכוי המס במקור"
+                    : sendEmail && !allEmailsValid
+                    ? 'יש להזין אימייל תקין בכרטיס "שליחה ללקוח"'
+                    : "כל פריט חייב תיאור, כמות חיובית ומחיר"}
+                </span>
+              </div>
+            )}
+            {toast && (
+              <div
+                className={`mt-3 text-sm p-3 rounded-xl flex items-start gap-2 ${
+                  toast.kind === "success"
+                    ? "bg-emerald-50 text-emerald-900 border border-emerald-200"
+                    : "bg-rose-50 text-rose-900 border border-rose-200"
+                }`}
+              >
+                {toast.kind === "success" ? (
+                  <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5 text-emerald-600" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-rose-600" />
+                )}
+                <span>{toast.text}</span>
+              </div>
+            )}
           </div>
-          <div className="mt-4 space-y-2">
-            <button
-              onClick={handleSave}
-              disabled={!canSave || saving || rateLoading || businessProfileIncomplete}
-              className="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white py-3 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200 disabled:from-stone-300 disabled:to-stone-300 disabled:cursor-not-allowed disabled:shadow-none transition-all"
-            >
-              {saving ? (
-                "שולח..."
-              ) : rateLoading ? (
-                "טוען שער חליפין…"
-              ) : sendEmail ? (
-                <>
-                  <Send className="w-4 h-4" />
-                  שמור, הפק ושלח
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4" />
-                  שמור והפק {docLabel}
-                </>
-              )}
-            </button>
-            <button
-              onClick={handleSaveDraft}
-              disabled={savingDraft || saving}
-              className="w-full inline-flex items-center justify-center gap-2 bg-white text-stone-700 border border-stone-300 py-2.5 rounded-2xl text-sm font-semibold hover:bg-stone-50 hover:border-stone-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-            >
-              <Save className="w-4 h-4" />
-              {savingDraft ? "שומר טיוטה…" : "שמור טיוטה והמשך אחר כך"}
-            </button>
-            <p className="text-xs text-stone-500 text-center">
-              טיוטה נשמרת בלי מספר — תוכל להמשיך אותה מלשונית &quot;טיוטות&quot;.
-            </p>
-          </div>
-          {businessProfileIncomplete && (
-            <div className="mt-3 flex items-start gap-2 text-xs text-rose-800 bg-rose-50 p-3 rounded-xl border border-rose-200">
-              <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-rose-600" />
-              <span>
-                לפני הפקת מסמך יש להשלים את שם העסק ומספר העוסק/ח.פ.{" "}
-                <a href="/settings" className="font-semibold underline hover:text-rose-900">
-                  להשלמת פרטי העסק בהגדרות ←
-                </a>
-              </span>
-            </div>
-          )}
-          {!canSave && !businessProfileIncomplete && (
-            <div className="mt-3 flex items-start gap-2 text-xs text-amber-700 bg-amber-50 p-3 rounded-xl border border-amber-200">
-              <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-              <span>
-                {!clientReady
-                  ? "יש לבחור לקוח או למלא שם של לקוח מזדמן"
-                  : isCreditNote && !creditRefValid
-                  ? "יש לבחור/להזין את חשבונית המס המקורית שאותה מזכים"
-                  : !discountValid
-                  ? "יש לתקן את סכום ההנחה"
-                  : !withholdingValid
-                  ? "יש לתקן את סכום ניכוי המס במקור"
-                  : sendEmail && !allEmailsValid
-                  ? "יש להזין אימייל תקין לשליחה"
-                  : "כל פריט חייב תיאור, כמות חיובית ומחיר"}
-              </span>
-            </div>
-          )}
-          {toast && (
-            <div
-              className={`mt-3 text-sm p-3 rounded-xl flex items-start gap-2 ${
-                toast.kind === "success"
-                  ? "bg-emerald-50 text-emerald-900 border border-emerald-200"
-                  : "bg-rose-50 text-rose-900 border border-rose-200"
-              }`}
-            >
-              {toast.kind === "success" ? (
-                <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5 text-emerald-600" />
-              ) : (
-                <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-rose-600" />
-              )}
-              <span>{toast.text}</span>
-            </div>
-          )}
-        </div>
-
-        <div className="hidden lg:block">
-          <h3 className="font-semibold text-stone-900 mb-3 flex items-center gap-2 text-sm">
-            <Eye className="w-4 h-4 text-orange-500" />
-            תצוגה מקדימה
-          </h3>
-          <DocumentPreview
-            business={business}
-            client={previewClient}
-            documentType={documentType}
-            date={date}
-            subject={subject || undefined}
-            items={previewItems}
-            subtotal={subtotal}
-            vat={vat}
-            vatRate={effectiveVatRate}
-            total={total}
-            rounding={rounding}
-            paymentMethod={isPrePayment ? undefined : paymentMethod}
-            paymentDetails={buildPaymentDetails()}
-            discount={discountAmount}
-            withholdingRate={withholdingEntered && withholdingValid ? withholdingRate : undefined}
-            withholdingAmount={withholdingEntered && withholdingValid ? withholdingAmount : undefined}
-            notes={notes || undefined}
-          />
         </div>
       </aside>
     </div>
@@ -1976,22 +2033,63 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   );
 }
 
-function Section({
+/**
+ * A titled section of the form, styled as the approved rounded card: gold icon
+ * chip, hairline-separated header, roomy body. Replaces the old flat <Section>.
+ */
+function EditorCard({
   title,
   icon: Icon,
+  optional = false,
   children,
 }: {
   title: string;
   icon?: React.ComponentType<{ className?: string }>;
+  optional?: boolean;
   children: React.ReactNode;
 }) {
   return (
-    <div className="card-soft p-5">
-      <h2 className="font-semibold text-stone-900 mb-4 flex items-center gap-2">
-        {Icon && <Icon className="w-4 h-4 text-orange-500" />}
-        {title}
-      </h2>
-      {children}
+    <div className="card-soft overflow-hidden">
+      <div className="flex items-center gap-2.5 px-5 py-3.5 border-b border-orange-100">
+        {Icon && <Icon className="w-4 h-4 text-orange-500 flex-shrink-0" />}
+        <h2 className="font-semibold text-stone-900 text-[15px]">{title}</h2>
+        {optional && (
+          <span className="ms-auto text-[11px] text-stone-600">אופציונלי</span>
+        )}
+      </div>
+      <div className="p-5">{children}</div>
+    </div>
+  );
+}
+
+/** A quiet disclosure for advanced/rarely-used controls. */
+function Expander({
+  label,
+  open,
+  onToggle,
+  children,
+}: {
+  label: string;
+  open: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="mt-3">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className="inline-flex items-center gap-1.5 min-h-[44px] text-[13px] font-semibold text-stone-700 hover:text-orange-700"
+      >
+        <ChevronDown
+          className={`w-4 h-4 transition-transform ${open ? "rotate-180" : ""}`}
+        />
+        {label}
+      </button>
+      {open && (
+        <div className="mt-3 pt-3 border-t border-dashed border-orange-200">{children}</div>
+      )}
     </div>
   );
 }

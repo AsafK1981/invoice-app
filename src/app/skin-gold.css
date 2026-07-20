@@ -43,13 +43,13 @@ html[data-skin="gold"] body {
     radial-gradient(110% 120% at 50% 30%, #1a1510 0%, #0d0a07 55%, #070504 100%) !important;
   background-attachment: fixed !important;
   color: var(--ink) !important;
-  font-family: "Assistant", "Heebo", system-ui, sans-serif;
+  font-family: var(--font-assistant), var(--font-heebo), "Assistant", "Heebo", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 html[data-skin="gold"] h1,
 html[data-skin="gold"] h2,
 html[data-skin="gold"] h3 {
-  font-family: "Frank Ruhl Libre", serif;
+  font-family: var(--font-frank), "Frank Ruhl Libre", serif;
   color: #e2dccd;
   letter-spacing: -0.01em;
 }
@@ -62,7 +62,7 @@ html[data-skin="gold"] .gk-value {
   background-clip: text;
   color: transparent !important;
   filter: drop-shadow(0 2px 10px rgba(190, 158, 78, 0.11));
-  font-family: "Frank Ruhl Libre", serif;
+  font-family: var(--font-frank), "Frank Ruhl Libre", serif;
 }
 
 /* ---------- text-colour remaps (Tailwind utilities) ---------- */
@@ -408,44 +408,14 @@ html[data-skin="gold"] .gk-doc-preview {
   background-color: #0d0a07 !important;
 }
 
-/* The receipt/PDF preview must stay white paper even under the gold skin,
-   same rationale as dark mode. */
-html[data-skin="gold"] .receipt-view {
-  background: #ffffff !important;
-  color: #44403c !important;
-}
-html[data-skin="gold"] .receipt-view * { color: inherit; }
-html[data-skin="gold"] .receipt-view::before,
-html[data-skin="gold"] .receipt-view::after { display: none !important; }
-
-/* PAPER SCOPE — the printable document sheet must render its OWN print-faithful
-   light palette under the gold skin, identically on the doc view, the editor
-   live-preview, the public /view page (gold is the default skin, so anonymous
-   recipients get data-skin="gold" too) and the server-rendered PDF (which
-   navigates headless Chrome to /view). The global gold remaps (table thead/td,
-   .text-stone-*, .bg-* , .bg-gradient-to-l.from-orange-50) are single-class
-   !important rules that were bleeding into the paper — turning the line-items
-   table dark with light text. Re-assert every utility the paper uses at
-   two-class (.receipt-view .x) specificity + !important so none of them can
-   leak in. Same strategy as the .gk-paper block below (journal / statement). */
-html[data-skin="gold"] .receipt-view .text-stone-900 { color: #1c1917 !important; }
-html[data-skin="gold"] .receipt-view .text-stone-800 { color: #292524 !important; }
-html[data-skin="gold"] .receipt-view .text-stone-700 { color: #44403c !important; }
-html[data-skin="gold"] .receipt-view .text-stone-600 { color: #57534e !important; }
-html[data-skin="gold"] .receipt-view .text-stone-500 { color: #78716c !important; }
-html[data-skin="gold"] .receipt-view .text-stone-400 { color: #a8a29e !important; }
-/* line-items table: coral-on-cream header + clean body, never the dark remap */
-html[data-skin="gold"] .receipt-view table thead { background: transparent !important; }
-html[data-skin="gold"] .receipt-view table thead th { color: #44403c !important; border-color: #fed7aa !important; }
-html[data-skin="gold"] .receipt-view table tbody td { color: inherit; border-color: transparent !important; }
-html[data-skin="gold"] .receipt-view .bg-gradient-to-l.from-orange-50 {
-  background: linear-gradient(to left, #fff7ed, #fffbeb) !important;
-}
-html[data-skin="gold"] .receipt-view .bg-white { background-color: #ffffff !important; }
-html[data-skin="gold"] .receipt-view .bg-stone-50\/60 { background-color: rgba(250, 250, 249, 0.6) !important; }
-html[data-skin="gold"] .receipt-view .bg-stone-100 { background-color: #f5f5f4 !important; }
-html[data-skin="gold"] .receipt-view .bg-orange-50\/60 { background-color: rgba(255, 247, 237, 0.6) !important; }
-html[data-skin="gold"] .receipt-view .border-stone-200 { border-color: #e7e5e4 !important; }
+/* PAPER SCOPE — INTENTIONALLY EMPTY (2026-07-19 redesign).
+   The printable sheet no longer styles itself with Tailwind utilities, so the
+   gold skin's utility remaps can't reach it any more. Everything the paper
+   needs now lives in `document-paper.css` under `.doc-paper`, in explicit
+   colours and PX sizes (also immune to the gold root font-size bump at the end
+   of this file). The old "re-assert every utility" block that used to live here
+   was deleted rather than updated — reintroducing utility classes inside the
+   sheet would just resurrect the leak. */
 
 /* PRINT / PDF — the server PDF route navigates headless Chrome to /view under
    the (now-default) gold skin and prints with printBackground. On screen the
@@ -604,13 +574,16 @@ html[data-skin="gold"] .ring-orange-200,
 html[data-skin="gold"] .ring-rose-200 { --tw-ring-color: rgba(214, 178, 108, 0.2) !important; }
 html[data-skin="gold"] .bg-stone-200 { background-color: rgba(214, 178, 108, 0.16) !important; }
 
-/* ---------- live document preview: white paper keeps a gold hairline frame ----------
-   The printed-sheet simulation stays white on purpose (premium paper-on-obsidian);
-   ring it in a gold hairline so it reads as an intentional framed artifact. */
-html[data-skin="gold"] .receipt-view {
-  box-shadow:
-    0 0 0 1px var(--line),
-    0 30px 60px -28px rgba(0, 0, 0, 0.8) !important;
+/* ---------- live document preview: the sheet keeps a gold hairline frame ----------
+   The printed-sheet simulation stays light on purpose (premium paper-on-obsidian);
+   ring it in a gold hairline so it reads as an intentional framed artifact.
+   Screen only — @media print below strips it. */
+@media screen {
+  html[data-skin="gold"] .receipt-view {
+    box-shadow:
+      0 0 0 1px var(--line),
+      0 30px 60px -28px rgba(0, 0, 0, 0.8) !important;
+  }
 }
 
 /* =====================================================================
