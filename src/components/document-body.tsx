@@ -143,6 +143,16 @@ export function DocumentBody({
   const businessName = business.name || (placeholders ? "—" : "");
   const showItemsEmptyState =
     placeholders && (items.length === 0 || items.every((i) => !i.description));
+  // Historical imported documents (e.g. the Invoice4U migration) stored only a
+  // total + subject, never per-line rows. Rather than show a headers-only table
+  // with no body, synthesize ONE display row from the document itself: the
+  // subject as the description (falling back to the document-type label), qty 1,
+  // and the pre-VAT subtotal as the amount — which equals the grand total for
+  // these zero-VAT (עוסק פטור) docs and stays consistent with the totals
+  // breakdown for any future VAT doc. This is display-only and NEVER fires for a
+  // document that actually has line items, nor in the editor placeholder state.
+  const useFallbackRow = !placeholders && items.length === 0;
+  const fallbackDescription = subject?.trim() || DOCUMENT_TYPE_LABELS[documentType];
   const hasWithholding = withholdingAmount != null && withholdingAmount > 0;
 
   // Business identity line: "עוסק מורשה 003244266" then address · phone · email.
@@ -262,6 +272,13 @@ export function DocumentBody({
                 <td colSpan={4} className="c-empty">
                   לא הוזנו פריטים עדיין
                 </td>
+              </tr>
+            ) : useFallbackRow ? (
+              <tr>
+                <td className="c-desc">{fallbackDescription}</td>
+                <td className="c-qty doc-tab">1</td>
+                <td className="c-num doc-tab">{money(subtotal)}</td>
+                <td className="c-total doc-tab">{money(subtotal)}</td>
               </tr>
             ) : (
               items.map((item) => (

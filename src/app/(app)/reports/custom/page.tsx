@@ -299,7 +299,7 @@ export default function CustomReportPage() {
                 <button
                   key={o.value}
                   onClick={() => setAllocation(o.value)}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
+                  className={`inline-flex items-center min-h-[40px] sm:min-h-0 px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
                     allocation === o.value ? "bg-white text-orange-700 shadow-sm" : "text-stone-600 hover:text-stone-900"
                   }`}
                 >
@@ -352,7 +352,7 @@ export default function CustomReportPage() {
               <button
                 key={t}
                 onClick={() => toggleType(t)}
-                className={`px-3 py-1.5 rounded-full text-sm font-semibold border-2 transition-colors ${
+                className={`inline-flex items-center min-h-[40px] sm:min-h-0 px-3 py-1.5 rounded-full text-sm font-semibold border-2 transition-colors ${
                   active
                     ? "bg-orange-50 border-orange-300 text-orange-800"
                     : "bg-white border-stone-200 text-stone-500 hover:border-stone-300"
@@ -362,17 +362,17 @@ export default function CustomReportPage() {
               </button>
             );
           })}
-          <div className="flex items-center gap-2 mr-2">
+          <div className="flex items-center gap-1 mr-2">
             <button
               onClick={() => setTypes(ALL_TYPES)}
-              className="text-xs font-semibold text-orange-600 hover:text-orange-700"
+              className="inline-flex items-center min-h-[40px] sm:min-h-0 px-2 text-xs font-semibold text-orange-600 hover:text-orange-700"
             >
               הכל
             </button>
             <span className="text-stone-300">·</span>
             <button
               onClick={() => setTypes([])}
-              className="text-xs font-semibold text-stone-500 hover:text-stone-700"
+              className="inline-flex items-center min-h-[40px] sm:min-h-0 px-2 text-xs font-semibold text-stone-500 hover:text-stone-700"
             >
               נקה
             </button>
