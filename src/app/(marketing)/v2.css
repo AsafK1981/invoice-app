@@ -1367,3 +1367,147 @@
   .v2-theme .v2-price-grid,
   .v2-theme .v2-str-grid { grid-template-columns: 1fr; }
 }
+
+/* ============================================================
+   BLOG / MAGAZINE (/blog + /blog/[slug]).
+   Reuses the shared sub-page shell (.v2-doc, .v2-back, .v2-doc-*,
+   .v2-prose). Adds a card list for the index and extends the prose
+   block to cover article markup (lists, tables, blockquote, hr, h3).
+   Every selector stays under `.v2-theme`.
+   ============================================================ */
+
+/* ---------- index card list ---------- */
+.v2-theme .v2-blog-list {
+  display: grid;
+  gap: 18px;
+  margin-top: 4px;
+}
+.v2-theme .v2-blog-card {
+  display: block;
+  position: relative;
+  padding: 24px 26px;
+  border-radius: 14px;
+  border: 1px solid var(--v2-line);
+  background: linear-gradient(160deg, #17110a, #100c07);
+  transition: border-color 0.2s ease, transform 0.15s ease;
+}
+.v2-theme .v2-blog-card:hover {
+  border-color: var(--v2-g2);
+  transform: translateY(-2px);
+}
+.v2-theme .v2-blog-card .date {
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  color: var(--v2-muted);
+}
+.v2-theme .v2-blog-card h2 {
+  font-family: "Frank Ruhl Libre", var(--font-frank), serif;
+  font-weight: 700;
+  font-size: clamp(19px, 3vw, 23px);
+  line-height: 1.25;
+  color: var(--v2-g1);
+  margin: 8px 0 10px;
+}
+.v2-theme .v2-blog-card p {
+  font-size: 14.5px;
+  line-height: 1.75;
+  color: #c4bbad;
+}
+.v2-theme .v2-blog-card .more {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 14px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--v2-g2);
+}
+.v2-theme .v2-blog-card .more svg { width: 15px; height: 15px; }
+
+.v2-theme .v2-blog-empty {
+  margin-top: 8px;
+  padding: 30px 26px;
+  border-radius: 14px;
+  border: 1px dashed var(--v2-line);
+  color: var(--v2-muted);
+  font-size: 15px;
+  line-height: 1.8;
+  text-align: center;
+}
+
+/* ---------- draft banner (published: false) ---------- */
+.v2-theme .v2-draft-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 26px;
+  padding: 13px 18px;
+  border-radius: 12px;
+  border: 1px solid var(--v2-partial);
+  background: rgba(217, 164, 65, 0.08);
+  color: var(--v2-partial);
+  font-size: 14px;
+  font-weight: 700;
+}
+.v2-theme .v2-draft-banner svg { width: 18px; height: 18px; flex: none; }
+
+/* ---------- article body (extends .v2-prose for markdown) ---------- */
+.v2-theme .v2-prose h1 {
+  font-family: "Frank Ruhl Libre", var(--font-frank), serif;
+  font-weight: 900;
+  font-size: clamp(26px, 4.6vw, 38px);
+  line-height: 1.15;
+  color: var(--v2-ink);
+  margin-bottom: 20px;
+}
+.v2-theme .v2-prose h2 { margin-top: 30px; }
+.v2-theme .v2-prose h3 {
+  font-family: "Frank Ruhl Libre", var(--font-frank), serif;
+  font-weight: 700;
+  font-size: 16.5px;
+  color: var(--v2-g1);
+  margin: 22px 0 8px;
+}
+.v2-theme .v2-prose p { margin-bottom: 14px; }
+.v2-theme .v2-prose ul,
+.v2-theme .v2-prose ol {
+  margin: 0 0 16px;
+  padding-inline-start: 22px;
+  color: #c4bbad;
+  font-size: 15px;
+  line-height: 1.8;
+}
+.v2-theme .v2-prose li { margin-bottom: 6px; }
+.v2-theme .v2-prose li::marker { color: var(--v2-g2); }
+.v2-theme .v2-prose strong { color: var(--v2-ink); font-weight: 700; }
+.v2-theme .v2-prose blockquote {
+  margin: 16px 0;
+  padding: 4px 16px;
+  border-inline-start: 2px solid var(--v2-g2);
+  color: #cbc2b3;
+  font-style: italic;
+}
+.v2-theme .v2-prose hr {
+  border: none;
+  border-top: 1px solid var(--v2-line);
+  margin: 28px 0;
+}
+.v2-theme .v2-prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 8px 0 20px;
+  font-size: 14.5px;
+}
+.v2-theme .v2-prose th,
+.v2-theme .v2-prose td {
+  border: 1px solid var(--v2-line);
+  padding: 9px 12px;
+  text-align: right;
+  color: #c4bbad;
+}
+.v2-theme .v2-prose th {
+  color: var(--v2-g1);
+  font-weight: 700;
+  background: rgba(214, 178, 108, 0.05);
+}
+.v2-theme .v2-prose em { color: #cbc2b3; }

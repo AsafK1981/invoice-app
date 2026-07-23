@@ -10,9 +10,9 @@ import {
   Zap,
   CheckCircle2,
   AlertCircle,
-  ExternalLink,
   ShieldCheck,
-  Globe,
+  RotateCcw,
+  XCircle,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import {
@@ -31,13 +31,17 @@ export default function BillingPage() {
   const [planStatus, setPlanStatus] = useState<PlanStatus>({ tier: "free", active: true });
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<PlanTier | null>(null);
-  const [interval, setInterval] = useState<BillingInterval>("month");
+  // Default to yearly: GTM roadmap task 4.4 — a single large annual charge best
+  // absorbs Grow's fixed ₪59/mo fee, so the annual plan is the recommended default.
+  const [interval, setInterval] = useState<BillingInterval>("year");
   const [toast, setToast] = useState<{ kind: "success" | "error"; text: string } | null>(null);
   // Confirmation modal — shown when user clicks subscribe, before
-  // redirecting to Polar's English checkout page. Sets expectations:
-  // (1) summary of the plan in Hebrew, (2) Polar is the processor and
-  // its checkout page is in English, (3) what happens after.
+  // redirecting to the hosted (Hebrew) checkout page. Sets expectations:
+  // a plan summary in Hebrew and what happens after payment.
   const [confirmingTier, setConfirmingTier] = useState<PlanTier | null>(null);
+  // Confirmation modal for canceling an active subscription. The user keeps
+  // access until the end of the already-paid period.
+  const [confirmingCancel, setConfirmingCancel] = useState(false);
 
   useEffect(() => {
     if (searchParams.get("success") === "1") {
@@ -62,7 +66,7 @@ export default function BillingPage() {
     setConfirmingTier(tier);
   }
 
-  // Step 2: user confirmed in the modal — now create the Polar
+  // Step 2: user confirmed in the modal — now create the hosted
   // checkout session and redirect to it.
   async function actuallySubscribe(tier: PlanTier) {
     setActionLoading(tier);
@@ -95,18 +99,100 @@ export default function BillingPage() {
     }
   }
 
-  async function handleManage() {
+  // Clicking "cancel subscription" just opens the confirm modal — the actual
+  // cancel call happens inside, after the user reviews the "you keep access
+  // until the end of the paid period" notice.
+  function handleManage() {
+    setToast(null);
+    setConfirmingCancel(true);
+  }
+
+  // Rollback path (PAYMENT_PROVIDER=polar): the cancel route refuses with 410,
+  // and cancellation is done through Polar's hosted customer portal instead.
+  // Returns true if we successfully kicked off the redirect.
+  async function redirectToPolarPortal(): Promise<boolean> {
+    const { data: { session } } = await supabase.auth.getSession();
+    const res = await fetch("/api/billing/portal", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${session?.access_token}` },
+    });
+    const data = await res.json();
+    if (data.ok && data.url) {
+      window.location.href = data.url;
+      return true;
+    }
+    return false;
+  }
+
+  // User confirmed cancellation. Calls the cancel route (Grow path). If it
+  // returns 410 we're in the Polar rollback mode — fall back to the hosted
+  // portal redirect.
+  async function actuallyCancel() {
+    setActionLoading("pro");
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch("/api/billing/cancel", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ action: "cancel" }),
+      });
+      if (res.status === 410) {
+        const ok = await redirectToPolarPortal();
+        if (!ok) {
+          setConfirmingCancel(false);
+          setToast({ kind: "error", text: "שגיאה בפתיחת ניהול המנוי" });
+        }
+        return;
+      }
+      const data = await res.json();
+      if (data.ok) {
+        setConfirmingCancel(false);
+        setPlanStatus((prev) => ({ ...prev, cancelAtPeriodEnd: true }));
+        setToast({
+          kind: "success",
+          text: "המנוי יבוטל בסוף התקופה. הגישה שלך נשמרת עד אז.",
+        });
+      } else {
+        setConfirmingCancel(false);
+        setToast({ kind: "error", text: data.error || "שגיאה" });
+      }
+    } catch (err) {
+      setConfirmingCancel(false);
+      setToast({
+        kind: "error",
+        text: err instanceof Error ? err.message : "שגיאה",
+      });
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  // Un-do a pending cancellation before the period ends.
+  async function handleResume() {
     setActionLoading("pro");
     setToast(null);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch("/api/billing/portal", {
+      const res = await fetch("/api/billing/cancel", {
         method: "POST",
-        headers: { Authorization: `Bearer ${session?.access_token}` },
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ action: "resume" }),
       });
+      if (res.status === 410) {
+        const ok = await redirectToPolarPortal();
+        if (!ok) setToast({ kind: "error", text: "שגיאה בפתיחת ניהול המנוי" });
+        return;
+      }
       const data = await res.json();
-      if (data.ok && data.url) {
-        window.location.href = data.url;
+      if (data.ok) {
+        setPlanStatus((prev) => ({ ...prev, cancelAtPeriodEnd: false }));
+        setToast({ kind: "success", text: "הביטול בוטל — המנוי ימשיך כרגיל." });
       } else {
         setToast({ kind: "error", text: data.error || "שגיאה" });
       }
@@ -174,21 +260,37 @@ export default function BillingPage() {
             </div>
             <div className="flex-1">
               <h2 className="font-bold text-stone-900 text-lg">המנוי שלך פעיל ✨</h2>
-              {planStatus.cancelAtPeriodEnd && periodEnd ? (
-                <p className="text-sm text-amber-800 mt-1">
-                  המנוי בוטל ויסתיים ב-{periodEnd}. עד אז יש לך גישה מלאה ל-Pro.
-                </p>
-              ) : periodEnd ? (
-                <p className="text-sm text-stone-700 mt-1">החיוב הבא: {periodEnd}</p>
-              ) : null}
-              <button
-                onClick={handleManage}
-                disabled={actionLoading !== null}
-                className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border-2 border-violet-200 text-violet-700 hover:bg-violet-50 disabled:opacity-50"
-              >
-                <ExternalLink className="w-4 h-4" />
-                {actionLoading !== null ? "טוען..." : "נהל מנוי / בטל / עדכן כרטיס"}
-              </button>
+              {planStatus.cancelAtPeriodEnd ? (
+                <>
+                  <p className="text-sm text-amber-800 mt-1">
+                    {periodEnd
+                      ? `המנוי יבוטל ב-${periodEnd}. עד אז יש לך גישה מלאה ל-Pro.`
+                      : "המנוי יבוטל בסוף התקופה. עד אז יש לך גישה מלאה ל-Pro."}
+                  </p>
+                  <button
+                    onClick={handleResume}
+                    disabled={actionLoading !== null}
+                    className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border-2 border-violet-200 text-violet-700 hover:bg-violet-50 disabled:opacity-50"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    {actionLoading !== null ? "טוען..." : "בטל ביטול"}
+                  </button>
+                </>
+              ) : (
+                <>
+                  {periodEnd && (
+                    <p className="text-sm text-stone-700 mt-1">החיוב הבא: {periodEnd}</p>
+                  )}
+                  <button
+                    onClick={handleManage}
+                    disabled={actionLoading !== null}
+                    className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border-2 border-violet-200 text-violet-700 hover:bg-violet-50 disabled:opacity-50"
+                  >
+                    <XCircle className="w-4 h-4" />
+                    {actionLoading !== null ? "טוען..." : "ביטול מנוי"}
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -300,13 +402,12 @@ export default function BillingPage() {
 
       <p className="text-xs text-center text-stone-500 mt-4">
         {!isPaying && `${TRIAL_DAYS} ימי ניסיון, ללא חיוב במשך התקופה. `}
-        תשלום מאובטח דרך Polar. ניתן לבטל בכל עת.
+        תשלום מאובטח. ניתן לבטל בכל עת.
       </p>
 
-      {/* Confirm-before-redirect modal. Shows plan summary in Hebrew
-          and warns that the next page (Polar's checkout) is in English
-          — manages expectations so Israeli users don't bounce when
-          they hit the language switch. */}
+      {/* Confirm-before-redirect modal. Shows a plan summary in Hebrew and
+          what happens after payment. The hosted checkout page is in Hebrew,
+          so there is no language-switch warning. */}
       <Modal
         open={confirmingTier !== null}
         onClose={() => setConfirmingTier(null)}
@@ -379,18 +480,17 @@ export default function BillingPage() {
               ))}
             </ul>
 
-            <div className="rounded-2xl border-2 border-amber-200 bg-amber-50/60 p-4">
+            <div className="rounded-2xl border-2 border-emerald-200 bg-emerald-50/60 p-4">
               <div className="flex items-start gap-3">
                 <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center flex-shrink-0 shadow-sm">
-                  <Globe className="w-4 h-4 text-amber-600" />
+                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
                 </div>
                 <div className="flex-1 text-sm leading-relaxed">
-                  <p className="font-bold text-stone-900">דף התשלום הבא הוא באנגלית</p>
+                  <p className="font-bold text-stone-900">תשלום מאובטח ומעובד בישראל</p>
                   <p className="text-stone-700 mt-1">
-                    התשלום מאובטח דרך <strong>Polar</strong> — סוחר רשום באירופה
-                    שעובד עם <strong>Stripe</strong> ברקע. דף ה-checkout שלהם
-                    זמין כרגע באנגלית בלבד. שאר האפליקציה נשארת בעברית, וההזמנה
-                    שלך תועבר אוטומטית חזרה לאחר התשלום.
+                    דף התשלום הבא הוא בעברית ומאובטח לפי תקני הסליקה. שאר
+                    האפליקציה נשארת בעברית, וההזמנה שלך תועבר אוטומטית חזרה
+                    לאחר התשלום.
                   </p>
                 </div>
               </div>
@@ -412,6 +512,41 @@ export default function BillingPage() {
             </ul>
           </div>
         )}
+      </Modal>
+
+      {/* Cancel-confirmation modal. Cancellation is not immediate — the user
+          keeps full access until the end of the period they already paid for. */}
+      <Modal
+        open={confirmingCancel}
+        onClose={() => setConfirmingCancel(false)}
+        title="ביטול מנוי"
+        subtitle="הגישה נשמרת עד סוף התקופה"
+        icon={XCircle}
+        maxWidth="sm"
+        footer={
+          <div className="flex gap-2 w-full">
+            <button
+              onClick={() => setConfirmingCancel(false)}
+              disabled={actionLoading !== null}
+              className="flex-1 px-4 py-2 rounded-xl text-sm font-semibold text-stone-700 hover:bg-white disabled:opacity-50"
+            >
+              להשאיר את המנוי
+            </button>
+            <button
+              onClick={actuallyCancel}
+              disabled={actionLoading !== null}
+              className="flex-1 inline-flex items-center justify-center gap-2 bg-gradient-to-l from-rose-500 to-red-500 text-white py-2.5 rounded-xl text-sm font-semibold hover:shadow-lg hover:shadow-rose-200/60 disabled:opacity-50 transition-all"
+            >
+              <XCircle className="w-4 h-4" />
+              {actionLoading !== null ? "מבטל..." : "כן, לבטל"}
+            </button>
+          </div>
+        }
+      >
+        <p className="text-sm text-stone-800 leading-relaxed">
+          לבטל את המנוי? תישאר לך גישה עד סוף התקופה שכבר שולמה. תמיד אפשר לחדש
+          לפני שהתקופה נגמרת.
+        </p>
       </Modal>
     </div>
   );

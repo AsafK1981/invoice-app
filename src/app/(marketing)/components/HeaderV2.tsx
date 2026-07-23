@@ -15,6 +15,9 @@ export default function HeaderV2() {
         <Link href="/vs" className="v2-navlink">
           השוואה
         </Link>
+        <Link href="/blog" className="v2-navlink">
+          מגזין
+        </Link>
         <Link href="/login" className="v2-btn-gold">
           התחברות
         </Link>
