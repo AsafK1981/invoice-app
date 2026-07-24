@@ -8,7 +8,7 @@ import FooterV2 from "../components/FooterV2";
 export const metadata: Metadata = {
   title: "השוואות מול תוכנות חשבוניות אחרות",
   description:
-    "השוואות הוגנות מול Invoice4U, חשבונית ירוקה, ו-iFreelance — מחירים, פיצ׳רים, יתרונות וחסרונות.",
+    "השוואות הוגנות מול Invoice4U, חשבונית ירוקה, iFreelance, SUMIT, iCount ו-EZcount — מחירים, פיצ׳רים, יתרונות וחסרונות.",
   alternates: { canonical: "/vs" },
 };
 
@@ -66,7 +66,7 @@ export default function V2VsIndex() {
 
         <div className="v2-cmp-cta" style={{ marginTop: "40px" }}>
           <Link href="/login" className="v2-cta">
-            התחילו 14 יום ניסיון
+            חודש ראשון חינם
           </Link>
           <div className="v2-fine">ללא כרטיס אשראי · ביטול בכל עת</div>
         </div>

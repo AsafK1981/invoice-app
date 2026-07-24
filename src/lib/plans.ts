@@ -2,21 +2,23 @@
  * Pricing plans for MySuperFriendlyInvoiceApp.
  *
  * Two tiers (Option A from competitor research):
- *   - Basic: ₪19/mo  ·  30 docs · 1 business · 10 clients
- *   - Pro:   ₪29/mo  ·  unlimited everything
+ *   - Basic: ₪15/mo  (₪149/yr)  ·  30 docs · 1 business · 10 clients
+ *   - Pro:   ₪25/mo  (₪250/yr)  ·  unlimited everything
  *
- * Annual prices are 20% off (industry standard — Greeninvoice, Invoice4U,
- * Rivhit all do roughly the same).
+ * Annual prices are chosen round-ish numbers below 12× the monthly rate,
+ * landing at roughly a ~17% discount (Basic: ₪149 vs ₪180 = ~17% off;
+ * Pro: ₪250 vs ₪300 = ~17% off) — in line with what Greeninvoice,
+ * Invoice4U and Rivhit offer on annual billing.
  *
- * Trial: 14 days, no credit card required. Long enough to feel out the
+ * Trial: 30 days, no credit card required. Long enough to feel out the
  * product, short enough that people decide instead of forgetting (longer
  * trials like Invoice4U's 60 days train people to never pay).
  *
  * Internal tier IDs are kept as "free" | "pro" for backwards compatibility
  * with existing users' `plan_tier` metadata. The displayed name on the
- * "free" tier is "בסיסי" — when Stripe is configured, that tier is no
- * longer free; until then the access enforcement still treats anyone
- * without a paid subscription as a beta user.
+ * "free" tier is "בסיסי" — once a payment provider is wired up, that
+ * tier is no longer free; until then the access enforcement still treats
+ * anyone without a paid subscription as a beta user.
  */
 
 export type PlanTier = "free" | "pro";
@@ -26,7 +28,7 @@ export interface Plan {
   name: string;
   /** ₪ per month, NIS, displayed value */
   priceMonthly: number;
-  /** ₪ per year, NIS — typically priceMonthly * 12 * 0.8 (20% off) */
+  /** ₪ per year, NIS — a chosen round-ish price below 12× monthly (~17% off) */
   priceYearly: number;
   description: string;
   features: string[];
@@ -43,15 +45,15 @@ export interface Plan {
   };
 }
 
-/** Free trial length in days (applied via Stripe `trial_period_days`). */
-export const TRIAL_DAYS = 14;
+/** Free trial length in days (applied via the payment provider's trial period). */
+export const TRIAL_DAYS = 30;
 
 export const PLANS: Record<PlanTier, Plan> = {
   free: {
     tier: "free",
     name: "בסיסי",
-    priceMonthly: 19,
-    priceYearly: 182, // 19 * 12 * 0.8 = 182.4, rounded down
+    priceMonthly: 15,
+    priceYearly: 149, // chosen annual price (~17% below 15 * 12 = 180)
     description: "מתאים לעצמאיים בתחילת הדרך",
     features: [
       "עד 30 מסמכים בחודש",
@@ -75,8 +77,8 @@ export const PLANS: Record<PlanTier, Plan> = {
   pro: {
     tier: "pro",
     name: "Pro",
-    priceMonthly: 29,
-    priceYearly: 278, // 29 * 12 * 0.8 = 278.4, rounded down
+    priceMonthly: 25,
+    priceYearly: 250, // chosen annual price (~17% below 25 * 12 = 300)
     description: "ללא הגבלות, לעסקים פעילים",
     features: [
       "מסמכים ולקוחות ללא הגבלה",
@@ -115,6 +117,9 @@ export interface PlanStatus {
   currentPeriodEnd?: string;
   subscriptionId?: string;
   customerId?: string;
+  /** Which processor backs this subscription. Provider-agnostic so a new
+   * processor can be added without another refactor. */
+  paymentProvider?: "grow" | "polar" | "stripe";
   /** True if this user got their access via a beta invite, not a paid Polar sub. */
   betaGrant?: boolean;
   /** Invite code they redeemed, if any. */
@@ -181,11 +186,16 @@ export function getPlanStatus(
     cancelAtPeriodEnd: meta.plan_cancel_at_period_end === true,
     currentPeriodEnd: periodEnd,
     subscriptionId:
+      (meta.provider_subscription_id as string | undefined) ||
       (meta.polar_subscription_id as string | undefined) ||
       (meta.stripe_subscription_id as string | undefined),
     customerId:
+      (meta.provider_customer_id as string | undefined) ||
       (meta.polar_customer_id as string | undefined) ||
       (meta.stripe_customer_id as string | undefined),
+    paymentProvider:
+      (meta.payment_provider as "grow" | "polar" | "stripe" | undefined) ||
+      (meta.polar_subscription_id ? "polar" : undefined),
     betaGrant: isBetaGrant && !betaExpired,
     betaInviteCode: meta.plan_invite_code as string | undefined,
     daysRemaining,

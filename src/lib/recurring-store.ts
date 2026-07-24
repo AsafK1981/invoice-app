@@ -107,17 +107,22 @@ export function useRecurringTemplates() {
   return { templates, ready };
 }
 
-export function calculateNextDue(currentDue: string, frequency: "monthly" | "weekly"): string {
+export function calculateNextDue(
+  currentDue: string,
+  frequency: "monthly" | "weekly" | "yearly",
+): string {
   const [y, m, d] = currentDue.split("-").map(Number);
   if (frequency === "weekly") {
     return new Date(Date.UTC(y, m - 1, d + 7)).toISOString().slice(0, 10);
   }
-  // Monthly: advance one calendar month, clamping the day to the target
-  // month's last day so the 29th–31st don't overflow into the month after
-  // (plain setMonth turns Jan 31 + 1 month into Mar 3, silently skipping
-  // months for end-of-month templates). All math in UTC to stay stable
-  // regardless of the runtime timezone.
-  const targetMonth = m; // 0-based index of next month = (m-1) + 1
+  // Monthly OR yearly: advance N calendar months (1 for monthly, 12 for
+  // yearly), clamping the day to the target month's last day so the 29th–31st
+  // don't overflow into the month after (plain setMonth turns Jan 31 + 1 month
+  // into Mar 3, silently skipping months for end-of-month templates; the same
+  // clamp keeps Feb-29 yearly renewals from drifting to Mar-1). All math in UTC
+  // to stay stable regardless of the runtime timezone.
+  const monthsToAdd = frequency === "yearly" ? 12 : 1;
+  const targetMonth = m - 1 + monthsToAdd; // 0-based index of the target month
   const targetYear = y + Math.floor(targetMonth / 12);
   const normMonth = targetMonth % 12;
   const lastDay = new Date(Date.UTC(targetYear, normMonth + 1, 0)).getUTCDate();

@@ -28,6 +28,31 @@ import FooterV2 from "./FooterV2";
  */
 
 const APP_NAME = "חשבונית סופר ידידותית";
+const SITE_URL = "https://mysuperfriendlyinvoiceapp.vercel.app";
+
+/**
+ * SoftwareApplication schema for the app itself — the same on every /vs page
+ * (it describes us, not the competitor). Emitted once per comparison page so
+ * search engines can render a rich product result. Price reflects the standing
+ * list entry price (₪15/mo); the launch period is currently free, surfaced in
+ * the on-page copy rather than in structured pricing.
+ */
+const APP_JSON_LD = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: APP_NAME,
+  applicationCategory: "FinanceApplication",
+  operatingSystem: "Web, iOS, Android (PWA)",
+  inLanguage: "he-IL",
+  url: SITE_URL,
+  description:
+    "תוכנת חשבוניות בעברית לעוסק פטור/מורשה בישראל — הפקת חשבוניות וקבלות, אינטגרציה ל-API חשבונית ישראל (הקצאת מספרים), במחיר הוגן.",
+  offers: {
+    "@type": "Offer",
+    price: "15",
+    priceCurrency: "ILS",
+  },
+};
 
 const formatPrice = (nis: number) =>
   new Intl.NumberFormat("he-IL", {
@@ -88,6 +113,11 @@ export function ComparisonViewV2({ competitor }: { competitor: Competitor }) {
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(APP_JSON_LD) }}
+      />
+
       {/* deco outer frame (matches the landing) */}
       <div className="v2-frame" aria-hidden="true">
         <i className="tl" />
@@ -137,20 +167,20 @@ export function ComparisonViewV2({ competitor }: { competitor: Competitor }) {
                 <li>
                   <span className="plan">בסיסי</span>
                   <span className="val">
-                    {formatPrice(19)} / חודש · 30 מסמכים
+                    {formatPrice(15)} / חודש · 30 מסמכים
                   </span>
                 </li>
                 <li>
                   <span className="plan">Pro</span>
-                  <span className="val">{formatPrice(29)} / חודש · ללא הגבלה</span>
+                  <span className="val">{formatPrice(25)} / חודש · ללא הגבלה</span>
                 </li>
                 <li>
                   <span className="plan">חיוב שנתי</span>
-                  <span className="val">20% הנחה</span>
+                  <span className="val">~17% הנחה</span>
                 </li>
                 <li className="trial">
                   <span className="plan">ניסיון חינם</span>
-                  <span className="val">14 ימים · ללא כרטיס אשראי</span>
+                  <span className="val">30 ימים · ללא כרטיס אשראי</span>
                 </li>
               </ul>
             </div>
@@ -179,7 +209,7 @@ export function ComparisonViewV2({ competitor }: { competitor: Competitor }) {
             <strong>למה זה משנה: </strong>
             עצמאי טיפוסי מפיק 20-50 מסמכים בחודש. ב-{competitor.name} מסלול
             שמתאים לכך עולה {formatPrice(midTier.priceMonthly)} ומעלה. אצלנו Pro
-            ללא הגבלה הוא {formatPrice(29)} בלבד.
+            ללא הגבלה הוא {formatPrice(25)} בלבד.
           </p>
         </section>
 
@@ -297,7 +327,7 @@ export function ComparisonViewV2({ competitor }: { competitor: Competitor }) {
         <section className="v2-cmp-cta">
           <h2 className="v2-gold">רוצה לנסות?</h2>
           <p>
-            14 ימי ניסיון, ללא כרטיס אשראי. אתה מקבל את כל הפיצ׳רים של Pro
+            30 ימי ניסיון, ללא כרטיס אשראי. אתה מקבל את כל הפיצ׳רים של Pro
             לתקופה הזו.
           </p>
           <div className="row">

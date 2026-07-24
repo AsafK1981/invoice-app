@@ -31,6 +31,11 @@ export default function V2Landing() {
             <i className="ln r" />
           </div>
 
+          <div className="v2-freenow" role="status">
+            <i className="dot" aria-hidden="true" />
+            🎉 חינם עכשיו בתקופת ההשקה — כל הפיצ׳רים, בלי כרטיס אשראי
+          </div>
+
           <h1 className="v2-h1">
             החשבונית שלך,
             <br />
@@ -133,20 +138,24 @@ export default function V2Landing() {
             </div>
           </div>
 
-          <div className="v2-pricetop">מסלולים החל מ־</div>
+          <div className="v2-pricetop">מסלולים עתידיים החל מ־</div>
           <div className="v2-price v2-gold">
-            ₪19<span className="per"> / חודש</span>
+            ₪15<span className="per"> / חודש</span>
           </div>
           <div className="v2-fdiv">
             <i className="ln" />
-            <span>Pro — כל הפיצ׳רים ללא הגבלה ב־₪29 · ביטול בכל עת</span>
+            <span>Pro — כל הפיצ׳רים ללא הגבלה ב־₪25 · ביטול בכל עת</span>
             <i className="ln r" />
+          </div>
+          <div className="v2-freenow-note">
+            בתקופת ההשקה הכול חינם. המחירים האלה ייכנסו לתוקף בהמשך — ונעדכן
+            מראש, בלי הפתעות.
           </div>
 
           <Link className="v2-cta" href="/login?mode=signup">
-            התחילו 14 יום ניסיון
+            התחילו בחינם
           </Link>
-          <div className="v2-fine">ללא כרטיס אשראי · ביטול בכל עת</div>
+          <div className="v2-fine">חינם עכשיו · ללא כרטיס אשראי · ביטול בכל עת</div>
 
           <div className="v2-credit">
             <i className="ln" />

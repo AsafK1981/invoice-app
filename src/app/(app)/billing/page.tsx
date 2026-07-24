@@ -235,6 +235,19 @@ export default function BillingPage() {
         </p>
       </div>
 
+      {!isPaying && (
+        <div className="flex items-start gap-3 text-sm p-4 rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 text-emerald-900">
+          <Sparkles className="w-5 h-5 flex-shrink-0 mt-0.5 text-emerald-600" />
+          <div>
+            <p className="font-bold">🎉 חינם עכשיו בתקופת ההשקה</p>
+            <p className="text-emerald-800/90 mt-0.5">
+              כל הפיצ׳רים פתוחים, בלי חיוב ובלי כרטיס אשראי. המחירים המוצגים
+              למטה ייכנסו לתוקף בהמשך — ונעדכן מראש, בלי הפתעות.
+            </p>
+          </div>
+        </div>
+      )}
+
       {toast && (
         <div
           className={`flex items-start gap-2 text-sm p-4 rounded-2xl ${

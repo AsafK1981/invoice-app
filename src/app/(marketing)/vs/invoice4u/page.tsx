@@ -7,7 +7,7 @@ const competitor = COMPETITORS.invoice4u;
 export const metadata: Metadata = {
   title: "חשבונית סופר ידידותית vs Invoice4U — השוואת מחירים ופיצ'רים (2026)",
   description:
-    "השוואה הוגנת בין חשבונית סופר ידידותית ל-Invoice4U — מחירים, פיצ'רים, יתרונות וחסרונות של כל אחד. ₪29 לחודש ללא הגבלה מול ₪82 ב-Invoice4U.",
+    "השוואה הוגנת בין חשבונית סופר ידידותית ל-Invoice4U — מחירים, פיצ'רים, יתרונות וחסרונות של כל אחד. ₪25 לחודש ללא הגבלה מול ₪82 ב-Invoice4U.",
   keywords: [
     "Invoice4U השוואה",
     "חלופה ל-Invoice4U",
