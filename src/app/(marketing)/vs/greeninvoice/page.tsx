@@ -6,9 +6,9 @@ const competitor = COMPETITORS.greeninvoice;
 
 export const metadata = vsMetadata({
   path: "/vs/greeninvoice",
-  title: "חשבונית סופר ידידותית vs חשבונית ירוקה — השוואת מחירים ופיצ'רים (2026)",
+  title: "חשבונית סופר ידידותית vs חשבונית ירוקה — השוואת מחירים ופיצ׳רים (2026)",
   description:
-    "השוואה הוגנת בין חשבונית סופר ידידותית לחשבונית ירוקה (Greeninvoice). Pro ₪25 לחודש vs Extra ₪89 — אותם פיצ'רים, פי 3.5 זול.",
+    "השוואה הוגנת בין חשבונית סופר ידידותית לחשבונית ירוקה (Greeninvoice). Pro ₪25 לחודש vs Extra ₪89 — אותם פיצ׳רים, פי 3.5 זול.",
   keywords: [
     "חשבונית ירוקה השוואה",
     "חלופה לחשבונית ירוקה",

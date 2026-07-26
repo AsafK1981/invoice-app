@@ -106,7 +106,7 @@ function groupFeatures(features: Competitor["features"]) {
   // Safety net: if the data ever grows past the mapped groups, show the
   // remainder in a catch-all so no feature is silently dropped.
   if (offset < features.length) {
-    groups.push({ title: "נוסף", rows: features.slice(offset) });
+    groups.push({ title: "נוספים", rows: features.slice(offset) });
   }
   return groups;
 }
@@ -151,7 +151,7 @@ export function ComparisonViewV2({ competitor }: { competitor: Competitor }) {
             <LtrText text={competitor.verdict} />
           </p>
           <p className="src">
-            השוואה הוגנת · נתוני המתחרים מ-
+            השוואה הוגנת · נתוני המתחרה מ-
             <LtrText text={competitor.url.replace("https://", "")} /> (עודכן
             5/2026)
           </p>
@@ -227,8 +227,8 @@ export function ComparisonViewV2({ competitor }: { competitor: Competitor }) {
 
           <p className="v2-price-note">
             <strong>למה זה משנה: </strong>
-            עצמאי טיפוסי מפיק 20-50 מסמכים בחודש. ב-
-            <LtrText text={competitor.name} /> מסלול שמתאים לכך עולה{" "}
+            עצמאי טיפוסי מפיק 20-50 מסמכים בחודש. מסלול שמתאים לכך ב-
+            <LtrText text={competitor.name} /> עולה{" "}
             {formatPrice(midTier.priceMonthly)} ומעלה. אצלנו <Ltr>Pro</Ltr> ללא
             הגבלה הוא {formatPrice(25)} בלבד. וכרגע, בתקופת ההשקה, הכול חינם
             אצלנו — בלי כרטיס אשראי. המחירים האלה ייכנסו לתוקף בהמשך, ונעדכן

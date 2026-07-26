@@ -26,6 +26,20 @@
      opts out — the comparison pages are a wider, table-bearing layout. */
   --v2-shell: 680px;
 
+  /* Reading measure for body copy. The comparison + blog columns are ~900px
+     wide, and body paragraphs that filled them were running 130-151 real
+     characters per line in Hebrew — roughly double the comfortable band, which
+     is what made /vs tiring to read.
+     `ch` is the advance of "0" in Assistant (~0.49em); Hebrew averages ~0.42em
+     per character, so 60ch lands these blocks at 66-74 ACTUAL characters. The
+     unit is resolved per-element at substitution time, so each block scales
+     with its own font-size instead of being pinned to one pixel width. */
+  --v2-measure: 60ch;
+
+  /* Gutter of the two-up pricing grid. Shared with .v2-price-note, which
+     re-derives one column width from it. */
+  --v2-price-gap: 18px;
+
   /* ---- radius scale ----
      pill (999) · sm 10 (inputs, chips) · md 12 (inline notices, icon tiles)
      · lg 14 (cards + panels) · xl 16 (hero + auth card).
@@ -1115,6 +1129,39 @@
   text-align: right;
 }
 
+/* ---------- shared reading measure ----------
+   ONE rule, one token (--v2-measure) for every body block that would otherwise
+   stretch to the full ~900px content column. Grouped rather than sprinkled per
+   selector so the comparison hub, the comparison detail pages and the blog
+   index can never drift apart again.
+
+   Deliberately NO `margin-inline: auto` here: these blocks sit in RTL,
+   right-aligned cards, so the default inline-start placement keeps the copy
+   flush with the card's reading edge — the same edge its heading and its
+   "read more" link sit on — and lets the slack fall on the far side. Centring
+   them would float the paragraph away from that edge and read as a mistake.
+   (`.v2-cmp-hero .verdict` is the one exception; it keeps its own auto margins
+   because the entire hero is centred.)
+
+   Not listed, because they already measure 31-56 characters and capping them
+   would only make them worse: `.v2-str li`, `.v2-cmp-cta p`, `.v2-lede`. */
+.v2-theme .v2-vs-card p,
+.v2-theme .v2-blog-card p,
+.v2-theme .v2-note-panel p {
+  max-width: var(--v2-measure);
+}
+/* The price note is the one capped block that is itself a bordered box, and it
+   stacks directly under the two-up pricing grid. At the bare reading measure it
+   came out 432.5px against the 441px column above it — an 8.5px near-miss that
+   reads as a misalignment bug rather than a decision. Snapping it to exactly
+   one grid column costs two characters of measure (75 -> 77) and buys a clean
+   shared edge; both sides derive the gutter from --v2-price-gap, so they cannot
+   drift apart. Below 720px the grid collapses and this falls back to the plain
+   measure (see the mobile block at the end of the file). */
+.v2-theme .v2-price-note {
+  max-width: calc((100% - var(--v2-price-gap)) / 2);
+}
+
 /* ---------- comparison hero ---------- */
 .v2-theme .v2-cmp-hero { text-align: center; margin-bottom: clamp(32px, 6vw, 52px); }
 .v2-theme .v2-cmp-hero h1 {
@@ -1140,7 +1187,10 @@
 }
 .v2-theme .v2-cmp-hero .verdict {
   margin: 16px auto 0;
-  max-width: 60ch;
+  /* was a literal 60ch — same value, now the shared token so the hero verdict
+     can't drift away from the rest of the body copy. Stays centred (auto
+     margins) because the whole hero is centred. */
+  max-width: var(--v2-measure);
   font-size: 16px;
   line-height: 1.75;
   color: #cbc2b3;
@@ -1186,7 +1236,10 @@
 .v2-theme .v2-price-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 18px;
+  /* Tokenised because .v2-price-note re-derives the column width from it to
+     line its own edge up with the card above; a literal here would let the two
+     drift apart silently. */
+  gap: var(--v2-price-gap);
 }
 .v2-theme .v2-price-card {
   position: relative;
@@ -1690,6 +1743,12 @@
 @media (max-width: 720px) {
   .v2-theme .v2-price-grid,
   .v2-theme .v2-str-grid { grid-template-columns: 1fr; }
+
+  /* The grid is one column now, so there is no column edge left for the note
+     to align to. Fall back to the shared reading measure — plus its own 16px
+     padding + 1px border, which `box-sizing: border-box` folds into max-width,
+     so the TEXT measure matches the bare paragraphs elsewhere. */
+  .v2-theme .v2-price-note { max-width: calc(var(--v2-measure) + 34px); }
 }
 
 @media (max-width: 520px) {

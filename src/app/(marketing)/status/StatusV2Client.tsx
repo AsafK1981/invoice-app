@@ -108,7 +108,7 @@ export default function V2StatusPage() {
 
           {error && (
             <div className="v2-status-error">
-              לא הצלחנו להגיע לשרת. ייתכן שהחיבור שלך נופל. ננסה שוב בעוד 30
+              לא הצלחנו להגיע לשרת. ייתכן שיש תקלה בחיבור שלך. ננסה שוב בעוד 30
               שניות.
             </div>
           )}
@@ -157,7 +157,7 @@ export default function V2StatusPage() {
 
           <p className="v2-status-note">
             הדף מתעדכן אוטומטית כל 30 שניות. אם אתה רואה תקלה שלא נפתרת תוך כמה
-            דקות, צור קשר לכתובת{" "}
+            דקות, צור קשר בכתובת{" "}
             <a href="mailto:asafkotlar@gmail.com">asafkotlar@gmail.com</a>.
           </p>
         </div>
