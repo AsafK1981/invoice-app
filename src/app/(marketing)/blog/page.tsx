@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowRight, ArrowLeft } from "lucide-react";
 import HeaderV2 from "../components/HeaderV2";
 import FooterV2 from "../components/FooterV2";
+import { LtrText } from "@/components/ui/ltr";
 import { getPublishedPosts } from "@/lib/blog-posts";
 
 export const metadata: Metadata = {
@@ -46,22 +47,21 @@ export default function BlogIndexPage() {
             <h1 className="v2-doc-title v2-gold">מדריכים לעצמאים</h1>
             <p className="v2-doc-lead">
               כל מה שעוסק פטור ומורשה צריך לדעת על חשבוניות, מספר הקצאה ורפורמת
-              חשבונית ישראל — בשפה פשוטה.
+              חשבונית ישראל — בשפה פשוטה, בלי ז׳רגון ובלי טפסים מפחידים.
             </p>
           </div>
 
           {posts.length === 0 ? (
             <div className="v2-blog-empty">
-              עדיין אין כאן מאמרים שפורסמו. בקרוב.
+              עוד רגע יהיה כאן תוכן. אנחנו כותבים.
             </div>
           ) : (
             <div className="v2-blog-list">
               {posts.map((post) => (
-                <Link
-                  key={post.slug}
-                  href={`/blog/${post.slug}`}
-                  className="v2-blog-card"
-                >
+                /* The card is an <article>, not a link. Its heading holds the
+                   one real anchor; `.v2-card-link::after` stretches that anchor
+                   over the whole card so the surface stays clickable. */
+                <article key={post.slug} className="v2-blog-card">
                   <span className="date">
                     {new Date(post.date).toLocaleDateString("he-IL", {
                       year: "numeric",
@@ -69,13 +69,19 @@ export default function BlogIndexPage() {
                       day: "numeric",
                     })}
                   </span>
-                  <h2>{post.title}</h2>
-                  <p>{post.description}</p>
-                  <span className="more">
+                  <h2>
+                    <Link href={`/blog/${post.slug}`} className="v2-card-link">
+                      <LtrText text={post.title} />
+                    </Link>
+                  </h2>
+                  <p>
+                    <LtrText text={post.description} />
+                  </p>
+                  <span className="more" aria-hidden="true">
                     לקריאה
                     <ArrowLeft />
                   </span>
-                </Link>
+                </article>
               ))}
             </div>
           )}

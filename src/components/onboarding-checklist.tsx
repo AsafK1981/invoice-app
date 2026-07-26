@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CheckCircle2, Circle, X, Sparkles, ArrowLeft } from "lucide-react";
 import type { Business, Client, Product, InvoiceDocument } from "@/lib/types";
+import { Ltr, LtrText } from "@/components/ui/ltr";
 
 interface Props {
   business: Business;
@@ -129,7 +130,8 @@ export function OnboardingChecklist({ business, clients, products, documents }: 
               מגיע מתוכנת חשבוניות אחרת?
             </p>
             <p className="text-xs text-stone-700 mt-0.5">
-              Invoice4U · חשבונית ירוקה · iCount · ריווחית · Morning · חשבשבת — מדריך מעבר לכולם
+              <Ltr>Invoice4U</Ltr> · חשבונית ירוקה · <Ltr>iCount</Ltr> · ריווחית ·{" "}
+              <Ltr>Morning</Ltr> · חשבשבת — מדריך מעבר לכולם
             </p>
           </div>
           <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700">
@@ -164,7 +166,9 @@ export function OnboardingChecklist({ business, clients, products, documents }: 
                 {step.label}
               </p>
               {!step.done && (
-                <p className="text-xs text-stone-600 mt-0.5">{step.desc}</p>
+                <p className="text-xs text-stone-600 mt-0.5">
+                  <LtrText text={step.desc} />
+                </p>
               )}
             </div>
             {!step.done && (

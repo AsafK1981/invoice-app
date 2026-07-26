@@ -61,10 +61,13 @@ export const BLOG_POSTS: BlogPost[] = [
     published: true,
   },
   {
+    // Slug intentionally keeps the lowercase spelling — it is a live URL in
+    // the sitemap. Only the human-facing title/description use the brand's
+    // real casing, "Invoice4U".
     slug: "maavar-me-invoice4u",
-    title: "מעבר מ-invoice4u: איך עוברים תוכנת חשבוניות בלי לאבד היסטוריה",
+    title: "מעבר מ-Invoice4U: איך עוברים תוכנת חשבוניות בלי לאבד היסטוריה",
     description:
-      "שוקלים לעזוב את invoice4u? מדריך מעשי למעבר לתוכנת חשבוניות אחרת ב-2026 - מה לגבות לפני שעוזבים, איך לא לאבד לקוחות והיסטוריית מסמכים, ומה לבדוק לפני שבוחרים תחליף.",
+      "שוקלים לעזוב את Invoice4U? מדריך מעשי למעבר לתוכנת חשבוניות אחרת ב-2026 - מה לגבות לפני שעוזבים, איך לא לאבד לקוחות והיסטוריית מסמכים, ומה לבדוק לפני שבוחרים תחליף.",
     date: "2026-07-14",
     published: true,
   },

@@ -1,16 +1,27 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { COMPETITORS } from "@/lib/comparison-data";
+import { LtrText } from "@/components/ui/ltr";
 import HeaderV2 from "../components/HeaderV2";
 import FooterV2 from "../components/FooterV2";
+import { vsMetadata } from "./vs-metadata";
 
-export const metadata: Metadata = {
+export const metadata = vsMetadata({
+  path: "/vs",
   title: "השוואות מול תוכנות חשבוניות אחרות",
   description:
     "השוואות הוגנות מול Invoice4U, חשבונית ירוקה, iFreelance, SUMIT, iCount ו-EZcount — מחירים, פיצ׳רים, יתרונות וחסרונות.",
-  alternates: { canonical: "/vs" },
-};
+  keywords: [
+    "השוואת תוכנות חשבוניות",
+    "תוכנת חשבוניות לעוסק פטור",
+    "Invoice4U",
+    "חשבונית ירוקה",
+    "iCount",
+    "EZcount",
+    "SUMIT",
+    "iFreelance",
+  ],
+});
 
 export default function V2VsIndex() {
   const list = Object.values(COMPETITORS);
@@ -39,36 +50,47 @@ export default function V2VsIndex() {
             <i className="ln r" />
           </div>
           <h1 className="v2-h1">
-            מי כדאי לי,
+            מי כדאי לי,{" "}
             <br />
             <span className="v2-gold">באמת?</span>
           </h1>
           <p className="v2-lede">
-            בלי ספין. איפה אנחנו חזקים, איפה הם — מחירים, פיצ׳רים, ויתרונות
-            אמיתיים של כל צד.
+            בלי ספין ובלי חצי-אמיתות. כתבנו בכנות איפה אנחנו חזקים ואיפה הם —
+            מחירים, פיצ׳רים והיתרונות האמיתיים של כל צד. גם כשהתשובה היא שהם
+            מתאימים לך יותר.
           </p>
         </div>
 
         <div className="v2-vs-list">
           {list.map((c) => (
-            <Link key={c.slug} href={`/vs/${c.slug}`} className="v2-vs-card">
+            /* The card is an <article>, not a link. Its heading holds the one
+               real anchor; `.v2-card-link::after` stretches that anchor over
+               the whole card so the surface stays clickable. */
+            <article key={c.slug} className="v2-vs-card">
               <h2>
-                <span className="v2-gold">חשבונית סופר ידידותית</span> מול {c.name}
+                <Link href={`/vs/${c.slug}`} className="v2-card-link">
+                  <span className="v2-gold">חשבונית סופר ידידותית</span> מול{" "}
+                  <LtrText text={c.name} />
+                </Link>
               </h2>
-              <p>{c.verdict}</p>
-              <span className="more">
+              <p>
+                <LtrText text={c.verdict} />
+              </p>
+              <span className="more" aria-hidden="true">
                 קראו את ההשוואה המלאה
                 <ArrowLeft />
               </span>
-            </Link>
+            </article>
           ))}
         </div>
 
         <div className="v2-cmp-cta" style={{ marginTop: "40px" }}>
-          <Link href="/login" className="v2-cta">
-            חודש ראשון חינם
+          <Link href="/login?mode=signup" className="v2-cta">
+            התחילו בחינם
           </Link>
-          <div className="v2-fine">ללא כרטיס אשראי · ביטול בכל עת</div>
+          <div className="v2-fine">
+            חינם עכשיו בתקופת ההשקה · ללא כרטיס אשראי · ביטול בכל עת
+          </div>
         </div>
       </main>
 

@@ -1,15 +1,17 @@
 import Link from "next/link";
+import { Ltr } from "@/components/ui/ltr";
 import HeaderV2 from "./components/HeaderV2";
 import FooterV2 from "./components/FooterV2";
 import RedirectIfAuthed from "./components/RedirectIfAuthed";
 
 /**
- * /v2 landing — faithful React port of design-F.html (gold on obsidian,
- * art-deco frame, golden invoice card). No auth-gate redirect: this page
- * stays viewable when logged in so both designs can be compared side by
- * side. CTAs route into the existing auth flow at /login.
+ * `/` — the public marketing landing (gold on obsidian, art-deco frame,
+ * golden invoice card). Server-rendered so anonymous visitors and crawlers
+ * get the full page immediately; `<RedirectIfAuthed />` then bounces an
+ * already-signed-in visitor to /dashboard from the client, without ever
+ * blocking the anon render. CTAs route into the auth flow at /login.
  */
-export default function V2Landing() {
+export default function MarketingLanding() {
   return (
     <>
       <RedirectIfAuthed />
@@ -37,14 +39,14 @@ export default function V2Landing() {
           </div>
 
           <h1 className="v2-h1">
-            החשבונית שלך,
+            החשבונית שלך,{" "}
             <br />
             <span className="v2-gold">יוקרתית כמו העסק</span>
           </h1>
 
           <p className="v2-lede">
-            המערכת הכי ידידותית לעוסקים פטורים — עברית מלאה, עומדת בדרישות
-            רשות המסים, במחיר הוגן.
+            בנינו את זה בשביל עצמאים כמוך: חשבונית מקצועית בעברית מלאה, עומדת
+            בדרישות רשות המסים — בלי בירוקרטיה ובלי כאב ראש.
           </p>
 
           {/* golden invoice card */}
@@ -138,13 +140,15 @@ export default function V2Landing() {
             </div>
           </div>
 
-          <div className="v2-pricetop">מסלולים עתידיים החל מ־</div>
+          <div className="v2-pricetop">בהמשך, המסלולים יתחילו מ־</div>
           <div className="v2-price v2-gold">
             ₪15<span className="per"> / חודש</span>
           </div>
           <div className="v2-fdiv">
             <i className="ln" />
-            <span>Pro — כל הפיצ׳רים ללא הגבלה ב־₪25 · ביטול בכל עת</span>
+            <span>
+              <Ltr>Pro</Ltr> — כל הפיצ׳רים ללא הגבלה ב־₪25 · ביטול בכל עת
+            </span>
             <i className="ln r" />
           </div>
           <div className="v2-freenow-note">

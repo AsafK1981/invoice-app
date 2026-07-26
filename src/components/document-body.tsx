@@ -2,6 +2,7 @@
 
 import { formatCurrency, formatDate } from "@/lib/format";
 import { formatMoney } from "@/lib/currencies";
+import { Ltr } from "@/components/ui/ltr";
 import {
   BUSINESS_TYPE_LABELS,
   DOC_SUM_LABEL,
@@ -429,7 +430,8 @@ export function DocumentBody({
           מסמך זה הופק אלקטרונית{business.name ? ` · ${business.name}` : ""}
         </div>
         <div className="doc-foot-brand">
-          הופק באמצעות MySuperFriendlyInvoiceApp · mysuperfriendlyinvoiceapp.vercel.app
+          הופק באמצעות{" "}
+          <Ltr>MySuperFriendlyInvoiceApp · mysuperfriendlyinvoiceapp.vercel.app</Ltr>
         </div>
       </div>
     </>

@@ -1,10 +1,11 @@
-import type { Metadata } from "next";
 import { ComparisonViewV2 } from "../../components/ComparisonViewV2";
 import { COMPETITORS } from "@/lib/comparison-data";
+import { vsMetadata } from "../vs-metadata";
 
 const competitor = COMPETITORS.ifreelance;
 
-export const metadata: Metadata = {
+export const metadata = vsMetadata({
+  path: "/vs/ifreelance",
   title: "חשבונית סופר ידידותית vs iFreelance — השוואת מחירים ופיצ'רים (2026)",
   description:
     "השוואה הוגנת בין חשבונית סופר ידידותית ל-iFreelance — מחירים, פיצ'רים, יתרונות וחסרונות של כל אחד. ₪19-26 לחודש לעומת ₪15-25 שלנו, אבל עם UX מודרני יותר.",
@@ -17,8 +18,7 @@ export const metadata: Metadata = {
     "עוסק פטור",
     "פרילנסר חשבוניות",
   ],
-  alternates: { canonical: "/vs/ifreelance" },
-};
+});
 
 export default function V2VsIFreelance() {
   return <ComparisonViewV2 competitor={competitor} />;

@@ -9,11 +9,20 @@
  * is rendered more than once on a page the id repeats, but every
  * definition is identical so `url(#v2-logo-gold)` resolves the same gold
  * fill everywhere — visually correct.
+ *
+ * ACCESSIBLE NAME: the mark is decorative (`aria-hidden`), so the text
+ * carries the name. The "full" variant gets it from the wordmark plus a
+ * `.v2-sr` space that keeps "חשבונית סופר ידידותית" from concatenating
+ * into one word in `textContent`. The "mark" variant has no visible text,
+ * so it renders `srText` — which is also what gives a wrapping <a> a real
+ * accessible name instead of just its href.
  */
 
 type LogoV2Props = {
   variant?: "full" | "mark";
   className?: string;
+  /** Screen-reader-only text for the "mark" variant (ignored by "full"). */
+  srText?: string;
 };
 
 function Mark({ small }: { small?: boolean }) {
@@ -21,8 +30,8 @@ function Mark({ small }: { small?: boolean }) {
     <svg
       className={`v2-logo-mark${small ? " sm" : ""}`}
       viewBox="0 0 100 100"
-      role="img"
-      aria-label="חשבונית"
+      aria-hidden="true"
+      focusable="false"
     >
       <defs>
         <linearGradient id="v2-logo-gold" x1="0" y1="0" x2="0" y2="1">
@@ -59,11 +68,16 @@ function Mark({ small }: { small?: boolean }) {
   );
 }
 
-export default function LogoV2({ variant = "full", className }: LogoV2Props) {
+export default function LogoV2({
+  variant = "full",
+  className,
+  srText = "חשבונית סופר ידידותית",
+}: LogoV2Props) {
   if (variant === "mark") {
     return (
       <span className={`v2-logo${className ? ` ${className}` : ""}`}>
         <Mark />
+        <span className="v2-sr">{srText}</span>
       </span>
     );
   }
@@ -73,6 +87,10 @@ export default function LogoV2({ variant = "full", className }: LogoV2Props) {
       <Mark />
       <span className="v2-logo-text">
         <span className="v2-logo-word v2-gold">חשבונית</span>
+        {/* Carries the word break between the two stacked lines: without it
+            textContent reads "חשבוניתסופר ידידותית". Absolutely positioned,
+            so it leaves the flex column and the two-line visual is unchanged. */}
+        <span className="v2-sr"> </span>
         <span className="v2-logo-sub">סופר ידידותית</span>
       </span>
     </span>

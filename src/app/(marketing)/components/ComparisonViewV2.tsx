@@ -10,25 +10,31 @@ import {
   Gift,
 } from "lucide-react";
 import type { Competitor, FeatureSupport } from "@/lib/comparison-data";
+import { Ltr, LtrText } from "@/components/ui/ltr";
+import { CANONICAL_ORIGIN } from "@/lib/public-url";
 import HeaderV2 from "./HeaderV2";
 import FooterV2 from "./FooterV2";
 
 /**
- * ComparisonViewV2 — gold/obsidian fork of `comparison-view.tsx`.
+ * ComparisonViewV2 — the shared body of every /vs/<competitor> page.
  *
- * Same honest data + information design (pricing cards with a highlighted
- * winner, a feature-support matrix, honest pros/cons, verdict), restyled
- * to the /v2 theme. Two deliberate legibility upgrades the designer asked
- * for on the long feature table:
+ * Honest data + information design: pricing cards with a highlighted winner,
+ * a feature-support matrix, pros/cons both ways, and a verdict. Two deliberate
+ * legibility choices on the long feature table:
  *   1. Semantic colors are NOT brand-gold — green ✓ = supported, red ✗ =
  *      not supported, amber − = partial. Gold is reserved for accents, so a
  *      scanning eye never reads "gold" as "yes".
  *   2. Section grouping rows + zebra striping make the 15-row matrix
  *      scannable.
+ *
+ * Every competitor name and data string renders through `<LtrText>`: this is
+ * RTL Hebrew copy with Latin brand names in it, and without a bidi isolate the
+ * surrounding punctuation resolves against the wrong neighbour. The JSON-LD
+ * block deliberately uses the RAW strings — it is machine-read, and bidi
+ * markup would corrupt it.
  */
 
 const APP_NAME = "חשבונית סופר ידידותית";
-const SITE_URL = "https://mysuperfriendlyinvoiceapp.vercel.app";
 
 /**
  * SoftwareApplication schema for the app itself — the same on every /vs page
@@ -44,7 +50,7 @@ const APP_JSON_LD = {
   applicationCategory: "FinanceApplication",
   operatingSystem: "Web, iOS, Android (PWA)",
   inLanguage: "he-IL",
-  url: SITE_URL,
+  url: CANONICAL_ORIGIN,
   description:
     "תוכנת חשבוניות בעברית לעוסק פטור/מורשה בישראל — הפקת חשבוניות וקבלות, אינטגרציה ל-API חשבונית ישראל (הקצאת מספרים), במחיר הוגן.",
   offers: {
@@ -137,14 +143,17 @@ export function ComparisonViewV2({ competitor }: { competitor: Competitor }) {
         {/* Hero */}
         <header className="v2-cmp-hero">
           <h1>
-            <span className="v2-gold">{APP_NAME}</span>
-            <span className="vs">מול</span>
-            {competitor.name}
+            <span className="v2-gold">{APP_NAME}</span>{" "}
+            <span className="vs">מול</span>{" "}
+            <LtrText text={competitor.name} />
           </h1>
-          <p className="verdict">{competitor.verdict}</p>
+          <p className="verdict">
+            <LtrText text={competitor.verdict} />
+          </p>
           <p className="src">
             השוואה הוגנת · נתוני המתחרים מ-
-            {competitor.url.replace("https://", "")} (עודכן 5/2026)
+            <LtrText text={competitor.url.replace("https://", "")} /> (עודכן
+            5/2026)
           </p>
         </header>
 
@@ -171,7 +180,9 @@ export function ComparisonViewV2({ competitor }: { competitor: Competitor }) {
                   </span>
                 </li>
                 <li>
-                  <span className="plan">Pro</span>
+                  <span className="plan">
+                    <Ltr>Pro</Ltr>
+                  </span>
                   <span className="val">{formatPrice(25)} / חודש · ללא הגבלה</span>
                 </li>
                 <li>
@@ -179,27 +190,36 @@ export function ComparisonViewV2({ competitor }: { competitor: Competitor }) {
                   <span className="val">~17% הנחה</span>
                 </li>
                 <li className="trial">
-                  <span className="plan">ניסיון חינם</span>
-                  <span className="val">30 ימים · ללא כרטיס אשראי</span>
+                  <span className="plan">חינם עכשיו</span>
+                  <span className="val">
+                    כל הפיצ׳רים בתקופת ההשקה · בלי כרטיס אשראי
+                  </span>
                 </li>
               </ul>
             </div>
 
             {/* Them */}
             <div className="v2-price-card">
-              <h3>{competitor.name}</h3>
+              <h3>
+                <LtrText text={competitor.name} />
+              </h3>
               <ul>
                 {competitor.pricing.map((p) => (
                   <li key={p.name}>
-                    <span className="plan">{p.name}</span>
+                    <span className="plan">
+                      <LtrText text={p.name} />
+                    </span>
                     <span className="val">
-                      {formatPrice(p.priceMonthly)} / חודש · {p.docs}
+                      {formatPrice(p.priceMonthly)} / חודש ·{" "}
+                      <LtrText text={p.docs} />
                     </span>
                   </li>
                 ))}
                 <li className="trial">
                   <span className="plan">ניסיון חינם</span>
-                  <span className="val">{competitor.freeTrial}</span>
+                  <span className="val">
+                    <LtrText text={competitor.freeTrial} />
+                  </span>
                 </li>
               </ul>
             </div>
@@ -207,9 +227,12 @@ export function ComparisonViewV2({ competitor }: { competitor: Competitor }) {
 
           <p className="v2-price-note">
             <strong>למה זה משנה: </strong>
-            עצמאי טיפוסי מפיק 20-50 מסמכים בחודש. ב-{competitor.name} מסלול
-            שמתאים לכך עולה {formatPrice(midTier.priceMonthly)} ומעלה. אצלנו Pro
-            ללא הגבלה הוא {formatPrice(25)} בלבד.
+            עצמאי טיפוסי מפיק 20-50 מסמכים בחודש. ב-
+            <LtrText text={competitor.name} /> מסלול שמתאים לכך עולה{" "}
+            {formatPrice(midTier.priceMonthly)} ומעלה. אצלנו <Ltr>Pro</Ltr> ללא
+            הגבלה הוא {formatPrice(25)} בלבד. וכרגע, בתקופת ההשקה, הכול חינם
+            אצלנו — בלי כרטיס אשראי. המחירים האלה ייכנסו לתוקף בהמשך, ונעדכן
+            מראש.
           </p>
         </section>
 
@@ -227,11 +250,13 @@ export function ComparisonViewV2({ competitor }: { competitor: Competitor }) {
                   <tr>
                     <th className="feat">פיצ׳ר</th>
                     <th className="col us">
-                      חשבונית
+                      חשבונית{" "}
                       <br />
                       סופר ידידותית
                     </th>
-                    <th className="col">{competitor.name}</th>
+                    <th className="col">
+                      <LtrText text={competitor.name} />
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -243,8 +268,14 @@ export function ComparisonViewV2({ competitor }: { competitor: Competitor }) {
                       {group.rows.map((row) => (
                         <tr key={row.feature} className="row">
                           <td className="feat">
-                            <div>{row.feature}</div>
-                            {row.note && <div className="note">{row.note}</div>}
+                            <div>
+                              <LtrText text={row.feature} />
+                            </div>
+                            {row.note && (
+                              <div className="note">
+                                <LtrText text={row.note} />
+                              </div>
+                            )}
                           </td>
                           <td className="mark">
                             <Mark kind={row.us} />
@@ -277,12 +308,16 @@ export function ComparisonViewV2({ competitor }: { competitor: Competitor }) {
         <section className="v2-cmp-sec">
           <div className="v2-str-grid">
             <div className="v2-panel v2-str them">
-              <h3>איפה {competitor.name} מנצחים</h3>
+              <h3>
+                איפה <LtrText text={competitor.name} /> מנצחים
+              </h3>
               <ul>
                 {competitor.theirStrengths.map((s) => (
                   <li key={s}>
                     <Check strokeWidth={2.5} />
-                    <span>{s}</span>
+                    <span>
+                      <LtrText text={s} />
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -293,7 +328,9 @@ export function ComparisonViewV2({ competitor }: { competitor: Competitor }) {
                 {competitor.ourStrengths.map((s) => (
                   <li key={s}>
                     <Check strokeWidth={2.5} />
-                    <span>{s}</span>
+                    <span>
+                      <LtrText text={s} />
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -310,14 +347,15 @@ export function ComparisonViewV2({ competitor }: { competitor: Competitor }) {
             <div>
               <h3>למה בכלל בנינו את זה?</h3>
               <p>
-                בעלי-בית הם בני אדם שמלאו שולחנם בעבודה ולא רוצים לבזבז עוד 10
-                דקות בחודש על ממשק שמורגש כמו תוכנת חשבוניות מ-2008. בנינו את
-                האפליקציה שעצמאי היה רוצה בעצמו: מהירה, נקייה, עברית מלאה, עם
-                המחיר ההוגן ביותר בשוק.
+                עצמאים הם אנשים עם שולחן מלא עבודה, שלא רוצים לבזבז עוד עשר
+                דקות בחודש על ממשק שמרגיש כמו תוכנת חשבוניות מ-2008. בנינו את
+                האפליקציה שהיינו רוצים בעצמנו: מהירה, נקייה, עברית מלאה, במחיר
+                הוגן.
               </p>
               <p>
-                {competitor.name} הם פלטפורמה רחבה ובוגרת. אנחנו פלטפורמה ממוקדת
-                ומהירה. שני העולמות תקפים — תלוי מה אתה צריך.
+                <LtrText text={competitor.name} /> הם פלטפורמה רחבה ובוגרת,
+                ואנחנו פלטפורמה ממוקדת ומהירה. שתי הגישות לגיטימיות — תלוי מה
+                אתה צריך.
               </p>
             </div>
           </div>
@@ -325,14 +363,14 @@ export function ComparisonViewV2({ competitor }: { competitor: Competitor }) {
 
         {/* CTA */}
         <section className="v2-cmp-cta">
-          <h2 className="v2-gold">רוצה לנסות?</h2>
+          <h2 className="v2-gold">רוצה לנסות? זה חינם עכשיו</h2>
           <p>
-            30 ימי ניסיון, ללא כרטיס אשראי. אתה מקבל את כל הפיצ׳רים של Pro
-            לתקופה הזו.
+            בתקופת ההשקה הכול פתוח — כל הפיצ׳רים של <Ltr>Pro</Ltr>, בלי כרטיס
+            אשראי. כשנתחיל לגבות נעדכן מראש, בלי הפתעות.
           </p>
           <div className="row">
             <Link href="/login?mode=signup" className="v2-cta">
-              התחילו ניסיון חינם
+              התחילו בחינם
             </Link>
             <Link href="/invite/FOR-FRIENDS-ONLY" className="ghost">
               <Gift />

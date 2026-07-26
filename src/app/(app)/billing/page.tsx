@@ -25,6 +25,7 @@ import {
 } from "@/lib/plans";
 import { formatCurrency } from "@/lib/format";
 import { Modal } from "@/components/ui/modal";
+import { Ltr, LtrText } from "@/components/ui/ltr";
 
 export default function BillingPage() {
   const searchParams = useSearchParams();
@@ -261,7 +262,9 @@ export default function BillingPage() {
           ) : (
             <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5 text-rose-600" />
           )}
-          <span>{toast.text}</span>
+          <span>
+            <LtrText text={toast.text} />
+          </span>
         </div>
       )}
 
@@ -277,8 +280,9 @@ export default function BillingPage() {
                 <>
                   <p className="text-sm text-amber-800 mt-1">
                     {periodEnd
-                      ? `המנוי יבוטל ב-${periodEnd}. עד אז יש לך גישה מלאה ל-Pro.`
-                      : "המנוי יבוטל בסוף התקופה. עד אז יש לך גישה מלאה ל-Pro."}
+                      ? `המנוי יבוטל ב-${periodEnd}. עד אז יש לך גישה מלאה ל-`
+                      : "המנוי יבוטל בסוף התקופה. עד אז יש לך גישה מלאה ל-"}
+                    <Ltr>Pro</Ltr>.
                   </p>
                   <button
                     onClick={handleResume}
@@ -371,7 +375,9 @@ export default function BillingPage() {
                   המסלול שלך
                 </div>
               )}
-              <h3 className="font-bold text-stone-900 text-xl">{plan.name}</h3>
+              <h3 className="font-bold text-stone-900 text-xl">
+                <LtrText text={plan.name} />
+              </h3>
               <p className="text-sm text-stone-700 mt-1">{plan.description}</p>
               <div className="mt-4 flex items-baseline gap-1">
                 <span className="text-4xl font-bold text-stone-900">
@@ -390,7 +396,9 @@ export default function BillingPage() {
                     <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0 mt-0.5">
                       <Check className="w-3 h-3 text-emerald-700" />
                     </div>
-                    <span>{f}</span>
+                    <span>
+                      <LtrText text={f} />
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -405,7 +413,16 @@ export default function BillingPage() {
                   }`}
                 >
                   <Sparkles className="w-4 h-4" />
-                  {actionLoading === tier ? "טוען..." : !isPaying ? `התחל ${TRIAL_DAYS} ימי ניסיון` : `שדרג ל-${plan.name}`}
+                  {actionLoading === tier ? (
+                    "טוען..."
+                  ) : !isPaying ? (
+                    `התחל ${TRIAL_DAYS} ימי ניסיון`
+                  ) : (
+                    <>
+                      שדרג ל-
+                      <LtrText text={plan.name} />
+                    </>
+                  )}
                 </button>
               )}
             </div>
@@ -462,7 +479,7 @@ export default function BillingPage() {
                 <div>
                   <p className="text-xs text-stone-700 font-medium">{PLANS[confirmingTier].description}</p>
                   <p className="font-bold text-stone-900 text-xl mt-1">
-                    {PLANS[confirmingTier].name}
+                    <LtrText text={PLANS[confirmingTier].name} />
                   </p>
                 </div>
                 <div className="text-right">
@@ -488,7 +505,9 @@ export default function BillingPage() {
               {PLANS[confirmingTier].features.slice(0, 4).map((f) => (
                 <li key={f} className="flex items-start gap-2 text-stone-800">
                   <Check className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
-                  <span>{f}</span>
+                  <span>
+                    <LtrText text={f} />
+                  </span>
                 </li>
               ))}
             </ul>

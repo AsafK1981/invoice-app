@@ -12,6 +12,7 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { Ltr } from "@/components/ui/ltr";
 
 type State =
   | { kind: "loading" }
@@ -146,7 +147,10 @@ export default function InviteLandingPage() {
                 <span>הגישה הופעלה בהצלחה</span>
               </div>
               <p className="text-sm text-stone-800 mt-2 leading-relaxed">
-                קיבלת מסלול <strong>{state.planTier === "pro" ? "Pro" : "בסיסי"}</strong>
+                קיבלת מסלול{" "}
+                <strong>
+                  {state.planTier === "pro" ? <Ltr>Pro</Ltr> : "בסיסי"}
+                </strong>
                 {" "}למשך <strong>{state.daysGranted} ימים</strong>.
               </p>
               <p className="text-xs text-stone-600 mt-1">

@@ -19,6 +19,10 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Latin runs inside RTL copy — isolate so adjacent Hebrew punctuation resolves
+   against the paragraph direction. See src/components/ui/ltr.tsx. */
+span[dir="ltr"] { unicode-bidi: isolate; }
+
 /* Tailwind 4 dropped default cursor:pointer from buttons. Restore it
    globally so every interactive control feels clickable. Scoped to
    anchors WITH an href so decorative/named-anchor `<a>` tags don't

@@ -10,8 +10,11 @@ export default function FooterV2() {
     <footer className="v2-footer">
       <div className="v2-footer-hair" />
       <div className="v2-footer-inner">
-        <Link href="/" aria-label="חשבונית — לדף הבית">
-          <LogoV2 variant="mark" />
+        {/* The mark alone has no text, so the link's accessible name comes
+            from LogoV2's `.v2-sr` string rather than an aria-label — an
+            anchor whose only content is an image used to expose just "/". */}
+        <Link href="/">
+          <LogoV2 variant="mark" srText="חשבונית סופר ידידותית — לדף הבית" />
         </Link>
         <nav className="v2-footer-links">
           <Link href="/terms">תנאי שימוש</Link>

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Upload, Sparkles } from "lucide-react";
+import { Ltr } from "@/components/ui/ltr";
 
 interface Props {
   /** Lucide icon component */
@@ -102,7 +103,8 @@ export function EmptyState({
       {showMigrateHint && (
         <div className="mt-6 pt-6 border-t border-orange-100 max-w-md mx-auto">
           <p className="text-xs text-stone-600">
-            מגיע מ-Invoice4U, חשבונית ירוקה, iCount, ריווחית או Excel?{" "}
+            מגיע מ-<Ltr>Invoice4U</Ltr>, חשבונית ירוקה, <Ltr>iCount</Ltr>, ריווחית או{" "}
+            <Ltr>Excel</Ltr>?{" "}
             <Link
               href="/migrate"
               className="text-orange-700 font-semibold hover:text-orange-900 underline"

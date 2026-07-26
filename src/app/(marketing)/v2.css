@@ -20,6 +20,37 @@
   --v2-card: #151109;
   --v2-obsidian: #070504;
 
+  /* Shared content width. The hero, the legal/blog doc shell and the footer
+     all measure the same, so the footer hairline lines up with the column
+     above it instead of being 40px narrower on /blog. `.v2-cmp` deliberately
+     opts out — the comparison pages are a wider, table-bearing layout. */
+  --v2-shell: 680px;
+
+  /* ---- radius scale ----
+     pill (999) · sm 10 (inputs, chips) · md 12 (inline notices, icon tiles)
+     · lg 14 (cards + panels) · xl 16 (hero + auth card).
+     Anything outside this set is a bug, not a decision. */
+  --v2-r-pill: 999px;
+  --v2-r-sm: 10px;
+  --v2-r-md: 12px;
+  --v2-r-lg: 14px;
+  --v2-r-xl: 16px;
+
+  /* ---- elevation: exactly three tiers ----
+     rest = a panel sitting on the page, hover = the same panel lifted,
+     float = the hero/auth card that reads as detached. `edge` and `inset`
+     are the gold hairline + top highlight that ride along with them. */
+  --v2-sh-rest: 0 22px 50px -28px rgba(0, 0, 0, 0.8);
+  --v2-sh-hover: 0 26px 60px -28px rgba(0, 0, 0, 0.85);
+  --v2-sh-float: 0 30px 70px -28px rgba(0, 0, 0, 0.85);
+  --v2-sh-edge: 0 0 0 1px rgba(190, 158, 78, 0.08);
+  --v2-sh-inset: inset 0 1px 0 rgba(255, 236, 180, 0.05);
+  /* gold glow — the button equivalent of rest/hover */
+  --v2-glow-rest: 0 12px 28px -12px rgba(190, 158, 78, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28);
+  --v2-glow-hover: 0 18px 36px -12px rgba(190, 158, 78, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+
   position: relative;
   min-height: 100vh;
   color: var(--v2-ink);
@@ -31,7 +62,13 @@
     radial-gradient(100% 120% at 50% 30%, #1a1510 0%, #0d0a07 55%, #070504 100%);
   font-family: "Assistant", var(--font-assistant), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
+  /* `clip`, NOT `hidden`. `overflow-x: hidden` forces overflow-y to compute to
+     `auto`, which turns this element into the nearest scrollport — and that
+     silently killed `position: sticky` on .v2-header (it stuck to a box that
+     never scrolls, so the header just scrolled away with the page). `clip`
+     suppresses horizontal overflow without creating a scroll container, so the
+     header sticks to the viewport as intended. */
+  overflow-x: clip;
 }
 
 /* Reset the box-model quirks design-F relied on, but ONLY inside v2. */
@@ -107,7 +144,13 @@
   align-items: center;
   gap: clamp(14px, 3vw, 28px);
 }
+/* inline-flex + min-height so the tap target is 40px tall, not the 21px the
+   text alone measured. The 40px logo mark still sets the header height, so
+   this costs nothing vertically. */
 .v2-theme .v2-navlink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
   font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.02em;
@@ -125,15 +168,16 @@
   font-weight: 700;
   font-size: 14px;
   color: #191206;
+  min-height: 40px;
   padding: 9px 22px;
-  border-radius: 999px;
+  border-radius: var(--v2-r-pill);
   background: var(--v2-gold-grad);
-  box-shadow: 0 10px 24px -12px rgba(190, 158, 78, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.28);
+  box-shadow: var(--v2-glow-rest);
   transition: transform 0.15s ease, box-shadow 0.2s ease;
 }
 .v2-theme .v2-btn-gold:hover {
   transform: translateY(-1px);
-  box-shadow: 0 16px 30px -12px rgba(190, 158, 78, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  box-shadow: var(--v2-glow-hover);
 }
 
 /* ---------- logo ---------- */
@@ -161,6 +205,9 @@
   font-size: 22px;
   letter-spacing: 0.01em;
 }
+/* nowrap: at 360px the header flex row squeezed the wordmark column until
+   "סופר ידידותית" broke onto two lines, turning the two-line logo into three
+   and growing the header. The kicker must always be one line. */
 .v2-theme .v2-logo-sub {
   font-family: "Assistant", var(--font-assistant), system-ui, sans-serif;
   font-weight: 600;
@@ -168,6 +215,25 @@
   letter-spacing: 0.28em;
   color: var(--v2-muted);
   margin-top: 3px;
+  white-space: nowrap;
+}
+/* Visually hidden, still read aloud and still part of textContent.
+   Two jobs in the logo: it carries the space between the stacked
+   "חשבונית" / "סופר ידידותית" lines (otherwise they concatenate into one
+   word for screen readers and crawlers), and it supplies the link text for
+   the mark-only footer logo, which has no visible text of its own.
+   `position:absolute` keeps it out of the flex column, so the two-line
+   layout renders exactly as before. */
+.v2-theme .v2-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* ---------- hero wrap ---------- */
@@ -177,7 +243,7 @@
   padding: clamp(40px, 7vw, 64px) 20px 40px;
 }
 .v2-theme .v2-wrap {
-  max-width: 680px;
+  max-width: var(--v2-shell);
   margin: 0 auto;
   position: relative;
   z-index: 1;
@@ -189,7 +255,7 @@
   align-items: center;
   justify-content: center;
   gap: 12px;
-  margin-bottom: 18px;
+  margin-bottom: 16px;
 }
 .v2-theme .v2-eyebrow-row .ln {
   height: 1px;
@@ -205,15 +271,17 @@
   color: #c9b885;
 }
 
+/* 36px floor (was 38): at 360px "יוקרתית כמו העסק" ran within ~10px of both
+   gutters. 62px ceiling keeps the desktop hero in the 56-72px band. */
 .v2-theme h1.v2-h1 {
   font-family: "Frank Ruhl Libre", var(--font-frank), serif;
   font-weight: 900;
-  font-size: clamp(38px, 7vw, 62px);
+  font-size: clamp(36px, 7vw, 62px);
   line-height: 1.04;
   letter-spacing: -0.01em;
 }
 .v2-theme .v2-lede {
-  margin-top: 14px;
+  margin-top: 16px;
   font-size: 16px;
   color: var(--v2-muted);
   max-width: 44ch;
@@ -226,9 +294,9 @@
   display: inline-flex;
   align-items: center;
   gap: 9px;
-  margin: 18px auto 0;
+  margin: 16px auto 0;
   padding: 9px 20px;
-  border-radius: 999px;
+  border-radius: var(--v2-r-pill);
   border: 1px solid var(--v2-line);
   background: linear-gradient(180deg, rgba(216, 190, 119, 0.1), rgba(216, 190, 119, 0.03));
   color: var(--v2-g1);
@@ -240,13 +308,13 @@
 .v2-theme .v2-freenow .dot {
   width: 7px;
   height: 7px;
-  border-radius: 999px;
+  border-radius: var(--v2-r-pill);
   background: var(--v2-g1);
   box-shadow: 0 0 0 4px rgba(216, 190, 119, 0.12);
   flex: none;
 }
 .v2-theme .v2-freenow-note {
-  margin-top: 10px;
+  margin-top: 8px;
   font-size: 12.5px;
   color: var(--v2-muted);
   max-width: 42ch;
@@ -257,17 +325,14 @@
 /* ---------- golden invoice card ---------- */
 .v2-theme .v2-card {
   position: relative;
-  margin: 34px auto 0;
+  margin: 32px auto 0;
   width: min(430px, 100%);
   text-align: right;
   background: linear-gradient(160deg, #191308, #0f0b06);
   border: 1px solid var(--v2-line);
-  border-radius: 16px;
-  padding: 26px 24px 22px;
-  box-shadow:
-    0 30px 70px -28px rgba(0, 0, 0, 0.85),
-    inset 0 1px 0 rgba(255, 236, 180, 0.05),
-    0 0 0 1px rgba(190, 158, 78, 0.06);
+  border-radius: var(--v2-r-xl);
+  padding: 24px;
+  box-shadow: var(--v2-sh-float), var(--v2-sh-inset), var(--v2-sh-edge);
 }
 .v2-theme .v2-card .corner {
   position: absolute;
@@ -310,7 +375,7 @@
   letter-spacing: 0.24em;
   color: #c9b885;
   border: 1px solid var(--v2-line);
-  border-radius: 999px;
+  border-radius: var(--v2-r-pill);
   padding: 4px 10px;
   white-space: nowrap;
 }
@@ -325,7 +390,8 @@
   font-family: "Frank Ruhl Libre", var(--font-frank), serif;
   font-weight: 700;
   border: 1px solid var(--v2-line);
-  border-radius: 6px;
+  /* badge tier — was a one-off 6px */
+  border-radius: 8px;
   padding: 3px 9px;
 }
 .v2-theme .v2-card .paid i {
@@ -375,17 +441,20 @@
 
 /* ---------- tagline ---------- */
 .v2-theme .v2-tag {
-  margin-top: 34px;
+  margin-top: 32px;
   font-size: clamp(20px, 3.6vw, 26px);
   font-weight: 700;
 }
 
 /* ---------- features row ---------- */
+/* row-gap only: the columns butt against their hairline dividers on desktop,
+   but once the row wraps on narrow phones the two lines need breathing room. */
 .v2-theme .v2-feats {
   display: flex;
   justify-content: center;
-  gap: 0;
-  margin-top: 30px;
+  column-gap: 0;
+  row-gap: 8px;
+  margin-top: 32px;
   flex-wrap: wrap;
 }
 .v2-theme .v2-ft {
@@ -453,22 +522,22 @@
 /* ---------- primary CTA ---------- */
 .v2-theme .v2-cta {
   display: inline-block;
-  margin-top: 34px;
+  margin-top: 32px;
   font-weight: 700;
   font-size: 16px;
   color: #191206;
   padding: 15px 42px;
-  border-radius: 999px;
+  border-radius: var(--v2-r-pill);
   background: var(--v2-gold-grad);
-  box-shadow: 0 14px 32px -12px rgba(190, 158, 78, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.28);
+  box-shadow: var(--v2-glow-rest);
   transition: transform 0.15s ease, box-shadow 0.2s ease;
 }
 .v2-theme .v2-cta:hover {
   transform: translateY(-1px);
-  box-shadow: 0 20px 40px -12px rgba(190, 158, 78, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  box-shadow: var(--v2-glow-hover);
 }
 .v2-theme .v2-fine {
-  margin-top: 13px;
+  margin-top: 12px;
   font-size: 12px;
   letter-spacing: 0.26em;
   color: var(--v2-muted);
@@ -506,12 +575,12 @@
 .v2-theme .v2-footer-hair {
   height: 1px;
   width: 100%;
-  max-width: 680px;
+  max-width: var(--v2-shell);
   margin: 0 auto 24px;
   background: linear-gradient(90deg, transparent, var(--v2-line), transparent);
 }
 .v2-theme .v2-footer-inner {
-  max-width: 680px;
+  max-width: var(--v2-shell);
   margin: 0 auto;
   display: flex;
   flex-wrap: wrap;
@@ -524,7 +593,13 @@
   align-items: center;
   gap: 20px;
 }
+/* min-height 40px: the bare text measured 19.5px tall, well under the 36px
+   floor. The 40px footer mark already sets the row height, so the footer
+   does not grow. */
 .v2-theme .v2-footer-links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
   font-size: 13px;
   color: #948a7c;
   transition: color 0.2s ease;
@@ -537,23 +612,28 @@
    ============================================================ */
 
 /* ---------- shared sub-page shell ---------- */
+/* Same 680px column as the hero and the footer, so /blog, /terms, /privacy
+   and /status all align with the footer hairline underneath them (this used
+   to be an unexplained 720px). */
 .v2-theme .v2-doc {
-  max-width: 720px;
+  max-width: var(--v2-shell);
   margin: 0 auto;
   position: relative;
   z-index: 1;
 }
 
-/* back-to-home link */
+/* back-to-home link — min-height for the tap target, margin trimmed by the
+   same amount so the optical gap below it is unchanged. */
 .v2-theme .v2-back {
   display: inline-flex;
   align-items: center;
+  min-height: 40px;
   gap: 6px;
   font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.02em;
   color: #c9b885;
-  margin-bottom: 26px;
+  margin-bottom: 16px;
   transition: color 0.2s ease;
 }
 .v2-theme .v2-back:hover { color: var(--v2-g1); }
@@ -561,8 +641,8 @@
 
 /* document header block */
 .v2-theme .v2-doc-head {
-  padding-bottom: 22px;
-  margin-bottom: 30px;
+  padding-bottom: 24px;
+  margin-bottom: 32px;
   border-bottom: 1px solid var(--v2-line);
 }
 .v2-theme .v2-doc-head .v2-eyebrow-row {
@@ -594,7 +674,7 @@
   text-align: right;
 }
 .v2-theme .v2-prose section + section {
-  margin-top: 26px;
+  margin-top: 24px;
 }
 .v2-theme .v2-prose h2 {
   font-family: "Frank Ruhl Libre", var(--font-frank), serif;
@@ -632,15 +712,16 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  padding-bottom: 22px;
-  margin-bottom: 26px;
+  padding-bottom: 24px;
+  margin-bottom: 24px;
   border-bottom: 1px solid var(--v2-line);
 }
+/* icon tile — same radius tier as .v2-note-panel .ic (was 14px) */
 .v2-theme .v2-status-badge {
   width: 52px;
   height: 52px;
   flex: none;
-  border-radius: 14px;
+  border-radius: var(--v2-r-md);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -668,11 +749,11 @@
 .v2-theme .v2-status-error {
   border: 1px solid rgba(230, 161, 90, 0.4);
   background: rgba(230, 161, 90, 0.06);
-  border-radius: 12px;
-  padding: 14px 16px;
+  border-radius: var(--v2-r-md);
+  padding: 16px;
   font-size: 14px;
   color: #e7c9a6;
-  margin-bottom: 22px;
+  margin-bottom: 24px;
 }
 
 .v2-theme .v2-status-list {
@@ -686,8 +767,8 @@
   justify-content: space-between;
   gap: 14px;
   border: 1px solid var(--v2-line-soft);
-  border-radius: 12px;
-  padding: 14px 16px;
+  border-radius: var(--v2-r-md);
+  padding: 16px;
   background: linear-gradient(160deg, #17110a, #0e0a06);
 }
 .v2-theme .v2-status-row.is-ok { border-color: rgba(214, 178, 108, 0.28); }
@@ -737,7 +818,7 @@
 .v2-theme .v2-status-refresh .spin { animation: v2-spin 1s linear infinite; }
 
 .v2-theme .v2-status-note {
-  margin-top: 22px;
+  margin-top: 24px;
   font-size: 12.5px;
   line-height: 1.7;
   color: var(--v2-muted);
@@ -750,11 +831,10 @@
 @keyframes v2-spin { to { transform: rotate(360deg); } }
 @keyframes v2-pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
 
-@media (max-width: 520px) {
-  .v2-theme .v2-ft { padding: 2px 12px; }
-  .v2-theme .v2-ft + .v2-ft::before { display: none; }
-  .v2-theme .v2-footer-inner { justify-content: center; }
-}
+/* NOTE: every responsive override lives in ONE block at the very bottom of
+   this file. Media queries add no specificity, so a `@media` rule placed
+   above a later base rule silently loses to it — the bug class that has
+   bitten this stylesheet before. Do not add `@media` blocks mid-file. */
 
 /* ============================================================
    Auth (login / signup / forgot) — /v2/login
@@ -798,12 +878,9 @@
   position: relative;
   background: linear-gradient(160deg, #191308, #0f0b06);
   border: 1px solid var(--v2-line);
-  border-radius: 16px;
-  padding: 30px 26px 26px;
-  box-shadow:
-    0 30px 70px -28px rgba(0, 0, 0, 0.85),
-    inset 0 1px 0 rgba(255, 236, 180, 0.05),
-    0 0 0 1px rgba(190, 158, 78, 0.06);
+  border-radius: var(--v2-r-xl);
+  padding: 32px 24px 24px;
+  box-shadow: var(--v2-sh-float), var(--v2-sh-inset), var(--v2-sh-edge);
 }
 .v2-theme .v2-auth-card .corner {
   position: absolute;
@@ -849,7 +926,7 @@
   color: var(--v2-ink);
   background: rgba(9, 7, 4, 0.6);
   border: 1px solid var(--v2-line);
-  border-radius: 10px;
+  border-radius: var(--v2-r-sm);
   padding: 12px 40px 12px 14px;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
@@ -909,15 +986,15 @@
   color: #191206;
   padding: 13px 22px;
   border: none;
-  border-radius: 999px;
+  border-radius: var(--v2-r-pill);
   cursor: pointer;
   background: var(--v2-gold-grad);
-  box-shadow: 0 14px 32px -12px rgba(190, 158, 78, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.28);
+  box-shadow: var(--v2-glow-rest);
   transition: transform 0.15s ease, box-shadow 0.2s ease;
 }
 .v2-theme .v2-auth-btn:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 20px 40px -12px rgba(190, 158, 78, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  box-shadow: var(--v2-glow-hover);
 }
 .v2-theme .v2-auth-btn:disabled {
   opacity: 0.6;
@@ -928,8 +1005,8 @@
 .v2-theme .v2-alert {
   font-size: 13px;
   line-height: 1.5;
-  border-radius: 10px;
-  padding: 11px 13px;
+  border-radius: var(--v2-r-sm);
+  padding: 12px;
 }
 .v2-theme .v2-alert.err {
   color: #f4b7a8;
@@ -990,7 +1067,7 @@
   color: var(--v2-ink);
   padding: 12px 22px;
   border: 1px solid var(--v2-line);
-  border-radius: 999px;
+  border-radius: var(--v2-r-pill);
   cursor: pointer;
   background: rgba(9, 7, 4, 0.5);
   transition: border-color 0.2s ease, background 0.2s ease;
@@ -1049,7 +1126,13 @@
 }
 .v2-theme .v2-cmp-hero .vs {
   display: inline-block;
-  margin: 0 14px;
+  /* 7px, not 14px: the h1 now has real literal spaces on both sides of this
+     span (they carry the word break into textContent), so the margin only has
+     to top up the optical gap. Measured in Chrome — the rendered space is
+     9.8px at the 48px desktop size and 6.1px at the 30px mobile size, so
+     7px lands the total at 16.8px / 13.1px against the old flat 14px: the
+     closest single value that stays near parity at both ends of the clamp. */
+  margin: 0 7px;
   font-family: "Assistant", var(--font-assistant), system-ui, sans-serif;
   font-weight: 400;
   font-size: 0.62em;
@@ -1094,9 +1177,9 @@
   position: relative;
   background: linear-gradient(160deg, #16110a, #0e0a06);
   border: 1px solid var(--v2-line);
-  border-radius: 14px;
-  padding: 22px 22px 20px;
-  box-shadow: 0 24px 60px -30px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 236, 180, 0.05);
+  border-radius: var(--v2-r-lg);
+  padding: 24px;
+  box-shadow: var(--v2-sh-rest), var(--v2-sh-inset);
 }
 
 /* ---------- pricing grid ---------- */
@@ -1107,8 +1190,8 @@
 }
 .v2-theme .v2-price-card {
   position: relative;
-  border-radius: 14px;
-  padding: 22px 20px 20px;
+  border-radius: var(--v2-r-lg);
+  padding: 24px;
   border: 1px solid var(--v2-line-soft);
   background: linear-gradient(160deg, #16110a, #0e0a06);
 }
@@ -1118,7 +1201,7 @@
   background:
     radial-gradient(120% 80% at 50% -10%, rgba(190, 158, 78, 0.06), transparent 55%),
     linear-gradient(160deg, #1a1408, #100b06);
-  box-shadow: 0 24px 60px -28px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(190, 158, 78, 0.08);
+  box-shadow: var(--v2-sh-rest), var(--v2-sh-edge);
 }
 .v2-theme .v2-price-card .badge {
   position: absolute;
@@ -1132,15 +1215,17 @@
   letter-spacing: 0.14em;
   color: #191206;
   padding: 4px 12px;
-  border-radius: 999px;
+  border-radius: var(--v2-r-pill);
   background: var(--v2-gold-grad);
   box-shadow: 0 8px 18px -10px rgba(190, 158, 78, 0.3);
 }
 .v2-theme .v2-price-card .badge svg { width: 12px; height: 12px; }
+/* 18px, matching .v2-str h3 and .v2-note-panel h3 — the three panel headings
+   used to be 17/17/18. */
 .v2-theme .v2-price-card h3 {
   font-family: "Frank Ruhl Libre", var(--font-frank), serif;
   font-weight: 700;
-  font-size: 17px;
+  font-size: 18px;
   margin-bottom: 14px;
 }
 .v2-theme .v2-price-card ul { display: flex; flex-direction: column; gap: 9px; }
@@ -1165,13 +1250,13 @@
 }
 .v2-theme .v2-price-card li.trial .val { color: var(--v2-g2); font-weight: 700; }
 .v2-theme .v2-price-note {
-  margin-top: 18px;
+  margin-top: 16px;
   font-size: 13.5px;
   line-height: 1.7;
   color: #cbc2b3;
   border: 1px solid var(--v2-line-soft);
-  border-radius: 12px;
-  padding: 14px 16px;
+  border-radius: var(--v2-r-md);
+  padding: 16px;
   background: rgba(190, 158, 78, 0.04);
 }
 .v2-theme .v2-price-note strong { color: var(--v2-g1); }
@@ -1237,7 +1322,7 @@
   justify-content: center;
   width: 26px;
   height: 26px;
-  border-radius: 999px;
+  border-radius: var(--v2-r-pill);
 }
 .v2-theme .v2-mk svg { width: 16px; height: 16px; }
 .v2-theme .v2-mk.yes { color: var(--v2-yes); background: rgba(79, 196, 122, 0.12); }
@@ -1269,7 +1354,7 @@
 .v2-theme .v2-str h3 {
   font-family: "Frank Ruhl Libre", var(--font-frank), serif;
   font-weight: 700;
-  font-size: 17px;
+  font-size: 18px;
   margin-bottom: 14px;
 }
 .v2-theme .v2-str.win { border-color: var(--v2-line); }
@@ -1293,7 +1378,7 @@
   width: 46px;
   height: 46px;
   flex: none;
-  border-radius: 12px;
+  border-radius: var(--v2-r-md);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1354,19 +1439,32 @@
   text-align: center;
   margin-bottom: clamp(28px, 5vw, 44px);
 }
+/* Sub-page title tier. `.v2-h1` is the LANDING hero scale (up to 62px); reused
+   verbatim here it made the /vs index shout as loudly as the home page and,
+   at 390/360px, held a 38px H1 where every other secondary page sits at 30px.
+   Same clamp as .v2-doc-title / .v2-cmp-hero h1, so all three secondary
+   templates now share one heading scale. */
+.v2-theme .v2-vs-head h1.v2-h1 {
+  font-size: clamp(30px, 5.6vw, 48px);
+  line-height: 1.1;
+}
 .v2-theme .v2-vs-list { display: flex; flex-direction: column; gap: 16px; }
+/* `position: relative` is load-bearing: it is the containing block for the
+   stretched `.v2-card-link::after`. (No `display: block` — the card is an
+   <article>, which is already block-level.) */
 .v2-theme .v2-vs-card {
-  display: block;
-  border-radius: 14px;
+  position: relative;
+  border-radius: var(--v2-r-lg);
   padding: 24px;
   border: 1px solid var(--v2-line-soft);
   background: linear-gradient(160deg, #16110a, #0e0a06);
+  box-shadow: var(--v2-sh-rest);
   transition: transform 0.16s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 .v2-theme .v2-vs-card:hover {
   transform: translateY(-2px);
   border-color: var(--v2-line);
-  box-shadow: 0 26px 60px -30px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(190, 158, 78, 0.08);
+  box-shadow: var(--v2-sh-hover), var(--v2-sh-edge);
 }
 .v2-theme .v2-vs-card h2 {
   font-family: "Frank Ruhl Libre", var(--font-frank), serif;
@@ -1396,9 +1494,28 @@
 }
 .v2-theme .v2-vs-card:hover .more svg { transform: translateX(-4px); }
 
-@media (max-width: 720px) {
-  .v2-theme .v2-price-grid,
-  .v2-theme .v2-str-grid { grid-template-columns: 1fr; }
+/* ---------- stretched card link (/vs index + /blog index) ----------
+   The card is an <article>; only its <h2> holds a real <a>, whose ::after is
+   stretched over the card so the whole surface stays clickable while the DOM
+   exposes exactly one link with real, crawlable text. The card's own
+   border-radius is mirrored (via the shared --v2-r-lg token, so the hit area
+   can never drift from the card shape), and focus is moved to the card so the
+   ring outlines the whole thing rather than just the heading.
+
+   No `color: inherit` / `text-decoration: none` here — `.v2-theme a` already
+   sets both, and duplicating them just invited them to drift apart. */
+.v2-theme .v2-card-link::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--v2-r-lg);
+  z-index: 1;
+}
+.v2-theme .v2-card-link:focus-visible { outline: none; }
+.v2-theme .v2-vs-card:has(.v2-card-link:focus-visible),
+.v2-theme .v2-blog-card:has(.v2-card-link:focus-visible) {
+  outline: 2px solid var(--v2-g1);
+  outline-offset: 3px;
 }
 
 /* ============================================================
@@ -1415,18 +1532,21 @@
   gap: 18px;
   margin-top: 4px;
 }
+/* Same primitive as .v2-vs-card — matching padding, radius, elevation and
+   transition timings. (No `display: block`: the card is an <article>.) */
 .v2-theme .v2-blog-card {
-  display: block;
   position: relative;
-  padding: 24px 26px;
-  border-radius: 14px;
+  padding: 24px;
+  border-radius: var(--v2-r-lg);
   border: 1px solid var(--v2-line);
   background: linear-gradient(160deg, #17110a, #100c07);
-  transition: border-color 0.2s ease, transform 0.15s ease;
+  box-shadow: var(--v2-sh-rest);
+  transition: transform 0.16s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 .v2-theme .v2-blog-card:hover {
   border-color: var(--v2-g2);
   transform: translateY(-2px);
+  box-shadow: var(--v2-sh-hover), var(--v2-sh-edge);
 }
 .v2-theme .v2-blog-card .date {
   font-size: 12px;
@@ -1455,12 +1575,19 @@
   font-weight: 700;
   color: var(--v2-g2);
 }
-.v2-theme .v2-blog-card .more svg { width: 15px; height: 15px; }
+/* The arrow nudges on card hover, exactly like .v2-vs-card's — the two index
+   templates were out of sync (this one had no transition at all). */
+.v2-theme .v2-blog-card .more svg {
+  width: 15px;
+  height: 15px;
+  transition: transform 0.2s ease;
+}
+.v2-theme .v2-blog-card:hover .more svg { transform: translateX(-4px); }
 
 .v2-theme .v2-blog-empty {
   margin-top: 8px;
-  padding: 30px 26px;
-  border-radius: 14px;
+  padding: 32px 24px;
+  border-radius: var(--v2-r-lg);
   border: 1px dashed var(--v2-line);
   color: var(--v2-muted);
   font-size: 15px;
@@ -1473,9 +1600,9 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 26px;
-  padding: 13px 18px;
-  border-radius: 12px;
+  margin-bottom: 24px;
+  padding: 14px 18px;
+  border-radius: var(--v2-r-md);
   border: 1px solid var(--v2-partial);
   background: rgba(217, 164, 65, 0.08);
   color: var(--v2-partial);
@@ -1544,3 +1671,54 @@
   background: rgba(214, 178, 108, 0.05);
 }
 .v2-theme .v2-prose em { color: #cbc2b3; }
+
+/* ============================================================
+   RESPONSIVE OVERRIDES — the ONLY place `@media` may appear.
+
+   Media queries carry no specificity of their own, so an override written
+   next to its base rule loses to any same-specificity rule declared further
+   down the file. Keeping every breakpoint here, after all base rules and in
+   descending width order, makes that impossible: a wider block can never
+   out-order a narrower one, and no base rule can out-order either.
+
+   Breakpoints: 720 (two-up grids collapse) · 520 (feature row + footer
+   stack) · 420 (small phones: tighten the sticky header + card padding).
+   Before adding a selector, check it is not already set in a wider block
+   below — the blocks are cumulative, not exclusive.
+   ============================================================ */
+
+@media (max-width: 720px) {
+  .v2-theme .v2-price-grid,
+  .v2-theme .v2-str-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 520px) {
+  .v2-theme .v2-ft { padding: 2px 12px; }
+  .v2-theme .v2-ft + .v2-ft::before { display: none; }
+  .v2-theme .v2-footer-inner { justify-content: center; }
+
+  /* Card padding stays at the 20px floor — never tighter. */
+  .v2-theme .v2-panel,
+  .v2-theme .v2-price-card,
+  .v2-theme .v2-vs-card,
+  .v2-theme .v2-blog-card { padding: 20px; }
+  .v2-theme .v2-card { padding: 20px; }
+  .v2-theme .v2-matrix { padding: 0; }
+
+  /* Footer trimmed ~25% (was 32/40 + a 24px hairline gap) now that the links
+     carry their own 40px tap height. */
+  .v2-theme .v2-footer { padding: 24px clamp(16px, 5vw, 40px) 28px; }
+  .v2-theme .v2-footer-hair { margin-bottom: 18px; }
+}
+
+@media (max-width: 420px) {
+  /* Sticky header: 80px of a 780px-tall phone viewport is too much to give
+     up permanently. Shrinking the mark to 34px drops it to ~68px while the
+     nav links keep their 40px tap height. */
+  .v2-theme .v2-header { padding: 12px 16px; gap: 12px; }
+  .v2-theme .v2-header-nav { gap: 12px; }
+  .v2-theme .v2-logo-mark { width: 34px; height: 34px; }
+  .v2-theme .v2-logo-word { font-size: 20px; }
+  .v2-theme .v2-logo-sub { font-size: 9px; letter-spacing: 0.2em; }
+  .v2-theme .v2-btn-gold { padding: 9px 16px; }
+}

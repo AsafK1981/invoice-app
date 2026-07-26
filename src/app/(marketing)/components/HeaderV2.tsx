@@ -8,7 +8,9 @@ import LogoV2 from "./LogoV2";
 export default function HeaderV2() {
   return (
     <header className="v2-header">
-      <Link href="/" aria-label="חשבונית — לדף הבית">
+      {/* No aria-label: the accessible name comes from the wordmark inside,
+          which now includes a screen-reader space between its two lines. */}
+      <Link href="/">
         <LogoV2 />
       </Link>
       <nav className="v2-header-nav">

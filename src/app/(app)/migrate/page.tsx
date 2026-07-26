@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { CsvImportModal } from "@/components/csv-import-modal";
 import { BulkImportZone } from "@/components/bulk-import-zone";
+import { Ltr, LtrText } from "@/components/ui/ltr";
 
 type Vendor =
   | "invoice4u"
@@ -204,7 +205,8 @@ export default function MigratePage() {
           מעבר מתוכנה אחרת
         </h1>
         <p className="text-sm text-stone-700 mt-2 mr-14 leading-relaxed">
-          מעבירים אותך ביד מ-Invoice4U / חשבונית ירוקה / Excel. כל הלקוחות והמוצרים והמסמכים שלך — בכמה דקות.
+          מעבירים אותך ביד מ-<Ltr>Invoice4U</Ltr> / חשבונית ירוקה / <Ltr>Excel</Ltr>. כל הלקוחות
+          והמוצרים והמסמכים שלך — בכמה דקות.
         </p>
       </div>
 
@@ -213,7 +215,11 @@ export default function MigratePage() {
         <>
           <h2 className="text-lg font-semibold text-stone-900">מאיזה כלי אתה מגיע?</h2>
           <p className="text-sm text-stone-600 -mt-3">
-            לא רואה את הכלי שלך כאן? לחץ <strong>"Excel / אחר"</strong> — או דלג לקטע ה-WhatsApp למטה.
+            לא רואה את הכלי שלך כאן? לחץ{" "}
+            <strong>
+              "<Ltr>Excel</Ltr> / אחר"
+            </strong>{" "}
+            — או דלג לקטע ה-<Ltr>WhatsApp</Ltr> למטה.
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
             {(Object.keys(VENDOR_META) as Array<keyof typeof VENDOR_META>).map((v) => (
@@ -230,9 +236,11 @@ export default function MigratePage() {
                 >
                   <Upload className="w-5 h-5 text-white" />
                 </div>
-                <h3 className="font-bold text-stone-900 text-sm">{VENDOR_META[v].name}</h3>
+                <h3 className="font-bold text-stone-900 text-sm">
+                  <LtrText text={VENDOR_META[v].name} />
+                </h3>
                 <p className="text-xs text-stone-600 mt-1 leading-snug">
-                  {VENDOR_META[v].tagline}
+                  <LtrText text={VENDOR_META[v].tagline} />
                 </p>
               </button>
             ))}
@@ -246,8 +254,8 @@ export default function MigratePage() {
               <div className="flex-1">
                 <h3 className="font-semibold text-stone-900">לא בא לך להתעסק? אני עושה לך את זה.</h3>
                 <p className="text-sm text-stone-700 mt-1 leading-relaxed">
-                  שלח לי ב-WhatsApp את קבצי הייצוא מהכלי הישן ואני אייבא לך את הכל ידנית — בחינם, כי אתה
-                  מתוך ה-20 הראשונים שמשתמשים באפליקציה.
+                  שלח לי ב-<Ltr>WhatsApp</Ltr> את קבצי הייצוא מהכלי הישן ואני אייבא לך את הכל ידנית
+                  — בחינם, כי אתה מתוך ה-20 הראשונים שמשתמשים באפליקציה.
                 </p>
                 <a
                   href={whatsappConciergeLink()}
@@ -256,7 +264,7 @@ export default function MigratePage() {
                   className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border-2 border-emerald-200 text-emerald-700 hover:bg-emerald-50"
                 >
                   <MessageCircle className="w-4 h-4" />
-                  שלח לי ב-WhatsApp
+                  שלח לי ב-<Ltr>WhatsApp</Ltr>
                 </a>
               </div>
             </div>
@@ -283,7 +291,10 @@ export default function MigratePage() {
                 <Upload className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h2 className="font-bold text-stone-900">מעבר מ-{VENDOR_META[vendor].name}</h2>
+                <h2 className="font-bold text-stone-900">
+                  מעבר מ-
+                  <LtrText text={VENDOR_META[vendor].name} />
+                </h2>
                 <p className="text-xs text-stone-600">בצע את השלבים בסדר</p>
               </div>
             </div>
@@ -315,7 +326,9 @@ export default function MigratePage() {
                     <div className="px-4 py-3 border-t border-orange-100 bg-white">
                       <ol className="space-y-2 text-sm text-stone-800 list-decimal pr-5">
                         {g.steps.map((s, i) => (
-                          <li key={i}>{s}</li>
+                          <li key={i}>
+                            <LtrText text={s} />
+                          </li>
                         ))}
                       </ol>
                       {g.link && (
@@ -326,7 +339,7 @@ export default function MigratePage() {
                           className="mt-3 inline-flex items-center gap-1 text-xs text-orange-600 hover:text-orange-700"
                         >
                           <ExternalLink className="w-3 h-3" />
-                          פתח את {VENDOR_META[vendor].name}
+                          פתח את <LtrText text={VENDOR_META[vendor].name} />
                         </a>
                       )}
                     </div>
@@ -346,8 +359,9 @@ export default function MigratePage() {
                       ייבוא הכל בלחיצה אחת
                     </p>
                     <p className="text-sm text-stone-700 mt-0.5">
-                      גרור את כל הקבצים שייצאת (לקוחות / מוצרים / הוצאות / מסמכים) — או קובץ Excel
-                      אחד עם כל הגיליונות — המערכת תזהה אוטומטית מה כל קובץ ותייבא הכל יחד.
+                      גרור את כל הקבצים שייצאת (לקוחות / מוצרים / הוצאות / מסמכים) — או קובץ{" "}
+                      <Ltr>Excel</Ltr> אחד עם כל הגיליונות — המערכת תזהה אוטומטית מה כל קובץ ותייבא
+                      הכל יחד.
                     </p>
                   </div>
                 </div>
@@ -443,7 +457,7 @@ export default function MigratePage() {
               <div className="flex-1 text-sm">
                 <span className="font-semibold text-stone-900">תקוע באיזה שלב?</span>{" "}
                 <span className="text-stone-700">
-                  שלח לי ב-WhatsApp את הקבצים, ואני אטפל ידנית. חינם בתקופת הבטא.
+                  שלח לי ב-<Ltr>WhatsApp</Ltr> את הקבצים, ואני אטפל ידנית. חינם בתקופת הבטא.
                 </span>
               </div>
               <a
