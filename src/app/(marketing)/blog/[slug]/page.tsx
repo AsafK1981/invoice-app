@@ -11,6 +11,18 @@ import {
   loadPostMarkdown,
 } from "@/lib/blog-posts";
 import { CANONICAL_ORIGIN } from "@/lib/public-url";
+import { parseFaq } from "@/lib/blog-faq";
+import { POST_RELATED } from "@/lib/related-links";
+import {
+  graph,
+  organization,
+  article,
+  breadcrumbList,
+  faqPage,
+} from "@/lib/jsonld";
+import JsonLd from "../../components/JsonLd";
+import RelatedLinks from "../../components/RelatedLinks";
+import SignupCta from "../../components/SignupCta";
 
 const BASE = CANONICAL_ORIGIN;
 
@@ -69,32 +81,28 @@ export default async function BlogPostPage({
   const rawMd = loadPostMarkdown(post.slug);
   const html = await marked.parse(stripLeadingH1(rawMd));
 
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "Article",
-    headline: post.title,
-    description: post.description,
-    datePublished: post.date,
-    dateModified: post.date,
-    inLanguage: "he-IL",
-    mainEntityOfPage: {
-      "@type": "WebPage",
-      "@id": `${BASE}/blog/${post.slug}`,
-    },
-    author: { "@type": "Organization", name: "חשבונית סופר ידידותית" },
-    publisher: {
-      "@type": "Organization",
-      name: "חשבונית סופר ידידותית",
-      logo: { "@type": "ImageObject", url: `${BASE}/logo-v2.svg` },
-    },
-  };
+  // FAQPage is derived from the article's own "## שאלות נפוצות" section, so the
+  // markup can never describe questions the page does not visibly show.
+  const faq = parseFaq(rawMd);
+
+  // Drafts are noindex and excluded from the sitemap; emitting structured data
+  // for them would advertise a page we deliberately hid.
+  const jsonLd = post.published
+    ? graph(
+        organization(),
+        article(post),
+        breadcrumbList([
+          { name: "בית", path: "/" },
+          { name: "מגזין", path: "/blog" },
+          { name: post.title, path: `/blog/${post.slug}` },
+        ]),
+        ...(faq.length > 0 ? [faqPage(faq)] : []),
+      )
+    : null;
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      {jsonLd && <JsonLd data={jsonLd} />}
 
       <div className="v2-frame" aria-hidden="true">
         <i className="tl" />
@@ -138,6 +146,9 @@ export default async function BlogPostPage({
             className="v2-prose"
             dangerouslySetInnerHTML={{ __html: html }}
           />
+
+          <RelatedLinks targets={POST_RELATED[post.slug] ?? {}} />
+          <SignupCta />
         </div>
       </main>
 

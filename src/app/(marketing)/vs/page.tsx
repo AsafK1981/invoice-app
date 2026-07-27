@@ -4,6 +4,14 @@ import { COMPETITORS } from "@/lib/comparison-data";
 import { LtrText } from "@/components/ui/ltr";
 import HeaderV2 from "../components/HeaderV2";
 import FooterV2 from "../components/FooterV2";
+import JsonLd from "../components/JsonLd";
+import RelatedLinks from "../components/RelatedLinks";
+import {
+  graph,
+  organization,
+  itemList,
+  breadcrumbList,
+} from "@/lib/jsonld";
 import { vsMetadata } from "./vs-metadata";
 
 export const metadata = vsMetadata({
@@ -27,6 +35,19 @@ export default function V2VsIndex() {
   const list = Object.values(COMPETITORS);
   return (
     <>
+      <JsonLd
+        data={graph(
+          organization(),
+          breadcrumbList([
+            { name: "בית", path: "/" },
+            { name: "השוואות", path: "/vs" },
+          ]),
+          itemList(
+            list.map((c) => ({ name: c.name, path: `/vs/${c.slug}` })),
+          ),
+        )}
+      />
+
       {/* deco outer frame */}
       <div className="v2-frame" aria-hidden="true">
         <i className="tl" />
@@ -83,6 +104,17 @@ export default function V2VsIndex() {
             </article>
           ))}
         </div>
+
+        <RelatedLinks
+          targets={{
+            posts: [
+              "hashbonit-digitalit-chinam-2026",
+              "mispar-haktzaa-eich-mekablim",
+              "maavar-osek-patur-le-osek-morshe-2026",
+            ],
+          }}
+          heading="מדריכים שכדאי לקרוא"
+        />
 
         <div className="v2-cmp-cta" style={{ marginTop: "var(--v2-sp-5)" }}>
           <Link href="/login?mode=signup" className="v2-cta">

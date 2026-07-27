@@ -1,0 +1,77 @@
+/* ============================================================
+   Internal-linking blocks: <RelatedLinks> and <VsSiblings>.
+
+   Kept in its own file rather than appended to v2.css so the SEO
+   linking pass stays reviewable on its own, and does not interleave
+   with in-flight landing-page work in that (large) stylesheet.
+
+   Imported after v2.css in (marketing)/layout.tsx, so these rules win
+   specificity ties by source order, same convention as app-skin.css.
+   Every selector stays scoped under .v2-theme, matching v2.css.
+
+   Card markup deliberately REUSES .v2-blog-list / .v2-blog-card /
+   .v2-card-link from the index, so there is no second card primitive
+   here to drift from the first — only the surrounding block.
+   ============================================================ */
+
+/* ---------- "כדאי לקרוא גם" ---------- */
+.v2-theme .v2-related {
+  margin-top: var(--v2-sp-5);
+  padding-top: var(--v2-sp-4);
+  border-top: 1px solid var(--v2-line);
+}
+.v2-theme .v2-related .v2-eyebrow-row {
+  margin-bottom: var(--v2-sp-3);
+}
+/* The block sits inside .v2-doc (a narrow reading column) on article pages,
+   so cards stack; the index's two-up desktop grid would be too tight here. */
+.v2-theme .v2-related .v2-blog-card h3 {
+  margin: 0 0 6px;
+  font-family: var(--font-frank), Georgia, serif;
+  font-size: 1.05rem;
+  line-height: 1.4;
+  font-weight: 700;
+}
+
+/* ---------- "השוואות נוספות" ---------- */
+.v2-theme .v2-vs-siblings {
+  margin-top: var(--v2-sp-5);
+  padding-top: var(--v2-sp-4);
+  border-top: 1px solid var(--v2-line);
+}
+.v2-theme .v2-vs-siblings ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: var(--v2-sp-3) 0 0;
+  padding: 0;
+  list-style: none;
+}
+.v2-theme .v2-vs-siblings a {
+  display: inline-block;
+  padding: 7px 14px;
+  border: 1px solid var(--v2-line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--v2-ink-2);
+  font-size: 0.92rem;
+  text-decoration: none;
+  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+}
+.v2-theme .v2-vs-siblings a:hover {
+  border-color: var(--v2-g2);
+  color: var(--v2-g1);
+  background: rgba(212, 175, 55, 0.06);
+}
+.v2-theme .v2-vs-siblings a:focus-visible {
+  outline: 2px solid var(--v2-g1);
+  outline-offset: 2px;
+}
+
+/* Touch targets: the pill row is the one new tappable surface here, and at
+   0.92rem the default padding lands under the 44px comfortable minimum. */
+@media (max-width: 720px) {
+  .v2-theme .v2-vs-siblings a {
+    padding: 11px 16px;
+  }
+}

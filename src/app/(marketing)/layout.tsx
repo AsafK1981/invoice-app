@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { Frank_Ruhl_Libre, Assistant } from "next/font/google";
 import "./v2.css";
+// After v2.css on purpose: keeps the internal-linking rules later in source
+// order so they win specificity ties, same convention as app-skin.css.
+import "./internal-links.css";
 
 const frankRuhl = Frank_Ruhl_Libre({
   weight: ["500", "700", "900"],

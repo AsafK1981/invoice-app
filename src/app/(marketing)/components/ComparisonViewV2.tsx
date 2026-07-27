@@ -11,9 +11,19 @@ import {
 } from "lucide-react";
 import type { Competitor, FeatureSupport } from "@/lib/comparison-data";
 import { Ltr, LtrText } from "@/components/ui/ltr";
-import { CANONICAL_ORIGIN } from "@/lib/public-url";
+import { VS_RELATED } from "@/lib/related-links";
+import {
+  APP_NAME_HE,
+  graph,
+  organization,
+  softwareApplication,
+  breadcrumbList,
+} from "@/lib/jsonld";
 import HeaderV2 from "./HeaderV2";
 import FooterV2 from "./FooterV2";
+import JsonLd from "./JsonLd";
+import VsSiblings from "./VsSiblings";
+import RelatedLinks from "./RelatedLinks";
 
 /**
  * ComparisonViewV2, the shared body of every /vs/<competitor> page.
@@ -34,31 +44,7 @@ import FooterV2 from "./FooterV2";
  * markup would corrupt it.
  */
 
-const APP_NAME = "חשבונית סופר ידידותית";
-
-/**
- * SoftwareApplication schema for the app itself, the same on every /vs page
- * (it describes us, not the competitor). Emitted once per comparison page so
- * search engines can render a rich product result. Price reflects the standing
- * list entry price (₪15/mo); the launch period is currently free, surfaced in
- * the on-page copy rather than in structured pricing.
- */
-const APP_JSON_LD = {
-  "@context": "https://schema.org",
-  "@type": "SoftwareApplication",
-  name: APP_NAME,
-  applicationCategory: "FinanceApplication",
-  operatingSystem: "Web, iOS, Android (PWA)",
-  inLanguage: "he-IL",
-  url: CANONICAL_ORIGIN,
-  description:
-    "תוכנת חשבוניות בעברית לעוסק פטור/מורשה בישראל: הפקת חשבוניות וקבלות, אינטגרציה ל-API חשבונית ישראל (הקצאת מספרים), במחיר הוגן.",
-  offers: {
-    "@type": "Offer",
-    price: "15",
-    priceCurrency: "ILS",
-  },
-};
+const APP_NAME = APP_NAME_HE;
 
 const formatPrice = (nis: number) =>
   new Intl.NumberFormat("he-IL", {
@@ -119,9 +105,16 @@ export function ComparisonViewV2({ competitor }: { competitor: Competitor }) {
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(APP_JSON_LD) }}
+      <JsonLd
+        data={graph(
+          organization(),
+          softwareApplication(),
+          breadcrumbList([
+            { name: "בית", path: "/" },
+            { name: "השוואות", path: "/vs" },
+            { name: competitor.name, path: `/vs/${competitor.slug}` },
+          ]),
+        )}
       />
 
       {/* deco outer frame (matches the landing) */}
@@ -362,6 +355,13 @@ export function ComparisonViewV2({ competitor }: { competitor: Competitor }) {
         </section>
 
         {/* CTA */}
+        <VsSiblings current={competitor.slug} />
+
+        <RelatedLinks
+          targets={{ posts: VS_RELATED[competitor.slug] ?? [] }}
+          heading="מדריכים שכדאי לקרוא"
+        />
+
         <section className="v2-cmp-cta">
           <h2 className="v2-gold">רוצה לנסות? זה חינם עכשיו</h2>
           <p>

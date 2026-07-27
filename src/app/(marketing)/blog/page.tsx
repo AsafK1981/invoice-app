@@ -5,6 +5,14 @@ import HeaderV2 from "../components/HeaderV2";
 import FooterV2 from "../components/FooterV2";
 import { LtrText } from "@/components/ui/ltr";
 import { getPublishedPosts } from "@/lib/blog-posts";
+import JsonLd from "../components/JsonLd";
+import {
+  graph,
+  organization,
+  website,
+  itemList,
+  breadcrumbList,
+} from "@/lib/jsonld";
 
 export const metadata: Metadata = {
   title: "מגזין | חשבונית סופר ידידותית",
@@ -23,6 +31,23 @@ export default function BlogIndexPage() {
 
   return (
     <>
+      <JsonLd
+        data={graph(
+          organization(),
+          website(),
+          breadcrumbList([
+            { name: "בית", path: "/" },
+            { name: "מגזין", path: "/blog" },
+          ]),
+          itemList(
+            posts.map((post) => ({
+              name: post.title,
+              path: `/blog/${post.slug}`,
+            })),
+          ),
+        )}
+      />
+
       <div className="v2-frame" aria-hidden="true">
         <i className="tl" />
         <i className="tr" />
