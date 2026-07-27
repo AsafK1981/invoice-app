@@ -29,8 +29,8 @@
     "jszip": "^3.10.1",
     "lucide-react": "^1.8.0",
     "marked": "^14.1.4",
-    "next": "16.2.7",
-    "nodemailer": "^8.0.5",
+    "next": "16.2.12",
+    "nodemailer": "^9.0.3",
     "papaparse": "^5.5.3",
     "puppeteer-core": "^25.3.0",
     "react": "19.2.4",
@@ -53,5 +53,9 @@
     "tsx": "^4.22.3",
     "typescript": "^5",
     "vitest": "^4.1.5"
+  },
+  "overrides": {
+    "postcss": "^8.5.23",
+    "sharp": "^0.35.3"
   }
 }
