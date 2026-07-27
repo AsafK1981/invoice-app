@@ -20,21 +20,82 @@
   --v2-card: #151109;
   --v2-obsidian: #070504;
 
-  /* Shared content width. The hero, the legal/blog doc shell and the footer
-     all measure the same, so the footer hairline lines up with the column
-     above it instead of being 40px narrower on /blog. `.v2-cmp` deliberately
-     opts out; the comparison pages are a wider, table-bearing layout. */
-  --v2-shell: 680px;
+  /* ---- containers ----
+     THREE widths, not one. They used to be a single 680px `--v2-shell` shared
+     by the hero, every doc page and the footer, which at a 1100px viewport
+     (the real width of a tiled window on an ultrawide) threw away 38% of the
+     screen and left the page reading as a narrow ribbon on a black field.
 
-  /* Reading measure for body copy. The comparison + blog columns are ~900px
-     wide, and body paragraphs that filled them were running 130-151 real
-     characters per line in Hebrew, roughly double the comfortable band, which
-     is what made /vs tiring to read.
+       --v2-shell  the LANDING hero + the footer frame. Wide: it holds a
+                   two-column hero at the desktop tier, so it wants the room.
+       --v2-read   the prose reading column (/terms, /privacy, /blog/<slug>).
+                   Deliberately the NARROWEST of the three and sized so the
+                   column IS the measure: see --v2-measure below.
+       --v2-wide   index + comparison grids (/vs, /blog, /vs/<competitor>).
+                   Two-up card grids and the feature matrix live here.
+
+     Every one of them steps up at the desktop breakpoints at the bottom of
+     this file. Do not hard-code a container width anywhere else. */
+  --v2-shell: 680px;
+  --v2-read: 680px;
+  --v2-wide: 940px;
+
+  /* Reading measure for body copy that sits in a container WIDER than a
+     comfortable line.
      `ch` is the advance of "0" in Assistant (~0.49em); Hebrew averages ~0.42em
-     per character, so 60ch lands these blocks at 66-74 ACTUAL characters. The
-     unit is resolved per-element at substitution time, so each block scales
-     with its own font-size instead of being pinned to one pixel width. */
+     per character, so 60ch lands a block at 66-74 ACTUAL characters. The unit
+     is resolved per-element, so each block scales with its own font-size.
+
+     IMPORTANT, and the reason /vs looked broken: a measure cap is a LAST
+     RESORT, not the primary tool. Capping a paragraph inside a 900px card
+     leaves the other 450px of that card as an empty rectangle, and in RTL all
+     of it piles up on one side, which reads as a rendering bug. The fix is to
+     bring the CONTAINER down to the measure (two-up card grids, a prose column
+     sized to the measure), and let this cap only catch the leftovers. Where it
+     still applies it should be close to inert. */
   --v2-measure: 60ch;
+
+  /* ---- type ladder ----
+     ONE ladder. Six body/UI roles used to live inside nine pixels
+     (11/12/13/13.5/14/16), which is not a hierarchy, it is a rounding error.
+     These five steps sit on a ~1.2 ratio and every one of them is visibly a
+     different size. The display sizes stay as their own `clamp()`s because
+     they are set per heading, but the BODY tier moves as a block at the
+     desktop breakpoints at the bottom of the file, so raising the whole app's
+     legibility is one edit, not seventy-six.
+
+       micro  letterspaced eyebrows, badges, legal fine print
+       meta   dates, captions, table notes, secondary values
+       body   THE default: body copy, nav, buttons, list items, table cells
+       lede   intro paragraphs, verdicts, article body
+       h3     panel + card headings
+       h2     section headings, card titles                                */
+  --v2-fs-micro: 11.5px;
+  --v2-fs-meta: 13.5px;
+  --v2-fs-body: 15.5px;
+  --v2-fs-lede: 17px;
+  --v2-fs-h3: 18.5px;
+  --v2-fs-h2: 21px;
+
+  /* ---- spacing rhythm ----
+     Multiples of 8, and they mean something:
+       1 label to its value        2 inside a block (heading to its body)
+       3 between blocks in a card  4 between cards
+       5 between sections          6 between the major bands of a page
+     A 24px icon row and a 380px invoice card used to get the same 32/48px
+     surround; the separation now scales with the weight of what it separates.
+     These step up at the desktop tiers too, so the rhythm stays proportional
+     to the type rather than being frozen at the phone value. */
+  --v2-sp-1: 8px;
+  --v2-sp-2: 16px;
+  --v2-sp-3: 24px;
+  --v2-sp-4: 32px;
+  --v2-sp-5: 48px;
+  --v2-sp-6: 64px;
+
+  /* Padding of the card/panel primitives. One token so a card can never drift
+     from a panel, and so it can grow with the type at the desktop tiers. */
+  --v2-pad-card: 24px;
 
   /* Gutter of the two-up pricing grid. Shared with .v2-price-note, which
      re-derives one column width from it. */
@@ -165,7 +226,7 @@
   display: inline-flex;
   align-items: center;
   min-height: 40px;
-  font-size: 14px;
+  font-size: var(--v2-fs-body);
   font-weight: 600;
   letter-spacing: 0.02em;
   color: #cbc2b3;
@@ -180,7 +241,7 @@
   justify-content: center;
   font-family: "Assistant", var(--font-assistant), system-ui, sans-serif;
   font-weight: 700;
-  font-size: 14px;
+  font-size: var(--v2-fs-body);
   color: #191206;
   min-height: 40px;
   padding: 9px 22px;
@@ -264,12 +325,23 @@
   text-align: center;
 }
 
+/* Hero composition. Phone/tablet: one centred stack, exactly as before.
+   Desktop (see the min-width block at the end of the file): a two-column
+   split, pitch on the reading edge and the invoice card as the object beside
+   it. That is worth ~400px of page height AND it is what stops the landing
+   from being a 680px ribbon with 210px of black on either side. */
+.v2-theme .v2-hero-copy > * + * { margin-top: 0; }
+.v2-theme .v2-hero-art {
+  display: flex;
+  justify-content: center;
+}
+
 .v2-theme .v2-eyebrow-row {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 12px;
-  margin-bottom: 16px;
+  margin-bottom: var(--v2-sp-2);
 }
 .v2-theme .v2-eyebrow-row .ln {
   height: 1px;
@@ -280,27 +352,30 @@
   background: linear-gradient(90deg, var(--v2-g2), transparent);
 }
 .v2-theme .v2-eyebrow-row span {
-  font-size: 11px;
+  font-size: var(--v2-fs-micro);
   letter-spacing: 0.4em;
   color: #c9b885;
 }
 
 /* 36px floor (was 38): at 360px "יוקרתית כמו העסק" ran within ~10px of both
-   gutters. 62px ceiling keeps the desktop hero in the 56-72px band. */
+   gutters. The ceiling is 76px rather than 62px because the vw term now
+   resolves BELOW the ceiling at every desktop width this design cares about
+   (61.6px at 1100, 76px from 1357 up), so the hero finally responds to a
+   wider window instead of being pinned flat from 886px onward. */
 .v2-theme h1.v2-h1 {
   font-family: "Frank Ruhl Libre", var(--font-frank), serif;
   font-weight: 900;
-  font-size: clamp(36px, 7vw, 62px);
+  font-size: clamp(36px, 5.6vw, 76px);
   line-height: 1.04;
   letter-spacing: -0.01em;
 }
 .v2-theme .v2-lede {
-  margin-top: 16px;
-  font-size: 16px;
+  margin-top: var(--v2-sp-2);
+  font-size: var(--v2-fs-lede);
   color: var(--v2-muted);
-  max-width: 44ch;
+  max-width: var(--v2-measure);
   margin-inline: auto;
-  line-height: 1.7;
+  line-height: 1.65;
 }
 
 /* ---------- launch "free now" banner ---------- */
@@ -308,14 +383,14 @@
   display: inline-flex;
   align-items: center;
   gap: 9px;
-  margin: 16px auto 0;
+  margin: var(--v2-sp-2) auto 0;
   padding: 9px 20px;
   border-radius: var(--v2-r-pill);
   border: 1px solid var(--v2-line);
   background: linear-gradient(180deg, rgba(216, 190, 119, 0.1), rgba(216, 190, 119, 0.03));
   color: var(--v2-g1);
   font-weight: 700;
-  font-size: 14px;
+  font-size: var(--v2-fs-body);
   line-height: 1.3;
   box-shadow: inset 0 1px 0 rgba(255, 236, 180, 0.06);
 }
@@ -328,10 +403,10 @@
   flex: none;
 }
 .v2-theme .v2-freenow-note {
-  margin-top: 8px;
-  font-size: 12.5px;
+  margin-top: var(--v2-sp-1);
+  font-size: var(--v2-fs-meta);
   color: var(--v2-muted);
-  max-width: 42ch;
+  max-width: 48ch;
   margin-inline: auto;
   line-height: 1.6;
 }
@@ -339,13 +414,13 @@
 /* ---------- golden invoice card ---------- */
 .v2-theme .v2-card {
   position: relative;
-  margin: 32px auto 0;
+  margin: var(--v2-sp-4) auto 0;
   width: min(430px, 100%);
   text-align: right;
   background: linear-gradient(160deg, #191308, #0f0b06);
   border: 1px solid var(--v2-line);
   border-radius: var(--v2-r-xl);
-  padding: 24px;
+  padding: var(--v2-pad-card);
   box-shadow: var(--v2-sh-float), var(--v2-sh-inset), var(--v2-sh-edge);
 }
 .v2-theme .v2-card .corner {
@@ -367,13 +442,13 @@
 .v2-theme .v2-card .biz {
   font-family: "Frank Ruhl Libre", var(--font-frank), serif;
   font-weight: 700;
-  font-size: 19px;
+  font-size: var(--v2-fs-h3);
 }
 .v2-theme .v2-card .biz small {
   display: block;
   font-family: "Assistant", var(--font-assistant), system-ui, sans-serif;
   font-weight: 400;
-  font-size: 11px;
+  font-size: var(--v2-fs-micro);
   color: var(--v2-muted);
   letter-spacing: 0.06em;
   margin-top: 2px;
@@ -385,7 +460,7 @@
   gap: 8px;
 }
 .v2-theme .v2-card .doclbl {
-  font-size: 10.5px;
+  font-size: var(--v2-fs-micro);
   letter-spacing: 0.24em;
   color: #c9b885;
   border: 1px solid var(--v2-line);
@@ -397,7 +472,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 11px;
+  font-size: var(--v2-fs-micro);
   letter-spacing: 0.14em;
   color: var(--v2-g2);
   transform: rotate(-4deg);
@@ -418,9 +493,9 @@
 .v2-theme .v2-card .meta {
   display: flex;
   justify-content: space-between;
-  font-size: 12px;
+  font-size: var(--v2-fs-meta);
   color: var(--v2-muted);
-  margin-top: 16px;
+  margin-top: var(--v2-sp-2);
   border-top: 1px solid var(--v2-line-soft);
   padding-top: 12px;
 }
@@ -428,7 +503,7 @@
 .v2-theme .v2-card .r {
   display: flex;
   justify-content: space-between;
-  font-size: 13px;
+  font-size: var(--v2-fs-body);
   padding: 7px 0;
   border-bottom: 1px dashed rgba(214, 178, 108, 0.14);
 }
@@ -443,20 +518,20 @@
   margin-top: 14px;
 }
 .v2-theme .v2-card .tot .lbl {
-  font-size: 12.5px;
+  font-size: var(--v2-fs-meta);
   color: var(--v2-muted);
   letter-spacing: 0.08em;
 }
 .v2-theme .v2-card .tot .amt {
   font-family: "Frank Ruhl Libre", var(--font-frank), serif;
   font-weight: 900;
-  font-size: 30px;
+  font-size: clamp(30px, 3.2vw, 44px);
 }
 
 /* ---------- tagline ---------- */
 .v2-theme .v2-tag {
-  margin-top: 32px;
-  font-size: clamp(20px, 3.6vw, 26px);
+  margin-top: var(--v2-sp-3);
+  font-size: clamp(20px, 3.2vw, 40px);
   font-weight: 700;
 }
 
@@ -467,14 +542,15 @@
   display: flex;
   justify-content: center;
   column-gap: 0;
-  row-gap: 8px;
-  margin-top: 32px;
+  row-gap: var(--v2-sp-1);
+  margin-top: var(--v2-sp-5);
   flex-wrap: wrap;
 }
 .v2-theme .v2-ft {
   padding: 2px 22px;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 9px;
   position: relative;
 }
@@ -487,13 +563,20 @@
   width: 1px;
   background: var(--v2-line-soft);
 }
-.v2-theme .v2-ft svg { width: 20px; height: 20px; }
-.v2-theme .v2-ft b { font-size: 13.5px; font-weight: 600; color: #dcd3c4; }
+.v2-theme .v2-ft svg { width: 20px; height: 20px; flex: none; }
+.v2-theme .v2-ft b { font-size: var(--v2-fs-body); font-weight: 600; color: #dcd3c4; }
 
 /* ---------- pricing ---------- */
+/* The launch-offer band. On phones it stays the plain centred stack it always
+   was; at the desktop tier it becomes one bordered band with the price on the
+   reading edge and the CTA opposite it, which is worth ~180px of page height
+   and gives the section the single accent moment it was missing (the price
+   and the button used to be two separate gold events 120px apart). */
+.v2-theme .v2-offer {
+  margin-top: var(--v2-sp-5);
+}
 .v2-theme .v2-pricetop {
-  margin-top: 48px;
-  font-size: 12px;
+  font-size: var(--v2-fs-micro);
   letter-spacing: 0.36em;
   color: #c9b885;
 }
@@ -501,7 +584,7 @@
   margin-top: 2px;
   font-family: "Frank Ruhl Libre", var(--font-frank), serif;
   font-weight: 900;
-  font-size: clamp(40px, 8vw, 68px);
+  font-size: clamp(40px, 6.2vw, 84px);
   line-height: 1;
 }
 .v2-theme .v2-price .per {
@@ -517,7 +600,7 @@
   align-items: center;
   justify-content: center;
   gap: 12px;
-  margin-top: 8px;
+  margin-top: var(--v2-sp-1);
 }
 .v2-theme .v2-fdiv .ln {
   height: 1px;
@@ -528,17 +611,17 @@
   background: linear-gradient(90deg, var(--v2-line), transparent);
 }
 .v2-theme .v2-fdiv span {
-  font-size: 11.5px;
-  letter-spacing: 0.36em;
+  font-size: var(--v2-fs-micro);
+  letter-spacing: 0.28em;
   color: #bcb19c;
 }
 
 /* ---------- primary CTA ---------- */
 .v2-theme .v2-cta {
   display: inline-block;
-  margin-top: 32px;
+  margin-top: var(--v2-sp-4);
   font-weight: 700;
-  font-size: 16px;
+  font-size: var(--v2-fs-lede);
   color: #191206;
   padding: 15px 42px;
   border-radius: var(--v2-r-pill);
@@ -552,14 +635,14 @@
 }
 .v2-theme .v2-fine {
   margin-top: 12px;
-  font-size: 12px;
-  letter-spacing: 0.26em;
+  font-size: var(--v2-fs-micro);
+  letter-spacing: 0.2em;
   color: var(--v2-muted);
 }
 
 /* ---------- inline hero credit line ---------- */
 .v2-theme .v2-credit {
-  margin-top: 40px;
+  margin-top: var(--v2-sp-5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -574,23 +657,26 @@
   background: linear-gradient(90deg, var(--v2-line), transparent);
 }
 .v2-theme .v2-credit span {
-  font-size: 11px;
+  font-size: var(--v2-fs-micro);
   letter-spacing: 0.28em;
   color: #786f63;
 }
 
-/* ---------- footer ---------- */
+/* ---------- footer ----------
+   Trimmed hard. A four-link footer was costing ~210px of page: 40px of main
+   padding, then 24 + 32 + a hairline + 24 before the row even started. It is
+   a footer, not a section; the surround now matches its weight. */
 .v2-theme .v2-footer {
   position: relative;
   z-index: 1;
-  margin-top: 24px;
-  padding: 32px clamp(16px, 5vw, 40px) 40px;
+  margin-top: 0;
+  padding: 0 clamp(16px, 5vw, 40px) 28px;
 }
 .v2-theme .v2-footer-hair {
   height: 1px;
   width: 100%;
   max-width: var(--v2-shell);
-  margin: 0 auto 24px;
+  margin: 0 auto var(--v2-sp-2);
   background: linear-gradient(90deg, transparent, var(--v2-line), transparent);
 }
 .v2-theme .v2-footer-inner {
@@ -614,7 +700,7 @@
   display: inline-flex;
   align-items: center;
   min-height: 40px;
-  font-size: 13px;
+  font-size: var(--v2-fs-meta);
   color: #948a7c;
   transition: color 0.2s ease;
 }
@@ -626,14 +712,19 @@
    ============================================================ */
 
 /* ---------- shared sub-page shell ---------- */
-/* Same 680px column as the hero and the footer, so /blog, /terms, /privacy
-   and /status all align with the footer hairline underneath them (this used
-   to be an unexplained 720px). */
+/* The READING column: /terms, /privacy, /status and /blog/<slug>. It is sized
+   to BE the measure (see --v2-read), so no paragraph inside it needs its own
+   max-width and no paragraph leaves a void beside it.
+   `.v2-doc-wide` is the opt-out for the pages whose body is a card GRID rather
+   than prose (/blog index); a grid wants the wide container. */
 .v2-theme .v2-doc {
-  max-width: var(--v2-shell);
+  max-width: var(--v2-read);
   margin: 0 auto;
   position: relative;
   z-index: 1;
+}
+.v2-theme .v2-doc.v2-doc-wide {
+  max-width: var(--v2-wide);
 }
 
 /* back-to-home link: min-height for the tap target, margin trimmed by the
@@ -643,11 +734,11 @@
   align-items: center;
   min-height: 40px;
   gap: 6px;
-  font-size: 13px;
+  font-size: var(--v2-fs-meta);
   font-weight: 600;
   letter-spacing: 0.02em;
   color: #c9b885;
-  margin-bottom: 16px;
+  margin-bottom: var(--v2-sp-1);
   transition: color 0.2s ease;
 }
 .v2-theme .v2-back:hover { color: var(--v2-g1); }
@@ -655,32 +746,36 @@
 
 /* document header block */
 .v2-theme .v2-doc-head {
-  padding-bottom: 24px;
-  margin-bottom: 32px;
+  padding-bottom: var(--v2-sp-3);
+  margin-bottom: var(--v2-sp-4);
   border-bottom: 1px solid var(--v2-line);
 }
 .v2-theme .v2-doc-head .v2-eyebrow-row {
   justify-content: flex-start;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 .v2-theme h1.v2-doc-title {
   font-family: "Frank Ruhl Libre", var(--font-frank), serif;
   font-weight: 900;
-  font-size: clamp(30px, 5.6vw, 46px);
+  font-size: clamp(30px, 4.4vw, 60px);
   line-height: 1.08;
   letter-spacing: -0.01em;
 }
 .v2-theme .v2-doc-updated {
   margin-top: 12px;
-  font-size: 12.5px;
+  font-size: var(--v2-fs-meta);
   letter-spacing: 0.16em;
   color: var(--v2-muted);
 }
+/* Capped even though `.v2-read` already is: on `.v2-doc-wide` (/blog) this
+   same lead sits in the 1160px grid container, where an uncapped line ran
+   ~126 characters. */
 .v2-theme .v2-doc-lead {
   margin-top: 12px;
-  font-size: 15px;
+  max-width: var(--v2-measure);
+  font-size: var(--v2-fs-lede);
   color: #cbc2b3;
-  line-height: 1.7;
+  line-height: 1.65;
 }
 
 /* ---------- legal prose ---------- */
@@ -688,12 +783,12 @@
   text-align: right;
 }
 .v2-theme .v2-prose section + section {
-  margin-top: 24px;
+  margin-top: var(--v2-sp-4);
 }
 .v2-theme .v2-prose h2 {
   font-family: "Frank Ruhl Libre", var(--font-frank), serif;
   font-weight: 700;
-  font-size: 19px;
+  font-size: var(--v2-fs-h3);
   color: var(--v2-g1);
   margin-bottom: 9px;
   display: flex;
@@ -708,11 +803,13 @@
   background: linear-gradient(90deg, transparent, var(--v2-g2));
   transform: translateY(-5px);
 }
+/* No `max-width` here on purpose. `--v2-read` already sizes the whole prose
+   column to the measure, so a second cap inside it could only ever subtract
+   width and reopen the void this pass exists to close. */
 .v2-theme .v2-prose p {
-  font-size: 15px;
-  line-height: 1.8;
+  font-size: var(--v2-fs-lede);
+  line-height: 1.75;
   color: #c4bbad;
-  max-width: 66ch;
 }
 .v2-theme .v2-prose a {
   color: var(--v2-g1);
@@ -751,12 +848,12 @@
 .v2-theme h1.v2-status-title {
   font-family: "Frank Ruhl Libre", var(--font-frank), serif;
   font-weight: 900;
-  font-size: clamp(26px, 4.6vw, 38px);
+  font-size: clamp(26px, 3.4vw, 46px);
   line-height: 1.1;
 }
 .v2-theme .v2-status-sub {
   margin-top: 6px;
-  font-size: 14px;
+  font-size: var(--v2-fs-body);
   color: var(--v2-muted);
 }
 
@@ -765,7 +862,7 @@
   background: rgba(230, 161, 90, 0.06);
   border-radius: var(--v2-r-md);
   padding: 16px;
-  font-size: 14px;
+  font-size: var(--v2-fs-body);
   color: #e7c9a6;
   margin-bottom: 24px;
 }
@@ -792,14 +889,14 @@
   align-items: center;
   gap: 10px;
   font-weight: 600;
-  font-size: 14.5px;
+  font-size: var(--v2-fs-body);
   color: #e2dccd;
 }
 .v2-theme .v2-status-row .name svg { width: 18px; height: 18px; }
 .v2-theme .v2-status-row.is-ok .name svg { color: var(--v2-g2); }
 .v2-theme .v2-status-row.is-down .name svg { color: #e6a15a; }
 .v2-theme .v2-status-row .val {
-  font-size: 13px;
+  font-size: var(--v2-fs-meta);
   font-variant-numeric: tabular-nums;
 }
 .v2-theme .v2-status-row.is-ok .val {
@@ -816,7 +913,7 @@
   margin-top: 20px;
   padding-top: 16px;
   border-top: 1px solid var(--v2-line-soft);
-  font-size: 12px;
+  font-size: var(--v2-fs-meta);
   color: var(--v2-muted);
 }
 .v2-theme .v2-status-refresh {
@@ -833,7 +930,7 @@
 
 .v2-theme .v2-status-note {
   margin-top: 24px;
-  font-size: 12.5px;
+  font-size: var(--v2-fs-meta);
   line-height: 1.7;
   color: var(--v2-muted);
 }
@@ -878,11 +975,11 @@
 .v2-theme .v2-auth-title {
   font-family: "Frank Ruhl Libre", var(--font-frank), serif;
   font-weight: 700;
-  font-size: 24px;
+  font-size: clamp(24px, 2.4vw, 34px);
   line-height: 1.1;
 }
 .v2-theme .v2-auth-sub {
-  font-size: 13.5px;
+  font-size: var(--v2-fs-body);
   color: var(--v2-muted);
   letter-spacing: 0.02em;
 }
@@ -925,7 +1022,7 @@
   justify-content: space-between;
 }
 .v2-theme .v2-label {
-  font-size: 12px;
+  font-size: var(--v2-fs-meta);
   font-weight: 600;
   letter-spacing: 0.04em;
   color: #cbc2b3;
@@ -936,7 +1033,7 @@
 .v2-theme .v2-input {
   width: 100%;
   font-family: "Assistant", var(--font-assistant), system-ui, sans-serif;
-  font-size: 14px;
+  font-size: var(--v2-fs-body);
   color: var(--v2-ink);
   background: rgba(9, 7, 4, 0.6);
   border: 1px solid var(--v2-line);
@@ -978,7 +1075,7 @@
 .v2-theme .v2-input-toggle svg { width: 16px; height: 16px; }
 
 .v2-theme .v2-link {
-  font-size: 12px;
+  font-size: var(--v2-fs-meta);
   font-weight: 600;
   color: var(--v2-g2);
   background: none;
@@ -996,7 +1093,7 @@
   width: 100%;
   font-family: "Assistant", var(--font-assistant), system-ui, sans-serif;
   font-weight: 700;
-  font-size: 15px;
+  font-size: var(--v2-fs-lede);
   color: #191206;
   padding: 13px 22px;
   border: none;
@@ -1017,7 +1114,7 @@
 .v2-theme .v2-auth-btn svg { width: 16px; height: 16px; }
 
 .v2-theme .v2-alert {
-  font-size: 13px;
+  font-size: var(--v2-fs-body);
   line-height: 1.5;
   border-radius: var(--v2-r-sm);
   padding: 12px;
@@ -1036,11 +1133,11 @@
 .v2-theme .v2-auth-switch {
   margin-top: 20px;
   text-align: center;
-  font-size: 13.5px;
+  font-size: var(--v2-fs-body);
   color: var(--v2-muted);
 }
 .v2-theme .v2-auth-switch .v2-link {
-  font-size: 13.5px;
+  font-size: var(--v2-fs-body);
 }
 .v2-theme .v2-auth-back {
   display: inline-flex;
@@ -1066,7 +1163,7 @@
   position: relative;
   background: #130e07;
   padding: 0 12px;
-  font-size: 12px;
+  font-size: var(--v2-fs-meta);
   color: var(--v2-muted);
 }
 .v2-theme .v2-google-btn {
@@ -1077,7 +1174,7 @@
   width: 100%;
   font-family: "Assistant", var(--font-assistant), system-ui, sans-serif;
   font-weight: 600;
-  font-size: 14px;
+  font-size: var(--v2-fs-body);
   color: var(--v2-ink);
   padding: 12px 22px;
   border: 1px solid var(--v2-line);
@@ -1097,7 +1194,7 @@
   text-align: center;
 }
 .v2-theme .v2-auth-home a {
-  font-size: 12px;
+  font-size: var(--v2-fs-meta);
   letter-spacing: 0.06em;
   color: #786f63;
   transition: color 0.2s ease;
@@ -1123,51 +1220,49 @@
 .v2-theme .v2-cmp {
   position: relative;
   z-index: 1;
-  max-width: 940px;
+  max-width: var(--v2-wide);
   margin: 0 auto;
-  padding: clamp(28px, 5vw, 48px) 20px 40px;
+  padding: clamp(28px, 4vw, 56px) 20px 40px;
   text-align: right;
 }
 
 /* ---------- shared reading measure ----------
-   ONE rule, one token (--v2-measure) for every body block that would otherwise
-   stretch to the full ~900px content column. Grouped rather than sprinkled per
-   selector so the comparison hub, the comparison detail pages and the blog
-   index can never drift apart again.
+   ONE rule, one token (--v2-measure) for the body blocks that could otherwise
+   stretch past a comfortable line.
 
-   Deliberately NO `margin-inline: auto` here: these blocks sit in RTL,
-   right-aligned cards, so the default inline-start placement keeps the copy
-   flush with the card's reading edge, the same edge its heading and its
-   "read more" link sit on, and lets the slack fall on the far side. Centring
-   them would float the paragraph away from that edge and read as a mistake.
-   (`.v2-cmp-hero .verdict` is the one exception; it keeps its own auto margins
-   because the entire hero is centred.)
+   THE HISTORY MATTERS. This cap used to be the whole strategy, and it was
+   applied to paragraphs sitting inside ~900px cards. The measure value was
+   right (62-66 characters) but the container was more than twice as wide, and
+   because the cards are RTL, every pixel of slack collected on one side: 51%
+   of every comparison card was a solid black rectangle, six times down /vs.
+   That is not "generous whitespace", it reads as a layout failure.
 
-   Not listed, because they already measure 31-56 characters and capping them
-   would only make them worse: `.v2-str li`, `.v2-cmp-cta p`, `.v2-lede`. */
+   The container now comes down to the copy instead. `.v2-vs-list` and
+   `.v2-blog-list` become two-up grids at the desktop tier, which puts each
+   card at ~460-520px of inner width, i.e. AT the measure, so these caps are
+   near-inert by design rather than load-bearing. They remain only as the
+   ceiling for the widest tier (1800px+), where a card does get wide enough to
+   need one.
+
+   Deliberately NO `margin-inline: auto`: these blocks sit in right-aligned
+   RTL cards, so inline-start placement keeps the copy flush with the same
+   reading edge as its heading and its "read more" link.
+   (`.v2-cmp-hero .verdict` is the exception; it keeps auto margins because
+   the whole hero is centred.)
+
+   Not listed, because they already measure 31-56 characters: `.v2-str li`,
+   `.v2-cmp-cta p`, `.v2-lede`. */
 .v2-theme .v2-vs-card p,
-.v2-theme .v2-blog-card p,
-.v2-theme .v2-note-panel p {
+.v2-theme .v2-blog-card p {
   max-width: var(--v2-measure);
-}
-/* The price note is the one capped block that is itself a bordered box, and it
-   stacks directly under the two-up pricing grid. At the bare reading measure it
-   came out 432.5px against the 441px column above it, an 8.5px near-miss that
-   reads as a misalignment bug rather than a decision. Snapping it to exactly
-   one grid column costs two characters of measure (75 -> 77) and buys a clean
-   shared edge; both sides derive the gutter from --v2-price-gap, so they cannot
-   drift apart. Below 720px the grid collapses and this falls back to the plain
-   measure (see the mobile block at the end of the file). */
-.v2-theme .v2-price-note {
-  max-width: calc((100% - var(--v2-price-gap)) / 2);
 }
 
 /* ---------- comparison hero ---------- */
-.v2-theme .v2-cmp-hero { text-align: center; margin-bottom: clamp(32px, 6vw, 52px); }
+.v2-theme .v2-cmp-hero { text-align: center; margin-bottom: clamp(28px, 3.4vw, 48px); }
 .v2-theme .v2-cmp-hero h1 {
   font-family: "Frank Ruhl Libre", var(--font-frank), serif;
   font-weight: 900;
-  font-size: clamp(30px, 5.5vw, 48px);
+  font-size: clamp(30px, 4.4vw, 62px);
   line-height: 1.1;
   letter-spacing: -0.01em;
 }
@@ -1186,34 +1281,33 @@
   color: var(--v2-muted);
 }
 .v2-theme .v2-cmp-hero .verdict {
-  margin: 16px auto 0;
-  /* was a literal 60ch; same value, now the shared token so the hero verdict
-     can't drift away from the rest of the body copy. Stays centred (auto
-     margins) because the whole hero is centred. */
+  margin: var(--v2-sp-2) auto 0;
+  /* Centred (auto margins) because the whole hero is centred, so the slack
+     falls symmetrically and reads as composition rather than as a hole. */
   max-width: var(--v2-measure);
-  font-size: 16px;
-  line-height: 1.75;
+  font-size: var(--v2-fs-lede);
+  line-height: 1.7;
   color: #cbc2b3;
 }
 .v2-theme .v2-cmp-hero .src {
   margin-top: 12px;
-  font-size: 11.5px;
+  font-size: var(--v2-fs-micro);
   letter-spacing: 0.04em;
   color: var(--v2-muted);
 }
 
 /* ---------- section heading (deco hairline) ---------- */
-.v2-theme .v2-cmp-sec { margin-bottom: clamp(26px, 5vw, 40px); }
+.v2-theme .v2-cmp-sec { margin-bottom: clamp(26px, 3.4vw, 48px); }
 .v2-theme .v2-cmp-h {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 20px;
+  margin-bottom: var(--v2-sp-2);
 }
 .v2-theme .v2-cmp-h h2 {
   font-family: "Frank Ruhl Libre", var(--font-frank), serif;
   font-weight: 700;
-  font-size: clamp(20px, 3.4vw, 26px);
+  font-size: clamp(20px, 2.4vw, 34px);
   white-space: nowrap;
 }
 .v2-theme .v2-cmp-h .ln {
@@ -1228,7 +1322,7 @@
   background: linear-gradient(160deg, #16110a, #0e0a06);
   border: 1px solid var(--v2-line);
   border-radius: var(--v2-r-lg);
-  padding: 24px;
+  padding: var(--v2-pad-card);
   box-shadow: var(--v2-sh-rest), var(--v2-sh-inset);
 }
 
@@ -1244,7 +1338,7 @@
 .v2-theme .v2-price-card {
   position: relative;
   border-radius: var(--v2-r-lg);
-  padding: 24px;
+  padding: var(--v2-pad-card);
   border: 1px solid var(--v2-line-soft);
   background: linear-gradient(160deg, #16110a, #0e0a06);
 }
@@ -1263,7 +1357,7 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: 10.5px;
+  font-size: var(--v2-fs-micro);
   font-weight: 700;
   letter-spacing: 0.14em;
   color: #191206;
@@ -1273,13 +1367,13 @@
   box-shadow: 0 8px 18px -10px rgba(190, 158, 78, 0.3);
 }
 .v2-theme .v2-price-card .badge svg { width: 12px; height: 12px; }
-/* 18px, matching .v2-str h3 and .v2-note-panel h3, the three panel headings
-   used to be 17/17/18. */
+/* One token, matching .v2-str h3 and .v2-note-panel h3; the three panel
+   headings used to be 17/17/18. */
 .v2-theme .v2-price-card h3 {
   font-family: "Frank Ruhl Libre", var(--font-frank), serif;
   font-weight: 700;
-  font-size: 18px;
-  margin-bottom: 14px;
+  font-size: var(--v2-fs-h3);
+  margin-bottom: var(--v2-sp-2);
 }
 .v2-theme .v2-price-card ul { display: flex; flex-direction: column; gap: 9px; }
 .v2-theme .v2-price-card li {
@@ -1287,7 +1381,7 @@
   align-items: baseline;
   justify-content: space-between;
   gap: 10px;
-  font-size: 13.5px;
+  font-size: var(--v2-fs-body);
 }
 .v2-theme .v2-price-card li .plan { color: var(--v2-muted); }
 .v2-theme .v2-price-card li .val {
@@ -1302,14 +1396,19 @@
   border-top: 1px solid var(--v2-line-soft);
 }
 .v2-theme .v2-price-card li.trial .val { color: var(--v2-g2); font-weight: 700; }
+/* The "why it matters" note under the pricing grid. It is a bordered box that
+   spans the section, and at the desktop tier it splits into two text columns
+   (see the min-width block) so its own width IS its measure and no black
+   rectangle is left beside it. Below that it stays a single capped column. */
 .v2-theme .v2-price-note {
-  margin-top: 16px;
-  font-size: 13.5px;
+  margin-top: var(--v2-sp-2);
+  max-width: calc(var(--v2-measure) + 34px);
+  font-size: var(--v2-fs-body);
   line-height: 1.7;
   color: #cbc2b3;
   border: 1px solid var(--v2-line-soft);
   border-radius: var(--v2-r-md);
-  padding: 16px;
+  padding: var(--v2-sp-2);
   background: rgba(190, 158, 78, 0.04);
 }
 .v2-theme .v2-price-note strong { color: var(--v2-g1); }
@@ -1320,7 +1419,7 @@
 .v2-theme table.v2-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13.5px;
+  font-size: var(--v2-fs-body);
 }
 .v2-theme table.v2-table thead th {
   position: sticky;
@@ -1332,19 +1431,23 @@
   border-bottom: 1px solid var(--v2-line);
 }
 .v2-theme table.v2-table thead th.feat { text-align: right; }
+/* `width` (not just min-width) so the two verdict columns take a real share of
+   a 1000px+ table instead of huddling at 96px against a 800px feature column.
+   The eye that scans a row now travels a third of the distance. */
 .v2-theme table.v2-table thead th.col {
   text-align: center;
+  width: 17%;
   min-width: 96px;
-  font-size: 12px;
+  font-size: var(--v2-fs-meta);
   line-height: 1.3;
 }
 .v2-theme table.v2-table thead th.col.us { color: var(--v2-g1); }
 /* section grouping row */
 .v2-theme table.v2-table tr.grp td {
-  padding: 12px 18px 8px;
+  padding: 14px 18px 8px;
   font-family: "Frank Ruhl Libre", var(--font-frank), serif;
   font-weight: 700;
-  font-size: 13px;
+  font-size: var(--v2-fs-body);
   letter-spacing: 0.02em;
   color: var(--v2-g2);
   background: #100b06;
@@ -1363,7 +1466,7 @@
 .v2-theme table.v2-table td.feat { color: #e2dccd; }
 .v2-theme table.v2-table td.feat .note {
   margin-top: 3px;
-  font-size: 11.5px;
+  font-size: var(--v2-fs-meta);
   line-height: 1.45;
   color: var(--v2-muted);
 }
@@ -1373,11 +1476,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   border-radius: var(--v2-r-pill);
 }
-.v2-theme .v2-mk svg { width: 16px; height: 16px; }
+.v2-theme .v2-mk svg { width: 17px; height: 17px; }
 .v2-theme .v2-mk.yes { color: var(--v2-yes); background: rgba(79, 196, 122, 0.12); }
 .v2-theme .v2-mk.no { color: var(--v2-no); background: rgba(229, 84, 75, 0.12); }
 .v2-theme .v2-mk.partial { color: var(--v2-partial); background: rgba(217, 164, 65, 0.12); }
@@ -1389,7 +1492,7 @@
   gap: 18px;
   padding: 14px 18px;
   border-top: 1px solid var(--v2-line);
-  font-size: 12px;
+  font-size: var(--v2-fs-meta);
   color: var(--v2-muted);
 }
 .v2-theme .v2-legend span { display: inline-flex; align-items: center; gap: 6px; }
@@ -1401,32 +1504,39 @@
 /* ---------- strengths columns ---------- */
 .v2-theme .v2-str-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 18px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--v2-sp-3);
 }
 .v2-theme .v2-str h3 {
   font-family: "Frank Ruhl Libre", var(--font-frank), serif;
   font-weight: 700;
-  font-size: 18px;
-  margin-bottom: 14px;
+  font-size: var(--v2-fs-h3);
+  margin-bottom: var(--v2-sp-2);
 }
 .v2-theme .v2-str.win { border-color: var(--v2-line); }
 .v2-theme .v2-str.win h3 { color: var(--v2-g1); }
-.v2-theme .v2-str ul { display: flex; flex-direction: column; gap: 11px; }
+.v2-theme .v2-str ul { display: flex; flex-direction: column; gap: 12px; }
 .v2-theme .v2-str li {
   display: flex;
   align-items: flex-start;
   gap: 9px;
-  font-size: 13.5px;
-  line-height: 1.55;
+  font-size: var(--v2-fs-body);
+  line-height: 1.5;
   color: #dcd3c4;
 }
-.v2-theme .v2-str li svg { width: 16px; height: 16px; margin-top: 2px; flex: none; }
+.v2-theme .v2-str li svg { width: 17px; height: 17px; margin-top: 3px; flex: none; }
 .v2-theme .v2-str.them li svg { color: var(--v2-muted); }
 .v2-theme .v2-str.win li svg { color: var(--v2-yes); }
 
-/* ---------- founder note ---------- */
-.v2-theme .v2-note-panel { display: flex; gap: 16px; align-items: flex-start; }
+/* ---------- founder note ----------
+   Same container/measure problem as the /vs cards, one panel instead of six:
+   two short paragraphs capped at the measure inside a full-width panel left
+   half the panel empty. Fix: the panel's TEXT half becomes a two-column grid
+   at the desktop tier (see the min-width block), so the two paragraphs sit
+   side by side and each one's column IS its measure. They are separate
+   paragraphs, not one flowed column, so nothing forces the eye back to the
+   top the way CSS multi-column text would. */
+.v2-theme .v2-note-panel { display: flex; gap: var(--v2-sp-2); align-items: flex-start; }
 .v2-theme .v2-note-panel .ic {
   width: 46px;
   height: 46px;
@@ -1440,15 +1550,17 @@
   box-shadow: 0 12px 26px -14px rgba(190, 158, 78, 0.28);
 }
 .v2-theme .v2-note-panel .ic svg { width: 24px; height: 24px; }
+.v2-theme .v2-note-panel > div:last-child { flex: 1; min-width: 0; }
 .v2-theme .v2-note-panel h3 {
   font-family: "Frank Ruhl Libre", var(--font-frank), serif;
   font-weight: 700;
-  font-size: 18px;
+  font-size: var(--v2-fs-h3);
 }
 .v2-theme .v2-note-panel p {
   margin-top: 10px;
-  font-size: 14px;
-  line-height: 1.75;
+  max-width: var(--v2-measure);
+  font-size: var(--v2-fs-body);
+  line-height: 1.7;
   color: #cbc2b3;
 }
 
@@ -1457,13 +1569,13 @@
 .v2-theme .v2-cmp-cta h2 {
   font-family: "Frank Ruhl Libre", var(--font-frank), serif;
   font-weight: 900;
-  font-size: clamp(24px, 4vw, 34px);
+  font-size: clamp(24px, 3.2vw, 46px);
 }
 .v2-theme .v2-cmp-cta p {
   margin: 12px auto 0;
-  max-width: 46ch;
-  font-size: 15px;
-  line-height: 1.7;
+  max-width: 48ch;
+  font-size: var(--v2-fs-lede);
+  line-height: 1.65;
   color: var(--v2-muted);
 }
 .v2-theme .v2-cmp-cta .row {
@@ -1478,7 +1590,7 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  font-size: 14px;
+  font-size: var(--v2-fs-body);
   font-weight: 600;
   color: #c9b885;
   padding: 13px 8px;
@@ -1488,9 +1600,12 @@
 .v2-theme .v2-cmp-cta .ghost svg { width: 16px; height: 16px; }
 
 /* ---------- /v2/vs index ---------- */
+/* Trimmed from clamp(28px, 5vw, 44px). At 1100 the /vs preamble (back link +
+   eyebrow + H1 + lede + this margin) ran 464px, 36% of the viewport, before
+   the first card, 140px of it pure margin. */
 .v2-theme .v2-vs-head {
   text-align: center;
-  margin-bottom: clamp(28px, 5vw, 44px);
+  margin-bottom: clamp(24px, 2.6vw, 40px);
 }
 /* Sub-page title tier. `.v2-h1` is the LANDING hero scale (up to 62px); reused
    verbatim here it made the /vs index shout as loudly as the home page and,
@@ -1498,17 +1613,22 @@
    Same clamp as .v2-doc-title / .v2-cmp-hero h1, so all three secondary
    templates now share one heading scale. */
 .v2-theme .v2-vs-head h1.v2-h1 {
-  font-size: clamp(30px, 5.6vw, 48px);
+  font-size: clamp(30px, 4.4vw, 60px);
   line-height: 1.1;
 }
-.v2-theme .v2-vs-list { display: flex; flex-direction: column; gap: 16px; }
+/* One column on phones; a two-up grid from 1000px (see the min-width block),
+   which halves the page height AND brings each card's inner width down onto
+   the reading measure. */
+.v2-theme .v2-vs-list { display: grid; gap: var(--v2-sp-3); }
 /* `position: relative` is load-bearing: it is the containing block for the
    stretched `.v2-card-link::after`. (No `display: block`; the card is an
    <article>, which is already block-level.) */
 .v2-theme .v2-vs-card {
   position: relative;
+  display: flex;
+  flex-direction: column;
   border-radius: var(--v2-r-lg);
-  padding: 24px;
+  padding: var(--v2-pad-card);
   border: 1px solid var(--v2-line-soft);
   background: linear-gradient(160deg, #16110a, #0e0a06);
   box-shadow: var(--v2-sh-rest);
@@ -1522,21 +1642,26 @@
 .v2-theme .v2-vs-card h2 {
   font-family: "Frank Ruhl Libre", var(--font-frank), serif;
   font-weight: 700;
-  font-size: 20px;
-  line-height: 1.25;
+  font-size: var(--v2-fs-h2);
+  line-height: 1.2;
 }
 .v2-theme .v2-vs-card p {
-  margin-top: 10px;
-  font-size: 14px;
-  line-height: 1.7;
+  margin-top: var(--v2-sp-2);
+  font-size: var(--v2-fs-body);
+  line-height: 1.65;
   color: #cbc2b3;
 }
+/* `margin-top: auto` pins the link to the bottom of the card, so in the
+   two-up grid the six cards' "read the full comparison" links line up across
+   a row instead of floating at six different heights. */
 .v2-theme .v2-vs-card .more {
-  margin-top: 14px;
+  margin-top: auto;
+  padding-top: var(--v2-sp-2);
   display: inline-flex;
+  align-self: flex-start;
   align-items: center;
   gap: 6px;
-  font-size: 13px;
+  font-size: var(--v2-fs-body);
   font-weight: 700;
   color: var(--v2-g2);
 }
@@ -1582,14 +1707,16 @@
 /* ---------- index card list ---------- */
 .v2-theme .v2-blog-list {
   display: grid;
-  gap: 18px;
+  gap: var(--v2-sp-3);
   margin-top: 4px;
 }
 /* Same primitive as .v2-vs-card: matching padding, radius, elevation and
-   transition timings. (No `display: block`: the card is an <article>.) */
+   transition timings, and the same two-up grid at the desktop tier. */
 .v2-theme .v2-blog-card {
   position: relative;
-  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  padding: var(--v2-pad-card);
   border-radius: var(--v2-r-lg);
   border: 1px solid var(--v2-line);
   background: linear-gradient(160deg, #17110a, #100c07);
@@ -1602,29 +1729,32 @@
   box-shadow: var(--v2-sh-hover), var(--v2-sh-edge);
 }
 .v2-theme .v2-blog-card .date {
-  font-size: 12px;
+  font-size: var(--v2-fs-meta);
   letter-spacing: 0.14em;
   color: var(--v2-muted);
 }
 .v2-theme .v2-blog-card h2 {
   font-family: "Frank Ruhl Libre", var(--font-frank), serif;
   font-weight: 700;
-  font-size: clamp(19px, 3vw, 23px);
-  line-height: 1.25;
+  font-size: var(--v2-fs-h2);
+  line-height: 1.2;
   color: var(--v2-g1);
-  margin: 8px 0 10px;
+  margin: 8px 0 var(--v2-sp-2);
 }
 .v2-theme .v2-blog-card p {
-  font-size: 14.5px;
-  line-height: 1.75;
+  font-size: var(--v2-fs-body);
+  line-height: 1.65;
   color: #c4bbad;
 }
+/* `margin-top: auto`: see the note on .v2-vs-card .more. */
 .v2-theme .v2-blog-card .more {
   display: inline-flex;
+  align-self: flex-start;
   align-items: center;
   gap: 6px;
-  margin-top: 14px;
-  font-size: 13px;
+  margin-top: auto;
+  padding-top: var(--v2-sp-2);
+  font-size: var(--v2-fs-body);
   font-weight: 700;
   color: var(--v2-g2);
 }
@@ -1643,8 +1773,8 @@
   border-radius: var(--v2-r-lg);
   border: 1px dashed var(--v2-line);
   color: var(--v2-muted);
-  font-size: 15px;
-  line-height: 1.8;
+  font-size: var(--v2-fs-lede);
+  line-height: 1.7;
   text-align: center;
 }
 
@@ -1659,7 +1789,7 @@
   border: 1px solid var(--v2-partial);
   background: rgba(217, 164, 65, 0.08);
   color: var(--v2-partial);
-  font-size: 14px;
+  font-size: var(--v2-fs-body);
   font-weight: 700;
 }
 .v2-theme .v2-draft-banner svg { width: 18px; height: 18px; flex: none; }
@@ -1668,27 +1798,27 @@
 .v2-theme .v2-prose h1 {
   font-family: "Frank Ruhl Libre", var(--font-frank), serif;
   font-weight: 900;
-  font-size: clamp(26px, 4.6vw, 38px);
+  font-size: clamp(26px, 3.4vw, 46px);
   line-height: 1.15;
   color: var(--v2-ink);
   margin-bottom: 20px;
 }
-.v2-theme .v2-prose h2 { margin-top: 30px; }
+.v2-theme .v2-prose h2 { margin-top: var(--v2-sp-5); }
 .v2-theme .v2-prose h3 {
   font-family: "Frank Ruhl Libre", var(--font-frank), serif;
   font-weight: 700;
-  font-size: 16.5px;
+  font-size: var(--v2-fs-lede);
   color: var(--v2-g1);
-  margin: 22px 0 8px;
+  margin: var(--v2-sp-3) 0 var(--v2-sp-1);
 }
-.v2-theme .v2-prose p { margin-bottom: 14px; }
+.v2-theme .v2-prose p { margin-bottom: var(--v2-sp-2); }
 .v2-theme .v2-prose ul,
 .v2-theme .v2-prose ol {
-  margin: 0 0 16px;
+  margin: 0 0 var(--v2-sp-2);
   padding-inline-start: 22px;
   color: #c4bbad;
-  font-size: 15px;
-  line-height: 1.8;
+  font-size: var(--v2-fs-lede);
+  line-height: 1.75;
 }
 .v2-theme .v2-prose li { margin-bottom: 6px; }
 .v2-theme .v2-prose li::marker { color: var(--v2-g2); }
@@ -1709,7 +1839,7 @@
   width: 100%;
   border-collapse: collapse;
   margin: 8px 0 20px;
-  font-size: 14.5px;
+  font-size: var(--v2-fs-body);
 }
 .v2-theme .v2-prose th,
 .v2-theme .v2-prose td {
@@ -1730,25 +1860,33 @@
 
    Media queries carry no specificity of their own, so an override written
    next to its base rule loses to any same-specificity rule declared further
-   down the file. Keeping every breakpoint here, after all base rules and in
-   descending width order, makes that impossible: a wider block can never
-   out-order a narrower one, and no base rule can out-order either.
+   down the file. Keeping every breakpoint here, after all base rules, makes
+   that impossible: no base rule can out-order a media block, and within each
+   family the blocks are ordered so a block can never out-order the one that
+   should win.
 
-   Breakpoints: 720 (two-up grids collapse) · 520 (feature row + footer
-   stack) · 420 (small phones: tighten the sticky header + card padding).
-   Before adding a selector, check it is not already set in a wider block
-   below; the blocks are cumulative, not exclusive.
+   TWO FAMILIES, and they are DISJOINT BY CONSTRUCTION:
+
+     PHONE / TABLET, max-width, descending: 720 · 520 · 420.
+     DESKTOP,        min-width,  ascending: 1000 · 1400 · 1800.
+
+   720 < 1000, so no max-width block and no min-width block can ever match the
+   same viewport. That is why the two families can sit next to each other
+   without a cascade fight; keep the gap if you add breakpoints.
+
+   WHY THE DESKTOP TIER EXISTS AT ALL. Until this pass there was none: every
+   breakpoint in this file was a max-width, and every `clamp()` was vw-based
+   and pinned to its ceiling somewhere below 1100px. The h1 measured 62px at
+   1100, at 1440 and at 1920 identically, the shell was 680px at all three,
+   and the only thing a wider window bought you was a wider black gutter. The
+   design had a phone tier and one flat desktop tier. Now the containers, the
+   type ladder and the spacing rhythm all step, and the card lists go two-up,
+   so a wider window buys content instead of margin.
    ============================================================ */
 
 @media (max-width: 720px) {
   .v2-theme .v2-price-grid,
   .v2-theme .v2-str-grid { grid-template-columns: 1fr; }
-
-  /* The grid is one column now, so there is no column edge left for the note
-     to align to. Fall back to the shared reading measure, plus its own 16px
-     padding + 1px border, which `box-sizing: border-box` folds into max-width,
-     so the TEXT measure matches the bare paragraphs elsewhere. */
-  .v2-theme .v2-price-note { max-width: calc(var(--v2-measure) + 34px); }
 }
 
 @media (max-width: 520px) {
@@ -1779,5 +1917,257 @@
   .v2-theme .v2-logo-mark { width: 34px; height: 34px; }
   .v2-theme .v2-logo-word { font-size: 20px; }
   .v2-theme .v2-logo-sub { font-size: 9px; letter-spacing: 0.2em; }
-  .v2-theme .v2-btn-gold { padding: 9px 16px; }
+  /* The body tier is 15.5px now (was a flat 14px), and at 320px the extra
+     1.5px on three header items pushed the nav 13px past the left edge.
+     The header is the one place the ladder has to give. */
+  .v2-theme .v2-navlink,
+  .v2-theme .v2-btn-gold { font-size: var(--v2-fs-meta); }
+  .v2-theme .v2-btn-gold { padding: 9px 14px; }
+}
+
+/* ------------------------------------------------------------
+   DESKTOP TIER 1 (>=1000px): the layout change.
+
+   This is where the ribbon becomes a page. Containers roughly double, the
+   whole type ladder steps up ~16%, the landing hero splits into two columns
+   and the two card lists go two-up. The two-up grids are the fix for the
+   measure/container mismatch: they bring each card's INNER width down to
+   ~460-520px, which is the reading measure, so the paragraph fills its card
+   instead of leaving half of it black.
+   ------------------------------------------------------------ */
+@media (min-width: 1000px) {
+  .v2-theme {
+    --v2-shell: 1060px;
+    --v2-read: 620px;
+    --v2-wide: 1160px;
+
+    --v2-fs-micro: 12.5px;
+    --v2-fs-meta: 15px;
+    --v2-fs-body: 18px;
+    --v2-fs-lede: 20px;
+    --v2-fs-h3: 23px;
+    --v2-fs-h2: 26px;
+
+    --v2-sp-3: 28px;
+    --v2-sp-4: 40px;
+    --v2-sp-5: 56px;
+    --v2-sp-6: 80px;
+    --v2-pad-card: 28px;
+  }
+
+  /* The shells now run close to the viewport edge, so the page gutter has to
+     clear the fixed deco frame (`.v2-frame`, inset 16px) rather than sit on
+     top of it. 40px leaves a 24px moat at 1100. */
+  .v2-theme .v2-main { padding: clamp(40px, 4.4vw, 72px) 40px var(--v2-sp-4); }
+  .v2-theme .v2-cmp { padding: clamp(28px, 3vw, 56px) 40px var(--v2-sp-4); }
+  /* The closing CTA is a footer for the section above it, not a section of
+     its own; it was carrying a section's worth of air on both sides. */
+  .v2-theme .v2-cmp-cta { padding: 0 0 var(--v2-sp-1); }
+
+  /* header: the mark and wordmark grow with the body tier so the sticky bar
+     does not read as a phone header stretched across a desk monitor */
+  .v2-theme .v2-header { padding: 18px clamp(24px, 3vw, 48px); }
+  .v2-theme .v2-logo-mark { width: 46px; height: 46px; }
+  .v2-theme .v2-logo-word { font-size: 25px; }
+  .v2-theme .v2-logo-sub { font-size: 10.5px; }
+  .v2-theme .v2-btn-gold { min-height: 46px; padding: 10px 26px; }
+  .v2-theme .v2-navlink { min-height: 46px; }
+
+  /* ---- landing: two-column hero ---- */
+  /* Equal columns. Measured: the h1's widest line is 414px at 1100 and 510px
+     at 1440, so a 488/571px copy column still has 74-130px of headroom, and
+     the spare width is better spent on the invoice card, which is the only
+     object on the page. */
+  .v2-theme .v2-hero {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: center;
+    gap: clamp(32px, 4vw, 64px);
+    text-align: right;
+  }
+  /* The hero copy column is 488px at 1100 and the h1's widest line measured
+     414px there, so the heading had 74px it was not using. 6.2vw fills it.
+     The 72px CEILING is not cosmetic: `--v2-shell` is frozen at 1060px right
+     across this tier, so the copy column stops growing at ~505px while the
+     vw term keeps going. Measured, the widest line is 533px at 1280px wide,
+     which wrapped "יוקרתית כמו העסק" onto a third line. 72px keeps the widest
+     line at 483px against that 505px column at every width in the tier; the
+     ceiling is lifted again at 1400, where the shell finally widens.
+     Written here rather than on the base rule so the phone clamp, which is
+     tuned for a 360px viewport, is untouched. */
+  .v2-theme h1.v2-h1 { font-size: clamp(56px, 6.2vw, 72px); }
+  .v2-theme .v2-hero-copy .v2-eyebrow-row { justify-content: flex-start; }
+  /* Badge tier, not body tier: at 18px this 54-character pill wrapped to two
+     lines inside the 488px copy column and read as a broken button. */
+  .v2-theme .v2-hero-copy .v2-freenow {
+    margin-inline: 0;
+    font-size: var(--v2-fs-meta);
+  }
+  /* No cap: the column IS the measure here (55-60 Hebrew characters). */
+  .v2-theme .v2-hero-copy .v2-lede { margin-inline: 0; }
+  .v2-theme .v2-hero-art .v2-card {
+    margin: 0;
+    width: min(490px, 100%);
+  }
+
+  /* feature band: three equal columns spanning the shell, separated by the
+     existing hairlines. No new boxes; the band is built from type, space and
+     two rules, which is the whole point. */
+  .v2-theme .v2-feats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    padding: var(--v2-sp-3) 0;
+    border-top: 1px solid var(--v2-line-soft);
+    border-bottom: 1px solid var(--v2-line-soft);
+  }
+  .v2-theme .v2-ft { padding: 2px var(--v2-sp-3); gap: 12px; }
+  .v2-theme .v2-ft svg { width: 26px; height: 26px; }
+
+  /* ---- landing: the launch-offer band ----
+     price on the reading edge, CTA opposite, one hairline between them, the
+     small print spanning underneath. Replaces ~180px of stacked one-liners. */
+  .v2-theme .v2-offer {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: center;
+    padding: var(--v2-sp-4) var(--v2-sp-5);
+    border: 1px solid var(--v2-line);
+    border-radius: var(--v2-r-xl);
+    background: linear-gradient(160deg, #191308, #0f0b06);
+    box-shadow: var(--v2-sh-rest), var(--v2-sh-inset);
+  }
+  /* The band gives the price half of a 1060px shell; at the shared 6.2vw it
+     was using a third of it. The price IS the section's focal point, so it
+     gets the display treatment the width already paid for. 7vw, not more:
+     it should sit just above the h1 (77px vs 68px at 1100), the same ~12%
+     lead the original 68/62 pairing had. Bigger than that and the pricing
+     band starts out-shouting the headline. Ceiling 88px for the same reason
+     the h1's is 72px: the band's half-column stops at ~473px in this tier. */
+  .v2-theme .v2-price { font-size: clamp(56px, 7vw, 88px); }
+  .v2-theme .v2-pricetop,
+  .v2-theme .v2-fine { font-size: var(--v2-fs-meta); }
+  .v2-theme .v2-ft b { font-size: var(--v2-fs-lede); }
+  .v2-theme .v2-offer-price { padding-inline-end: var(--v2-sp-5); }
+  .v2-theme .v2-offer-act {
+    padding-inline-start: var(--v2-sp-5);
+    border-inline-start: 1px solid var(--v2-line-soft);
+  }
+  .v2-theme .v2-offer .v2-cta { margin-top: 0; }
+  /* The deco rules flanking the plan line are dropped inside the band: the
+     band's own border already frames it, and at this width the line would
+     have to wrap to fit them. */
+  .v2-theme .v2-offer .v2-fdiv .ln { display: none; }
+  .v2-theme .v2-offer .v2-fdiv span { letter-spacing: 0.1em; }
+  .v2-theme .v2-offer .v2-freenow-note {
+    grid-column: 1 / -1;
+    margin-top: var(--v2-sp-3);
+    padding-top: var(--v2-sp-3);
+    border-top: 1px solid var(--v2-line-soft);
+    max-width: 72ch;
+  }
+
+  /* ---- /vs + /blog: two-up card grids ---- */
+  .v2-theme .v2-vs-list,
+  .v2-theme .v2-blog-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* ---- /vs/<competitor>: the two remaining wide-container blocks ---- */
+  /* Price note: two text columns inside its own box, so the box IS the
+     measure twice over rather than once with a hole beside it. */
+  .v2-theme .v2-price-note {
+    max-width: none;
+    padding: var(--v2-sp-3);
+    columns: 2;
+    column-gap: var(--v2-sp-5);
+    column-rule: 1px solid var(--v2-line-soft);
+  }
+  /* Founder note: heading spans, the two paragraphs sit side by side. */
+  .v2-theme .v2-note-panel { gap: var(--v2-sp-3); }
+  .v2-theme .v2-note-panel > div:last-child {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: var(--v2-sp-5);
+  }
+  .v2-theme .v2-note-panel h3 { grid-column: 1 / -1; }
+  .v2-theme .v2-note-panel p { max-width: none; }
+  .v2-theme .v2-note-panel .ic { width: 56px; height: 56px; }
+  .v2-theme .v2-note-panel .ic svg { width: 28px; height: 28px; }
+
+  .v2-theme table.v2-table thead th { padding: 16px 22px; }
+  .v2-theme table.v2-table tbody td { padding: 14px 22px; }
+  .v2-theme table.v2-table tr.grp td { padding: 16px 22px 10px; }
+  .v2-theme .v2-legend { padding: 16px 22px; gap: 24px; }
+  /* The feature column is ~600px wide and the labels are ~30 characters, so
+     stacking the clarifying note UNDER the label wasted a line and left the
+     cell's far half empty. Inline, the note fills the width the column
+     already has and the five annotated rows lose a line each. */
+  .v2-theme table.v2-table td.feat {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+  }
+  .v2-theme table.v2-table td.feat > div:first-child { flex: none; }
+  .v2-theme table.v2-table td.feat .note { margin-top: 0; }
+}
+
+/* ------------------------------------------------------------
+   DESKTOP TIER 2 (>=1400px): more room, so more of everything. Pure scale,
+   no layout change; the compositions set at tier 1 all hold.
+   ------------------------------------------------------------ */
+@media (min-width: 1400px) {
+  .v2-theme {
+    --v2-shell: 1220px;
+    --v2-read: 660px;
+    --v2-wide: 1320px;
+
+    --v2-fs-micro: 13px;
+    --v2-fs-meta: 15.5px;
+    --v2-fs-body: 19px;
+    --v2-fs-lede: 21.5px;
+    --v2-fs-h3: 25px;
+    --v2-fs-h2: 29px;
+
+    --v2-sp-2: 20px;
+    --v2-sp-3: 32px;
+    --v2-sp-4: 44px;
+    --v2-sp-5: 64px;
+    --v2-sp-6: 88px;
+    --v2-pad-card: 32px;
+  }
+  .v2-theme .v2-logo-mark { width: 50px; height: 50px; }
+  .v2-theme .v2-logo-word { font-size: 27px; }
+  .v2-theme .v2-hero-art .v2-card { width: min(520px, 100%); }
+  /* The shell widens to 1220px here, so the hero column reaches 582px and the
+     display ceilings held back in tier 1 can be released. Verified: widest h1
+     line 550px in a 582px column, price 481px in a 545px half-band. */
+  .v2-theme h1.v2-h1 { font-size: clamp(56px, 6.2vw, 82px); }
+  .v2-theme .v2-price { font-size: clamp(56px, 7vw, 94px); }
+}
+
+/* ------------------------------------------------------------
+   DESKTOP TIER 3 (>=1800px): the ultrawide, un-tiled case.
+   ------------------------------------------------------------ */
+@media (min-width: 1800px) {
+  .v2-theme {
+    --v2-shell: 1420px;
+    --v2-read: 720px;
+    --v2-wide: 1520px;
+
+    --v2-fs-micro: 13.5px;
+    --v2-fs-meta: 16px;
+    --v2-fs-body: 20px;
+    --v2-fs-lede: 23px;
+    --v2-fs-h3: 27px;
+    --v2-fs-h2: 32px;
+
+    --v2-sp-3: 36px;
+    --v2-sp-4: 48px;
+    --v2-sp-5: 72px;
+    --v2-sp-6: 96px;
+    --v2-pad-card: 36px;
+  }
+  /* Six comparison cards go three-up rather than growing past the measure. */
+  .v2-theme .v2-vs-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .v2-theme .v2-hero-art .v2-card { width: min(600px, 100%); }
 }

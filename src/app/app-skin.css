@@ -614,15 +614,31 @@ html button:disabled.from-orange-500 * { color: #665f4e !important; }
     padding: 4px 12px;
   }
   html .gk-dashboard .card-soft.p-5 {
-    padding: 1.6rem 1.65rem;
+    padding: 1.15rem 1.2rem;
   }
   html .gk-dashboard .gk-icon {
-    width: 3.1rem;
-    height: 3.1rem;
+    width: 2.4rem;
+    height: 2.4rem;
   }
   html .gk-dashboard .gk-icon svg {
-    width: 1.5rem;
-    height: 1.5rem;
+    width: 1.2rem;
+    height: 1.2rem;
+  }
+  /* Shrink-to-fit for the amount, so it can never ellipsise again.
+     The KPI card becomes an inline-size container and the number is sized in
+     `cqw` (percent of the CARD, not of the viewport), which is the only unit
+     that knows how much room the number actually has. Declared AFTER the flat
+     2.15rem above on purpose: a browser without container query units drops
+     this line as invalid and keeps the flat value, so the fallback is exactly
+     the old behaviour rather than nothing.
+     13cqw is the measured fit for a six-figure shekel amount ("119,900 ₪",
+     routine under the ₪120,000 עוסק פטור ceiling) at every card width this
+     grid produces from 1024px up; 2.15rem remains the ceiling. */
+  html .gk-dashboard .grid.lg\:grid-cols-4 > a {
+    container-type: inline-size;
+  }
+  html .gk-dashboard .gk-value {
+    font-size: clamp(1.45rem, 13cqw, 2.15rem);
   }
   html .gk-dashboard .gk-value + div .text-xs {
     font-size: 0.82rem;
@@ -641,24 +657,85 @@ html button:disabled.from-orange-500 * { color: #665f4e !important; }
     font-size: 0.82rem;
   }
   html .gk-dashboard table tbody td {
-    font-size: 0.98rem;
+    font-size: 1rem;
     padding-top: 0.9rem;
     padding-bottom: 0.9rem;
   }
 }
 
 /* =====================================================================
-   GLOBAL TYPE SCALE-UP (Asaf, 2026-07-11), carried over unchanged.
+   KPI GRID: four across only when four across actually fits (2026-07-27).
+
+   The markup asks for `lg:grid-cols-4`, i.e. four KPI cards from 1024px. But
+   the shell only widens to 1560px at 1280px, so between 1024 and 1279 the
+   four cards share ~664-920px MINUS the 288px sidebar. Measured at a 1100px
+   window: 171px per card, of which the icon takes 56 and the padding 60,
+   leaving the amount a 54px box. `truncate` then ellipsised it, so the
+   headline number on the dashboard rendered as a literal "..." at the exact
+   window width this app is used at every day. Six-figure amounts (the עוסק
+   פטור ceiling is ₪120,000, so they are routine) clipped up to 1440px.
+
+   Two columns in that band fixes it at the layout level instead of shrinking
+   the number: 361px per card at 1100, a 246px box for the amount, and the
+   number keeps its full 2.15rem display size. Cost is one extra row (~110px)
+   on a page that is scrolled anyway.
+   ===================================================================== */
+@media screen and (min-width: 1024px) and (max-width: 1279.98px) {
+  html .gk-dashboard .grid.lg\:grid-cols-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* =====================================================================
+   GLOBAL TYPE SCALE-UP (Asaf, 2026-07-11; raised again 2026-07-27).
    Tailwind 4 sizes are rem-based and <html> carries no explicit font-size,
    so lifting the root size scales every text utility uniformly with no
    per-component edits.
+
+   2026-07-27: the desktop steps went 17 / 17.5 -> 18 / 18.75 / 19.25, and a
+   1400px tier was added, because the app is worked in daily in a ~1100px
+   tiled window on an ultrawide and every UI role sat at 16px or below. This
+   is deliberately a SMALLER lift than the marketing site got (+6% here vs
+   +16% there): the app carries dense data tables, a fixed-width sidebar and
+   forms whose columns a big jump would break.
+
+   WHY THIS IS SAFE AGAINST THE BREAKPOINTS. Tailwind's breakpoints are
+   `rem` (`64rem` for `lg:`), and inside a MEDIA QUERY `rem` resolves against
+   the INITIAL font size (16px), never the root element's computed value. So
+   `lg:` stays at 1024px no matter what this rule says, and the sidebar keeps
+   appearing at 1100px. Verified in Chrome, not assumed: `html{font-size:19px}`
+   + `@media (min-width:64rem)` still matches at a 1100px viewport and still
+   does not match at 1000px.
+
+   The printable sheet (`document-paper.css`) is px-based throughout and is
+   therefore immune to this, which is what keeps the frozen document design
+   frozen.
    ===================================================================== */
 html { font-size: 16.5px; }
 @media (min-width: 1024px) {
-  html { font-size: 17px; }
+  html { font-size: 18px; }
 }
-@media (min-width: 1536px) {
-  html { font-size: 17.5px; }
+@media (min-width: 1400px) {
+  html { font-size: 18.75px; }
 }
-/* text-[10px] chips are px, so the root bump skips them; nudge manually. */
-html .text-\[10px\] { font-size: 11px; }
+@media (min-width: 1800px) {
+  html { font-size: 19.25px; }
+}
+/* text-[10px] chips are px, so the root bump skips them; nudge manually.
+   12px, not 11px: at the new body scale an 11px chip read as a different
+   design system rather than as the small end of this one. */
+html .text-\[10px\] { font-size: 12px; }
+/* Same reason: `text-[11px]` and `text-[13px]` one-offs are px too. */
+html .text-\[11px\] { font-size: 12.5px; }
+html .text-\[13px\] { font-size: 14px; }
+
+/* =====================================================================
+   WIDE-SCREEN SHELL: stop throwing away horizontal room.
+   The app shell caps at `max-w-7xl` (80rem). On a 1600px+ window that left
+   200-350px of empty shell beside every page except the dashboard, which
+   already had its own override above. `screen` scope so a wide print sheet
+   can never pick this up.
+   ===================================================================== */
+@media screen and (min-width: 1600px) {
+  html main > div.max-w-7xl { max-width: 1600px; }
+}

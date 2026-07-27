@@ -84,7 +84,7 @@ export default function V2VsIndex() {
           ))}
         </div>
 
-        <div className="v2-cmp-cta" style={{ marginTop: "40px" }}>
+        <div className="v2-cmp-cta" style={{ marginTop: "var(--v2-sp-5)" }}>
           <Link href="/login?mode=signup" className="v2-cta">
             התחילו בחינם
           </Link>

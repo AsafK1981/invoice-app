@@ -32,8 +32,11 @@ export default function BlogIndexPage() {
 
       <HeaderV2 />
 
+      {/* `v2-doc-wide`: the index body is a card GRID, not prose, so it wants
+          the wide container rather than the narrow reading column that
+          /blog/<slug>, /terms and /privacy use. */}
       <main className="v2-main">
-        <div className="v2-doc">
+        <div className="v2-doc v2-doc-wide">
           <Link href="/" className="v2-back">
             <ArrowRight />
             חזרה לעמוד הבית

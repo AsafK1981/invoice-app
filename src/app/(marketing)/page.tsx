@@ -27,74 +27,84 @@ export default function MarketingLanding() {
 
       <main className="v2-main">
         <div className="v2-wrap">
-          <div className="v2-eyebrow-row">
-            <i className="ln" />
-            <span>לעוסק פטור בישראל</span>
-            <i className="ln r" />
-          </div>
-
-          <div className="v2-freenow" role="status">
-            <i className="dot" aria-hidden="true" />
-            🎉 חינם עכשיו בתקופת ההשקה: כל הפיצ׳רים, בלי כרטיס אשראי
-          </div>
-
-          <h1 className="v2-h1">
-            החשבונית שלך,{" "}
-            <br />
-            <span className="v2-gold">יוקרתית כמו העסק</span>
-          </h1>
-
-          <p className="v2-lede">
-            בנינו את זה בשביל עצמאים כמוך: חשבונית מקצועית בעברית מלאה, עומדת
-            בדרישות רשות המסים, בלי בירוקרטיה ובלי כאב ראש.
-          </p>
-
-          {/* golden invoice card */}
-          <div className="v2-card">
-            <i className="corner c1" />
-            <i className="corner c2" />
-            <i className="corner c3" />
-            <i className="corner c4" />
-            <div className="chd">
-              <div className="biz v2-gold">
-                סטודיו נועה
-                <small>עיצוב גרפי · עוסק פטור</small>
+          {/* Hero. One centred stack on phones; from 1000px `.v2-hero` becomes
+              a two-column grid (pitch on the reading edge, invoice card as the
+              object beside it), which is worth ~400px of page height and stops
+              the landing from rendering as a 680px ribbon on a black field. */}
+          <div className="v2-hero">
+            <div className="v2-hero-copy">
+              <div className="v2-eyebrow-row">
+                <i className="ln" />
+                <span>לעוסק פטור בישראל</span>
+                <i className="ln r" />
               </div>
-              <div className="chd-right">
-                <div className="doclbl">חשבונית מס</div>
-                <div className="paid">
-                  <i />
-                  שולם
+
+              <div className="v2-freenow" role="status">
+                <i className="dot" aria-hidden="true" />
+                🎉 חינם עכשיו בתקופת ההשקה: כל הפיצ׳רים, בלי כרטיס אשראי
+              </div>
+
+              <h1 className="v2-h1">
+                החשבונית שלך,{" "}
+                <br />
+                <span className="v2-gold">יוקרתית כמו העסק</span>
+              </h1>
+
+              <p className="v2-lede">
+                בנינו את זה בשביל עצמאים כמוך: חשבונית מקצועית בעברית מלאה,
+                עומדת בדרישות רשות המסים, בלי בירוקרטיה ובלי כאב ראש.
+              </p>
+
+              <div className="v2-tag">
+                <span>פשוט.</span> <span>מהיר.</span>{" "}
+                <span className="v2-gold">מקצועי.</span>
+              </div>
+            </div>
+
+            {/* golden invoice card */}
+            <div className="v2-hero-art">
+              <div className="v2-card">
+                <i className="corner c1" />
+                <i className="corner c2" />
+                <i className="corner c3" />
+                <i className="corner c4" />
+                <div className="chd">
+                  <div className="biz v2-gold">
+                    סטודיו נועה
+                    <small>עיצוב גרפי · עוסק פטור</small>
+                  </div>
+                  <div className="chd-right">
+                    <div className="doclbl">חשבונית מס</div>
+                    <div className="paid">
+                      <i />
+                      שולם
+                    </div>
+                  </div>
+                </div>
+                <div className="meta">
+                  <span>לכבוד: סטודיו אורות בע״מ</span>
+                  <span>מס׳ 187025961 · 09.07.2026</span>
+                </div>
+                <div className="rows">
+                  <div className="r">
+                    <span>עיצוב לוגו ומיתוג</span>
+                    <span>3,200 ₪</span>
+                  </div>
+                  <div className="r">
+                    <span>דף נחיתה</span>
+                    <span>1,450 ₪</span>
+                  </div>
+                  <div className="r">
+                    <span>ייעוץ חזותי</span>
+                    <span>600 ₪</span>
+                  </div>
+                </div>
+                <div className="tot">
+                  <span className="lbl">סה״כ לתשלום</span>
+                  <span className="amt v2-gold">5,250 ₪</span>
                 </div>
               </div>
             </div>
-            <div className="meta">
-              <span>לכבוד: סטודיו אורות בע״מ</span>
-              <span>מס׳ 187025961 · 09.07.2026</span>
-            </div>
-            <div className="rows">
-              <div className="r">
-                <span>עיצוב לוגו ומיתוג</span>
-                <span>3,200 ₪</span>
-              </div>
-              <div className="r">
-                <span>דף נחיתה</span>
-                <span>1,450 ₪</span>
-              </div>
-              <div className="r">
-                <span>ייעוץ חזותי</span>
-                <span>600 ₪</span>
-              </div>
-            </div>
-            <div className="tot">
-              <span className="lbl">סה״כ לתשלום</span>
-              <span className="amt v2-gold">5,250 ₪</span>
-            </div>
-          </div>
-
-          <div className="v2-tag">
-            <span>פשוט.</span> <span>מהיר.</span>{" "}
-            <span className="v2-gold">מקצועי.</span>
           </div>
 
           <div className="v2-feats">
@@ -140,26 +150,38 @@ export default function MarketingLanding() {
             </div>
           </div>
 
-          <div className="v2-pricetop">בהמשך, המסלולים יתחילו מ־</div>
-          <div className="v2-price v2-gold">
-            ₪15<span className="per"> / חודש</span>
-          </div>
-          <div className="v2-fdiv">
-            <i className="ln" />
-            <span>
-              <Ltr>Pro</Ltr>: כל הפיצ׳רים ללא הגבלה ב־₪25 · ביטול בכל עת
-            </span>
-            <i className="ln r" />
-          </div>
-          <div className="v2-freenow-note">
-            בתקופת ההשקה הכול חינם. המחירים האלה ייכנסו לתוקף בהמשך, ונעדכן
-            מראש, בלי הפתעות.
-          </div>
+          {/* Launch-offer band. On phones this is the same centred stack it
+              always was; from 1000px it becomes one bordered band with the
+              price on the reading edge and the CTA opposite it. */}
+          <div className="v2-offer">
+            <div className="v2-offer-price">
+              <div className="v2-pricetop">בהמשך, המסלולים יתחילו מ־</div>
+              <div className="v2-price v2-gold">
+                ₪15<span className="per"> / חודש</span>
+              </div>
+              <div className="v2-fdiv">
+                <i className="ln" />
+                <span>
+                  <Ltr>Pro</Ltr>: כל הפיצ׳רים ללא הגבלה ב־₪25 · ביטול בכל עת
+                </span>
+                <i className="ln r" />
+              </div>
+            </div>
 
-          <Link className="v2-cta" href="/login?mode=signup">
-            התחילו בחינם
-          </Link>
-          <div className="v2-fine">חינם עכשיו · ללא כרטיס אשראי · ביטול בכל עת</div>
+            <div className="v2-offer-act">
+              <Link className="v2-cta" href="/login?mode=signup">
+                התחילו בחינם
+              </Link>
+              <div className="v2-fine">
+                חינם עכשיו · ללא כרטיס אשראי · ביטול בכל עת
+              </div>
+            </div>
+
+            <div className="v2-freenow-note">
+              בתקופת ההשקה הכול חינם. המחירים האלה ייכנסו לתוקף בהמשך, ונעדכן
+              מראש, בלי הפתעות.
+            </div>
+          </div>
 
           <div className="v2-credit">
             <i className="ln" />
