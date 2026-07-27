@@ -14,8 +14,14 @@ export default function HeaderV2() {
         <LogoV2 />
       </Link>
       <nav className="v2-header-nav">
+        {/* Two labels, one shown at a time by CSS. The long form is the real
+            pitch and earns its width on desktop; at phone widths it would not
+            fit beside the logo, "מגזין" and the login button, so the short
+            form takes over. display:none keeps the hidden one out of the
+            accessibility tree, so only one label is ever announced. */}
         <Link href="/vs" className="v2-navlink">
-          השוואה
+          <span className="v2-nav-long">איזו תוכנה באמת מתאימה לך</span>
+          <span className="v2-nav-short">השוואה</span>
         </Link>
         <Link href="/blog" className="v2-navlink">
           מגזין

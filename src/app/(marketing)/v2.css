@@ -351,11 +351,19 @@
 .v2-theme .v2-eyebrow-row .ln.r {
   background: linear-gradient(90deg, var(--v2-g2), transparent);
 }
+/* Eyebrow label. Bumped a full step (micro -> meta) so it reads as a real
+   kicker instead of a whisper. Tracking comes DOWN as the size goes up: 0.4em
+   was tuned for 11.5px text and turns into a 6px gap between Hebrew letters at
+   the larger size, which stops reading as a word. */
 .v2-theme .v2-eyebrow-row span {
-  font-size: var(--v2-fs-micro);
-  letter-spacing: 0.4em;
+  font-size: var(--v2-fs-meta);
+  letter-spacing: 0.26em;
   color: #c9b885;
 }
+
+/* Nav label swap, see HeaderV2.tsx. Long form from the desktop tier up. */
+.v2-theme .v2-nav-long { display: none; }
+.v2-theme .v2-nav-short { display: inline; }
 
 /* 36px floor (was 38): at 360px "יוקרתית כמו העסק" ran within ~10px of both
    gutters. The ceiling is 76px rather than 62px because the vw term now
@@ -1936,6 +1944,10 @@
    instead of leaving half of it black.
    ------------------------------------------------------------ */
 @media (min-width: 1000px) {
+  /* Room for the full pitch in the nav. Below this the short label wins. */
+  .v2-theme .v2-nav-long { display: inline; }
+  .v2-theme .v2-nav-short { display: none; }
+
   .v2-theme {
     --v2-shell: 1060px;
     --v2-read: 620px;
