@@ -121,9 +121,9 @@ export default function ClientStatementPage({
             </p>
           </div>
           <div className="text-xs text-stone-700 text-left">
-            <p className="font-semibold text-stone-900">{business.name || "—"}</p>
+            <p className="font-semibold text-stone-900">{business.name || "-"}</p>
             <p>
-              {BUSINESS_TYPE_LABELS[business.businessType]} · ע.מ {business.taxId || "—"}
+              {BUSINESS_TYPE_LABELS[business.businessType]} · ע.מ {business.taxId || "-"}
             </p>
             {business.address && <p>{business.address}</p>}
           </div>

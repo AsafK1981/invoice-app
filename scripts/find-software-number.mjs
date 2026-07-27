@@ -1,6 +1,6 @@
 import { ImapFlow } from "imapflow";
 import { readFileSync } from "node:fs";
-const env = (()=>{try{return readFileSync(new URL("../.env.local", import.meta.url),"utf8");}catch{console.error("ENV_FILE_GUARD: .env.local not found next to scripts/ — run from the project with .env.local present");process.exit(1);}})()
+const env = (()=>{try{return readFileSync(new URL("../.env.local", import.meta.url),"utf8");}catch{console.error("ENV_FILE_GUARD: .env.local not found next to scripts/, run from the project with .env.local present");process.exit(1);}})()
   .split("\n").filter((l)=>l&&!l.startsWith("#"))
   .reduce((a,l)=>{const[k,...r]=l.split("=");if(k)a[k.trim()]=r.join("=").trim();return a;},{});
 if(!env.GMAIL_USER||!env.GMAIL_APP_PASSWORD){

@@ -80,7 +80,7 @@ export function Sidebar() {
         {[
           ...navItems,
           // חשבונית ישראל (allocation numbers) only applies to VAT-charging
-          // businesses — surface a dedicated, easy-to-find entry for them so
+          // businesses. surface a dedicated, easy-to-find entry for them so
           // connecting isn't buried inside the settings page.
           ...(business?.businessType === "authorized" ||
           business?.businessType === "company"
@@ -126,9 +126,9 @@ export function Sidebar() {
       </nav>
       <div className="p-3 border-t border-orange-100/60 space-y-1">
         {/* The app has exactly one look (see app-skin.css), so there is no
-            skin toggle and no light/dark toggle here — the coral-era ones
+            skin toggle and no light/dark toggle here; the coral-era ones
             were removed with the second visual state they switched between. */}
-        {/* Beta feedback button — pre-fills a WhatsApp message to Asaf
+        {/* Beta feedback button: pre-fills a WhatsApp message to Asaf
             with the current page URL so testing friends can report
             something they hit in one tap. The phone number is the
             user's real WhatsApp; if you fork this app, change it. */}

@@ -17,11 +17,11 @@ export function ExemptCeilingTracker({ business, documents }: Props) {
   const ceiling = getExemptCeiling(year);
 
   const yearlyTurnover = useMemo(() => {
-    // Annual ceiling counts real revenue transactions only — the tax authority
+    // Annual ceiling counts real revenue transactions only; the tax authority
     // definition of מחזור עסקאות, not "money received". Excluded:
-    //   • drafts / cancelled — not real transactions
-    //   • price quotes (הצעת מחיר) / proforma (חשבון עסקה) — pre-payment, not revenue
-    //   • any doc already converted into another (convertedToId set) — its
+    //   • drafts / cancelled: not real transactions
+    //   • price quotes (הצעת מחיר) / proforma (חשבון עסקה): pre-payment, not revenue
+    //   • any doc already converted into another (convertedToId set), its
     //     revenue is represented by the target, so counting both double-counts
     //     (the source quote is marked "paid" on conversion).
     // Credit notes subtract (stored negative). Revenue types add.
@@ -73,7 +73,7 @@ export function ExemptCeilingTracker({ business, documents }: Props) {
       icon: AlertTriangle,
       iconColor: "text-orange-700",
       iconBg: "bg-orange-100",
-      title: "כמעט בתקרה — שקול מעבר לעוסק מורשה",
+      title: "כמעט בתקרה: שקול מעבר לעוסק מורשה",
     },
     exceeded: {
       bg: "from-rose-50 to-pink-50",
@@ -82,7 +82,7 @@ export function ExemptCeilingTracker({ business, documents }: Props) {
       icon: AlertTriangle,
       iconColor: "text-rose-700",
       iconBg: "bg-rose-100",
-      title: "חרגת מהתקרה — חובה לעבור לעוסק מורשה",
+      title: "חרגת מהתקרה: חובה לעבור לעוסק מורשה",
     },
   } as const;
 
@@ -140,7 +140,7 @@ export function ExemptCeilingTracker({ business, documents }: Props) {
           {tone === "exceeded" && (
             <p className="text-xs text-rose-800 mt-2 font-medium">
               חרגת מהתקרה. החל מתחילת השנה הבאה (לכל המאוחר) חובה להירשם כעוסק
-              מורשה ברשויות המס. חוקית — חשבוניות מעבר לתקרה כבר היו צריכות
+              מורשה ברשויות המס. חוקית, חשבוניות מעבר לתקרה כבר היו צריכות
               לכלול מע&quot;מ.
             </p>
           )}

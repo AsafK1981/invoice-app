@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { createClient } from "@supabase/supabase-js";
-const env = (()=>{try{return readFileSync(new URL("../.env.local", import.meta.url),"utf8");}catch{console.error("ENV_FILE_GUARD: .env.local not found next to scripts/ — run from the project with .env.local present");process.exit(1);}})()
+const env = (()=>{try{return readFileSync(new URL("../.env.local", import.meta.url),"utf8");}catch{console.error("ENV_FILE_GUARD: .env.local not found next to scripts/, run from the project with .env.local present");process.exit(1);}})()
   .split("\n").filter(l=>l&&!l.startsWith("#"))
   .reduce((a,l)=>{const[k,...r]=l.split("=");if(k)a[k.trim()]=r.join("=").trim();return a;},{});
 const SUPA_URL=env.NEXT_PUBLIC_SUPABASE_URL, SK=env.SUPABASE_SERVICE_ROLE_KEY, AK=env.NEXT_PUBLIC_SUPABASE_ANON_KEY;

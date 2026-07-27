@@ -7,7 +7,7 @@ const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-// Smallest valid GIF — 1×1 transparent. Base64 of 43 bytes.
+// Smallest valid GIF: 1×1 transparent. Base64 of 43 bytes.
 const PIXEL = Buffer.from(
   "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
   "base64",
@@ -16,12 +16,12 @@ const PIXEL = Buffer.from(
 /**
  * Email open tracking pixel. Embedded as a 1×1 invisible <img> in
  * outgoing emails. The recipient's mail client loads the image when
- * they view the message, which fires this endpoint — we stamp
+ * they view the message, which fires this endpoint; we stamp
  * email_opened_at + bump email_open_count on the document.
  *
  * Always returns the GIF (cache-control: no-store), even on errors,
  * so mail clients don't display broken-image icons. The id is
- * validated as a UUID before any DB call — otherwise hits to bogus
+ * validated as a UUID before any DB call; otherwise hits to bogus
  * IDs just return the pixel silently.
  *
  * Privacy note: we capture nothing about the opener (IP, user-agent)
@@ -81,7 +81,7 @@ export async function GET(
       }
     }
   } catch (err) {
-    // Tracking is best-effort — never let it break the pixel response.
+    // Tracking is best-effort; never let it break the pixel response.
     console.warn("[email-track] failed to stamp open:", err);
   }
 

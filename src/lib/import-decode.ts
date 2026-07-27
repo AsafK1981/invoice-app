@@ -12,7 +12,7 @@ import Papa from "papaparse";
  *   3. fall back to Windows-1255.
  *
  * The xlsx (SheetJS) path handles its own encoding and should NOT go through
- * here — this is for the CSV read paths only.
+ * here; this is for the CSV read paths only.
  */
 export function decodeFileBytes(buf: ArrayBuffer): string {
   const bytes = new Uint8Array(buf);
@@ -30,15 +30,15 @@ export function decodeFileBytes(buf: ArrayBuffer): string {
     return new TextDecoder("utf-16be").decode(bytes.subarray(2));
   }
 
-  // No BOM — try strict UTF-8, accept only if clean.
+  // No BOM: try strict UTF-8, accept only if clean.
   try {
     const utf8 = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
     if (!utf8.includes("�")) return utf8;
   } catch {
-    // invalid UTF-8 — fall through to the Hebrew legacy codepage
+    // invalid UTF-8; fall through to the Hebrew legacy codepage
   }
 
-  // Fallback: Windows-1255 (Hebrew) — Israeli Excel "Save as CSV".
+  // Fallback: Windows-1255 (Hebrew), Israeli Excel "Save as CSV".
   return new TextDecoder("windows-1255").decode(bytes);
 }
 

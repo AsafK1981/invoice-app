@@ -14,7 +14,7 @@ import {
 const BASE = "https://mysuperfriendlyinvoiceapp.vercel.app";
 
 // Pre-render every post (drafts included) so a draft is reachable by direct
-// URL for review — while still hidden from the index + sitemap and marked
+// URL for review, while still hidden from the index + sitemap and marked
 // noindex below.
 export function generateStaticParams() {
   return BLOG_POSTS.map((p) => ({ slug: p.slug }));
@@ -32,7 +32,7 @@ export async function generateMetadata({
   const url = `${BASE}/blog/${post.slug}`;
 
   return {
-    title: `${post.title} — חשבונית סופר ידידותית`,
+    title: `${post.title} | חשבונית סופר ידידותית`,
     description: post.description,
     alternates: { canonical: `/blog/${post.slug}` },
     // REVIEW-FIRST: drafts must never be indexed. Flip published:true in
@@ -114,7 +114,7 @@ export default async function BlogPostPage({
           {!post.published && (
             <div className="v2-draft-banner" role="status">
               <FileEdit />
-              טיוטה — עדיין לא פורסם
+              טיוטה: עדיין לא פורסם
             </div>
           )}
 

@@ -24,9 +24,9 @@ const failures = rows.filter((c) => c.last_error);
 console.log(`Connected businesses: ${rows.length}`);
 console.log(`Failures (last_error set): ${failures.length}`);
 for (const f of failures) {
-  console.log(`  ✗ business ${f.business_id} (vat ${f.vat_number}) — "${f.last_error}" (last used ${f.last_used_at})`);
+  console.log(`  ✗ business ${f.business_id} (vat ${f.vat_number}): "${f.last_error}" (last used ${f.last_used_at})`);
 }
 for (const r of rows.filter((c) => !c.last_error)) {
-  console.log(`  ✓ business ${r.business_id} (vat ${r.vat_number}) — ok, connected ${r.connected_at}, last used ${r.last_used_at || "never"}`);
+  console.log(`  ✓ business ${r.business_id} (vat ${r.vat_number}): ok, connected ${r.connected_at}, last used ${r.last_used_at || "never"}`);
 }
-console.log(failures.length === 0 ? "\nAll healthy." : `\n⚠ ${failures.length} failing — investigate (software number? token expiry?).`);
+console.log(failures.length === 0 ? "\nAll healthy." : `\n⚠ ${failures.length} failing: investigate (software number? token expiry?).`);

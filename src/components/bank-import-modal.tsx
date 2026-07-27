@@ -44,7 +44,7 @@ interface MatchRow {
 
 /**
  * Israeli-bank-CSV column header heuristics. Each bank exports slightly
- * differently — Hapoalim, Discount, Leumi, Mizrahi, even credit-card
+ * differently: Hapoalim, Discount, Leumi, Mizrahi, even credit-card
  * statements. We look for the most common Hebrew/English variants.
  */
 function detectColumn(headers: string[], variants: RegExp[]): string | null {
@@ -133,7 +133,7 @@ export function BankImportModal({ open, onClose, unpaidDocuments, onPaid }: Prop
     setError(null);
 
     // Decode with encoding detection (cp1255 Israeli bank exports) before
-    // parsing — a raw Papa.parse(file) would mojibake Hebrew column headers.
+    // parsing; a raw Papa.parse(file) would mojibake Hebrew column headers.
     let rows: Record<string, string>[];
     try {
       ({ rows } = await parseCsvFile(file));
@@ -242,7 +242,7 @@ export function BankImportModal({ open, onClose, unpaidDocuments, onPaid }: Prop
           .eq("id", m.selectedDocId!);
         if (error) throw new Error(error.message);
         updated++;
-        // Notification — best-effort, never blocks the matching action.
+        // Notification: best-effort, never blocks the matching action.
         if (businessId) {
           const matchedDoc = unpaidDocuments.find((d) => d.id === m.selectedDocId);
           if (matchedDoc) {
@@ -250,7 +250,7 @@ export function BankImportModal({ open, onClose, unpaidDocuments, onPaid }: Prop
               businessId,
               userId,
               kind: "payment_matched",
-              title: `תשלום זוהה — ${matchedDoc.clientName}`,
+              title: `תשלום זוהה: ${matchedDoc.clientName}`,
               body: `מסמך #${matchedDoc.number} (₪${matchedDoc.total.toLocaleString("he-IL")}) סומן כשולם לפי תנועה בבנק ב-${formatDate(m.tx.date)}.`,
               href: `/documents/${m.selectedDocId}`,
               documentId: m.selectedDocId!,
@@ -288,7 +288,7 @@ export function BankImportModal({ open, onClose, unpaidDocuments, onPaid }: Prop
               </div>
               <ol className="list-decimal mr-5 space-y-1 text-xs">
                 <li>הורידו תדפיס חשבון בנק / Bit / PayBox בפורמט CSV</li>
-                <li>העלו כאן — נזהה אוטומטית עמודות תאריך/סכום/תיאור</li>
+                <li>העלו כאן, נזהה אוטומטית עמודות תאריך/סכום/תיאור</li>
                 <li>נציע התאמה לחשבוניות פתוחות לפי סכום + תאריך</li>
                 <li>תאשרו את ההתאמות, והחשבוניות יסומנו אוטומטית כשולמו</li>
               </ol>
@@ -381,7 +381,7 @@ export function BankImportModal({ open, onClose, unpaidDocuments, onPaid }: Prop
                           {formatDate(m.tx.date)}
                         </td>
                         <td className="px-3 py-2 text-stone-700 max-w-[200px] truncate" title={m.tx.description}>
-                          {m.tx.description || "—"}
+                          {m.tx.description || "-"}
                         </td>
                         <td className="px-3 py-2 text-left font-mono font-semibold text-emerald-700 whitespace-nowrap">
                           {formatCurrency(m.tx.amount)}

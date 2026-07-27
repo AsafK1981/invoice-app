@@ -47,8 +47,8 @@ export default function RecurringPage() {
       // Build the document through the SAME path the interactive editor uses
       // on save (computeAmounts + per-line net prices + ₪ snapshot), so a
       // generated recurring doc is identical to one created manually from the
-      // same template. Rounding the summed total instead of per-line — and
-      // omitting currency/exchangeRate/ILS fields — used to let the header
+      // same template. Rounding the summed total instead of per-line, and
+      // omitting currency/exchangeRate/ILS fields, used to let the header
       // subtotal drift from the sum of line totals, the exact line/header
       // mismatch that gets a tax export rejected. Templates are ILS-only and
       // exclusive-VAT today, so we mirror those defaults explicitly.
@@ -114,7 +114,7 @@ export default function RecurringPage() {
   }
 
   async function handleSkip(template: RecurringTemplate) {
-    // Advances nextDue without creating a doc — useful when a client
+    // Advances nextDue without creating a doc; useful when a client
     // cancels for a single period but the recurring relationship continues.
     await saveTemplate({
       ...template,

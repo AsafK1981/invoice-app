@@ -4,11 +4,11 @@ import HeaderV2 from "../components/HeaderV2";
 import FooterV2 from "../components/FooterV2";
 
 export const metadata = {
-  title: "תנאי שימוש — חשבונית",
+  title: "תנאי שימוש | חשבונית",
 };
 
 /**
- * /v2/terms — the same terms-of-use copy as /terms, re-themed in the
+ * /v2/terms, the same terms-of-use copy as /terms, re-themed in the
  * gold/obsidian v2 design. Legal wording is reused verbatim.
  */
 export default function V2TermsPage() {

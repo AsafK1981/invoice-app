@@ -57,7 +57,7 @@ interface EntityTotals {
 }
 
 interface DetectedFile {
-  /** Display name shown to the user — could be the file name or "<file>: <sheet>" for xlsx sheets */
+  /** Display name shown to the user: could be the file name or "<file>: <sheet>" for xlsx sheets */
   label: string;
   entity: EntityType | null;
   rows: ParsedRow[];
@@ -75,28 +75,28 @@ const ENTITY_META: Record<EntityType, { label: string; icon: typeof UsersIcon; c
 /**
  * Look at the column headers and decide what entity this sheet/file is.
  * Documents are tried first (most specific schema), then expenses, then
- * products, then clients (most generic — just needs a name + identifier).
+ * products, then clients (most generic, just needs a name + identifier).
  */
 function detectEntity(headers: string[]): EntityType | null {
   const set = new Set(headers.map((h) => h.toLowerCase().trim()));
   const has = (...keys: string[]) => keys.some((k) => set.has(k.toLowerCase()));
 
-  // Documents — must have a number + a client + a total. Uses the shared
+  // Documents: must have a number + a client + a total. Uses the shared
   // cross-vendor header-alias layer so a Morning / iCount / Rivhit /
   // Hashavshevet export (ספרור / שם חשבון / סה"כ / Document Number …) is
   // detected, not just the Invoice4U short keys.
   if (isDocumentsHeaderSet(headers)) {
     return "documents";
   }
-  // Expenses — supplier + amount
+  // Expenses: supplier + amount
   if (has("ספק", "supplier") && has("סכום", "amount")) {
     return "expenses";
   }
-  // Products — price column is a strong signal
+  // Products: price column is a strong signal
   if (has("מחיר", "price") && has("שם", "name")) {
     return "products";
   }
-  // Clients — name + at least one contact field
+  // Clients: name + at least one contact field
   if (has("שם", "name") && (has("ח.פ / ת.ז", "ח.פ", "ת.ז", "tax_id", "טלפון", "phone", "אימייל", "email", "כתובת", "address"))) {
     return "clients";
   }
@@ -136,7 +136,7 @@ export function BulkImportZone() {
         label: `${file.name} → ${sheetName}`,
         entity: detectEntity(headers),
         rows: rows.map((r) => {
-          // Convert all cell values to strings — matches the CSV path.
+          // Convert all cell values to strings; matches the CSV path.
           const obj: ParsedRow = {};
           for (const k of Object.keys(r)) obj[k] = String(r[k] ?? "").trim();
           return obj;
@@ -222,7 +222,7 @@ export function BulkImportZone() {
   ): Promise<{ imported: number; skipped: number; unmappedType: number }> {
     let imported = 0;
     let skipped = 0;
-    // Rows whose document-type cell wasn't recognized — imported as receipt but
+    // Rows whose document-type cell wasn't recognized: imported as receipt but
     // flagged so the count is surfaced (previously dropped on the floor here).
     let unmappedType = 0;
     const today = todayInIsrael();
@@ -295,7 +295,7 @@ export function BulkImportZone() {
       }
     } else if (file.entity === "documents") {
       if (!businessId) {
-        throw new Error("אין עסק פעיל — רענן את הדף ונסה שוב");
+        throw new Error("אין עסק פעיל, רענן את הדף ונסה שוב");
       }
       const clientCache = new Map<string, string>();
       const maxNumberByType = new Map<string, number>();
@@ -422,7 +422,7 @@ export function BulkImportZone() {
           <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center shadow-md mx-auto mb-3">
             <Upload className="w-7 h-7 text-white" />
           </div>
-          <p className="font-bold text-stone-900">גרור לכאן את כל הקבצים — או לחץ לבחירה</p>
+          <p className="font-bold text-stone-900">גרור לכאן את כל הקבצים, או לחץ לבחירה</p>
           <p className="text-sm text-stone-700 mt-1">
             CSV של לקוחות / מוצרים / הוצאות / מסמכים, או קובץ Excel אחד עם כמה גיליונות
           </p>
@@ -473,7 +473,7 @@ export function BulkImportZone() {
                         </>
                       ) : (
                         <>
-                          לא זוהה אוטומטית ({d.rows.length} שורות) — בחר ידנית:
+                          לא זוהה אוטומטית ({d.rows.length} שורות), בחר ידנית:
                         </>
                       )}
                     </p>
@@ -510,7 +510,7 @@ export function BulkImportZone() {
 
           {unknown.length > 0 && (
             <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl p-3">
-              {unknown.length} {unknown.length === 1 ? "קובץ" : "קבצים"} לא זוהה אוטומטית — בחר סוג
+              {unknown.length} {unknown.length === 1 ? "קובץ" : "קבצים"} לא זוהה אוטומטית, בחר סוג
               ידנית או הסר.
             </p>
           )}

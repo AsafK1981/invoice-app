@@ -7,7 +7,7 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 /**
- * Public health-check endpoint. No auth — designed to be hit by
+ * Public health-check endpoint. No auth; designed to be hit by
  * external uptime monitors (BetterUptime, UptimeRobot, etc.) and
  * by our own admin dashboard.
  *
@@ -20,7 +20,7 @@ const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
  * attackers pin known-vulnerable code paths). Admins who pass a
  * valid Bearer token still get it for the dashboard.
  *
- * NOT cached — Vercel + Next.js default to no-store for API
+ * NOT cached; Vercel + Next.js default to no-store for API
  * routes, but we set explicit headers anyway in case anyone
  * proxies this.
  */
@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
 
   const checks: Record<string, { ok: boolean; latencyMs?: number; error?: string }> = {};
 
-  // Database — does a count query that requires actual SQL execution.
+  // Database: does a count query that requires actual SQL execution.
   try {
     const t0 = Date.now();
     const sb = createClient(supabaseUrl, serviceKey, {
@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
     checks.database = { ok: false, error: err instanceof Error ? err.message : "unknown" };
   }
 
-  // Storage — list buckets (lightweight metadata call).
+  // Storage: list buckets (lightweight metadata call).
   try {
     const t0 = Date.now();
     const sb = createClient(supabaseUrl, serviceKey, {
@@ -56,7 +56,7 @@ export async function GET(req: NextRequest) {
     checks.storage = { ok: false, error: err instanceof Error ? err.message : "unknown" };
   }
 
-  // Auth — list one user (cheap admin-API call).
+  // Auth: list one user (cheap admin-API call).
   try {
     const t0 = Date.now();
     const sb = createClient(supabaseUrl, serviceKey, {
@@ -82,7 +82,7 @@ export async function GET(req: NextRequest) {
       const { data: { user } } = await authClient.auth.getUser(authHeader.slice(7));
       if (user && isAdminEmail(user.email)) showVersion = true;
     } catch {
-      // ignore — non-admins just don't see the version
+      // ignore: non-admins just don't see the version
     }
   }
 

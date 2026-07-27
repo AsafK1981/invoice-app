@@ -7,7 +7,7 @@ interface Props {
   label: string;
   children: ReactNode;
   side?: "top" | "bottom" | "left" | "right";
-  /** Reserved for future use — kept for backwards compat with callers */
+  /** Reserved for future use, kept for backwards compat with callers */
   align?: "start" | "center" | "end";
   className?: string;
 }
@@ -16,7 +16,7 @@ interface Props {
  * Portal-rendered tooltip. Computes the trigger's viewport rect on hover
  * and renders the tooltip text directly into <body> with `position:fixed`.
  * That bypasses every ancestor `overflow:hidden` / transform-induced
- * clipping issue — the tooltip can extend anywhere on screen.
+ * clipping issue; the tooltip can extend anywhere on screen.
  *
  * The earlier CSS-only `position:absolute` version got clipped when the
  * trigger sat near the edge of an `overflow:hidden` ancestor. The portal

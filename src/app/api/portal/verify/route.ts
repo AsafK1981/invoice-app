@@ -8,7 +8,7 @@ import {
 
 export async function GET(req: NextRequest) {
   const token = req.nextUrl.searchParams.get("token") || "";
-  // Demand aud="link" — refuse to bootstrap a session from anything
+  // Demand aud="link": refuse to bootstrap a session from anything
   // other than a freshly-emailed magic link.
   const payload = verifyPortalToken(token, "link");
 

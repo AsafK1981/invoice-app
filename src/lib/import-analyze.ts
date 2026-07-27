@@ -13,7 +13,7 @@ import { todayInIsrael } from "@/lib/date";
 /**
  * Dry-run import analyzer. Defers every skip / type / field decision to the
  * shared mapDocumentRow, so the preview it produces == what the real import
- * loops will actually do, by construction. It inserts nothing — it just
+ * loops will actually do, by construction. It inserts nothing; it just
  * summarizes the mapper's per-row results for a validating preview UI.
  */
 

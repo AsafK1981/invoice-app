@@ -195,7 +195,7 @@ export default function CustomReportPage() {
             דוח מותאם
           </h1>
           <p className="text-sm text-stone-600 mt-2 mr-14">
-            שלב מסננים חופשי — תאריך, הקצאה, לקוח, סוג מסמך וסטטוס — כדי להפיק כל חתך שתרצה.
+            שלב מסננים חופשי (תאריך, הקצאה, לקוח, סוג מסמך וסטטוס) כדי להפיק כל חתך שתרצה.
           </p>
         </div>
         <div className="flex items-center gap-2 no-print">
@@ -421,9 +421,9 @@ export default function CustomReportPage() {
                       </td>
                       <td className="px-4 py-3.5 text-center align-middle whitespace-nowrap text-stone-700 border-b border-l border-stone-200">{DOCUMENT_TYPE_LABELS[d.type]}</td>
                       <td className="px-4 py-3.5 text-center align-middle text-stone-700 border-b border-l border-stone-200">{d.clientName}</td>
-                      <td className="px-4 py-3.5 text-center align-middle tabular-nums whitespace-nowrap text-stone-700 border-b border-l border-stone-200">{taxId || <span className="text-stone-300">—</span>}</td>
+                      <td className="px-4 py-3.5 text-center align-middle tabular-nums whitespace-nowrap text-stone-700 border-b border-l border-stone-200">{taxId || <span className="text-stone-300">-</span>}</td>
                       <td className="px-4 py-3.5 text-center align-middle tabular-nums font-extrabold text-stone-900 whitespace-nowrap border-b border-l border-stone-200">{formatCurrency(d.totalIls ?? d.total)}</td>
-                      <td className="px-4 py-3.5 text-center align-middle tabular-nums whitespace-nowrap text-stone-700 border-b border-l border-stone-200">{d.allocationNumber || <span className="text-stone-300">—</span>}</td>
+                      <td className="px-4 py-3.5 text-center align-middle tabular-nums whitespace-nowrap text-stone-700 border-b border-l border-stone-200">{d.allocationNumber || <span className="text-stone-300">-</span>}</td>
                       <td className="px-4 py-3.5 text-center align-middle whitespace-nowrap text-stone-700 border-b border-stone-200">{DOCUMENT_STATUS_LABELS[d.status]}</td>
                     </tr>
                   );

@@ -79,7 +79,7 @@ export default function NotificationsPage() {
           <Bell className="w-10 h-10 mx-auto text-stone-400 mb-3" />
           <p className="text-stone-700 font-medium">אין התראות עדיין</p>
           <p className="text-sm text-stone-500 mt-1">
-            כשלקוח יפתח חשבונית, תשלום יזוהה, או הצעת מחיר תאושר — תקבל פה.
+            כשלקוח יפתח חשבונית, תשלום יזוהה, או הצעת מחיר תאושר, תקבל פה.
           </p>
         </div>
       ) : (

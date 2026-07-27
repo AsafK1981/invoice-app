@@ -74,7 +74,7 @@ interface Props {
   vat: number;
   vatRate: number;
   total: number;
-  /** הפרש עיגול — signed rounding adjustment; a summary line renders when non-zero. */
+  /** הפרש עיגול, signed rounding adjustment; a summary line renders when non-zero. */
   rounding?: number;
   paymentMethod?: PaymentMethod;
   /** Structured payment detail (check/bank/card), shown next to the payment method. */
@@ -85,7 +85,7 @@ interface Props {
    * to already be the DISCOUNTED subtotal.
    */
   discount?: number;
-  /** ניכוי מס במקור — withholding rate (%) and amount; renders a payment-split block. */
+  /** ניכוי מס במקור, withholding rate (%) and amount; renders a payment-split block. */
   withholdingRate?: number;
   withholdingAmount?: number;
   notes?: string;
@@ -140,15 +140,15 @@ export function DocumentBody({
   const money = (n: number) => (currency === "ILS" ? formatCurrency(n) : formatMoney(n, currency));
 
   const numberStr = number != null ? String(number).padStart(4, "0") : "(אוטומטי)";
-  const dateStr = date ? formatDate(date) : "—";
-  const businessName = business.name || (placeholders ? "—" : "");
+  const dateStr = date ? formatDate(date) : "-";
+  const businessName = business.name || (placeholders ? "-" : "");
   const showItemsEmptyState =
     placeholders && (items.length === 0 || items.every((i) => !i.description));
   // Historical imported documents (e.g. the Invoice4U migration) stored only a
   // total + subject, never per-line rows. Rather than show a headers-only table
   // with no body, synthesize ONE display row from the document itself: the
   // subject as the description (falling back to the document-type label), qty 1,
-  // and the pre-VAT subtotal as the amount — which equals the grand total for
+  // and the pre-VAT subtotal as the amount, which equals the grand total for
   // these zero-VAT (עוסק פטור) docs and stays consistent with the totals
   // breakdown for any future VAT doc. This is display-only and NEVER fires for a
   // document that actually has line items, nor in the editor placeholder state.
@@ -177,7 +177,7 @@ export function DocumentBody({
       <div className="doc-card doc-head">
         <div className="doc-biz">
           {/* Logo is OPTIONAL and there is deliberately NO placeholder/monogram
-              fallback — a business without a logo simply shows its name. */}
+              fallback; a business without a logo simply shows its name. */}
           {business.logoUrl && (
             <img src={business.logoUrl} alt={business.name} className="doc-logo" />
           )}
@@ -284,7 +284,7 @@ export function DocumentBody({
             ) : (
               items.map((item) => (
                 <tr key={item.id}>
-                  <td className="c-desc">{item.description || (placeholders ? "—" : "")}</td>
+                  <td className="c-desc">{item.description || (placeholders ? "-" : "")}</td>
                   <td className="c-qty doc-tab">{item.quantity}</td>
                   <td className="c-num doc-tab">{money(item.unitPrice)}</td>
                   <td className="c-total doc-tab">{money(item.total)}</td>
@@ -319,7 +319,7 @@ export function DocumentBody({
           {zeroRated ? (
             <div className="doc-brow">
               <span>מע״מ</span>
-              <span>עסקה בשיעור אפס — ייצוא שירותים</span>
+              <span>עסקה בשיעור אפס: ייצוא שירותים</span>
             </div>
           ) : (
             vatRate > 0 && (

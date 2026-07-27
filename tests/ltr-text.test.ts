@@ -4,7 +4,7 @@ import { COMPETITORS } from "@/lib/comparison-data";
 
 /**
  * Marketing copy is Hebrew RTL with Latin brand names embedded in it. The
- * splitter decides which slices get a `dir="ltr"` isolate — get the boundaries
+ * splitter decides which slices get a `dir="ltr"` isolate; get the boundaries
  * wrong and punctuation jumps to the wrong side of the sentence.
  */
 
@@ -33,7 +33,7 @@ describe("splitLatinRuns", () => {
 
   it("breaks a run on ₪/digits, but joins space-adjacent Latin words", () => {
     // "Pro" and "vs" are separated by "₪25", so they are two runs. "vs Extra"
-    // has nothing but a space between them, so it is ONE run — the same rule
+    // has nothing but a space between them, so it is ONE run; the same rule
     // that keeps "Apple Pay" together. That is intended: a multi-word run is a
     // single bidi isolate and still wraps normally (no display:inline-block).
     expect(runs("Pro ₪25 vs Extra ₪89")).toEqual(["Pro", "vs Extra"]);

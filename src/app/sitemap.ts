@@ -7,7 +7,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
 
   // Only PUBLISHED blog posts (published: true) go in the sitemap. Drafts
-  // are excluded on purpose — see src/lib/blog-posts.ts (REVIEW-FIRST).
+  // are excluded on purpose; see src/lib/blog-posts.ts (REVIEW-FIRST).
   const blogPosts: MetadataRoute.Sitemap = getPublishedPosts().map((post) => ({
     url: `${BASE}/blog/${post.slug}`,
     lastModified: new Date(post.date),

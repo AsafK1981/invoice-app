@@ -136,7 +136,7 @@ export default function PortalDocumentsPage() {
             <FileText className="w-12 h-12 mx-auto text-stone-400 mb-3" />
             <p className="text-stone-700 font-medium">אין עדיין מסמכים זמינים</p>
             <p className="text-sm text-stone-500 mt-1">
-              כשעסק ישלח לכם חשבונית — היא תופיע כאן.
+              כשעסק ישלח לכם חשבונית, היא תופיע כאן.
             </p>
           </div>
         ) : (

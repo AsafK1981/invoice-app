@@ -12,7 +12,7 @@ type MonthDatum = { month: string; הכנסות: number; הוצאות: number };
 
 /**
  * The chart palette, single-sourced. Every place a series is painted
- * — legend pill, area fill, stroke, point, value label, hover tooltip key —
+ * (legend pill, area fill, stroke, point, value label, hover tooltip key)
  * reads from here. (Before this existed the tooltip's colour dots still carried
  * the pre-redesign obsidian values, so the same series was drawn in three
  * different colours depending on where you looked.)
@@ -50,7 +50,7 @@ function kLabel(v: unknown): string {
   return `₪${Math.round(n / 1000)}k`;
 }
 
-/** Full ILS currency (used in the hover tooltip — exact, not rounded to k). */
+/** Full ILS currency (used in the hover tooltip, exact, not rounded to k). */
 const ils = new Intl.NumberFormat("he-IL", {
   style: "currency",
   currency: "ILS",
@@ -139,7 +139,7 @@ function tickLabel(v: number): string {
 }
 
 /**
- * Fritsch–Carlson monotone cubic interpolation → smooth cubic-bezier path.
+ * Fritsch-Carlson monotone cubic interpolation → smooth cubic-bezier path.
  * Returns the stroke path `d`, plus the on-screen point coordinates.
  * Ported from the approved mockup (chart-redesign.html).
  */
@@ -335,7 +335,7 @@ function MonthlyLineChart({ data }: { data: MonthDatum[] }) {
               );
             })}
 
-            {/* monthly profit-gap connectors — barely-there dashed gold,
+            {/* monthly profit-gap connectors: barely-there dashed gold,
                 drawn BEHIND areas/lines. Skip when the two points nearly touch. */}
             {months.map((_, i) => {
               const incY = inc.ys[i];
@@ -414,7 +414,7 @@ function MonthlyLineChart({ data }: { data: MonthDatum[] }) {
               // Always below the expense point. Clamp above the month-axis band,
               // and if this is a loss month (income point sits lower than the
               // expense point) push the label down toward the axis to stay off
-              // the income area — never above the expense point.
+              // the income area, never above the expense point.
               const axisBand = h - padB + 6;
               let ly = y + 16;
               if (inc.ys[i] > y) ly = Math.max(ly, y + 16);
@@ -479,7 +479,7 @@ function MonthlyLineChart({ data }: { data: MonthDatum[] }) {
           </svg>
         )}
 
-        {/* hover tooltip — exact ILS values */}
+        {/* hover tooltip: exact ILS values */}
         {ready && hover !== null && (
           <div
             className="pointer-events-none absolute z-10 rounded-xl px-3 py-2 text-xs"

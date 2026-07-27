@@ -2,7 +2,7 @@
 // the latest production deployment. If it doesn't, repoints automatically.
 //
 // AGENTS.md trap #2: the alias does NOT auto-advance when a new deploy goes
-// ready. This has bitten us multiple times — most painfully on 2026-05-03,
+// ready. This has bitten us multiple times; most painfully on 2026-05-03,
 // when a React #310 fix was deployed but the alias stayed pinned to a
 // 3-day-old broken build, so the user kept hitting the same crash.
 //
@@ -78,5 +78,5 @@ if (recheck.deploymentId === latest.uid) {
   console.log(`✓ repointed → ${latest.uid.slice(0, 16)}`);
   process.exit(0);
 }
-console.error("✗ repoint failed — alias still wrong");
+console.error("✗ repoint failed, alias still wrong");
 process.exit(1);

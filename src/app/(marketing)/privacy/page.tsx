@@ -4,11 +4,11 @@ import HeaderV2 from "../components/HeaderV2";
 import FooterV2 from "../components/FooterV2";
 
 export const metadata = {
-  title: "מדיניות פרטיות — חשבונית",
+  title: "מדיניות פרטיות | חשבונית",
 };
 
 /**
- * /v2/privacy — the same privacy-policy copy as /privacy, re-themed in
+ * /v2/privacy, the same privacy-policy copy as /privacy, re-themed in
  * the gold/obsidian v2 design. Legal wording is reused verbatim.
  */
 export default function V2PrivacyPage() {

@@ -89,7 +89,7 @@ export async function deleteAttachment(attachment: DocumentAttachment): Promise<
   const { error: storageError } = await supabase.storage
     .from(BUCKET)
     .remove([attachment.filePath]);
-  // We log but don't fail on storage error — the row removal is the canonical truth
+  // We log but don't fail on storage error; the row removal is the canonical truth
   if (storageError) {
     console.warn("Storage delete failed:", storageError.message);
   }

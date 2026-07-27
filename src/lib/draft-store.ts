@@ -3,7 +3,7 @@
 // Server-side drafts for unfinished documents. Unlike the per-device
 // localStorage autosave (draft-storage.ts), these persist in the DB, survive
 // across devices/cache clears, and back the "טיוטות" tab. A draft never holds a
-// real invoice number — that's allocated only when the document is finalized.
+// real invoice number; that's allocated only when the document is finalized.
 
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "./supabase";

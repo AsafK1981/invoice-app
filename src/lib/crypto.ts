@@ -24,7 +24,7 @@ function getKey(): Buffer {
   const hex = process.env.COLUMN_ENCRYPTION_KEY;
   if (!hex) {
     throw new Error(
-      "COLUMN_ENCRYPTION_KEY env var is missing — required to encrypt/decrypt Tax Authority tokens. Generate one with: node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\"",
+      "COLUMN_ENCRYPTION_KEY env var is missing; required to encrypt/decrypt Tax Authority tokens. Generate one with: node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\"",
     );
   }
   if (hex.length !== 64) {

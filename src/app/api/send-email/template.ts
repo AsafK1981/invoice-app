@@ -4,7 +4,7 @@
 // Every shape requirement asserted by tests/email-html.test.ts maps to
 // a property a real corporate mail filter checks before deciding to
 // render, strip, or quarantine an email. Don't change a structure
-// invariant here without updating the tests too — the gate exists
+// invariant here without updating the tests too; the gate exists
 // because a regression in this file silently broke a real customer
 // once (2026-06-01).
 
@@ -28,7 +28,7 @@ function escapeHtml(str: string): string {
 
 // Name the actual document type in the email ("מצורפת חשבונית מס" / "מצורף
 // חשבון עסקה") instead of a generic "מסמך". Only "חשבון עסקה" (proforma) is
-// grammatically masculine — the rest, including "הצעת מחיר" (quote), are
+// grammatically masculine; the rest, including "הצעת מחיר" (quote), are
 // feminine → "מצורפת".
 function docWording(type?: DocumentType): { attached: string; noun: string } {
   if (!type || !DOCUMENT_TYPE_LABELS[type]) return { attached: "מצורף מסמך", noun: "מסמך" };
@@ -45,9 +45,9 @@ export function buildHtml(args: {
   logoUrl?: string;
   kind?: "initial" | "reminder";
   daysSinceSent?: number;
-  /** Document type — names the doc in the copy ("מצורפת חשבונית מס"). */
+  /** Document type: names the doc in the copy ("מצורפת חשבונית מס"). */
   documentType?: DocumentType;
-  /** 1×1 tracking-pixel URL — stamps email_opened_at when the recipient
+  /** 1×1 tracking-pixel URL: stamps email_opened_at when the recipient
    *  loads the message. Omit to disable tracking for a particular send. */
   trackingPixelUrl?: string;
   /** ISO 4217 currency the document total is denominated in. Default "ILS". */
@@ -60,13 +60,13 @@ export function buildHtml(args: {
   const introLine = isReminder
     ? `מקווה שאתם בסדר. רק תזכורת קלה לגבי ${escapeHtml(noun)} מספר <strong>#${escapeHtml(String(receiptNumber))}</strong> על סך <strong>${totalFormatted}</strong>${
         daysSinceSent ? ` ששלחנו לפני ${daysSinceSent} ימים` : ""
-      } — אשמח לדעת אם הוא הגיע ומה דעתכם.`
+      }. אשמח לדעת אם הוא הגיע ומה דעתכם.`
     : `${escapeHtml(attached)} מספר <strong>#${escapeHtml(String(receiptNumber))}</strong> על סך <strong>${totalFormatted}</strong>.`;
   const ctaLine = isReminder
     ? "לצפייה חוזרת במסמך המלא:"
     : "לצפייה במסמך המלא והדפסה/הורדה כ-PDF, לחץ על הכפתור למטה.";
 
-  // Full HTML document — corporate mail filters (Microsoft 365 Defender,
+  // Full HTML document: corporate mail filters (Microsoft 365 Defender,
   // Mimecast, etc.) flag bare HTML fragments as suspicious. Wrap with a
   // proper doctype + charset + body so Outlook/Exchange clients accept
   // the message and render the Hebrew correctly.

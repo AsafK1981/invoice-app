@@ -24,7 +24,7 @@ const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
  * shared it via WhatsApp.
  *
  * Without this endpoint there was no way for an admin to import
- * data into another user's account — the regular /api/* import
+ * data into another user's account; the regular /api/* import
  * paths use Supabase client RLS scoped to the calling user.
  *
  * Every import writes an audit_log entry tagged `admin.import` so
@@ -47,7 +47,7 @@ type ImportSummary = {
   skipped: number;
   /** Per-reason labelled skip breakdown (documents import only). */
   skipSummary?: SkipSummaryEntry[];
-  /** Rows whose document-type cell wasn't recognized — imported as receipt but flagged for review. */
+  /** Rows whose document-type cell wasn't recognized; imported as receipt but flagged for review. */
   unmappedType?: number;
   unmappedTypeSamples?: string[];
   errors: string[];
@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
   const rl = checkRate({ key: `admin-import:${caller.id}`, max: 20, windowMs: 60_000 });
   if (!rl.ok) {
     return NextResponse.json(
-      { ok: false, error: "Slow down — 20 imports per minute max" },
+      { ok: false, error: "Slow down: 20 imports per minute max" },
       { status: 429, headers: { "Retry-After": String(Math.ceil(rl.resetIn / 1000)) } },
     );
   }
@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         ok: false,
-        error: "Target user has no business yet — they need to complete onboarding first",
+        error: "Target user has no business yet; they need to complete onboarding first",
       },
       { status: 400 },
     );
@@ -137,7 +137,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Audit log entry — transparent to the target user.
+  // Audit log entry: transparent to the target user.
   await sb.from("audit_log").insert({
     business_id: targetBusinessId,
     action: "admin.import",
@@ -300,7 +300,7 @@ async function importDocuments(sb: SB, businessId: string, rows: ImportRow[]): P
   const maxByType = new Map<string, number>();
   const docsToInsert: Array<Record<string, unknown>> = [];
   // Rows dropped because their client couldn't be created (not a mapDocumentRow
-  // skip reason) — folded into the skipped total but not the per-reason summary.
+  // skip reason); folded into the skipped total but not the per-reason summary.
   let clientErrorSkips = 0;
 
   for (const row of rows) {

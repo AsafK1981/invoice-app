@@ -40,7 +40,7 @@ interface Props {
   exchangeRate?: number;
   totalIls?: number;
   zeroRated?: boolean;
-  /** מספר הקצאה — mirrors the live allocation-banner value onto the preview. */
+  /** מספר הקצאה, mirrors the live allocation-banner value onto the preview. */
   allocationNumber?: string;
 }
 
@@ -173,7 +173,7 @@ export function DocumentPreview(props: Props) {
             />
             <div className="relative z-10 flex items-center justify-between px-4 py-3 bg-stone-900/80 backdrop-blur-sm">
               <span className="text-sm text-stone-100 font-medium">
-                תצוגה מקדימה — לחץ מחוץ למסמך או על X כדי לסגור
+                תצוגה מקדימה, לחץ מחוץ למסמך או על X כדי לסגור
               </span>
               <button
                 type="button"

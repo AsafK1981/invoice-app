@@ -2,7 +2,7 @@ import Link from "next/link";
 import LogoV2 from "./LogoV2";
 
 /**
- * FooterV2 — gold/obsidian footer with a deco gold hairline divider,
+ * FooterV2, gold/obsidian footer with a deco gold hairline divider,
  * the mark, and legal/login links.
  */
 export default function FooterV2() {
@@ -11,10 +11,10 @@ export default function FooterV2() {
       <div className="v2-footer-hair" />
       <div className="v2-footer-inner">
         {/* The mark alone has no text, so the link's accessible name comes
-            from LogoV2's `.v2-sr` string rather than an aria-label — an
+            from LogoV2's `.v2-sr` string rather than an aria-label, an
             anchor whose only content is an image used to expose just "/". */}
         <Link href="/">
-          <LogoV2 variant="mark" srText="חשבונית סופר ידידותית — לדף הבית" />
+          <LogoV2 variant="mark" srText="חשבונית סופר ידידותית, לדף הבית" />
         </Link>
         <nav className="v2-footer-links">
           <Link href="/terms">תנאי שימוש</Link>

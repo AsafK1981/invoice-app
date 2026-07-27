@@ -5,7 +5,7 @@
 // in a ZIP archive: INI.txt (header / counts) + BKMVDATA.txt (data).
 //
 // Field positions and record layouts are governed by horaot_131.pdf
-// (the official OPENFORMAT 1.31 spec — see docs/uniform-structure/).
+// (the official OPENFORMAT 1.31 spec, see docs/uniform-structure/).
 
 import { toWindows1255 } from "./encode";
 import {

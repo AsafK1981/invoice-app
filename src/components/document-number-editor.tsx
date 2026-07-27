@@ -7,7 +7,7 @@ import { DOCUMENT_TYPE_LABELS, type InvoiceDocument } from "@/lib/types";
 
 /**
  * Inline editor for a finalized document's number. Lets the user set any
- * positive number (gaps allowed — their call); the DB unique index prevents
+ * positive number (gaps allowed, their call); the DB unique index prevents
  * a collision with another document of the same type.
  */
 export function DocumentNumberEditor({ doc }: { doc: InvoiceDocument }) {

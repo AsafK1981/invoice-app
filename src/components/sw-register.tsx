@@ -5,7 +5,7 @@ import { useEffect } from "react";
 /**
  * Registers the service worker (public/sw.js) once the page has loaded, which
  * is what makes the app an installable PWA (Add to Home Screen / Google Play
- * TWA). The SW itself is deliberately conservative — it never caches app HTML
+ * TWA). The SW itself is deliberately conservative; it never caches app HTML
  * or JS, so registering it can't cause stale code to be served.
  */
 export function SwRegister() {

@@ -64,7 +64,7 @@ export async function GET(
   // Strip internal/tracking columns before returning to a public (auth-less)
   // viewer. The recipient of a shared invoice has no business seeing the
   // sender's read-receipt tracking or private payment reference. Keep
-  // allocation_number — it's legally required to appear on the invoice.
+  // allocation_number: it's legally required to appear on the invoice.
   const doc = { ...docRes.data } as Record<string, unknown>;
   for (const f of [
     "email_opened_at",
@@ -83,11 +83,11 @@ export async function GET(
       .select("*")
       .eq("document_id", id)
       .order("sort_order"),
-    // Explicit allowlist — never select("*") on a publicly-visible
+    // Explicit allowlist: never select("*") on a publicly-visible
     // resource. Any future column added to businesses (tax_authority
     // API keys, internal flags, etc.) won't accidentally leak via
     // every shared document URL. user_id and created_at intentionally
-    // dropped — receivers of an invoice don't need them.
+    // dropped: receivers of an invoice don't need them.
     admin
       .from("businesses")
       .select(

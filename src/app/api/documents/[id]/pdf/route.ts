@@ -6,7 +6,7 @@ import { CANONICAL_ORIGIN } from "@/lib/public-url";
 import { DOCUMENT_TYPE_LABELS } from "@/lib/types";
 import { clientIp } from "@/lib/rate-limit";
 
-// Headless-Chrome cold start + a full page render can take a while — give the
+// Headless-Chrome cold start + a full page render can take a while; give the
 // serverless function real headroom so a slow cold boot doesn't 504.
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -17,7 +17,7 @@ const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // PDF generation spins up headless Chrome (~10s, memory-heavy), so it's far
-// more expensive than a plain read. Keep the per-IP budget tight — a handful
+// more expensive than a plain read. Keep the per-IP budget tight; a handful
 // per minute is plenty for a human downloading their own documents, while a
 // scripted abuser can't pin our function memory / rack up compute. Mirrors the
 // inline per-IP limiter the other public routes use (public-document/approve).
@@ -63,7 +63,7 @@ export async function GET(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  // Rate-limit before doing any work — PDF generation is the most expensive
+  // Rate-limit before doing any work: PDF generation is the most expensive
   // public operation we expose, so cap it per-IP up front.
   const ip = clientIp(req);
   const rl = checkRateLimit(ip);
@@ -83,7 +83,7 @@ export async function GET(
 
   // Cheap existence pre-check BEFORE launching Chrome. Any random UUID would
   // otherwise cold-boot headless Chrome (~10s, memory-heavy) just to render a
-  // 404 /view page — a trivial DoS lever. A service-role SELECT id short-
+  // 404 /view page, a trivial DoS lever. A service-role SELECT id short-
   // circuits nonexistent ids in milliseconds. No new data exposure: the /view
   // page this PDF renders is already public by UUID.
   const admin = createClient(supabaseUrl, serviceKey, {
@@ -101,7 +101,7 @@ export async function GET(
   // Navigate Chrome to the app's own public /view page so the PDF reuses the
   // exact print CSS (RTL, print-color-adjust, page breaks, allocation number).
   // SSRF guard: on Vercel (production AND preview) always use the trusted
-  // canonical origin — NEVER a request Host/X-Forwarded-Host header, which is
+  // canonical origin, NEVER a request Host/X-Forwarded-Host header, which is
   // attacker-controllable and could point Chrome at an arbitrary host. Only
   // truly-local dev (no VERCEL env) falls back to the request origin. Combined
   // with the validated UUID, Chrome can only ever navigate to our own
@@ -117,7 +117,7 @@ export async function GET(
   // מקור/העתק passthrough: the caller decides which label the rendered PDF
   // should carry. Owner reprints request ?copy=1 (→ "העתק"); the customer's
   // download omits it (→ "מקור"). We only ever forward the boolean as an
-  // explicit ?copy=1 onto our own validated canonical /view URL — no other part
+  // explicit ?copy=1 onto our own validated canonical /view URL; no other part
   // of the request is trusted, so the SSRF guard above is unaffected.
   const wantCopy = new URL(req.url).searchParams.get("copy") === "1";
   const url = `${base}/view/${id}${wantCopy ? "?copy=1" : ""}`;
@@ -142,7 +142,7 @@ export async function GET(
     const page = await browser.newPage();
     await page.goto(url, { waitUntil: "networkidle0", timeout: 45_000 });
     // The /view page fetches the document client-side, so wait for the rendered
-    // document body before printing — otherwise the PDF captures the loader.
+    // document body before printing; otherwise the PDF captures the loader.
     await page.waitForSelector(".receipt-view", { timeout: 20_000 });
 
     const pdf = await page.pdf({
@@ -153,7 +153,7 @@ export async function GET(
       preferCSSPageSize: true,
     });
 
-    // הוראות ניהול ספרים סעיף 18ב — render-then-set ordering: the PDF above was
+    // הוראות ניהול ספרים סעיף 18ב, render-then-set ordering: the PDF above was
     // rendered from /view while original_issued_at was still NULL, so THIS first
     // download reads "מקור". Now stamp it (idempotent, only while NULL) so the
     // NEXT download reads "העתק". Best-effort: never fail an already-produced PDF.
@@ -180,7 +180,7 @@ export async function GET(
     });
   } catch (err) {
     // Log the full error server-side only. NEVER leak internal detail to the
-    // client — a past failure exposed the bundled chromium filesystem path.
+    // client, a past failure exposed the bundled chromium filesystem path.
     // The client-side caller falls back to window.print on any non-OK response.
     console.error("[pdf] generation failed", err);
     return NextResponse.json(

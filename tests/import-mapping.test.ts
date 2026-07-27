@@ -280,7 +280,7 @@ describe("analyzeRows (dry-run)", () => {
     expect(reasons["סכום לא תקין"]).toBe(1);
   });
 
-  it("skips ALL negative totals — credit-note support is out of scope, defers to mapDocumentRow's <= 0 gate", () => {
+  it("skips ALL negative totals: credit-note support is out of scope, defers to mapDocumentRow's <= 0 gate", () => {
     // Preview == reality: the real import loops skip total <= 0 for every type,
     // so the analyzer must too (previously it drifted and kept credit notes).
     const rows = [
@@ -309,7 +309,7 @@ describe("mapDocumentRow parity with the real import loops", () => {
 
   // A faithful re-implementation of the SOURCE-OF-TRUTH real-loop skip logic
   // (route.ts / csv-import-modal / bulk-import-zone), kept local so it can't be
-  // "helpfully" refactored to share mapDocumentRow — the whole point is to prove
+  // "helpfully" refactored to share mapDocumentRow; the whole point is to prove
   // the extracted mapper still makes the same decisions.
   function realLoopDecision(
     row: Record<string, string>,

@@ -7,14 +7,14 @@ import { LtrText } from "@/components/ui/ltr";
 import { getPublishedPosts } from "@/lib/blog-posts";
 
 export const metadata: Metadata = {
-  title: "מגזין — חשבונית סופר ידידותית",
+  title: "מגזין | חשבונית סופר ידידותית",
   description:
-    "מדריכים פשוטים לעצמאים בישראל: עוסק פטור ומורשה, מספר הקצאה, רפורמת חשבונית ישראל, והוצאת חשבוניות כחוק — בשפה ברורה, בלי ז׳רגון.",
+    "מדריכים פשוטים לעצמאים בישראל: עוסק פטור ומורשה, מספר הקצאה, רפורמת חשבונית ישראל, והוצאת חשבוניות כחוק, בשפה ברורה, בלי ז׳רגון.",
   alternates: { canonical: "/blog" },
 };
 
 /**
- * /blog — magazine index. Lists ONLY published posts (published: true),
+ * /blog, magazine index. Lists ONLY published posts (published: true),
  * newest first. Draft posts (published: false) are intentionally omitted
  * here; they stay reachable by direct URL for review. See src/lib/blog-posts.ts.
  */
@@ -47,7 +47,7 @@ export default function BlogIndexPage() {
             <h1 className="v2-doc-title v2-gold">מדריכים לעצמאים</h1>
             <p className="v2-doc-lead">
               כל מה שעוסק פטור ומורשה צריך לדעת על חשבוניות, מספר הקצאה ורפורמת
-              חשבונית ישראל — בשפה פשוטה, בלי ז׳רגון ובלי טפסים מפחידים.
+              חשבונית ישראל, בשפה פשוטה, בלי ז׳רגון ובלי טפסים מפחידים.
             </p>
           </div>
 

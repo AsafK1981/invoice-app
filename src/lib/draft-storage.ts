@@ -25,7 +25,7 @@ export interface EditorDraft {
    *  backward compatibility with drafts saved before the feature existed. */
   roundTotal?: boolean;
   items: DraftItem[];
-  // הנחה / ניכוי מס במקור / פירוט אמצעי תשלום — all optional (backward compatible
+  // הנחה / ניכוי מס במקור / פירוט אמצעי תשלום, all optional (backward compatible
   // with drafts saved before these features). Raw editor inputs are stored so a
   // resumed draft round-trips exactly to the same UI state.
   showDiscount?: boolean;
@@ -56,7 +56,7 @@ export function saveDraft(documentType: DocumentType, draft: EditorDraft): void 
     const stored: StoredDraft = { draft, savedAt: Date.now() };
     localStorage.setItem(key(documentType), JSON.stringify(stored));
   } catch {
-    // storage full / private mode — ignore silently
+    // storage full / private mode, ignore silently
   }
 }
 

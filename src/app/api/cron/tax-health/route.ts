@@ -12,7 +12,7 @@ import { cronAuthError, cronAdminClient } from "@/lib/cron";
  * null on success. So a single query over that column tells us whether
  * any connected business has hit a problem. If so, we surface it in
  * Sentry (the user already has Sentry alerts wired) so the first failed
- * allocation gets caught early — even when no dev session is running.
+ * allocation gets caught early; even when no dev session is running.
  *
  * Provisional-config note: the software number is currently Asaf's
  * business number (049040686) rather than a real software-registry

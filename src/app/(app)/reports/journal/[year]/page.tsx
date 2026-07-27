@@ -146,9 +146,9 @@ export default function YearJournalPage({ params }: { params: Promise<{ year: st
           </h1>
           <p className="text-stone-700 mt-1">שנת מס {year}</p>
           <div className="mt-4 text-sm text-stone-700 space-y-0.5">
-            <p className="font-semibold text-stone-900">{business.name || "—"}</p>
+            <p className="font-semibold text-stone-900">{business.name || "-"}</p>
             <p>
-              {BUSINESS_TYPE_LABELS[business.businessType]} · ע.מ {business.taxId || "—"}
+              {BUSINESS_TYPE_LABELS[business.businessType]} · ע.מ {business.taxId || "-"}
             </p>
             {business.address && <p>{business.address}</p>}
           </div>
@@ -227,7 +227,7 @@ export default function YearJournalPage({ params }: { params: Promise<{ year: st
                     <td className="px-3 py-1.5 border border-stone-200">{formatDate(e.date)}</td>
                     <td className="px-3 py-1.5 border border-stone-200">{e.supplier}</td>
                     <td className="px-3 py-1.5 border border-stone-200">{e.category}</td>
-                    <td className="px-3 py-1.5 border border-stone-200 text-stone-600">{e.description || "—"}</td>
+                    <td className="px-3 py-1.5 border border-stone-200 text-stone-600">{e.description || "-"}</td>
                     <td className="px-3 py-1.5 border border-stone-200 text-left font-mono">{formatCurrency(e.vatAmount || 0)}</td>
                     <td className="px-3 py-1.5 border border-stone-200 text-left font-mono font-semibold">{formatCurrency(e.amount)}</td>
                   </tr>

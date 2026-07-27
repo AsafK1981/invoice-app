@@ -13,7 +13,7 @@ export interface SendReceiptEmailArgs {
   /**
    * "initial" (default) sends the standard "מצורף מסמך…" body.
    * "reminder" sends a softer follow-up phrasing referencing how long
-   * ago it went out — used when chasing a stale quote/invoice.
+   * ago it went out, used when chasing a stale quote/invoice.
    */
   kind?: "initial" | "reminder";
   /** Only used when kind = "reminder". Drives the "ששלחנו לפני N ימים" line. */

@@ -16,7 +16,7 @@ type PrefillFromScan = {
   amount?: number;
   vatAmount?: number;
   description?: string;
-  /** Set by the scan flow — the uploaded receipt's storage path. The form
+  /** Set by the scan flow: the uploaded receipt's storage path. The form
    *  carries it through to the save call without exposing it in the UI. */
   receiptPath?: string;
 };
@@ -135,7 +135,7 @@ export function ExpenseFormModal({ open, onClose, expense, prefill }: Props) {
         expense
           ? "עדכן את פרטי ההוצאה"
           : prefill
-            ? "מילאתי לפי המסמך — בדוק ושמור"
+            ? "מילאתי לפי המסמך, בדוק ושמור"
             : "תיעוד הוצאה עסקית"
       }
       icon={Wallet}

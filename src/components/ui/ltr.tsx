@@ -11,21 +11,21 @@ import type { ReactNode } from "react";
  * punctuation resolves against the paragraph direction instead.
  *
  * Two entry points:
- *   • `<Ltr>` — for JSX you are AUTHORING. You know where the Latin is, so
+ *   • `<Ltr>`: for JSX you are AUTHORING. You know where the Latin is, so
  *     wrap it by hand: `נסה את <Ltr>Apple Pay</Ltr> שלנו`.
- *   • `<LtrText>` — for DATA strings you are RENDERING (e.g. the `verdict` /
+ *   • `<LtrText>`: for DATA strings you are RENDERING (e.g. the `verdict` /
  *     `tagline` fields in `src/lib/comparison-data.ts`), where the Latin runs
  *     are not known at author time and must be detected.
  *
  * Deliberately NO `display:inline-block` on the span. `dir` alone (plus the
  * `unicode-bidi: isolate` base rule in globals.css) already gives full bidi
  * isolation, while `inline-block` would make the run an atomic box that can
- * never wrap — a multi-word run like "Apple Pay Business" would then be
+ * never wrap; a multi-word run like "Apple Pay Business" would then be
  * pushed to the next line whole, or overflow a narrow mobile column.
  */
 
 /** A Latin token: starts with a letter, may carry digits, may contain inner
- *  joiners (`-'&+./`), and ALWAYS ends on an alphanumeric — so trailing
+ *  joiners (`-'&+./`), and ALWAYS ends on an alphanumeric, so trailing
  *  punctuation ("Invoice4U.", "Bit,") stays outside the run. */
 const TOKEN = String.raw`[A-Za-z][A-Za-z0-9]*(?:[-'&+./][A-Za-z0-9]+)*`;
 /** Consecutive tokens joined by a single space are ONE run ("Apple Pay"). */
@@ -47,7 +47,7 @@ export function splitLatinRuns(text: string): LatinSegment[] {
   const out: LatinSegment[] = [];
   if (!text) return out;
 
-  // Fresh regex per call — a module-level /g regex would carry `lastIndex`
+  // Fresh regex per call; a module-level /g regex would carry `lastIndex`
   // across calls and silently skip matches. `exec` in a loop rather than
   // `matchAll`, which needs a downlevel iteration helper at target ES2017.
   const re = new RegExp(LATIN_RUN_SOURCE, "g");

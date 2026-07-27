@@ -1,5 +1,5 @@
 /**
- * Security-event emitter — sends typed events to Sentry with tags that
+ * Security-event emitter, sends typed events to Sentry with tags that
  * the Sentry dashboard can fan out into alerts (email / Slack).
  *
  * Info-security appendix §20 requires real-time alerting on attack
@@ -36,7 +36,7 @@ export interface SecurityEvent {
   ip?: string;
   userId?: string;
   businessId?: string;
-  /** Free-form details — kept short, must NOT contain tokens/passwords. */
+  /** Free-form details, kept short, must NOT contain tokens/passwords. */
   message: string;
   /** Severity hint to Sentry. "error" pages; "warning" emails on threshold. */
   severity?: "error" | "warning" | "info";
@@ -61,7 +61,7 @@ export function emitSecurityEvent(ev: SecurityEvent): void {
       Sentry.captureMessage(`security:${ev.kind} ${ev.message}`, severity);
     });
   } catch {
-    // Sentry failures must never crash the request — security logging
+    // Sentry failures must never crash the request; security logging
     // is best-effort.
   }
   // Always mirror to console so it shows up in Vercel logs (which we
@@ -72,7 +72,7 @@ export function emitSecurityEvent(ev: SecurityEvent): void {
   );
 
   // Direct ingest to Axiom (free; doesn't require Vercel Pro Log
-  // Drains). Fire-and-forget — never blocks the request.
+  // Drains). Fire-and-forget, never blocks the request.
   logToAxiom({
     source: "security-events",
     severity,

@@ -24,7 +24,7 @@ export interface AxiomEvent {
 
 /**
  * Fire-and-forget log. Never throws, never rejects, returns
- * immediately — the POST runs in the background. Caller does not
+ * immediately; the POST runs in the background. Caller does not
  * await; logging failure must never affect the user request.
  */
 export function logToAxiom(event: AxiomEvent): void {
@@ -32,7 +32,7 @@ export function logToAxiom(event: AxiomEvent): void {
 
   const payload = [{ _time: new Date().toISOString(), ...event }];
 
-  // Fire and forget — we use void on the promise so the linter doesn't
+  // Fire and forget; we use void on the promise so the linter doesn't
   // flag the floating call.
   void fetch(`${AXIOM_BASE}/v1/datasets/${AXIOM_DATASET}/ingest`, {
     method: "POST",
@@ -45,7 +45,7 @@ export function logToAxiom(event: AxiomEvent): void {
     // handler returns, so we keep this very short and accept dropped
     // events under high load.
   }).catch(() => {
-    // Silently swallow — Sentry already captures errors at a higher
+    // Silently swallow; Sentry already captures errors at a higher
     // level; if Axiom is down we don't want to pollute Sentry too.
   });
 }

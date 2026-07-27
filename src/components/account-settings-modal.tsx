@@ -214,7 +214,7 @@ export function AccountSettingsModal({ open, onClose }: Props) {
             <h3 className="font-semibold text-stone-900">ייצוא הנתונים שלי</h3>
           </div>
           <p className="text-sm text-stone-700 mb-3 leading-relaxed">
-            הורד קובץ JSON עם כל הנתונים שלך — עסקים, לקוחות, מוצרים, מסמכים,
+            הורד קובץ JSON עם כל הנתונים שלך: עסקים, לקוחות, מוצרים, מסמכים,
             פרטי הוצאות, יומן פעילות. מתאים לגיבוי או למעבר לשירות אחר.
           </p>
           <button

@@ -79,7 +79,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
         <div className="flex items-center gap-2 flex-wrap">
           <Link
             href={`/clients/${client.id}/statement`}
-            title="כרטסת לקוח עם כל החשבוניות והיתרה — מסמך מעוצב להדפסה / שמירה כ-PDF"
+            title="כרטסת לקוח עם כל החשבוניות והיתרה: מסמך מעוצב להדפסה / שמירה כ-PDF"
             className="inline-flex items-center gap-2 bg-white border border-emerald-200 text-stone-800 px-4 py-2 rounded-xl text-sm font-semibold hover:bg-emerald-50"
           >
             <BookOpen className="w-4 h-4 text-emerald-600" />
@@ -179,7 +179,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
             <div className="min-w-0">
               <p className="text-xs text-stone-600">פעילות אחרונה</p>
               <p className="text-sm font-bold text-stone-900">
-                {lastDocDate ? formatDate(lastDocDate) : "—"}
+                {lastDocDate ? formatDate(lastDocDate) : "-"}
               </p>
             </div>
           </div>

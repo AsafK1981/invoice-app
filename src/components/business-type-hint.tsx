@@ -14,7 +14,7 @@ interface Props {
 /**
  * Contextual help line shown below the business-type picker (in
  * onboarding + business-form-modal). The exempt option needs explicit
- * mention of the annual turnover ceiling — new users picking blindly
+ * mention of the annual turnover ceiling; new users picking blindly
  * was the #1 source of "wait, I should have been authorized" support
  * tickets. Authorized + company show what they imply tax-wise.
  */
@@ -26,7 +26,7 @@ export function BusinessTypeHint({ type }: Props) {
     return (
       <p className="text-xs text-stone-600 mt-1.5 leading-relaxed">
         מחזור עד <strong dir="ltr" className="inline-block">{formatCurrency(ceiling)}</strong> לשנה
-        ({year}), פטור מגביית מע״מ. מעל הסף — חובת מעבר לעוסק מורשה.
+        ({year}), פטור מגביית מע״מ. מעל הסף: חובת מעבר לעוסק מורשה.
       </p>
     );
   }

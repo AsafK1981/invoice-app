@@ -36,7 +36,7 @@ export function OnboardingChecklist({ business, clients, products, documents }: 
       id: "business",
       done: Boolean(business.name && business.taxId && business.address),
       label: "פרטי העסק",
-      desc: "שם, ח.פ וכתובת — כך שיופיעו על כל מסמך",
+      desc: "שם, ח.פ וכתובת, כך שיופיעו על כל מסמך",
       cta: "לעמוד הגדרות",
       href: "/settings",
     },
@@ -103,7 +103,7 @@ export function OnboardingChecklist({ business, clients, products, documents }: 
         </div>
         <div>
           <h2 className="font-bold text-stone-900">
-            {completedCount === 0 ? "ברוך הבא! בוא נתחיל" : `כמעט שם — ${completedCount} מתוך ${steps.length}`}
+            {completedCount === 0 ? "ברוך הבא! בוא נתחיל" : `כמעט שם: ${completedCount} מתוך ${steps.length}`}
           </h2>
           <p className="text-sm text-stone-700 mt-0.5">
             {completedCount === 0
@@ -115,7 +115,7 @@ export function OnboardingChecklist({ business, clients, products, documents }: 
         </div>
       </div>
 
-      {/* "Migrating from another tool?" hint — shows only while the user
+      {/* "Migrating from another tool?" hint: shows only while the user
           hasn't ticked off any steps yet (i.e. fresh signup). */}
       {completedCount === 0 && (
         <Link
@@ -131,7 +131,7 @@ export function OnboardingChecklist({ business, clients, products, documents }: 
             </p>
             <p className="text-xs text-stone-700 mt-0.5">
               <Ltr>Invoice4U</Ltr> · חשבונית ירוקה · <Ltr>iCount</Ltr> · ריווחית ·{" "}
-              <Ltr>Morning</Ltr> · חשבשבת — מדריך מעבר לכולם
+              <Ltr>Morning</Ltr> · חשבשבת: מדריך מעבר לכולם
             </p>
           </div>
           <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700">

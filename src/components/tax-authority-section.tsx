@@ -18,20 +18,20 @@ import { canIssueTaxInvoicesByType } from "@/lib/vat";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
 /**
- * Settings card for "חשבונית ישראל" — Israel Tax Authority allocation
+ * Settings card for "חשבונית ישראל", Israel Tax Authority allocation
  * number API. Shows one of three states:
  *
- *   1. Vendor not configured — app owner hasn't registered with gov.il
+ *   1. Vendor not configured: app owner hasn't registered with gov.il
  *      yet. No connect button is shown; the section just explains that
  *      this is coming soon.
- *   2. Exempt dealer — business_type is "exempt". Section is hidden
+ *   2. Exempt dealer: business_type is "exempt". Section is hidden
  *      (allocation numbers don't apply to עוסק פטור).
  *   3. Vendor configured + VAT-charging business (authorized / company)
- *      + not connected — shows a "Connect" button that starts OAuth.
- *   4. Connected — shows status (last used, expires when, environment)
+ *      + not connected: shows a "Connect" button that starts OAuth.
+ *   4. Connected: shows status (last used, expires when, environment)
  *      and a Disconnect button.
  *
- * Visual direction: "quietly premium institutional" — a refined nod to
+ * Visual direction: "quietly premium institutional", a refined nod to
  * an official, secure government document (medallion icon with a halo,
  * an eyebrow trust label, a connected gradient stepper, and a faint
  * security-pattern dot texture) while staying cohesive with the app's
@@ -57,11 +57,11 @@ interface Status {
 
 const CONNECT_STEPS = [
   "לחיצה על הכפתור תעביר אותך לאתר רשות המסים. התחבר עם פרטי השירותים הדיגיטליים שלך (ת.ז + קוד משתמש קבוע) ואשר את הגישה.",
-  "תוחזר לכאן אוטומטית — והעסק שלך מחובר. אין מה למלא ידנית.",
+  "תוחזר לכאן אוטומטית, והעסק שלך מחובר. אין מה למלא ידנית.",
   "מכאן, כל חשבונית מס מעל הסף תקבל מספר הקצאה מרשות המסים בלחיצה אחת.",
 ];
 
-// Faint banknote-style dot guilloché — signals "official / secure" without shouting.
+// Faint banknote-style dot guilloché; signals "official / secure" without shouting.
 const SECURITY_TEXTURE: React.CSSProperties = {
   backgroundImage:
     "radial-gradient(circle at 1px 1px, rgba(79,70,229,0.07) 1px, transparent 0)",
@@ -162,12 +162,12 @@ export function TaxAuthoritySection() {
     );
   }
 
-  // Hide entirely for exempt businesses — allocation numbers don't apply.
+  // Hide entirely for exempt businesses; allocation numbers don't apply.
   if (status?.businessType === "exempt") return null;
 
   return (
     <div className="card-soft relative overflow-hidden p-6 space-y-5">
-      {/* Atmospheric corner glow — adds depth to an otherwise flat white card. */}
+      {/* Atmospheric corner glow: adds depth to an otherwise flat white card. */}
       <div
         aria-hidden
         className="pointer-events-none absolute -top-20 -left-16 w-56 h-56 rounded-full bg-indigo-300/20 blur-3xl"
@@ -193,10 +193,10 @@ export function TaxAuthoritySection() {
             </span>
           </div>
           <h2 className="font-extrabold text-stone-900 text-[15px] leading-tight">
-            חשבונית ישראל — מספרי הקצאה
+            חשבונית ישראל: מספרי הקצאה
           </h2>
           <p className="text-sm text-stone-600 mt-1.5 leading-relaxed">
-            חיבור פעם אחת — וכל חשבונית מס מעל הסף מקבלת מספר הקצאה רשמי אוטומטית.
+            חיבור פעם אחת, וכל חשבונית מס מעל הסף מקבלת מספר הקצאה רשמי אוטומטית.
           </p>
           <span className="inline-flex items-center gap-1 mt-2.5 px-2.5 py-1 rounded-full bg-stone-100/80 border border-stone-200/70 text-[11px] font-semibold text-stone-600">
             סף נוכחי
@@ -229,7 +229,7 @@ export function TaxAuthoritySection() {
           <div className="flex items-start gap-2">
             <AlertTriangle className="w-4 h-4 text-amber-700 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="font-semibold text-stone-900">בקרוב — האפליקציה בתהליך רישום ברשות המסים</p>
+              <p className="font-semibold text-stone-900">בקרוב: האפליקציה בתהליך רישום ברשות המסים</p>
               <p className="text-stone-700 mt-1">
                 התשתית מוכנה. ברגע שהרישום של MySuperFriendlyInvoiceApp כבית-תוכנה יושלם, יופיע
                 כפתור "חיבור" כאן.
@@ -249,7 +249,7 @@ export function TaxAuthoritySection() {
         canIssueTaxInvoicesByType(status?.businessType) &&
         !status?.connected && (
         <div className="relative space-y-4">
-          {/* Connect walkthrough — a connected gradient stepper over a faint security texture */}
+          {/* Connect walkthrough: a connected gradient stepper over a faint security texture */}
           <div className="relative overflow-hidden rounded-2xl border border-indigo-100/80 bg-gradient-to-b from-indigo-50/60 to-white p-5">
             <div aria-hidden className="absolute inset-0 opacity-60" style={SECURITY_TEXTURE} />
             <div className="relative">

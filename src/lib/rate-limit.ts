@@ -3,7 +3,7 @@
  *
  * In-memory token bucket. Each Vercel function instance has its own
  * map, which means an attacker spread across many cold starts could
- * still exceed the per-instance budget — but for the realistic abuse
+ * still exceed the per-instance budget; but for the realistic abuse
  * cases (a single bad actor hammering one endpoint from one machine),
  * this is plenty as a first defense.
  *
@@ -65,7 +65,7 @@ export function checkRate({ key, max, windowMs }: RateCheck): RateResult {
 /**
  * Best-effort client-IP extraction from Vercel headers.
  *
- * SECURITY: never trust the *leftmost* x-forwarded-for entry — it is
+ * SECURITY: never trust the *leftmost* x-forwarded-for entry; it is
  * attacker-supplied. A client can send any `X-Forwarded-For` header it
  * likes, and Vercel *appends* the real connecting IP to the RIGHT of
  * whatever the client sent. So the leftmost value is spoofable and would

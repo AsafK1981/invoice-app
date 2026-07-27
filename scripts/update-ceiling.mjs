@@ -6,7 +6,7 @@
 //   node scripts/update-ceiling.mjs 2027 125000
 //
 // Inserts/updates the YEAR:AMOUNT pair in EXEMPT_CEILING_BY_YEAR
-// inside src/lib/tax-thresholds.ts. Doesn't commit — review the diff,
+// inside src/lib/tax-thresholds.ts. Doesn't commit; review the diff,
 // then `git add src/lib/tax-thresholds.ts && git commit -m "ceiling 2027: ₪125,000"`.
 
 import { readFileSync, writeFileSync } from "node:fs";
@@ -40,7 +40,7 @@ if (replaceRe.test(source)) {
   const insertionMarker = /export const EXEMPT_CEILING_BY_YEAR[\s\S]*?\{([\s\S]*?)\};/;
   const match = source.match(insertionMarker);
   if (!match) {
-    console.error("Couldn't find EXEMPT_CEILING_BY_YEAR block — manual edit required");
+    console.error("Couldn't find EXEMPT_CEILING_BY_YEAR block: manual edit required");
     process.exit(2);
   }
   const inner = match[1].trimEnd();

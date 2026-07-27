@@ -210,7 +210,7 @@ function WarningStage({
       <div className="rounded-2xl bg-rose-50 border-2 border-rose-200 p-4 flex items-start gap-3">
         <AlertTriangle className="w-5 h-5 text-rose-700 flex-shrink-0 mt-0.5" />
         <div className="text-sm text-rose-900 leading-relaxed">
-          <strong className="block mb-1">פעולה הרסנית — לא ניתן לשחזר.</strong>
+          <strong className="block mb-1">פעולה הרסנית: לא ניתן לשחזר.</strong>
           ימחקו לצמיתות:
           <ul className="list-disc mr-5 mt-1 space-y-0.5 text-xs">
             <li>{counts.documents} מסמכים + פירוטים + קבצים מצורפים</li>
@@ -219,9 +219,9 @@ function WarningStage({
             <li>{counts.products} מוצרים/שירותים</li>
             <li>כל התזכורות שנשלחו וההתראות במערכת</li>
             <li>תבניות חיובים חוזרים</li>
-            <li>מונים — חשבונית חדשה תתחיל מחדש מ-1001/201</li>
+            <li>מונים: חשבונית חדשה תתחיל מחדש מ-1001/201</li>
           </ul>
-          <p className="mt-2 text-xs">פרטי העסק, חיבור לרשות המסים, ויומן הביקורת — נשארים.</p>
+          <p className="mt-2 text-xs">פרטי העסק, חיבור לרשות המסים, ויומן הביקורת נשארים.</p>
         </div>
       </div>
 
@@ -229,7 +229,7 @@ function WarningStage({
         <div className="flex items-start gap-3">
           <Download className="w-5 h-5 text-emerald-700 flex-shrink-0 mt-0.5" />
           <div className="flex-1">
-            <h3 className="font-bold text-emerald-900 text-sm">קודם — הורד גיבוי</h3>
+            <h3 className="font-bold text-emerald-900 text-sm">קודם: הורד גיבוי</h3>
             <p className="text-xs text-emerald-900 mt-1">
               קובץ ZIP אחד עם כל המסמכים, הלקוחות, המוצרים וההוצאות כ-CSV. שמור אותו במקום בטוח.
             </p>
@@ -303,7 +303,7 @@ function ConfirmStage({
     <div className="space-y-5">
       <div className="rounded-2xl bg-rose-50 border-2 border-rose-300 p-4">
         <p className="text-sm text-rose-900 leading-relaxed">
-          כדי לאשר את המחיקה — הקלד את שם העסק שלך בדיוק כפי שהוא מופיע למטה:
+          כדי לאשר את המחיקה, הקלד את שם העסק שלך בדיוק כפי שהוא מופיע למטה:
         </p>
         <p
           className="mt-3 px-3 py-2 rounded-lg bg-white border border-rose-200 text-sm font-mono text-stone-900 select-text"
@@ -412,7 +412,7 @@ function DoneStage({
             </p>
           ) : (
             <p className="text-amber-900">
-              <strong>חלק נמחק, חלק נכשל.</strong> פירוט למטה — חלק מהנתונים עדיין כאן.
+              <strong>חלק נמחק, חלק נכשל.</strong> פירוט למטה. חלק מהנתונים עדיין כאן.
             </p>
           )}
         </div>

@@ -50,7 +50,7 @@ Field rules:
 - vendor: Who got paid. Business/supplier name if printed; if WhatsApp/SMS/Bit-style, use the recipient's name (e.g. "דניאל כהן" or "מוסך זהב"). Hebrew if originally Hebrew, else English.
 - amount: TOTAL amount paid in NIS (₪). Include VAT. Just the number, no currency symbol. If currency isn't shown but obviously Israeli context, assume NIS.
 - vatAmount: Only if the source EXPLICITLY shows a VAT (מע"מ / מעמ / VAT) line. Otherwise null.
-- date: Date of the expense / payment in YYYY-MM-DD format. Israeli dates are usually DD/MM/YYYY — convert. If unclear, use today's date.
+- date: Date of the expense / payment in YYYY-MM-DD format. Israeli dates are usually DD/MM/YYYY; convert. If unclear, use today's date.
 - category: Best guess from this exact Hebrew list:
   "תוכנה" | "ציוד" | "שיווק" | "משרד" | "שירותים מקצועיים" | "נסיעות" | "אחר"
 - description: One-line Hebrew description of WHAT the expense was for (e.g. "ארוחת עסקים", "דלק", "מנוי חודשי OpenAI", "תיקון לרכב"). If you can't tell the purpose, describe the source (e.g. "תשלום בביט", "העברה בנקאית").
@@ -103,16 +103,16 @@ try {
   process.exit(2);
 }
 
-// For a 1x1 blank PNG the model SHOULD return cannot_parse — anything else
+// For a 1x1 blank PNG the model SHOULD return cannot_parse; anything else
 // would mean the prompt isn't being followed.
 if (!parsed.error && !parsed.vendor) {
-  console.error(`✗ Model didn't return either an error or a vendor — prompt broken.`);
+  console.error(`✗ Model didn't return either an error or a vendor: prompt broken.`);
   console.error(JSON.stringify(parsed, null, 2));
   process.exit(3);
 }
 console.log(`✓ Prompt is being followed (got ${parsed.error ? "expected error" : "vendor field"})`);
 
-// Step 2: hit the production endpoint without auth — should get 401.
+// Step 2: hit the production endpoint without auth; should get 401.
 console.log("[2/3] testing /api/expenses/scan auth gate...");
 const probe = await fetch("https://mysuperfriendlyinvoiceapp.vercel.app/api/expenses/scan", {
   method: "POST",
@@ -120,7 +120,7 @@ const probe = await fetch("https://mysuperfriendlyinvoiceapp.vercel.app/api/expe
   body: JSON.stringify({ image: `data:image/png;base64,${TINY_PNG_B64}` }),
 });
 if (probe.status !== 401) {
-  console.error(`✗ Auth gate broken — expected 401, got ${probe.status}`);
+  console.error(`✗ Auth gate broken: expected 401, got ${probe.status}`);
   process.exit(4);
 }
 console.log(`✓ /api/expenses/scan rejects unauth'd requests with 401`);
@@ -133,5 +133,5 @@ if (probe.headers.get("x-vercel-id")) {
 
 console.log("");
 console.log("================================================");
-console.log("✓ ALL CHECKS PASSED — receipt OCR is ready to use");
+console.log("✓ ALL CHECKS PASSED: receipt OCR is ready to use");
 console.log("================================================");

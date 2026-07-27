@@ -48,7 +48,7 @@ for (const { key, value } of vars) {
         body: JSON.stringify({
           key,
           value,
-          // Encrypt all of them — safe default for an env-setting tool. The
+          // Encrypt all of them, safe default for an env-setting tool. The
         // software number is public-registry data, but encrypting it costs
         // nothing and keeps the whole tax-authority set consistent.
         type: "encrypted",
@@ -63,6 +63,6 @@ for (const { key, value } of vars) {
       console.log(`✓ ${key} set (${data.type ?? "ok"})`);
     }
   } catch (e) {
-    console.error(`✗ ${key}: network error — ${e.message}`);
+    console.error(`✗ ${key}: network error: ${e.message}`);
   }
 }

@@ -11,7 +11,7 @@ const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD!;
 
 // Strict-and-narrow email regex. RFC technically allows `_` and `%` in
 // local-parts, but they're SQL wildcards in the downstream ilike/like
-// path — even if we use eq() everywhere, refusing them at the boundary
+// path; even if we use eq() everywhere, refusing them at the boundary
 // makes a regression cheap to spot. Real users practically never use
 // either in their addresses.
 const EMAIL_RE = /^[a-zA-Z0-9.+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
       </p>
     </div>
     <p style="font-size:12px;color:#a8a29e;text-align:center;">
-      אם לא ביקשתם קישור — אפשר להתעלם מהמייל.
+      אם לא ביקשתם קישור, אפשר להתעלם מהמייל.
     </p>
   </div>
 </body>
@@ -102,7 +102,7 @@ export async function POST(req: NextRequest) {
 לחצו על הקישור הבא (תקף ל-24 שעות):
 ${link}
 
-אם לא ביקשתם — אפשר להתעלם.
+אם לא ביקשתם, אפשר להתעלם.
 `;
 
       try {
@@ -124,7 +124,7 @@ ${link}
           },
         });
       } catch (err) {
-        // Log but don't reveal failure — keeps email-existence
+        // Log but don't reveal failure; keeps email-existence
         // non-distinguishable across success/failure paths.
         console.error("portal request-link send failed", err);
       }

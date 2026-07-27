@@ -57,7 +57,7 @@ function getRangeStart(range: DateRange): string {
 }
 
 /**
- * Get the matching previous period — same length, immediately before the
+ * Get the matching previous period, same length, immediately before the
  * current one. Used to compute month-over-month / year-over-year deltas
  * on the dashboard cards.
  *   this_month       -> prev month
@@ -88,7 +88,7 @@ function getPreviousRange(range: DateRange): { start: string; end: string } | nu
 
 /**
  * Compute percentage delta between current and previous, treating each
- * gracefully — null when there's no previous data to compare against,
+ * gracefully: null when there's no previous data to compare against,
  * +∞ when going from zero to positive (rendered as "חדש" by the UI).
  */
 function calcDelta(curr: number, prev: number): { pct: number | null; mode: "up" | "down" | "flat" | "new" } {
@@ -170,7 +170,7 @@ export default function DashboardPage() {
       : null;
 
   // Build a `month=YYYY-MM` query suffix only when the dashboard is showing
-  // exactly one calendar month — for other ranges the documents-table month
+  // exactly one calendar month; for other ranges the documents-table month
   // filter wouldn't match, and we'd rather show "all months" than wrong months.
   const monthQs = (() => {
     if (range !== "this_month") return "";
@@ -187,7 +187,7 @@ export default function DashboardPage() {
       bgGradient: "from-emerald-50 to-teal-50",
       href: `/documents?status=paid${monthQs}`,
       delta: stats.hasPrev ? stats.incomeDelta : null,
-      /** Higher = better — for income, "up" is good (green) */
+      /** Higher = better: for income, "up" is good (green) */
       higherIsBetter: true,
     },
     {
@@ -198,13 +198,13 @@ export default function DashboardPage() {
       bgGradient: "from-rose-50 to-pink-50",
       href: "/expenses",
       delta: stats.hasPrev ? stats.expenseDelta : null,
-      /** Lower = better — for expenses, "down" is good (green) */
+      /** Lower = better: for expenses, "down" is good (green) */
       higherIsBetter: false,
     },
     {
       label: "רווח",
       value: formatCurrency(stats.profit),
-      sub: stats.income > 0 ? `${((stats.profit / stats.income) * 100).toFixed(0)}% מההכנסות` : "—",
+      sub: stats.income > 0 ? `${((stats.profit / stats.income) * 100).toFixed(0)}% מההכנסות` : "-",
       icon: PiggyBank,
       bgGradient: "from-orange-50 to-amber-50",
       href: "/reports",
@@ -309,7 +309,7 @@ export default function DashboardPage() {
 
       {ready && documents.length > 0 && <DashboardInsights />}
 
-      {/* Empty-state hero — only when the user has zero docs at all
+      {/* Empty-state hero: only when the user has zero docs at all
           (across all time). Replaces the dense KPI grid with an obvious
           "create your first" CTA. Auto-disappears the moment they
           create their first doc. */}
@@ -320,7 +320,7 @@ export default function DashboardPage() {
           </div>
           <h2 className="text-xl font-bold text-stone-900 mb-2">בואו נתחיל</h2>
           <p className="text-sm text-stone-700 mb-5 max-w-md mx-auto leading-relaxed">
-            עדיין אין לך מסמכים. הפק חשבון עסקה, הצעת מחיר או קבלה ראשונה — זה לוקח דקה. הסטטיסטיקות יופיעו כאן ברגע שיהיה מה לסכם.
+            עדיין אין לך מסמכים. הפק חשבון עסקה, הצעת מחיר או קבלה ראשונה. זה לוקח דקה. הסטטיסטיקות יופיעו כאן ברגע שיהיה מה לסכם.
           </p>
           <Link
             href="/documents/new"
@@ -448,7 +448,7 @@ export default function DashboardPage() {
 
 /**
  * Small badge next to a KPI showing % change vs the previous period.
- * Color & icon flip based on `higherIsBetter` — for expenses, "down"
+ * Color & icon flip based on `higherIsBetter`, for expenses, "down"
  * is the good direction so it renders green even though the delta
  * itself is negative. The label is rendered as a tooltip so the
  * card stays uncluttered.
@@ -468,7 +468,7 @@ function DeltaBadge({
         className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-stone-500 bg-stone-100 px-1.5 py-0.5 rounded-md"
         title={`ללא שינוי לעומת ${prevLabel}`}
       >
-        — 0%
+        0%
       </span>
     );
   }

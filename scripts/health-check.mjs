@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /* eslint-disable no-console */
 /**
- * invoice-app twice-weekly health guardian (LOCAL — full access).
+ * invoice-app twice-weekly health guardian (LOCAL, full access).
  *
  * Runs the deterministic half of "check everything": live routes, security
  * headers, tax-authority liveness, Vercel deploy freshness, Supabase tax
@@ -30,7 +30,7 @@ const env = readFileSync(new URL(".env.local", ROOT), "utf8")
 
 const BASE = "https://mysuperfriendlyinvoiceapp.vercel.app";
 const PROJECT_ID = env.VERCEL_PROJECT_ID || "prj_TvmyEkfULUU4vcQSvEySbrEhuqGB";
-// Gaya push creds come from .env.local (gitignored) — never hardcode a secret.
+// Gaya push creds come from .env.local (gitignored); never hardcode a secret.
 const GAYA_PUSH_URL = env.GAYA_PUSH_URL;
 const GAYA_TOKEN = env.GAYA_PUSH_TOKEN;
 
@@ -78,13 +78,13 @@ async function checkHeaders() {
 async function checkTaxLive() {
   const res = await timed(() => fetch(BASE + "/api/tax-authority/connect", { method: "POST" }));
   if (res.status === 401) ok.push("tax-authority integration live (401 gate)");
-  else if (res.status === 503) fail.push("tax-authority integration DORMANT (503) — env vars dropped?");
+  else if (res.status === 503) fail.push("tax-authority integration DORMANT (503), env vars dropped?");
   else fail.push(`tax-authority/connect → ${res.status || res.error}`);
 }
 
 // 4. Latest production deploy READY and matches local master HEAD
 async function checkDeploy() {
-  if (!env.VERCEL_ACCESS_TOKEN) { warn.push("VERCEL_ACCESS_TOKEN missing — skipped deploy check"); return; }
+  if (!env.VERCEL_ACCESS_TOKEN) { warn.push("VERCEL_ACCESS_TOKEN missing, skipped deploy check"); return; }
   const res = await timed(() =>
     fetch(`https://api.vercel.com/v6/deployments?projectId=${PROJECT_ID}&target=production&limit=1`, {
       headers: { Authorization: `Bearer ${env.VERCEL_ACCESS_TOKEN}` },
@@ -101,14 +101,14 @@ async function checkDeploy() {
   try { localHead = execSync("git rev-parse HEAD", { cwd: ROOT }).toString().trim().slice(0, 7); } catch {}
   const deployedSha = (dep.meta?.githubCommitSha || "").slice(0, 7);
   if (localHead && deployedSha && localHead !== deployedSha) {
-    warn.push(`deploy at ${deployedSha} but local HEAD ${localHead} — unpushed work?`);
+    warn.push(`deploy at ${deployedSha} but local HEAD ${localHead}, unpushed work?`);
   }
 }
 
 // 5. Tax allocation failures in the DB
 async function checkTaxFailures() {
   if (!env.NEXT_PUBLIC_SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
-    warn.push("Supabase keys missing — skipped allocation-failure check");
+    warn.push("Supabase keys missing, skipped allocation-failure check");
     return;
   }
   const sb = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
@@ -123,7 +123,7 @@ async function checkTaxFailures() {
   else fail.push(`${failures.length} business(es) with failed allocation: ${failures.map((f) => f.last_error).join("; ")}`);
 }
 
-// 6. Git drift — uncommitted or unpushed
+// 6. Git drift: uncommitted or unpushed
 function checkGit() {
   try {
     const dirty = execSync("git status --porcelain", { cwd: ROOT }).toString().trim();
@@ -147,7 +147,7 @@ function checkDeps() {
     if (sev === 0) ok.push("no high/critical npm vulns");
     else fail.push(`${v.critical || 0} critical + ${v.high || 0} high npm vulns`);
   } catch (e) {
-    // npm audit exits non-zero when vulns exist — parse stdout from the error
+    // npm audit exits non-zero when vulns exist; parse stdout from the error
     try {
       const j = JSON.parse(e.stdout?.toString() || "{}");
       const v = j.metadata?.vulnerabilities || {};
@@ -171,11 +171,11 @@ async function main() {
 
   const status = fail.length ? "🔴" : warn.length ? "🟡" : "🟢";
   const lines = [
-    `${status} invoice-app health — ${fail.length} fail / ${warn.length} warn / ${ok.length} ok`,
+    `${status} invoice-app health: ${fail.length} fail / ${warn.length} warn / ${ok.length} ok`,
   ];
   if (fail.length) lines.push("✗ " + fail.join("\n✗ "));
   if (warn.length) lines.push("⚠ " + warn.join("\n⚠ "));
-  if (!fail.length && !warn.length) lines.push("הכל תקין — אתר חי, אינטגרציה דלוקה, אין כשלים, deploy מעודכן.");
+  if (!fail.length && !warn.length) lines.push("הכל תקין: אתר חי, אינטגרציה דלוקה, אין כשלים, deploy מעודכן.");
   const text = lines.join("\n");
 
   console.log(text);
@@ -186,7 +186,7 @@ async function main() {
   const noPush = process.argv.includes("--no-push");
   if (!noPush && !silentGreen) {
     if (!GAYA_PUSH_URL || !GAYA_TOKEN) {
-      console.error("GAYA_PUSH_URL / GAYA_PUSH_TOKEN missing in .env.local — skipping WhatsApp push");
+      console.error("GAYA_PUSH_URL / GAYA_PUSH_TOKEN missing in .env.local, skipping WhatsApp push");
       process.exit(fail.length ? 1 : 0);
     }
     try {

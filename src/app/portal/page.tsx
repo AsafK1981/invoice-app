@@ -11,7 +11,7 @@ function PortalLoginInner() {
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [err, setErr] = useState<string | null>(
-    errorParam === "expired" ? "הקישור פג תוקף — בקשו חדש" : null,
+    errorParam === "expired" ? "הקישור פג תוקף, בקשו חדש" : null,
   );
 
   async function handleSubmit(e: React.FormEvent) {

@@ -27,7 +27,7 @@ try {
   const info = await t.sendMail({
     from: `"MySuperFriendlyInvoiceApp test" <${user}>`,
     to: "asafkotlar@gmail.com",
-    subject: "SMTP test from local — " + new Date().toISOString(),
+    subject: "SMTP test from local at " + new Date().toISOString(),
     text: "If you got this, GMAIL_USER and GMAIL_APP_PASSWORD are valid. Check your spam folder if you see it there.",
   });
   console.log("✓ sent:", info.messageId);

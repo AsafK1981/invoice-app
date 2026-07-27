@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     // Only these come from the client. Everything shown in the email
     // (business name, amount, doc number, client name, logo) is derived
-    // from the DB below — never trusted from the body — so an authenticated
+    // from the DB below, never trusted from the body, so an authenticated
     // user can't send fabricated invoice content (phishing) through the
     // platform's shared Gmail identity.
     const { to, subject, documentId, kind, daysSinceSent } = body;
@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
       auth: { autoRefreshToken: false, persistSession: false },
     });
     // הוראות ניהול ספרים סעיף 18ב: a successful send is the first authoritative
-    // delivery of the מקור. Stamp original_issued_at once (idempotent — only
+    // delivery of the מקור. Stamp original_issued_at once (idempotent, only
     // while NULL) so every later render is העתק. Best-effort: a failure here must
     // NOT fail the (already-sent) email.
     const stampOriginalIssued = async () => {
@@ -110,7 +110,7 @@ export async function POST(req: NextRequest) {
 
     // Resolve the buyer's business/VAT number: the doc's stored client_tax_id
     // (snapshotted in the editor), falling back to the linked client's tax_id.
-    // A private customer (no number) is B2C — the allocation gate below doesn't
+    // A private customer (no number) is B2C; the allocation gate below doesn't
     // apply to them (they can't deduct input VAT).
     let customerTaxId = normalizeCustomerVatNumber(docRow.client_tax_id);
     if (!customerTaxId && docRow.client_id) {
@@ -122,7 +122,7 @@ export async function POST(req: NextRequest) {
       customerTaxId = normalizeCustomerVatNumber(clientRow?.tax_id);
     }
 
-    // Server-side allocation gate (defense in depth — the editor blocks this
+    // Server-side allocation gate (defense in depth, the editor blocks this
     // too, but a crafted request must not bypass it). A tax document from an
     // עוסק מורשה/חברה to a BUSINESS customer that is over the חשבונית ישראל
     // threshold may not be sent until it carries an allocation number. B2C
@@ -162,7 +162,7 @@ export async function POST(req: NextRequest) {
     const documentType = docRow.type as DocumentType | undefined;
     const docLabel = (documentType && DOCUMENT_TYPE_LABELS[documentType]) || "מסמך";
 
-    // Always use the canonical URL — never NEXT_PUBLIC_VERCEL_URL, which
+    // Always use the canonical URL: never NEXT_PUBLIC_VERCEL_URL, which
     // is the immutable per-deploy hash and will decay into stale-code
     // views minutes after the next push. The link is going into an email
     // that will sit in someone's inbox for weeks.
@@ -185,7 +185,7 @@ export async function POST(req: NextRequest) {
     const isReminder = kind === "reminder";
     const baseSubject = sanitizeEmailSubject(subject, `${businessName} - ${docLabel} #${receiptNumber}`);
     const emailSubject = isReminder ? `תזכורת: ${baseSubject}` : baseSubject;
-    // Tracking pixel — only when we have a documentId to attribute the
+    // Tracking pixel: only when we have a documentId to attribute the
     // open event to. Suffix `.gif` for mail clients that are picky about
     // extensionless image URLs.
     const trackingPixelUrl =
@@ -227,7 +227,7 @@ export async function POST(req: NextRequest) {
     const fromName = String(businessName || "").replace(/[",;<>\r\n]/g, " ").trim() || "Invoices";
 
     // Prefer Gmail SMTP when configured. If both Gmail creds are present and
-    // the send fails, surface the error directly — falling through to Resend
+    // the send fails, surface the error directly; falling through to Resend
     // hides the real cause from the user (and Resend's onboarding@resend.dev
     // sender can only deliver to the Resend account owner anyway, so it's not
     // a useful fallback for arbitrary recipients).
@@ -326,7 +326,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Resend fallback path — only if Gmail isn't configured at all.
+    // Resend fallback path: only if Gmail isn't configured at all.
     const { data, error } = await resend.emails.send({
       from: `${fromName} <onboarding@resend.dev>`,
       to: recipients,

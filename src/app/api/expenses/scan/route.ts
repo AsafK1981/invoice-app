@@ -45,7 +45,7 @@ Field rules:
 - vendor: Who got paid. Business/supplier name if printed; if WhatsApp/SMS/Bit-style, use the recipient's name (e.g. "דניאל כהן" or "מוסך זהב"). Hebrew if originally Hebrew, else English.
 - amount: TOTAL amount paid in NIS (₪). Include VAT. Just the number, no currency symbol. If currency isn't shown but obviously Israeli context, assume NIS.
 - vatAmount: Only if the source EXPLICITLY shows a VAT (מע"מ / מעמ / VAT) line. Otherwise null.
-- date: Date of the expense / payment in YYYY-MM-DD format. Israeli dates are usually DD/MM/YYYY — convert. If unclear, use today's date.
+- date: Date of the expense / payment in YYYY-MM-DD format. Israeli dates are usually DD/MM/YYYY; convert. If unclear, use today's date.
 - category: Best guess from this exact Hebrew list:
   "תוכנה" | "ציוד" | "שיווק" | "משרד" | "שירותים מקצועיים" | "נסיעות" | "אחר"
 - description: One-line Hebrew description of WHAT the expense was for (e.g. "ארוחת עסקים", "דלק", "מנוי חודשי OpenAI", "תיקון לרכב"). If you can't tell the purpose, describe the source (e.g. "תשלום בביט", "העברה בנקאית").

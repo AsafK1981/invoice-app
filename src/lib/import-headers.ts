@@ -32,7 +32,7 @@ export const CANONICAL_FIELDS: CanonicalField[] = [
  * - normalize slash / backslash / hyphen / underscore separators to spaces
  * - collapse whitespace, lowercase
  *
- * Internal gershayim (e.g. סה"כ, מע"מ) are preserved — only quotes wrapping the
+ * Internal gershayim (e.g. סה"כ, מע"מ) are preserved; only quotes wrapping the
  * whole cell are stripped.
  */
 export function normalizeHeader(h: string): string {
@@ -125,15 +125,15 @@ for (const field of CANONICAL_FIELDS) {
  * ORIGINAL source-header string that maps to it (so it can index the row), or
  * null when no column matched.
  *
- * Two passes: (1) normalized-exact — a header whose normalized form equals an
- * alias, first header wins; then (2) substring fallback — for fields still
+ * Two passes: (1) normalized-exact: a header whose normalized form equals an
+ * alias, first header wins; then (2) substring fallback: for fields still
  * unmatched, a header that CONTAINS an alias (e.g. "מספר מסמך פנימי" → number).
  * A header claimed in an earlier pass/field is never reused, so a specific
  * column like "סכום מע\"מ" (claimed by vat) can't be stolen by total's looser
  * "סכום" substring. Exact always beats substring.
  */
 export function mapHeaders(headers: string[]): Record<CanonicalField, string | null> {
-  // One source for the field list — derive the all-null map from CANONICAL_FIELDS.
+  // One source for the field list: derive the all-null map from CANONICAL_FIELDS.
   const out = Object.fromEntries(
     CANONICAL_FIELDS.map((f) => [f, null]),
   ) as Record<CanonicalField, string | null>;

@@ -93,7 +93,7 @@ describe("matchDocument", () => {
     expect(matchDocument(doc, "totallymadeup")).toBe(false);
   });
 
-  it("handles credit note (negative amount) — amount-based search uses absolute value", () => {
+  it("handles credit note (negative amount): amount-based search uses absolute value", () => {
     const credit = makeDoc({ type: "credit_note", total: -200, subtotal: -200 });
     expect(matchDocument(credit, "200")).toBe(true);
   });

@@ -80,7 +80,7 @@ function withRounding<T extends { subtotal: number; vat: number; total: number }
  * Apply an optional document-level discount (הנחה) to a computed base, BEFORE
  * VAT. The base `subtotal` is the lines subtotal (pre-discount); the discounted
  * subtotal drives VAT and total. When `discount` is 0 (default) the base is
- * returned unchanged, so every existing caller keeps identical results — the
+ * returned unchanged, so every existing caller keeps identical results; the
  * VAT-inclusive gross-sum reconciliation in particular is only bypassed when a
  * discount is actually present (a rare case). Returns the effective `discount`
  * that was applied (clamped to [0, subtotal)) alongside the adjusted figures.
@@ -114,8 +114,8 @@ export function computeAmounts(
 ) {
   // Header figures are summed from the SAME per-line rounded amounts the
   // document persists (receipt-editor stores round2(qty × round2(unit ×
-  // factor)) per line). Rounding the per-line nets and summing those —
-  // rather than rounding one big gross sum — guarantees the line items
+  // factor)) per line). Rounding the per-line nets and summing those,
+  // rather than rounding one big gross sum, guarantees the line items
   // always reconcile with the header subtotal/VAT/total (otherwise they
   // could drift a few agorot apart, which both looks wrong on the document
   // and gets a tax-export rejected for a line/header mismatch).
@@ -153,7 +153,7 @@ export function computeAmounts(
 
 /**
  * String-level predicate for "this business charges VAT and can issue
- * tax invoices (חשבונית מס)" — i.e. עוסק מורשה or חברה. Works directly on
+ * tax invoices (חשבונית מס)", i.e. עוסק מורשה or חברה. Works directly on
  * a raw DB `business_type` value, so server routes holding a Supabase row
  * (not a `Business`) can share the same rule as the UI.
  */

@@ -8,7 +8,7 @@ import {
 import type { InvoiceDocument } from "@/lib/types";
 
 /**
- * Minimal doc factory — requiresAllocationNumber gates on the PRE-VAT amount
+ * Minimal doc factory, requiresAllocationNumber gates on the PRE-VAT amount
  * (subtotalIls ?? subtotal). The `total` here is treated as the pre-VAT
  * governing amount and mirrored into `subtotal` so the pre-VAT path evaluates
  * it. Amounts in these tests are therefore pre-VAT figures.
@@ -26,7 +26,7 @@ function doc(partial: {
   return { ...partial, subtotal: partial.total } as unknown as InvoiceDocument;
 }
 
-// A valid business customer (ח.פ / עוסק מורשה) — allocation rules apply to them.
+// A valid business customer (ח.פ / עוסק מורשה); allocation rules apply to them.
 const BUSINESS_CUSTOMER = "514567890";
 
 describe("getAllocationThresholdForYear", () => {
@@ -43,7 +43,7 @@ describe("getAllocationThresholdForYear", () => {
 });
 
 describe("allocationRequiredThreshold (date-aware, honours the mid-2026 drop)", () => {
-  it("is ₪10,000 for Jan–May 2026", () => {
+  it("is ₪10,000 for Jan-May 2026", () => {
     expect(allocationRequiredThreshold(new Date("2026-01-15"))).toBe(10_000);
     expect(allocationRequiredThreshold(new Date("2026-05-31"))).toBe(10_000);
   });
@@ -105,7 +105,7 @@ describe("requiresAllocationNumber", () => {
     expect(
       requiresAllocationNumber(doc({ type: "tax_invoice_receipt", date: "2026-06-10", total: 9_000 }), BUSINESS_CUSTOMER),
     ).toBe(true);
-    // Credit notes are negative — abs() must still cross the threshold
+    // Credit notes are negative; abs() must still cross the threshold
     expect(
       requiresAllocationNumber(doc({ type: "credit_note", date: "2026-06-10", total: -8_000 }), BUSINESS_CUSTOMER),
     ).toBe(true);
@@ -122,7 +122,7 @@ describe("requiresAllocationNumber", () => {
   });
 });
 
-describe("hebrewForItaCode — maps ITA error codes to clean Hebrew (no raw JSON)", () => {
+describe("hebrewForItaCode: maps ITA error codes to clean Hebrew (no raw JSON)", () => {
   it("maps 446 (missing user id/name) to a Hebrew reason", () => {
     const msg = hebrewForItaCode("446");
     expect(msg).toContain("מזהה משתמש");
@@ -139,7 +139,7 @@ describe("hebrewForItaCode — maps ITA error codes to clean Hebrew (no raw JSON
   });
 });
 
-describe("requiresAllocationNumber — ₪ equivalent governs the threshold", () => {
+describe("requiresAllocationNumber: ₪ equivalent governs the threshold", () => {
   // Zero-VAT export: the pre-VAT ₪ equivalent (subtotalIls) governs, and for a
   // zero-rated export it equals the total ₪ equivalent.
   it("a $2000 export doc worth ₪7400 (over the June-2026 ₪5,000 threshold) requires a number", () => {

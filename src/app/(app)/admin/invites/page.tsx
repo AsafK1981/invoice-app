@@ -53,7 +53,7 @@ export default function AdminInvitesPage() {
   const [toast, setToast] = useState<{ kind: "success" | "error"; text: string } | null>(null);
   const confirm = useConfirm();
 
-  // Form — pre-filled with sensible defaults so creating a code is
+  // Form: pre-filled with sensible defaults so creating a code is
   // literally one click. Each successful create rotates the suffix so
   // back-to-back clicks don't collide on the UNIQUE constraint.
   const [code, setCode] = useState(() => defaultCode());
@@ -192,7 +192,7 @@ export default function AdminInvitesPage() {
             הזמנות בטא
           </h1>
           <p className="text-sm text-stone-700 mt-2 mr-14">
-            צור קישורים שמעניקים גישה חינם — שלח לחברים, הם לוחצים, מתחברים עם Google ומקבלים גישה מיידית.
+            צור קישורים שמעניקים גישה חינם: שלח לחברים, הם לוחצים, מתחברים עם Google ומקבלים גישה מיידית.
           </p>
         </div>
         <Link

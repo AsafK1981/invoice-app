@@ -79,7 +79,7 @@ interface Props {
 }
 
 // Format a stored ISO date ("YYYY-MM-DD" or full timestamp) as DD/MM/YYYY
-// without going through Date() — avoids a UTC-vs-local off-by-one day.
+// without going through Date(); avoids a UTC-vs-local off-by-one day.
 function formatDateHe(iso: string): string {
   const [y, m, d] = iso.slice(0, 10).split("-");
   return d && m && y ? `${d}/${m}/${y}` : iso;
@@ -112,7 +112,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   const isCreditNote = documentType === "credit_note";
   const sign = isCreditNote ? -1 : 1;
   // Payment-recording documents (a קבלה or a חשבונית מס/קבלה) are the only ones
-  // that record HOW the money arrived — so withholding-tax and payment-detail
+  // that record HOW the money arrived, so withholding-tax and payment-detail
   // controls appear only for them. Discount (הנחה) applies to any priced doc
   // except a credit note (which stores negative amounts).
   const isPaymentRecording =
@@ -138,13 +138,13 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   // business setting; overridable per document.
   const [roundTotal, setRoundTotal] = useState<boolean>(business.roundTotalDefault ?? false);
 
-  // הנחה (document-level discount) — collapsed by default. User enters a % or a
+  // הנחה (document-level discount), collapsed by default. User enters a % or a
   // ₪ amount; we persist the resolved ₪ amount. Applied BEFORE VAT.
   const [showDiscount, setShowDiscount] = useState<boolean>(false);
   const [discountMode, setDiscountMode] = useState<"amount" | "percent">("amount");
   const [discountInput, setDiscountInput] = useState<string>("");
 
-  // ניכוי מס במקור (withholding tax) — collapsed by default, payment docs only.
+  // ניכוי מס במקור (withholding tax), collapsed by default, payment docs only.
   // Rate % drives an auto-computed amount (on the total incl. VAT); the amount
   // stays editable for a manual override.
   const [showWithholding, setShowWithholding] = useState<boolean>(false);
@@ -152,7 +152,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   const [withholdingAmountInput, setWithholdingAmountInput] = useState<string>("");
   const [withholdingTouched, setWithholdingTouched] = useState<boolean>(false);
 
-  // פירוט אמצעי תשלום — structured detail for the selected payment method.
+  // פירוט אמצעי תשלום: structured detail for the selected payment method.
   const [payDetails, setPayDetails] = useState<PaymentDetails>({});
   const updatePayDetails = (patch: Partial<PaymentDetails>) =>
     setPayDetails((p) => ({ ...p, ...patch }));
@@ -163,7 +163,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   const [paymentMethodTouched, setPaymentMethodTouched] = useState<boolean>(false);
   const [showPreviewMobile, setShowPreviewMobile] = useState<boolean>(false);
   // "הגדרות מתקדמות" disclosure inside פרטי המסמך (currency, exchange rate,
-  // zero-rated, rounding, logo). Collapsed by default — most documents never
+  // zero-rated, rounding, logo). Collapsed by default; most documents never
   // need any of it.
   const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
   const [saving, setSaving] = useState<boolean>(false);
@@ -384,7 +384,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
     return () => { cancelled = true; };
   }, [currency, date]);
 
-  // Lines subtotal BEFORE any discount — drives the % calculation and validation.
+  // Lines subtotal BEFORE any discount; drives the % calculation and validation.
   const linesSubtotal = useMemo(
     () => computeAmounts(items, effectiveVatRate, vatMode, false, 0).subtotal,
     [items, effectiveVatRate, vatMode]
@@ -413,7 +413,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   );
   const { subtotal, vat, total, rounding, netUnitPriceFactor } = amounts;
 
-  // ניכוי מס במקור — computed on the total incl. VAT. Keep the amount synced to
+  // ניכוי מס במקור, computed on the total incl. VAT. Keep the amount synced to
   // (rate × total) until the user manually edits the amount field.
   const withholdingEntered =
     isPaymentRecording && showWithholding && withholdingRateInput.trim() !== "";
@@ -457,7 +457,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
       // editor mounting) we'd silently apply the wrong VAT rate / sign.
       const currentBid = getBusinessId();
       if (currentBid && srcDoc.business_id !== currentBid) {
-        console.warn("[convert] source doc belongs to a different business — abort");
+        console.warn("[convert] source doc belongs to a different business; abort");
         return;
       }
       const { data: srcItems } = await supabase
@@ -472,7 +472,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
       } else if (srcDoc.client_name) {
         setAdhocMode(true);
         setAdhocName(srcDoc.client_name);
-        // Restore the ad-hoc customer tax id too — without it a duplicated
+        // Restore the ad-hoc customer tax id too; without it a duplicated
         // B2B tax invoice looks B2C (empty tax id) and the allocation banner
         // wrongly shows "no allocation number needed".
         setAdhocTaxId(srcDoc.client_tax_id || "");
@@ -652,7 +652,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
 
   const clientReady = adhocMode ? adhocName.trim().length > 0 : !!clientId;
 
-  // #18: hard gate — a legal document may not be issued while the business
+  // #18: hard gate, a legal document may not be issued while the business
   // profile is still empty/placeholder (onboarding is skippable and
   // business-init.ts auto-creates a blank business). Drafts are exempt.
   const businessProfileIncomplete =
@@ -736,7 +736,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   }
 
   // Save the current (possibly incomplete) state as a server draft to finish
-  // later. No invoice number is allocated — that happens only on finalize.
+  // later. No invoice number is allocated; that happens only on finalize.
   async function handleSaveDraft() {
     if (savingDraft) return;
     setSavingDraft(true);
@@ -795,7 +795,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   async function handleSave() {
     if (!canSave) return;
     // #11: never persist while the exchange-rate fetch for a non-ILS currency
-    // is still in flight — `rate` still holds 1 / the previous currency's
+    // is still in flight; `rate` still holds 1 / the previous currency's
     // value, which would be stamped onto exchangeRate/subtotalIls/totalIls.
     if (rateLoading) return;
     // #18: block issuing a legal document with an empty/placeholder business
@@ -866,7 +866,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
         allocationNumber: allocationNumber.trim() || undefined,
         // Credit note: when the user picked an existing issued invoice from the
         // picker, persist a real FK to it. Manual-entry (external invoice) stays
-        // null — its reference lives only in the notes line above. Additive to,
+        // null; its reference lives only in the notes line above. Additive to,
         // not a replacement for, the human-readable creditRefLine.
         originalDocumentId: creditRefPicked?.id || null,
         subject: subject.trim() || undefined,
@@ -917,7 +917,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
 
       // If this was a convert-from-quote flow, link the original quote to
       // this new receipt and mark it paid. Failures are logged but
-      // don't block the success toast — the receipt itself is already
+      // don't block the success toast; the receipt itself is already
       // created, the link is purely for navigation/UX.
       let linkFailed = false;
       if (isConvert && fromDocId) {
@@ -929,10 +929,10 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
         }
       }
       // #32: the new doc was created fine, but linking/marking the source quote
-      // failed — surface it so the user can reconcile (mark the quote paid
+      // failed; surface it so the user can reconcile (mark the quote paid
       // manually) instead of silently believing the conversion fully closed.
       const linkNote = linkFailed
-        ? " שים לב: קישור הצעת המחיר המקורית נכשל — סמן אותה כשולמה ידנית."
+        ? " שים לב: קישור הצעת המחיר המקורית נכשל, סמן אותה כשולמה ידנית."
         : "";
 
       if (sendEmail) {
@@ -957,7 +957,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
           try {
             await markDocumentEmailed(doc.id);
           } catch {
-            // Don't fail the toast — the email already went out, just the
+            // Don't fail the toast; the email already went out, just the
             // timestamp is stuck. Doc page will say "טרם נשלח" but the
             // user can re-click the email button to fix the marker.
           }
@@ -1054,7 +1054,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
       {(() => {
         // Inline nudge: this doc type renders a "how to pay" block
         // (quote / tax_invoice), but the business has no bank/payment info
-        // configured — so the client won't see how to pay you. Surface this
+        // configured, so the client won't see how to pay you. Surface this
         // at the moment of creation, when a fix is most useful.
         const docShowsPayment =
           documentType === "quote" ||
@@ -1102,7 +1102,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
         />
       </div>
     )}
-    {/* NOTE: no `items-start` here on purpose — the grid's default stretch is
+    {/* NOTE: no `items-start` here on purpose; the grid's default stretch is
         what gives the preview column a full-height track for `position:sticky`
         to travel in. With items-start the aside collapses to content height and
         the sticky pane scrolls away. */}
@@ -1110,7 +1110,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
       {/* ── FORM COLUMN (inline-start / right in RTL) ───────────────────── */}
       <div className="lg:col-span-7 space-y-4">
         {/* Mobile/tablet: the live preview lives behind a button. It renders the
-            very same <DocumentPreview> the desktop pane uses — one renderer. */}
+            very same <DocumentPreview> the desktop pane uses, one renderer. */}
         <button
           type="button"
           onClick={() => setShowPreviewMobile((s) => !s)}
@@ -1311,7 +1311,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
             </div>
           )}
 
-          {/* Quiet expander — everything most users never touch. */}
+          {/* Quiet expander: everything most users never touch. */}
           <Expander
             label="הגדרות מתקדמות (מטבע, מע״מ, עיגול, לוגו)"
             open={showAdvanced}
@@ -1359,7 +1359,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                   </span>
                 ) : (
                   <span className="text-xs text-stone-600">
-                    ללא לוגו — המסמך יציג את שם העסק בלבד.
+                    ללא לוגו: המסמך יציג את שם העסק בלבד.
                   </span>
                 )}
                 <a
@@ -1639,7 +1639,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
 
             {isPaymentRecording && (
               <div className="space-y-3 mt-3">
-                {/* פירוט אמצעי תשלום — per-method optional detail. */}
+                {/* פירוט אמצעי תשלום: per-method optional detail. */}
                 {(paymentMethod === "bank_transfer" ||
                   paymentMethod === "bit" ||
                   paymentMethod === "paypal") && (
@@ -1725,7 +1725,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                   </div>
                 )}
 
-                {/* ניכוי מס במקור — collapsed by default. */}
+                {/* ניכוי מס במקור: collapsed by default. */}
                 {!showWithholding ? (
                   <button
                     type="button"
@@ -1791,7 +1791,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                       </div>
                     </div>
                     <p className="text-xs text-stone-600">
-                      מחושב על הסכום כולל מע״מ. סכום המסמך אינו משתנה — זהו פיצול של התשלום.
+                      מחושב על הסכום כולל מע״מ. סכום המסמך אינו משתנה, זהו פיצול של התשלום.
                     </p>
                     {withholdingEntered && withholdingValid && withholdingAmount > 0 && (
                       <p className="text-sm font-semibold text-stone-800">
@@ -1886,7 +1886,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
             </div>
             {!adhocMode && selectedClient && !selectedClient.email && (
               <p className="text-xs text-amber-700 mt-1">
-                ללקוח זה אין אימייל שמור — מלא ידנית או ערוך את פרטי הלקוח
+                ללקוח זה אין אימייל שמור, מלא ידנית או ערוך את פרטי הלקוח
               </p>
             )}
           </FormField>
@@ -1906,7 +1906,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
           <div className="hidden lg:block">
             <p className="flex items-center gap-2 text-xs font-semibold text-stone-700 mb-2">
               <span className="w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-emerald-200" />
-              תצוגה חיה — מתעדכנת תוך כדי הקלדה
+              תצוגה חיה, מתעדכנת תוך כדי הקלדה
             </p>
             <DocumentPreview {...previewProps} />
           </div>
@@ -1978,7 +1978,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                 {savingDraft ? "שומר טיוטה…" : "שמור טיוטה והמשך אחר כך"}
               </button>
               <p className="text-xs text-stone-600 text-center">
-                טיוטה נשמרת בלי מספר — תוכל להמשיך אותה מלשונית &quot;טיוטות&quot;.
+                טיוטה נשמרת בלי מספר, תוכל להמשיך אותה מלשונית &quot;טיוטות&quot;.
               </p>
             </div>
             {businessProfileIncomplete && (

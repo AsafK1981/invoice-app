@@ -7,7 +7,7 @@ import type { Business } from "./types";
 const BUSINESS_ID_KEY = "invoice-app-business-id";
 const BUSINESS_READY_EVENT = "invoice-app:business-ready";
 
-// Empty strings — NOT placeholder Hebrew text. The form's placeholder=
+// Empty strings, NOT placeholder Hebrew text. The form's placeholder=
 // attribute is the right place for guidance text; storing literal
 // "העסק שלי" / "000000000" as real data made them render as bold,
 // "already filled in" values in Settings, fooling the user into

@@ -32,11 +32,11 @@ export default function BillingPage() {
   const [planStatus, setPlanStatus] = useState<PlanStatus>({ tier: "free", active: true });
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<PlanTier | null>(null);
-  // Default to yearly: GTM roadmap task 4.4 — a single large annual charge best
+  // Default to yearly: GTM roadmap task 4.4, a single large annual charge best
   // absorbs Grow's fixed ₪59/mo fee, so the annual plan is the recommended default.
   const [interval, setInterval] = useState<BillingInterval>("year");
   const [toast, setToast] = useState<{ kind: "success" | "error"; text: string } | null>(null);
-  // Confirmation modal — shown when user clicks subscribe, before
+  // Confirmation modal: shown when user clicks subscribe, before
   // redirecting to the hosted (Hebrew) checkout page. Sets expectations:
   // a plan summary in Hebrew and what happens after payment.
   const [confirmingTier, setConfirmingTier] = useState<PlanTier | null>(null);
@@ -59,7 +59,7 @@ export default function BillingPage() {
     });
   }, []);
 
-  // Step 1: clicking the plan card just opens the confirm modal —
+  // Step 1: clicking the plan card just opens the confirm modal,
   // the actual checkout call happens inside, after the user reviews
   // the plan + the "next page is in English" notice.
   function handleSubscribe(tier: PlanTier) {
@@ -67,7 +67,7 @@ export default function BillingPage() {
     setConfirmingTier(tier);
   }
 
-  // Step 2: user confirmed in the modal — now create the hosted
+  // Step 2: user confirmed in the modal, now create the hosted
   // checkout session and redirect to it.
   async function actuallySubscribe(tier: PlanTier) {
     setActionLoading(tier);
@@ -100,7 +100,7 @@ export default function BillingPage() {
     }
   }
 
-  // Clicking "cancel subscription" just opens the confirm modal — the actual
+  // Clicking "cancel subscription" just opens the confirm modal; the actual
   // cancel call happens inside, after the user reviews the "you keep access
   // until the end of the paid period" notice.
   function handleManage() {
@@ -126,7 +126,7 @@ export default function BillingPage() {
   }
 
   // User confirmed cancellation. Calls the cancel route (Grow path). If it
-  // returns 410 we're in the Polar rollback mode — fall back to the hosted
+  // returns 410 we're in the Polar rollback mode; fall back to the hosted
   // portal redirect.
   async function actuallyCancel() {
     setActionLoading("pro");
@@ -193,7 +193,7 @@ export default function BillingPage() {
       const data = await res.json();
       if (data.ok) {
         setPlanStatus((prev) => ({ ...prev, cancelAtPeriodEnd: false }));
-        setToast({ kind: "success", text: "הביטול בוטל — המנוי ימשיך כרגיל." });
+        setToast({ kind: "success", text: "הביטול בוטל: המנוי ימשיך כרגיל." });
       } else {
         setToast({ kind: "error", text: data.error || "שגיאה" });
       }
@@ -243,7 +243,7 @@ export default function BillingPage() {
             <p className="font-bold">🎉 חינם עכשיו בתקופת ההשקה</p>
             <p className="text-emerald-800/90 mt-0.5">
               כל הפיצ׳רים פתוחים, בלי חיוב ובלי כרטיס אשראי. המחירים המוצגים
-              למטה ייכנסו לתוקף בהמשך — ונעדכן מראש, בלי הפתעות.
+              למטה ייכנסו לתוקף בהמשך, ונעדכן מראש, בלי הפתעות.
             </p>
           </div>
         </div>
@@ -443,7 +443,7 @@ export default function BillingPage() {
         onClose={() => setConfirmingTier(null)}
         title={
           confirmingTier
-            ? `${PLANS[confirmingTier].name} — אישור הזמנה`
+            ? `${PLANS[confirmingTier].name}: אישור הזמנה`
             : "אישור הזמנה"
         }
         subtitle={
@@ -497,7 +497,7 @@ export default function BillingPage() {
               </div>
               <div className="mt-4 flex items-center gap-2 text-sm font-semibold text-emerald-700">
                 <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
-                <span>{TRIAL_DAYS} ימי ניסיון — אפס חיוב במשך התקופה הזו</span>
+                <span>{TRIAL_DAYS} ימי ניסיון: אפס חיוב במשך התקופה הזו</span>
               </div>
             </div>
 
@@ -546,7 +546,7 @@ export default function BillingPage() {
         )}
       </Modal>
 
-      {/* Cancel-confirmation modal. Cancellation is not immediate — the user
+      {/* Cancel-confirmation modal. Cancellation is not immediate; the user
           keeps full access until the end of the period they already paid for. */}
       <Modal
         open={confirmingCancel}

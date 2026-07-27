@@ -19,11 +19,11 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
   const [approving, setApproving] = useState(false);
   const [approveError, setApproveError] = useState<string | null>(null);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
-  // מקור/העתק: the customer link is ALWAYS מקור (VAT rule — the buyer must
+  // מקור/העתק: the customer link is ALWAYS מקור (VAT rule: the buyer must
   // receive the original). Only when the owner's PDF route explicitly requests
   // ?copy=1 (for the owner's retained reprint) do we render "העתק". Read from
   // the URL directly (not useSearchParams) so the page needs no Suspense
-  // boundary — it is fully client-rendered behind a loader anyway.
+  // boundary; it is fully client-rendered behind a loader anyway.
   const [copy, setCopy] = useState(false);
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -139,7 +139,7 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
           rounding: docRow.rounding != null ? Number(docRow.rounding) : 0,
           roundTotal: Boolean(docRow.round_total),
           paymentMethod: docRow.payment_method || undefined,
-          // Payment split / discount / structured payment detail — must render on
+          // Payment split / discount / structured payment detail; must render on
           // the client-facing view and PDF exactly as on the owner's copy.
           paymentDetails: docRow.payment_details || undefined,
           withholdingRate: docRow.withholding_rate != null ? Number(docRow.withholding_rate) : undefined,
@@ -148,15 +148,15 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
           notes: docRow.notes || undefined,
           approvedAt: docRow.approved_at || undefined,
           approvalSignature: docRow.approval_signature || undefined,
-          // הוראות ניהול ספרים 18ב — drives the מקור/העתק label. Once the
+          // הוראות ניהול ספרים 18ב: drives the מקור/העתק label. Once the
           // original has been emitted (set), the public view renders "העתק".
           originalIssuedAt: docRow.original_issued_at || null,
-          // מספר הקצאה (חשבונית ישראל) — must render on the document the client
+          // מספר הקצאה (חשבונית ישראל); must render on the document the client
           // sees, exactly as on the owner's copy. Without this mapping the
           // public view silently dropped it.
           allocationNumber: docRow.allocation_number || undefined,
           allocationSetAt: docRow.allocation_set_at || undefined,
-          // Multi-currency fields — so foreign-currency invoices display in
+          // Multi-currency fields; so foreign-currency invoices display in
           // their currency (and the ₪ equivalent) on the client-facing view too.
           currency: docRow.currency || undefined,
           exchangeRate: docRow.exchange_rate != null ? Number(docRow.exchange_rate) : undefined,
@@ -230,8 +230,8 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
 
   return (
     // doc-print-host: this tinted full-height panel is what the server PDF
-    // (headless Chrome + printBackground) would otherwise print as a coloured —
-    // under the gold skin, BLACK — frame around the sheet. document-paper.css
+    // (headless Chrome + printBackground) would otherwise print as a coloured
+    // frame around the sheet (BLACK, under the gold skin). document-paper.css
     // flattens anything carrying this marker to white, zero-padding, in print.
     <div className="doc-print-host min-h-screen bg-gradient-to-br from-orange-50 to-amber-50 py-8 px-4">
       <div className="no-print max-w-[210mm] mx-auto mb-6 flex items-center justify-end gap-3">

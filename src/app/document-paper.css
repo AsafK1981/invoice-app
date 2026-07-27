@@ -1,14 +1,14 @@
 /* =====================================================================
-   DOCUMENT PAPER — the printable sheet (approved 2026-07-19 redesign).
+   DOCUMENT PAPER: the printable sheet (approved 2026-07-19 redesign).
 
    Scope: everything here is scoped under `.doc-paper` (a class the three
    paper wrappers add next to `.receipt-view`): the /view public page, the
-   owner's document page, the editor live-preview and — most importantly —
+   owner's document page, the editor live-preview and, most importantly,
    the server PDF (headless Chrome navigates to /view and prints it).
 
    WHY ITS OWN STYLESHEET INSTEAD OF TAILWIND UTILITIES
    The app skin (`app-skin.css`) remaps Tailwind utilities app-wide with
-   `!important` — `.text-stone-700`, `.bg-white`, `table thead th`, even the
+   `!important`: `.text-stone-700`, `.bg-white`, `table thead th`, even the
    root font-size. The old paper used those utilities and needed a long
    "re-assert every utility" block in the skin to stay printable.
    By giving the sheet its own vocabulary of `.doc-*` classes with explicit
@@ -21,7 +21,7 @@
    ===================================================================== */
 
 .doc-paper {
-  /* palette — warm near-black ink, thin antique-gold accents */
+  /* palette: warm near-black ink, thin antique-gold accents */
   --d-ink: #211c15;
   --d-ink2: #514a3d;
   --d-soft: #6f6857;
@@ -37,7 +37,7 @@
   background: var(--d-canvas) !important;
   color: var(--d-ink) !important;
   font-family: var(--font-heebo), "Heebo", system-ui, sans-serif !important;
-  /* 68px ≈ 18mm — matches the approved mockup's side margin at 96dpi, and
+  /* 68px ≈ 18mm, matches the approved mockup's side margin at 96dpi, and
      lines the on-screen 794px (=210mm) sheet up with the printed one. */
   padding: 74px 68px 44px !important;
   border-radius: 0 !important;
@@ -152,7 +152,7 @@
   font-size: 13.5px;
   white-space: nowrap;
 }
-/* a זיכוי stays visually distinct from an invoice — same language, rose ink */
+/* a זיכוי stays visually distinct from an invoice: same language, rose ink */
 .doc-paper .doc-badge.is-credit {
   border-color: #d0a49a;
   color: #94402f;
@@ -371,7 +371,7 @@
 
 /* ---------- payment / bank / notes cards ---------- */
 /* Two columns, so a lone card takes half the sheet instead of stretching into
-   an empty band — and a third wraps to a half-width slot on the next row. */
+   an empty band, and a third wraps to a half-width slot on the next row. */
 .doc-paper .doc-infos {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -414,7 +414,7 @@
 /* ---------- narrow screens ----------
    Only the FLUID sheet (the public /view page, which really is as wide as the
    phone) collapses. The editor's live preview renders at a fixed 794px and is
-   CSS-scaled down, so it must keep the exact print layout even on a phone —
+   CSS-scaled down, so it must keep the exact print layout even on a phone,
    hence `.is-fluid` rather than a bare viewport media query. */
 @media (max-width: 700px) {
   .doc-paper.is-fluid {
@@ -434,7 +434,7 @@
   .doc-paper.is-fluid .doc-infos {
     grid-template-columns: 1fr;
   }
-  /* In a COLUMN flex container `flex-basis` sizes the HEIGHT — the desktop
+  /* In a COLUMN flex container `flex-basis` sizes the HEIGHT; the desktop
      bases would stretch each card into a tall empty band. Reset them, and drop
      the auto inline-start margin that was suppressing the cross-axis stretch. */
   .doc-paper.is-fluid .doc-strip > *,
@@ -481,7 +481,7 @@
 @media print {
   /* Kill every page-chrome surface around the sheet. The gold skin paints the
      /view wrapper (and html/body) obsidian, and the PDF route prints with
-     printBackground:true — without this the PDF came out with a black frame
+     printBackground:true; without this the PDF came out with a black frame
      around the paper. Re-asserted here (last stylesheet) so it beats the skin's
      own !important background rules. */
   html,

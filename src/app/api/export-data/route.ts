@@ -9,8 +9,8 @@ const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 /**
  * GDPR / "right to data portability" endpoint.
  * Returns a single JSON file containing every row the requesting user
- * owns across the platform — businesses, clients, products, documents
- * (with line items), expenses, audit log entries — plus account
+ * owns across the platform: businesses, clients, products, documents
+ * (with line items), expenses, audit log entries, plus account
  * metadata.
  *
  * Limited to one export per user per 5 minutes (it's an expensive

@@ -99,7 +99,7 @@ export function DocumentTimeline({ document: doc }: Props) {
     const out: TimelineEvent[] = [];
 
     // Synthetic events derived from the document itself. These are always
-    // accurate because they're columns on the row — no audit log gap risk.
+    // accurate because they're columns on the row, no audit log gap risk.
     if (doc.emailedAt) {
       out.push({
         at: doc.emailedAt,
@@ -150,7 +150,7 @@ export function DocumentTimeline({ document: doc }: Props) {
       const mapping = ACTION_TO_EVENT[a.action];
       if (!mapping) continue;
       // Skip status_changed entries that are redundant with the synthetic
-      // paid/approved events — keeps the timeline from showing the same
+      // paid/approved events; keeps the timeline from showing the same
       // moment twice in slightly different wording.
       if (a.action === "document.status_changed") {
         const next = (a.payload as { next?: string } | null)?.next;

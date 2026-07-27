@@ -8,7 +8,7 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 /**
  * Creates a one-time customer portal session for the calling user. The
  * portal lets them update their payment method, cancel, see invoices,
- * and switch plan tier — all hosted by Polar.
+ * and switch plan tier, all hosted by Polar.
  */
 export async function POST(req: NextRequest) {
   if (!polar) {

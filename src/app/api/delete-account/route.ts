@@ -7,7 +7,7 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 /**
- * Account deletion — irreversible. Wipes:
+ * Account deletion: irreversible. Wipes:
  *   - Storage logos (business-logos bucket)
  *   - Document attachments (rows + storage files)
  *   - audit_log rows for the user's businesses
@@ -18,7 +18,7 @@ const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
  *
  * Rate limited so an attacker who somehow obtains a token can't
  * destroy the user's data more than once a day (admittedly a thin
- * wall — the right defense is the auth check above it). Bigger
+ * wall; the right defense is the auth check above it). Bigger
  * concern is preventing accidental double-clicks on the Delete
  * button from racing.
  */
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
     }
 
-    // Rate limit BY USER — not IP — because a legitimate user does this
+    // Rate limit BY USER, not IP, because a legitimate user does this
     // exactly once. Two requests in 60 seconds is a double-click race.
     const ip = clientIp(req);
     const rl = checkRate({
@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
         attachmentPaths = (atts || []).map((a) => a.file_path as string).filter(Boolean);
       }
 
-      // Storage cleanup — best effort. If a delete fails we still
+      // Storage cleanup: best effort. If a delete fails we still
       // proceed with the rest of the wipe (orphaned storage files
       // can be cleaned up by the bucket lifecycle later).
       const logoPaths = (businesses ?? [])

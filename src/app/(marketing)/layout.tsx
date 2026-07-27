@@ -16,7 +16,7 @@ const assistant = Assistant({
   display: "swap",
 });
 
-// This is now the REAL public marketing site (promoted from /v2). No noindex —
+// This is now the REAL public marketing site (promoted from /v2). No noindex;
 // it should be indexed. Titles/description are inherited from the root layout
 // (its title template + OG), except where a child page sets its own; that keeps
 // the root domain's existing metadata intact.

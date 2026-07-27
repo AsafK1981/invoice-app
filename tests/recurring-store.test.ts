@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { calculateNextDue, serializeWrite } from "@/lib/recurring-store";
 
-describe("calculateNextDue — weekly", () => {
+describe("calculateNextDue: weekly", () => {
   it("adds 7 days", () => {
     expect(calculateNextDue("2026-01-15", "weekly")).toBe("2026-01-22");
   });
@@ -10,7 +10,7 @@ describe("calculateNextDue — weekly", () => {
   });
 });
 
-describe("calculateNextDue — monthly (end-of-month must not overflow)", () => {
+describe("calculateNextDue: monthly (end-of-month must not overflow)", () => {
   it("Jan 31 -> Feb 28 (does NOT spill to March)", () => {
     expect(calculateNextDue("2026-01-31", "monthly")).toBe("2026-02-28");
   });
@@ -31,7 +31,7 @@ describe("calculateNextDue — monthly (end-of-month must not overflow)", () => 
   });
 });
 
-describe("serializeWrite — no lost update under concurrency", () => {
+describe("serializeWrite: no lost update under concurrency", () => {
   const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
   it("runs read-modify-write mutations sequentially so updates compose", async () => {

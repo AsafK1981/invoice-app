@@ -139,7 +139,7 @@ export default function ReportsPage() {
 
   const exportSuffix = periodLabelShort(period);
 
-  // Year detected from the selected period — used by the OPENFORMAT
+  // Year detected from the selected period; used by the OPENFORMAT
   // export, which only makes sense scoped to a single tax year.
   const selectedYear = /^\d{4}/.test(period) ? parseInt(period.slice(0, 4), 10) : null;
 
@@ -213,7 +213,7 @@ export default function ReportsPage() {
           </button>
           <button
             onClick={() => downloadUniformStructure(false)}
-            title="ייצוא קבצי מבנה אחיד (OPENFORMAT 1.31) מהנתונים האמיתיים — לאודיט"
+            title="ייצוא קבצי מבנה אחיד (OPENFORMAT 1.31) מהנתונים האמיתיים, לאודיט"
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border-2 border-purple-200 text-stone-800 hover:bg-purple-50"
           >
             <FileArchive className="w-4 h-4 text-purple-600" />
@@ -221,16 +221,16 @@ export default function ReportsPage() {
           </button>
           <button
             onClick={() => downloadUniformStructure(true)}
-            title="ייצוא קבצי מבנה אחיד דוגמה (2500+ רשומות סינתטיות) — לסימולטור רשות המסים לצורך רישום במרשם תוכנות"
+            title="ייצוא קבצי מבנה אחיד דוגמה (2500+ רשומות סינתטיות), לסימולטור רשות המסים לצורך רישום במרשם תוכנות"
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border-2 border-fuchsia-200 text-stone-800 hover:bg-fuchsia-50"
           >
             <FileArchive className="w-4 h-4 text-fuchsia-600" />
-            מבנה אחיד — דוגמה ({selectedYear || "שנה"})
+            מבנה אחיד: דוגמה ({selectedYear || "שנה"})
           </button>
           {selectedYear && (
             <Link
               href={`/reports/journal/${selectedYear}`}
-              title="יומן הוצאות והכנסות שנתי — מסמך מעוצב להדפסה / שמירה כ-PDF"
+              title="יומן הוצאות והכנסות שנתי, מסמך מעוצב להדפסה / שמירה כ-PDF"
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border-2 border-emerald-200 text-stone-800 hover:bg-emerald-50"
             >
               <BookOpen className="w-4 h-4 text-emerald-600" />
@@ -239,7 +239,7 @@ export default function ReportsPage() {
           )}
           <Link
             href="/reports/tax-projection"
-            title="צפי מס + ביטוח לאומי לסוף השנה — דע מראש כמה לשמור בצד"
+            title="צפי מס + ביטוח לאומי לסוף השנה, דע מראש כמה לשמור בצד"
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border-2 border-teal-200 text-stone-800 hover:bg-teal-50"
           >
             <Calculator className="w-4 h-4 text-teal-600" />
@@ -247,7 +247,7 @@ export default function ReportsPage() {
           </Link>
           <Link
             href="/reports/invoices-period"
-            title="דוח חשבוניות תקופתי (חודש / חודשיים / 3 / חצי שנה) — ת.ז/ח.פ, מספר, תאריך, סכום לפני ואחרי מע״מ, מספר הקצאה"
+            title="דוח חשבוניות תקופתי (חודש / חודשיים / 3 / חצי שנה): ת.ז/ח.פ, מספר, תאריך, סכום לפני ואחרי מע״מ, מספר הקצאה"
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border-2 border-sky-200 text-stone-800 hover:bg-sky-50"
           >
             <FileSpreadsheet className="w-4 h-4 text-sky-600" />
@@ -255,7 +255,7 @@ export default function ReportsPage() {
           </Link>
           <Link
             href="/reports/custom"
-            title="דוח מותאם — שלב מסננים חופשי (תאריך, הקצאה, לקוח, סוג מסמך, סטטוס) והפק כל חתך"
+            title="דוח מותאם: שלב מסננים חופשי (תאריך, הקצאה, לקוח, סוג מסמך, סטטוס) והפק כל חתך"
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border-2 border-rose-200 text-stone-800 hover:bg-rose-50"
           >
             <SlidersHorizontal className="w-4 h-4 text-rose-600" />

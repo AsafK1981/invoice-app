@@ -36,7 +36,7 @@ export function useNotifications(limit = 20) {
 
   useEffect(() => {
     fetchList();
-    // Re-fetch on focus + on global change event. No realtime channel —
+    // Re-fetch on focus + on global change event. No realtime channel,
     // polling on focus is more than enough for this use case and avoids
     // the always-on WebSocket cost.
     const onChange = () => fetchList();
@@ -83,7 +83,7 @@ interface CreateClientArgs {
   documentId?: string;
 }
 
-/** Client-side notification create. Uses RLS — user can only write their
+/** Client-side notification create. Uses RLS; user can only write their
  *  own notifications for their own business. Used by the bank-import
  *  matcher and other in-browser producers. */
 export async function createNotificationClient(args: CreateClientArgs): Promise<void> {

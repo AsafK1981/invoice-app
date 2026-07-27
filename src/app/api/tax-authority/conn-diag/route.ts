@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqual } from "node:crypto";
 
 /**
- * TEMPORARY diagnostic — probes Vercel→gov.il token-endpoint reachability.
+ * TEMPORARY diagnostic: probes Vercel→gov.il token-endpoint reachability.
  * Uses dummy credentials so nothing sensitive is sent or returned; the gov
  * server replies 400/401 if reachable, or the fetch throws a network error
  * (ETIMEDOUT / ECONNRESET / ENETUNREACH …) we surface via err.cause.
@@ -12,7 +12,7 @@ import { timingSafeEqual } from "node:crypto";
  * once the connectivity root cause is confirmed.
  */
 export const dynamic = "force-dynamic";
-// Run from Frankfurt — closest Vercel region to Israel. iad1 (US East)
+// Run from Frankfurt: closest Vercel region to Israel. iad1 (US East)
 // can't complete the TCP handshake to gov.il within undici's 10s connect
 // timeout; fra1's ~60ms RTT does.
 export const preferredRegion = "fra1";

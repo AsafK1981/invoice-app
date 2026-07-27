@@ -1,4 +1,4 @@
-// Reproduces the AEGIS pentest exploit (F-001, CVSS 9.1) — anon-key read of
+// Reproduces the AEGIS pentest exploit (F-001, CVSS 9.1): anon-key read of
 // every protected table. MUST return 0 rows on every table. If any returns
 // data, the RLS bypass has regressed and the push must be aborted.
 //
@@ -30,7 +30,7 @@ const TABLES = [
   "documents",
   "document_items",
   "expenses",
-  // Added 2026-05-11 after the security audit — any new public-schema
+  // Added 2026-05-11 after the security audit; any new public-schema
   // table goes here so a forgotten `ENABLE ROW LEVEL SECURITY` is caught
   // before reaching prod.
   "audit_log",
@@ -58,7 +58,7 @@ for (const table of TABLES) {
 
 if (leaks.length > 0) {
   console.error("");
-  console.error("🚨 SECURITY REGRESSION — anon-key reads returned data:");
+  console.error("🚨 SECURITY REGRESSION: anon-key reads returned data:");
   for (const { table, rows } of leaks) {
     console.error(`   ${table}: ${rows} rows`);
   }

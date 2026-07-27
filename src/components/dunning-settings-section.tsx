@@ -99,7 +99,7 @@ export function DunningSettingsSection() {
               </button>
             </div>
             <p className="text-xs text-stone-500 mt-1.5">
-              אם תשאיר ריק — יוצג שם העסק ({business.name || "לא הוגדר"}).
+              אם תשאיר ריק, יוצג שם העסק ({business.name || "לא הוגדר"}).
             </p>
           </div>
         )}

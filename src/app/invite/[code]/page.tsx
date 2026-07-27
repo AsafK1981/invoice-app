@@ -67,7 +67,7 @@ export default function InviteLandingPage() {
       // Auto-redeem on first authenticated visit (or right after OAuth
       // bounces back with ?action=redeem).
       if (search.get("redeemed") === "1") {
-        // Already redeemed in this tab — don't double-call.
+        // Already redeemed in this tab: don't double-call.
         return;
       }
       redeem(session.access_token);
@@ -111,12 +111,12 @@ export default function InviteLandingPage() {
           <>
             <div className="rounded-2xl bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-100 p-5 space-y-2">
               <p className="text-sm text-stone-800 leading-relaxed">
-                ברוך הבא ל-<strong>MySuperFriendlyInvoiceApp</strong> — אפליקציה
+                ברוך הבא ל-<strong>MySuperFriendlyInvoiceApp</strong>, אפליקציה
                 להפקת חשבוניות וקבלות לעצמאיים.
               </p>
               <p className="text-sm text-stone-700 leading-relaxed">
                 ההזמנה הזו תעניק לך גישה מלאה, בלי כרטיס אשראי. תוכל להפיק
-                מסמכים, לנהל לקוחות, לעקוב אחר הכנסות והוצאות — הכל בעברית.
+                מסמכים, לנהל לקוחות, לעקוב אחר הכנסות והוצאות, הכל בעברית.
               </p>
             </div>
             <button
@@ -127,7 +127,7 @@ export default function InviteLandingPage() {
               התחבר עם Google כדי להפעיל
             </button>
             <p className="text-xs text-center text-stone-500">
-              ההתחברות עם Google — אפס סיסמאות, אפס טפסים.
+              ההתחברות עם Google, אפס סיסמאות, אפס טפסים.
             </p>
           </>
         )}

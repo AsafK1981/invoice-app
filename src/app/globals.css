@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* The app ships light-only: nothing ever puts `.dark` on <html>.
-   This line must STAY anyway — it re-points Tailwind's
+   This line must STAY anyway; it re-points Tailwind's
    `dark:` variant (still used in a handful of components) at the class
    instead of Tailwind 4's default prefers-color-scheme, which would
    otherwise fire those utilities for anyone whose OS is in dark mode. */
@@ -19,7 +19,7 @@ html {
   scroll-behavior: smooth;
 }
 
-/* Latin runs inside RTL copy — isolate so adjacent Hebrew punctuation resolves
+/* Latin runs inside RTL copy: isolate so adjacent Hebrew punctuation resolves
    against the paragraph direction. See src/components/ui/ltr.tsx. */
 span[dir="ltr"] { unicode-bidi: isolate; }
 
@@ -217,11 +217,11 @@ tr {
 }
 
 /* =====================================================================
-   CONTRAST REPAIRS — measured, not eyeballed
+   CONTRAST REPAIRS: measured, not eyeballed
    Every rule below fixes a stock-Tailwind pair that an automated sweep of
    all 21 app routes measured BELOW its WCAG AA threshold (4.5:1 body /
    3:1 large text and graphics). These are an accessibility FLOOR, not a
-   palette decision, so they live here — unscoped — rather than inside
+   palette decision, so they live here, unscoped, rather than inside
    app-skin.css.
 
    Why not override the source colours in `@theme`? Two of the three groups
@@ -247,7 +247,7 @@ tr {
 [class~="bg-rose-500"][class~="text-white"] { background-color: #be123c !important; }
 
 /* Secondary CTA gradients that carry WHITE labels (export-to-Excel, enable
-   2FA, beta invites, the Pro plan CTA). White measured 1.94–4.12:1 on the
+   2FA, beta invites, the Pro plan CTA). White measured 1.94-4.12:1 on the
    stock -400/-500 stops. Drop each ramp to its -600/-700 pair: ≥5.4:1.
    These same class pairs also paint document-type icon TILES, where the
    darker ramp only helps the white glyph (3:1 → 5:1+). */

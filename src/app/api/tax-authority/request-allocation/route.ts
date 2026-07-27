@@ -15,7 +15,7 @@ import { clientIp } from "@/lib/rate-limit";
 import { todayInIsrael } from "@/lib/date";
 
 // Token refresh + allocation go through the Israeli egress proxy (Cloud Run
-// me-west1) — allow headroom for proxy cold-start + the gov.il round trip.
+// me-west1); allow headroom for proxy cold-start + the gov.il round trip.
 export const maxDuration = 30;
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -37,7 +37,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
  *   6. Save the returned allocation number on the document row
  *   7. Return the result
  *
- * Idempotent — if the document already has an allocation_number, we
+ * Idempotent: if the document already has an allocation_number, we
  * return it without re-calling the API.
  */
 export async function POST(req: NextRequest) {
@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "מסמך לא נמצא" }, { status: 404 });
   }
 
-  // Idempotency — already have an allocation number? return it.
+  // Idempotency: already have an allocation number? return it.
   if (doc.allocation_number) {
     return NextResponse.json({
       ok: true,
@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
 
   // A valid עוסק/company number is mandatory for the allocation request. New
   // businesses may still carry the placeholder ("000000000") or an empty
-  // value — fail with a clear pointer instead of letting the Tax Authority
+  // value; fail with a clear pointer instead of letting the Tax Authority
   // reject Vat_Number=0 with a cryptic code the user can't act on.
   const vatNumber = String(business.tax_id || "").replace(/\D/g, "");
   if (!vatNumber || /^0+$/.test(vatNumber)) {
@@ -148,11 +148,11 @@ export async function POST(req: NextRequest) {
       notApplicable: true,
       allocationNumber: null,
       message:
-        "לקוח פרטי (ללא מספר עוסק/ח.פ) — חשבונית זו אינה מחייבת מספר הקצאה מרשות המסים.",
+        "לקוח פרטי (ללא מספר עוסק/ח.פ), חשבונית זו אינה מחייבת מספר הקצאה מרשות המסים.",
     });
   }
 
-  // Verify the doc actually needs an allocation (defense in depth — UI
+  // Verify the doc actually needs an allocation (defense in depth, UI
   // should also check, but we don't trust the UI). Pass the resolved
   // customer number so the B2C carve-out is honoured here too.
   if (
@@ -188,7 +188,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Refresh access token if it's within 5 minutes of expiry. Tokens are
-  // stored AES-256-GCM encrypted (info-security appendix §18) — decrypt
+  // stored AES-256-GCM encrypted (info-security appendix §18); decrypt
   // before use and re-encrypt before writing back.
   let accessToken: string;
   try {
@@ -198,7 +198,7 @@ export async function POST(req: NextRequest) {
       kind: "tax_authority_token_decrypt_failed",
       ip: clientIp(req),
       businessId: business.id as string,
-      message: "Token decrypt failed — wrong key, corrupted blob, or tampering",
+      message: "Token decrypt failed: wrong key, corrupted blob, or tampering",
       severity: "error",
       extra: { error: err instanceof Error ? err.message : "unknown" },
     });
@@ -266,7 +266,7 @@ export async function POST(req: NextRequest) {
     customerVatNumber,
     invoiceDate: doc.date as string,
     // Issuance date should be the document's own calendar date; fall back to
-    // today (in Israel time — the server runs UTC) only if the row lacks one.
+    // today (in Israel time, the server runs UTC) only if the row lacks one.
     issuanceDate: (doc.date as string) || todayInIsrael(),
     amountBeforeDiscount: Math.round((subtotalIls + discountIls) * 100) / 100,
     discount: Math.round(discountIls * 100) / 100,
@@ -288,7 +288,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Persist the result regardless — both success and failure are useful audit data
+  // Persist the result regardless; both success and failure are useful audit data
   await sb
     .from("tax_authority_credentials")
     .update({
@@ -299,7 +299,7 @@ export async function POST(req: NextRequest) {
 
   if (!result.allocationNumber) {
     // resultMessage is already a clean Hebrew reason (mapped from the ITA code
-    // in tax-authority.ts) — never the raw upstream JSON. Compose it with the
+    // in tax-authority.ts); never the raw upstream JSON. Compose it with the
     // code for reference so the user sees actionable RTL Hebrew, not a blob.
     const hebrewReason = result.resultMessage || "הבקשה נדחתה על ידי רשות המסים";
     return NextResponse.json(

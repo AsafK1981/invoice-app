@@ -29,7 +29,7 @@ const COMPONENT_LABELS: Record<string, string> = {
 };
 
 /**
- * /v2/status — same live health-check logic as /status (polls
+ * /v2/status, same live health-check logic as /status (polls
  * /api/health every 30s), re-themed in the gold/obsidian v2 design.
  */
 export default function V2StatusPage() {

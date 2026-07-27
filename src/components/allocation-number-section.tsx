@@ -26,15 +26,15 @@ const GOV_PORTAL_URL = "https://www.gov.il/he/pages/invoices-israel";
  * עוסק מורשה customers (or this user post-upgrade) get it for free.
  *
  * Three states:
- *   1. Doc doesn't need an allocation number (under threshold) — section
+ *   1. Doc doesn't need an allocation number (under threshold), section
  *      is hidden entirely.
- *   2. Required and not yet set — red warning + input to paste the number
+ *   2. Required and not yet set, red warning + input to paste the number
  *      after getting it from the gov portal.
- *   3. Set — green "received" card with the number + when it was entered
+ *   3. Set: green "received" card with the number + when it was entered
  *      + a small edit button to replace it.
  */
 export function AllocationNumberSection({ doc, customerTaxId }: Props) {
-  // All hooks must run unconditionally — early return MUST come after.
+  // All hooks must run unconditionally; early return MUST come after.
   // Same trap that produced the React #310 bug yesterday.
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(doc.allocationNumber || "");
@@ -47,21 +47,21 @@ export function AllocationNumberSection({ doc, customerTaxId }: Props) {
     doc.type === "tax_invoice" ||
     doc.type === "tax_invoice_receipt" ||
     doc.type === "credit_note";
-  // Private customers (no business/VAT number) are never gated — the section
+  // Private customers (no business/VAT number) are never gated; the section
   // stays hidden for B2C tax invoices regardless of amount.
   const required = requiresAllocationNumber(doc, customerTaxId ?? doc.clientTaxId);
   if (!isTaxDoc || !required) return null;
 
   const docYear = parseInt(doc.date.slice(0, 4), 10) || new Date().getFullYear();
   // Use the date-aware threshold (honours the mid-2026 drop to ₪5,000) so the
-  // displayed number matches what requiresAllocationNumber() actually gates on
-  // — otherwise a ₪7,000 June-2026 doc would claim a ₪10,000 threshold.
+  // displayed number matches what requiresAllocationNumber() actually gates on.
+  // Otherwise a ₪7,000 June-2026 doc would claim a ₪10,000 threshold.
   const threshold = allocationRequiredThreshold(doc.date ? new Date(doc.date) : new Date());
   const hasNumber = Boolean(doc.allocationNumber);
 
   // Tries our /api/tax-authority/request-allocation endpoint, which
   // hits gov.il using the business's stored OAuth tokens. On success
-  // the server has already persisted the number on the document —
+  // the server has already persisted the number on the document,
   // we update local UI so the user doesn't need to refresh.
   async function handleAutoFetch() {
     setFetching(true);
@@ -111,14 +111,14 @@ export function AllocationNumberSection({ doc, customerTaxId }: Props) {
 
   async function handleClear() {
     // If the doc has already been emailed to the client, the allocation
-    // is part of what was delivered — clearing it leaves the recipient
+    // is part of what was delivered; clearing it leaves the recipient
     // with a doc that cites a number we no longer have on record.
     // Require explicit confirmation in that case.
     if (doc.emailedAt) {
       const ok = await confirm({
         title: "המסמך כבר נשלח ללקוח",
         message:
-          "המסמך כבר נשלח ללקוח עם מספר ההקצאה הזה. ניקוי המספר אינו מבטל את החשבונית — אם זו טעות, צור חשבונית זיכוי במקום. להמשיך בכל זאת?",
+          "המסמך כבר נשלח ללקוח עם מספר ההקצאה הזה. ניקוי המספר אינו מבטל את החשבונית. אם זו טעות, צור חשבונית זיכוי במקום. להמשיך בכל זאת?",
         tone: "danger",
         confirmLabel: "נקה בכל זאת",
       });
@@ -194,7 +194,7 @@ export function AllocationNumberSection({ doc, customerTaxId }: Props) {
             אסור לשלוח את המסמך ללקוח לפני שמספר ההקצאה משויך אליו.
           </p>
 
-          {/* Auto-fetch via our /api/tax-authority/request-allocation — works
+          {/* Auto-fetch via our /api/tax-authority/request-allocation; works
               if the business has connected to gov.il in /settings. Falls
               back gracefully (just shows an error in this card) if the
               connection isn't set up; the manual paste flow below stays
@@ -218,7 +218,7 @@ export function AllocationNumberSection({ doc, customerTaxId }: Props) {
           </button>
 
           <div className="mt-3 flex items-center gap-2 flex-wrap">
-            <p className="text-xs text-stone-600">או — הזן את המספר ידנית אם קיבלת אותו במקום אחר:</p>
+            <p className="text-xs text-stone-600">או הזן את המספר ידנית אם קיבלת אותו במקום אחר:</p>
             <a
               href={GOV_PORTAL_URL}
               target="_blank"

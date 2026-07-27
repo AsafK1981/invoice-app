@@ -46,7 +46,7 @@ function mapRow(row: Record<string, unknown>): AuditEntry {
 
 /**
  * Fire-and-forget audit log write. Failures are swallowed (with a console
- * warning) — the audit log is not critical to the operation that triggered
+ * warning); the audit log is not critical to the operation that triggered
  * it, so we never block user actions on it.
  */
 export async function logAudit(args: {

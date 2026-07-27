@@ -6,7 +6,7 @@ import { formatCurrency, formatDate } from "@/lib/format";
 
 /**
  * Read-only, auto-computed pre-import preview for the documents entity. Pure
- * presentational — it just renders an `AnalyzeResult` (from analyzeRows). The
+ * presentational; it just renders an `AnalyzeResult` (from analyzeRows). The
  * three import surfaces (per-entity modal, bulk zone, admin concierge) each
  * compute an AnalyzeResult and drop this component in; the copy + styling live
  * here once so the preview can't triplicate or drift.
@@ -57,7 +57,7 @@ export function ImportAnalysisPanel({ analysis }: { analysis: AnalyzeResult }) {
           <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
           <p>
             שורות עם סוג לא מזוהה ייובאו כקבלה
-            {" — "}
+            {": "}
             <span className="text-amber-600">{unmappedTypeSamples.slice(0, 5).join(" · ")}</span>
           </p>
         </div>
@@ -86,14 +86,14 @@ export function ImportAnalysisPanel({ analysis }: { analysis: AnalyzeResult }) {
             <tbody>
               {sampleMapped.map((r, idx) => (
                 <tr key={idx} className="border-t border-amber-50">
-                  <td className="px-2 py-1 text-stone-700">{r.number || "—"}</td>
+                  <td className="px-2 py-1 text-stone-700">{r.number || "-"}</td>
                   <td className="px-2 py-1 text-stone-700">{DOCUMENT_TYPE_LABELS[r.type]}</td>
-                  <td className="px-2 py-1 text-stone-700">{r.date ? formatDate(r.date) : "—"}</td>
+                  <td className="px-2 py-1 text-stone-700">{r.date ? formatDate(r.date) : "-"}</td>
                   <td className="px-2 py-1 text-stone-700">
-                    {r.total == null ? "—" : formatCurrency(r.total)}
+                    {r.total == null ? "-" : formatCurrency(r.total)}
                   </td>
                   <td className="px-2 py-1 text-stone-700 truncate max-w-[120px]">
-                    {r.client || "—"}
+                    {r.client || "-"}
                   </td>
                 </tr>
               ))}

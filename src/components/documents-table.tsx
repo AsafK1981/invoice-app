@@ -369,7 +369,7 @@ export function DocumentsTable({ documents, limit, showExport = false }: Props) 
                       </span>
                     </td>
                     <td className="px-3 sm:px-6 py-3 text-sm font-medium text-stone-900">{d.clientName}</td>
-                    <td className="px-6 py-3 text-sm text-stone-700 hidden lg:table-cell">{d.subject || "—"}</td>
+                    <td className="px-6 py-3 text-sm text-stone-700 hidden lg:table-cell">{d.subject || "-"}</td>
                     <td className="px-6 py-3 text-sm text-stone-600 hidden md:table-cell">{formatDate(d.date)}</td>
                     <td className="px-3 sm:px-6 py-3 text-sm">
                       <div className="flex flex-col gap-1">
@@ -459,7 +459,7 @@ function RowActions({ doc }: { doc: InvoiceDocument }) {
       message:
         doc.status === "draft"
           ? "פעולה זו לא ניתנת לביטול."
-          : "המספר לא יוחזר — ייתכן רצף חסר במספור. פעולה זו לא ניתנת לביטול.",
+          : "המספר לא יוחזר, ייתכן רצף חסר במספור. פעולה זו לא ניתנת לביטול.",
       tone: "danger",
       confirmLabel: "מחק",
     });
@@ -484,7 +484,7 @@ function RowActions({ doc }: { doc: InvoiceDocument }) {
           className="p-1.5 rounded-lg text-stone-300 hover:text-sky-600 hover:bg-sky-50 transition-colors cursor-pointer"
           aria-label="הפק קבלה לחשבון העסקה הזה"
         >
-          <Tooltip label="הפק קבלה — כסף התקבל" side="left">
+          <Tooltip label="הפק קבלה: כסף התקבל" side="left">
             <FilePlus2 className="w-4 h-4" />
           </Tooltip>
         </button>

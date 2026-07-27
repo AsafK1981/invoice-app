@@ -128,12 +128,12 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
     doc.status !== "cancelled" &&
     doc.status !== "draft" &&
     !doc.convertedToId;
-  // The doc this quote/proforma was converted into (if any) — used to render a
+  // The doc this quote/proforma was converted into (if any); used to render a
   // "→ הומר לקבלה #N" link instead of the convert button.
   const convertedDoc = doc.convertedToId
     ? allDocuments.find((d) => d.id === doc.convertedToId)
     : null;
-  // The quote/proforma this receipt was created FROM (if it was a conversion) —
+  // The quote/proforma this receipt was created FROM (if it was a conversion),
   // shown as a "← נוצר מהצעה #N" link.
   const sourceQuote = !isConvertible
     ? allDocuments.find((d) => d.convertedToId === doc.id)
@@ -159,14 +159,14 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
   })();
 
   // True when the doc legally needs a מספר הקצאה but doesn't have one yet.
-  // Used to disable any "send to client" button — sending without it would
+  // Used to disable any "send to client" button; sending without it would
   // be a regulatory violation.
   const allocationGate = requiresAllocationNumber(doc, customerTaxId) && !doc.allocationNumber;
 
   async function handlePrint() {
     // Render-then-set (18ב): window.print() blocks until the print dialog is
     // dismissed, so the printed sheet reflects the CURRENT flag (מקור while
-    // NULL). Only AFTER it returns do we stamp original_issued_at — making this
+    // NULL). Only AFTER it returns do we stamp original_issued_at, making this
     // first print the מקור and every later print/download/send an העתק.
     window.print();
     if (!doc) return;
@@ -181,7 +181,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
     if (!doc || downloadingPdf) return;
     // One-click real .pdf download. The server route renders the public
     // /view page with headless Chrome (full print CSS: RTL, colors,
-    // page-breaks, allocation number) and streams back a PDF — no more
+    // page-breaks, allocation number) and streams back a PDF; no more
     // "switch the print destination to Save as PDF" dance.
     const docLabel = DOCUMENT_TYPE_LABELS[doc.type];
     const filename =
@@ -206,7 +206,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
       // Mirror handlePrint (18ב): the route stamps original_issued_at AFTER
       // producing the bytes, but doesn't notify the client, so our local
       // doc.originalIssuedAt stays stale and a second download would re-send
-      // מקור. Stamp it here too — refetch propagates the flag so the NEXT
+      // מקור. Stamp it here too; refetch propagates the flag so the NEXT
       // download appends ?copy=1 → העתק. This first download already rendered
       // מקור (copyParam was empty at click time).
       try {
@@ -325,7 +325,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
     if (!doc) return;
     // Convert produces a doc that represents "paid for" the original quote.
     // עוסק פטור: receipt (קבלה).
-    // עוסק מורשה / company: tax_invoice_receipt (חשבונית מס/קבלה) — combines
+    // עוסק מורשה / company: tax_invoice_receipt (חשבונית מס/קבלה), combines
     // the tax invoice and the receipt in one doc, status auto-paid. Routing
     // to plain tax_invoice would leave it status=sent, which is wrong: the
     // client already paid.
@@ -368,13 +368,13 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
 
     // A document is deletable iff it was never emailed to the customer
     // (drafts AND issued-but-unsent docs). An emailed doc is a real record the
-    // customer holds — it must be reversed with a credit note, not deleted — so
+    // customer holds; it must be reversed with a credit note, not deleted, so
     // the button isn't rendered for those. Issued-but-unsent docs still leave a
     // numbering gap when removed, so we warn about it.
     const message =
       doc.status === "draft"
         ? "למחוק את המסמך? פעולה זו אינה הפיכה."
-        : "למחוק את המסמך? המספר לא יוחזר — ייתכן רצף חסר במספור. פעולה זו אינה הפיכה.";
+        : "למחוק את המסמך? המספר לא יוחזר, ייתכן רצף חסר במספור. פעולה זו אינה הפיכה.";
 
     const ok = await confirm({
       title: `למחוק את מסמך #${doc.number}?`,
@@ -409,7 +409,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
             <button
               onClick={handleConvertToReceipt}
               className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100"
-              title="המר את ההצעה לקבלה / חשבונית — הצעה תסומן כשולמה"
+              title="המר את ההצעה לקבלה / חשבונית, הצעה תסומן כשולמה"
             >
               <RefreshCw className="w-4 h-4" />
               <span className="hidden sm:inline">המר ל{canIssueTaxInvoices(business) ? "חשבונית מס/קבלה" : "קבלה"}</span>
@@ -445,7 +445,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
           )}
           {/* On a credit note that references an in-app invoice, link back to
               the original document it reverses (the notes-line reference on the
-              printed doc is retained separately — this is the interactive one). */}
+              printed doc is retained separately; this is the interactive one). */}
           {originalDoc && (
             <Link
               href={`/documents/${originalDoc.id}`}
@@ -494,7 +494,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
             className="hidden sm:inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-50 disabled:opacity-50 disabled:cursor-not-allowed"
             title={
               allocationGate
-                ? "חסר מספר הקצאה — אסור לשלוח חשבונית מס מבלעדיו"
+                ? "חסר מספר הקצאה: אסור לשלוח חשבונית מס מבלעדיו"
                 : client?.phone ? `שליחה ל-${client.phone}` : "שליחה ב-WhatsApp"
             }
           >
@@ -507,7 +507,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
             className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-white border border-orange-200 text-stone-800 hover:bg-orange-50 disabled:opacity-50 disabled:cursor-not-allowed"
             title={
               allocationGate
-                ? "חסר מספר הקצאה — אסור לשלוח חשבונית מס מבלעדיו"
+                ? "חסר מספר הקצאה: אסור לשלוח חשבונית מס מבלעדיו"
                 : client?.email
                   ? `שליחה ל-${client.email}`
                   : "אין אימייל שמור ללקוח"
@@ -525,7 +525,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
               </>
             )}
           </button>
-          {/* Reminder button — relevant for sent quotes/tax_invoices that
+          {/* Reminder button: relevant for sent quotes/tax_invoices that
               haven't been paid yet. Always shown when the doc TYPE is right
               and status is "sent", so the user discovers the feature exists.
               Disabled with a tooltip explaining the gate when the doc hasn't
@@ -691,7 +691,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
         </div>
       )}
 
-      {/* Delivery status — separate from payment status. Set only when an
+      {/* Delivery status, separate from payment status. Set only when an
           email send actually succeeds (not on doc creation). */}
       {doc.status !== "draft" && doc.status !== "cancelled" && (
         <div className="no-print card-soft p-3 flex items-center gap-3 max-w-[210mm] mx-auto">
@@ -854,8 +854,8 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                   doc.type === "tax_invoice" ||
                   doc.type === "tax_invoice_receipt" ||
                   doc.type === "credit_note")
-                  ? "מסמך שנשלח ללקוח — מספרו סופי ואינו ניתן למחיקה. לביטול יש להפיק חשבונית זיכוי."
-                  : "מסמך שהופק — מספרו סופי ואינו ניתן לשינוי."}
+                  ? "מסמך שנשלח ללקוח: מספרו סופי ואינו ניתן למחיקה. לביטול יש להפיק חשבונית זיכוי."
+                  : "מסמך שהופק: מספרו סופי ואינו ניתן לשינוי."}
               </p>
             </div>
           </div>

@@ -6,7 +6,7 @@ import { emitSecurityEvent } from "@/lib/security-events";
 import { clientIp } from "@/lib/rate-limit";
 
 // The token exchange goes through the Israeli egress proxy (Cloud Run
-// me-west1) — allow headroom for proxy cold-start + the gov.il round trip.
+// me-west1); allow headroom for proxy cold-start + the gov.il round trip.
 export const maxDuration = 30;
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -20,7 +20,7 @@ const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
  *   3. Store the tokens encrypted-at-rest in tax_authority_credentials
  *   4. Redirect the user back to /settings with a success flag
  *
- * The tokens never touch the client browser — they live only in our
+ * The tokens never touch the client browser; they live only in our
  * service-role-scoped DB and are pulled server-side when issuing an
  * allocation request.
  */
@@ -56,12 +56,12 @@ export async function GET(req: NextRequest) {
     emitSecurityEvent({
       kind: "tax_authority_unauthorized",
       ip: clientIp(req),
-      message: "OAuth callback with invalid/unknown state — possible CSRF or replay",
+      message: "OAuth callback with invalid/unknown state: possible CSRF or replay",
       severity: "warning",
     });
     return NextResponse.redirect(`${origin}/settings?tax_authority=error&reason=invalid_state`);
   }
-  // Consume the state up front — one-time use. Doing it before the expiry
+  // Consume the state up front; one-time use. Doing it before the expiry
   // check means expired/abandoned rows also get cleaned here instead of
   // piling up (there's no separate GC for this table).
   await sb.from("tax_authority_oauth_states").delete().eq("state", state);

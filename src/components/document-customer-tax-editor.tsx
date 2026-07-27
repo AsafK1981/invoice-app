@@ -7,7 +7,7 @@ import type { InvoiceDocument } from "@/lib/types";
 
 /**
  * Inline editor for the customer's עוסק/ח.פ number on a document. Surfaced on
- * tax-invoice documents because חשבונית ישראל allocation requires it — lets the
+ * tax-invoice documents because חשבונית ישראל allocation requires it; lets the
  * user add it to an invoice that was created for an ad-hoc client without one.
  */
 export function DocumentCustomerTaxEditor({ doc }: { doc: InvoiceDocument }) {
@@ -95,7 +95,7 @@ export function DocumentCustomerTaxEditor({ doc }: { doc: InvoiceDocument }) {
         ) : (
           <div className="flex items-center gap-3 flex-shrink-0">
             <span className={`text-base font-bold ${current ? "text-stone-900" : "text-stone-400"}`} dir="ltr">
-              {current || "— חסר"}
+              {current || "חסר"}
             </span>
             <button
               onClick={start}

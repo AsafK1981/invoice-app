@@ -51,7 +51,7 @@ const EXACT_TYPE_CODES: Record<string, DocumentType> = {
  * Canonical mapping from a raw CSV/xlsx "document type" cell to our internal
  * DocumentType, together with whether anything actually matched.
  *
- * This is the single source of truth — csv-import-modal, bulk-import-zone and
+ * This is the single source of truth: csv-import-modal, bulk-import-zone and
  * the admin import route all call it, so the three flows can never drift.
  *
  * `matched` is false when the cell was empty or nothing recognized it. Import
@@ -61,7 +61,7 @@ const EXACT_TYPE_CODES: Record<string, DocumentType> = {
  *
  * Order matters: most-specific label first, so e.g. "חשבונית מס/קבלה" is
  * matched before the looser "חשבונית"/"קבלה" fallbacks. A standalone "חשבון"
- * (without "קבלה") maps to tax_invoice — an עוסק מורשה export uses it for the
+ * (without "קבלה") maps to tax_invoice; an עוסק מורשה export uses it for the
  * tax invoice.
  */
 export function resolveDocumentTypeStrict(raw: string): { type: DocumentType; matched: boolean } {
@@ -73,7 +73,7 @@ export function resolveDocumentTypeStrict(raw: string): { type: DocumentType; ma
     return { type: EXACT_TYPE_CODES[t], matched: true };
   }
 
-  // חשבונית מס/קבלה — the combined tax-invoice-receipt
+  // חשבונית מס/קבלה: the combined tax-invoice-receipt
   if (
     t.includes("חשבונית מס קבלה") ||
     (t.includes("חשבונית") && t.includes("מס") && t.includes("קבלה")) ||
@@ -82,9 +82,9 @@ export function resolveDocumentTypeStrict(raw: string): { type: DocumentType; ma
   ) {
     return { type: "tax_invoice_receipt", matched: true };
   }
-  // חשבונית זיכוי — credit note
+  // חשבונית זיכוי: credit note
   if (t.includes("זיכוי") || t.includes("credit")) return { type: "credit_note", matched: true };
-  // חשבון עסקה / חשבונית עסקה — proforma / transaction account
+  // חשבון עסקה / חשבונית עסקה: proforma / transaction account
   if (
     t.includes("חשבון עסקה") ||
     t.includes("חשבון עיסקה") ||
@@ -97,7 +97,7 @@ export function resolveDocumentTypeStrict(raw: string): { type: DocumentType; ma
   ) {
     return { type: "proforma", matched: true };
   }
-  // הצעת מחיר — quote / price quote / estimate
+  // הצעת מחיר: quote / price quote / estimate
   if (
     t.includes("הצעת מחיר") ||
     t.includes("הצעה") ||
@@ -107,7 +107,7 @@ export function resolveDocumentTypeStrict(raw: string): { type: DocumentType; ma
   ) {
     return { type: "quote", matched: true };
   }
-  // חשבונית מס / חשבונית / standalone חשבון (without קבלה) — tax invoice
+  // חשבונית מס / חשבונית / standalone חשבון (without קבלה): tax invoice
   if (
     t.includes("חשבונית מס") ||
     t.includes("חשבונית") ||
@@ -117,10 +117,10 @@ export function resolveDocumentTypeStrict(raw: string): { type: DocumentType; ma
   ) {
     return { type: "tax_invoice", matched: true };
   }
-  // קבלה — receipt
+  // קבלה: receipt
   if (t.includes("קבלה") || t.includes("receipt")) return { type: "receipt", matched: true };
 
-  // Unknown — caller should flag as "סוג לא מזוהה". We still default to receipt
+  // Unknown: caller should flag as "סוג לא מזוהה". We still default to receipt
   // so a mis-typed row is imported rather than dropped.
   return { type: "receipt", matched: false };
 }
@@ -165,7 +165,7 @@ export function excelSerialToISO(n: number): string {
  * unambiguous ISO date.
  *
  * AMBIGUITY RULE: for slash/dot/dash separated all-numeric dates the leading
- * component decides — a 4-digit leading component is treated as year-first
+ * component decides; a 4-digit leading component is treated as year-first
  * (YYYY/MM/DD), otherwise day-first (Israeli DD/MM/YYYY). We never guess
  * month-first.
  *
@@ -179,7 +179,7 @@ export function normalizeImportDate(raw: string | null | undefined): string | nu
 
   // Already an ISO date.
   if (/^\d{4}-\d{2}-\d{2}$/.test(original)) return original;
-  // ISO datetime — keep the date part.
+  // ISO datetime: keep the date part.
   if (/^\d{4}-\d{2}-\d{2}T/.test(original)) return original.slice(0, 10);
 
   // Pure digits: either YYYYMMDD (BKMVDATA) or an Excel serial number.
@@ -221,9 +221,9 @@ export function normalizeImportDate(raw: string | null | undefined): string | nu
 /**
  * Import-time date resolution used by every import path.
  *
- * - empty/missing  → `fallback` (today) — the row had no date column
+ * - empty/missing  → `fallback` (today): the row had no date column
  * - present + valid → normalized `YYYY-MM-DD`
- * - present + invalid → `null` — caller should skip and count the row
+ * - present + invalid → `null`: caller should skip and count the row
  */
 export function resolveImportDate(raw: string | null | undefined, fallback: string): string | null {
   const trimmed = (raw ?? "").trim();

@@ -23,7 +23,7 @@ interface BackupInput {
 }
 
 // UTF-8 BOM keeps Hebrew rendering correct when the CSV is opened in
-// Excel — the existing CSV exports do the same.
+// Excel; the existing CSV exports do the same.
 const BOM = "﻿";
 
 /**
@@ -129,7 +129,7 @@ export async function downloadFullBackupZip(input: BackupInput): Promise<void> {
       ),
   );
 
-  // 5) Document items, one row each — uses doc number + type as the
+  // 5) Document items, one row each, uses doc number + type as the
   // human-readable reference (id would survive a re-import but means
   // nothing to a person reading the CSV).
   const itemRows: Array<Record<string, string | number>> = [];
@@ -166,7 +166,7 @@ export async function downloadFullBackupZip(input: BackupInput): Promise<void> {
       ),
   );
 
-  // 7) README — context for a future-you who finds this zip in a folder
+  // 7) README: context for a future-you who finds this zip in a folder
   // a year from now and wonders what it is.
   zip.file(
     "README.txt",

@@ -123,7 +123,7 @@ export function useDocument(id: string) {
  * in one Postgres transaction. If the insert fails, the counter doesn't advance
  * (no gap in numbering). Returns the assigned number.
  *
- * Pass `doc.number = 0` (or anything) — it's ignored; the RPC assigns the real number.
+ * Pass `doc.number = 0` (or anything), it's ignored; the RPC assigns the real number.
  */
 /**
  * The number the next document of this type will get (the counter's value, or
@@ -233,7 +233,7 @@ export async function createDocument(
       .select();
     if (allocError || !allocData || allocData.length === 0) {
       throw new Error(
-        "המסמך נשמר אך שמירת מספר ההקצאה נכשלה — עדכן אותו ידנית במסמך.",
+        "המסמך נשמר אך שמירת מספר ההקצאה נכשלה. עדכן אותו ידנית במסמך.",
       );
     }
     window.dispatchEvent(new Event(CHANGE_EVENT));
@@ -250,14 +250,14 @@ export async function deleteDocument(id: string) {
     .eq("id", id)
     .maybeSingle();
 
-  // Deletable iff the document was NEVER emailed to the customer — this covers
+  // Deletable iff the document was NEVER emailed to the customer; this covers
   // drafts AND issued-but-unsent docs (e.g. a mistaken/test issue). A document
   // that WAS delivered (emailed_at set) is a real record given to the customer
   // and can only be reversed with a credit note (mirrors the DB immutability
   // trigger's DELETE rule).
   if (snap && snap.emailed_at) {
     throw new Error(
-      "מסמך שנשלח ללקוח אינו ניתן למחיקה — לביטול הפק חשבונית זיכוי",
+      "מסמך שנשלח ללקוח אינו ניתן למחיקה, לביטול הפק חשבונית זיכוי",
     );
   }
 
@@ -277,7 +277,7 @@ export async function deleteDocument(id: string) {
 }
 
 export async function updateDocumentStatus(id: string, status: InvoiceDocument["status"]) {
-  // Snapshot for context — what was the previous status?
+  // Snapshot for context: what was the previous status?
   const { data: snap } = await supabase
     .from("documents")
     .select("type, number, client_name, status")
@@ -298,7 +298,7 @@ export async function updateDocumentStatus(id: string, status: InvoiceDocument["
     .select();
   if (error) throw new Error(error.message);
   if (!updated || updated.length === 0) {
-    throw new Error("עדכון לא עבר — ייתכן שאין הרשאה (RLS) או שהמסמך לא קיים");
+    throw new Error("עדכון לא עבר, ייתכן שאין הרשאה (RLS) או שהמסמך לא קיים");
   }
 
   if (snap) {
@@ -320,7 +320,7 @@ export async function updateDocumentStatus(id: string, status: InvoiceDocument["
  */
 /**
  * Records that `sourceQuoteId` was converted into `targetReceiptId` and
- * marks the source quote as "paid" — because conversion only happens
+ * marks the source quote as "paid", because conversion only happens
  * when the client actually paid for the quote. One transaction, both
  * updates. Used by the receipt editor after a successful create-from
  * convert flow.
@@ -344,7 +344,7 @@ export async function linkConvertedDocument(sourceQuoteId: string, targetReceipt
   if (error) throw new Error(error.message);
   if (!data || data.length === 0) {
     throw new Error(
-      "ההצעה כבר הומרה לקבלה אחרת — שני טאבים פעילים? רענן ובדוק.",
+      "ההצעה כבר הומרה לקבלה אחרת. שני טאבים פעילים? רענן ובדוק.",
     );
   }
   window.dispatchEvent(new Event(CHANGE_EVENT));
@@ -368,14 +368,14 @@ export async function setAllocationNumber(id: string, allocationNumber: string |
     .select();
   if (error) throw new Error(error.message);
   if (!data || data.length === 0) {
-    throw new Error("עדכון לא עבר — ייתכן שאין הרשאה (RLS) או שהמסמך לא קיים");
+    throw new Error("עדכון לא עבר, ייתכן שאין הרשאה (RLS) או שהמסמך לא קיים");
   }
   window.dispatchEvent(new Event(CHANGE_EVENT));
 }
 
 /**
  * Change a specific document's number to any positive integer. The only hard
- * rule is uniqueness — the DB unique index (business_id, type, number) blocks a
+ * rule is uniqueness: the DB unique index (business_id, type, number) blocks a
  * collision, which we surface as a friendly message. Gaps / non-sequential
  * numbers are allowed (the user's call vs. their accountant).
  */
@@ -408,9 +408,9 @@ export async function updateDocumentNumber(id: string, newNumber: number) {
     throw new Error(error.message);
   }
   if (!data || data.length === 0) {
-    throw new Error("עדכון לא עבר — ייתכן שאין הרשאה (RLS) או שהמסמך לא קיים");
+    throw new Error("עדכון לא עבר, ייתכן שאין הרשאה (RLS) או שהמסמך לא קיים");
   }
-  // Audit trail — renumbering a finalized document is sensitive (tax-relevant).
+  // Audit trail: renumbering a finalized document is sensitive (tax-relevant).
   const type = (data[0].type as DocumentType) ?? (before?.type as DocumentType);
   logAudit({
     action: "document.number_changed",
@@ -437,7 +437,7 @@ export async function updateDocumentClientTaxId(id: string, taxId: string) {
     .select();
   if (error) throw new Error(error.message);
   if (!data || data.length === 0) {
-    throw new Error("עדכון לא עבר — ייתכן שאין הרשאה (RLS) או שהמסמך לא קיים");
+    throw new Error("עדכון לא עבר, ייתכן שאין הרשאה (RLS) או שהמסמך לא קיים");
   }
   window.dispatchEvent(new Event(CHANGE_EVENT));
 }
@@ -451,7 +451,7 @@ export async function markDocumentEmailed(id: string) {
     .select();
   if (error) throw new Error(error.message);
   if (!data || data.length === 0) {
-    throw new Error("עדכון לא עבר — ייתכן שאין הרשאה (RLS) או שהמסמך לא קיים");
+    throw new Error("עדכון לא עבר, ייתכן שאין הרשאה (RLS) או שהמסמך לא קיים");
   }
   window.dispatchEvent(new Event(CHANGE_EVENT));
 }
@@ -464,7 +464,7 @@ export async function markDocumentEmailed(id: string) {
  *
  * IDEMPOTENT: guarded by `.is("original_issued_at", null)` so a re-print /
  * re-send never resets the timestamp. A 0-row result (already set) is the
- * expected no-op — NOT an error — so we don't apply the usual 0-row RLS check.
+ * expected no-op, NOT an error, so we don't apply the usual 0-row RLS check.
  * The immutability trigger deliberately permits this column post-issue.
  */
 export async function markDocumentIssued(id: string) {

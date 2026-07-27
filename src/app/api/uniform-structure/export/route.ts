@@ -17,7 +17,7 @@ const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
  * registering the software in מרשם תוכנות.
  *
  * Query params:
- *   year   — 4-digit tax year (defaults to current year)
+ *   year: 4-digit tax year (defaults to current year)
  *
  * Auth: Bearer token; resolves to user → business owned by that user.
  */

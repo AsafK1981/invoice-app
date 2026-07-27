@@ -40,7 +40,7 @@ export function getProductId(tier: PlanTier, interval: BillingInterval): string 
 }
 
 /**
- * Reverse lookup — given a Polar product ID returned by a webhook,
+ * Reverse lookup, given a Polar product ID returned by a webhook,
  * which (tier, interval) does it represent? Returns null if the ID
  * doesn't match anything we configured.
  */

@@ -58,7 +58,7 @@ function biMonthlyRange(reference: Date, offsetPeriods: number): { start: string
     "ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יוני",
     "יולי", "אוגוסט", "ספטמבר", "אוקטובר", "נובמבר", "דצמבר",
   ];
-  const label = `${monthNames[startMonth]}–${monthNames[endMonth]} ${targetYear}`;
+  const label = `${monthNames[startMonth]}-${monthNames[endMonth]} ${targetYear}`;
   return { start, end, label };
 }
 
@@ -82,13 +82,13 @@ function yearRange(reference: Date): { start: string; end: string; label: string
 }
 
 export function VatPeriodReport({ business, documents, expenses }: Props) {
-  // ALL hooks must run before any conditional return — same trap as
+  // ALL hooks must run before any conditional return, same trap as
   // React #310 yesterday. The early return for עוסק פטור comes last.
   const [mode, setMode] = useState<PeriodMode>("this_2m");
   // Stable across renders. Without memo, the next two useMemos invalidate
   // every render because Date instances aren't ===; the report would
   // re-aggregate documents/expenses on every keystroke elsewhere on the
-  // page. Recompute would be wasted work — the period only depends on
+  // page. Recompute would be wasted work; the period only depends on
   // today's calendar date, which doesn't change for the life of the
   // component instance (worst case: midnight rollover, acceptable).
   const today = useMemo(() => new Date(), []);
@@ -129,7 +129,7 @@ export function VatPeriodReport({ business, documents, expenses }: Props) {
 
     // Input VAT (מע"מ תשומות) = sum of vat_amount on expenses in period.
     // Clamp negative net-of-VAT to 0 in case the user typed a vat_amount
-    // larger than the total amount (typo) — base shouldn't go negative.
+    // larger than the total amount (typo); base shouldn't go negative.
     let inputVat = 0;
     let inputBase = 0;
     for (const e of expensesInRange) {
@@ -151,7 +151,7 @@ export function VatPeriodReport({ business, documents, expenses }: Props) {
     };
   }, [documents, expenses, range]);
 
-  // Hidden for עוסק פטור — they don't file VAT.
+  // Hidden for עוסק פטור; they don't file VAT.
   if (business.businessType !== "authorized" && business.businessType !== "company") {
     return null;
   }
@@ -235,7 +235,7 @@ export function VatPeriodReport({ business, documents, expenses }: Props) {
       <div className="text-xs text-stone-600 leading-relaxed border-t border-orange-100 pt-3">
         <strong className="text-stone-700">איך מחושב:</strong>{" "}
         מע״מ עסקאות = ה-מע״מ שנגבה מהלקוחות בחשבוניות מס וחשבוניות מס/קבלה (ללא טיוטות וביטולים, חשבוניות זיכוי מקטינות).
-        מע״מ תשומות = שדה &quot;מתוכו מע״מ&quot; שהזנת על כל הוצאה. הסיכום אינו תחליף לדוח טופס 102 אצל רואה החשבון —
+        מע״מ תשומות = שדה &quot;מתוכו מע״מ&quot; שהזנת על כל הוצאה. הסיכום אינו תחליף לדוח טופס 102 אצל רואה החשבון,
         משמש לבקרה והכנה בלבד.
       </div>
     </div>

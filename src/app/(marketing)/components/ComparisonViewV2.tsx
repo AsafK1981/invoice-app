@@ -16,12 +16,12 @@ import HeaderV2 from "./HeaderV2";
 import FooterV2 from "./FooterV2";
 
 /**
- * ComparisonViewV2 — the shared body of every /vs/<competitor> page.
+ * ComparisonViewV2, the shared body of every /vs/<competitor> page.
  *
  * Honest data + information design: pricing cards with a highlighted winner,
  * a feature-support matrix, pros/cons both ways, and a verdict. Two deliberate
  * legibility choices on the long feature table:
- *   1. Semantic colors are NOT brand-gold — green ✓ = supported, red ✗ =
+ *   1. Semantic colors are NOT brand-gold: green ✓ = supported, red ✗ =
  *      not supported, amber − = partial. Gold is reserved for accents, so a
  *      scanning eye never reads "gold" as "yes".
  *   2. Section grouping rows + zebra striping make the 15-row matrix
@@ -30,14 +30,14 @@ import FooterV2 from "./FooterV2";
  * Every competitor name and data string renders through `<LtrText>`: this is
  * RTL Hebrew copy with Latin brand names in it, and without a bidi isolate the
  * surrounding punctuation resolves against the wrong neighbour. The JSON-LD
- * block deliberately uses the RAW strings — it is machine-read, and bidi
+ * block deliberately uses the RAW strings; it is machine-read, and bidi
  * markup would corrupt it.
  */
 
 const APP_NAME = "חשבונית סופר ידידותית";
 
 /**
- * SoftwareApplication schema for the app itself — the same on every /vs page
+ * SoftwareApplication schema for the app itself, the same on every /vs page
  * (it describes us, not the competitor). Emitted once per comparison page so
  * search engines can render a rich product result. Price reflects the standing
  * list entry price (₪15/mo); the launch period is currently free, surfaced in
@@ -52,7 +52,7 @@ const APP_JSON_LD = {
   inLanguage: "he-IL",
   url: CANONICAL_ORIGIN,
   description:
-    "תוכנת חשבוניות בעברית לעוסק פטור/מורשה בישראל — הפקת חשבוניות וקבלות, אינטגרציה ל-API חשבונית ישראל (הקצאת מספרים), במחיר הוגן.",
+    "תוכנת חשבוניות בעברית לעוסק פטור/מורשה בישראל: הפקת חשבוניות וקבלות, אינטגרציה ל-API חשבונית ישראל (הקצאת מספרים), במחיר הוגן.",
   offers: {
     "@type": "Offer",
     price: "15",
@@ -67,7 +67,7 @@ const formatPrice = (nis: number) =>
     maximumFractionDigits: 0,
   }).format(nis);
 
-/** Semantic support mark — green/red/amber, never gold. */
+/** Semantic support mark: green/red/amber, never gold. */
 function Mark({ kind, note }: { kind: FeatureSupport; note?: string }) {
   const tone = kind === "yes" ? "yes" : kind === "no" ? "no" : "partial";
   const Icon = kind === "yes" ? Check : kind === "no" ? XIcon : Minus;
@@ -77,7 +77,7 @@ function Mark({ kind, note }: { kind: FeatureSupport; note?: string }) {
     <span
       className={`v2-mk ${tone}`}
       title={note ?? label}
-      aria-label={note ? `${label} — ${note}` : label}
+      aria-label={note ? `${label}: ${note}` : label}
     >
       <Icon strokeWidth={3} />
     </span>
@@ -87,12 +87,12 @@ function Mark({ kind, note }: { kind: FeatureSupport; note?: string }) {
 /**
  * Logical grouping of the 15 shared features (indices into
  * `competitor.features`, whose order is fixed by SHARED_FEATURES). Purely
- * presentational — the data and its order are untouched.
+ * presentational; the data and its order are untouched.
  */
 const FEATURE_GROUPS: { title: string; count: number }[] = [
-  { title: "מסמכים והפקה", count: 5 }, // 0–4
-  { title: "ניתוח, מעקב וייצוא", count: 4 }, // 5–8
-  { title: "שליטה בנתונים, תאימות ושקיפות", count: 6 }, // 9–14
+  { title: "מסמכים והפקה", count: 5 }, // 0-4
+  { title: "ניתוח, מעקב וייצוא", count: 4 }, // 5-8
+  { title: "שליטה בנתונים, תאימות ושקיפות", count: 6 }, // 9-14
 ];
 
 /** Slice the flat feature list into the presentational groups above. */
@@ -113,7 +113,7 @@ function groupFeatures(features: Competitor["features"]) {
 
 export function ComparisonViewV2({ competitor }: { competitor: Competitor }) {
   // Pricing "why it matters" mirrors the original: pick a mid tier on their
-  // side as the realistic 20–50 docs/month comparison point.
+  // side as the realistic 20-50 docs/month comparison point.
   const midTier =
     competitor.pricing[Math.min(1, competitor.pricing.length - 1)];
 
@@ -165,7 +165,7 @@ export function ComparisonViewV2({ competitor }: { competitor: Competitor }) {
           </div>
 
           <div className="v2-price-grid">
-            {/* Us — highlighted winner */}
+            {/* Us: highlighted winner */}
             <div className="v2-price-card win">
               <span className="badge">
                 <Trophy />
@@ -231,7 +231,7 @@ export function ComparisonViewV2({ competitor }: { competitor: Competitor }) {
             <LtrText text={competitor.name} /> עולה{" "}
             {formatPrice(midTier.priceMonthly)} ומעלה. אצלנו <Ltr>Pro</Ltr> ללא
             הגבלה הוא {formatPrice(25)} בלבד. וכרגע, בתקופת ההשקה, הכול חינם
-            אצלנו — בלי כרטיס אשראי. המחירים האלה ייכנסו לתוקף בהמשך, ונעדכן
+            אצלנו, בלי כרטיס אשראי. המחירים האלה ייכנסו לתוקף בהמשך, ונעדכן
             מראש.
           </p>
         </section>
@@ -304,7 +304,7 @@ export function ComparisonViewV2({ competitor }: { competitor: Competitor }) {
           </div>
         </section>
 
-        {/* Strengths — honest both ways */}
+        {/* Strengths: honest both ways */}
         <section className="v2-cmp-sec">
           <div className="v2-str-grid">
             <div className="v2-panel v2-str them">
@@ -354,7 +354,7 @@ export function ComparisonViewV2({ competitor }: { competitor: Competitor }) {
               </p>
               <p>
                 <LtrText text={competitor.name} /> הם פלטפורמה רחבה ובוגרת,
-                ואנחנו פלטפורמה ממוקדת ומהירה. שתי הגישות לגיטימיות — תלוי מה
+                ואנחנו פלטפורמה ממוקדת ומהירה. שתי הגישות לגיטימיות, תלוי מה
                 אתה צריך.
               </p>
             </div>
@@ -365,7 +365,7 @@ export function ComparisonViewV2({ competitor }: { competitor: Competitor }) {
         <section className="v2-cmp-cta">
           <h2 className="v2-gold">רוצה לנסות? זה חינם עכשיו</h2>
           <p>
-            בתקופת ההשקה הכול פתוח — כל הפיצ׳רים של <Ltr>Pro</Ltr>, בלי כרטיס
+            בתקופת ההשקה הכול פתוח: כל הפיצ׳רים של <Ltr>Pro</Ltr>, בלי כרטיס
             אשראי. כשנתחיל לגבות נעדכן מראש, בלי הפתעות.
           </p>
           <div className="row">

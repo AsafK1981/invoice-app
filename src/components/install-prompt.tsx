@@ -13,7 +13,7 @@ interface BeforeInstallPromptEvent extends Event {
 const DISMISS_KEY = "invoice-app:install-dismissed-at";
 const PERMANENT_KEY = "invoice-app:install-dismissed-permanently";
 const SESSION_KEY = "invoice-app:install-dismissed-this-session";
-const DISMISS_DAYS = 60; // bumped from 14 — popping up every 2 weeks is still annoying
+const DISMISS_DAYS = 60; // bumped from 14; popping up every 2 weeks is still annoying
 
 export function InstallPrompt() {
   const pathname = usePathname();
@@ -25,7 +25,7 @@ export function InstallPrompt() {
     /^\/documents\/[^/]+$/.test(pathname || "") && !/^\/documents\/new/.test(pathname || "");
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [visible, setVisible] = useState(false);
-  // Set to true once the user has chosen ANY option in this session — prevents
+  // Set to true once the user has chosen ANY option in this session; prevents
   // the prompt from re-appearing if the browser fires beforeinstallprompt a
   // second time (which it does whenever you navigate routes in some Chromes).
   const dismissedThisSessionRef = useRef(false);
@@ -52,7 +52,7 @@ export function InstallPrompt() {
     const handler = (e: Event) => {
       e.preventDefault();
       // If user already dealt with the prompt this session, swallow the
-      // event silently — don't pop up again.
+      // event silently; don't pop up again.
       if (dismissedThisSessionRef.current) return;
       setDeferredPrompt(e as BeforeInstallPromptEvent);
       setVisible(true);
@@ -85,7 +85,7 @@ export function InstallPrompt() {
     await deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
     if (outcome === "accepted") {
-      // Installed — never show again
+      // Installed: never show again
       localStorage.setItem(PERMANENT_KEY, "1");
     }
     markDismissedThisSession();

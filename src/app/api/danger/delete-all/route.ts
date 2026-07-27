@@ -14,15 +14,15 @@ const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
  * the Auth user itself stay.
  *
  * Safety gates (in order):
- *   1) Bearer auth — must be a real user.
- *   2) Rate limit — 3/hour/user.
+ *   1) Bearer auth: must be a real user.
+ *   2) Rate limit: 3/hour/user.
  *   3) Body `confirmation` must be a case-insensitive trim match of the
  *      caller's business.name (server-side check; can't be bypassed from
  *      the client even with devtools).
  *   4) Only deletes rows where business_id = the caller's business.
  *
  * Returns a per-resource count of what was deleted and a list of any
- * partial-failure errors — the modal surfaces both to the user.
+ * partial-failure errors; the modal surfaces both to the user.
  */
 export async function POST(req: NextRequest) {
   const ip = clientIp(req);
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Per-user 3/hour cap. Even an angry user shouldn't be able to chain
-  // these — every accidental click here is irreversible.
+  // these; every accidental click here is irreversible.
   const userLimit = checkRate({ key: `danger-delete:user:${user.id}`, max: 3, windowMs: 60 * 60_000 });
   if (!userLimit.ok) {
     return NextResponse.json(
@@ -94,7 +94,7 @@ export async function POST(req: NextRequest) {
   // Wrap a step so any thrown error is captured as an honest partial-failure
   // entry instead of crashing the whole wipe. `assertOk` inside each step turns
   // a Supabase `{ error }` response (which does NOT throw on its own) into a
-  // throw — the previous version ignored these and reported ok:true / count 0.
+  // throw; the previous version ignored these and reported ok:true / count 0.
   async function step<T>(name: string, fn: () => Promise<T>): Promise<T | null> {
     try {
       return await fn();
@@ -108,7 +108,7 @@ export async function POST(req: NextRequest) {
     if (res.error) throw new Error(`${what}: ${res.error.message}`);
   }
 
-  // 1) Collect doc ids first — we need them to count child rows + purge storage.
+  // 1) Collect doc ids first; we need them to count child rows + purge storage.
   const { data: docRows, error: docListErr } = await admin
     .from("documents")
     .select("id")
@@ -187,7 +187,7 @@ export async function POST(req: NextRequest) {
     deleted.documents = res.count || 0;
   });
 
-  // 5) Dunning log — most rows cascade-deleted with their documents above; this
+  // 5) Dunning log: most rows cascade-deleted with their documents above; this
   //    sweeps any business-scoped rows not tied to a (now-gone) document.
   await step("dunning_log", async () => {
     const res = await admin
@@ -198,7 +198,7 @@ export async function POST(req: NextRequest) {
     deleted.dunning_log = res.count || 0;
   });
 
-  // 7) Expenses — also capture receipt paths first so we can purge storage.
+  // 7) Expenses: also capture receipt paths first so we can purge storage.
   let receiptPaths: string[] = [];
   await step("expenses", async () => {
     const scan = await admin
@@ -243,7 +243,7 @@ export async function POST(req: NextRequest) {
     deleted.document_counters = res.count || 0;
   });
 
-  // 11) Storage cleanup — delete in chunks so we don't blow past Supabase's
+  // 11) Storage cleanup; delete in chunks so we don't blow past Supabase's
   // per-call limit.
   await step("storage_attachments", async () => {
     if (attachmentPaths.length === 0) {
@@ -289,7 +289,7 @@ export async function POST(req: NextRequest) {
     deleted.recurring_templates = existing.length;
   });
 
-  // 13) Append the data.cleared audit entry — survives the wipe.
+  // 13) Append the data.cleared audit entry; survives the wipe.
   await step("audit_log_append", async () => {
     const res = await admin.from("audit_log").insert({
       business_id: businessId,

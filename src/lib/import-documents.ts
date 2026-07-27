@@ -4,9 +4,9 @@ import { pickField } from "@/lib/import-headers";
 import { resolveDocumentTypeStrict, resolveImportDate, parseAmount } from "@/lib/import-mapping";
 
 /**
- * THE single document-row normalizer. Every import path — the admin
+ * THE single document-row normalizer. Every import path, the admin
  * import-for-user route, the per-entity CSV modal, the one-click bulk zone,
- * and the dry-run analyzer — calls this so their skip decisions, type
+ * and the dry-run analyzer, calls this so their skip decisions, type
  * resolution and computed fields can never drift apart.
  *
  * This encodes the source-of-truth real-loop logic (route.ts / csv-import-modal
@@ -14,10 +14,10 @@ import { resolveDocumentTypeStrict, resolveImportDate, parseAmount } from "@/lib
  *   - number must be all digits (`documents.number` is int) else skip
  *   - client name required
  *   - total must parse AND be > 0 (credit-note negative-total support is
- *     explicitly OUT of scope — do not "fix" the `<= 0` gate here)
+ *     explicitly OUT of scope; do not "fix" the `<= 0` gate here)
  *   - date resolves via resolveImportDate (empty → `today` fallback, present +
  *     invalid → skip)
- *   - type resolves via resolveDocumentTypeStrict — an unrecognized cell NEVER
+ *   - type resolves via resolveDocumentTypeStrict; an unrecognized cell NEVER
  *     skips (imported as receipt) but `typeMatched:false` is surfaced so callers
  *     can count it for review
  *   - VAT greater than the total (abs) is almost always a column misalignment →
@@ -116,7 +116,7 @@ export interface UnmappedTypeCollector {
 /**
  * Shared collector for the "type cell wasn't recognized" idiom that route.ts and
  * the analyzer previously copy-pasted (cap 20, dedupe, empty → "(ריק)"). These
- * rows are still imported (as receipt) — the count is surfaced for review.
+ * rows are still imported (as receipt); the count is surfaced for review.
  */
 export function createUnmappedTypeCollector(cap = 20): UnmappedTypeCollector {
   const samples: string[] = [];

@@ -2,7 +2,7 @@
 // that act on behalf of a user (with service-role).
 //
 // Client-side producers (e.g. bank-import-modal) should use the regular
-// supabase client + the RLS insert policy instead — see
+// supabase client + the RLS insert policy instead, see
 // src/lib/notifications-client.ts.
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
@@ -31,7 +31,7 @@ interface CreateArgs {
 
 /**
  * Fire-and-forget. Looks up the owning user for the business and inserts
- * a notification. Silently swallows errors — producers must not fail
+ * a notification. Silently swallows errors; producers must not fail
  * their main action just because a notification couldn't be written.
  */
 export async function createNotificationForBusiness(args: CreateArgs): Promise<void> {

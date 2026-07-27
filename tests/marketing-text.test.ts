@@ -15,7 +15,7 @@ import { COMPETITORS } from "@/lib/comparison-data";
  *   </h1>
  *
  * Each literal is individually unremarkable, but joined they read
- * "מי כדאי לי, באמת?" — "who is worth it for me, really?", which is not a
+ * "מי כדאי לי, באמת?", "who is worth it for me, really?", which is not a
  * grammatical Hebrew question about software. The sentence a reader actually
  * sees NEVER EXISTS as a string in the source, so grep, string search, diff
  * review and every existing test were structurally blind to it: only the
@@ -27,17 +27,17 @@ import { COMPETITORS } from "@/lib/comparison-data";
  *
  * Three approaches were on the table:
  *
- *   1. jsdom + @testing-library/react — real `textContent`, but BOTH are new
+ *   1. jsdom + @testing-library/react: real `textContent`, but BOTH are new
  *      dependencies (jsdom alone pulls ~50 transitive packages) for one test.
  *      Rejected: not worth the surface area.
- *   2. Parse `.next/server/app/**​/*.html` after `next build` — highest
+ *   2. Parse `.next/server/app/**​/*.html` after `next build`: highest
  *      fidelity (asserts exactly what ships), but the test can only run AFTER
  *      a build, so it must either fail spuriously or silently SKIP in a plain
  *      `npx vitest run` / pre-commit hook / CI job that doesn't build. A guard
  *      that skips is a guard that isn't there on the day it matters. Rejected.
  *   3. (chosen) `react-dom/server`'s `renderToStaticMarkup` on the real page
- *      modules, then strip tags. React and react-dom are already dependencies
- *      — ZERO new packages. Runs in well under a second, ALWAYS, with no build
+ *      modules, then strip tags. React and react-dom are already dependencies,
+ *      so ZERO new packages. Runs in well under a second, ALWAYS, with no build
  *      prerequisite, and it renders the ACTUAL page components rather than a
  *      copy of their JSX, so it catches the bug at its source.
  *
@@ -47,7 +47,7 @@ import { COMPETITORS } from "@/lib/comparison-data";
  * the bug, which is precisely why this substitute works.
  *
  * The one concession: `next/navigation`'s `useRouter` throws outside a Next
- * runtime, so it is stubbed below. That is the entire shim — no DOM, no router
+ * runtime, so it is stubbed below. That is the entire shim: no DOM, no router
  * context, no test renderer.
  */
 
@@ -134,13 +134,13 @@ const BLOCK_TAGS =
   "div|p|li|h[1-6]|td|th|section|header|footer|main|nav|article|ul|ol|table|tr|thead|tbody|figcaption|blockquote|dt|dd|summary|caption|form|label|button";
 
 /**
- * Every LEAF block element's joined text — i.e. an element that contains no
+ * Every LEAF block element's joined text, i.e. an element that contains no
  * further block element, only inline markup (<span>, <br>, <a>, <b>, <svg>…).
  *
  * Leaf scope is what makes this checkable. A whole-page text dump glues the
  * end of one paragraph onto the start of the next (a real element boundary,
  * not a bug) and would flag ~8 false positives per page. Scoped to leaves,
- * every join inside a block is one an author wrote — exactly the bug class.
+ * every join inside a block is one an author wrote, exactly the bug class.
  */
 function textBlocks(html: string): TextBlock[] {
   const re = new RegExp(
@@ -173,7 +173,7 @@ async function h1Of(route: string): Promise<string> {
   return h.text;
 }
 
-describe("marketing pages — joined heading text", () => {
+describe("marketing pages: joined heading text", () => {
   it("/vs H1 reads as one sentence across its <br>", async () => {
     // This exact heading is the one that shipped reading as nonsense; the
     // assertion is on the joined sentence, not on either literal.
@@ -193,7 +193,7 @@ describe("marketing pages — joined heading text", () => {
   });
 
   it("the feature-matrix 'us' <th> joins to the full app name", async () => {
-    // Authored as "חשבונית" + <br /> + "סופר ידידותית" — the exact shape that
+    // Authored as "חשבונית" + <br /> + "סופר ידידותית", the exact shape that
     // silently loses its space.
     for (const c of Object.values(COMPETITORS)) {
       const ths = headings(await pageHtml(`/vs/${c.slug}`))
@@ -213,7 +213,7 @@ describe("marketing pages — joined heading text", () => {
   });
 });
 
-describe("marketing pages — brand wordmark", () => {
+describe("marketing pages: brand wordmark", () => {
   it("the logo wordmark joins to 'חשבונית סופר ידידותית', not 'חשבוניתסופר…'", async () => {
     const { default: LogoV2 } = await import("../src/app/(marketing)/components/LogoV2");
     const full = toText(renderToStaticMarkup(createElement(LogoV2))).trim();
@@ -240,14 +240,14 @@ describe("marketing pages — brand wordmark", () => {
  * list; this catches the same bug class anywhere on the page. A missing space
  * between two Hebrew WORDS is undetectable without a dictionary, so instead we
  * assert the two machine-checkable signatures of a bad join:
- *   • punctuation glued straight onto a Hebrew letter — "לי,באמת" (the symptom)
- *   • a double space — the inverse, a join applied twice
+ *   • punctuation glued straight onto a Hebrew letter, "לי,באמת" (the symptom)
+ *   • a double space, the inverse, a join applied twice
  */
 const HEBREW = "֐-׿";
 const GLUED_PUNCT = new RegExp(`[,.;:!?][${HEBREW}]`);
 const DOUBLE_SPACE = /\s{2,}/;
 
-describe("marketing pages — generic split-literal signatures", () => {
+describe("marketing pages: generic split-literal signatures", () => {
   it("no text block glues punctuation directly onto a Hebrew letter", async () => {
     const offenders: string[] = [];
     for (const route of ROUTES) {

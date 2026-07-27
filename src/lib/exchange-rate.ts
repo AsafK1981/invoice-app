@@ -49,7 +49,7 @@ let fetcher: RateFetcher = async (currency) => {
   return rate / unit;
 };
 
-/** Test seam — override the network fetcher. */
+/** Test seam: override the network fetcher. */
 export function __setRateFetcher(f: RateFetcher) {
   fetcher = f;
 }
@@ -59,7 +59,7 @@ const cache = new Map<string, number>();
 /**
  * ₪ per 1 unit of `currency` on `dateISO`. ILS → 1 (no network). On any
  * failure returns null so the caller falls back to manual entry. Cached by
- * (currency, date) — BoI daily rates are immutable for past dates.
+ * (currency, date); BoI daily rates are immutable for past dates.
  */
 export async function getRate(currency: string, dateISO: string): Promise<number | null> {
   if (currency === "ILS") return 1;

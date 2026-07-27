@@ -13,7 +13,7 @@ try{
       if(!uids||!uids.length){ continue; }
       const uid=uids[uids.length-1];
       const msg=await c.fetchOne(uid,{source:true,envelope:true});
-      // Decode per transfer-encoding/charset — Resend sends multipart with
+      // Decode per transfer-encoding/charset: Resend sends multipart with
       // QP/base64 parts, so the raw source never contains the Hebrew (or even
       // the ASCII tokens, if base64) literally. Searching raw = false negatives.
       const raw=msg.source?.toString("binary")||"";

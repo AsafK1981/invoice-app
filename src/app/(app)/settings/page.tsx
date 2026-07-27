@@ -61,12 +61,12 @@ export default function SettingsPage() {
     {
       icon: Landmark,
       label: "העברה בנקאית",
-      value: bankParts.length > 0 ? bankParts.join(" · ") : "—",
+      value: bankParts.length > 0 ? bankParts.join(" · ") : "-",
     },
     {
       icon: MessageSquare,
       label: "הערות תשלום",
-      value: business.paymentNotes || "—",
+      value: business.paymentNotes || "-",
     },
   ];
 
@@ -147,7 +147,7 @@ export default function SettingsPage() {
         </div>
         {bankParts.length === 0 && !business.paymentNotes ? (
           <p className="text-sm text-rose-900 mb-3 leading-relaxed">
-            <strong>חשבונות עסקה וחשבוניות מס שתפיק יישלחו ללא בלוק תשלום</strong> — הלקוח לא יראה לאן להעביר את הכסף. הוסף לפחות פרט אחד (חשבון בנק, Bit, או הערת תשלום) כדי לתקן.
+            <strong>חשבונות עסקה וחשבוניות מס שתפיק יישלחו ללא בלוק תשלום</strong>, הלקוח לא יראה לאן להעביר את הכסף. הוסף לפחות פרט אחד (חשבון בנק, Bit, או הערת תשלום) כדי לתקן.
           </p>
         ) : (
           <p className="text-xs text-stone-600 mb-3">
@@ -157,7 +157,7 @@ export default function SettingsPage() {
         <div className="space-y-3">
           {paymentFields.map((f) => {
             const Icon = f.icon;
-            const isEmpty = f.value === "—";
+            const isEmpty = f.value === "-";
             return (
               <div
                 key={f.label}
@@ -202,7 +202,7 @@ export default function SettingsPage() {
             <div className="rounded-xl bg-stone-50 border border-stone-200 p-3">
               <p className="font-semibold text-stone-900 mb-1">סף הקצאה שנתי</p>
               <p className="text-stone-700 leading-relaxed">
-                <span dir="ltr">2024: ₪25,000</span> · <span dir="ltr">2025: ₪20,000</span> · <span dir="ltr">2026: ₪5,000</span>. כל שנה בינואר רשות המסים מורידה את הסף. (אין קשר לתקרת מחזור עוסק פטור — זה סף לחובת מספר הקצאה.)
+                <span dir="ltr">2024: ₪25,000</span> · <span dir="ltr">2025: ₪20,000</span> · <span dir="ltr">2026: ₪5,000</span>. כל שנה בינואר רשות המסים מורידה את הסף. (אין קשר לתקרת מחזור עוסק פטור, זה סף לחובת מספר הקצאה.)
               </p>
             </div>
           </div>

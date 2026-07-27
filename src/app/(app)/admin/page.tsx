@@ -104,7 +104,7 @@ export default function AdminPage() {
         setError("לא מחובר");
         return;
       }
-      // Fetch stats and health in parallel — they're independent and the
+      // Fetch stats and health in parallel; they're independent and the
       // health check shouldn't block stats display if it's slow.
       const [statsRes, healthRes] = await Promise.all([
         fetch("/api/admin/stats", { headers: { Authorization: `Bearer ${token}` } }),
@@ -126,7 +126,7 @@ export default function AdminPage() {
           const healthData = await healthRes.json();
           setHealth(healthData);
         } catch {
-          // Health endpoint unreachable — leave previous value
+          // Health endpoint unreachable; leave previous value
         }
       }
     } catch (err) {
@@ -207,7 +207,7 @@ export default function AdminPage() {
         <div className="text-center py-16 text-stone-500">טוען נתונים...</div>
       ) : stats ? (
         <>
-          {/* System status — real per-component health from /api/health */}
+          {/* System status: real per-component health from /api/health */}
           {health ? (
             <div
               className={`card-soft p-4 border ${
@@ -321,7 +321,7 @@ export default function AdminPage() {
 
           {/* Daily docs chart */}
           <div className="card-soft p-5">
-            <h2 className="font-semibold text-stone-900 mb-4">מסמכים שנוצרו — 14 ימים אחרונים</h2>
+            <h2 className="font-semibold text-stone-900 mb-4">מסמכים שנוצרו: 14 ימים אחרונים</h2>
             <div className="h-56">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={stats.documents.dailyChart}>
@@ -380,7 +380,7 @@ export default function AdminPage() {
             <div className="card-soft overflow-hidden">
               <div className="px-5 py-3 border-b border-orange-100 flex items-center gap-2">
                 <Activity className="w-4 h-4 text-orange-500" />
-                <h2 className="font-semibold text-stone-900">יומן פעילות — 30 פעולות אחרונות</h2>
+                <h2 className="font-semibold text-stone-900">יומן פעילות: 30 פעולות אחרונות</h2>
               </div>
               <ul className="divide-y divide-orange-50 max-h-96 overflow-y-auto">
                 {stats.auditLog.map((entry) => (
@@ -415,7 +415,7 @@ export default function AdminPage() {
           <div className="card-soft overflow-hidden">
             <div className="px-5 py-3 border-b border-orange-100 flex items-center gap-2">
               <FileText className="w-4 h-4 text-orange-500" />
-              <h2 className="font-semibold text-stone-900">מסמכים אחרונים — כל המשתמשים</h2>
+              <h2 className="font-semibold text-stone-900">מסמכים אחרונים: כל המשתמשים</h2>
             </div>
             {stats.documents.recent.length === 0 ? (
               <p className="p-5 text-sm text-stone-500 italic">אין מסמכים עדיין</p>

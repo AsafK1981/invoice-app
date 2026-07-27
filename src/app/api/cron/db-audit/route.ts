@@ -52,7 +52,7 @@ export async function GET(req: Request) {
     }
   }
 
-  // 3. Duplicate (business_id, type, number) tuples — would violate the unique
+  // 3. Duplicate (business_id, type, number) tuples; would violate the unique
   // constraint, so this is a sanity check that the constraint is doing its job
   const { data: docs } = await admin
     .from("documents")

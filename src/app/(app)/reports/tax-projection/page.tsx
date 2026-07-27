@@ -86,7 +86,7 @@ export default function TaxProjectionPage() {
             צפי מס שנתי
           </h1>
           <p className="text-sm text-stone-700 mt-2 mr-14">
-            הערכה כמה תהיה חייב במס סוף שנת {year} — לפי הקצב הנוכחי. תוודא עם רו״ח לפני החלטה כספית.
+            הערכה כמה תהיה חייב במס סוף שנת {year}, לפי הקצב הנוכחי. תוודא עם רו״ח לפני החלטה כספית.
           </p>
         </div>
         <Link
@@ -102,7 +102,7 @@ export default function TaxProjectionPage() {
         <div className="rounded-2xl border-2 border-amber-200 bg-amber-50 p-4 flex items-start gap-3">
           <AlertTriangle className="w-5 h-5 text-amber-700 flex-shrink-0 mt-0.5" />
           <div className="text-sm text-amber-900">
-            <strong>זהירות —</strong> חלפו רק {ytd.daysElapsed} ימים מתחילת השנה. הצפי לא יציב בתחילת שנה. החל מסוף פברואר התחזית מדויקת יותר.
+            <strong>זהירות:</strong> חלפו רק {ytd.daysElapsed} ימים מתחילת השנה. הצפי לא יציב בתחילת שנה. החל מסוף פברואר התחזית מדויקת יותר.
           </div>
         </div>
       )}
@@ -199,7 +199,7 @@ export default function TaxProjectionPage() {
           איך לא להישרף בסוף השנה
         </h2>
         <p className="text-sm text-stone-800 mb-4">
-          המספרים שלמטה הם המינימום שכדאי לשמור בצד מכל הכנסה — לא לסעוד מהם.
+          המספרים שלמטה הם המינימום שכדאי לשמור בצד מכל הכנסה, לא לסעוד מהם.
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -209,7 +209,7 @@ export default function TaxProjectionPage() {
               {(projection.setAsidePct * 100).toFixed(0)}%
             </p>
             <p className="text-xs text-stone-500 mt-1">
-              ברגע שמקבל כסף — מעביר את האחוז הזה לחשבון נפרד.
+              ברגע שמקבל כסף, מעביר את האחוז הזה לחשבון נפרד.
             </p>
           </div>
           <div className="bg-white rounded-2xl p-4 border border-emerald-100">
@@ -236,7 +236,7 @@ export default function TaxProjectionPage() {
       <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4 text-xs text-stone-600 flex items-start gap-2">
         <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
         <p>
-          חישוב מבוסס על מדרגות מס וביטוח לאומי לשנת {year}. הנתונים מתעדכנים שנתית. <strong>זו הערכה בלבד</strong> — לפני כל החלטה כספית התייעץ עם רו״ח. אם יש לך הכנסות נוספות (משכורת, שכר דירה) או הוצאות מוכרות נוספות שלא בקובץ ההוצאות — המספרים יהיו לא מדויקים.
+          חישוב מבוסס על מדרגות מס וביטוח לאומי לשנת {year}. הנתונים מתעדכנים שנתית. <strong>זו הערכה בלבד</strong>, לפני כל החלטה כספית התייעץ עם רו״ח. אם יש לך הכנסות נוספות (משכורת, שכר דירה) או הוצאות מוכרות נוספות שלא בקובץ ההוצאות, המספרים יהיו לא מדויקים.
         </p>
       </div>
     </div>

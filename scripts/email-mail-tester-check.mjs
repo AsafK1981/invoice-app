@@ -37,7 +37,7 @@ if (!GMAIL_USER || !GMAIL_APP_PASSWORD) {
   process.exit(1);
 }
 
-// Step 1 — mint a fresh test address.
+// Step 1: mint a fresh test address.
 // mail-tester.com generates the ID client-side via JS so the homepage
 // HTML doesn't carry it. Their backend accepts any test-XXXX address
 // against srv1.mail-tester.com and lazily creates the session when
@@ -52,7 +52,7 @@ const resultUrl = `https://www.mail-tester.com/test-${testId}`;
 console.log(`✓ test address: ${testAddress}`);
 console.log(`  result URL:   ${resultUrl}`);
 
-// Step 2 — send a representative invoice-style email
+// Step 2: send a representative invoice-style email
 console.log("[2/5] sending representative invoice email…");
 const SAMPLE_VIEW_URL = "https://mysuperfriendlyinvoiceapp.vercel.app/view/sample";
 const html = `<!DOCTYPE html>
@@ -100,11 +100,11 @@ const sendInfo = await transporter.sendMail({
 });
 console.log(`✓ sent. messageId=${sendInfo.messageId}`);
 
-// Step 3 — wait for mail-tester to process
+// Step 3: wait for mail-tester to process
 console.log("[3/5] waiting 90s for mail-tester to score…");
 await new Promise((r) => setTimeout(r, 90_000));
 
-// Step 4 — fetch the result page + parse the score
+// Step 4: fetch the result page + parse the score
 console.log(`[4/5] fetching ${resultUrl}…`);
 const resultRes = await fetch(resultUrl, {
   headers: { "User-Agent": "Mozilla/5.0 (compatible; invoice-app-deliverability-check)" },
@@ -115,7 +115,7 @@ if (!resultRes.ok) {
 }
 const resultHtml = await resultRes.text();
 
-// Step 5 — parse the score. mail-tester renders it in a few forms,
+// Step 5: parse the score. mail-tester renders it in a few forms,
 // most reliably as `Your score: X.X/10` and `<div class="score">X.X/10`.
 // Multiple regex paths so a minor markup change doesn't kill us silently.
 const scorePatterns = [
@@ -151,7 +151,7 @@ if (score == null || Number.isNaN(score)) {
 summary.ok = score >= MIN_SCORE;
 console.log("=".repeat(60));
 console.log(`mail-tester score: ${score}/10 (threshold: ${MIN_SCORE})`);
-console.log(summary.ok ? "✓ PASS — deliverability healthy" : "✗ FAIL — score below threshold");
+console.log(summary.ok ? "✓ PASS: deliverability healthy" : "✗ FAIL: score below threshold");
 console.log("=".repeat(60));
 console.log(JSON.stringify(summary, null, 2));
 

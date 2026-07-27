@@ -8,7 +8,7 @@ const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const webhookSecret = process.env.POLAR_WEBHOOK_SECRET || "";
 
 /**
- * Polar webhook handler. Mirrors the previous Stripe webhook semantics —
+ * Polar webhook handler. Mirrors the previous Stripe webhook semantics,
  * each subscription event resolves which tier the user is now on (by
  * looking up the product ID) and writes plan_tier + plan_active into
  * Supabase user_metadata.
@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
       ? new Date(sub.currentPeriodEnd).toISOString()
       : null;
 
-    // Write to app_metadata — only the service role can touch this. The
+    // Write to app_metadata: only the service role can touch this. The
     // user CANNOT modify it from a browser console (which would let
     // them grant themselves Pro for free if we stored plan fields in
     // user_metadata).
@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
         plan_trial_used: prevAppMeta.plan_trial_used === true || isActive,
         plan_cancel_at_period_end: sub.cancelAtPeriodEnd === true,
         plan_current_period_end: periodEndIso,
-        plan_beta_grant: false, // they're paying now — no longer a beta grant
+        plan_beta_grant: false, // they're paying now; no longer a beta grant
         polar_subscription_id: sub.id,
         polar_customer_id:
           sub.customerId ||
@@ -120,7 +120,7 @@ export async function POST(req: NextRequest) {
         break;
       }
       default:
-        // Ignore everything else (order.created, etc.) — we only care
+        // Ignore everything else (order.created, etc.); we only care
         // about subscription state.
         break;
     }

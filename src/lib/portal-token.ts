@@ -4,7 +4,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 //
 // The portal is a "no-account" experience: customers prove ownership of
 // their email by clicking a link sent to that email. The signed token
-// in the link is what we trust — we never write a customer row.
+// in the link is what we trust; we never write a customer row.
 //
 // Structure (URL-safe base64):
 //   payload = JSON.stringify({ email, exp })
@@ -13,9 +13,9 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 const SECRET = process.env.PORTAL_TOKEN_SECRET || "";
 
 if (!SECRET && process.env.NODE_ENV === "production") {
-  // Don't crash dev/test — but in production a missing secret means
+  // Don't crash dev/test, but in production a missing secret means
   // anyone can mint tokens (or none can). Either way: refuse to operate.
-  console.error("PORTAL_TOKEN_SECRET missing — portal will refuse requests");
+  console.error("PORTAL_TOKEN_SECRET missing; portal will refuse requests");
 }
 
 const ENCODER = new TextEncoder();
@@ -40,7 +40,7 @@ export interface PortalTokenPayload {
   email: string;
   /** ms-since-epoch expiry */
   exp: number;
-  /** Audience — "link" tokens are emailed to the customer once and
+  /** Audience: "link" tokens are emailed to the customer once and
    *  consumed by /api/portal/verify; "session" tokens are set as a
    *  cookie after a successful verify. Mixing them up would let an
    *  attacker reuse an emailed link as if it were a session cookie

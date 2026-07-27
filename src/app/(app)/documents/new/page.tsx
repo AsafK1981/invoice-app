@@ -35,7 +35,7 @@ export default function NewDocumentPage() {
     },
     {
       title: "חשבון עסקה",
-      desc: "דרישת תשלום לפני הפקת חשבונית מס — לכל סוגי העסקים",
+      desc: "דרישת תשלום לפני הפקת חשבונית מס, לכל סוגי העסקים",
       icon: FileClock,
       href: `/documents/new/proforma${suffix}`,
       gradient: "from-fuchsia-400 to-purple-500",

@@ -206,12 +206,12 @@ describe("computeAmounts", () => {
   it("handles a 30-line invoice without precision drift > 1 cent", () => {
     const items = Array.from({ length: 30 }, () => ({ quantity: 1, unitPrice: 33.33 }));
     const result = computeAmounts(items, 18, "exclusive");
-    // Direct check — sum of 30 × 33.33 = 999.90 (might float-drift to 999.8999...)
+    // Direct check: sum of 30 × 33.33 = 999.90 (might float-drift to 999.8999...)
     expect(Math.abs(result.subtotal - 999.9)).toBeLessThan(0.01);
   });
 });
 
-describe("computeAmounts — optional final-total rounding (הפרש עיגול)", () => {
+describe("computeAmounts: optional final-total rounding (הפרש עיגול)", () => {
   it("rounding OFF (default): total unchanged, rounding = 0", () => {
     const off = computeAmounts([{ quantity: 3, unitPrice: 33.33 }], 18, "exclusive");
     expect(off.subtotal).toBe(99.99);
@@ -312,9 +312,9 @@ describe("deriveVatRate", () => {
   });
 });
 
-describe("computeAmounts — line/header reconciliation (multi-line rounding)", () => {
+describe("computeAmounts: line/header reconciliation (multi-line rounding)", () => {
   // Re-derive the per-line net amounts the document persists and assert they
-  // sum exactly to the header — the bug was a few-agorot drift here.
+  // sum exactly to the header; the bug was a few-agorot drift here.
   function lineNetsOf(items: { quantity: number; unitPrice: number }[], factor: number) {
     return items.map((i) => round2(i.quantity * round2(i.unitPrice * factor)));
   }

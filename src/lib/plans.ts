@@ -7,7 +7,7 @@
  *
  * Annual prices are chosen round-ish numbers below 12× the monthly rate,
  * landing at roughly a ~17% discount (Basic: ₪149 vs ₪180 = ~17% off;
- * Pro: ₪250 vs ₪300 = ~17% off) — in line with what Greeninvoice,
+ * Pro: ₪250 vs ₪300 = ~17% off), in line with what Greeninvoice,
  * Invoice4U and Rivhit offer on annual billing.
  *
  * Trial: 30 days, no credit card required. Long enough to feel out the
@@ -16,7 +16,7 @@
  *
  * Internal tier IDs are kept as "free" | "pro" for backwards compatibility
  * with existing users' `plan_tier` metadata. The displayed name on the
- * "free" tier is "בסיסי" — once a payment provider is wired up, that
+ * "free" tier is "בסיסי"; once a payment provider is wired up, that
  * tier is no longer free; until then the access enforcement still treats
  * anyone without a paid subscription as a beta user.
  */
@@ -28,7 +28,7 @@ export interface Plan {
   name: string;
   /** ₪ per month, NIS, displayed value */
   priceMonthly: number;
-  /** ₪ per year, NIS — a chosen round-ish price below 12× monthly (~17% off) */
+  /** ₪ per year, NIS, a chosen round-ish price below 12× monthly (~17% off) */
   priceYearly: number;
   description: string;
   features: string[];
@@ -126,7 +126,7 @@ export interface PlanStatus {
   betaInviteCode?: string;
   /** Days remaining until grant or subscription period ends. Negative = expired. Null = no end date set. */
   daysRemaining?: number | null;
-  /** True if the user's beta grant expired — they revert to the free tier with basic limits. */
+  /** True if the user's beta grant expired: they revert to the free tier with basic limits. */
   betaExpired?: boolean;
 }
 
@@ -135,12 +135,12 @@ export interface PlanStatus {
  *
  * **Security:** `app_metadata` (admin/service-role only) takes precedence
  * over `user_metadata` (user-writable). Supabase users can update their
- * own `user_metadata` directly from a browser console — they cannot
+ * own `user_metadata` directly from a browser console; they cannot
  * touch `app_metadata`. So we always write plan_* into `app_metadata`,
  * and we read from `app_metadata` first.
  *
  * We still merge `user_metadata` as a fallback so any users whose plan
- * fields haven't been migrated yet aren't suddenly logged out — but
+ * fields haven't been migrated yet aren't suddenly logged out, but
  * `app_metadata` overrides anything they might have placed in
  * `user_metadata` themselves.
  */
@@ -167,7 +167,7 @@ export function getPlanStatus(
   const now = Date.now();
 
   // A beta grant that's past its end date should NOT keep granting Pro
-  // access. We treat the user as free-tier with basic limits — friendly
+  // access. We treat the user as free-tier with basic limits, friendly
   // degradation rather than a hard lockout (so they can still see their
   // historical data and decide whether to subscribe).
   const betaExpired = isBetaGrant && periodEndMs !== null && periodEndMs < now;

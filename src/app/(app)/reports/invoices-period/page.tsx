@@ -35,7 +35,7 @@ function startOfRange(endYm: string, lengthMonths: number): string {
   return `${ym(d)}-01`;
 }
 
-/** First day of the month AFTER `endYm` — exclusive upper bound for the range. */
+/** First day of the month AFTER `endYm`, exclusive upper bound for the range. */
 function afterEnd(endYm: string): string {
   const [y, m] = endYm.split("-").map(Number);
   const d = new Date(y, m, 1);
@@ -47,7 +47,7 @@ function rangeLabel(endYm: string, lengthMonths: number): string {
   const end = `${MONTH_NAMES[em - 1]} ${ey}`;
   if (lengthMonths === 1) return end;
   const s = new Date(ey, em - 1 - (lengthMonths - 1), 1);
-  return `${MONTH_NAMES[s.getMonth()]} ${s.getFullYear()} – ${end}`;
+  return `${MONTH_NAMES[s.getMonth()]} ${s.getFullYear()} עד ${end}`;
 }
 
 export default function InvoicesPeriodReportPage() {
@@ -102,7 +102,7 @@ export default function InvoicesPeriodReportPage() {
 
   const currentLabel =
     rangeMode === "custom"
-      ? `${fromDate ? fmtDate(fromDate) : "?"} – ${toDate ? fmtDate(toDate) : "?"}`
+      ? `${fromDate ? fmtDate(fromDate) : "?"} עד ${toDate ? fmtDate(toDate) : "?"}`
       : rangeLabel(endMonth, lengthMonths);
 
   const totals = useMemo(
@@ -159,7 +159,7 @@ export default function InvoicesPeriodReportPage() {
             דוח חשבוניות תקופתי
           </h1>
           <p className="text-sm text-stone-600 mt-2 mr-14">
-            כל חשבוניות המס בתקופה — ת.ז/ח.פ, מספר, תאריך, סכום לפני ואחרי מע״מ, ומספר הקצאה.
+            כל חשבוניות המס בתקופה: ת.ז/ח.פ, מספר, תאריך, סכום לפני ואחרי מע״מ, ומספר הקצאה.
           </p>
         </div>
         <div className="flex items-center gap-2 no-print">
@@ -284,7 +284,7 @@ export default function InvoicesPeriodReportPage() {
               <tbody>
                 {rows.map((r, i) => (
                   <tr key={r.id} className={`${i % 2 ? "bg-orange-50/40" : "bg-white"} hover:bg-amber-50/40 transition-colors`}>
-                    <td className="px-4 py-3.5 text-center align-middle tabular-nums whitespace-nowrap text-stone-700 border-b border-l border-stone-200">{r.customerTaxId || <span className="text-stone-300">—</span>}</td>
+                    <td className="px-4 py-3.5 text-center align-middle tabular-nums whitespace-nowrap text-stone-700 border-b border-l border-stone-200">{r.customerTaxId || <span className="text-stone-300">-</span>}</td>
                     <td className="px-4 py-3.5 text-center align-middle whitespace-nowrap border-b border-l border-stone-200">
                       <Link href={`/documents/${r.id}`} className="text-orange-700 hover:underline font-bold">
                         {DOCUMENT_TYPE_LABELS[r.type]} #{r.number}
@@ -294,7 +294,7 @@ export default function InvoicesPeriodReportPage() {
                     <td className="px-4 py-3.5 text-center align-middle tabular-nums whitespace-nowrap text-stone-700 border-b border-l border-stone-200">{formatCurrency(r.net)}</td>
                     <td className="px-4 py-3.5 text-center align-middle tabular-nums whitespace-nowrap text-stone-700 border-b border-l border-stone-200">{formatCurrency(r.vat)}</td>
                     <td className="px-4 py-3.5 text-center align-middle tabular-nums font-extrabold text-stone-900 whitespace-nowrap border-b border-l border-stone-200">{formatCurrency(r.total)}</td>
-                    <td className="px-4 py-3.5 text-center align-middle tabular-nums whitespace-nowrap text-stone-700 border-b border-stone-200">{r.allocation || <span className="text-stone-300">—</span>}</td>
+                    <td className="px-4 py-3.5 text-center align-middle tabular-nums whitespace-nowrap text-stone-700 border-b border-stone-200">{r.allocation || <span className="text-stone-300">-</span>}</td>
                   </tr>
                 ))}
               </tbody>

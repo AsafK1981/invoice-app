@@ -105,7 +105,7 @@ async function main() {
 
       const id = env.messageId || `${env.from?.[0]?.address}|${env.date}|${env.subject}`;
 
-      // Server-side atomic claim — first run wins, every subsequent call
+      // Server-side atomic claim: first run wins, every subsequent call
       // for the same id returns first=false. No race possible.
       const isFirst = await claimFirstTime(id);
       if (!isFirst) {

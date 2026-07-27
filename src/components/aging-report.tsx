@@ -19,7 +19,7 @@ interface AgingRow {
 }
 
 function daysOverdue(doc: InvoiceDocument): number {
-  // Use issue date as the proxy for "due" — most freelancers issue and
+  // Use issue date as the proxy for "due"; most freelancers issue and
   // expect payment within 30 days. Compare calendar day to calendar day:
   // doc.date ("YYYY-MM-DD") parses as UTC midnight, so mixing it with a
   // local Date.now() drifts ±1 day near midnight and flips boundary docs
@@ -38,7 +38,7 @@ function bucketIndex(days: number): 0 | 1 | 2 | 3 {
   return 3;
 }
 
-const BUCKET_LABELS = ["0–30 ימים", "31–60 ימים", "61–90 ימים", "מעל 90 ימים"];
+const BUCKET_LABELS = ["0-30 ימים", "31-60 ימים", "61-90 ימים", "מעל 90 ימים"];
 const BUCKET_TONES = [
   "text-stone-700",
   "text-amber-700",
@@ -99,7 +99,7 @@ export function AgingReport({ documents }: Props) {
           <span className="text-xs text-stone-500">חלוקה לפי וותק החוב</span>
         </div>
         <p className="text-sm text-stone-600 mt-2">
-          אין חשבוניות פתוחות. כל הלקוחות מסונכרנים — נכון לעכשיו 👌
+          אין חשבוניות פתוחות. כל הלקוחות מסונכרנים, נכון לעכשיו 👌
         </p>
       </div>
     );
@@ -122,7 +122,7 @@ export function AgingReport({ documents }: Props) {
           <h2 className="font-semibold text-stone-900">חובות פתוחים</h2>
           <span
             className="text-xs text-stone-500"
-            title="כמה ימים עברו מאז הפקת המסמך — מה שמכונה בעולם החשבונאות 'גיול חובות'."
+            title="כמה ימים עברו מאז הפקת המסמך, מה שמכונה בעולם החשבונאות 'גיול חובות'."
           >
             לפי וותק החוב
           </span>
@@ -165,7 +165,7 @@ export function AgingReport({ documents }: Props) {
             <td className="px-6 py-3 text-sm text-stone-900">סה״כ</td>
             {totals.buckets.map((v, i) => (
               <td key={i} className={`px-3 py-3 text-sm text-left font-mono ${BUCKET_TONES[i]}`}>
-                {v > 0 ? formatCurrency(v) : "—"}
+                {v > 0 ? formatCurrency(v) : "-"}
               </td>
             ))}
             <td className="px-6 py-3 text-sm text-left font-mono text-stone-900" dir="ltr">
@@ -203,7 +203,7 @@ function FragmentRow({
         </td>
         {row.buckets.map((v, i) => (
           <td key={i} className={`px-3 py-3 text-sm text-left font-mono ${BUCKET_TONES[i]}`}>
-            {v > 0 ? formatCurrency(v) : "—"}
+            {v > 0 ? formatCurrency(v) : "-"}
           </td>
         ))}
         <td className="px-6 py-3 text-sm text-left font-mono font-bold text-stone-900" dir="ltr">

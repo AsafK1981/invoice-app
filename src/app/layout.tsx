@@ -4,7 +4,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { SwRegister } from "@/components/sw-register";
 import "./globals.css";
-// THE app skin — the warm light shell every user sees. Unconditional since
+// THE app skin, the warm light shell every user sees. Unconditional since
 // 2026-07-20 (it used to be gated behind html[data-skin="gold"], with a
 // ?skin=coral fallback to the legacy design; that second, untested visual
 // state is gone). Imported AFTER globals.css on purpose: keeps skin rules
@@ -18,7 +18,7 @@ import "./document-paper.css";
 
 // SELF-HOSTED FONTS (was: two Google-Fonts <link> tags in <head>).
 // The PDF route drives headless Chrome on a serverless box to /view and prints
-// it — a third-party CDN fetch there is a real availability risk (a slow or
+// it; a third-party CDN fetch there is a real availability risk (a slow or
 // blocked fonts.gstatic.com would silently print the document in a fallback
 // face). next/font downloads the files at BUILD time and serves them from our
 // own origin, so the PDF can't lose its typography. Exposed as CSS variables
@@ -46,7 +46,7 @@ const assistant = Assistant({
 // NOTE (2026-07-20): there used to be a synchronous inline <head> script here
 // that read localStorage and set html[data-skin] before first paint, so the
 // gated skin applied without a flash of the legacy coral look. Both the gate
-// and the coral fallback are gone — app-skin.css now applies unconditionally —
+// and the coral fallback are gone (app-skin.css now applies unconditionally),
 // so the script had no job left. Deleting it also removed a render-blocking
 // localStorage read and the React hydration-attribute warning it caused. The
 // `classList.remove("dark")` it also carried was belt-and-braces for a class
@@ -94,19 +94,19 @@ export const metadata: Metadata = {
     title: "MySuperFriendlyInvoiceApp - חשבוניות וקבלות בלי כאב ראש",
     description:
       "אפליקציית חשבוניות לעצמאיים. ניהול לקוחות, שליחה במייל, דשבורד עם גרפים.",
-    // images intentionally omitted — Next picks up src/app/opengraph-image.tsx
+    // images intentionally omitted; Next picks up src/app/opengraph-image.tsx
     // automatically and generates a 1200x630 card.
   },
   twitter: {
     card: "summary_large_image",
     title: "MySuperFriendlyInvoiceApp - חשבוניות וקבלות בלי כאב ראש",
     description: "אפליקציית חשבוניות לעצמאיים",
-    // images: same — file-based generation handles it.
+    // images: same, file-based generation handles it.
   },
 };
 
 export const viewport: Viewport = {
-  // Warm sand — matches the light app shell's page background.
+  // Warm sand: matches the light app shell's page background.
   themeColor: "#f7f4ed",
 };
 

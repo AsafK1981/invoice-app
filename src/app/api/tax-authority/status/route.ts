@@ -15,7 +15,7 @@ const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
  * credentials. Used by the settings UI to render the right state
  * (Connect button vs Connected card).
  *
- * Intentionally does NOT return any token fields — only metadata.
+ * Intentionally does NOT return any token fields, only metadata.
  */
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get("authorization");

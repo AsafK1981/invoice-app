@@ -10,7 +10,7 @@ const AXIOM_BASE = process.env.AXIOM_API_BASE || "https://api.eu.axiom.co";
 
 /**
  * Weekly archive of Axiom logs into Supabase Storage. Solves the
- * 12-month retention gap from the info-security appendix §19 — Axiom's
+ * 12-month retention gap from the info-security appendix §19; Axiom's
  * free tier caps at 30 days, so every Sunday we snapshot the last 8
  * days (1-day overlap for safety) into a private storage bucket.
  *
@@ -102,7 +102,7 @@ export async function GET(req: Request) {
     );
   }
 
-  // Compose NDJSON (one JSON object per line) — easier to stream + grep
+  // Compose NDJSON (one JSON object per line); easier to stream + grep
   // than a single giant JSON array.
   const ndjson = rows.map((r) => JSON.stringify(r)).join("\n");
   const compressed = gzipSync(Buffer.from(ndjson, "utf8"));
@@ -130,7 +130,7 @@ export async function GET(req: Request) {
   }
 
   console.log(
-    `[axiom-archive] ${objectPath} — ${rows.length} rows, ${compressed.length} bytes`,
+    `[axiom-archive] ${objectPath}: ${rows.length} rows, ${compressed.length} bytes`,
   );
 
   return NextResponse.json({

@@ -45,7 +45,7 @@ function doc(over: Partial<InvoiceDocument>): InvoiceDocument {
   };
 }
 
-describe("filterDocuments — allocation", () => {
+describe("filterDocuments: allocation", () => {
   const docs = [
     doc({ id: "with", allocationNumber: "187025961" }),
     doc({ id: "without", allocationNumber: undefined }),
@@ -74,7 +74,7 @@ describe("filterDocuments — allocation", () => {
   });
 });
 
-describe("filterDocuments — date range", () => {
+describe("filterDocuments: date range", () => {
   const docs = [
     doc({ id: "jan", date: "2026-01-01" }),
     doc({ id: "jun", date: "2026-06-15" }),
@@ -106,7 +106,7 @@ describe("filterDocuments — date range", () => {
   });
 });
 
-describe("filterDocuments — client", () => {
+describe("filterDocuments: client", () => {
   const docs = [
     doc({ id: "a", clientId: "c1" }),
     doc({ id: "b", clientId: "c2" }),
@@ -121,7 +121,7 @@ describe("filterDocuments — client", () => {
   });
 });
 
-describe("filterDocuments — type", () => {
+describe("filterDocuments: type", () => {
   const docs = [
     doc({ id: "ti", type: "tax_invoice" }),
     doc({ id: "rc", type: "receipt" }),
@@ -138,7 +138,7 @@ describe("filterDocuments — type", () => {
   });
 });
 
-describe("filterDocuments — status", () => {
+describe("filterDocuments: status", () => {
   const docs = [
     doc({ id: "paid", status: "paid" }),
     doc({ id: "draft", status: "draft" }),
@@ -157,7 +157,7 @@ describe("filterDocuments — status", () => {
   });
 });
 
-describe("filterDocuments — combined query", () => {
+describe("filterDocuments: combined query", () => {
   // "tax invoices WITH allocation for client c1 in 2026"
   const docs = [
     doc({ id: "hit", type: "tax_invoice", clientId: "c1", date: "2026-05-01", allocationNumber: "1", status: "paid" }),

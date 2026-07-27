@@ -20,7 +20,7 @@ interface YearRow {
 }
 
 /**
- * הצהרת הון — Statement of Capital. Filed every ~3-5 years by request
+ * הצהרת הון, Statement of Capital. Filed every ~3-5 years by request
  * of the Tax Authority; compares assets at start of period vs end and
  * reconciles the diff against business profits + personal spending.
  *
@@ -79,7 +79,7 @@ export function CapitalDeclarationReport({ documents, expenses }: Props) {
             הכנה להצהרת הון
           </h2>
           <p className="text-sm text-stone-700 mt-1">
-            סיכום רב-שנתי של הכנסות והוצאות העסק — לצירוף לטופס ההצהרה או לשימוש רואה החשבון.
+            סיכום רב-שנתי של הכנסות והוצאות העסק, לצירוף לטופס ההצהרה או לשימוש רואה החשבון.
           </p>
         </div>
         <button
@@ -206,7 +206,7 @@ export function CapitalDeclarationReport({ documents, expenses }: Props) {
       </div>
 
       <div className="mt-4 rounded-xl bg-purple-50 border border-purple-200 p-3 text-xs text-purple-900">
-        <strong>שים לב:</strong> הצהרת הון משווה את ההון בתחילת תקופה לסופה — היא דורשת גם נתוני
+        <strong>שים לב:</strong> הצהרת הון משווה את ההון בתחילת תקופה לסופה, היא דורשת גם נתוני
         נכסים אישיים (חשבונות בנק, נדל״ן, רכבים, חסכונות) שאינם במערכת. הטבלה הזו מספקת את חלק
         הרווח השוטף מהעסק; את שאר הסעיפים יש להוסיף בנפרד.
       </div>

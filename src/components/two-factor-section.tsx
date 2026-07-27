@@ -26,7 +26,7 @@ type Factor = {
  *   4. challenge + verify → factor is activated
  *
  * QR code is rendered as a data-URL <img> rather than via
- * dangerouslySetInnerHTML — Supabase's SVG is trusted but rendering
+ * dangerouslySetInnerHTML, Supabase's SVG is trusted but rendering
  * server-supplied SVG as live DOM is an unnecessary XSS surface.
  */
 export function TwoFactorSection() {
@@ -130,7 +130,7 @@ export function TwoFactorSection() {
 
   const qrDataUrl = useMemo(() => {
     if (!enrollData) return "";
-    // Supabase returns SVG XML — wrap as data URL for safe <img> rendering.
+    // Supabase returns SVG XML; wrap as data URL for safe <img> rendering.
     return `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(enrollData.qrCode)))}`;
   }, [enrollData]);
 

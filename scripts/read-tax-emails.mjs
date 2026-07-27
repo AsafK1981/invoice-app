@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /* eslint-disable no-console */
 // One-off: read the recent thread with רשות המסים (*@taxes.gov.il) so
-// Claude can draft a follow-up. Read-only — never marks as seen.
+// Claude can draft a follow-up. Read-only: never marks as seen.
 // Handles windows-1255 (Outlook Hebrew encoding) properly so replies
 // don't come out as gibberish.
 
@@ -76,7 +76,7 @@ let inboxMatches = [];
 let sentMatches = [];
 try {
   // connect() inside the try so a network/auth failure mid-handshake
-  // still triggers the finally — imapflow can leave a half-open socket
+  // still triggers the finally; imapflow can leave a half-open socket
   // otherwise, and Gmail rate-limits the account after a few of those.
   await client.connect();
   inboxMatches = await searchFolder("INBOX", { from: "taxes.gov.il" });
@@ -85,7 +85,7 @@ try {
   try {
     await client.logout();
   } catch {
-    // Already disconnected or never connected — nothing useful to do.
+    // Already disconnected or never connected; nothing useful to do.
   }
 }
 
@@ -93,7 +93,7 @@ const all = [...inboxMatches, ...sentMatches].sort((a, b) =>
   a.date.localeCompare(b.date),
 );
 
-// Print only the last 8 — focus on most recent thread state.
+// Print only the last 8: focus on most recent thread state.
 const recent = all.slice(-8);
 
 console.log(`Showing last ${recent.length} of ${all.length} messages.\n${"=".repeat(60)}`);

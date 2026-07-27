@@ -1,5 +1,5 @@
 /**
- * LogoV2 — the gold "document" mark (from icon-app.svg) + "חשבונית"
+ * LogoV2, the gold "document" mark (from icon-app.svg) + "חשבונית"
  * wordmark in Frank Ruhl Libre gold, with a small "סופר ידידותית"
  * kicker. Two variants:
  *   - "full" (default): mark + wordmark + kicker
@@ -8,13 +8,13 @@
  * The inline SVG uses a fixed gradient id ("v2-logo-gold"). If the logo
  * is rendered more than once on a page the id repeats, but every
  * definition is identical so `url(#v2-logo-gold)` resolves the same gold
- * fill everywhere — visually correct.
+ * fill everywhere, visually correct.
  *
  * ACCESSIBLE NAME: the mark is decorative (`aria-hidden`), so the text
  * carries the name. The "full" variant gets it from the wordmark plus a
  * `.v2-sr` space that keeps "חשבונית סופר ידידותית" from concatenating
  * into one word in `textContent`. The "mark" variant has no visible text,
- * so it renders `srText` — which is also what gives a wrapping <a> a real
+ * so it renders `srText`, which is also what gives a wrapping <a> a real
  * accessible name instead of just its href.
  */
 

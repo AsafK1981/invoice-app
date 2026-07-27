@@ -118,7 +118,7 @@ export default function ProductsPage() {
         <EmptyState
           icon={Package}
           title="הקטלוג ריק"
-          description="הוסף את המוצרים והשירותים שאתה מוכר — שם, מחיר, יחידה. בעורך מסמכים תוכל לבחור פריט בקליק ולחסוך הקלדה חוזרת."
+          description="הוסף את המוצרים והשירותים שאתה מוכר: שם, מחיר, יחידה. בעורך מסמכים תוכל לבחור פריט בקליק ולחסוך הקלדה חוזרת."
           primaryAction={{
             label: "הוסף פריט ראשון",
             onClick: openNew,

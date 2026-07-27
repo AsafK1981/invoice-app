@@ -5,7 +5,7 @@ import FooterV2 from "./components/FooterV2";
 import RedirectIfAuthed from "./components/RedirectIfAuthed";
 
 /**
- * `/` — the public marketing landing (gold on obsidian, art-deco frame,
+ * `/`, the public marketing landing (gold on obsidian, art-deco frame,
  * golden invoice card). Server-rendered so anonymous visitors and crawlers
  * get the full page immediately; `<RedirectIfAuthed />` then bounces an
  * already-signed-in visitor to /dashboard from the client, without ever
@@ -35,7 +35,7 @@ export default function MarketingLanding() {
 
           <div className="v2-freenow" role="status">
             <i className="dot" aria-hidden="true" />
-            🎉 חינם עכשיו בתקופת ההשקה — כל הפיצ׳רים, בלי כרטיס אשראי
+            🎉 חינם עכשיו בתקופת ההשקה: כל הפיצ׳רים, בלי כרטיס אשראי
           </div>
 
           <h1 className="v2-h1">
@@ -46,7 +46,7 @@ export default function MarketingLanding() {
 
           <p className="v2-lede">
             בנינו את זה בשביל עצמאים כמוך: חשבונית מקצועית בעברית מלאה, עומדת
-            בדרישות רשות המסים — בלי בירוקרטיה ובלי כאב ראש.
+            בדרישות רשות המסים, בלי בירוקרטיה ובלי כאב ראש.
           </p>
 
           {/* golden invoice card */}
@@ -147,12 +147,12 @@ export default function MarketingLanding() {
           <div className="v2-fdiv">
             <i className="ln" />
             <span>
-              <Ltr>Pro</Ltr> — כל הפיצ׳רים ללא הגבלה ב־₪25 · ביטול בכל עת
+              <Ltr>Pro</Ltr>: כל הפיצ׳רים ללא הגבלה ב־₪25 · ביטול בכל עת
             </span>
             <i className="ln r" />
           </div>
           <div className="v2-freenow-note">
-            בתקופת ההשקה הכול חינם. המחירים האלה ייכנסו לתוקף בהמשך — ונעדכן
+            בתקופת ההשקה הכול חינם. המחירים האלה ייכנסו לתוקף בהמשך, ונעדכן
             מראש, בלי הפתעות.
           </div>
 

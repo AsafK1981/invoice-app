@@ -14,7 +14,7 @@ const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
  * where N concurrent redeemers all passed the cap check before
  * anyone bumped the counter.
  *
- * Rate limit: 10 attempts per minute per IP — slows brute-force code
+ * Rate limit: 10 attempts per minute per IP; slows brute-force code
  * guessing. Refuses if user already has a paid Polar subscription
  * (don't want to overwrite their real sub state with beta-grant
  * fields). Just before writing app_metadata we re-fetch the user so
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "קוד לא תקין" }, { status: 400 });
   }
 
-  // Refuse if user already has a paid Polar subscription — read from
+  // Refuse if user already has a paid Polar subscription, read from
   // app_metadata (the trustworthy source) first.
   const appMeta = (user.app_metadata || {}) as Record<string, unknown>;
   const userMeta = (user.user_metadata || {}) as Record<string, unknown>;
@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
     (appMeta.plan_beta_grant === undefined && userMeta.plan_beta_grant === true);
   if (polarSubId && planActive && !isBetaGrant) {
     return NextResponse.json(
-      { ok: false, error: "כבר יש לך מנוי פעיל בתשלום — לא ניתן להמיר אותו לבטא." },
+      { ok: false, error: "כבר יש לך מנוי פעיל בתשלום, לא ניתן להמיר אותו לבטא." },
       { status: 409 },
     );
   }
@@ -120,7 +120,7 @@ export async function POST(req: NextRequest) {
   // Re-fetch user RIGHT before writing app_metadata so a concurrent
   // Polar webhook (e.g. checkout completing in another tab) isn't
   // silently overwritten. The window between `auth.getUser(token)` up
-  // top and here can be a couple hundred ms — enough for that race
+  // top and here can be a couple hundred ms; enough for that race
   // to fire.
   const { data: latest } = await sb.auth.admin.getUserById(user.id);
   const latestAppMeta = (latest.user?.app_metadata || {}) as Record<string, unknown>;

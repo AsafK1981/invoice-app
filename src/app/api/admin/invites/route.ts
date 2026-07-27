@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
   const rl = checkRate({ key: `admin-invites:${user.id}`, max: 30, windowMs: 60_000 });
   if (!rl.ok) {
     return NextResponse.json(
-      { ok: false, error: "Slow down — 30 creations per minute max" },
+      { ok: false, error: "Slow down: 30 creations per minute max" },
       { status: 429, headers: { "Retry-After": String(Math.ceil(rl.resetIn / 1000)) } },
     );
   }
@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
   };
 
   // Normalize the code: uppercase, dashes for spaces, drop anything else.
-  // This is forgiving — a human typing "For Friends Only" gets the same
+  // This is forgiving; a human typing "For Friends Only" gets the same
   // result as one typing "FOR-FRIENDS-ONLY".
   const code = body.code
     ? body.code
@@ -118,7 +118,7 @@ export async function POST(req: NextRequest) {
   if (error) {
     if (error.code === "23505") {
       return NextResponse.json(
-        { ok: false, error: "כבר קיים קוד כזה — בחר אחר" },
+        { ok: false, error: "כבר קיים קוד כזה, בחר אחר" },
         { status: 409 },
       );
     }

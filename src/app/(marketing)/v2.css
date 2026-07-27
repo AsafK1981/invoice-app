@@ -1,5 +1,5 @@
 /* ============================================================
-   v2 marketing theme — gold metallic on obsidian (design "F").
+   v2 marketing theme: gold metallic on obsidian (design "F").
    EVERY selector is prefixed with `.v2-theme` so nothing here can
    ever match an element outside the /v2 subtree. This also lets us
    win, on specificity, over the inherited globals.css rules (warm
@@ -8,7 +8,7 @@
    ============================================================ */
 
 .v2-theme {
-  /* gold design tokens — muted antique gold (matches approved app palette) */
+  /* gold design tokens: muted antique gold (matches approved app palette) */
   --v2-g1: #d8be77;
   --v2-g2: #be9e4e;
   --v2-g3: #8f6f2a;
@@ -23,12 +23,12 @@
   /* Shared content width. The hero, the legal/blog doc shell and the footer
      all measure the same, so the footer hairline lines up with the column
      above it instead of being 40px narrower on /blog. `.v2-cmp` deliberately
-     opts out — the comparison pages are a wider, table-bearing layout. */
+     opts out; the comparison pages are a wider, table-bearing layout. */
   --v2-shell: 680px;
 
   /* Reading measure for body copy. The comparison + blog columns are ~900px
      wide, and body paragraphs that filled them were running 130-151 real
-     characters per line in Hebrew — roughly double the comfortable band, which
+     characters per line in Hebrew, roughly double the comfortable band, which
      is what made /vs tiring to read.
      `ch` is the advance of "0" in Assistant (~0.49em); Hebrew averages ~0.42em
      per character, so 60ch lands these blocks at 66-74 ACTUAL characters. The
@@ -59,7 +59,7 @@
   --v2-sh-float: 0 30px 70px -28px rgba(0, 0, 0, 0.85);
   --v2-sh-edge: 0 0 0 1px rgba(190, 158, 78, 0.08);
   --v2-sh-inset: inset 0 1px 0 rgba(255, 236, 180, 0.05);
-  /* gold glow — the button equivalent of rest/hover */
+  /* gold glow: the button equivalent of rest/hover */
   --v2-glow-rest: 0 12px 28px -12px rgba(190, 158, 78, 0.25),
     inset 0 1px 0 rgba(255, 255, 255, 0.28);
   --v2-glow-hover: 0 18px 36px -12px rgba(190, 158, 78, 0.3),
@@ -77,7 +77,7 @@
   font-family: "Assistant", var(--font-assistant), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   /* `clip`, NOT `hidden`. `overflow-x: hidden` forces overflow-y to compute to
-     `auto`, which turns this element into the nearest scrollport — and that
+     `auto`, which turns this element into the nearest scrollport, and that
      silently killed `position: sticky` on .v2-header (it stuck to a box that
      never scrolls, so the header just scrolled away with the page). `clip`
      suppresses horizontal overflow without creating a scroll container, so the
@@ -404,7 +404,7 @@
   font-family: "Frank Ruhl Libre", var(--font-frank), serif;
   font-weight: 700;
   border: 1px solid var(--v2-line);
-  /* badge tier — was a one-off 6px */
+  /* badge tier, was a one-off 6px */
   border-radius: 8px;
   padding: 3px 9px;
 }
@@ -636,7 +636,7 @@
   z-index: 1;
 }
 
-/* back-to-home link — min-height for the tap target, margin trimmed by the
+/* back-to-home link: min-height for the tap target, margin trimmed by the
    same amount so the optical gap below it is unchanged. */
 .v2-theme .v2-back {
   display: inline-flex;
@@ -730,7 +730,7 @@
   margin-bottom: 24px;
   border-bottom: 1px solid var(--v2-line);
 }
-/* icon tile — same radius tier as .v2-note-panel .ic (was 14px) */
+/* icon tile: same radius tier as .v2-note-panel .ic (was 14px) */
 .v2-theme .v2-status-badge {
   width: 52px;
   height: 52px;
@@ -847,11 +847,11 @@
 
 /* NOTE: every responsive override lives in ONE block at the very bottom of
    this file. Media queries add no specificity, so a `@media` rule placed
-   above a later base rule silently loses to it — the bug class that has
+   above a later base rule silently loses to it; the bug class that has
    bitten this stylesheet before. Do not add `@media` blocks mid-file. */
 
 /* ============================================================
-   Auth (login / signup / forgot) — /v2/login
+   Auth (login / signup / forgot): /v2/login
    ============================================================ */
 .v2-theme .v2-auth-main {
   position: relative;
@@ -887,7 +887,7 @@
   letter-spacing: 0.02em;
 }
 
-/* card — reuses the golden invoice-card treatment */
+/* card: reuses the golden invoice-card treatment */
 .v2-theme .v2-auth-card {
   position: relative;
   background: linear-gradient(160deg, #191308, #0f0b06);
@@ -1108,15 +1108,15 @@
    COMPARISON pages (/v2/vs + /v2/vs/[competitor]).
    Every selector stays under `.v2-theme`. Semantic yes/no colors
    are deliberately NOT brand-gold: green = supported, red = not
-   supported, amber = partial — so a scanning eye never confuses
+   supported, amber = partial, so a scanning eye never confuses
    "gold accent" with "yes". (Reuses the existing `.v2-back` link.)
    ============================================================ */
 
 /* semantic tokens for the feature matrix */
 .v2-theme {
-  --v2-yes: #4fc47a;   /* unambiguous green — supported */
-  --v2-no: #e5544b;    /* true red — not supported */
-  --v2-partial: #d9a441; /* amber — partial (distinct minus glyph) */
+  --v2-yes: #4fc47a;   /* unambiguous green: supported */
+  --v2-no: #e5544b;    /* true red: not supported */
+  --v2-partial: #d9a441; /* amber: partial (distinct minus glyph) */
 }
 
 /* ---------- shared comparison shell ---------- */
@@ -1137,8 +1137,8 @@
 
    Deliberately NO `margin-inline: auto` here: these blocks sit in RTL,
    right-aligned cards, so the default inline-start placement keeps the copy
-   flush with the card's reading edge — the same edge its heading and its
-   "read more" link sit on — and lets the slack fall on the far side. Centring
+   flush with the card's reading edge, the same edge its heading and its
+   "read more" link sit on, and lets the slack fall on the far side. Centring
    them would float the paragraph away from that edge and read as a mistake.
    (`.v2-cmp-hero .verdict` is the one exception; it keeps its own auto margins
    because the entire hero is centred.)
@@ -1152,7 +1152,7 @@
 }
 /* The price note is the one capped block that is itself a bordered box, and it
    stacks directly under the two-up pricing grid. At the bare reading measure it
-   came out 432.5px against the 441px column above it — an 8.5px near-miss that
+   came out 432.5px against the 441px column above it, an 8.5px near-miss that
    reads as a misalignment bug rather than a decision. Snapping it to exactly
    one grid column costs two characters of measure (75 -> 77) and buys a clean
    shared edge; both sides derive the gutter from --v2-price-gap, so they cannot
@@ -1175,7 +1175,7 @@
   display: inline-block;
   /* 7px, not 14px: the h1 now has real literal spaces on both sides of this
      span (they carry the word break into textContent), so the margin only has
-     to top up the optical gap. Measured in Chrome — the rendered space is
+     to top up the optical gap. Measured in Chrome; the rendered space is
      9.8px at the 48px desktop size and 6.1px at the 30px mobile size, so
      7px lands the total at 16.8px / 13.1px against the old flat 14px: the
      closest single value that stays near parity at both ends of the clamp. */
@@ -1187,7 +1187,7 @@
 }
 .v2-theme .v2-cmp-hero .verdict {
   margin: 16px auto 0;
-  /* was a literal 60ch — same value, now the shared token so the hero verdict
+  /* was a literal 60ch; same value, now the shared token so the hero verdict
      can't drift away from the rest of the body copy. Stays centred (auto
      margins) because the whole hero is centred. */
   max-width: var(--v2-measure);
@@ -1248,7 +1248,7 @@
   border: 1px solid var(--v2-line-soft);
   background: linear-gradient(160deg, #16110a, #0e0a06);
 }
-/* highlighted winner — gold border + faint gold wash */
+/* highlighted winner: gold border + faint gold wash */
 .v2-theme .v2-price-card.win {
   border: 1px solid var(--v2-line);
   background:
@@ -1273,7 +1273,7 @@
   box-shadow: 0 8px 18px -10px rgba(190, 158, 78, 0.3);
 }
 .v2-theme .v2-price-card .badge svg { width: 12px; height: 12px; }
-/* 18px, matching .v2-str h3 and .v2-note-panel h3 — the three panel headings
+/* 18px, matching .v2-str h3 and .v2-note-panel h3, the three panel headings
    used to be 17/17/18. */
 .v2-theme .v2-price-card h3 {
   font-family: "Frank Ruhl Libre", var(--font-frank), serif;
@@ -1355,7 +1355,7 @@
   vertical-align: top;
   border-bottom: 1px solid var(--v2-line-soft);
 }
-/* zebra striping — subtle warm tint on alternate feature rows */
+/* zebra striping: subtle warm tint on alternate feature rows */
 .v2-theme table.v2-table tr.row:nth-of-type(even) {
   background: rgba(190, 158, 78, 0.03);
 }
@@ -1503,7 +1503,7 @@
 }
 .v2-theme .v2-vs-list { display: flex; flex-direction: column; gap: 16px; }
 /* `position: relative` is load-bearing: it is the containing block for the
-   stretched `.v2-card-link::after`. (No `display: block` — the card is an
+   stretched `.v2-card-link::after`. (No `display: block`; the card is an
    <article>, which is already block-level.) */
 .v2-theme .v2-vs-card {
   position: relative;
@@ -1555,7 +1555,7 @@
    can never drift from the card shape), and focus is moved to the card so the
    ring outlines the whole thing rather than just the heading.
 
-   No `color: inherit` / `text-decoration: none` here — `.v2-theme a` already
+   No `color: inherit` / `text-decoration: none` here; `.v2-theme a` already
    sets both, and duplicating them just invited them to drift apart. */
 .v2-theme .v2-card-link::after {
   content: "";
@@ -1585,7 +1585,7 @@
   gap: 18px;
   margin-top: 4px;
 }
-/* Same primitive as .v2-vs-card — matching padding, radius, elevation and
+/* Same primitive as .v2-vs-card: matching padding, radius, elevation and
    transition timings. (No `display: block`: the card is an <article>.) */
 .v2-theme .v2-blog-card {
   position: relative;
@@ -1628,7 +1628,7 @@
   font-weight: 700;
   color: var(--v2-g2);
 }
-/* The arrow nudges on card hover, exactly like .v2-vs-card's — the two index
+/* The arrow nudges on card hover, exactly like .v2-vs-card's, the two index
    templates were out of sync (this one had no transition at all). */
 .v2-theme .v2-blog-card .more svg {
   width: 15px;
@@ -1726,7 +1726,7 @@
 .v2-theme .v2-prose em { color: #cbc2b3; }
 
 /* ============================================================
-   RESPONSIVE OVERRIDES — the ONLY place `@media` may appear.
+   RESPONSIVE OVERRIDES: the ONLY place `@media` may appear.
 
    Media queries carry no specificity of their own, so an override written
    next to its base rule loses to any same-specificity rule declared further
@@ -1737,7 +1737,7 @@
    Breakpoints: 720 (two-up grids collapse) · 520 (feature row + footer
    stack) · 420 (small phones: tighten the sticky header + card padding).
    Before adding a selector, check it is not already set in a wider block
-   below — the blocks are cumulative, not exclusive.
+   below; the blocks are cumulative, not exclusive.
    ============================================================ */
 
 @media (max-width: 720px) {
@@ -1745,7 +1745,7 @@
   .v2-theme .v2-str-grid { grid-template-columns: 1fr; }
 
   /* The grid is one column now, so there is no column edge left for the note
-     to align to. Fall back to the shared reading measure — plus its own 16px
+     to align to. Fall back to the shared reading measure, plus its own 16px
      padding + 1px border, which `box-sizing: border-box` folds into max-width,
      so the TEXT measure matches the bare paragraphs elsewhere. */
   .v2-theme .v2-price-note { max-width: calc(var(--v2-measure) + 34px); }
@@ -1756,7 +1756,7 @@
   .v2-theme .v2-ft + .v2-ft::before { display: none; }
   .v2-theme .v2-footer-inner { justify-content: center; }
 
-  /* Card padding stays at the 20px floor — never tighter. */
+  /* Card padding stays at the 20px floor, never tighter. */
   .v2-theme .v2-panel,
   .v2-theme .v2-price-card,
   .v2-theme .v2-vs-card,

@@ -21,7 +21,7 @@ interface FieldRow {
 }
 
 /**
- * טופס 1301 — דוח שנתי ליחיד. Maps computed values to the actual
+ * טופס 1301, דוח שנתי ליחיד. Maps computed values to the actual
  * field codes on the form so the user can copy them straight into
  * the gov.il online filing or hand them to their accountant. Codes
  * are taken from the 2025 form revision; fields specific to עוסק
@@ -64,13 +64,13 @@ export function Form1301Helper({ year, business, documents, expenses }: Props) {
 
     if (business.businessType === "authorized" || business.businessType === "company") {
       rows.push({
-        code: "—",
+        code: "-",
         label: "מע״מ עסקאות שנגבה (לדוח מע״מ)",
         value: vatCollected,
         note: "אינו שדה ב-1301; לדיווח לרשות המע״מ",
       });
       rows.push({
-        code: "—",
+        code: "-",
         label: "מע״מ תשומות (זיכוי לדוח מע״מ)",
         value: vatInput,
         note: "מסכום ה-vatAmount של ההוצאות",
@@ -79,7 +79,7 @@ export function Form1301Helper({ year, business, documents, expenses }: Props) {
 
     if (business.businessType === "authorized") {
       rows.push({
-        code: "—",
+        code: "-",
         label: "סך כל המחזור כולל מע״מ",
         value: totalIncomeWithVat,
         note: "להשוואה מול ספח שנתי של רשות המסים",
@@ -164,7 +164,7 @@ export function Form1301Helper({ year, business, documents, expenses }: Props) {
 
       <div className="mt-4 rounded-xl bg-amber-50 border border-amber-200 p-3 text-xs text-amber-900">
         <strong>שים לב:</strong> השדות שונים מעט לפי מצב משפחתי, מקורות הכנסה נוספים ועיסוקים נוספים.
-        זה עזר לחישוב המספרים — את הטופס המלא ממלאים באתר רשות המסים או דרך רואה חשבון.
+        זה עזר לחישוב המספרים. את הטופס המלא ממלאים באתר רשות המסים או דרך רואה חשבון.
       </div>
     </div>
   );

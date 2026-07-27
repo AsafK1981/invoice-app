@@ -74,7 +74,7 @@ export function QuoteAging({ documents }: Props) {
     },
     {
       key: "aging",
-      label: "1–2 שבועות",
+      label: "1-2 שבועות",
       count: aging.length,
       value: aging.reduce((s, q) => s + (q.totalIls ?? q.total), 0),
       items: aging,
@@ -106,7 +106,7 @@ export function QuoteAging({ documents }: Props) {
         <div>
           <h2 className="font-semibold text-stone-900 flex items-center gap-2">
             <FileQuestion className="w-5 h-5 text-amber-600" />
-            הצעות פתוחות — לפי זמן ההפקה
+            הצעות פתוחות: לפי זמן ההפקה
           </h2>
           <p className="text-xs text-stone-600 mt-1">
             סה״כ <span className="font-semibold text-stone-900">{formatCurrency(totalValue)}</span>{" "}

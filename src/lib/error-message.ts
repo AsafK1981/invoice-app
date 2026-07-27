@@ -1,5 +1,5 @@
 // Maps a caught error (Supabase / postgREST / fetch / anything) to a
-// friendly Hebrew message. Our users are Hebrew-speaking freelancers —
+// friendly Hebrew message. Our users are Hebrew-speaking freelancers,
 // surfacing a raw English string like "duplicate key value violates
 // unique constraint" is both confusing and leaks internals. Prefer a
 // short, actionable Hebrew sentence; fall back to a generic one.
@@ -38,7 +38,7 @@ export function friendlyError(err: unknown, fallback: string = GENERIC): string 
 
   if (!text && !code) return fallback;
 
-  // Auth / session expiry — tell them to log back in.
+  // Auth / session expiry: tell them to log back in.
   if (
     code === "PGRST301" ||
     text.includes("jwt expired") ||
@@ -52,7 +52,7 @@ export function friendlyError(err: unknown, fallback: string = GENERIC): string 
     return "פג תוקף ההתחברות, התחבר מחדש";
   }
 
-  // Unique-constraint violation — the record already exists.
+  // Unique-constraint violation: the record already exists.
   if (code === "23505" || text.includes("duplicate key") || text.includes("already exists")) {
     return "כבר קיימת רשומה כזו";
   }
@@ -86,7 +86,7 @@ export function friendlyError(err: unknown, fallback: string = GENERIC): string 
   }
 
   // If the message is already Hebrew, it was written for the user on
-  // purpose (our own API returns Hebrew errors) — pass it through.
+  // purpose (our own API returns Hebrew errors), pass it through.
   if (/[֐-׿]/.test(text)) {
     // Recover the original (non-lowercased) message when possible so we
     // don't mangle any embedded Latin text.

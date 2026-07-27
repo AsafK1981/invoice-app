@@ -73,7 +73,7 @@ export function TaxYearDetail({ year, documents, expenses, allDocuments, allExpe
       .filter((e) => e.date.startsWith(`${priorYear}-`))
       .reduce((s, e) => s + e.amount, 0);
 
-    // End-of-year projection — only meaningful when looking at the
+    // End-of-year projection, only meaningful when looking at the
     // current year mid-stride. Extrapolate linearly from days-elapsed.
     const now = new Date();
     const isCurrentYear = year === now.getFullYear();
@@ -171,7 +171,7 @@ export function TaxYearDetail({ year, documents, expenses, allDocuments, allExpe
       {stats.totalVat > 0 && (
         <div className="rounded-2xl bg-blue-50 border border-blue-200 p-4 mb-6">
           <p className="text-sm text-blue-900">
-            <strong>מע״מ שנגבה:</strong> {formatCurrency(stats.totalVat)} — ייתכן ויש להעביר
+            <strong>מע״מ שנגבה:</strong> {formatCurrency(stats.totalVat)}, ייתכן ויש להעביר
             לרשות המסים בדיווח התקופתי.
           </p>
         </div>

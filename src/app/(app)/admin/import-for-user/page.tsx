@@ -104,7 +104,7 @@ export default function AdminImportForUserPage() {
     if (allowed) loadUsers();
   }, [allowed, loadUsers]);
 
-  // Documents-only dry-run preview — gives the admin the per-row/per-reason
+  // Documents-only dry-run preview: gives the admin the per-row/per-reason
   // detail the server route's aggregate response doesn't return.
   const analysis = useMemo(
     () =>
@@ -195,7 +195,7 @@ export default function AdminImportForUserPage() {
             ייבוא בשביל משתמש (Concierge)
           </h1>
           <p className="text-sm text-stone-700 mt-2 mr-14 leading-relaxed">
-            חבר ששלח לך CSV ב-WhatsApp? בחר אותו, העלה את הקובץ, וההוא יראה את הנתונים בפנים — כאילו הוא ייבא בעצמו.
+            חבר ששלח לך CSV ב-WhatsApp? בחר אותו, העלה את הקובץ, וההוא יראה את הנתונים בפנים, כאילו הוא ייבא בעצמו.
           </p>
         </div>
         <Link

@@ -280,7 +280,7 @@ export default function ExpensesPage() {
         <EmptyState
           icon={Wallet}
           title="אין הוצאות מתועדות"
-          description="תיעוד הוצאות מאפשר לך לחשב רווח נטו, להפיק דיווחים תקופתיים, ולהיות מוכן ליום של הצהרת הון. הוסף הוצאה ראשונה — שתי דקות עבודה, חודשים של שקט."
+          description="תיעוד הוצאות מאפשר לך לחשב רווח נטו, להפיק דיווחים תקופתיים, ולהיות מוכן ליום של הצהרת הון. הוסף הוצאה ראשונה: שתי דקות עבודה, חודשים של שקט."
           primaryAction={{
             label: "הוסף הוצאה ראשונה",
             onClick: openNew,
@@ -399,7 +399,7 @@ export default function ExpensesPage() {
                           <span>{e.supplier}</span>
                         </div>
                       </td>
-                      <td className="px-6 py-3 text-sm text-stone-700">{e.description || "—"}</td>
+                      <td className="px-6 py-3 text-sm text-stone-700">{e.description || "-"}</td>
                       <td className="px-6 py-3 text-sm font-bold text-left text-rose-600">
                         {formatCurrency(e.amount)}
                       </td>

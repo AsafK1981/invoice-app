@@ -12,28 +12,28 @@ export type PaymentMethod = "bank_transfer" | "cash" | "check" | "credit_card" |
 
 /**
  * Structured payment detail captured per payment method on receipts /
- * tax-invoice-receipts (פירוט אמצעי תשלום). All fields optional — only the
+ * tax-invoice-receipts (פירוט אמצעי תשלום). All fields optional: only the
  * ones relevant to the chosen method are filled. The primary human reference
  * (bank/Bit/PayPal reference, or the check number, or the card approval) is
  * also mirrored into the document's `paymentReference` so the bank-import
  * matcher / timeline keep working.
  */
 export interface PaymentDetails {
-  /** העברה בנקאית / Bit / PayPal — אסמכתא. */
+  /** העברה בנקאית / Bit / PayPal: אסמכתא. */
   reference?: string;
-  /** צ'ק — מספר שיק. */
+  /** צ'ק: מספר שיק. */
   checkNumber?: string;
-  /** צ'ק — בנק. */
+  /** צ'ק: בנק. */
   checkBank?: string;
-  /** צ'ק — סניף. */
+  /** צ'ק: סניף. */
   checkBranch?: string;
-  /** צ'ק — מספר חשבון. */
+  /** צ'ק: מספר חשבון. */
   checkAccount?: string;
-  /** צ'ק — תאריך פירעון (ז"פ), ISO date. */
+  /** צ'ק: תאריך פירעון (ז"פ), ISO date. */
   checkDueDate?: string;
-  /** אשראי — 4 ספרות אחרונות. */
+  /** אשראי: 4 ספרות אחרונות. */
   cardLast4?: string;
-  /** אשראי — מספר אישור. */
+  /** אשראי: מספר אישור. */
   cardApproval?: string;
 }
 
@@ -95,7 +95,7 @@ export interface InvoiceDocument {
   date: string;
   clientId: string;
   clientName: string;
-  /** Customer's עוסק/ח.פ number — required for חשבונית ישראל allocation requests. */
+  /** Customer's עוסק/ח.פ number, required for חשבונית ישראל allocation requests. */
   clientTaxId?: string;
   subject?: string;
   status: DocumentStatus;
@@ -104,7 +104,7 @@ export interface InvoiceDocument {
   vat: number;
   total: number;
   /**
-   * הפרש עיגול — signed rounding adjustment absorbing the difference when the
+   * הפרש עיגול, signed rounding adjustment absorbing the difference when the
    * final total is rounded to a whole unit of the document currency. 0 (default)
    * when rounding is off. Invariant: total = subtotal + vat + rounding.
    */
@@ -117,7 +117,7 @@ export interface InvoiceDocument {
   approvalSignature?: string;
   emailedAt?: string;
   /**
-   * When the document's מקור (original) was first emitted to the customer —
+   * When the document's מקור (original) was first emitted to the customer,
    * first email send / PDF download / print. NULL ⇒ the doc still renders the
    * legally-required "מקור" label; once set, every reprint/re-download/re-send
    * renders "העתק" (הוראות ניהול ספרים סעיף 18ב). A שכפול creates a fresh row
@@ -129,7 +129,7 @@ export interface InvoiceDocument {
   /** Total number of times the tracking pixel has loaded (open + later re-reads). */
   emailOpenCount?: number;
   /**
-   * מספר הקצאה — Tax Authority allocation number from חשבונית ישראל.
+   * מספר הקצאה: Tax Authority allocation number from חשבונית ישראל.
    * Required on tax invoices above the annual threshold (סעיף 47ב לחוק מע"מ).
    * Manually entered by the user after submitting the doc to the gov portal;
    * future API integration will set this automatically.
@@ -145,18 +145,18 @@ export interface InvoiceDocument {
   /**
    * For a credit note (חשבונית זיכוי): FK to the original tax invoice it
    * reverses, when that invoice exists as an app document (picked from the
-   * editor). NULL when the original was issued externally and entered manually
-   * — in that case the reference lives only in the notes line. Additive to the
+   * editor). NULL when the original was issued externally and entered manually.
+   * In that case the reference lives only in the notes line. Additive to the
    * human-readable notes reference, not a replacement for it.
    */
   originalDocumentId?: string | null;
   /**
    * When the document was marked paid (either manually or via the bank-
-   * import matcher). Independent of status — historical docs that were
+   * import matcher). Independent of status; historical docs that were
    * marked paid before this field existed have status=paid but null here.
    */
   paidAt?: string;
-  /** Free-form payment reference — bank transaction id, Bit ref, etc. */
+  /** Free-form payment reference: bank transaction id, Bit ref, etc. */
   paymentReference?: string;
   /**
    * Structured payment detail per method (check/bank/card). Only meaningful on
@@ -164,9 +164,9 @@ export interface InvoiceDocument {
    */
   paymentDetails?: PaymentDetails;
   /**
-   * ניכוי מס במקור — withholding tax the customer deducts from the payment and
+   * ניכוי מס במקור, withholding tax the customer deducts from the payment and
    * remits to the Tax Authority on the supplier's behalf. Computed on the TOTAL
-   * including VAT. This does NOT change subtotal/vat/total — it's a split of the
+   * including VAT. This does NOT change subtotal/vat/total; it's a split of the
    * payment (total = actually-paid + withholding). Applies to עוסק פטור too
    * (it's income tax, not VAT). Only recorded on receipts / tax-invoice-receipts.
    */
@@ -194,8 +194,8 @@ export interface InvoiceDocument {
 /**
  * Document types that represent actual revenue (מחזור עסקאות). Price quotes
  * (הצעת מחיר) and proforma invoices (חשבון עסקה) are pre-payment documents and
- * are NOT revenue. Credit notes (חשבונית זיכוי) subtract — they're stored
- * negative — and are handled separately from this list.
+ * are NOT revenue. Credit notes (חשבונית זיכוי) subtract, they're stored
+ * negative, and are handled separately from this list.
  */
 export const REVENUE_DOCUMENT_TYPES: DocumentType[] = [
   "receipt",
@@ -228,7 +228,7 @@ export interface Expense {
   amount: number;
   description?: string;
   /**
-   * VAT (מע"מ) component of the expense — used by עוסק מורשה for
+   * VAT (מע"מ) component of the expense, used by עוסק מורשה for
    * input-VAT credit on periodic VAT returns. Always 0 for עוסק פטור.
    */
   vatAmount?: number;

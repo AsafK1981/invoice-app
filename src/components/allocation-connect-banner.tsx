@@ -15,7 +15,7 @@ interface Props {
   /** Pre-VAT subtotal in ₪ (foreign docs: subtotal × exchange rate). The
    *  allocation threshold is measured on the PRE-VAT amount, not the total. */
   subtotalIls: number;
-  /** Document date (YYYY-MM-DD) — the threshold is date-aware. */
+  /** Document date (YYYY-MM-DD); the threshold is date-aware. */
   date: string;
   /** Buyer's business/VAT number. Absent/empty ⇒ private customer (B2C),
    *  which never needs an allocation number. */
@@ -28,7 +28,7 @@ interface Props {
 /**
  * Prominent, in-editor call-to-action shown WHILE writing a tax invoice that
  * will need a חשבונית ישראל allocation number. Surfaces the connect / status
- * right where the user is, instead of buried in settings — the allocation flow
+ * right where the user is, instead of buried in settings; the allocation flow
  * was hard to find. Self-hides for עוסק פטור and for documents under the
  * threshold (where no allocation number is required).
  */
@@ -93,7 +93,7 @@ export function AllocationConnectBanner({
 
   const isPrivateCustomer = !normalizeCustomerVatNumber(customerTaxId);
 
-  // A tax invoice that doesn't need an allocation number — reassure the user
+  // A tax invoice that doesn't need an allocation number; reassure the user
   // with a short note instead of showing nothing. Two reasons it may not need
   // one: under the threshold, or a private (B2C) customer.
   if (!needs) {
@@ -103,7 +103,7 @@ export function AllocationConnectBanner({
         <div className="rounded-2xl border border-stone-200 bg-stone-50/70 px-4 py-3 flex items-start gap-3">
           <Info className="w-5 h-5 text-stone-500 flex-shrink-0 mt-0.5" />
           <p className="text-sm text-stone-700 leading-relaxed">
-            לקוח ללא מספר עוסק/ח.פ — לכן <span className="font-semibold">אין חובת מספר הקצאה</span>. אם זהו לקוח עסקי, הוסף את מספר העוסק/ח.פ שלו כדי לקבל מספר הקצאה.
+            לקוח ללא מספר עוסק/ח.פ, לכן <span className="font-semibold">אין חובת מספר הקצאה</span>. אם זהו לקוח עסקי, הוסף את מספר העוסק/ח.פ שלו כדי לקבל מספר הקצאה.
           </p>
         </div>
       );
@@ -113,7 +113,7 @@ export function AllocationConnectBanner({
       <div className="rounded-2xl border border-stone-200 bg-stone-50/70 px-4 py-3 flex items-start gap-3">
         <Info className="w-5 h-5 text-stone-500 flex-shrink-0 mt-0.5" />
         <p className="text-sm text-stone-700 leading-relaxed">
-          הסכום מתחת ל-₪{threshold.toLocaleString()} — <span className="font-semibold">אין צורך במספר הקצאה</span> מרשות המסים למסמך זה.
+          הסכום מתחת ל-₪{threshold.toLocaleString()}, <span className="font-semibold">אין צורך במספר הקצאה</span> מרשות המסים למסמך זה.
         </p>
       </div>
     );
@@ -138,7 +138,7 @@ export function AllocationConnectBanner({
     setConnecting(false);
   }
 
-  // The "מספר הקצאה" slot — always rendered when this document needs a number,
+  // The "מספר הקצאה" slot, always rendered when this document needs a number,
   // so the user has a fixed place for it and a reminder that it's still missing.
   // Editable: the number normally arrives automatically from the Tax Authority
   // after saving, but the user can also type/paste one they obtained elsewhere.
@@ -152,14 +152,14 @@ export function AllocationConnectBanner({
         dir="ltr"
         value={allocationNumber}
         onChange={(e) => onAllocationNumberChange?.(e.target.value.replace(/[^\d]/g, ""))}
-        placeholder="— טרם הוקצה"
+        placeholder="טרם הוקצה"
         className="input-warm text-left"
       />
       <p className="text-xs text-stone-600 mt-1">
         {hasNumber
-          ? "מספר הקצאה הוזן ידנית — יודפס על המסמך."
+          ? "מספר הקצאה הוזן ידנית, יודפס על המסמך."
           : connected
-          ? "השאר ריק — יתקבל אוטומטית מרשות המסים לאחר שמירה. או הזן ידנית."
+          ? "השאר ריק, יתקבל אוטומטית מרשות המסים לאחר שמירה. או הזן ידנית."
           : "השאר ריק והפק לאחר חיבור, או הזן ידנית מספר שקיבלת."}
       </p>
     </div>
@@ -191,7 +191,7 @@ export function AllocationConnectBanner({
             מסמך זה דורש מספר הקצאה (חשבונית ישראל)
           </p>
           <p className="text-xs text-stone-700 mt-0.5 leading-relaxed">
-            חבר את העסק פעם אחת — וכל חשבונית מס מעל הסף תקבל מספר הקצאה מרשות המסים אוטומטית,
+            חבר את העסק פעם אחת, וכל חשבונית מס מעל הסף תקבל מספר הקצאה מרשות המסים אוטומטית,
             בלי פורטל חיצוני.
           </p>
           <button

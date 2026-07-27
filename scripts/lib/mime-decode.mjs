@@ -2,7 +2,7 @@
 // Handles quoted-printable + base64 transfer encodings and per-part
 // charsets (including windows-1255, which Node's TextDecoder supports
 // natively via ICU). The pattern: capture raw bytes, then decode using
-// the declared charset — never assume UTF-8.
+// the declared charset; never assume UTF-8.
 
 export function decodeQPBytes(s) {
   // Quoted-printable -> raw bytes (returned as a Buffer so the caller can

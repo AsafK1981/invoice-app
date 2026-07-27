@@ -2,7 +2,7 @@ import type { DocumentStatus, DocumentType, InvoiceDocument } from "./types";
 
 /**
  * Filter set for the flexible custom report (`/reports/custom`). All filters
- * are combinable — a document must pass every one to appear in the result.
+ * are combinable: a document must pass every one to appear in the result.
  */
 export interface ReportFilters {
   /** YYYY-MM-DD inclusive lower bound, or null = no lower bound. */

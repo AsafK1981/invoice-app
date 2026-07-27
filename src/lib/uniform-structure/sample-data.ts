@@ -61,7 +61,7 @@ const EXPENSE_SUPPLIERS = [
 
 const PAYMENT_METHODS: PaymentMethod[] = ["bank_transfer", "cash", "check", "credit_card", "bit"];
 
-// Document type distribution — must include at least one of each
+// Document type distribution: must include at least one of each
 const DOC_TYPES: DocumentType[] = [
   "receipt",
   "quote",
@@ -100,7 +100,7 @@ export function generateSampleDataset(input: SampleInput): SampleDataset {
   //   - 600 B100 lines (~2 per paid doc)                 = 600 records
   //   - 100 expenses (~2 B100 per expense)               = 200 records
   //   - 1 A100 + 1 Z900                                  = 2 records
-  //   Total target: ~1907 records — scale up if needed.
+  //   Total target: ~1907 records, scale up if needed.
 
   const numClients = Math.max(50, Math.floor(targetRecords / 50));
   const numDocs = Math.max(300, Math.floor(targetRecords / 7));
@@ -165,7 +165,7 @@ export function generateSampleDataset(input: SampleInput): SampleDataset {
       });
     }
     // עוסק פטור = no VAT. For type=tax_invoice we still set vat=0 since
-    // Asaf is exempt — the simulator doesn't care about מע"מ correctness.
+    // Asaf is exempt; the simulator doesn't care about מע"מ correctness.
     const vat = 0;
     const total = subtotal + vat;
 

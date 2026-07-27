@@ -107,7 +107,7 @@ export function CsvImportModal({ open, onClose, entityType }: Props) {
       // Use the headers returned by parseCsvFile (they include columns that are
       // empty in the first data row, which Object.keys(preview[0]) would miss).
       const docHeadersMap = mapHeaders(headers);
-      // Cache of clients we've already created in this batch — avoids
+      // Cache of clients we've already created in this batch; avoids
       // creating the same client twice when two rows share a name and
       // the supabase select hasn't seen the in-flight insert yet.
       const clientCache = new Map<string, string>();
@@ -275,7 +275,7 @@ export function CsvImportModal({ open, onClose, entityType }: Props) {
       const skipNotes = skips.toSkipSummary().map((s) => `${s.count} ${s.label}`);
       const skipSuffix = skipNotes.length > 0 ? ` (דילוג על ${skipNotes.join(" · ")})` : "";
       // Rows whose document-type cell wasn't recognized are still imported (as
-      // קבלה) rather than dropped — surface the count so the user can review.
+      // קבלה) rather than dropped; surface the count so the user can review.
       const typeWarn =
         unmappedTypes.count > 0 ? ` · ${unmappedTypes.count} עם סוג לא מזוהה (יובאו כקבלה)` : "";
       setSuccess(`יובאו ${imported} רשומות בהצלחה${skipSuffix}${typeWarn}`);

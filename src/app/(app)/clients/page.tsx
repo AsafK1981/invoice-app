@@ -172,7 +172,7 @@ export default function ClientsPage() {
         <EmptyState
           icon={Users}
           title="עדיין אין לקוחות"
-          description="הלקוחות שלך הם בסיס הכל — כל מסמך שאתה מפיק שייך ללקוח. הוסף את הראשון, וכל מסמך שלו יקושר אוטומטית."
+          description="הלקוחות שלך הם בסיס הכל: כל מסמך שאתה מפיק שייך ללקוח. הוסף את הראשון, וכל מסמך שלו יקושר אוטומטית."
           primaryAction={{
             label: "הוסף לקוח ראשון",
             onClick: openNew,

@@ -21,14 +21,14 @@ function buildWelcomeHtml(): string {
       </div>
       <h1 style="color:#1c1917;font-size:22px;margin:0 0 12px;">ברוך/ה הבא/ה! 🎉</h1>
       <p style="color:#44403c;font-size:15px;line-height:1.6;margin:0 0 16px;">
-        תודה שנרשמת ל-MySuperFriendlyInvoiceApp — אפליקציה אישית להפקת חשבוניות וקבלות לעצמאיים בישראל.
+        תודה שנרשמת ל-MySuperFriendlyInvoiceApp, אפליקציה אישית להפקת חשבוניות וקבלות לעצמאיים בישראל.
       </p>
       <p style="color:#44403c;font-size:15px;line-height:1.6;margin:0 0 16px;">
         מה אפשר לעשות מכאן:
       </p>
       <ul style="color:#44403c;font-size:15px;line-height:1.8;margin:0 0 20px;padding-right:20px;">
-        <li>למלא את פרטי העסק — כדי שיופיעו אוטומטית על כל מסמך</li>
-        <li>להוסיף לקוחות ומוצרים פעם אחת — והפקה הופכת לשנייה</li>
+        <li>למלא את פרטי העסק, כדי שיופיעו אוטומטית על כל מסמך</li>
+        <li>להוסיף לקוחות ומוצרים פעם אחת, והפקה הופכת לשנייה</li>
         <li>להפיק קבלות, חשבונות עסקה, חשבוניות מס</li>
         <li>לשלוח ללקוח באימייל / WhatsApp / קישור לשיתוף</li>
         <li>להוריד PDF מקצועי בלחיצה</li>
@@ -43,7 +43,7 @@ function buildWelcomeHtml(): string {
         טיפ: בדשבורד תמצא צ'ק-ליסט קצר עם 5 צעדים להפקת המסמך הראשון.
       </p>
       <p style="color:#78716c;font-size:13px;line-height:1.5;margin:0;">
-        יש שאלה? פשוט תענה למייל הזה — מגיע אליי ישר.
+        יש שאלה? פשוט תענה למייל הזה, מגיע אליי ישר.
       </p>
     </div>
   `;

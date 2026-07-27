@@ -2,7 +2,7 @@
 //
 // Estimates the year-end tax + ביטוח לאומי + דמי בריאות bill based on
 // year-to-date income and expenses, projecting linearly through year-end.
-// The goal isn't accountant-grade precision — it's "don't get blindsided
+// The goal isn't accountant-grade precision; it's "don't get blindsided
 // in January by a 20K bill you didn't put aside." Disclaimer surfaces in
 // the UI: this is an estimate, not tax advice.
 //
@@ -26,9 +26,9 @@ const TAX_BRACKETS_2026: ReadonlyArray<[number, number]> = [
   [Infinity, 0.50],
 ];
 
-// Bituach Leumi + דמי בריאות 2026 — combined rates for self-employed
-// aged 18–retirement.
-const BL_MONTHLY_THRESHOLD_2026 = 7_703; // ₪/month — below = low band, above = high band
+// Bituach Leumi + דמי בריאות 2026: combined rates for self-employed
+// aged 18-retirement.
+const BL_MONTHLY_THRESHOLD_2026 = 7_703; // ₪/month: below = low band, above = high band
 const BL_RATE_LOW_2026 = 0.077; // 4.47% NI + 3.23% health
 const BL_RATE_HIGH_2026 = 0.18; // 12.83% NI + 5.17% health
 const BL_MONTHLY_CAP_2026 = 51_910; // monthly income above this isn't charged BL
@@ -40,7 +40,7 @@ const TAX_CREDIT_POINT_VALUE_2026 = 242 * 12; // ≈ 2,904 ₪/year per point
 const DEFAULT_TAX_CREDIT_POINTS = 2.25;
 
 export interface ProjectionInputs {
-  /** YTD revenue — sum of paid income through today. */
+  /** YTD revenue, sum of paid income through today. */
   ytdIncome: number;
   /** YTD deductible expenses. */
   ytdExpenses: number;
@@ -57,7 +57,7 @@ export interface ProjectionResult {
   projectedExpenses: number;
   projectedProfit: number;
 
-  /** מס הכנסה — annual income tax after applying credit points. */
+  /** מס הכנסה, annual income tax after applying credit points. */
   incomeTax: number;
   /** ביטוח לאומי + דמי בריאות annual liability. */
   bituachLeumi: number;
@@ -106,7 +106,7 @@ export function computeBituachLeumi(annualProfit: number): number {
 
 /**
  * Project the year-end tax liability based on YTD income/expenses.
- * Uses linear projection — naive but matches what most accountants
+ * Uses linear projection, naive but matches what most accountants
  * eyeball. When days elapsed is very small (< 30) the projection is
  * unstable; UI should warn the user in that case.
  */

@@ -41,7 +41,7 @@ interface ExportStep {
 
 // Generic export instructions shared across less-documented Israeli
 // vendors. Each gets its own login link but the underlying steps are
-// the same — find the Settings/Backup area, export each entity type
+// the same: find the Settings/Backup area, export each entity type
 // as CSV or Excel.
 const GENERIC_STEPS = (loginUrl: string, vendorName: string): ExportStep[] => [
   {
@@ -65,9 +65,9 @@ const GENERIC_STEPS = (loginUrl: string, vendorName: string): ExportStep[] => [
     title: "ייצוא היסטוריית מסמכים",
     steps: [
       'נווט אל "מסמכים" / "חשבוניות"',
-      "הגדר טווח תאריכים — מומלץ השנה הנוכחית + 2 שנים אחורה",
+      "הגדר טווח תאריכים: מומלץ השנה הנוכחית + 2 שנים אחורה",
       "ייצוא ל-CSV או Excel",
-      "ודא שמספרים רצים נשמרים — חשוב לרצף לרשות המיסים",
+      "ודא שמספרים רצים נשמרים, חשוב לרצף לרשות המיסים",
     ],
   },
 ];
@@ -98,7 +98,7 @@ const EXPORT_GUIDES: Record<Exclude<Vendor, null>, ExportStep[]> = {
         'בתפריט הצדדי לחץ "מסמכים"',
         'הגדר טווח תאריכים (מומלץ: השנה הנוכחית + 2 שנים אחורה)',
         'אייקון ההורדה → ייצוא ל-Excel/CSV',
-        'הקובץ יכלול מספרים רצים — חשוב לשמירה היסטורית',
+        'הקובץ יכלול מספרים רצים, חשוב לשמירה היסטורית',
       ],
     },
   ],
@@ -158,22 +158,22 @@ const VENDOR_META: Record<Exclude<Vendor, null>, { name: string; color: string; 
   icount: {
     name: "iCount",
     color: "from-blue-400 to-indigo-500",
-    tagline: "מדריך כללי, 5–10 דקות",
+    tagline: "מדריך כללי, 5-10 דקות",
   },
   rivhit: {
     name: "ריווחית",
     color: "from-violet-400 to-purple-500",
-    tagline: "מדריך כללי, 5–10 דקות",
+    tagline: "מדריך כללי, 5-10 דקות",
   },
   morning: {
     name: "Morning",
     color: "from-amber-400 to-yellow-500",
-    tagline: "מדריך כללי, 5–10 דקות",
+    tagline: "מדריך כללי, 5-10 דקות",
   },
   hashavshevet: {
     name: "חשבשבת",
     color: "from-stone-500 to-stone-700",
-    tagline: "מדריך כללי, 5–10 דקות",
+    tagline: "מדריך כללי, 5-10 דקות",
   },
   other: {
     name: "Excel / אחר",
@@ -206,7 +206,7 @@ export default function MigratePage() {
         </h1>
         <p className="text-sm text-stone-700 mt-2 mr-14 leading-relaxed">
           מעבירים אותך ביד מ-<Ltr>Invoice4U</Ltr> / חשבונית ירוקה / <Ltr>Excel</Ltr>. כל הלקוחות
-          והמוצרים והמסמכים שלך — בכמה דקות.
+          והמוצרים והמסמכים שלך, בכמה דקות.
         </p>
       </div>
 
@@ -219,7 +219,7 @@ export default function MigratePage() {
             <strong>
               "<Ltr>Excel</Ltr> / אחר"
             </strong>{" "}
-            — או דלג לקטע ה-<Ltr>WhatsApp</Ltr> למטה.
+            או דלג לקטע ה-<Ltr>WhatsApp</Ltr> למטה.
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
             {(Object.keys(VENDOR_META) as Array<keyof typeof VENDOR_META>).map((v) => (
@@ -255,7 +255,7 @@ export default function MigratePage() {
                 <h3 className="font-semibold text-stone-900">לא בא לך להתעסק? אני עושה לך את זה.</h3>
                 <p className="text-sm text-stone-700 mt-1 leading-relaxed">
                   שלח לי ב-<Ltr>WhatsApp</Ltr> את קבצי הייצוא מהכלי הישן ואני אייבא לך את הכל ידנית
-                  — בחינם, כי אתה מתוך ה-20 הראשונים שמשתמשים באפליקציה.
+                  בחינם, כי אתה מתוך ה-20 הראשונים שמשתמשים באפליקציה.
                 </p>
                 <a
                   href={whatsappConciergeLink()}
@@ -347,7 +347,7 @@ export default function MigratePage() {
                 </li>
               ))}
 
-              {/* One-click bulk import — preferred path */}
+              {/* One-click bulk import: preferred path */}
               <li className="rounded-2xl border-2 border-orange-200 bg-gradient-to-br from-orange-50/80 to-amber-50/60 px-4 py-4">
                 <div className="flex items-start gap-3 mb-3">
                   <span className="w-7 h-7 rounded-full bg-gradient-to-br from-orange-400 to-rose-500 text-white flex items-center justify-center text-xs font-bold flex-shrink-0 shadow-sm">
@@ -359,8 +359,8 @@ export default function MigratePage() {
                       ייבוא הכל בלחיצה אחת
                     </p>
                     <p className="text-sm text-stone-700 mt-0.5">
-                      גרור את כל הקבצים שייצאת (לקוחות / מוצרים / הוצאות / מסמכים) — או קובץ{" "}
-                      <Ltr>Excel</Ltr> אחד עם כל הגיליונות — המערכת תזהה אוטומטית מה כל קובץ ותייבא
+                      גרור את כל הקבצים שייצאת (לקוחות / מוצרים / הוצאות / מסמכים), או קובץ{" "}
+                      <Ltr>Excel</Ltr> אחד עם כל הגיליונות, המערכת תזהה אוטומטית מה כל קובץ ותייבא
                       הכל יחד.
                     </p>
                   </div>
@@ -374,7 +374,7 @@ export default function MigratePage() {
                   <summary className="cursor-pointer px-4 py-3 text-sm text-stone-700 hover:bg-stone-50 rounded-2xl flex items-center justify-between">
                     <span>
                       <ChevronDown className="w-4 h-4 inline group-open:hidden" />
-                      <ChevronUp className="w-4 h-4 inline hidden group-open:inline" /> או — ייבוא
+                      <ChevronUp className="w-4 h-4 inline hidden group-open:inline" /> או ייבוא
                       נפרד לכל סוג נתונים
                     </span>
                   </summary>
@@ -423,7 +423,7 @@ export default function MigratePage() {
                       <Link href="/settings" className="text-orange-600 underline">
                         הגדרות
                       </Link>{" "}
-                      → "פרטי עסק" — עדכן שם, ח.פ./ת.ז., כתובת, פרטי בנק. העלה את הלוגו שלך כדי שיופיע על
+                      → "פרטי עסק": עדכן שם, ח.פ./ת.ז., כתובת, פרטי בנק. העלה את הלוגו שלך כדי שיופיע על
                       כל מסמך.
                     </p>
                   </div>
@@ -434,7 +434,7 @@ export default function MigratePage() {
                 <div className="flex items-start gap-3">
                   <CheckCircle2 className="w-6 h-6 text-emerald-600 flex-shrink-0 mt-0.5" />
                   <div className="flex-1 text-sm">
-                    <p className="font-bold text-stone-900">סיימת — אתה מוכן לעבודה ✨</p>
+                    <p className="font-bold text-stone-900">סיימת! אתה מוכן לעבודה ✨</p>
                     <p className="text-stone-700 mt-1 leading-relaxed">
                       ההיסטוריה שלך נשמרה, המספרים הרצים ממשיכים מהמקום שעצרת.
                     </p>
@@ -474,7 +474,7 @@ export default function MigratePage() {
         </>
       )}
 
-      {/* Existing CSV import modal — reused per entity */}
+      {/* Existing CSV import modal: reused per entity */}
       {importingEntity && (
         <CsvImportModal
           open={true}

@@ -25,13 +25,13 @@ const CHANGE_EVENT = "invoice-app:recurring-changed";
  * mutation is a read-modify-write with no row-level merge. Two concurrent
  * mutations (generate from two templates at once, or a save while another
  * is in flight) would otherwise read the same baseline and the second
- * updateUser would clobber the first — a lost update.
+ * updateUser would clobber the first: a lost update.
  *
  * serializeWrite runs mutations one at a time. Each one re-reads the freshest
  * metadata inside its own callback (after the previous write has persisted),
  * so updates compose instead of overwriting. Exported for direct testing.
  * (Note: this guards a single session/tab; truly concurrent edits from two
- * separate tabs/devices still need a row-backed table — a larger change.)
+ * separate tabs/devices still need a row-backed table, a larger change.)
  */
 let writeChain: Promise<unknown> = Promise.resolve();
 export function serializeWrite<T>(fn: () => Promise<T>): Promise<T> {
@@ -116,7 +116,7 @@ export function calculateNextDue(
     return new Date(Date.UTC(y, m - 1, d + 7)).toISOString().slice(0, 10);
   }
   // Monthly OR yearly: advance N calendar months (1 for monthly, 12 for
-  // yearly), clamping the day to the target month's last day so the 29th–31st
+  // yearly), clamping the day to the target month's last day so the 29th-31st
   // don't overflow into the month after (plain setMonth turns Jan 31 + 1 month
   // into Mar 3, silently skipping months for end-of-month templates; the same
   // clamp keeps Feb-29 yearly renewals from drifting to Mar-1). All math in UTC

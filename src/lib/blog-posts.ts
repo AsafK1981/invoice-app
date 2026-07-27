@@ -9,13 +9,13 @@ import path from "node:path";
  * typed metadata plus the crucial `published` flag.
  *
  * ─────────────────────────────────────────────────────────────────────────
- *  REVIEW-FIRST — how publishing works
+ *  REVIEW-FIRST: how publishing works
  * ─────────────────────────────────────────────────────────────────────────
  *  Every post is imported with `published: false`. While false, a post is:
  *    • hidden from the /blog index list,
  *    • excluded from sitemap.ts,
  *    • marked `robots: noindex, nofollow` on its own page,
- *    • shown with a visible "טיוטה — עדיין לא פורסם" banner.
+ *    • shown with a visible "טיוטה: עדיין לא פורסם" banner.
  *  It is still reachable by direct URL (/blog/<slug>) so Asaf can review it.
  *
  *  TO PUBLISH A POST: flip that post's `published` field below from
@@ -39,7 +39,7 @@ export interface BlogPost {
 }
 
 /**
- * All imported drafts. Ordering here does not matter — the index sorts by
+ * All imported drafts. Ordering here does not matter; the index sorts by
  * date. Keep `published: false` until a post has been reviewed and approved.
  */
 export const BLOG_POSTS: BlogPost[] = [
@@ -61,21 +61,21 @@ export const BLOG_POSTS: BlogPost[] = [
     published: true,
   },
   {
-    // Slug intentionally keeps the lowercase spelling — it is a live URL in
+    // Slug intentionally keeps the lowercase spelling; it is a live URL in
     // the sitemap. Only the human-facing title/description use the brand's
     // real casing, "Invoice4U".
     slug: "maavar-me-invoice4u",
     title: "מעבר מ-Invoice4U: איך עוברים תוכנת חשבוניות בלי לאבד היסטוריה",
     description:
-      "שוקלים לעזוב את Invoice4U? מדריך מעשי למעבר לתוכנת חשבוניות אחרת ב-2026 — מה לגבות לפני שעוזבים, איך לא לאבד לקוחות והיסטוריית מסמכים, ומה לבדוק לפני שבוחרים תחליף.",
+      "שוקלים לעזוב את Invoice4U? מדריך מעשי למעבר לתוכנת חשבוניות אחרת ב-2026: מה לגבות לפני שעוזבים, איך לא לאבד לקוחות והיסטוריית מסמכים, ומה לבדוק לפני שבוחרים תחליף.",
     date: "2026-07-14",
     published: true,
   },
   {
     slug: "maavar-osek-patur-le-osek-morshe-2026",
-    title: "מעבר מעוסק פטור לעוסק מורשה — המדריך המלא 2026",
+    title: "מעבר מעוסק פטור לעוסק מורשה: המדריך המלא 2026",
     description:
-      "עברתם את תקרת המחזור? המדריך המלא למעבר מעוסק פטור לעוסק מורשה ב-2026 — מה משתנה, איך נרשמים ברשות המסים, ואיך ממשיכים להוציא חשבוניות בלי כאב ראש.",
+      "עברתם את תקרת המחזור? המדריך המלא למעבר מעוסק פטור לעוסק מורשה ב-2026: מה משתנה, איך נרשמים ברשות המסים, ואיך ממשיכים להוציא חשבוניות בלי כאב ראש.",
     date: "2026-07-14",
     published: true,
   },
@@ -83,7 +83,7 @@ export const BLOG_POSTS: BlogPost[] = [
     slug: "article-2026-07-13-1",
     title: "מספר הקצאה לחשבוניות ב-2026: המדריך המלא לעצמאים",
     description:
-      "מהו מספר הקצאה, למי הוא חובה, ומהם הספים המעודכנים ל-2026? מדריך פשוט לעצמאים על רפורמת חשבונית ישראל — איך מוציאים מספר הקצאה ואיך תוכנה עושה זאת אוטומטית.",
+      "מהו מספר הקצאה, למי הוא חובה, ומהם הספים המעודכנים ל-2026? מדריך פשוט לעצמאים על רפורמת חשבונית ישראל: איך מוציאים מספר הקצאה ואיך תוכנה עושה זאת אוטומטית.",
     date: "2026-07-13",
     published: true,
   },
@@ -91,7 +91,7 @@ export const BLOG_POSTS: BlogPost[] = [
     slug: "article-2026-07-13-2",
     title: "עוסק פטור 2026: המדריך המלא להוצאת קבלות וחשבוניות כחוק",
     description:
-      "מה עוסק פטור צריך להוציא — קבלה, חשבונית עסקה או חשבונית מס? מדריך 2026 על מספור רציף, מסמך ממוחשב, שמירת מסמכים 7 שנים והטעויות הנפוצות. פשוט וברור.",
+      "מה עוסק פטור צריך להוציא: קבלה, חשבונית עסקה או חשבונית מס? מדריך 2026 על מספור רציף, מסמך ממוחשב, שמירת מסמכים 7 שנים והטעויות הנפוצות. פשוט וברור.",
     date: "2026-07-13",
     published: true,
   },

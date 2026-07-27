@@ -7,7 +7,7 @@
  * down over time: ₪20,000 in 2025, ₪10,000 from 2026-01-01, then
  * ₪5,000 from 2026-06-01 onward.
  *
- * Without the allocation number the recipient cannot deduct VAT — so
+ * Without the allocation number the recipient cannot deduct VAT, so
  * for עוסק מורשה customers this integration is critical.
  *
  * Auth model: OAuth2 authorization code with long-lived refresh
@@ -53,7 +53,7 @@ const CALLBACK_URL = `${APP_ORIGIN}/api/tax-authority/callback`;
  * allocation) time out from Vercel. When TAX_AUTHORITY_PROXY_BASE is set we
  * route those calls through a reverse proxy on Cloud Run me-west1 (Tel Aviv),
  * whose Israeli egress IP gov.il accepts. Browser-facing URLs (the authorize
- * redirect) must NOT be proxied — the user's own Israeli IP reaches gov fine.
+ * redirect) must NOT be proxied; the user's own Israeli IP reaches gov fine.
  */
 const PROXY_BASE = (process.env.TAX_AUTHORITY_PROXY_BASE || "").replace(/\/$/, "");
 const PROXY_KEY = process.env.TAX_AUTHORITY_PROXY_KEY || "";
@@ -93,7 +93,7 @@ export function taxAuthorityEnv(): "sandbox" | "production" {
 }
 
 /* ------------------------------------------------------------------ */
-/* Threshold helpers — kept stable for legacy callers                  */
+/* Threshold helpers, kept stable for legacy callers                   */
 /* ------------------------------------------------------------------ */
 
 const THRESHOLD_BY_YEAR: Record<number, number> = {
@@ -111,14 +111,14 @@ export function getAllocationThresholdForYear(year: number): number {
 }
 
 /**
- * Date-aware allocation threshold — the single source of truth for gating.
+ * Date-aware allocation threshold, the single source of truth for gating.
  * The legislated schedule steps down mid-2026:
  *   - 2025:                        ₪20,000
  *   - 2026-01-01 .. 2026-05-31:    ₪10,000
  *   - 2026-06-01 onward:           ₪5,000
  *   - 2027 and later:              ₪5,000
  * Uses UTC so the invoice's calendar date determines the threshold
- * deterministically, regardless of the runtime timezone — a date string
+ * deterministically, regardless of the runtime timezone; a date string
  * like "2026-01-01" parses to UTC midnight, and reading the local month
  * on a UTC-negative host would otherwise mis-bucket it into the prior year.
  */
@@ -149,13 +149,13 @@ export function normalizeCustomerVatNumber(v: unknown): string {
  * Does this document legally require a חשבונית ישראל allocation number
  * (מספר הקצאה)?
  *
- * The requirement only bites when the BUYER can deduct input VAT — i.e. a
+ * The requirement only bites when the BUYER can deduct input VAT, i.e. a
  * business customer with a valid עוסק/ח.פ number. A PRIVATE customer (no
  * business number) can't deduct VAT, so חוק החשבוניות doesn't apply and no
  * allocation number is required, regardless of amount. Hence: no customer
  * number ⇒ not required.
  *
- * @param doc  partial document — type, date, pre-VAT amount, and clientTaxId.
+ * @param doc  partial document: type, date, pre-VAT amount, and clientTaxId.
  * @param customerTaxId optional override for the buyer's business number,
  *        already resolved by the caller (e.g. from the linked client). When
  *        omitted, falls back to doc.clientTaxId.
@@ -219,7 +219,7 @@ export async function exchangeCodeForTokens(code: string): Promise<TokenResponse
   });
   const r = await fetch(url, { method: "POST", headers, body });
   if (!r.ok) {
-    // Full upstream body stays in server logs only — never surfaced to the
+    // Full upstream body stays in server logs only; never surfaced to the
     // client or persisted (gov.il bodies can carry internal detail).
     console.error("[tax-authority] token exchange failed", r.status, await r.text().catch(() => ""));
     throw new Error("שגיאה בהתחברות לרשות המסים. נסה שוב או חבר מחדש בהגדרות.");
@@ -239,7 +239,7 @@ export async function refreshAccessToken(refreshToken: string): Promise<TokenRes
   });
   const r = await fetch(url, { method: "POST", headers, body });
   if (!r.ok) {
-    // Full upstream body stays in server logs only — never surfaced to the
+    // Full upstream body stays in server logs only; never surfaced to the
     // client or persisted (gov.il bodies can carry internal detail).
     console.error("[tax-authority] token refresh failed", r.status, await r.text().catch(() => ""));
     throw new Error("פג תוקף החיבור לרשות המסים. חבר מחדש בהגדרות.");
@@ -258,7 +258,7 @@ export interface AllocationRequest {
   /** Issuer's עוסק/company number (digits only). */
   vatNumber: string;
   /**
-   * ID (ת.ז) of the human user performing the allocation — the API's
+   * ID (ת.ז) of the human user performing the allocation; the API's
    * `user_id` field (N9, mandatory unless `user_name` is sent). The v2 spec
    * (§Table 2.1, field 6) demands "the ID of the user performing the actual
    * allocation"; without it the gateway rejects with code 446 ("Requeried one
@@ -296,11 +296,11 @@ export async function requestAllocation(
 ): Promise<AllocationResponse> {
   // Israel Invoice "Israel Invoice Model" v2 (7/2024). The v2 single-Approval
   // body is flat (no Items), field names are lowercase, and the VAT numbers
-  // are sent as NUMBERS (the published example showing strings is wrong — the
+  // are sent as NUMBERS (the published example showing strings is wrong; the
   // production swagger rejects strings with a type error). The allocation
   // number comes back as `confirmation_number`; print its 9 right-most digits.
   // `user_id` (N9): the ID of the user performing the allocation. Mandatory
-  // unless `user_name` is sent — the gateway returns code 446 without it. For
+  // unless `user_name` is sent; the gateway returns code 446 without it. For
   // our solo-freelancer users the operator is the business owner, so we send
   // the issuer's own number (a 9-digit numeric, matching the N9 spec and the
   // "numbers not strings" convention above). See AllocationRequest.userId.
@@ -354,7 +354,7 @@ export async function requestAllocation(
   };
 
   // The raw English/technical `message` string, dug out of whichever shape the
-  // response uses. Kept only as a fallback / for logs — never shown verbatim.
+  // response uses. Kept only as a fallback / for logs; never shown verbatim.
   const extractRawMessage = (): string | undefined => {
     if (!obj) return undefined;
     const msg = obj.message;
@@ -379,7 +379,7 @@ export async function requestAllocation(
     const resultCode = extractCode() ?? String(r.status);
     const rawMessage = extractRawMessage();
     // Full upstream body (may carry gov.il internal detail) stays in server
-    // logs only — never surfaced to the client as a raw JSON blob.
+    // logs only; never surfaced to the client as a raw JSON blob.
     console.error(
       "[tax-authority] allocation rejected",
       "http=", r.status,
@@ -390,7 +390,7 @@ export async function requestAllocation(
       allocationNumber: null,
       confirmationNumber: confirmation || undefined,
       resultCode,
-      // A clean, human Hebrew reason — mapped from the ITA code where known,
+      // A clean, human Hebrew reason, mapped from the ITA code where known,
       // otherwise a generic line. The technical English string is dropped.
       resultMessage: hebrewForItaCode(resultCode, rawMessage),
       raw,
@@ -410,7 +410,7 @@ export async function requestAllocation(
 /**
  * Map an Israel-Tax-Authority error code to a concise, user-facing Hebrew
  * reason. The gateway/business messages come back in technical English (or a
- * JSON blob), which reads terribly inside our RTL Hebrew card — so we translate
+ * JSON blob), which reads terribly inside our RTL Hebrew card, so we translate
  * the codes we know and fall back to a generic Hebrew line for the rest. The
  * raw English is never shown to the user (it stays in server logs).
  */
@@ -426,7 +426,7 @@ export function hebrewForItaCode(code: string | undefined, _rawMessage?: string)
       return "קיימת כבר החלטה עבור חשבונית זו";
     case "401":
     case "403":
-      return "החיבור לרשות המסים אינו מורשה — חבר מחדש בהגדרות";
+      return "החיבור לרשות המסים אינו מורשה, חבר מחדש בהגדרות";
     default:
       return "הבקשה נדחתה על ידי רשות המסים";
   }

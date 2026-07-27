@@ -11,8 +11,8 @@ import { getPlanStatus, type PlanStatus } from "@/lib/plans";
  * Polar sub). Color + tone shift as the expiry date approaches:
  *
  *   > 30 days  → emerald, chill ("גישת בטא פעילה")
- *   8–30 days  → amber, gentle reminder ("X ימים נשארו")
- *   1–7 days   → rose, urgent ("נגמר בעוד X ימים")
+ *   8-30 days  → amber, gentle reminder ("X ימים נשארו")
+ *   1-7 days   → rose, urgent ("נגמר בעוד X ימים")
  *   expired    → rose-strong, blocking-ish ("פג, שדרג עכשיו")
  *
  * Dismissible per browser; reappears every session so the user is
@@ -29,7 +29,7 @@ export function BetaBanner() {
       const s = getPlanStatus(user);
       setStatus(s);
     });
-    // Per-day dismissal — re-shows once a day even after the user closes it.
+    // Per-day dismissal: re-shows once a day even after the user closes it.
     try {
       const stored = window.sessionStorage.getItem(DISMISS_KEY);
       setDismissed(stored === "1");
@@ -91,7 +91,7 @@ export function BetaBanner() {
     : "גישת בטא פעילה";
 
   const subtitle = isExpired
-    ? "חזרת למסלול הבסיסי. כדי להמשיך עם כל הפיצ'רים — שדרג עכשיו."
+    ? "חזרת למסלול הבסיסי. כדי להמשיך עם כל הפיצ'רים, שדרג עכשיו."
     : dateLabel
     ? `המסלול שלך פג בתאריך ${dateLabel}. תוכל להמשיך לתשלום חודשי בכל עת.`
     : "תהנה מכל הפיצ'רים בחינם בתקופת הבטא.";

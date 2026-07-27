@@ -132,7 +132,7 @@ export function NotificationsBell() {
             <p className="text-sm text-stone-500 dark:text-stone-400 text-center py-10 px-4">
               אין התראות עדיין.
               <br />
-              כשאירוע חשוב יקרה — תקבל כאן.
+              כשאירוע חשוב יקרה, תקבל כאן.
             </p>
           ) : (
             <ul className="max-h-[420px] overflow-y-auto">

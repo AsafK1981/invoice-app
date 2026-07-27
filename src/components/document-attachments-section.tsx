@@ -101,7 +101,7 @@ export function DocumentAttachmentsSection({ documentId }: Props) {
       </div>
 
       <p className="text-xs text-stone-600 mb-3">
-        חוזה חתום, צילום תשלום, או כל קובץ עזר אחר. מקסימום 10MB לקובץ. הקבצים פרטיים — רק אתה רואה אותם.
+        חוזה חתום, צילום תשלום, או כל קובץ עזר אחר. מקסימום 10MB לקובץ. הקבצים פרטיים, רק אתה רואה אותם.
       </p>
 
       {error && (

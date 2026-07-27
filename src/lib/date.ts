@@ -4,7 +4,7 @@
  * On Vercel the server runs in UTC, and `new Date().toISOString().slice(0,10)`
  * therefore yields the UTC calendar date. For a user in Asia/Jerusalem creating
  * a document between midnight and ~02:00/03:00 local time, that UTC date is
- * still the PREVIOUS day — which stamps a legal document (invoice/receipt) with
+ * still the PREVIOUS day, which stamps a legal document (invoice/receipt) with
  * the wrong date and, at a month/year boundary, files it in the wrong VAT
  * period or tax year. Always derive document/issue/period dates from these
  * helpers, never from raw `toISOString()`.

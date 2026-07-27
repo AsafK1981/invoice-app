@@ -7,11 +7,11 @@
 // Why this exists: רשות המסים updates the עוסק פטור ceiling roughly
 // annually (סעיף 31 לחוק מע"מ). The dashboard, business-type picker,
 // and yearly journal all read from EXEMPT_CEILING_BY_YEAR. If the table
-// is missing the current year, the FALLBACK kicks in — which goes stale.
+// is missing the current year, the FALLBACK kicks in; which goes stale.
 //
 // On detection: pushes a WhatsApp via the Gaya endpoint asking Asaf to
 // verify the official value and update tax-thresholds.ts. Doesn't try
-// to scrape gov.il — runners are geo-blocked and the page changes
+// to scrape gov.il; runners are geo-blocked and the page changes
 // often. Human-in-the-loop is the reliable path.
 
 import { readFileSync } from "node:fs";
@@ -36,20 +36,20 @@ if (m) {
   process.exit(0);
 }
 
-console.log(`✗ no ceiling entry for ${currentYear} — will alert`);
+console.log(`✗ no ceiling entry for ${currentYear}, will alert`);
 
 if (!TOKEN) {
-  console.error("GAYA_PUSH_TOKEN not set — can't push reminder");
+  console.error("GAYA_PUSH_TOKEN not set, can't push reminder");
   process.exit(1);
 }
 
-const text = `🔔 תקרת עוסק פטור — צריך לעדכן
+const text = `🔔 תקרת עוסק פטור: צריך לעדכן
 
 חסר ערך עבור שנת ${currentYear} ב-src/lib/tax-thresholds.ts (האפליקציה משתמשת ב-FALLBACK).
 
 לבדוק:
 1) gov.il / רשות המסים → "תקרת מחזור לעוסק פטור ${currentYear}"
-2) סעיף 31 לחוק מע"מ — אם פורסם תיקון
+2) סעיף 31 לחוק מע"מ, אם פורסם תיקון
 
 לעדכן:
 node scripts/update-ceiling.mjs ${currentYear} <amount>
@@ -67,7 +67,7 @@ try {
   });
   const body = await res.text();
   if (!res.ok) {
-    console.error(`push failed: HTTP ${res.status} — ${body}`);
+    console.error(`push failed: HTTP ${res.status}: ${body}`);
     process.exit(1);
   }
   console.log("✓ reminder pushed via Gaya");

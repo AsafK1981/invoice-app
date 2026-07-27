@@ -8,18 +8,18 @@ import { Ltr } from "@/components/ui/ltr";
 interface Props {
   /** Lucide icon component */
   icon: React.ComponentType<{ className?: string }>;
-  /** Big heading — what this page is for, in 2-4 words */
+  /** Big heading: what this page is for, in 2-4 words */
   title: string;
-  /** One-sentence pitch — why this page matters */
+  /** One-sentence pitch: why this page matters */
   description: string;
-  /** Primary CTA — usually "create your first ..." */
+  /** Primary CTA: usually "create your first ..." */
   primaryAction: {
     label: string;
     onClick?: () => void;
     href?: string;
     icon?: React.ComponentType<{ className?: string }>;
   };
-  /** Optional secondary CTA — usually CSV import */
+  /** Optional secondary CTA: usually CSV import */
   secondaryAction?: {
     label: string;
     onClick?: () => void;

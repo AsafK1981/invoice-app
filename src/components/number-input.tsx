@@ -9,7 +9,7 @@ import { useEffect, useState, type InputHTMLAttributes } from "react";
  * 1. **Stray leading zero.** React skips writing back to a number input when
  *    the DOM string and the numeric prop are loosely equal, so typing 4200 into
  *    a field holding 0 leaves the box showing "04200" (the parsed value, and
- *    therefore the totals, were right — it just looked broken).
+ *    therefore the totals, were right; it just looked broken).
  * 2. **Can't be emptied.** Clearing the box parsed to 0 and immediately snapped
  *    a "0" back into it, so you had to select-all before typing.
  *
@@ -30,7 +30,7 @@ export function NumberInput({ value, onValueChange, ...rest }: Props) {
   const [draft, setDraft] = useState(() => toDraft(value));
 
   // Re-sync when the value changes from the outside (picking a product, an
-  // exchange-rate fetch, loading a draft) — but never while the two already
+  // exchange-rate fetch, loading a draft), but never while the two already
   // agree numerically, otherwise we'd fight the user mid-keystroke ("1." → "1").
   useEffect(() => {
     const parsed = draft.trim() === "" ? 0 : Number.parseFloat(draft);

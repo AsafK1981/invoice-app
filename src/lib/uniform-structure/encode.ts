@@ -5,7 +5,7 @@
 // with leading zeros; string fields are left-aligned and space-padded (or
 // truncated if too long).
 //
-// We expose pure string helpers here — final Windows-1255 encoding happens
+// We expose pure string helpers here; final Windows-1255 encoding happens
 // in `toWindows1255()` once the entire file content is assembled.
 
 import iconv from "iconv-lite";
@@ -38,7 +38,7 @@ export function padStr(value: string | undefined | null, width: number): string 
   return clean.padEnd(width, " ");
 }
 
-/** YYYYMMDD — 8 chars. Accepts ISO-8601 date strings or Date objects. */
+/** YYYYMMDD, 8 chars. Accepts ISO-8601 date strings or Date objects. */
 export function formatDate(date: string | Date | undefined | null): string {
   if (!date) return "00000000";
   const d = typeof date === "string" ? new Date(date) : date;
@@ -49,7 +49,7 @@ export function formatDate(date: string | Date | undefined | null): string {
   return `${y}${m}${dd}`;
 }
 
-/** HHMM — 4 chars. */
+/** HHMM, 4 chars. */
 export function formatTime(date: Date | undefined | null): string {
   if (!date) return "0000";
   const h = String(date.getHours()).padStart(2, "0");
@@ -59,7 +59,7 @@ export function formatTime(date: Date | undefined | null): string {
 
 /**
  * Amounts in מבנה אחיד are signed, with 2 decimal places encoded as part
- * of the integer (i.e., 123.45 → "12345" — multiply by 100 and round).
+ * of the integer (i.e., 123.45 → "12345", multiply by 100 and round).
  * Negative values keep a leading minus sign. Padded to the field width.
  */
 export function formatAmount(value: number, width: number): string {
@@ -71,7 +71,7 @@ export function formatAmount(value: number, width: number): string {
 /**
  * Signed amount per spec format X9(integerDigits)v9(decimalDigits).
  *
- *   X    sign — '+' for positive (or zero), '-' for negative
+ *   X    sign: '+' for positive (or zero), '-' for negative
  *   9(n) n integer digits with leading zeros
  *   v    implied decimal point (no character emitted)
  *   9(m) m decimal digits
@@ -101,7 +101,7 @@ export function buildLine(parts: string[]): string {
  * Windows-1255 Buffer ready to write to disk / send over HTTP.
  *
  * Characters outside the Windows-1255 set are replaced with "?" by
- * iconv-lite — acceptable for tax data which is Hebrew + ASCII only.
+ * iconv-lite, acceptable for tax data which is Hebrew + ASCII only.
  */
 export function toWindows1255(text: string): Buffer {
   return iconv.encode(text, "windows-1255");

@@ -18,7 +18,7 @@ const DATE_ONLY = /^(\d{4})-(\d{2})-(\d{2})$/;
  *
  * Two kinds of input reach this function and they must NOT be treated alike:
  *
- * 1. Calendar dates ("YYYY-MM-DD") — document date, due date, period dates.
+ * 1. Calendar dates ("YYYY-MM-DD"): document date, due date, period dates.
  *    `new Date("2026-07-05")` parses as UTC midnight, and formatting that in a
  *    runtime-local timezone west of UTC prints 04.07.2026. On a tax document
  *    that is a legal defect. These are formatted from their parts, with no
@@ -26,7 +26,7 @@ const DATE_ONLY = /^(\d{4})-(\d{2})-(\d{2})$/;
  *
  * 2. Instants (full ISO timestamps: emailed_at, paid_at, created_at…). These
  *    genuinely denote a moment in time, so they are rendered in Asia/Jerusalem
- *    — the users' timezone — instead of whatever timezone the runtime happens
+ *    (the users' timezone) instead of whatever timezone the runtime happens
  *    to be in (UTC on Vercel, local in the browser).
  */
 export function formatDate(date: string): string {

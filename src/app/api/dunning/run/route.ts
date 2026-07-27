@@ -12,12 +12,12 @@ const DUNNING_CRON_SECRET = process.env.DUNNING_CRON_SECRET || "";
 const APP_URL = "https://mysuperfriendlyinvoiceapp.vercel.app";
 
 type DayBucket = 3 | 14 | 30;
-const BUCKETS: DayBucket[] = [30, 14, 3]; // newest first — earliest match wins
+const BUCKETS: DayBucket[] = [30, 14, 3]; // newest first; earliest match wins
 
 const SUBJECTS: Record<DayBucket, string> = {
-  3: "תזכורת — חשבונית מספר {n}",
-  14: "תזכורת שנייה — חשבונית מספר {n}",
-  30: "חשבונית מספר {n} — תשלום מתעכב",
+  3: "תזכורת: חשבונית מספר {n}",
+  14: "תזכורת שנייה: חשבונית מספר {n}",
+  30: "חשבונית מספר {n}: תשלום מתעכב",
 };
 
 const TONES: Record<DayBucket, { intro: string; cta: string; signoff: string }> = {
@@ -27,13 +27,13 @@ const TONES: Record<DayBucket, { intro: string; cta: string; signoff: string }> 
     signoff: "תודה רבה,",
   },
   14: {
-    intro: "אנחנו עוקבים אחרי חשבונית מספר {n} על סך ₪{total} ששלחנו ב-{date} — חלפו כבר {days} ימים ולא ראינו את התשלום.",
+    intro: "אנחנו עוקבים אחרי חשבונית מספר {n} על סך ₪{total} ששלחנו ב-{date}. חלפו כבר {days} ימים ולא ראינו את התשלום.",
     cta: "אשמח לקבל עדכון: האם התשלום בוצע ולא הגיע, או שעדיין מתעכב?",
     signoff: "תודה,",
   },
   30: {
-    intro: "חשבונית מספר {n} על סך ₪{total} מ-{date} עדיין לא שולמה — חלפו {days} ימים.",
-    cta: "אנא תאמו אתנו תאריך תשלום בהקדם. אם יש בעיה או שאלה — נשמח לסייע.",
+    intro: "חשבונית מספר {n} על סך ₪{total} מ-{date} עדיין לא שולמה. חלפו {days} ימים.",
+    cta: "אנא תאמו אתנו תאריך תשלום בהקדם. אם יש בעיה או שאלה, נשמח לסייע.",
     signoff: "בכבוד רב,",
   },
 };
@@ -143,7 +143,7 @@ function buildHtml(args: {
     </div>
     <p style="font-size:13px;color:#78716c;text-align:center;margin-bottom:8px;">${escapeHtml(tone.signoff)}</p>
     <p style="font-size:14px;color:#44403c;text-align:center;font-weight:600;margin:0 0 16px 0;">${escapeHtml(fromName)}</p>
-    <p style="font-size:11px;color:#a8a29e;text-align:center;">תזכורת אוטומטית — אם התשלום כבר בוצע ולא הגיע, נשמח לשמוע.</p>
+    <p style="font-size:11px;color:#a8a29e;text-align:center;">תזכורת אוטומטית. אם התשלום כבר בוצע ולא הגיע, נשמח לשמוע.</p>
   </div>
 </body>
 </html>`;
@@ -314,7 +314,7 @@ export async function POST(req: NextRequest) {
           businessId: biz.id,
           kind: "dunning_sent",
           title: `נשלחה תזכורת ל-${doc.client_name}`,
-          body: `מסמך #${doc.number} (₪${Number(doc.total).toLocaleString("he-IL")}) — תזכורת יום ${bucket}.`,
+          body: `מסמך #${doc.number} (₪${Number(doc.total).toLocaleString("he-IL")}): תזכורת יום ${bucket}.`,
           href: `/documents/${doc.id}`,
           documentId: doc.id,
         });

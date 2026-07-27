@@ -13,7 +13,7 @@
  * touch this). This script copies any existing values across so no
  * existing user loses their state during the cut-over.
  *
- * Idempotent — safe to run multiple times. Does not delete the
+ * Idempotent, safe to run multiple times. Does not delete the
  * user_metadata values (they stay as a read-only fallback for the
  * transition window) but they are no longer trusted.
  *
