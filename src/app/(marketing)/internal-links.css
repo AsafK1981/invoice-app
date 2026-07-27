@@ -23,14 +23,29 @@
 .v2-theme .v2-related .v2-eyebrow-row {
   margin-bottom: var(--v2-sp-3);
 }
-/* The block sits inside .v2-doc (a narrow reading column) on article pages,
-   so cards stack; the index's two-up desktop grid would be too tight here. */
+/* CONFLICTING BREAKPOINT FIX.
+   v2.css turns `.v2-blog-list` into a two-up grid at `min-width: 1000px`,
+   which is right for the /blog index (it lives in `.v2-doc-wide`, 1160px at
+   that tier) but wrong here: on an article this block sits inside plain
+   `.v2-doc`, whose measure NARROWS to 620px at exactly that same tier. Two
+   cards side by side in 620px leaves ~295px each for a serif title plus a
+   two-line blurb. Inside the reading column the list stays single-column at
+   every width; in the wide /vs containers it keeps the inherited two-up. */
+.v2-theme .v2-doc .v2-related .v2-blog-list {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* Matches `.v2-blog-card h2` (gold, Frank Ruhl, same rhythm) so the related
+   cards read as the same primitive as the index cards rather than a
+   near-miss. One step down in size because this is a secondary block under
+   an article, not the page's main content. */
 .v2-theme .v2-related .v2-blog-card h3 {
-  margin: 0 0 6px;
-  font-family: var(--font-frank), Georgia, serif;
-  font-size: 1.05rem;
-  line-height: 1.4;
+  font-family: "Frank Ruhl Libre", var(--font-frank), serif;
   font-weight: 700;
+  font-size: 1.05rem;
+  line-height: 1.3;
+  color: var(--v2-g1);
+  margin: 0 0 var(--v2-sp-2);
 }
 
 /* ---------- "השוואות נוספות" ---------- */
@@ -48,30 +63,42 @@
   list-style: none;
 }
 .v2-theme .v2-vs-siblings a {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
   padding: 7px 14px;
-  border: 1px solid var(--v2-line);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.02);
-  color: var(--v2-ink-2);
+  border: 1px solid var(--v2-line-soft);
+  border-radius: var(--v2-r-pill);
+  background: var(--v2-card);
+  color: var(--v2-ink);
   font-size: 0.92rem;
   text-decoration: none;
   transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
 }
+/* Same gold tint the feature table uses for row hover, rgba of --v2-g2, so the
+   two hover treatments read as one system rather than two near-identical golds. */
 .v2-theme .v2-vs-siblings a:hover {
   border-color: var(--v2-g2);
   color: var(--v2-g1);
-  background: rgba(212, 175, 55, 0.06);
+  background: rgba(190, 158, 78, 0.06);
 }
 .v2-theme .v2-vs-siblings a:focus-visible {
   outline: 2px solid var(--v2-g1);
   outline-offset: 2px;
 }
 
-/* Touch targets: the pill row is the one new tappable surface here, and at
-   0.92rem the default padding lands under the 44px comfortable minimum. */
+/* Touch targets. The pill row is the one genuinely new tappable surface in
+   this file (the related cards inherit `.v2-card-link::after`, which stretches
+   the anchor over the whole card, so they are already large).
+   `min-height` rather than padding alone: padding-derived height depends on the
+   inherited line-height, so a future type change could quietly drop these under
+   the threshold. 44px is the comfortable minimum; the 10px gap keeps adjacent
+   pills from being mis-tapped. */
 @media (max-width: 720px) {
   .v2-theme .v2-vs-siblings a {
-    padding: 11px 16px;
+    min-height: 44px;
+    padding: 10px 16px;
+  }
+  .v2-theme .v2-vs-siblings ul {
+    gap: 10px;
   }
 }
