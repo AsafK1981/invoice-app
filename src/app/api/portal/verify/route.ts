@@ -5,6 +5,7 @@ import {
   PORTAL_COOKIE,
   PORTAL_SESSION_TTL_MS,
 } from "@/lib/portal-token";
+import { CANONICAL_ORIGIN } from "@/lib/public-url";
 
 export async function GET(req: NextRequest) {
   const token = req.nextUrl.searchParams.get("token") || "";
@@ -12,7 +13,7 @@ export async function GET(req: NextRequest) {
   // other than a freshly-emailed magic link.
   const payload = verifyPortalToken(token, "link");
 
-  const baseUrl = "https://mysuperfriendlyinvoiceapp.vercel.app";
+  const baseUrl = CANONICAL_ORIGIN;
 
   if (!payload) {
     return NextResponse.redirect(

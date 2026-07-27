@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 import { createClient } from "@supabase/supabase-js";
+import { CANONICAL_ORIGIN } from "@/lib/public-url";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -9,7 +10,7 @@ const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const GMAIL_USER = process.env.GMAIL_USER;
 const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD;
 
-const APP_URL = "https://mysuperfriendlyinvoiceapp.vercel.app";
+const APP_URL = CANONICAL_ORIGIN;
 
 function buildWelcomeHtml(): string {
   return `

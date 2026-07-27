@@ -32,7 +32,9 @@ async function probe(label: string, url: string, extraHeaders: Record<string, st
     const r = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded", ...extraHeaders },
-      body: "grant_type=authorization_code&code=dummy&redirect_uri=https://mysuperfriendlyinvoiceapp.vercel.app/api/tax-authority/callback",
+      // domain-literal-ok: must byte-match the redirect_uri registered with
+      // רשות המסים, so it deliberately does not follow CANONICAL_ORIGIN.
+      body: "grant_type=authorization_code&code=dummy&redirect_uri=https://mysuperfriendlyinvoiceapp.vercel.app/api/tax-authority/callback", // domain-literal-ok
       signal: AbortSignal.timeout(25_000),
     });
     const text = await r.text();

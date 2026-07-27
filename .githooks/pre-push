@@ -5,7 +5,7 @@ set -e
 
 cd "$(git rev-parse --show-toplevel)"
 
-echo "[pre-push] 1/5 typecheck..."
+echo "[pre-push] 1/6 typecheck..."
 if ! npx tsc --noEmit > /tmp/prepush-tsc.log 2>&1; then
   echo "✗ typecheck failed:"
   cat /tmp/prepush-tsc.log
@@ -15,7 +15,7 @@ if ! npx tsc --noEmit > /tmp/prepush-tsc.log 2>&1; then
 fi
 echo "✓ types clean"
 
-echo "[pre-push] 2/5 react-hooks lint..."
+echo "[pre-push] 2/6 react-hooks lint..."
 if ! npx eslint src/ > /tmp/prepush-eslint.log 2>&1; then
   echo "✗ react-hooks lint failed (this catches React error #310 — hooks after early returns):"
   cat /tmp/prepush-eslint.log
@@ -23,7 +23,7 @@ if ! npx eslint src/ > /tmp/prepush-eslint.log 2>&1; then
 fi
 echo "✓ hooks ordered"
 
-echo "[pre-push] 3/5 unit tests..."
+echo "[pre-push] 3/6 unit tests..."
 if ! npx vitest run > /tmp/prepush-tests.log 2>&1; then
   echo "✗ tests failed:"
   cat /tmp/prepush-tests.log
@@ -31,18 +31,48 @@ if ! npx vitest run > /tmp/prepush-tests.log 2>&1; then
 fi
 echo "✓ tests pass"
 
-echo "[pre-push] 4/5 anon-read security check..."
+echo "[pre-push] 4/6 anon-read security check..."
 if ! node scripts/check-anon-read.mjs; then
   exit 1
 fi
 
-echo "[pre-push] 5/6 stale URL grep..."
-if grep -rEn "invoice-app-ochre-five|http://localhost:3000" src/ 2>/dev/null; then
-  echo "✗ stale URL found in src/ (above)"
-  echo "Replace with mysuperfriendlyinvoiceapp.vercel.app or a process.env reference."
+echo "[pre-push] 5/6 raw origin literal grep..."
+# Every user-facing origin must come from CANONICAL_ORIGIN (src/lib/public-url.ts)
+# so that buying a domain is a one-value change instead of a 30-file sweep.
+# This bans raw origins in shipped code rather than pinning one specific domain
+# (which is what this check used to do, and which would have blocked the very
+# migration it was meant to protect).
+#
+# Escape hatch: append `domain-literal-ok` on the same line, with a comment
+# saying why. The legitimate survivors are the fallback inside public-url.ts
+# and the two רשות המסים redirect_uri values, which must byte-match what is
+# registered with שע"מ and therefore must NOT follow the canonical origin.
+
+# The host is READ FROM public-url.ts rather than hardcoded here, so this check
+# keeps working after a domain migration instead of pinning the old domain
+# forever. Third-party URLs (competitors, Google, Meshulam) are untouched — only
+# our OWN origin is banned, because only our own origin needs to move.
+SELF_HOST=$(grep -oE '"https://[a-z0-9.-]+"' src/lib/public-url.ts | head -1 | tr -d '"' | sed 's|https://||')
+if [ -z "$SELF_HOST" ]; then
+  echo "✗ could not read the canonical host from src/lib/public-url.ts"
+  echo "  (this guard derives it from the fallback literal there)"
   exit 1
 fi
-echo "✓ no stale URLs"
+
+if grep -rEn "${SELF_HOST}|http://localhost:3000" \
+     src/ --include="*.ts" --include="*.tsx" --include="*.md" 2>/dev/null \
+   | grep -v "domain-literal-ok" \
+   | grep -v "^src/lib/public-url.ts:"; then
+  echo "✗ raw self-origin literal in src/ (above)"
+  echo "  '${SELF_HOST}' must not be hardcoded — import CANONICAL_ORIGIN,"
+  echo "  CANONICAL_HOST or absoluteUrl from @/lib/public-url instead, so that"
+  echo "  changing domains stays a one-value change."
+  echo "  If the literal is genuinely required (e.g. a redirect_uri registered"
+  echo "  with a third party), append 'domain-literal-ok' on that line with a"
+  echo "  comment explaining why."
+  exit 1
+fi
+echo "✓ no raw self-origin literals (host: ${SELF_HOST})"
 
 echo "[pre-push] 6/6 plan/polar fields in user_metadata (write side)..."
 # user_metadata is user-writable from the browser console. Writing

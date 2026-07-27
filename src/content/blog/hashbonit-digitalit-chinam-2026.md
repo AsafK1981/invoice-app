@@ -47,4 +47,4 @@
 
 ---
 
-*רוצים לנסות חשבונית דיגיטלית חינם, בעברית, בלי כרטיס אשראי? אפשר להתחיל תוך דקה ב-[My Super Friendly Invoice App](https://mysuperfriendlyinvoiceapp.vercel.app).*
+*רוצים לנסות חשבונית דיגיטלית חינם, בעברית, בלי כרטיס אשראי? אפשר להתחיל תוך דקה ב-[My Super Friendly Invoice App](/login?mode=signup).*

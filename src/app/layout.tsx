@@ -3,6 +3,7 @@ import { Heebo, Frank_Ruhl_Libre, Assistant } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { SwRegister } from "@/components/sw-register";
+import { CANONICAL_ORIGIN } from "@/lib/public-url";
 import "./globals.css";
 // THE app skin, the warm light shell every user sees. Unconditional since
 // 2026-07-20 (it used to be gated behind html[data-skin="gold"], with a
@@ -56,7 +57,7 @@ const assistant = Assistant({
 // in returning users' localStorage; nothing reads them. Not worth re-adding a
 // blocking script to clear.
 
-const SITE_URL = "https://mysuperfriendlyinvoiceapp.vercel.app";
+const SITE_URL = CANONICAL_ORIGIN;
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

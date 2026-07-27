@@ -18,6 +18,7 @@ import { supabase } from "@/lib/supabase";
 import { isAdminEmail } from "@/lib/admin";
 import { formatDate } from "@/lib/format";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { CANONICAL_ORIGIN } from "@/lib/public-url";
 
 // Friendly random suffix to keep "FOR-FRIENDS-ONLY-" codes unique on
 // repeated clicks. Avoids confusing chars (0/O, 1/I/L).
@@ -43,7 +44,7 @@ interface Invite {
   expires_at: string | null;
 }
 
-const SITE_BASE = "https://mysuperfriendlyinvoiceapp.vercel.app";
+const SITE_BASE = CANONICAL_ORIGIN;
 
 export default function AdminInvitesPage() {
   const [invites, setInvites] = useState<Invite[]>([]);

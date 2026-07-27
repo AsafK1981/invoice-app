@@ -37,4 +37,4 @@
 
 ---
 
-*עוברים לעוסק מורשה ורוצים תוכנה שכבר מוכנה לרפורמת מספר הקצאה? אפשר להתחיל חינם ב-[My Super Friendly Invoice App](https://mysuperfriendlyinvoiceapp.vercel.app).*
+*עוברים לעוסק מורשה ורוצים תוכנה שכבר מוכנה לרפורמת מספר הקצאה? אפשר להתחיל חינם ב-[My Super Friendly Invoice App](/login?mode=signup).*

@@ -63,6 +63,15 @@ const nextConfig: NextConfig = {
       { source: "/v2/:path*", destination: "/:path*", permanent: true },
     ];
   },
+  // security.txt is generated (its Canonical/Policy URLs follow
+  // CANONICAL_ORIGIN) rather than served as a static file. A dot-prefixed
+  // app-router segment is unreliable, so the well-known path is rewritten to
+  // a normal route instead.
+  async rewrites() {
+    return [
+      { source: "/.well-known/security.txt", destination: "/api/security-txt" },
+    ];
+  },
 };
 
 export default withSentryConfig(nextConfig, {

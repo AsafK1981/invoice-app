@@ -3,6 +3,7 @@
 import { formatCurrency, formatDate } from "@/lib/format";
 import { formatMoney } from "@/lib/currencies";
 import { Ltr } from "@/components/ui/ltr";
+import { CANONICAL_HOST } from "@/lib/public-url";
 import {
   BUSINESS_TYPE_LABELS,
   DOC_SUM_LABEL,
@@ -431,7 +432,7 @@ export function DocumentBody({
         </div>
         <div className="doc-foot-brand">
           הופק באמצעות{" "}
-          <Ltr>MySuperFriendlyInvoiceApp · mysuperfriendlyinvoiceapp.vercel.app</Ltr>
+          <Ltr>MySuperFriendlyInvoiceApp · {CANONICAL_HOST}</Ltr>
         </div>
       </div>
     </>

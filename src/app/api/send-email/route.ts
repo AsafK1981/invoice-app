@@ -6,6 +6,7 @@ import { checkRate, clientIp } from "@/lib/rate-limit";
 import { sanitizeEmailSubject } from "@/lib/email-subject";
 import { DOCUMENT_TYPE_LABELS, type DocumentType } from "@/lib/types";
 import { requiresAllocationNumber, normalizeCustomerVatNumber } from "@/lib/tax-authority";
+import { CANONICAL_ORIGIN } from "@/lib/public-url";
 import { canIssueTaxInvoicesByType } from "@/lib/vat";
 import { buildHtml, buildText } from "./template";
 
@@ -166,7 +167,7 @@ export async function POST(req: NextRequest) {
     // is the immutable per-deploy hash and will decay into stale-code
     // views minutes after the next push. The link is going into an email
     // that will sit in someone's inbox for weeks.
-    const baseUrl = "https://mysuperfriendlyinvoiceapp.vercel.app";
+    const baseUrl = CANONICAL_ORIGIN;
     const viewUrl = `${baseUrl}/view/${documentId}`;
 
     if (!to) {

@@ -10,8 +10,9 @@ import {
   getPostBySlug,
   loadPostMarkdown,
 } from "@/lib/blog-posts";
+import { CANONICAL_ORIGIN } from "@/lib/public-url";
 
-const BASE = "https://mysuperfriendlyinvoiceapp.vercel.app";
+const BASE = CANONICAL_ORIGIN;
 
 // Pre-render every post (drafts included) so a draft is reachable by direct
 // URL for review, while still hidden from the index + sitemap and marked

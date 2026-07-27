@@ -3,6 +3,7 @@ import nodemailer from "nodemailer";
 import { createClient } from "@supabase/supabase-js";
 import { checkRate, clientIp } from "@/lib/rate-limit";
 import { signPortalToken, PORTAL_LINK_TTL_MS } from "@/lib/portal-token";
+import { CANONICAL_ORIGIN } from "@/lib/public-url";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -53,7 +54,7 @@ export async function POST(req: NextRequest) {
 
     if (hasMatch) {
       const token = signPortalToken(email, PORTAL_LINK_TTL_MS, "link");
-      const baseUrl = "https://mysuperfriendlyinvoiceapp.vercel.app";
+      const baseUrl = CANONICAL_ORIGIN;
       const link = `${baseUrl}/api/portal/verify?token=${encodeURIComponent(token)}`;
 
       const html = `<!DOCTYPE html>

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 import { createClient } from "@supabase/supabase-js";
 import { createNotificationForBusiness } from "@/lib/notifications-server";
+import { CANONICAL_ORIGIN } from "@/lib/public-url";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -9,7 +10,7 @@ const GMAIL_USER = process.env.GMAIL_USER!;
 const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD!;
 const DUNNING_CRON_SECRET = process.env.DUNNING_CRON_SECRET || "";
 
-const APP_URL = "https://mysuperfriendlyinvoiceapp.vercel.app";
+const APP_URL = CANONICAL_ORIGIN;
 
 type DayBucket = 3 | 14 | 30;
 const BUCKETS: DayBucket[] = [30, 14, 3]; // newest first; earliest match wins
