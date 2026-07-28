@@ -1,20 +1,57 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Ltr } from "@/components/ui/ltr";
 import HeaderV2 from "./components/HeaderV2";
 import FooterV2 from "./components/FooterV2";
 import RedirectIfAuthed from "./components/RedirectIfAuthed";
+import JsonLd from "./components/JsonLd";
+import { graph, organization, website, softwareApplication } from "@/lib/jsonld";
 
 /**
- * `/`, the public marketing landing (gold on obsidian, art-deco frame,
- * golden invoice card). Server-rendered so anonymous visitors and crawlers
- * get the full page immediately; `<RedirectIfAuthed />` then bounces an
- * already-signed-in visitor to /dashboard from the client, without ever
- * blocking the anon render. CTAs route into the auth flow at /login.
+ * Self-canonical only, and DELIBERATELY nothing else.
+ *
+ * A child route that specifies `openGraph` REPLACES the parent's entire
+ * openGraph block rather than merging into it, the trap documented in
+ * vs-metadata.ts, and how every /vs page once previewed as the homepage. The
+ * root layout already sets the correct absolute og:url for `/`, so declaring
+ * openGraph here could only make things worse. Title and description are
+ * likewise inherited from the root on purpose.
+ */
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+};
+
+/**
+ * `/`, the public marketing landing: the "product showcase" composition
+ * approved 2026-07-27.
+ *
+ * THE IDEA. The thing we sell is a document, so the document IS the hero: a
+ * paper sheet rendered large on the obsidian stage, under one soft pool of
+ * warm light, with the pitch orbiting it on the reading edge (RTL, so copy
+ * right, sheet left). The copy column is `space-between`, which pins its top
+ * group to the sheet's head and its CTA to the sheet's foot, with three
+ * hairline-ruled feature rows carrying the span between them. Under the stage
+ * a quiet hairline band states the launch pricing without competing.
+ *
+ * THE SHEET IS A PRESENTATIONAL ECHO, NOT THE REAL COMPONENT. The persuasive
+ * premise is "this is what you get", so the markup below mirrors the real
+ * printed document zone for zone (`src/components/document-body.tsx`): head
+ * with identity block, allocation + "לכבוד" strip, itemised table under a gold
+ * micro-label, the breakdown pushed to the inline end, the electronic-issuance
+ * footer. It deliberately does NOT import `DocumentBody` or `document-paper.css`
+ * - the printed sheet is a tax document and is frozen; a marketing page must
+ * never be able to reach into it. The palette is copied by value into the
+ * `--v2-paper-*` tokens in v2.css so the two cannot drift silently.
+ *
+ * Server-rendered so anonymous visitors and crawlers get the full page
+ * immediately; `<RedirectIfAuthed />` then bounces an already-signed-in visitor
+ * to /dashboard from the client, without ever blocking the anon render.
  */
 export default function MarketingLanding() {
   return (
     <>
       <RedirectIfAuthed />
+      <JsonLd data={graph(organization(), website(), softwareApplication())} />
       {/* deco outer frame */}
       <div className="v2-frame" aria-hidden="true">
         <i className="tl" />
@@ -27,161 +64,189 @@ export default function MarketingLanding() {
 
       <main className="v2-main">
         <div className="v2-wrap">
-          {/* Hero. One centred stack on phones; from 1000px `.v2-hero` becomes
-              a two-column grid (pitch on the reading edge, invoice card as the
-              object beside it), which is worth ~400px of page height and stops
-              the landing from rendering as a 680px ribbon on a black field. */}
-          <div className="v2-hero">
-            <div className="v2-hero-copy">
-              <div className="v2-eyebrow-row">
-                <i className="ln" />
-                <span>לעוסק פטור בישראל</span>
-                <i className="ln r" />
-              </div>
-
-              <div className="v2-freenow" role="status">
-                <i className="dot" aria-hidden="true" />
-                🎉 חינם עכשיו בתקופת ההשקה: כל הפיצ׳רים, בלי כרטיס אשראי
-              </div>
-
-              <h1 className="v2-h1">
-                החשבונית שלך,{" "}
-                <br />
-                <span className="v2-gold">יוקרתית כמו העסק</span>
-              </h1>
-
-              <p className="v2-lede">
-                בנינו את זה בשביל עצמאים כמוך: חשבונית מקצועית בעברית מלאה,
-                עומדת בדרישות רשות המסים, בלי בירוקרטיה ובלי כאב ראש.
-              </p>
-
-              <div className="v2-tag">
-                <span>פשוט.</span> <span>מהיר.</span>{" "}
-                <span className="v2-gold">מקצועי.</span>
-              </div>
-            </div>
-
-            {/* golden invoice card */}
-            <div className="v2-hero-art">
-              <div className="v2-card">
-                <i className="corner c1" />
-                <i className="corner c2" />
-                <i className="corner c3" />
-                <i className="corner c4" />
-                <div className="chd">
-                  <div className="biz v2-gold">
-                    סטודיו נועה
-                    <small>עיצוב גרפי · עוסק פטור</small>
+          <section className="v2-stage">
+            <div className="v2-stage-in">
+              {/* ---- the pitch, on the reading edge ---- */}
+              <div className="v2-stage-copy">
+                <div className="v2-stage-lead">
+                  <div className="v2-eyebrow-row">
+                    <span>לעוסק פטור בישראל</span>
+                    <i className="ln" />
                   </div>
-                  <div className="chd-right">
-                    <div className="doclbl">חשבונית מס</div>
-                    <div className="paid">
-                      <i />
-                      שולם
+
+                  <h1 className="v2-h1">
+                    החשבונית שלך,{" "}
+                    <br />
+                    <span className="v2-gold">יוקרתית</span> כמו העסק
+                  </h1>
+
+                  <p className="v2-lede">
+                    בנינו את זה בשביל עצמאים כמוך: חשבונית מקצועית בעברית מלאה,
+                    עומדת בדרישות רשות המסים, בלי בירוקרטיה ובלי כאב ראש.
+                  </p>
+                </div>
+
+                {/* Three hairline-ruled rows. No boxes: the band is built from
+                    type, space and two rules, so it supports the sheet instead
+                    of competing with it for attention. */}
+                <ul className="v2-feats">
+                  <li className="v2-ft">
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.6"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M13 3L4 14h7l-1 7 9-12h-7z" />
+                    </svg>
+                    <b>הפקה בשניות</b>
+                  </li>
+                  <li className="v2-ft">
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.6"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z" />
+                      <path d="M9 12l2 2 4-4" />
+                    </svg>
+                    <b>הקצאה אוטומטית מרשות המסים</b>
+                  </li>
+                  <li className="v2-ft">
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.6"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M22 2L11 13M22 2l-7 20-4-9-9-4z" />
+                    </svg>
+                    <b>שליחה בכל ערוץ</b>
+                  </li>
+                </ul>
+
+                <div className="v2-stage-act">
+                  <Link className="v2-cta" href="/login?mode=signup">
+                    התחילו בחינם
+                  </Link>
+                  <p className="v2-fine">חינם עכשיו · ללא כרטיס אשראי</p>
+                </div>
+              </div>
+
+              {/* ---- the product, as the object ---- */}
+              <figure className="v2-sheet-wrap">
+                <article className="v2-sheet">
+                  <div className="v2-sh-card v2-sh-head">
+                    <div className="v2-sh-biz">
+                      <p className="v2-sh-name">סטודיו נועה</p>
+                      <p className="v2-sh-bizline">עוסק פטור · עיצוב גרפי ומיתוג</p>
+                    </div>
+                    <div className="v2-sh-ident">
+                      <div className="v2-sh-orig">מקור</div>
+                      <div className="v2-sh-badge">חשבונית מס</div>
+                      <div className="v2-sh-num">0042</div>
+                      <div className="v2-sh-date">09.07.2026</div>
                     </div>
                   </div>
-                </div>
-                <div className="meta">
-                  <span>לכבוד: סטודיו אורות בע״מ</span>
-                  <span>מס׳ 187025961 · 09.07.2026</span>
-                </div>
-                <div className="rows">
-                  <div className="r">
-                    <span>עיצוב לוגו ומיתוג</span>
-                    <span>3,200 ₪</span>
+
+                  <div className="v2-sh-strip">
+                    <div className="v2-sh-card v2-sh-mini">
+                      <div className="v2-sh-glabel">מספר הקצאה</div>
+                      <div className="v2-sh-mini-v is-gold">187025961</div>
+                    </div>
+                    <div className="v2-sh-card v2-sh-mini">
+                      <div className="v2-sh-glabel">לכבוד</div>
+                      <div className="v2-sh-mini-v">סטודיו אורות בע״מ</div>
+                    </div>
                   </div>
-                  <div className="r">
-                    <span>דף נחיתה</span>
-                    <span>1,450 ₪</span>
+
+                  <div className="v2-sh-card v2-sh-items">
+                    <div className="v2-sh-glabel">פירוט</div>
+                    <table className="v2-sh-table">
+                      <thead>
+                        <tr>
+                          <th className="c-desc">תיאור</th>
+                          <th className="c-qty">כמות</th>
+                          <th className="c-num">סכום</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td className="c-desc">עיצוב לוגו ומיתוג</td>
+                          <td className="c-qty">1</td>
+                          <td className="c-total">3,200 ₪</td>
+                        </tr>
+                        <tr>
+                          <td className="c-desc">דף נחיתה</td>
+                          <td className="c-qty">1</td>
+                          <td className="c-total">1,450 ₪</td>
+                        </tr>
+                        <tr>
+                          <td className="c-desc">ייעוץ חזותי</td>
+                          <td className="c-qty">1</td>
+                          <td className="c-total">600 ₪</td>
+                        </tr>
+                      </tbody>
+                    </table>
                   </div>
-                  <div className="r">
-                    <span>ייעוץ חזותי</span>
-                    <span>600 ₪</span>
+
+                  <div className="v2-sh-money">
+                    <div className="v2-sh-card v2-sh-breakdown">
+                      <div className="v2-sh-brow">
+                        <span>סכום ביניים</span>
+                        <span>5,250 ₪</span>
+                      </div>
+                      <div className="v2-sh-brow is-grand">
+                        <span>סה״כ לתשלום</span>
+                        <span className="v2-sh-grand">5,250 ₪</span>
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div className="tot">
-                  <span className="lbl">סה״כ לתשלום</span>
-                  <span className="amt v2-gold">5,250 ₪</span>
-                </div>
-              </div>
-            </div>
-          </div>
 
-          <div className="v2-feats">
-            <div className="v2-ft">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#BE9E4E"
-                strokeWidth="1.6"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M13 3L4 14h7l-1 7 9-12h-7z" />
-              </svg>
-              <b>הפקה בשניות</b>
-            </div>
-            <div className="v2-ft">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#BE9E4E"
-                strokeWidth="1.6"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z" />
-                <path d="M9 12l2 2 4-4" />
-              </svg>
-              <b>הקצאה אוטומטית</b>
-            </div>
-            <div className="v2-ft">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#BE9E4E"
-                strokeWidth="1.6"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M22 2L11 13M22 2l-7 20-4-9-9-4z" />
-              </svg>
-              <b>שליחה בכל ערוץ</b>
-            </div>
-          </div>
+                  <p className="v2-sh-note">
+                    <b>עוסק פטור</b> · אין חיוב מע״מ בחשבונית הזו
+                  </p>
 
-          {/* Launch-offer band. On phones this is the same centred stack it
-              always was; from 1000px it becomes one bordered band with the
-              price on the reading edge and the CTA opposite it. */}
-          <div className="v2-offer">
-            <div className="v2-offer-price">
-              <div className="v2-pricetop">בהמשך, המסלולים יתחילו מ־</div>
-              <div className="v2-price v2-gold">
-                ₪15<span className="per"> / חודש</span>
-              </div>
-              <div className="v2-fdiv">
-                <i className="ln" />
-                <span>
-                  <Ltr>Pro</Ltr>: כל הפיצ׳רים ללא הגבלה ב־₪25 · ביטול בכל עת
-                </span>
-                <i className="ln r" />
-              </div>
+                  <div className="v2-sh-foot">
+                    <div className="v2-sh-sig">מסמך זה הופק אלקטרונית</div>
+                    <div className="v2-sh-brand">
+                      הופק באמצעות{" "}
+                      <Ltr>MySuperFriendlyInvoiceApp</Ltr>
+                    </div>
+                  </div>
+                </article>
+                <figcaption className="v2-sheet-cap">
+                  כך נראית החשבונית שהמערכת מפיקה לך
+                </figcaption>
+              </figure>
             </div>
+          </section>
 
-            <div className="v2-offer-act">
-              <Link className="v2-cta" href="/login?mode=signup">
-                התחילו בחינם
-              </Link>
-              <div className="v2-fine">
-                חינם עכשיו · ללא כרטיס אשראי · ביטול בכל עת
-              </div>
+          {/* Launch pricing, deliberately quiet: two hairlines and type. The
+              sheet is the only object on this page, so the offer states the
+              facts and gets out of the way. */}
+          <section className="v2-band">
+            <div className="v2-band-offer">
+              <p className="v2-band-now">בתקופת ההשקה, הכול חינם</p>
+              <p className="v2-band-later">
+                בהמשך, המסלולים יתחילו מ־₪15 לחודש · <Ltr>Pro</Ltr> ללא הגבלה
+                ב־₪25
+              </p>
             </div>
-
-            <div className="v2-freenow-note">
-              בתקופת ההשקה הכול חינם. המחירים האלה ייכנסו לתוקף בהמשך, ונעדכן
-              מראש, בלי הפתעות.
-            </div>
-          </div>
+            <p className="v2-band-terms">
+              ביטול בכל עת · נעדכן מראש לפני כל שינוי מחיר
+            </p>
+          </section>
 
           <div className="v2-credit">
             <i className="ln" />

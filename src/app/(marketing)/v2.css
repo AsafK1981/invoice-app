@@ -118,6 +118,11 @@
   --v2-sh-rest: 0 22px 50px -28px rgba(0, 0, 0, 0.8);
   --v2-sh-hover: 0 26px 60px -28px rgba(0, 0, 0, 0.85);
   --v2-sh-float: 0 30px 70px -28px rgba(0, 0, 0, 0.85);
+  /* A fourth tier, and only the landing hero sheet uses it. The other three
+     lift a DARK panel off a dark field, where a soft shadow is enough. The
+     hero sheet is white paper on obsidian: at `float` it reads as pasted on,
+     because a real sheet that bright would cast further and darker. */
+  --v2-sh-sheet: 0 42px 80px -34px rgba(0, 0, 0, 0.95);
   --v2-sh-edge: 0 0 0 1px rgba(190, 158, 78, 0.08);
   --v2-sh-inset: inset 0 1px 0 rgba(255, 236, 180, 0.05);
   /* gold glow: the button equivalent of rest/hover */
@@ -125,6 +130,26 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.28);
   --v2-glow-hover: 0 18px 36px -12px rgba(190, 158, 78, 0.3),
     inset 0 1px 0 rgba(255, 255, 255, 0.3);
+
+  /* ---- paper palette (the hero sheet only) ----
+     NEW TOKENS, and they need a reason. Every other token in this file
+     describes gold ink on obsidian; none of them can describe a WHITE SHEET,
+     which is exactly what the landing hero now is. These nine are copied BY
+     VALUE from the `--d-*` block at the top of `src/app/document-paper.css`,
+     the stylesheet of the real printed tax document. The hero must look like
+     the product it is selling, but it must not import the document's CSS or
+     component (that sheet is a legal artefact and is frozen), so the colours
+     are duplicated here on purpose. If document-paper.css ever repalettes,
+     these are the nine values to bring across. */
+  --v2-paper: #efece4;
+  --v2-paper-card: #ffffff;
+  --v2-paper-line: #e8e1d0;
+  --v2-paper-ink: #211c15;
+  --v2-paper-ink2: #514a3d;
+  --v2-paper-soft: #6f6857;
+  --v2-paper-gold: #8a6d26;
+  --v2-paper-goldline: #c9ab63;
+  --v2-paper-goldfaint: #e7dcbf;
 
   position: relative;
   min-height: 100vh;
@@ -317,23 +342,14 @@
   z-index: 1;
   padding: clamp(40px, 7vw, 64px) 20px 40px;
 }
+/* The landing is right-aligned RTL prose beside an object, not a centred
+   poster; only `.v2-credit` (its own centred flex row) opts out. */
 .v2-theme .v2-wrap {
   max-width: var(--v2-shell);
   margin: 0 auto;
   position: relative;
   z-index: 1;
-  text-align: center;
-}
-
-/* Hero composition. Phone/tablet: one centred stack, exactly as before.
-   Desktop (see the min-width block at the end of the file): a two-column
-   split, pitch on the reading edge and the invoice card as the object beside
-   it. That is worth ~400px of page height AND it is what stops the landing
-   from being a 680px ribbon with 210px of black on either side. */
-.v2-theme .v2-hero-copy > * + * { margin-top: 0; }
-.v2-theme .v2-hero-art {
-  display: flex;
-  justify-content: center;
+  text-align: right;
 }
 
 .v2-theme .v2-eyebrow-row {
@@ -386,242 +402,421 @@
   line-height: 1.65;
 }
 
-/* ---------- launch "free now" banner ---------- */
-.v2-theme .v2-freenow {
-  display: inline-flex;
-  align-items: center;
-  gap: 9px;
-  margin: var(--v2-sp-2) auto 0;
-  padding: 9px 20px;
-  border-radius: var(--v2-r-pill);
-  border: 1px solid var(--v2-line);
-  background: linear-gradient(180deg, rgba(216, 190, 119, 0.1), rgba(216, 190, 119, 0.03));
-  color: var(--v2-g1);
-  font-weight: 700;
-  font-size: var(--v2-fs-body);
-  line-height: 1.3;
-  box-shadow: inset 0 1px 0 rgba(255, 236, 180, 0.06);
-}
-.v2-theme .v2-freenow .dot {
-  width: 7px;
-  height: 7px;
-  border-radius: var(--v2-r-pill);
-  background: var(--v2-g1);
-  box-shadow: 0 0 0 4px rgba(216, 190, 119, 0.12);
-  flex: none;
-}
-.v2-theme .v2-freenow-note {
-  margin-top: var(--v2-sp-1);
-  font-size: var(--v2-fs-meta);
-  color: var(--v2-muted);
-  max-width: 48ch;
-  margin-inline: auto;
-  line-height: 1.6;
-}
+/* ============================================================
+   THE STAGE: the landing hero (composition approved 2026-07-27).
 
-/* ---------- golden invoice card ---------- */
-.v2-theme .v2-card {
-  position: relative;
-  margin: var(--v2-sp-4) auto 0;
-  width: min(430px, 100%);
-  text-align: right;
-  background: linear-gradient(160deg, #191308, #0f0b06);
-  border: 1px solid var(--v2-line);
-  border-radius: var(--v2-r-xl);
-  padding: var(--v2-pad-card);
-  box-shadow: var(--v2-sh-float), var(--v2-sh-inset), var(--v2-sh-edge);
-}
-.v2-theme .v2-card .corner {
-  position: absolute;
-  width: 20px;
-  height: 20px;
-  border: 1.4px solid var(--v2-g2);
-  opacity: 0.75;
-}
-.v2-theme .v2-card .c1 { top: 10px; right: 10px; border-left: none; border-bottom: none; }
-.v2-theme .v2-card .c2 { top: 10px; left: 10px; border-right: none; border-bottom: none; }
-.v2-theme .v2-card .c3 { bottom: 10px; right: 10px; border-left: none; border-top: none; }
-.v2-theme .v2-card .c4 { bottom: 10px; left: 10px; border-right: none; border-top: none; }
-.v2-theme .v2-card .chd {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-}
-.v2-theme .v2-card .biz {
-  font-family: "Frank Ruhl Libre", var(--font-frank), serif;
-  font-weight: 700;
-  font-size: var(--v2-fs-h3);
-}
-.v2-theme .v2-card .biz small {
-  display: block;
-  font-family: "Assistant", var(--font-assistant), system-ui, sans-serif;
-  font-weight: 400;
-  font-size: var(--v2-fs-micro);
-  color: var(--v2-muted);
-  letter-spacing: 0.06em;
-  margin-top: 2px;
-}
-.v2-theme .v2-card .chd-right {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
-}
-.v2-theme .v2-card .doclbl {
-  font-size: var(--v2-fs-micro);
-  letter-spacing: 0.24em;
-  color: #c9b885;
-  border: 1px solid var(--v2-line);
-  border-radius: var(--v2-r-pill);
-  padding: 4px 10px;
-  white-space: nowrap;
-}
-.v2-theme .v2-card .paid {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: var(--v2-fs-micro);
-  letter-spacing: 0.14em;
-  color: var(--v2-g2);
-  transform: rotate(-4deg);
-  font-family: "Frank Ruhl Libre", var(--font-frank), serif;
-  font-weight: 700;
-  border: 1px solid var(--v2-line);
-  /* badge tier, was a one-off 6px */
-  border-radius: 8px;
-  padding: 3px 9px;
-}
-.v2-theme .v2-card .paid i {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--v2-g2);
-  box-shadow: 0 0 6px rgba(190, 158, 78, 0.4);
-}
-.v2-theme .v2-card .meta {
-  display: flex;
-  justify-content: space-between;
-  font-size: var(--v2-fs-meta);
-  color: var(--v2-muted);
-  margin-top: var(--v2-sp-2);
-  border-top: 1px solid var(--v2-line-soft);
-  padding-top: 12px;
-}
-.v2-theme .v2-card .rows { margin-top: 12px; }
-.v2-theme .v2-card .r {
-  display: flex;
-  justify-content: space-between;
-  font-size: var(--v2-fs-body);
-  padding: 7px 0;
-  border-bottom: 1px dashed rgba(214, 178, 108, 0.14);
-}
-.v2-theme .v2-card .r span:last-child {
-  font-variant-numeric: tabular-nums;
-  color: #e2dccd;
-}
-.v2-theme .v2-card .tot {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-top: 14px;
-}
-.v2-theme .v2-card .tot .lbl {
-  font-size: var(--v2-fs-meta);
-  color: var(--v2-muted);
-  letter-spacing: 0.08em;
-}
-.v2-theme .v2-card .tot .amt {
-  font-family: "Frank Ruhl Libre", var(--font-frank), serif;
-  font-weight: 900;
-  font-size: clamp(30px, 3.2vw, 44px);
-}
-
-/* ---------- tagline ---------- */
-.v2-theme .v2-tag {
-  margin-top: var(--v2-sp-3);
-  font-size: clamp(20px, 3.2vw, 40px);
-  font-weight: 700;
-}
-
-/* ---------- features row ---------- */
-/* row-gap only: the columns butt against their hairline dividers on desktop,
-   but once the row wraps on narrow phones the two lines need breathing room. */
-.v2-theme .v2-feats {
-  display: flex;
-  justify-content: center;
-  column-gap: 0;
-  row-gap: var(--v2-sp-1);
-  margin-top: var(--v2-sp-5);
-  flex-wrap: wrap;
-}
-.v2-theme .v2-ft {
-  padding: 2px 22px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 9px;
+   The product is a document, so the DOCUMENT is the hero. One paper sheet,
+   rendered as large as the tier allows, on the obsidian field, under a single
+   pool of warm light; the pitch orbits it on the reading edge (RTL, so copy
+   right, sheet left). Nothing else on this page is an object: the feature
+   rows are hairlines, the offer band is two rules and type. That restraint is
+   the point, one lit object reads as a product shot; two read as a brochure.
+   ============================================================ */
+.v2-theme .v2-stage {
   position: relative;
 }
-.v2-theme .v2-ft + .v2-ft::before {
+/* The single light source: above and behind the sheet's column. 27% of the
+   box from the left is the middle of the sheet at every tier, because the
+   sheet always takes the left (inline-end) half of an RTL two-column grid.
+   Vertical bleed only, `inset: -8% 0`, so the glow can never widen the
+   document: `.v2-theme` clips horizontal overflow but a bleeding decoration
+   still measures as off-canvas geometry, which is a real bug on phones. */
+.v2-theme .v2-stage::before {
   content: "";
   position: absolute;
-  right: 0;
-  top: 14%;
-  height: 72%;
-  width: 1px;
-  background: var(--v2-line-soft);
+  inset: -8% 0;
+  z-index: 0;
+  background: radial-gradient(46% 56% at 27% 46%, rgba(190, 158, 78, 0.13), transparent 68%);
+  pointer-events: none;
 }
-.v2-theme .v2-ft svg { width: 20px; height: 20px; flex: none; }
-.v2-theme .v2-ft b { font-size: var(--v2-fs-body); font-weight: 600; color: #dcd3c4; }
+.v2-theme .v2-stage-in {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: var(--v2-sp-5);
+}
 
-/* ---------- pricing ---------- */
-/* The launch-offer band. On phones it stays the plain centred stack it always
-   was; at the desktop tier it becomes one bordered band with the price on the
-   reading edge and the CTA opposite it, which is worth ~180px of page height
-   and gives the section the single accent moment it was missing (the price
-   and the button used to be two separate gold events 120px apart). */
-.v2-theme .v2-offer {
-  margin-top: var(--v2-sp-5);
+/* ---------- the pitch column ----------
+   THE COPY IS A CO-FOCAL POINT, NOT A CAPTION. The known failure mode of a
+   product-shot hero is that the image eats the fold and the value proposition
+   shrinks into a label beside it. Three things stop that here: the column
+   takes a full half of the shell (not the mockup's fixed 520px sidebar), the
+   h1 keeps the site-wide `.v2-h1` display scale (56-82px, i.e. bigger than
+   the sheet's own headline at every tier), and the lede keeps `--v2-fs-lede`
+   rather than dropping to body. The eye lands on the sheet, but the sentence
+   next to it is the same size as the sentence on a page with no image. */
+.v2-theme .v2-stage-copy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v2-sp-4);
 }
-.v2-theme .v2-pricetop {
-  font-size: var(--v2-fs-micro);
-  letter-spacing: 0.36em;
-  color: #c9b885;
+.v2-theme .v2-stage .v2-eyebrow-row {
+  justify-content: flex-start;
 }
-.v2-theme .v2-price {
-  margin-top: 2px;
-  font-family: "Frank Ruhl Libre", var(--font-frank), serif;
-  font-weight: 900;
-  font-size: clamp(40px, 6.2vw, 84px);
-  line-height: 1;
+/* The column IS the measure at every tier (52-60 Hebrew characters), so the
+   shared centring/cap on `.v2-lede` would only ever subtract width here. */
+.v2-theme .v2-stage-lead .v2-lede {
+  margin-inline: 0;
+  max-width: none;
 }
-.v2-theme .v2-price .per {
-  font-size: 0.36em;
-  font-weight: 700;
-  font-family: "Assistant", var(--font-assistant), system-ui, sans-serif;
-  color: #cbb98a;
-  letter-spacing: 0.02em;
-  -webkit-text-fill-color: #cbb98a;
+.v2-theme .v2-stage-act .v2-cta {
+  margin-top: 0;
 }
-.v2-theme .v2-fdiv {
+
+/* ---------- the sheet ----------
+   Sized by its COLUMN, not by the viewport, and everything inside it is in
+   `em` off one root font-size. That font-size is `cqi`, a share of the
+   sheet's own inline size (`.v2-sheet-wrap` is the query container), so the
+   whole document scales as one object as `--v2-shell` steps: ~508px wide at
+   1100, ~582px at 1400, ~773px at 1800. This is the fix for the mockup's one
+   structural weakness, where the sheet was pinned at 520/580px and stopped
+   being dominant on a wide screen.
+
+   Floor 12px keeps a 320px phone sheet readable. Ceiling 16.5px is not
+   arbitrary: the real printed document sets 14px on a 794px page, so past
+   ~635px of sheet the type stops growing and only the paper does, exactly as
+   a physical page behaves.
+
+   The zone-by-zone geometry below is transcribed from document-paper.css:
+   every `em` is that rule's px value divided by the document's own 14px base
+   (or by its own font-size, for margins and padding on sized elements). Keep
+   it that way; the whole persuasive premise is "this is what you get". */
+.v2-theme .v2-sheet-wrap {
+  container-type: inline-size;
+  min-width: 0;
+  margin: 0;
+}
+.v2-theme .v2-sheet {
+  position: relative;
+  overflow: hidden;
+  padding: 2.6em 2.4em 1.9em;
+  border-radius: var(--v2-r-xl);
+  background: var(--v2-paper);
+  color: var(--v2-paper-ink);
+  font-size: clamp(12px, 2.6cqi, 16.5px);
+  line-height: 1.5;
+  text-align: right;
+  box-shadow: var(--v2-sh-sheet), var(--v2-sh-edge);
+}
+/* the gold hairline along the sheet's top edge (4px at the document's base) */
+.v2-theme .v2-sheet::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 0.29em;
+  background: var(--v2-gold-grad);
+}
+/* the soft white card each zone sits in */
+.v2-theme .v2-sh-card {
+  background: var(--v2-paper-card);
+  border: 1px solid var(--v2-paper-line);
+  border-radius: 1.14em;
+  box-shadow: 0 1px 2px rgba(40, 30, 10, 0.03);
+}
+/* the gold micro-label with a fading rule, every zone's caption */
+.v2-theme .v2-sh-glabel {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 12px;
-  margin-top: var(--v2-sp-1);
+  gap: 0.86em;
+  font-size: 0.75em;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--v2-paper-gold);
 }
-.v2-theme .v2-fdiv .ln {
+.v2-theme .v2-sh-glabel::after {
+  content: "";
+  flex: 1;
   height: 1px;
-  width: 52px;
-  background: linear-gradient(90deg, transparent, var(--v2-line));
+  background: linear-gradient(to left, var(--v2-paper-goldfaint), transparent);
 }
-.v2-theme .v2-fdiv .ln.r {
-  background: linear-gradient(90deg, var(--v2-line), transparent);
+
+/* head: business identity vs document identity */
+.v2-theme .v2-sh-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1.71em;
+  padding: 1.71em 1.86em;
+  margin-bottom: 0.86em;
 }
-.v2-theme .v2-fdiv span {
+.v2-theme .v2-sh-biz {
+  min-width: 0;
+}
+.v2-theme .v2-sh-name {
+  font-family: "Frank Ruhl Libre", var(--font-frank), serif;
+  font-size: 1.78em;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.12;
+}
+.v2-theme .v2-sh-bizline {
+  margin-top: 0.48em;
+  font-size: 0.89em;
+  line-height: 1.6;
+  color: var(--v2-paper-ink2);
+}
+.v2-theme .v2-sh-ident {
+  flex: none;
+  text-align: left;
+}
+.v2-theme .v2-sh-orig {
+  font-size: 0.71em;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  color: var(--v2-paper-soft);
+}
+.v2-theme .v2-sh-badge {
+  display: inline-block;
+  margin-top: 0.44em;
+  padding: 0.37em 1.11em;
+  border: 1px solid var(--v2-paper-goldline);
+  border-radius: 3px;
+  color: var(--v2-paper-gold);
+  font-weight: 600;
+  font-size: 0.96em;
+  white-space: nowrap;
+}
+.v2-theme .v2-sh-num {
+  margin-top: 0.27em;
+  font-family: "Frank Ruhl Libre", var(--font-frank), serif;
+  font-size: 2.14em;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.v2-theme .v2-sh-date {
+  margin-top: 0.4em;
+  font-size: 0.89em;
+  color: var(--v2-paper-ink2);
+  font-variant-numeric: tabular-nums;
+}
+
+/* meta strip: allocation number, client */
+.v2-theme .v2-sh-strip {
+  display: flex;
+  align-items: stretch;
+  gap: 0.86em;
+  margin-bottom: 0.86em;
+}
+.v2-theme .v2-sh-strip > * {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.v2-theme .v2-sh-mini {
+  padding: 1.07em 1.29em;
+}
+.v2-theme .v2-sh-mini-v {
+  margin-top: 0.5em;
+  font-size: 1.14em;
+  font-weight: 700;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.v2-theme .v2-sh-mini-v.is-gold {
+  color: var(--v2-paper-gold);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+/* line items */
+.v2-theme .v2-sh-items {
+  padding: 0.57em 1.43em 1em;
+  margin-bottom: 0.86em;
+}
+.v2-theme .v2-sh-items .v2-sh-glabel {
+  margin: 1.24em 0 0.19em;
+}
+.v2-theme .v2-sh-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.v2-theme .v2-sh-table th {
+  padding: 1.05em 0.19em;
+  font-size: 0.75em;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--v2-paper-soft);
+  border-bottom: 1.5px solid var(--v2-paper-goldline);
+}
+.v2-theme .v2-sh-table th.c-desc {
+  text-align: right;
+}
+.v2-theme .v2-sh-table th.c-qty {
+  width: 4.43em;
+  text-align: center;
+}
+.v2-theme .v2-sh-table th.c-num {
+  width: 8.29em;
+  text-align: left;
+}
+.v2-theme .v2-sh-table td {
+  padding: 0.93em 0.14em;
+  border-bottom: 1px solid #f2eee4;
+  vertical-align: top;
+}
+.v2-theme .v2-sh-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+.v2-theme .v2-sh-table td.c-desc {
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+.v2-theme .v2-sh-table td.c-qty {
+  text-align: center;
+  color: var(--v2-paper-ink2);
+  font-variant-numeric: tabular-nums;
+}
+.v2-theme .v2-sh-table td.c-total {
+  text-align: left;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* the money zone. No withholding on this example, so it renders exactly like
+   the real document's `is-solo` case: the breakdown alone, at 62%, pushed to
+   the inline end. */
+.v2-theme .v2-sh-money {
+  display: flex;
+  margin-bottom: 0.86em;
+}
+.v2-theme .v2-sh-breakdown {
+  flex: 0 1 62%;
+  min-width: 0;
+  margin-inline-start: auto;
+  padding: 1.29em 1.57em;
+}
+.v2-theme .v2-sh-brow {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.19em;
+  padding: 0.44em 0;
+  font-size: 0.96em;
+  color: var(--v2-paper-ink2);
+}
+.v2-theme .v2-sh-brow > span:last-child {
+  color: var(--v2-paper-ink);
+  font-weight: 500;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.v2-theme .v2-sh-brow.is-grand {
+  margin-top: 0.44em;
+  padding-top: 0.89em;
+  border-top: 2px solid var(--v2-paper-ink);
+}
+.v2-theme .v2-sh-brow.is-grand > span {
+  font-weight: 700;
+}
+.v2-theme .v2-sh-grand {
+  font-family: "Frank Ruhl Libre", var(--font-frank), serif;
+  font-size: 1.56em;
+}
+
+/* The one line that is not in the printed document: a factual note that an
+   עוסק פטור charges no VAT, which is the single most common question this
+   page has to answer. Styled as the document's own gold-framed panel. */
+.v2-theme .v2-sh-note {
+  margin-bottom: 0.86em;
+  padding: 1em 1.43em;
+  border: 1px solid var(--v2-paper-goldline);
+  border-radius: 1.14em;
+  background: linear-gradient(160deg, #fdfaf1, #faf4e6);
+  font-size: 0.96em;
+  line-height: 1.6;
+  color: var(--v2-paper-ink2);
+}
+.v2-theme .v2-sh-note b {
+  font-weight: 700;
+  color: var(--v2-paper-ink);
+}
+
+/* footer: the electronic-issuance statement and the brand mark */
+.v2-theme .v2-sh-foot {
+  padding-top: 1.29em;
+  text-align: center;
+}
+.v2-theme .v2-sh-sig {
+  font-size: 0.71em;
+  letter-spacing: 0.2em;
+  color: var(--v2-paper-soft);
+}
+.v2-theme .v2-sh-brand {
+  margin-top: 0.5em;
+  font-size: 0.71em;
+  color: #6b6353;
+}
+.v2-theme .v2-sheet-cap {
+  margin-top: var(--v2-sp-3);
+  text-align: center;
   font-size: var(--v2-fs-micro);
-  letter-spacing: 0.28em;
-  color: #bcb19c;
+  letter-spacing: 0.22em;
+  line-height: 1.9;
+  color: #7a7164;
+}
+
+/* ---------- feature rows ----------
+   Three hairline-ruled rows inside the copy column, which is what lets the
+   copy column hold a full sheet's worth of height without inventing filler.
+   No boxes, no icon tiles: two rules and a 20px glyph. */
+.v2-theme .v2-feats {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.v2-theme .v2-ft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: var(--v2-sp-2) 0;
+  border-top: 1px solid var(--v2-line-soft);
+}
+.v2-theme .v2-ft:last-child {
+  border-bottom: 1px solid var(--v2-line-soft);
+}
+.v2-theme .v2-ft svg {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  color: var(--v2-g2);
+}
+.v2-theme .v2-ft b {
+  font-size: var(--v2-fs-body);
+  font-weight: 600;
+  color: #dcd3c4;
+}
+
+/* ---------- launch-offer band ----------
+   A quiet strip, on purpose. The old band was a bordered panel with an 84px
+   gold ₪15 in it, which out-shouted both the headline and the sheet for a
+   price nobody pays yet. Two hairlines and type state the same facts. */
+.v2-theme .v2-band {
+  display: grid;
+  gap: var(--v2-sp-2);
+  margin-top: var(--v2-sp-5);
+  padding-block: var(--v2-sp-4);
+  border-top: 1px solid var(--v2-line-soft);
+  border-bottom: 1px solid var(--v2-line-soft);
+}
+.v2-theme .v2-band-now {
+  font-family: "Frank Ruhl Libre", var(--font-frank), serif;
+  font-size: var(--v2-fs-h2);
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--v2-g1);
+}
+.v2-theme .v2-band-later {
+  margin-top: 4px;
+  font-size: var(--v2-fs-meta);
+  line-height: 1.7;
+  color: var(--v2-muted);
+}
+.v2-theme .v2-band-terms {
+  font-size: var(--v2-fs-meta);
+  letter-spacing: 0.1em;
+  line-height: 1.9;
+  color: #7d7467;
 }
 
 /* ---------- primary CTA ---------- */
@@ -1898,8 +2093,6 @@
 }
 
 @media (max-width: 520px) {
-  .v2-theme .v2-ft { padding: 2px 12px; }
-  .v2-theme .v2-ft + .v2-ft::before { display: none; }
   .v2-theme .v2-footer-inner { justify-content: center; }
 
   /* Card padding stays at the 20px floor, never tighter. */
@@ -1907,8 +2100,19 @@
   .v2-theme .v2-price-card,
   .v2-theme .v2-vs-card,
   .v2-theme .v2-blog-card { padding: 20px; }
-  .v2-theme .v2-card { padding: 20px; }
   .v2-theme .v2-matrix { padding: 0; }
+
+  /* The sheet keeps its own `em` geometry (it is a scale model of a page, not
+     a responsive card), so the only phone concession is the outer padding:
+     2.4em of a 12px base is 29px of a 350px column, which is a lot of margin
+     to spend on a phone. */
+  .v2-theme .v2-sheet { padding: 2em 1.5em 1.6em; }
+  /* Two mini cards side by side inside a 320px sheet leaves ~130px each,
+     which breaks "סטודיו אורות בע״מ" over three lines. Stack them, exactly
+     as the real document does on a narrow screen. */
+  .v2-theme .v2-sh-strip { flex-direction: column; }
+  .v2-theme .v2-sh-strip > * { flex: 0 0 auto; }
+  .v2-theme .v2-sh-breakdown { flex-basis: auto; width: 100%; }
 
   /* Footer trimmed ~25% (was 32/40 + a 24px hairline gap) now that the links
      carry their own 40px tap height. */
@@ -1985,98 +2189,61 @@
   .v2-theme .v2-btn-gold { min-height: 46px; padding: 10px 26px; }
   .v2-theme .v2-navlink { min-height: 46px; }
 
-  /* ---- landing: two-column hero ---- */
-  /* Equal columns. Measured: the h1's widest line is 414px at 1100 and 510px
-     at 1440, so a 488/571px copy column still has 74-130px of headroom, and
-     the spare width is better spent on the invoice card, which is the only
-     object on the page. */
-  .v2-theme .v2-hero {
-    display: grid;
+  /* ---- landing: the stage ---- */
+  /* Two EQUAL columns. The sheet takes the inline-end (left) half, the pitch
+     the reading edge. Equal, rather than the mockup's "1fr 520px", for two
+     reasons: a fixed sidebar is exactly what let the image own the fold while
+     the value proposition shrank into a caption beside it, and a fraction
+     rather than a pixel width is what makes the sheet grow with --v2-shell at
+     every tier (508px here, 582px at 1400, 773px at 1800) with no further
+     rule.
+     `align-items` is deliberately left at `stretch`: it is what makes the copy
+     column exactly as tall as the sheet, which is what lets `space-between`
+     below register the two groups against the sheet's head and foot. */
+  .v2-theme .v2-stage-in {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    align-items: center;
     gap: clamp(32px, 4vw, 64px);
-    text-align: right;
   }
-  /* The hero copy column is 488px at 1100 and the h1's widest line measured
-     414px there, so the heading had 74px it was not using. 6.2vw fills it.
-     The 72px CEILING is not cosmetic: `--v2-shell` is frozen at 1060px right
-     across this tier, so the copy column stops growing at ~505px while the
-     vw term keeps going. Measured, the widest line is 533px at 1280px wide,
-     which wrapped "יוקרתית כמו העסק" onto a third line. 72px keeps the widest
-     line at 483px against that 505px column at every width in the tier; the
-     ceiling is lifted again at 1400, where the shell finally widens.
-     Written here rather than on the base rule so the phone clamp, which is
-     tuned for a 360px viewport, is untouched. */
+  .v2-theme .v2-stage { padding-block: var(--v2-sp-1) var(--v2-sp-3); }
+  /* Top group against the sheet's head, CTA against its foot, the three
+     feature rules carrying the span between them. The bottom padding is the
+     sheet caption's block, which sits inside the stretched column below the
+     sheet; without it the CTA would line up with the caption instead of with
+     the document's last line. */
+  .v2-theme .v2-stage-copy {
+    justify-content: space-between;
+    padding-block: var(--v2-sp-1) var(--v2-sp-5);
+  }
+  /* The copy column is 488px at 1100 and the h1's widest LINE measures 456px
+     there at 6.2vw, so the heading fills the column it was given: at this
+     size it is a co-focal point beside the sheet, not a label on it.
+     The 72px CEILING is the third-line guard, not decoration. `--v2-shell` is
+     frozen at 1060px right across this tier, so the copy column stops growing
+     at ~502px while the vw term keeps climbing. MEASURED (and measure the
+     LINE, not the widest client rect: the line the h1 breaks onto is built
+     from three rects and is 15% longer than the first line, which is the trap
+     here): "יוקרתית כמו העסק" renders at 6.71x the font size in Frank Ruhl
+     Libre 900, so 72px puts it at 483px inside that 502px column. 74px
+     already overflows it and drops "העסק" onto a third line. Lifted again at
+     1400, where the shell finally widens. Written here rather than on the
+     base rule so the phone clamp, tuned for a 360px viewport, is untouched. */
   .v2-theme h1.v2-h1 { font-size: clamp(56px, 6.2vw, 72px); }
-  .v2-theme .v2-hero-copy .v2-eyebrow-row { justify-content: flex-start; }
-  /* Badge tier, not body tier: at 18px this 54-character pill wrapped to two
-     lines inside the 488px copy column and read as a broken button. */
-  .v2-theme .v2-hero-copy .v2-freenow {
-    margin-inline: 0;
-    font-size: var(--v2-fs-meta);
-  }
-  /* No cap: the column IS the measure here (55-60 Hebrew characters). */
-  .v2-theme .v2-hero-copy .v2-lede { margin-inline: 0; }
-  .v2-theme .v2-hero-art .v2-card {
-    margin: 0;
-    width: min(490px, 100%);
-  }
+  .v2-theme .v2-fine { font-size: var(--v2-fs-meta); }
 
-  /* feature band: three equal columns spanning the shell, separated by the
-     existing hairlines. No new boxes; the band is built from type, space and
-     two rules, which is the whole point. */
-  .v2-theme .v2-feats {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    padding: var(--v2-sp-3) 0;
-    border-top: 1px solid var(--v2-line-soft);
-    border-bottom: 1px solid var(--v2-line-soft);
-  }
-  .v2-theme .v2-ft { padding: 2px var(--v2-sp-3); gap: 12px; }
+  /* The feature rules are the copy column's spine, so they take a section's
+     worth of air rather than a list item's. */
+  .v2-theme .v2-ft { padding: var(--v2-sp-3) 0; gap: 14px; }
   .v2-theme .v2-ft svg { width: 26px; height: 26px; }
+  .v2-theme .v2-ft b { font-size: var(--v2-fs-lede); }
 
   /* ---- landing: the launch-offer band ----
-     price on the reading edge, CTA opposite, one hairline between them, the
-     small print spanning underneath. Replaces ~180px of stacked one-liners. */
-  .v2-theme .v2-offer {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+     Offer on the reading edge, terms opposite, one line each. */
+  .v2-theme .v2-band {
+    grid-template-columns: 1fr auto;
     align-items: center;
-    padding: var(--v2-sp-4) var(--v2-sp-5);
-    border: 1px solid var(--v2-line);
-    border-radius: var(--v2-r-xl);
-    background: linear-gradient(160deg, #191308, #0f0b06);
-    box-shadow: var(--v2-sh-rest), var(--v2-sh-inset);
+    gap: var(--v2-sp-5);
   }
-  /* The band gives the price half of a 1060px shell; at the shared 6.2vw it
-     was using a third of it. The price IS the section's focal point, so it
-     gets the display treatment the width already paid for. 7vw, not more:
-     it should sit just above the h1 (77px vs 68px at 1100), the same ~12%
-     lead the original 68/62 pairing had. Bigger than that and the pricing
-     band starts out-shouting the headline. Ceiling 88px for the same reason
-     the h1's is 72px: the band's half-column stops at ~473px in this tier. */
-  .v2-theme .v2-price { font-size: clamp(56px, 7vw, 88px); }
-  .v2-theme .v2-pricetop,
-  .v2-theme .v2-fine { font-size: var(--v2-fs-meta); }
-  .v2-theme .v2-ft b { font-size: var(--v2-fs-lede); }
-  .v2-theme .v2-offer-price { padding-inline-end: var(--v2-sp-5); }
-  .v2-theme .v2-offer-act {
-    padding-inline-start: var(--v2-sp-5);
-    border-inline-start: 1px solid var(--v2-line-soft);
-  }
-  .v2-theme .v2-offer .v2-cta { margin-top: 0; }
-  /* The deco rules flanking the plan line are dropped inside the band: the
-     band's own border already frames it, and at this width the line would
-     have to wrap to fit them. */
-  .v2-theme .v2-offer .v2-fdiv .ln { display: none; }
-  .v2-theme .v2-offer .v2-fdiv span { letter-spacing: 0.1em; }
-  .v2-theme .v2-offer .v2-freenow-note {
-    grid-column: 1 / -1;
-    margin-top: var(--v2-sp-3);
-    padding-top: var(--v2-sp-3);
-    border-top: 1px solid var(--v2-line-soft);
-    max-width: 72ch;
-  }
+  .v2-theme .v2-band-terms { text-align: left; }
 
   /* ---- /vs + /blog: two-up card grids ---- */
   .v2-theme .v2-vs-list,
@@ -2149,12 +2316,13 @@
   }
   .v2-theme .v2-logo-mark { width: 50px; height: 50px; }
   .v2-theme .v2-logo-word { font-size: 27px; }
-  .v2-theme .v2-hero-art .v2-card { width: min(520px, 100%); }
-  /* The shell widens to 1220px here, so the hero column reaches 582px and the
-     display ceilings held back in tier 1 can be released. Verified: widest h1
-     line 550px in a 582px column, price 481px in a 545px half-band. */
+  /* The shell widens to 1220px here, so the hero copy column reaches 582px
+     (578px at the top of the tier, where the viewport gutter bites) and the
+     ceiling held back in tier 1 can be released. At the same measured 6.71x,
+     82px puts the widest h1 line at 550px, 28px of headroom in the narrowest
+     column of the tier. The sheet needs no rule of its own: its column
+     widened by the same 74px and `cqi` did the rest. */
   .v2-theme h1.v2-h1 { font-size: clamp(56px, 6.2vw, 82px); }
-  .v2-theme .v2-price { font-size: clamp(56px, 7vw, 94px); }
 }
 
 /* ------------------------------------------------------------
@@ -2181,5 +2349,14 @@
   }
   /* Six comparison cards go three-up rather than growing past the measure. */
   .v2-theme .v2-vs-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .v2-theme .v2-hero-art .v2-card { width: min(600px, 100%); }
+  /* The one tier where the split stops being 50/50. The h1 ceiling is 82px,
+     so its widest line stays ~550px however wide the window gets, and an
+     equal half of a 1420px shell would hand the copy column ~230px it cannot
+     use. Tipping to 0.86/1.14 spends that slack on the sheet instead: ~583px
+     of copy (still 33px of headroom on the heading) against a ~773px sheet,
+     which is within 3% of the real printed page's 794px. The hero is finally
+     the document at 1:1. */
+  .v2-theme .v2-stage-in {
+    grid-template-columns: minmax(0, 0.86fr) minmax(0, 1.14fr);
+  }
 }
