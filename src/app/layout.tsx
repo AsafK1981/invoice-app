@@ -59,8 +59,19 @@ const assistant = Assistant({
 
 const SITE_URL = CANONICAL_ORIGIN;
 
+// Google Search Console ownership token, emitted as
+// <meta name="google-site-verification">. Kept in an env var, not committed:
+// verifying a NEW property (e.g. after buying a domain) then costs a variable
+// change plus a redeploy, with no code edit and no stray google*.html file
+// sitting in public/ forever. Unset = no tag rendered, which is the correct
+// behaviour rather than an empty meta.
+const GOOGLE_SITE_VERIFICATION = process.env.GOOGLE_SITE_VERIFICATION?.trim();
+
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
+  ...(GOOGLE_SITE_VERIFICATION
+    ? { verification: { google: GOOGLE_SITE_VERIFICATION } }
+    : {}),
   title: {
     default: "MySuperFriendlyInvoiceApp - חשבוניות וקבלות בלי כאב ראש",
     template: "%s | MySuperFriendlyInvoiceApp",
