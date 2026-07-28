@@ -247,16 +247,58 @@ const HEBREW = "֐-׿";
 const GLUED_PUNCT = new RegExp(`[,.;:!?][${HEBREW}]`);
 const DOUBLE_SPACE = /\s{2,}/;
 
+/**
+ * The one legitimate "period glued onto a Hebrew letter": an initialism, where
+ * the period is INTERNAL to a single token rather than sentence punctuation.
+ * "ח.פ / ת.ז", the customer's company/ID number label, is copied verbatim from
+ * the printed tax document, so the hero sheet cannot spell it any other way.
+ *
+ * Kept as tight as the exception allows: the period must follow a Hebrew letter
+ * that is itself NOT preceded by a Hebrew letter, i.e. a one-letter token. A
+ * genuine bad join always has a whole word before the punctuation ("לי,באמת",
+ * "זה.באמת"), so it still fails. The lookbehind reads the ORIGINAL string, so a
+ * chained initialism like "א.ג.נ" clears every period in it.
+ */
+const HEB_INITIALISM = new RegExp(
+  `(?<![${HEBREW}])([${HEBREW}])\\.(?=[${HEBREW}])`,
+  "g",
+);
+function stripInitialismDots(text: string): string {
+  return text.replace(HEB_INITIALISM, "$1 ");
+}
+
 describe("marketing pages: generic split-literal signatures", () => {
   it("no text block glues punctuation directly onto a Hebrew letter", async () => {
     const offenders: string[] = [];
     for (const route of ROUTES) {
       for (const b of textBlocks(await pageHtml(route))) {
-        const hit = GLUED_PUNCT.exec(b.text);
+        const hit = GLUED_PUNCT.exec(stripInitialismDots(b.text));
         if (hit) {
           offenders.push(
             `${route} <${b.tag}> "${b.text}"\n    → "${hit[0]}" has no space after the ` +
               `punctuation; split JSX literals were joined without {" "}`,
+          );
+        }
+      }
+    }
+    expect(offenders, `\n${offenders.join("\n")}\n`).toEqual([]);
+  });
+
+  /**
+   * The middot is this site's one separator ("חינם עכשיו · ללא כרטיס אשראי"),
+   * always spaced on both sides, and it is invisible to GLUED_PUNCT above:
+   * the symptom is a Hebrew letter BEFORE it, not after. Shipped once as
+   * "מספר הקצאה· נדרש" on the hero sheet, because the JSX transform drops the
+   * leading space of a text child that spans lines. Cheap to assert directly.
+   */
+  it("every middot separator keeps its space on both sides", async () => {
+    const offenders: string[] = [];
+    for (const route of ROUTES) {
+      for (const b of textBlocks(await pageHtml(route))) {
+        if (/\S·|·\S/.test(b.text)) {
+          offenders.push(
+            `${route} <${b.tag}> ${JSON.stringify(b.text)}\n    → a "·" is glued to ` +
+              `a neighbour; split JSX literals were joined without {" "}`,
           );
         }
       }

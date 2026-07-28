@@ -617,6 +617,18 @@
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.02em;
 }
+/* The customer's ח.פ under their name. Transcribed from `.doc-mini-sub`:
+   11.5px / 14 = 0.82em, and its 3px top margin against its OWN size,
+   3 / 11.5 = 0.26em. Load-bearing rather than decorative, since the
+   allocation number above it is only required when the buyer has a business
+   number to deduct input VAT against. */
+.v2-theme .v2-sh-mini-sub {
+  margin-top: 0.26em;
+  font-size: 0.82em;
+  line-height: 1.55;
+  color: var(--v2-paper-ink2);
+  overflow-wrap: anywhere;
+}
 
 /* line items */
 .v2-theme .v2-sh-items {
@@ -712,9 +724,10 @@
   font-size: 1.56em;
 }
 
-/* The one line that is not in the printed document: a factual note that an
-   עוסק פטור charges no VAT, which is the single most common question this
-   page has to answer. Styled as the document's own gold-framed panel. */
+/* The one zone that is not in the printed document: a factual note saying why
+   this invoice carries an allocation number at all, which is the question the
+   gold number in the strip provokes. Styled as the document's own gold-framed
+   panel. */
 .v2-theme .v2-sh-note {
   margin-bottom: 0.86em;
   padding: 1em 1.43em;

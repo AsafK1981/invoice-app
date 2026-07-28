@@ -70,7 +70,7 @@ export default function MarketingLanding() {
               <div className="v2-stage-copy">
                 <div className="v2-stage-lead">
                   <div className="v2-eyebrow-row">
-                    <span>לעוסק פטור בישראל</span>
+                    <span>לעצמאים בישראל</span>
                     <i className="ln" />
                   </div>
 
@@ -149,7 +149,12 @@ export default function MarketingLanding() {
                   <div className="v2-sh-card v2-sh-head">
                     <div className="v2-sh-biz">
                       <p className="v2-sh-name">סטודיו נועה</p>
-                      <p className="v2-sh-bizline">עוסק פטור · עיצוב גרפי ומיתוג</p>
+                      <p className="v2-sh-bizline">
+                        עוסק מורשה <Ltr>003244266</Ltr> · עיצוב גרפי ומיתוג
+                        <br />
+                        הרצל 12, תל אביב · <Ltr>054-1234567</Ltr> ·{" "}
+                        <Ltr>noa@studio-noa.co.il</Ltr>
+                      </p>
                     </div>
                     <div className="v2-sh-ident">
                       <div className="v2-sh-orig">מקור</div>
@@ -161,12 +166,15 @@ export default function MarketingLanding() {
 
                   <div className="v2-sh-strip">
                     <div className="v2-sh-card v2-sh-mini">
-                      <div className="v2-sh-glabel">מספר הקצאה</div>
-                      <div className="v2-sh-mini-v is-gold">187025961</div>
+                      <div className="v2-sh-glabel">מספר הקצאה · חשבונית ישראל</div>
+                      <div className="v2-sh-mini-v is-gold">403581926</div>
                     </div>
                     <div className="v2-sh-card v2-sh-mini">
                       <div className="v2-sh-glabel">לכבוד</div>
                       <div className="v2-sh-mini-v">סטודיו אורות בע״מ</div>
+                      <div className="v2-sh-mini-sub">
+                        ח.פ / ת.ז <Ltr>514738293</Ltr>
+                      </div>
                     </div>
                   </div>
 
@@ -206,15 +214,28 @@ export default function MarketingLanding() {
                         <span>סכום ביניים</span>
                         <span>5,250 ₪</span>
                       </div>
+                      <div className="v2-sh-brow">
+                        <span>
+                          מע״מ <Ltr>18%</Ltr>
+                        </span>
+                        <span>945 ₪</span>
+                      </div>
                       <div className="v2-sh-brow is-grand">
                         <span>סה״כ לתשלום</span>
-                        <span className="v2-sh-grand">5,250 ₪</span>
+                        <span className="v2-sh-grand">6,195 ₪</span>
                       </div>
                     </div>
                   </div>
 
+                  {/* The separator is an explicit {" · "} expression, not two
+                      JSX literals around a bare middot: the transform drops the
+                      space that leads a multi-line text child, which silently
+                      shipped "מספר הקצאה· נדרש". */}
                   <p className="v2-sh-note">
-                    <b>עוסק פטור</b> · אין חיוב מע״מ בחשבונית הזו
+                    <b>מספר הקצאה</b>
+                    {" · "}
+                    נדרש בחשבונית מס ללקוח עסקי בסכום של 5,000&nbsp;₪ ומעלה לפני
+                    מע״מ. המערכת מבקשת אותו מרשות המסים אוטומטית.
                   </p>
 
                   <div className="v2-sh-foot">
