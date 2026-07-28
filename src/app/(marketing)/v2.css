@@ -591,7 +591,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* meta strip: allocation number, client */
+/* meta strip: client, allocation number */
 .v2-theme .v2-sh-strip {
   display: flex;
   align-items: stretch;

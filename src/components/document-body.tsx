@@ -218,14 +218,13 @@ export function DocumentBody({
         </div>
       </div>
 
-      {/* ── Meta strip: allocation number · client · subject ── */}
+      {/* ── Meta strip: client · allocation number · subject ──
+          DOM order IS the visual order here (plain RTL flex row, no `order`),
+          so the customer card renders at the reading start (right side) and
+          stays first when the strip stacks to a column on narrow screens.
+          The allocation number is metadata about the document, so it follows.
+          Placement only: no field, label or value changes. */}
       <div className="doc-strip">
-        {allocationNumber && (
-          <div className="doc-card doc-mini">
-            <div className="doc-glabel">מספר הקצאה · חשבונית ישראל</div>
-            <div className="doc-mini-v is-gold doc-mono">{allocationNumber}</div>
-          </div>
-        )}
         <div className="doc-card doc-mini">
           <div className="doc-glabel">לכבוד</div>
           {client ? (
@@ -248,6 +247,12 @@ export function DocumentBody({
             <div className="doc-mini-v is-empty">לקוח לא נבחר</div>
           )}
         </div>
+        {allocationNumber && (
+          <div className="doc-card doc-mini">
+            <div className="doc-glabel">מספר הקצאה · חשבונית ישראל</div>
+            <div className="doc-mini-v is-gold doc-mono">{allocationNumber}</div>
+          </div>
+        )}
         {subject && (
           <div className="doc-card doc-mini">
             <div className="doc-glabel">בגין</div>

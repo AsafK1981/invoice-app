@@ -169,7 +169,7 @@
   margin-top: 5px;
 }
 
-/* ---------- meta strip: allocation · client · subject ---------- */
+/* ---------- meta strip: client · allocation · subject ---------- */
 .doc-paper .doc-strip {
   display: flex;
   gap: 12px;

@@ -36,7 +36,7 @@ export const metadata: Metadata = {
  * THE SHEET IS A PRESENTATIONAL ECHO, NOT THE REAL COMPONENT. The persuasive
  * premise is "this is what you get", so the markup below mirrors the real
  * printed document zone for zone (`src/components/document-body.tsx`): head
- * with identity block, allocation + "לכבוד" strip, itemised table under a gold
+ * with identity block, "לכבוד" + allocation strip, itemised table under a gold
  * micro-label, the breakdown pushed to the inline end, the electronic-issuance
  * footer. It deliberately does NOT import `DocumentBody` or `document-paper.css`
  * - the printed sheet is a tax document and is frozen; a marketing page must
@@ -164,17 +164,21 @@ export default function MarketingLanding() {
                     </div>
                   </div>
 
+                  {/* Same DOM order as the real document's `.doc-strip`: the
+                      customer first, so RTL puts "לכבוד" at the reading start
+                      (right) and the allocation number after it (left), and the
+                      customer stays on top when the strip stacks on mobile. */}
                   <div className="v2-sh-strip">
-                    <div className="v2-sh-card v2-sh-mini">
-                      <div className="v2-sh-glabel">מספר הקצאה · חשבונית ישראל</div>
-                      <div className="v2-sh-mini-v is-gold">403581926</div>
-                    </div>
                     <div className="v2-sh-card v2-sh-mini">
                       <div className="v2-sh-glabel">לכבוד</div>
                       <div className="v2-sh-mini-v">סטודיו אורות בע״מ</div>
                       <div className="v2-sh-mini-sub">
                         ח.פ / ת.ז <Ltr>514738293</Ltr>
                       </div>
+                    </div>
+                    <div className="v2-sh-card v2-sh-mini">
+                      <div className="v2-sh-glabel">מספר הקצאה · חשבונית ישראל</div>
+                      <div className="v2-sh-mini-v is-gold">403581926</div>
                     </div>
                   </div>
 
