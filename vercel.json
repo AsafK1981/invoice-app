@@ -11,6 +11,10 @@
     {
       "path": "/api/cron/tax-health",
       "schedule": "0 5 * * *"
+    },
+    {
+      "path": "/api/cron/subscription-billing",
+      "schedule": "0 7 * * *"
     }
   ]
 }

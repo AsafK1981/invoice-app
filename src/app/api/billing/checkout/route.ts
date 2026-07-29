@@ -1,32 +1,73 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type User } from "@supabase/supabase-js";
 import { polar, getProductId } from "@/lib/polar";
+import {
+  isGrowConfigured,
+  createPaymentProcess,
+  getPlanPrice,
+  GROW_CALLBACK_SECRET,
+  TOKEN_VALIDATION_AMOUNT,
+} from "@/lib/grow";
 import { TRIAL_DAYS, type PlanTier, type BillingInterval } from "@/lib/plans";
+import { CANONICAL_ORIGIN } from "@/lib/public-url";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 /**
- * Creates a Polar checkout session for a subscription. Body shape:
- *   { tier: "free" | "pro", interval: "month" | "year" }
+ * Which processor backs new checkouts. Defaults to "polar", the provider that
+ * is actually live today. The Grow (Israeli direct card processing) branch
+ * below ships complete but INERT: it only runs once someone sets
+ * PAYMENT_PROVIDER=grow, which happens after the GROW_* credentials exist and
+ * the flow has been verified end to end against Grow's live docs. Defaulting to
+ * Grow before then would break every real checkout on the first deploy.
+ */
+const PAYMENT_PROVIDER = process.env.PAYMENT_PROVIDER === "grow" ? "grow" : "polar";
+
+// Keeps the NEXT_PUBLIC_APP_URL override (payment providers validate return
+// URLs against what was registered with them), falling back to the canonical
+// origin rather than a second copy of the domain literal.
+const APP_ORIGIN = process.env.NEXT_PUBLIC_APP_URL || CANONICAL_ORIGIN;
+
+/**
+ * Resolve the origin used to build the browser-facing success/cancel URLs.
  *
- * "free" is the internal tier ID for the Basic display tier — kept for
+ * The `Origin` request header is CLIENT CONTROLLED. A browser sets it and JS
+ * cannot forge it, but this is a server route: anyone can send an arbitrary
+ * Origin with curl. Interpolating it straight into successUrl would let a
+ * caller mint a payment link that bounces the payer to a domain they own after
+ * the charge, which is a ready-made phishing flow wearing our checkout.
+ *
+ * So the header is an ALLOWLIST LOOKUP, never a value we pass through. Anything
+ * unrecognized silently falls back to our own origin. The allowlist exists only
+ * so a preview deployment returns to itself instead of jumping to production
+ * mid-flow; it is not an extension point for arbitrary domains.
+ */
+const ALLOWED_ORIGINS = new Set(
+  [APP_ORIGIN, CANONICAL_ORIGIN].filter(Boolean) as string[],
+);
+
+function resolveOrigin(req: NextRequest): string {
+  const header = req.headers.get("origin");
+  return header && ALLOWED_ORIGINS.has(header) ? header : APP_ORIGIN;
+}
+
+/**
+ * Creates a checkout session for a subscription. Body shape:
+ *   { tier: "free" | "pro", interval: "month" | "year" }
+ * Response (unchanged contract the frontend relies on):
+ *   { ok: true, url }  |  { ok: false, error }
+ *
+ * "free" is the internal tier ID for the Basic display tier, kept for
  * backwards compat with existing user_metadata.plan_tier values.
  *
- * The user's Supabase ID is passed as `customerExternalId` so the webhook
- * can map subscription events back to a Supabase user without an extra
- * lookup. We also stash the same ID in metadata as a belt-and-suspenders.
+ * Routed by PAYMENT_PROVIDER between Polar (default, live) and Grow (opt-in,
+ * PAYMENT_PROVIDER=grow).
  */
 export async function POST(req: NextRequest) {
-  if (!polar) {
-    return NextResponse.json(
-      { ok: false, error: "Polar not configured" },
-      { status: 503 },
-    );
-  }
-
   try {
+    // ── Auth (identical to the original Polar route) ──────────────────────
     const authHeader = req.headers.get("authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
@@ -39,6 +80,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
     }
 
+    // ── Resolve tier/interval defensively (identical logic) ───────────────
     const body = (await req.json().catch(() => ({}))) as {
       tier?: PlanTier;
       interval?: BillingInterval;
@@ -47,69 +89,12 @@ export async function POST(req: NextRequest) {
     const interval: BillingInterval =
       body.interval === "year" || body.interval === "month" ? body.interval : "month";
 
-    const productId = getProductId(tier, interval);
-    if (!productId) {
-      return NextResponse.json(
-        { ok: false, error: `מחיר ל-${tier}/${interval} לא הוגדר` },
-        { status: 503 },
-      );
+    const origin = resolveOrigin(req);
+
+    if (PAYMENT_PROVIDER === "polar") {
+      return await handlePolarCheckout({ user, tier, interval, origin });
     }
-
-    const origin = req.headers.get("origin") || "https://mysuperfriendlyinvoiceapp.vercel.app";
-
-    // First-time subscribers get a 14-day trial; returning subscribers
-    // (canceled then resubscribed) don't, so they can't farm the trial
-    // by churning. Read from app_metadata (the trustworthy source).
-    const hasUsedTrial =
-      ((user.app_metadata || {}) as Record<string, unknown>).plan_trial_used === true ||
-      // Fallback for any pre-migration users (the migration should have
-      // moved this already, but defense in depth).
-      ((user.user_metadata || {}) as Record<string, unknown>).plan_trial_used === true;
-
-    const checkout = await polar.checkouts.create({
-      products: [productId],
-      customerEmail: user.email,
-      // Maps Supabase user.id to a Polar customer. If the customer
-      // doesn't exist yet, Polar creates one with this external ID
-      // attached so future webhooks can resolve back without a lookup.
-      externalCustomerId: user.id,
-      successUrl: `${origin}/billing?success=1`,
-      // Polar's metadata only accepts flat scalar values.
-      metadata: {
-        supabase_user_id: user.id,
-        tier,
-        interval,
-      },
-      allowDiscountCodes: true,
-      // 14-day trial for first-time subscribers. Polar honors trial
-      // settings on the checkout level when allowTrial is true.
-      ...(hasUsedTrial
-        ? { allowTrial: false as const }
-        : {
-            allowTrial: true as const,
-            trialInterval: "day" as const,
-            trialIntervalCount: TRIAL_DAYS,
-          }),
-    });
-
-    // Best-effort: store the Polar customer hint on the Supabase user
-    // (in app_metadata, which is service-role only) so the customer
-    // portal route can resolve it without a round-trip.
-    try {
-      const admin = createClient(supabaseUrl, serviceKey);
-      const customerId =
-        typeof checkout.customerId === "string" ? checkout.customerId : undefined;
-      const prevAppMeta = (user.app_metadata || {}) as Record<string, unknown>;
-      if (customerId && prevAppMeta.polar_customer_id !== customerId) {
-        await admin.auth.admin.updateUserById(user.id, {
-          app_metadata: { ...prevAppMeta, polar_customer_id: customerId },
-        });
-      }
-    } catch {
-      // non-fatal — customer ID will be persisted on the next webhook
-    }
-
-    return NextResponse.json({ ok: true, url: checkout.url });
+    return await handleGrowCheckout({ user, tier, interval, origin });
   } catch (err) {
     console.error("Checkout error:", err);
     return NextResponse.json(
@@ -117,4 +102,196 @@ export async function POST(req: NextRequest) {
       { status: 500 },
     );
   }
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Grow (opt-in, only reached when PAYMENT_PROVIDER=grow)
+// ─────────────────────────────────────────────────────────────────────────
+async function handleGrowCheckout({
+  user,
+  tier,
+  interval,
+  origin,
+}: {
+  user: User;
+  tier: PlanTier;
+  interval: BillingInterval;
+  origin: string;
+}) {
+  if (!isGrowConfigured()) {
+    return NextResponse.json(
+      { ok: false, error: "Grow not configured" },
+      { status: 503 },
+    );
+  }
+
+  // First-time subscribers get a trial; returning subscribers (canceled then
+  // resubscribed) don't, so they can't farm the trial by churning. Read from
+  // app_metadata (the trustworthy source), user_metadata as pre-migration
+  // fallback, same logic as the original Polar route.
+  const hasUsedTrial =
+    ((user.app_metadata || {}) as Record<string, unknown>).plan_trial_used === true ||
+    ((user.user_metadata || {}) as Record<string, unknown>).plan_trial_used === true;
+
+  const fullPrice = getPlanPrice(tier, interval);
+
+  // ── Charge amount for THIS checkout ──────────────────────────────────────
+  // For a first-time trial we do NOT charge the full price now. We only want a
+  // saved card token; the first real charge fires later via the recurring cron
+  // (not built in this task).
+  //
+  // We send TOKEN_VALIDATION_AMOUNT (₪1) as that validation amount; defined
+  // once in grow.ts and shared with the callback route, which accepts the same
+  // amount as a valid sum.
+  //
+  // TODO(verify against Grow's live docs / support): true ₪0 tokenization. Card
+  //   networks generally reject a ₪0 authorization, so many processors require a
+  //   nominal ≥₪1 validation charge even just to save a token. IF Grow supports a
+  //   genuine 0-charge tokenization mode, switch to that instead (it directly
+  //   affects trial UX; the user shouldn't be charged during a "free" trial).
+  //   This is the single most important billing detail to confirm before shipping.
+  const isTrial = !hasUsedTrial;
+  const chargeSum = isTrial ? TOKEN_VALIDATION_AMOUNT : fullPrice;
+
+  // Browser-facing redirects: NO secret here (users see these URLs).
+  const successUrl = `${origin}/billing?success=1`;
+  const cancelUrl = `${origin}/billing?canceled=1`;
+
+  // Server-to-server callback URL: THIS is where our anti-spoof secret goes.
+  // Grow doesn't sign callbacks, so ?cs=<secret> stops randos from POSTing junk
+  // to our callback. NOTE: whether Grow's model uses a dedicated server-callback
+  // field or reuses successUrl is unconfirmed; see the TODO in grow.ts's
+  // createPaymentProcess. We pass a dedicated callback URL and let grow.ts send
+  // it under its best-guess field name (`notifyUrl`).
+  // TODO(verify against Grow's live docs): confirm the server-callback wiring.
+  // No secret-less fallback: isGrowConfigured() above already refused the whole
+  // request with a 503 when GROW_CALLBACK_SECRET is unset, precisely so we never
+  // charge a card for a subscription whose callback the callback route will then
+  // reject as unsigned.
+  const callbackUrl = `${APP_ORIGIN}/api/billing/callback?cs=${encodeURIComponent(GROW_CALLBACK_SECRET)}`;
+
+  const { raw, url } = await createPaymentProcess({
+    sum: chargeSum,
+    description: `${tier === "pro" ? "Pro" : "Basic"} ${interval === "year" ? "yearly" : "monthly"}`,
+    successUrl,
+    cancelUrl,
+    // Grow rejects special characters in parameter values; user.email/name can
+    // legitimately contain "@" and dots. We only pass email/phone/name into
+    // pageField[*] which is where Grow expects contact info; keep it simple.
+    fullName: (user.user_metadata?.full_name as string | undefined) || user.email || "Customer",
+    phone: (user.user_metadata?.phone as string | undefined) || "",
+    email: user.email || "",
+    // Passthrough echoed back on the callback, mirrors the flat `metadata`
+    // shape the old Polar checkout used, so the callback can map back to a user.
+    customFields: { supabase_user_id: user.id, tier, interval },
+    // Save a reusable token for the recurring cron to charge later.
+    saveToken: true,
+    callbackUrl,
+  });
+
+  // Best-effort: stash a Grow customer/process hint into app_metadata (service
+  // role only), mirroring how the Polar route stored polar_customer_id. We do
+  // NOT set plan_active / plan_tier here; that only happens once the callback
+  // route confirms the real payment. Nor do we set plan_current_period_end here;
+  // the callback owns the trial period end (now + TRIAL_DAYS) once it fires.
+  try {
+    const admin = createClient(supabaseUrl, serviceKey);
+    const parsed = raw.parsed;
+    const customerId =
+      typeof parsed === "object" && parsed !== null
+        ? (typeof parsed.processId === "string"
+            ? parsed.processId
+            : typeof parsed.customerId === "string"
+              ? parsed.customerId
+              : undefined)
+        : undefined;
+    const prevAppMeta = (user.app_metadata || {}) as Record<string, unknown>;
+    if (customerId && prevAppMeta.provider_customer_id !== customerId) {
+      await admin.auth.admin.updateUserById(user.id, {
+        app_metadata: {
+          ...prevAppMeta,
+          provider_customer_id: customerId,
+          payment_provider: "grow",
+        },
+      });
+    }
+  } catch {
+    // non-fatal: customer ID will be persisted on the callback instead
+  }
+
+  // The 14-day trial (TRIAL_DAYS) is intentionally NOT applied here; that is
+  // the callback route's job. This route's scope is: get a token + redirect URL.
+  void TRIAL_DAYS;
+
+  return NextResponse.json({ ok: true, url });
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Polar (the live default; Grow only takes over on PAYMENT_PROVIDER=grow)
+// ─────────────────────────────────────────────────────────────────────────
+async function handlePolarCheckout({
+  user,
+  tier,
+  interval,
+  origin,
+}: {
+  user: User;
+  tier: PlanTier;
+  interval: BillingInterval;
+  origin: string;
+}) {
+  if (!polar) {
+    return NextResponse.json(
+      { ok: false, error: "Polar not configured" },
+      { status: 503 },
+    );
+  }
+
+  const productId = getProductId(tier, interval);
+  if (!productId) {
+    return NextResponse.json(
+      { ok: false, error: `מחיר ל-${tier}/${interval} לא הוגדר` },
+      { status: 503 },
+    );
+  }
+
+  const hasUsedTrial =
+    ((user.app_metadata || {}) as Record<string, unknown>).plan_trial_used === true ||
+    ((user.user_metadata || {}) as Record<string, unknown>).plan_trial_used === true;
+
+  const checkout = await polar.checkouts.create({
+    products: [productId],
+    customerEmail: user.email,
+    externalCustomerId: user.id,
+    successUrl: `${origin}/billing?success=1`,
+    metadata: {
+      supabase_user_id: user.id,
+      tier,
+      interval,
+    },
+    allowDiscountCodes: true,
+    ...(hasUsedTrial
+      ? { allowTrial: false as const }
+      : {
+          allowTrial: true as const,
+          trialInterval: "day" as const,
+          trialIntervalCount: TRIAL_DAYS,
+        }),
+  });
+
+  try {
+    const admin = createClient(supabaseUrl, serviceKey);
+    const customerId =
+      typeof checkout.customerId === "string" ? checkout.customerId : undefined;
+    const prevAppMeta = (user.app_metadata || {}) as Record<string, unknown>;
+    if (customerId && prevAppMeta.polar_customer_id !== customerId) {
+      await admin.auth.admin.updateUserById(user.id, {
+        app_metadata: { ...prevAppMeta, polar_customer_id: customerId },
+      });
+    }
+  } catch {
+    // non-fatal: customer ID will be persisted on the next webhook
+  }
+
+  return NextResponse.json({ ok: true, url: checkout.url });
 }

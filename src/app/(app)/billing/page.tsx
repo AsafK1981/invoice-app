@@ -108,9 +108,9 @@ export default function BillingPage() {
     setConfirmingCancel(true);
   }
 
-  // Rollback path (PAYMENT_PROVIDER=polar): the cancel route refuses with 410,
-  // and cancellation is done through Polar's hosted customer portal instead.
-  // Returns true if we successfully kicked off the redirect.
+  // Default path (PAYMENT_PROVIDER unset or =polar): the cancel route refuses
+  // with 410, and cancellation is done through Polar's hosted customer portal
+  // instead. Returns true if we successfully kicked off the redirect.
   async function redirectToPolarPortal(): Promise<boolean> {
     const { data: { session } } = await supabase.auth.getSession();
     const res = await fetch("/api/billing/portal", {
@@ -126,8 +126,8 @@ export default function BillingPage() {
   }
 
   // User confirmed cancellation. Calls the cancel route (Grow path). If it
-  // returns 410 we're in the Polar rollback mode; fall back to the hosted
-  // portal redirect.
+  // returns 410 we're on the Polar default; fall back to the hosted portal
+  // redirect.
   async function actuallyCancel() {
     setActionLoading("pro");
     try {
