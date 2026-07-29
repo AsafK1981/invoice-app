@@ -48,8 +48,8 @@ interface Props {
 }
 
 /**
- * How many days a `sent` document may sit unpaid before the card calls it out
- * under the status pill. Receipts are paid by definition and are excluded.
+ * How many days a `sent` document may sit unpaid before the row calls it out
+ * next to the status pill. Receipts are paid by definition and are excluded.
  */
 const OVERDUE_DAYS = 7;
 
@@ -228,36 +228,6 @@ export function DocumentsTable({ documents, limit, showExport = false }: Props) 
       </div>
 
       <div className="dc-shell">
-        {/* Sort lives in its own strip instead of clickable column headers:
-            the cards have no columns to head, and three labelled chips are a
-            lot more discoverable than a caret on a table <th>. */}
-        {filtered.length > 0 && (
-          <div className="dc-sortbar" role="group" aria-label="מיון המסמכים">
-            <span className="dc-sortbar-label">מיון לפי:</span>
-            <SortChip
-              label="תאריך"
-              sortKey="date"
-              currentKey={sortKey}
-              dir={sortDir}
-              onClick={() => toggleSort("date")}
-            />
-            <SortChip
-              label="מספר"
-              sortKey="number"
-              currentKey={sortKey}
-              dir={sortDir}
-              onClick={() => toggleSort("number")}
-            />
-            <SortChip
-              label="סכום"
-              sortKey="total"
-              currentKey={sortKey}
-              dir={sortDir}
-              onClick={() => toggleSort("total")}
-            />
-          </div>
-        )}
-
         {filtered.length === 0 ? (
           <div className="dc-empty">
             <div className="text-4xl mb-2">{filtersActive ? "🔍" : "📄"}</div>
@@ -282,11 +252,67 @@ export function DocumentsTable({ documents, limit, showExport = false }: Props) 
             )}
           </div>
         ) : (
-          <ul className="dc-list" role="list">
-            {filtered.map((d) => (
-              <DocumentCard key={d.id} doc={d} />
-            ))}
-          </ul>
+          <div className="dc-table">
+            {/* One header row for the whole list. It is a subgrid item like
+                every card, so its labels sit exactly over the columns they
+                name, and the three numeric labels double as the sort control
+                (the old "מיון לפי" chip strip is gone). */}
+            <div className="dc-head">
+              <span className="dc-cell" data-col="type">
+                סוג
+              </span>
+              <span className="dc-cell" data-col="client">
+                לקוח
+              </span>
+              <span className="dc-cell" data-col="subj">
+                נושא
+              </span>
+              <span className="dc-cell" data-col="date">
+                <SortLabel
+                  label="תאריך"
+                  sortKey="date"
+                  currentKey={sortKey}
+                  dir={sortDir}
+                  onClick={() => toggleSort("date")}
+                />
+              </span>
+              <span className="dc-cell" data-col="number">
+                <SortLabel
+                  label="מספר"
+                  sortKey="number"
+                  currentKey={sortKey}
+                  dir={sortDir}
+                  onClick={() => toggleSort("number")}
+                />
+              </span>
+              <span className="dc-cell" data-col="alloc">
+                מספר הקצאה
+              </span>
+              <span className="dc-cell" data-col="mail">
+                נשלח<span className="dc-tail"> במייל</span>
+              </span>
+              <span className="dc-cell" data-col="status">
+                סטטוס
+              </span>
+              <span className="dc-cell" data-col="amount">
+                <SortLabel
+                  label="סכום"
+                  sortKey="total"
+                  currentKey={sortKey}
+                  dir={sortDir}
+                  onClick={() => toggleSort("total")}
+                />
+              </span>
+              <span className="dc-cell" data-col="acts">
+                <span className="sr-only">פעולות</span>
+              </span>
+            </div>
+            <ul className="dc-rows" role="list">
+              {filtered.map((d) => (
+                <DocumentRow key={d.id} doc={d} />
+              ))}
+            </ul>
+          </div>
         )}
       </div>
     </div>
@@ -294,26 +320,24 @@ export function DocumentsTable({ documents, limit, showExport = false }: Props) 
 }
 
 /**
- * One document, one card. Every datum gets its OWN row and every card shares
- * the same grid template, so the values line up vertically down the list:
+ * One document, one single-line card-row. Every datum gets its OWN vertical
+ * COLUMN, and every row is a `grid-template-columns: subgrid` item of the one
+ * `.dc-table` grid, so the columns are sized once, from the content of the
+ * whole list, and every card's cells start at exactly the same x - including
+ * the header row above them:
  *
- *   line 1   type chip + client name .... status pill .... amount
- *   line 2   subject, on a line of its own
- *   then     a labelled <dl>, ONE datum per row:
- *              תאריך        05.07.2026
- *              מספר         #90004
- *              מספר הקצאה   187025961      (only when the doc has one)
- *              נשלח במייל   [icon] נשלח ב-05.07.2026 / [icon] לא נשלח
- *            with the actions pinned at the card's bottom-left.
+ *   סוג | לקוח | נושא | תאריך | מספר | מספר הקצאה | נשלח | סטטוס | סכום | ⋯
  *
- * The label column is a fixed rem width, so the values start at the same x in
- * every card, not just within one card.
+ * Subgrid is what makes this both a real table AND a stack of separate white
+ * cards: fixed rem widths per column would have to be guessed against the
+ * widest possible Hebrew label, whereas subgrid tracks size themselves to the
+ * actual data and stay shared across every card.
  *
  * The whole card is clickable via a stretched link on the client name (rather
  * than an onClick on a div), which keeps it reachable by keyboard and
  * announced as a link, while the action buttons sit above the overlay.
  */
-function DocumentCard({ doc: d }: { doc: InvoiceDocument }) {
+function DocumentRow({ doc: d }: { doc: InvoiceDocument }) {
   const unpaidDays =
     d.status === "sent" && d.type !== "receipt" && d.type !== "tax_invoice_receipt"
       ? Math.floor((Date.now() - new Date(d.date).getTime()) / (1000 * 60 * 60 * 24))
@@ -321,71 +345,85 @@ function DocumentCard({ doc: d }: { doc: InvoiceDocument }) {
   const emailed = Boolean(d.emailedAt);
   // מספר הקצאה, the Tax Authority allocation number (חשבונית ישראל). Set on
   // tax invoices above the annual threshold, either by the gov API integration
-  // or by hand; most documents don't have one, so the row is conditional.
+  // or by hand. Most documents have none, but the CELL is always rendered (a
+  // muted hyphen) so the column keeps its width and the grid stays symmetric.
   const allocation = d.allocationNumber?.trim();
+  const subject = d.subject?.trim();
 
   return (
-    <li className="dc-card" data-type={d.type} data-status={d.status}>
-      <div className="dc-who">
+    <li className="dc-row" data-type={d.type} data-status={d.status}>
+      <span className="dc-cell" data-col="type">
         <span className="dc-chip">
           <i className="dc-tdot" data-type={d.type} aria-hidden="true" />
           {DOCUMENT_TYPE_LABELS[d.type]}
         </span>
-        <Link href={`/documents/${d.id}`} className="dc-name">
+      </span>
+
+      <span className="dc-cell" data-col="client">
+        <Link href={`/documents/${d.id}`} className="dc-name" title={d.clientName}>
           {d.clientName}
         </Link>
-      </div>
+      </span>
 
-      <div className="dc-state">
+      <span className="dc-cell" data-col="subj">
+        <span className="dc-subj" title={subject || undefined}>
+          {subject || "-"}
+        </span>
+      </span>
+
+      <span className="dc-cell" data-col="date" data-label="תאריך">
+        <span className="dc-val">{formatDate(d.date)}</span>
+      </span>
+
+      <span className="dc-cell" data-col="number" data-label="מספר">
+        <span className="dc-num">#{d.number}</span>
+      </span>
+
+      <span className="dc-cell" data-col="alloc" data-label="הקצאה">
+        {allocation ? (
+          <span className="dc-val">{allocation}</span>
+        ) : (
+          <span className="dc-none" aria-hidden="true">
+            -
+          </span>
+        )}
+      </span>
+
+      <span className="dc-cell" data-col="mail">
+        <span className="dc-mail" data-sent={emailed ? "1" : undefined}>
+          {emailed ? (
+            <MailCheck className="dc-mailicon" aria-hidden="true" />
+          ) : (
+            <Mail className="dc-mailicon" aria-hidden="true" />
+          )}
+          <span className="dc-mailtxt" aria-hidden="true">
+            {emailed ? "נשלח" : "לא נשלח"}
+          </span>
+          <span className="sr-only">
+            {emailed ? `נשלח במייל ב-${formatDate(d.emailedAt!)}` : "לא נשלח במייל"}
+          </span>
+        </span>
+      </span>
+
+      <span className="dc-cell" data-col="status">
         <span className="dc-pill" data-status={d.status}>
           <i className="dc-pilldot" aria-hidden="true" />
           {DOCUMENT_STATUS_LABELS[d.status]}
         </span>
         {unpaidDays >= OVERDUE_DAYS && (
-          <span className="dc-note">{unpaidDays} ימים ללא תשלום</span>
-        )}
-      </div>
-
-      <div className="dc-amount">{formatCurrency(d.total)}</div>
-
-      <div className="dc-subj">{d.subject || "ללא נושא"}</div>
-
-      <dl className="dc-data">
-        <dt className="dc-dt">תאריך</dt>
-        <dd className="dc-dd">
-          <span className="dc-val">{formatDate(d.date)}</span>
-        </dd>
-
-        <dt className="dc-dt">מספר</dt>
-        <dd className="dc-dd">
-          <span className="dc-num">#{d.number}</span>
-        </dd>
-
-        {allocation && (
-          <>
-            <dt className="dc-dt">מספר הקצאה</dt>
-            <dd className="dc-dd">
-              <span className="dc-val">{allocation}</span>
-            </dd>
-          </>
-        )}
-
-        <dt className="dc-dt">נשלח במייל</dt>
-        <dd className="dc-dd">
-          <span className="dc-mailv" data-sent={emailed ? "1" : undefined}>
-            {emailed ? (
-              <MailCheck className="dc-mailicon" aria-hidden="true" />
-            ) : (
-              <Mail className="dc-mailicon" aria-hidden="true" />
-            )}
-            {emailed ? `נשלח ב-${formatDate(d.emailedAt!)}` : "לא נשלח"}
+          <span className="dc-note" title={`${unpaidDays} ימים ללא תשלום`}>
+            {unpaidDays} ימים<span className="dc-tail"> ללא תשלום</span>
           </span>
-        </dd>
-      </dl>
+        )}
+      </span>
 
-      <div className="dc-acts">
+      <span className="dc-cell" data-col="amount">
+        {formatCurrency(d.total)}
+      </span>
+
+      <span className="dc-cell" data-col="acts">
         <RowActions doc={d} />
-      </div>
+      </span>
     </li>
   );
 }
@@ -499,7 +537,13 @@ function RowActions({ doc }: { doc: InvoiceDocument }) {
   );
 }
 
-function SortChip({
+/**
+ * A column label that is also the sort control for that column, so sorting
+ * lives where the data is instead of in a separate chip strip. Inactive
+ * columns still show the up/down glyph (at low opacity) so it is discoverable
+ * that the label is clickable at all.
+ */
+function SortLabel({
   label,
   sortKey,
   currentKey,
@@ -529,7 +573,7 @@ function SortChip({
       title={hint}
     >
       {label}
-      <Icon className="w-3.5 h-3.5" aria-hidden="true" />
+      <Icon className="dc-sorticon" aria-hidden="true" />
     </button>
   );
 }
