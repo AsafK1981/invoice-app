@@ -1,6 +1,6 @@
 /**
  * LogoV2, the gold "document" mark (from icon-app.svg) + "חשבונית"
- * wordmark in Heebo gold, with a small "סופר ידידותית"
+ * wordmark in Heebo gold, with a small "ידידותית"
  * kicker. Two variants:
  *   - "full" (default): mark + wordmark + kicker
  *   - "mark": just the gold document mark
@@ -12,7 +12,7 @@
  *
  * ACCESSIBLE NAME: the mark is decorative (`aria-hidden`), so the text
  * carries the name. The "full" variant gets it from the wordmark plus a
- * `.v2-sr` space that keeps "חשבונית סופר ידידותית" from concatenating
+ * `.v2-sr` space that keeps "חשבונית ידידותית" from concatenating
  * into one word in `textContent`. The "mark" variant has no visible text,
  * so it renders `srText`, which is also what gives a wrapping <a> a real
  * accessible name instead of just its href.
@@ -71,7 +71,7 @@ function Mark({ small }: { small?: boolean }) {
 export default function LogoV2({
   variant = "full",
   className,
-  srText = "חשבונית סופר ידידותית",
+  srText = "חשבונית ידידותית",
 }: LogoV2Props) {
   if (variant === "mark") {
     return (
@@ -88,10 +88,10 @@ export default function LogoV2({
       <span className="v2-logo-text">
         <span className="v2-logo-word v2-gold">חשבונית</span>
         {/* Carries the word break between the two stacked lines: without it
-            textContent reads "חשבוניתסופר ידידותית". Absolutely positioned,
+            textContent reads "חשבוניתידידותית". Absolutely positioned,
             so it leaves the flex column and the two-line visual is unchanged. */}
         <span className="v2-sr"> </span>
-        <span className="v2-logo-sub">סופר ידידותית</span>
+        <span className="v2-logo-sub">ידידותית</span>
       </span>
     </span>
   );

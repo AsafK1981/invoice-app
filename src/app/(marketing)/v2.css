@@ -309,7 +309,7 @@
   letter-spacing: -0.01em;
 }
 /* nowrap: at 360px the header flex row squeezed the wordmark column until
-   "סופר ידידותית" broke onto two lines, turning the two-line logo into three
+   "ידידותית" broke onto two lines, turning the two-line logo into three
    and growing the header. The kicker must always be one line. */
 .v2-theme .v2-logo-sub {
   font-family: "Assistant", var(--font-assistant), system-ui, sans-serif;
@@ -322,7 +322,7 @@
 }
 /* Visually hidden, still read aloud and still part of textContent.
    Two jobs in the logo: it carries the space between the stacked
-   "חשבונית" / "סופר ידידותית" lines (otherwise they concatenate into one
+   "חשבונית" / "ידידותית" lines (otherwise they concatenate into one
    word for screen readers and crawlers), and it supplies the link text for
    the mark-only footer logo, which has no visible text of its own.
    `position:absolute` keeps it out of the flex column, so the two-line

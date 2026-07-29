@@ -246,7 +246,7 @@ export default function MarketingLanding() {
                     <div className="v2-sh-sig">מסמך זה הופק אלקטרונית</div>
                     <div className="v2-sh-brand">
                       הופק באמצעות{" "}
-                      <Ltr>MySuperFriendlyInvoiceApp</Ltr>
+                      <Ltr>MyFriendlyInvoiceApp</Ltr>
                     </div>
                   </div>
                 </article>

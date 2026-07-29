@@ -234,7 +234,7 @@ export default function ClientStatementPage({
         </section>
 
         <footer className="text-xs text-stone-500 text-center mt-6 pt-4 border-t border-stone-200">
-          הופק ממערכת MySuperFriendlyInvoiceApp · {formatDate(today)}
+          הופק ממערכת MyFriendlyInvoiceApp · {formatDate(today)}
         </footer>
       </div>
     </div>

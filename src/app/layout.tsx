@@ -73,8 +73,8 @@ export const metadata: Metadata = {
     ? { verification: { google: GOOGLE_SITE_VERIFICATION } }
     : {}),
   title: {
-    default: "MySuperFriendlyInvoiceApp - חשבוניות וקבלות בלי כאב ראש",
-    template: "%s | MySuperFriendlyInvoiceApp",
+    default: "MyFriendlyInvoiceApp - חשבוניות וקבלות בלי כאב ראש",
+    template: "%s | MyFriendlyInvoiceApp",
   },
   description:
     "אפליקציית חשבוניות לעצמאיים. הפק קבלות, חשבונות עסקה וחשבוניות מס במהירות. שליחה במייל, ניהול לקוחות, דשבורד עם גרפים.",
@@ -102,8 +102,8 @@ export const metadata: Metadata = {
     type: "website",
     locale: "he_IL",
     url: SITE_URL,
-    siteName: "MySuperFriendlyInvoiceApp",
-    title: "MySuperFriendlyInvoiceApp - חשבוניות וקבלות בלי כאב ראש",
+    siteName: "MyFriendlyInvoiceApp",
+    title: "MyFriendlyInvoiceApp - חשבוניות וקבלות בלי כאב ראש",
     description:
       "אפליקציית חשבוניות לעצמאיים. ניהול לקוחות, שליחה במייל, דשבורד עם גרפים.",
     // images intentionally omitted; Next picks up src/app/opengraph-image.tsx
@@ -111,7 +111,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "MySuperFriendlyInvoiceApp - חשבוניות וקבלות בלי כאב ראש",
+    title: "MyFriendlyInvoiceApp - חשבוניות וקבלות בלי כאב ראש",
     description: "אפליקציית חשבוניות לעצמאיים",
     // images: same, file-based generation handles it.
   },

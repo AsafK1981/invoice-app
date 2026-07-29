@@ -191,7 +191,7 @@ export default function MigratePage() {
 
   function whatsappConciergeLink(): string {
     const PHONE = "972549000684";
-    const text = `היי אסף, רציתי לעבור מ-${vendor ? VENDOR_META[vendor].name : "תוכנה אחרת"} ל-MySuperFriendlyInvoiceApp. אני שולח את הקבצים שיצאתי, ואשמח אם תעזור לי לייבא אותם.`;
+    const text = `היי אסף, רציתי לעבור מ-${vendor ? VENDOR_META[vendor].name : "תוכנה אחרת"} ל-MyFriendlyInvoiceApp. אני שולח את הקבצים שיצאתי, ואשמח אם תעזור לי לייבא אותם.`;
     return `https://wa.me/${PHONE}?text=${encodeURIComponent(text)}`;
   }
 

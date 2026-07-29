@@ -90,7 +90,7 @@ export default function V2VsIndex() {
             <article key={c.slug} className="v2-vs-card">
               <h2>
                 <Link href={`/vs/${c.slug}`} className="v2-card-link">
-                  <span className="v2-gold">חשבונית סופר ידידותית</span> מול{" "}
+                  <span className="v2-gold">חשבונית ידידותית</span> מול{" "}
                   <LtrText text={c.name} />
                 </Link>
               </h2>

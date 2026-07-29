@@ -437,7 +437,7 @@ export function DocumentBody({
         </div>
         <div className="doc-foot-brand">
           הופק באמצעות{" "}
-          <Ltr>MySuperFriendlyInvoiceApp · {CANONICAL_HOST}</Ltr>
+          <Ltr>MyFriendlyInvoiceApp · {CANONICAL_HOST}</Ltr>
         </div>
       </div>
     </>

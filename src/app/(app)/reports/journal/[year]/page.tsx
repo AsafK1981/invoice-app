@@ -280,7 +280,7 @@ export default function YearJournalPage({ params }: { params: Promise<{ year: st
         </section>
 
         <footer className="text-xs text-stone-500 text-center mt-8 pt-4 border-t border-stone-200">
-          הופק ב-{formatDate(todayInIsrael())} ממערכת MySuperFriendlyInvoiceApp
+          הופק ב-{formatDate(todayInIsrael())} ממערכת MyFriendlyInvoiceApp
         </footer>
       </div>
     </div>

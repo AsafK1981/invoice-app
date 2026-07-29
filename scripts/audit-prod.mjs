@@ -175,10 +175,17 @@ async function checkAuthConfig() {
   ]) {
     const v = c[k];
     if (v) {
-      const hasName = /MySuperFriendlyInvoiceApp/i.test(v);
+      const hasName = /MyFriendlyInvoiceApp/i.test(v);
+      // The old brand surviving here means the remote Supabase template was
+      // never re-pushed after the rename (scripts/update-email-templates.mjs).
+      const hasStaleName = /MySuperFriendlyInvoiceApp/i.test(v);
       console.log(
         k + ":",
-        hasName ? "has MySuperFriendlyInvoiceApp" : "missing brand",
+        hasStaleName
+          ? "STALE — still says MySuperFriendlyInvoiceApp"
+          : hasName
+            ? "has MyFriendlyInvoiceApp"
+            : "missing brand",
         "len=" + v.length
       );
     } else {

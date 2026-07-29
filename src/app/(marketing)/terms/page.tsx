@@ -43,7 +43,7 @@ export default function V2TermsPage() {
             <section>
               <h2>1. השירות</h2>
               <p>
-                MySuperFriendlyInvoiceApp הוא כלי לניהול חשבוניות וקבלות
+                MyFriendlyInvoiceApp הוא כלי לניהול חשבוניות וקבלות
                 לעצמאיים. השירות ניתן באופן "כפי שהוא" (AS-IS).
               </p>
             </section>

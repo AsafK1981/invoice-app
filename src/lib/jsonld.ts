@@ -12,8 +12,15 @@ import { CANONICAL_ORIGIN, absoluteUrl } from "@/lib/public-url";
  * result misbehaves.
  */
 
-export const APP_NAME = "MySuperFriendlyInvoiceApp";
-export const APP_NAME_HE = "חשבונית סופר ידידותית";
+export const APP_NAME = "MyFriendlyInvoiceApp";
+export const APP_NAME_HE = "חשבונית ידידותית";
+
+/**
+ * Pre-2026-07-29 brand. Kept as an alternateName so the existing search-result
+ * association survives the rename; drop once the new name has been indexed.
+ */
+const LEGACY_APP_NAME = "MySuperFriendlyInvoiceApp";
+const LEGACY_APP_NAME_HE = "חשבונית סופר ידידותית";
 
 const ORG_ID = `${CANONICAL_ORIGIN}/#organization`;
 const SITE_ID = `${CANONICAL_ORIGIN}/#website`;
@@ -25,7 +32,7 @@ export function organization(): JsonLdNode {
     "@type": "Organization",
     "@id": ORG_ID,
     name: APP_NAME_HE,
-    alternateName: APP_NAME,
+    alternateName: [APP_NAME, LEGACY_APP_NAME_HE, LEGACY_APP_NAME],
     url: CANONICAL_ORIGIN,
     logo: { "@type": "ImageObject", url: absoluteUrl("/logo-v2.svg") },
   };
@@ -52,6 +59,7 @@ export function softwareApplication(): JsonLdNode {
     "@type": "SoftwareApplication",
     "@id": `${CANONICAL_ORIGIN}/#app`,
     name: APP_NAME,
+    alternateName: LEGACY_APP_NAME,
     applicationCategory: "FinanceApplication",
     operatingSystem: "Web, iOS, Android (PWA)",
     inLanguage: "he-IL",

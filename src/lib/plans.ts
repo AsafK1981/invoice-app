@@ -1,5 +1,5 @@
 /**
- * Pricing plans for MySuperFriendlyInvoiceApp.
+ * Pricing plans for MyFriendlyInvoiceApp.
  *
  * Two tiers (Option A from competitor research):
  *   - Basic: ₪15/mo  (₪149/yr)  ·  30 docs · 1 business · 10 clients

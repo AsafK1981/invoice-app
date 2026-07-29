@@ -245,7 +245,7 @@ export function ComparisonViewV2({ competitor }: { competitor: Competitor }) {
                     <th className="col us">
                       חשבונית{" "}
                       <br />
-                      סופר ידידותית
+                      ידידותית
                     </th>
                     <th className="col">
                       <LtrText text={competitor.name} />

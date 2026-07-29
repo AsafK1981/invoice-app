@@ -17,12 +17,12 @@ function buildWelcomeHtml(): string {
     <div dir="rtl" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Heebo, Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; color: #1c1917; background: #fff7ed; border-radius: 16px;">
       <div style="text-align: center; margin-bottom: 24px;">
         <div style="display:inline-block;background:linear-gradient(135deg,#fb923c,#f43f5e);color:#fff;padding:14px 22px;border-radius:18px;font-weight:700;font-size:16px;">
-          MySuperFriendlyInvoiceApp
+          MyFriendlyInvoiceApp
         </div>
       </div>
       <h1 style="color:#1c1917;font-size:22px;margin:0 0 12px;">ברוך/ה הבא/ה! 🎉</h1>
       <p style="color:#44403c;font-size:15px;line-height:1.6;margin:0 0 16px;">
-        תודה שנרשמת ל-MySuperFriendlyInvoiceApp, אפליקציה אישית להפקת חשבוניות וקבלות לעצמאיים בישראל.
+        תודה שנרשמת ל-MyFriendlyInvoiceApp, אפליקציה אישית להפקת חשבוניות וקבלות לעצמאיים בישראל.
       </p>
       <p style="color:#44403c;font-size:15px;line-height:1.6;margin:0 0 16px;">
         מה אפשר לעשות מכאן:
@@ -82,9 +82,9 @@ export async function POST(req: NextRequest) {
 
   try {
     await transporter.sendMail({
-      from: `"MySuperFriendlyInvoiceApp" <${GMAIL_USER}>`,
+      from: `"MyFriendlyInvoiceApp" <${GMAIL_USER}>`,
       to: user.email,
-      subject: "ברוך הבא ל-MySuperFriendlyInvoiceApp 🎉",
+      subject: "ברוך הבא ל-MyFriendlyInvoiceApp 🎉",
       html: buildWelcomeHtml(),
       replyTo: GMAIL_USER,
     });

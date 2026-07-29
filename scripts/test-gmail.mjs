@@ -23,7 +23,7 @@ const transporter = nodemailer.createTransport({
 console.log(`Testing Gmail SMTP for ${env.GMAIL_USER}...`);
 
 const info = await transporter.sendMail({
-  from: `MySuperFriendlyInvoiceApp <${env.GMAIL_USER}>`,
+  from: `MyFriendlyInvoiceApp <${env.GMAIL_USER}>`,
   to: env.GMAIL_USER,
   subject: "✅ Gmail SMTP test - הכל עובד",
   html: `

@@ -111,7 +111,7 @@ export default function InviteLandingPage() {
           <>
             <div className="rounded-2xl bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-100 p-5 space-y-2">
               <p className="text-sm text-stone-800 leading-relaxed">
-                ברוך הבא ל-<strong>MySuperFriendlyInvoiceApp</strong>, אפליקציה
+                ברוך הבא ל-<strong>MyFriendlyInvoiceApp</strong>, אפליקציה
                 להפקת חשבוניות וקבלות לעצמאיים.
               </p>
               <p className="text-sm text-stone-700 leading-relaxed">

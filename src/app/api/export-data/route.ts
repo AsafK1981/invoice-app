@@ -100,7 +100,7 @@ function serializeUser(user: { id: string; email?: string; created_at?: string; 
 
 function jsonDownload(payload: unknown) {
   const body = JSON.stringify(payload, null, 2);
-  const filename = `mysuperfriendlyinvoiceapp-export-${new Date().toISOString().slice(0, 10)}.json`;
+  const filename = `myfriendlyinvoiceapp-export-${new Date().toISOString().slice(0, 10)}.json`;
   return new NextResponse(body, {
     headers: {
       "Content-Type": "application/json; charset=utf-8",

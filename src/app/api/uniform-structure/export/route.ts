@@ -168,6 +168,7 @@ export async function GET(req: NextRequest) {
     taxYear,
     fromDate,
     toDate,
+    // Registered name at רשות המסים — not the display brand. See builder.ts.
     softwareName: "MySuperFriendlyInvoiceApp",
     softwareVersion: "1.0",
     softwareVendorName: "Asaf Kotler",

@@ -71,7 +71,7 @@ export function Sidebar() {
             </div>
           )}
           <div className="min-w-0">
-            <h1 className="text-sm font-bold text-stone-900 leading-tight">MySuperFriendly<br/>InvoiceApp</h1>
+            <h1 className="text-sm font-bold text-stone-900 leading-tight">MyFriendly<br/>InvoiceApp</h1>
             <p className="text-xs text-stone-600 truncate">{business.name}</p>
           </div>
         </div>
@@ -136,7 +136,7 @@ export function Sidebar() {
           href={(() => {
             const PHONE = "972549000684"; // +972 549000684 (international format)
             const where = typeof window !== "undefined" ? window.location.href : "";
-            const text = `היי אסף, מצאתי משהו ב-MySuperFriendlyInvoiceApp:\n\n[תאר כאן את הבעיה]\n\nבעמוד: ${where}`;
+            const text = `היי אסף, מצאתי משהו ב-MyFriendlyInvoiceApp:\n\n[תאר כאן את הבעיה]\n\nבעמוד: ${where}`;
             return `https://wa.me/${PHONE}?text=${encodeURIComponent(text)}`;
           })()}
           target="_blank"

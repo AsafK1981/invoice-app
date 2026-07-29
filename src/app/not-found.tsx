@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Compass, ArrowLeft } from "lucide-react";
 
 export const metadata = {
-  title: "העמוד לא נמצא · MySuperFriendlyInvoiceApp",
+  title: "העמוד לא נמצא · MyFriendlyInvoiceApp",
 };
 
 export default function NotFound() {

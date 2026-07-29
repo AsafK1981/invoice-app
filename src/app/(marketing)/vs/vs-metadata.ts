@@ -29,7 +29,7 @@ export function vsMetadata(opts: {
     openGraph: {
       type: "website",
       locale: "he_IL",
-      siteName: "MySuperFriendlyInvoiceApp",
+      siteName: "MyFriendlyInvoiceApp",
       url: path,
       title,
       description,

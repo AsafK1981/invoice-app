@@ -129,7 +129,7 @@ function LoginForm() {
           <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center mx-auto shadow-xl shadow-orange-200/50 btn-glow">
             <Sparkles className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-xl font-bold text-stone-900 mt-4">MySuperFriendlyInvoiceApp</h1>
+          <h1 className="text-xl font-bold text-stone-900 mt-4">MyFriendlyInvoiceApp</h1>
           <p className="text-sm text-stone-600 mt-1">{titles[mode]}</p>
         </div>
 

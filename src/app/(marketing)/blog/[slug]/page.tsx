@@ -45,7 +45,7 @@ export async function generateMetadata({
   const url = `${BASE}/blog/${post.slug}`;
 
   return {
-    title: `${post.title} | חשבונית סופר ידידותית`,
+    title: `${post.title} | חשבונית ידידותית`,
     description: post.description,
     alternates: { canonical: `/blog/${post.slug}` },
     // REVIEW-FIRST: drafts must never be indexed. Flip published:true in

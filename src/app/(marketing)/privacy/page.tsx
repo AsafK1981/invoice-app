@@ -43,7 +43,7 @@ export default function V2PrivacyPage() {
             <section>
               <h2>1. איזה מידע אנחנו אוספים</h2>
               <p>
-                כשאתה משתמש ב-MySuperFriendlyInvoiceApp אנחנו אוספים: כתובת
+                כשאתה משתמש ב-MyFriendlyInvoiceApp אנחנו אוספים: כתובת
                 אימייל וסיסמה (להתחברות), פרטי העסק שלך, פרטי הלקוחות שאתה מוסיף,
                 מסמכים שאתה מפיק, והוצאות שאתה מתעד.
               </p>

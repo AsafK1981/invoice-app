@@ -11,7 +11,7 @@ if (!TOKEN || !REF) {
   process.exit(1);
 }
 
-const APP_NAME = "MySuperFriendlyInvoiceApp";
+const APP_NAME = "MyFriendlyInvoiceApp";
 const APP_URL = "https://mysuperfriendlyinvoiceapp.vercel.app";
 
 const confirmationHtml = `

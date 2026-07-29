@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
-export const alt = "MySuperFriendlyInvoiceApp - חשבוניות וקבלות בלי כאב ראש";
+export const alt = "MyFriendlyInvoiceApp - חשבוניות וקבלות בלי כאב ראש";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -86,7 +86,7 @@ export default async function OpengraphImage() {
             display: "flex",
           }}
         >
-          MySuperFriendlyInvoiceApp
+          MyFriendlyInvoiceApp
         </div>
         <div
           style={{

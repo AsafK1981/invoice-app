@@ -171,7 +171,7 @@ export async function downloadFullBackupZip(input: BackupInput): Promise<void> {
   zip.file(
     "README.txt",
     [
-      `גיבוי MySuperFriendlyInvoiceApp`,
+      `גיבוי MyFriendlyInvoiceApp`,
       `עסק: ${input.business.name}`,
       `יוצא בתאריך: ${date}`,
       ``,

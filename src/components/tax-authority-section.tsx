@@ -231,7 +231,7 @@ export function TaxAuthoritySection() {
             <div>
               <p className="font-semibold text-stone-900">בקרוב: האפליקציה בתהליך רישום ברשות המסים</p>
               <p className="text-stone-700 mt-1">
-                התשתית מוכנה. ברגע שהרישום של MySuperFriendlyInvoiceApp כבית-תוכנה יושלם, יופיע
+                התשתית מוכנה. ברגע שהרישום של MyFriendlyInvoiceApp כבית-תוכנה יושלם, יופיע
                 כפתור "חיבור" כאן.
               </p>
             </div>

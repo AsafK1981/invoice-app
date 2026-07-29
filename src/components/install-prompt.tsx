@@ -107,7 +107,7 @@ export function InstallPrompt() {
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-stone-900 text-sm">להתקין את האפליקציה?</p>
           <p className="text-xs text-stone-600 mt-1">
-            הוסף את MySuperFriendlyInvoiceApp למסך הבית לגישה מהירה כמו אפליקציה רגילה.
+            הוסף את MyFriendlyInvoiceApp למסך הבית לגישה מהירה כמו אפליקציה רגילה.
           </p>
           <div className="flex gap-2 mt-3 flex-wrap">
             <button

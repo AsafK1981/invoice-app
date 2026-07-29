@@ -6,9 +6,9 @@ const competitor = COMPETITORS.ifreelance;
 
 export const metadata = vsMetadata({
   path: "/vs/ifreelance",
-  title: "חשבונית סופר ידידותית vs iFreelance: השוואת מחירים ופיצ׳רים (2026)",
+  title: "חשבונית ידידותית vs iFreelance: השוואת מחירים ופיצ׳רים (2026)",
   description:
-    "השוואה הוגנת בין חשבונית סופר ידידותית ל-iFreelance: מחירים, פיצ׳רים, יתרונות וחסרונות של כל אחד. ₪19-26 לחודש לעומת ₪15-25 שלנו, אבל עם UX מודרני יותר.",
+    "השוואה הוגנת בין חשבונית ידידותית ל-iFreelance: מחירים, פיצ׳רים, יתרונות וחסרונות של כל אחד. ₪19-26 לחודש לעומת ₪15-25 שלנו, אבל עם UX מודרני יותר.",
   keywords: [
     "iFreelance השוואה",
     "חלופה ל-iFreelance",

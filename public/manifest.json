@@ -1,7 +1,7 @@
 {
-  "name": "MySuperFriendlyInvoiceApp",
+  "name": "MyFriendlyInvoiceApp",
   "short_name": "Invoices",
-  "description": "The super friendly way to manage invoices and receipts",
+  "description": "The friendly way to manage invoices and receipts",
   "start_url": "/dashboard",
   "display": "standalone",
   "background_color": "#f7f4ed",

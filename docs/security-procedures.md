@@ -1,4 +1,4 @@
-# Information Security Procedures — MySuperFriendlyInvoiceApp
+# Information Security Procedures — MyFriendlyInvoiceApp
 
 This document fulfils sections §9–§22 of the Israel Tax Authority
 information-security appendix that every approved software house signs

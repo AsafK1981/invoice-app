@@ -14,7 +14,7 @@ export default function FooterV2() {
             from LogoV2's `.v2-sr` string rather than an aria-label, an
             anchor whose only content is an image used to expose just "/". */}
         <Link href="/">
-          <LogoV2 variant="mark" srText="חשבונית סופר ידידותית, לדף הבית" />
+          <LogoV2 variant="mark" srText="חשבונית ידידותית, לדף הבית" />
         </Link>
         <nav className="v2-footer-links">
           <Link href="/terms">תנאי שימוש</Link>

@@ -15,7 +15,7 @@ import {
 } from "@/lib/jsonld";
 
 export const metadata: Metadata = {
-  title: "מגזין | חשבונית סופר ידידותית",
+  title: "מגזין | חשבונית ידידותית",
   description:
     "מדריכים פשוטים לעצמאים בישראל: עוסק פטור ומורשה, מספר הקצאה, רפורמת חשבונית ישראל, והוצאת חשבוניות כחוק, בשפה ברורה, בלי ז׳רגון.",
   alternates: { canonical: "/blog" },

@@ -20,7 +20,7 @@ import { COMPETITORS } from "@/lib/comparison-data";
  * sees NEVER EXISTS as a string in the source, so grep, string search, diff
  * review and every existing test were structurally blind to it: only the
  * browser's JOINED `textContent` is wrong. The same structural blindness in
- * its missing-space form produced "חשבוניתסופר ידידותית" in the logo wordmark
+ * its missing-space form produced "חשבוניתידידותית" in the logo wordmark
  * (fixed in f7b330c). Both are caught here by asserting the joined text.
  *
  * ── Why renderToStaticMarkup and not jsdom / .next HTML ──────────────────
@@ -68,7 +68,7 @@ vi.mock("next/navigation", () => ({
   notFound: () => {},
 }));
 
-const APP_NAME = "חשבונית סופר ידידותית";
+const APP_NAME = "חשבונית ידידותית";
 
 /** JSON-LD and CSS are machine-read, not page copy. */
 function stripNonText(html: string): string {
@@ -193,7 +193,7 @@ describe("marketing pages: joined heading text", () => {
   });
 
   it("the feature-matrix 'us' <th> joins to the full app name", async () => {
-    // Authored as "חשבונית" + <br /> + "סופר ידידותית", the exact shape that
+    // Authored as "חשבונית" + <br /> + "ידידותית", the exact shape that
     // silently loses its space.
     for (const c of Object.values(COMPETITORS)) {
       const ths = headings(await pageHtml(`/vs/${c.slug}`))
@@ -214,7 +214,7 @@ describe("marketing pages: joined heading text", () => {
 });
 
 describe("marketing pages: brand wordmark", () => {
-  it("the logo wordmark joins to 'חשבונית סופר ידידותית', not 'חשבוניתסופר…'", async () => {
+  it("the logo wordmark joins to 'חשבונית ידידותית', not 'חשבוניתידידותית'", async () => {
     const { default: LogoV2 } = await import("../src/app/(marketing)/components/LogoV2");
     const full = toText(renderToStaticMarkup(createElement(LogoV2))).trim();
     expect(full).toBe(APP_NAME);

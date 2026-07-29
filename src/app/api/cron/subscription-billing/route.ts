@@ -478,7 +478,7 @@ async function sendFailureEmail(
 <body style="margin:0;padding:0;background:#f5f5f4;font-family:Arial,sans-serif;">
   <div dir="rtl" style="max-width:600px;margin:0 auto;padding:20px;">
     <div style="background:linear-gradient(135deg,#f97316,#e11d48);padding:24px;border-radius:16px;color:white;text-align:center;margin-bottom:24px;">
-      <h1 style="margin:0;font-size:22px;">My Super Friendly Invoice App</h1>
+      <h1 style="margin:0;font-size:22px;">My Friendly Invoice App</h1>
     </div>
     <div style="background:#fffaf5;border:1px solid #fed7aa;border-radius:12px;padding:24px;margin-bottom:24px;">
       <p style="margin:0 0 12px 0;font-size:16px;color:#44403c;">שלום,</p>
@@ -503,7 +503,7 @@ ${billingUrl}
 הודעה אוטומטית. אם כבר טיפלת בזה, אפשר להתעלם.`;
 
   await transporter.sendMail({
-    from: `"My Super Friendly Invoice App" <${GMAIL_USER}>`,
+    from: `"My Friendly Invoice App" <${GMAIL_USER}>`,
     to,
     subject,
     html,
