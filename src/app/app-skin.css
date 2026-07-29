@@ -121,6 +121,7 @@ html {
   --dc-void-ink: #9a3520;
   --dc-void-line: #f0d5cd;
   --dc-wait-ink: #7d5a17;
+  --dc-wait-bg: #fbf2da;
 
   /* --- document cards: type dots (6px, decorative, label always present) */
   --dc-t-receipt: #6f9b7f;
@@ -523,20 +524,36 @@ html .gk-etable thead th {
    white rows separated by a gap, pills, no full-row status tint.
 
    HOW THE COLUMNS ALIGN. `.dc-table` is the one and only grid. The header
-   and every card span all its tracks and declare
+   band and every card span all its tracks and declare
    `grid-template-columns: subgrid`, so the tracks are sized ONCE, from the
    content of the whole list, and every card inherits those exact track
    positions. A card still owns its border, background, radius and hover -
    it just does not own its column widths. (A subgrid's own border insets
    only its FIRST and LAST track, never the lines between, so the header
-   carries the same 1px transparent border as the cards and every column
-   starts at the same x in all of them.)
+   carries the same 1px border as the cards and every column starts at the
+   same x in all of them.)
 
-   Why not a fixed rem width per column: it would have to be guessed against
-   the widest Hebrew label that could ever appear ("חשבונית מס/קבלה", a
-   9-digit allocation number), which spends 30-40% of a 1024px layout on
-   air. Subgrid tracks are content-sized, so they are never wider than the
-   data actually is.
+   THE WIDTH BUDGET (rebuilt 2026-07-29 after the subject came out
+   ellipsised with a hand's width of empty space beside it). Only ONE track
+   is flexible: נושא. It is `minmax(0, 1fr)` and every other track is
+   content-sized, so the subject - the longest string on the row - collects
+   ALL the surplus instead of the quarter it used to get from a 2fr/1fr
+   split against the (much shorter) client names. What used to be spent on
+   air is spent on the subject:
+     - מספר הקצאה is not rendered at all for a business that cannot receive
+       one (עוסק פטור) or when nothing in view has one: no header, no cell,
+       no track.
+     - the mail column is a glyph, not a glyph plus "לא נשלח", and its
+       header reads "מייל" (a header label sizes its track too).
+     - the client track is content-sized and capped by `.dc-name`'s
+       max-width, so it can never hoard.
+
+   EVERY CARD IS THE SAME RECTANGLE. The row height is FIXED (not a
+   min-height); the type chip stretches to its track so all chips are one
+   size; the status pill has a min-width so all pills are one size; the
+   overdue note sits inline after the pill (under it, it made overdue rows
+   taller); and the action block is four fixed slots whether or not a
+   document offers four actions.
 
    Sizes are in `rem` on purpose: the app's root font-size steps 16.5 -> 19.25px
    with viewport width (see GLOBAL TYPE SCALE-UP at the foot of this file) and
@@ -545,11 +562,10 @@ html .gk-etable thead th {
    BREAKPOINTS. The shell is narrowest at 1024, NOT at 768: the 288px sidebar
    appears exactly at 1024 and eats 28% of the window, so 1024-1279 has less
    room than 768-1023 does.
-     >= 1600     all ten columns, "N ימים ללא תשלום" spelled out in full
-     1400-1599   all ten columns, the unpaid note shortened to "N ימים"
-     1280-1399   8 columns: נושא + מספר הקצאה drop out
-     1024-1279   7 columns: נשלח drops too, everything on a diet, ~590px
-     768-1023    8 columns, mail cell icon-only (no sidebar, so more room)
+     >= 1400     every column, subject at its roomiest
+     1280-1399   9 columns: מספר הקצאה never appears at this width
+     1024-1279   8 columns: מייל drops too, everything on a diet
+     768-1023    9 columns (no sidebar, so more room than 1024-1279)
      <= 767.98   no columns at all - the row stacks into a phone card
    ===================================================================== */
 
@@ -557,29 +573,41 @@ html .gk-etable thead th {
    three host pages wrap it in; that is what makes a white row read as a card. */
 html .dc-shell {
   background: var(--bg);
-  padding: 0.85rem;
+  padding: 0.7rem;
 }
 
 /* ---- the one grid ----
-   Eight content-sized tracks and two flexible ones (לקוח, נושא). The client
-   name gets the larger share of the leftover because it is the row's
-   headline; both flexible tracks carry `minmax(0, ...)` so they shrink past
-   their content and ellipsise instead of pushing the row wide. */
+   Eight content-sized tracks and exactly one flexible one (נושא), which is
+   therefore the column that grows with the window. */
 html .dc-table {
   display: grid;
   grid-template-columns:
     auto /* סוג */
-    minmax(4.5rem, 2fr) /* לקוח */
-    minmax(2.5rem, 1fr) /* נושא */
+    auto /* לקוח, capped by .dc-name's max-width */
+    minmax(0, 1fr) /* נושא - takes every spare pixel */
     auto /* תאריך */
     auto /* מספר */
-    auto /* מספר הקצאה */
-    auto /* נשלח במייל */
+    auto /* מייל */
     auto /* סטטוס */
     auto /* סכום */
     auto; /* actions */
   column-gap: 0.55rem;
-  row-gap: 0.45rem;
+  row-gap: 0.35rem;
+}
+/* The only list that still has a מספר הקצאה column: a business that can
+   receive one AND has at least one in view. */
+html .dc-table[data-alloc] {
+  grid-template-columns:
+    auto /* סוג */
+    auto /* לקוח */
+    minmax(0, 1fr) /* נושא */
+    auto /* תאריך */
+    auto /* מספר */
+    auto /* מספר הקצאה */
+    auto /* מייל */
+    auto /* סטטוס */
+    auto /* סכום */
+    auto; /* actions */
 }
 /* The <ul> exists for semantics only; the <li>s must be direct grid items of
    `.dc-table` for subgrid to reach them. `role="list"` on the element keeps
@@ -596,24 +624,57 @@ html .dc-row {
   border: 1px solid transparent;
 }
 
-/* ---- header row ---- */
+/* ---- the header band ----
+   A deliberate object, not four grey words floating over the list: a warm
+   gold-tinted bar the width of the list, the cards' radius, a crisp gold
+   hairline under it (as a shadow, so it costs no layout and cannot shift a
+   column), and labels in confident ink rather than the washed-out muted
+   grey they were. */
 html .dc-head {
-  padding: 0.1rem 0 0.5rem;
-  font-size: 0.76rem;
-  font-weight: 700;
-  color: var(--muted);
+  height: 2.4rem;
+  margin-bottom: 0.35rem;
+  border-radius: 12px;
+  border-color: var(--goldtintline);
+  background: linear-gradient(180deg, #fdfaf2 0%, #f6efdc 100%);
+  box-shadow: 0 1px 0 0 var(--goldline);
 }
 html .dc-head .dc-cell {
   white-space: nowrap;
+  align-self: stretch;
+}
+html .dc-hlabel,
+html .dc-head .dc-sort {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+}
+html .dc-hlabel {
+  height: 100%;
+}
+/* The actions have no data to line up with, so their label is a quieter
+   member of the band: present enough to name the icon column, not loud
+   enough to compete with the columns that carry values. */
+html .dc-head .dc-cell[data-col="acts"] {
+  /* the four action slots fill the cell, so the label starts where they do */
+  justify-content: flex-start;
+}
+html .dc-head .dc-cell[data-col="acts"] .dc-hlabel {
+  font-weight: 600;
+  color: var(--muted);
 }
 
-/* ---- one card, one row ---- */
+/* ---- one card, one row ----
+   `height`, not `min-height`: whatever a given document happens to carry,
+   its card is the same rectangle as every other card in the list. */
 html .dc-row {
   position: relative;
-  padding: 0.45rem 0;
+  height: 3rem;
   background: var(--card);
   border-color: var(--line);
-  border-radius: 14px;
+  border-radius: 13px;
   transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
 }
 html .dc-row:hover {
@@ -634,11 +695,11 @@ html .dc-row:focus-within {
 html .dc-cell {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.35rem;
   min-width: 0;
 }
 html .dc-cell[data-col="type"] {
-  padding-inline-start: 0.85rem;
+  padding-inline-start: 0.8rem;
 }
 html .dc-cell[data-col="acts"] {
   padding-inline-end: 0.5rem;
@@ -648,12 +709,19 @@ html .dc-cell[data-col="amount"] {
   justify-content: flex-end;
 }
 
-/* ---- סוג: the type chip ---- */
+/* ---- סוג: the type chip ----
+   `flex: 1` makes every chip fill the type track, so the chips are one
+   rectangle down the whole list instead of six different widths. The track
+   is still content-sized, so they are all as wide as the widest LABEL that
+   is actually present - never wider. */
 html .dc-chip {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
-  min-height: 1.45rem;
+  justify-content: center;
+  gap: 0.28rem;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 1.5rem;
   padding: 0 0.45rem;
   border-radius: 8px;
   border: 1px solid var(--goldtintline);
@@ -663,7 +731,6 @@ html .dc-chip {
   font-weight: 600;
   line-height: 1;
   white-space: nowrap;
-  flex: none;
 }
 html .dc-tdot {
   width: 6px;
@@ -682,13 +749,16 @@ html .dc-tdot[data-type="credit_note"] { background: var(--dc-t-credit); }
 /* ---- לקוח: the headline, and the whole row's link ----
    The client name carries the stretched link: the WHOLE row is clickable,
    but the click target is a real <a> so it is keyboard reachable and
-   announced as a link. The action buttons lift above the overlay. */
+   announced as a link. The action buttons lift above the overlay.
+   `max-width` is what caps the (content-sized) client track: without it one
+   very long company name would take the width the subject needs. */
 html .dc-name {
   font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
   font-weight: 700;
-  font-size: 0.92rem;
+  font-size: 0.86rem;
   color: var(--ink);
   min-width: 0;
+  max-width: 9.6rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -697,19 +767,29 @@ html .dc-name::after {
   content: "";
   position: absolute;
   inset: 0;
-  border-radius: 14px;
+  border-radius: 13px;
   z-index: 1;
 }
 html .dc-row:hover .dc-name { color: var(--gold-text); }
 
-/* ---- נושא: the one column allowed to ellipsise (it has a title attr) ---- */
+/* ---- נושא: the widest column on the row, and the one allowed two lines ----
+   Even as the only flexible column, a 50-character sentence does not fit on
+   one 240px line next to eight other columns; on ONE line the user could not
+   read his own subjects, which is the complaint that started this pass. So
+   the subject - and only the subject - wraps, clamped at two lines. The row
+   height is fixed and two lines of 0.74rem still clear it, so a wrapped
+   subject cannot make its card taller than any other card. */
 html .dc-subj {
   min-width: 0;
-  font-size: 0.8rem;
-  color: var(--muted);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: 0.74rem;
+  line-height: 1.3;
+  color: var(--muted);
+  overflow-wrap: anywhere;
 }
 
 /* ---- תאריך / מספר / מספר הקצאה ----
@@ -719,7 +799,7 @@ html .dc-subj {
 html .dc-row .dc-cell[data-col="date"],
 html .dc-row .dc-cell[data-col="number"],
 html .dc-row .dc-cell[data-col="alloc"] {
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   font-weight: 600;
   color: var(--ink2);
   font-variant-numeric: tabular-nums;
@@ -735,19 +815,21 @@ html .dc-num {
   font-weight: 700;
   color: var(--gold-text);
 }
-/* The placeholder for a document with no allocation number. It keeps the
-   column occupied so the grid stays symmetric down the list. */
+/* The placeholder for a document with no allocation number, in a list where
+   some other document has one. */
 html .dc-none {
   color: var(--muted);
   opacity: 0.6;
 }
 
-/* ---- נשלח במייל ---- */
+/* ---- מייל: a glyph, and only a glyph, once there are columns ----
+   The word cost ~45px of every row for something the icon already says (and
+   the cell carries both a title and screen-reader text). */
 html .dc-mail {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  font-size: 0.76rem;
+  font-size: 0.74rem;
   font-weight: 600;
   color: var(--muted);
   white-space: nowrap;
@@ -758,17 +840,24 @@ html .dc-mailicon {
   height: 0.95rem;
   flex: none;
 }
+html .dc-mailtxt {
+  display: none;
+}
 
-/* ---- סטטוס: pill, plus the "unpaid for N days" note beside it ---- */
+/* ---- סטטוס: pill, plus the "unpaid for N days" note beside it ----
+   `min-width` on the pill: four different Hebrew words must not produce four
+   different rectangles. */
 html .dc-pill {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.3rem;
-  min-height: 1.45rem;
-  padding: 0 0.6rem;
+  min-width: 4rem;
+  height: 1.5rem;
+  padding: 0 0.5rem;
   border-radius: 99px;
   border: 1px solid transparent;
-  font-size: 0.74rem;
+  font-size: 0.72rem;
   font-weight: 600;
   line-height: 1;
   white-space: nowrap;
@@ -800,48 +889,65 @@ html .dc-pill[data-status="cancelled"] {
   color: var(--dc-void-ink);
   border-color: var(--dc-void-line);
 }
+/* Inline with the pill and one line tall, so a card with an overdue note is
+   exactly as tall as a card without one. */
 html .dc-note {
-  font-size: 0.68rem;
-  line-height: 1.15;
-  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  height: 1.2rem;
+  padding: 0 0.25rem;
+  border-radius: 6px;
+  background: var(--dc-wait-bg);
+  font-size: 0.64rem;
+  line-height: 1;
+  font-weight: 700;
   color: var(--dc-wait-ink);
   white-space: nowrap;
   flex: none;
 }
-/* The full sentence, "N ימים ללא תשלום", costs ~70px of a column that is
-   shared by every row; below 1600px only "N ימים" is shown and the sentence
-   moves to the cell's title. Same class carries the mail header's " במייל". */
+/* The full sentence, "N ימים ללא תשלום", is only ever spelled out on the
+   phone card, where the row is not competing for horizontal space; with
+   columns it lives in the note's title. */
 html .dc-tail {
   display: none;
+  /* `.dc-note` is an inline-flex box, so the space in front of this span is
+     collapsed away with the anonymous flex item it belonged to. */
+  margin-inline-start: 0.25em;
 }
 
 /* ---- סכום: the loudest thing on the row ---- */
 html .dc-row .dc-cell[data-col="amount"] {
   font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
   font-weight: 700;
-  font-size: 1rem;
+  font-size: 0.98rem;
   letter-spacing: -0.01em;
   color: var(--ink);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
-/* ---- actions ---- */
+/* ---- actions: four fixed slots ----
+   Every card renders four slots in the same order, empty ones included, so
+   the icons form four straight vertical lines down the list and the block
+   is one width for every row. */
 html .dc-cell[data-col="acts"] {
-  gap: 0.05rem;
+  gap: 0.1rem;
   position: relative;
   z-index: 2;
 }
 html .dc-act {
-  width: 1.7rem;
-  height: 1.7rem;
+  width: 1.45rem;
+  height: 1.45rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 9px;
+  border-radius: 8px;
   color: var(--dc-icon);
   flex: none;
   transition: background-color 0.15s ease, color 0.15s ease;
+}
+html .dc-act-empty {
+  pointer-events: none;
 }
 html .dc-act:hover {
   background: var(--icotile);
@@ -861,28 +967,49 @@ html .dc-act[data-tone="danger"]:hover {
   color: var(--dc-void-ink);
 }
 
-/* ---- sortable column labels (they replaced the old "מיון לפי" chips) ---- */
-html .dc-sort {
-  display: inline-flex;
-  align-items: center;
+/* ---- sortable column labels ----
+   The label IS the sort control. It stretches to fill its header cell, so
+   (a) its text starts at exactly the x its column's data starts at, and
+   (b) the hover/active tint reads as the whole column head lighting up
+   rather than a word getting a box. */
+html .dc-head .dc-sort {
+  justify-content: flex-start;
   gap: 0.25rem;
-  min-height: 1.75rem;
+  width: 100%;
+  min-width: 0;
+  align-self: stretch;
   padding: 0;
   border: 0;
+  border-radius: 7px 7px 0 0;
   background: none;
-  font: inherit;
-  color: inherit;
   cursor: pointer;
   white-space: nowrap;
-  transition: color 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
-html .dc-sort:hover { color: var(--gold-text); }
-html .dc-sort[data-active] { color: var(--gold-text); }
+/* סכום is end-aligned (currency reads off its last digit), so its label is
+   too - and the sort glyph moves to the label's other side so the WORD, not
+   the arrow, is what lines up with the column of numbers. */
+html .dc-head .dc-cell[data-col="amount"] .dc-sort {
+  flex-direction: row-reverse;
+  justify-content: flex-start;
+}
+html .dc-head .dc-sort:hover {
+  background: rgba(190, 158, 78, 0.16);
+  color: var(--gold-text);
+}
+/* The column the list is sorted by keeps its own segment of the band's
+   bottom rule, in gold and twice as thick: the classic table-header tell,
+   and it cannot shift a column because it is an inset shadow. */
+html .dc-head .dc-sort[data-active] {
+  background: rgba(190, 158, 78, 0.2);
+  box-shadow: inset 0 -2px 0 0 var(--g3);
+  color: var(--gold-text);
+}
 html .dc-sorticon {
   width: 0.8rem;
   height: 0.8rem;
   flex: none;
-  opacity: 0.4;
+  opacity: 0.45;
 }
 html .dc-sort:hover .dc-sorticon,
 html .dc-sort[data-active] .dc-sorticon { opacity: 1; }
@@ -892,96 +1019,110 @@ html .dc-empty {
   text-align: center;
 }
 
-/* ---- below 1600: the unpaid note moves under the pill ----
-   Beside the pill it makes the status column ~115px wide for EVERY row in
-   the list, which is width the client name cannot spare below 1600. Under
-   it, the column is only as wide as the pill. The status cell then carries a
-   min-height tall enough for pill + note, so a row that has a note is not
-   taller than one that has not: every row in the list stays the same height
-   whatever it happens to contain. */
-@media (max-width: 1599.98px) {
-  html .dc-cell[data-col="status"] {
-    flex-direction: column;
-    align-items: flex-start;
-    justify-content: center;
-    gap: 0.08rem;
-    min-height: 2.35rem;
-  }
-}
-
-/* ---- 1600+: room to spell the unpaid note out in full, beside the pill ---- */
-@media (min-width: 1600px) {
-  html .dc-tail { display: inline; }
-}
-
-/* ---- 768-1399: eight columns ----
-   The eight fixed columns want ~780px between them; ten columns only leave
-   the client name a usable width from about 1400px up. נושא and מספר הקצאה
-   are the two the eye needs least: the subject is one click away on the
-   document itself, and an allocation number is a legal artefact nobody
-   scans a list for. */
+/* ---- 1280-1399: the allocation column never appears at this width ----
+   It is the one column a reader never scans a list for (a legal artefact on
+   a single invoice), so below 1400 it goes even for the businesses that
+   have one, and the subject keeps the room. */
 @media (max-width: 1399.98px) {
-  html .dc-table {
+  html .dc-table[data-alloc] {
     grid-template-columns:
       auto /* סוג */
-      minmax(4.5rem, 1fr) /* לקוח */
+      auto /* לקוח */
+      minmax(0, 1fr) /* נושא */
       auto /* תאריך */
       auto /* מספר */
-      auto /* נשלח */
+      auto /* מייל */
       auto /* סטטוס */
       auto /* סכום */
       auto; /* actions */
   }
-  html .dc-cell[data-col="subj"],
   html .dc-cell[data-col="alloc"] { display: none; }
 }
 
-/* ---- below 1280: the mail cell loses its label and keeps the glyph ---- */
-@media (max-width: 1279.98px) {
-  html .dc-mailtxt { display: none; }
+/* ---- 768-1399: the diet tier ----
+   Below 1400 the nine columns have to share 650-880px, so every one of them
+   is a notch smaller. The subject stays - it is the column the list is read
+   for - and takes whatever the diet frees. */
+@media (min-width: 768px) and (max-width: 1399.98px) {
+  html .dc-shell { padding: 0.5rem; }
+  html .dc-table,
+  html .dc-table[data-alloc] { column-gap: 0.3rem; }
+  html .dc-chip { font-size: 0.66rem; padding: 0 0.35rem; height: 1.35rem; }
+  html .dc-name { font-size: 0.82rem; max-width: 8.6rem; }
+  html .dc-hlabel,
+  html .dc-head .dc-sort { font-size: 0.73rem; }
+  html .dc-subj { font-size: 0.71rem; }
+  html .dc-row .dc-cell[data-col="date"],
+  html .dc-row .dc-cell[data-col="number"] { font-size: 0.71rem; }
+  html .dc-pill { font-size: 0.68rem; padding: 0 0.3rem; min-width: 3.5rem; }
+  html .dc-note { font-size: 0.6rem; padding: 0 0.2rem; }
+  html .dc-row .dc-cell[data-col="amount"] { font-size: 0.88rem; }
+  html .dc-act { width: 1.35rem; height: 1.35rem; }
+  html .dc-cell[data-col="type"] { padding-inline-start: 0.55rem; }
+  html .dc-cell[data-col="acts"] { padding-inline-end: 0.3rem; }
 }
 
-/* ---- 1024-1279: the tightest shell in the whole app ----
-   The sidebar turns on at exactly 1024 and takes 288px, leaving the list
-   about 590px - less than the 768-1023 tier gets, where there is no sidebar.
-   Seven columns, and every one of them on a diet. */
-@media (min-width: 1024px) and (max-width: 1279.98px) {
-  html .dc-shell { padding: 0.6rem; }
-  html .dc-table {
+/* ---- 768-1279: the mail glyph and the overdue note step aside ----
+   Both are secondary (the mail state is also a filter and a tooltip; the
+   overdue count is on the document itself), and between them they were
+   spending ~75px of a row that has ~640-715px to give. The overdue signal
+   survives as an amber status dot, and the cell keeps its title. */
+@media (min-width: 768px) and (max-width: 1279.98px) {
+  html .dc-table,
+  html .dc-table[data-alloc] {
     grid-template-columns:
       auto /* סוג */
-      minmax(3.5rem, 1fr) /* לקוח */
+      auto /* לקוח */
+      minmax(0, 1fr) /* נושא */
       auto /* תאריך */
       auto /* מספר */
       auto /* סטטוס */
       auto /* סכום */
       auto; /* actions */
-    column-gap: 0.45rem;
   }
   html .dc-cell[data-col="mail"] { display: none; }
-  html .dc-chip { font-size: 0.66rem; padding: 0 0.35rem; min-height: 1.3rem; }
-  html .dc-name { font-size: 0.86rem; }
-  html .dc-head { font-size: 0.72rem; }
-  html .dc-row .dc-cell[data-col="date"],
-  html .dc-row .dc-cell[data-col="number"] { font-size: 0.72rem; }
-  html .dc-pill { font-size: 0.7rem; padding: 0 0.45rem; }
-  html .dc-note { font-size: 0.64rem; }
-  html .dc-row .dc-cell[data-col="amount"] { font-size: 0.9rem; }
-  html .dc-act { width: 1.55rem; height: 1.55rem; }
-  html .dc-cell[data-col="type"] { padding-inline-start: 0.6rem; }
-  html .dc-cell[data-col="acts"] { padding-inline-end: 0.35rem; }
+  html .dc-note { display: none; }
+  html .dc-cell[data-overdue] .dc-pilldot {
+    background: var(--dc-wait-ink);
+    opacity: 1;
+  }
+}
+
+/* ---- 1024-1279: the tightest shell in the whole app ----
+   The sidebar turns on at exactly 1024 and takes 288px, so this tier has
+   LESS room (~640px) than the 768-1023 one (~715px), where there is no
+   sidebar. 640px cannot hold a subject that is worth reading - at the width
+   left over it would be three words and an ellipsis on every row - so here,
+   and only here, the subject column goes and the client name becomes the
+   flexible column, which is what stops long company names ellipsising at
+   exactly the width where they were being cut. */
+@media (min-width: 1024px) and (max-width: 1279.98px) {
+  html .dc-table,
+  html .dc-table[data-alloc] {
+    grid-template-columns:
+      auto /* סוג */
+      minmax(4rem, 1fr) /* לקוח */
+      auto /* תאריך */
+      auto /* מספר */
+      auto /* סטטוס */
+      auto /* סכום */
+      auto; /* actions */
+  }
+  html .dc-cell[data-col="subj"] { display: none; }
+  html .dc-name { max-width: none; }
 }
 
 /* ---- phones (below Tailwind's `md`): no columns, a stacked card ----
-   A ten-column single line cannot be made to work at 390px, so the row
+   A nine-column single line cannot be made to work at 390px, so the row
    stops being a row: client + amount, subject, then the meta on two lines
    and the actions as a footer bar. Every datum that loses its column header
    grows an inline label via `data-label`. */
 @media (max-width: 767.98px) {
   html .dc-shell { padding: 0.6rem; }
-  html .dc-table { display: flex; flex-direction: column; gap: 0.6rem; }
+  html .dc-table,
+  html .dc-table[data-alloc] { display: flex; flex-direction: column; gap: 0.6rem; }
   html .dc-tail { display: inline; }
-  /* There are no columns down here, so there is nothing for a header row to
+  /* There are no columns down here, so there is nothing for a header band to
      head - but the three sortable labels ARE the only sort control in the
      component, and a phone must not lose sorting. The header collapses into
      a strip of three thumb-sized sort chips. */
@@ -990,14 +1131,19 @@ html .dc-empty {
     flex-wrap: wrap;
     align-items: center;
     gap: 0.4rem;
+    height: auto;
     padding: 0 0.1rem 0.55rem;
+    margin-bottom: 0;
     border: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
   }
   html .dc-head::before {
     content: "מיון:";
     font-size: 0.78rem;
     font-weight: 700;
-    color: var(--muted);
+    color: var(--ink2);
   }
   html .dc-head .dc-cell { display: none; }
   html .dc-head .dc-cell[data-col="date"],
@@ -1007,7 +1153,9 @@ html .dc-empty {
     padding: 0;
   }
   html .dc-head .dc-sort {
+    width: auto;
     min-height: 2.45rem;
+    margin-block: 0;
     padding: 0 0.75rem;
     border: 1px solid var(--line);
     border-radius: 99px;
@@ -1020,13 +1168,14 @@ html .dc-empty {
   }
   html .dc-row {
     display: grid;
+    height: auto;
     grid-template-columns: auto auto minmax(0, 1fr);
     grid-template-areas:
       "type   type   amount"
       "client client client"
       "subj   subj   subj"
-      "date   number alloc"
-      "status status mail"
+      "date   number mail"
+      "status status alloc"
       "acts   acts   acts";
     column-gap: 0.6rem;
     row-gap: 0.3rem;
@@ -1046,6 +1195,10 @@ html .dc-empty {
   html .dc-row .dc-cell[data-col="amount"] { grid-area: amount; }
   html .dc-row .dc-cell[data-col="acts"] {
     grid-area: acts;
+    /* a footer bar, so the four slots sit as one centred cluster instead of
+       hugging one edge of the card */
+    justify-content: center;
+    gap: 0.35rem;
     padding-inline-end: 0;
     margin-top: 0.15rem;
     padding-top: 0.35rem;
@@ -1058,8 +1211,16 @@ html .dc-empty {
     font-weight: 500;
     opacity: 0.85;
   }
+  html .dc-chip { flex: 0 0 auto; }
   html .dc-mailtxt { display: inline; }
-  html .dc-name { font-size: 1rem; }
+  html .dc-name { font-size: 1rem; max-width: none; }
+  /* The phone card has no fixed height, so the subject reserves its two
+     lines whether or not it needs both: that is what keeps every card on the
+     phone the same rectangle too. */
+  html .dc-subj {
+    font-size: 0.82rem;
+    min-height: 2.6em;
+  }
   html .dc-row .dc-cell[data-col="amount"] { font-size: 1.05rem; }
   /* Thumb-sized targets: 2.5rem is 41px at the phone root size of 16.5px. */
   html .dc-act { width: 2.5rem; height: 2.5rem; }

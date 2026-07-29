@@ -55,6 +55,7 @@ const OVERDUE_DAYS = 7;
 
 export function DocumentsTable({ documents, limit, showExport = false }: Props) {
   const searchParams = useSearchParams();
+  const { business } = useBusiness();
   // Read initial filter values from URL search params so dashboard cards
   // (and other deep-links like /documents?type=quote&status=sent) can
   // pre-filter the list. Validates against known values to ignore noise.
@@ -110,6 +111,19 @@ export function DocumentsTable({ documents, limit, showExport = false }: Props) 
     if (limit) result = result.slice(0, limit);
     return result;
   }, [documents, typeFilter, statusFilter, monthFilter, emailFilter, search, limit, sortKey, sortDir]);
+
+  /**
+   * מספר הקצאה is a column only a business that can actually receive one
+   * should have to look at. An עוסק פטור may not issue a tax invoice at all,
+   * so the number can never exist for him and a column of hyphens is pure
+   * noise (and ~80px stolen from the subject). Belt and braces: even for a
+   * business that COULD have one, the column only appears once a document in
+   * the current filtered list really carries a number. The cells are not
+   * rendered and the grid drops the track, so nothing is left behind.
+   */
+  const showAlloc =
+    business.businessType !== "exempt" &&
+    filtered.some((d) => Boolean(d.allocationNumber?.trim()));
 
   function toggleSort(key: SortKey) {
     if (sortKey === key) {
@@ -252,20 +266,20 @@ export function DocumentsTable({ documents, limit, showExport = false }: Props) 
             )}
           </div>
         ) : (
-          <div className="dc-table">
-            {/* One header row for the whole list. It is a subgrid item like
-                every card, so its labels sit exactly over the columns they
-                name, and the three numeric labels double as the sort control
+          <div className="dc-table" data-alloc={showAlloc ? "1" : undefined}>
+            {/* One header band for the whole list. It is a subgrid item like
+                every card, so each label sits exactly over the column it
+                names, and the three numeric labels double as the sort control
                 (the old "מיון לפי" chip strip is gone). */}
             <div className="dc-head">
               <span className="dc-cell" data-col="type">
-                סוג
+                <span className="dc-hlabel">סוג</span>
               </span>
               <span className="dc-cell" data-col="client">
-                לקוח
+                <span className="dc-hlabel">לקוח</span>
               </span>
               <span className="dc-cell" data-col="subj">
-                נושא
+                <span className="dc-hlabel">נושא</span>
               </span>
               <span className="dc-cell" data-col="date">
                 <SortLabel
@@ -285,14 +299,16 @@ export function DocumentsTable({ documents, limit, showExport = false }: Props) 
                   onClick={() => toggleSort("number")}
                 />
               </span>
-              <span className="dc-cell" data-col="alloc">
-                מספר הקצאה
-              </span>
+              {showAlloc && (
+                <span className="dc-cell" data-col="alloc">
+                  <span className="dc-hlabel">הקצאה</span>
+                </span>
+              )}
               <span className="dc-cell" data-col="mail">
-                נשלח<span className="dc-tail"> במייל</span>
+                <span className="dc-hlabel">מייל</span>
               </span>
               <span className="dc-cell" data-col="status">
-                סטטוס
+                <span className="dc-hlabel">סטטוס</span>
               </span>
               <span className="dc-cell" data-col="amount">
                 <SortLabel
@@ -304,12 +320,12 @@ export function DocumentsTable({ documents, limit, showExport = false }: Props) 
                 />
               </span>
               <span className="dc-cell" data-col="acts">
-                <span className="sr-only">פעולות</span>
+                <span className="dc-hlabel">פעולות</span>
               </span>
             </div>
             <ul className="dc-rows" role="list">
               {filtered.map((d) => (
-                <DocumentRow key={d.id} doc={d} />
+                <DocumentRow key={d.id} doc={d} showAlloc={showAlloc} />
               ))}
             </ul>
           </div>
@@ -324,20 +340,26 @@ export function DocumentsTable({ documents, limit, showExport = false }: Props) 
  * COLUMN, and every row is a `grid-template-columns: subgrid` item of the one
  * `.dc-table` grid, so the columns are sized once, from the content of the
  * whole list, and every card's cells start at exactly the same x - including
- * the header row above them:
+ * the header band above them:
  *
- *   סוג | לקוח | נושא | תאריך | מספר | מספר הקצאה | נשלח | סטטוס | סכום | ⋯
+ *   סוג | לקוח | נושא | תאריך | מספר | [הקצאה] | מייל | סטטוס | סכום | ⋯
  *
  * Subgrid is what makes this both a real table AND a stack of separate white
  * cards: fixed rem widths per column would have to be guessed against the
  * widest possible Hebrew label, whereas subgrid tracks size themselves to the
  * actual data and stay shared across every card.
  *
+ * Every card is exactly the same rectangle: the row height is fixed (not a
+ * min-height), the type chip fills its track, the status pill has a fixed
+ * width, the "N ימים" overdue note sits inline after the pill instead of
+ * under it, and the action slot is four fixed cells whether or not a given
+ * document offers four actions.
+ *
  * The whole card is clickable via a stretched link on the client name (rather
  * than an onClick on a div), which keeps it reachable by keyboard and
  * announced as a link, while the action buttons sit above the overlay.
  */
-function DocumentRow({ doc: d }: { doc: InvoiceDocument }) {
+function DocumentRow({ doc: d, showAlloc }: { doc: InvoiceDocument; showAlloc: boolean }) {
   const unpaidDays =
     d.status === "sent" && d.type !== "receipt" && d.type !== "tax_invoice_receipt"
       ? Math.floor((Date.now() - new Date(d.date).getTime()) / (1000 * 60 * 60 * 24))
@@ -345,8 +367,8 @@ function DocumentRow({ doc: d }: { doc: InvoiceDocument }) {
   const emailed = Boolean(d.emailedAt);
   // מספר הקצאה, the Tax Authority allocation number (חשבונית ישראל). Set on
   // tax invoices above the annual threshold, either by the gov API integration
-  // or by hand. Most documents have none, but the CELL is always rendered (a
-  // muted hyphen) so the column keeps its width and the grid stays symmetric.
+  // or by hand. The column only exists at all when this business can receive
+  // one AND some document in view actually has one (see `showAlloc`).
   const allocation = d.allocationNumber?.trim();
   const subject = d.subject?.trim();
 
@@ -379,18 +401,24 @@ function DocumentRow({ doc: d }: { doc: InvoiceDocument }) {
         <span className="dc-num">#{d.number}</span>
       </span>
 
-      <span className="dc-cell" data-col="alloc" data-label="הקצאה">
-        {allocation ? (
-          <span className="dc-val">{allocation}</span>
-        ) : (
-          <span className="dc-none" aria-hidden="true">
-            -
-          </span>
-        )}
-      </span>
+      {showAlloc && (
+        <span className="dc-cell" data-col="alloc" data-label="הקצאה">
+          {allocation ? (
+            <span className="dc-val">{allocation}</span>
+          ) : (
+            <span className="dc-none" aria-hidden="true">
+              -
+            </span>
+          )}
+        </span>
+      )}
 
       <span className="dc-cell" data-col="mail">
-        <span className="dc-mail" data-sent={emailed ? "1" : undefined}>
+        <span
+          className="dc-mail"
+          data-sent={emailed ? "1" : undefined}
+          title={emailed ? `נשלח במייל ב-${formatDate(d.emailedAt!)}` : "לא נשלח במייל"}
+        >
           {emailed ? (
             <MailCheck className="dc-mailicon" aria-hidden="true" />
           ) : (
@@ -405,11 +433,18 @@ function DocumentRow({ doc: d }: { doc: InvoiceDocument }) {
         </span>
       </span>
 
-      <span className="dc-cell" data-col="status">
+      <span
+        className="dc-cell"
+        data-col="status"
+        data-overdue={unpaidDays >= OVERDUE_DAYS ? "1" : undefined}
+        title={unpaidDays >= OVERDUE_DAYS ? `${unpaidDays} ימים ללא תשלום` : undefined}
+      >
         <span className="dc-pill" data-status={d.status}>
           <i className="dc-pilldot" aria-hidden="true" />
           {DOCUMENT_STATUS_LABELS[d.status]}
         </span>
+        {/* Inline, never on a second line: a note under the pill made an
+            overdue card taller than every other card in the list. */}
         {unpaidDays >= OVERDUE_DAYS && (
           <span className="dc-note" title={`${unpaidDays} ימים ללא תשלום`}>
             {unpaidDays} ימים<span className="dc-tail"> ללא תשלום</span>
@@ -418,7 +453,7 @@ function DocumentRow({ doc: d }: { doc: InvoiceDocument }) {
       </span>
 
       <span className="dc-cell" data-col="amount">
-        {formatCurrency(d.total)}
+        <span className="dc-amt">{formatCurrency(d.total)}</span>
       </span>
 
       <span className="dc-cell" data-col="acts">
@@ -471,9 +506,14 @@ function RowActions({ doc }: { doc: InvoiceDocument }) {
     }
   }
 
+  // FOUR fixed slots, always, in the same order on every card. An action a
+  // given document cannot offer leaves its slot empty rather than letting the
+  // rest slide across, so "edit" is under "edit" and "delete" under "delete"
+  // all the way down the list and the actions block is one width for every
+  // row - which is also what keeps the cards identical rectangles.
   return (
     <>
-      {canConvertToReceipt && (
+      {canConvertToReceipt ? (
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -488,8 +528,10 @@ function RowActions({ doc }: { doc: InvoiceDocument }) {
             <FilePlus2 className="w-4 h-4" />
           </Tooltip>
         </button>
+      ) : (
+        <ActSlot />
       )}
-      {canMarkPaid && (
+      {canMarkPaid ? (
         <button
           onClick={async (e) => {
             e.stopPropagation();
@@ -508,6 +550,8 @@ function RowActions({ doc }: { doc: InvoiceDocument }) {
             {isPaid ? <CheckCircle2 className="w-4 h-4" /> : <Circle className="w-4 h-4" />}
           </Tooltip>
         </button>
+      ) : (
+        <ActSlot />
       )}
       <button
         onClick={(e) => {
@@ -521,7 +565,7 @@ function RowActions({ doc }: { doc: InvoiceDocument }) {
           <Pencil className="w-4 h-4" />
         </Tooltip>
       </button>
-      {isDeletable && (
+      {isDeletable ? (
         <button
           onClick={handleRowDelete}
           className="dc-act"
@@ -532,9 +576,16 @@ function RowActions({ doc }: { doc: InvoiceDocument }) {
             <Trash2 className="w-4 h-4" />
           </Tooltip>
         </button>
+      ) : (
+        <ActSlot />
       )}
     </>
   );
+}
+
+/** The placeholder that holds an unavailable action's place in the row. */
+function ActSlot() {
+  return <span className="dc-act dc-act-empty" aria-hidden="true" />;
 }
 
 /**
