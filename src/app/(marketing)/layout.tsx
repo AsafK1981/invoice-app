@@ -1,14 +1,26 @@
 import type { Metadata } from "next";
-import { Frank_Ruhl_Libre, Assistant } from "next/font/google";
+import { Heebo, Assistant } from "next/font/google";
 import "./v2.css";
 // After v2.css on purpose: keeps the internal-linking rules later in source
 // order so they win specificity ties, same convention as app-skin.css.
 import "./internal-links.css";
 
-const frankRuhl = Frank_Ruhl_Libre({
-  weight: ["500", "700", "900"],
+// Headline face. Was Frank_Ruhl_Libre until 2026-07-28; the serif read
+// biblical rather than modern-premium, so the whole marketing site moved to
+// Heebo (clean Hebrew sans, Roboto-derived). Body copy stays Assistant.
+// Weights: 700/800/900 are what the display rules ask for; 400/500 cover the
+// few rules that set the headline family and inherit a normal weight
+// (`.v2-status-row .val`), which used to be faked by the browser from Frank's
+// 500.
+//
+// The hero's mock invoice is the deliberate exception and stayed serif
+// (`.v2-sh-name` / `.v2-sh-num` / `.v2-sh-grand`): it depicts the real printed
+// document, which is still Frank Ruhl Libre. Those rules read `--font-frank`,
+// which the ROOT layout puts on <html>, not this layout.
+const heebo = Heebo({
+  weight: ["400", "500", "700", "800", "900"],
   subsets: ["hebrew", "latin"],
-  variable: "--font-frank",
+  variable: "--font-heebo",
   display: "swap",
 });
 
@@ -31,7 +43,7 @@ export default function MarketingLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <div className={`v2-theme ${frankRuhl.variable} ${assistant.variable}`}>
+    <div className={`v2-theme ${heebo.variable} ${assistant.variable}`}>
       {children}
     </div>
   );

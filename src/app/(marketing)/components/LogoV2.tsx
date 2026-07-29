@@ -1,6 +1,6 @@
 /**
  * LogoV2, the gold "document" mark (from icon-app.svg) + "חשבונית"
- * wordmark in Frank Ruhl Libre gold, with a small "סופר ידידותית"
+ * wordmark in Heebo gold, with a small "סופר ידידותית"
  * kicker. Two variants:
  *   - "full" (default): mark + wordmark + kicker
  *   - "mark": just the gold document mark

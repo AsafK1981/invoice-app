@@ -124,7 +124,7 @@ html body {
 html h1,
 html h2,
 html h3 {
-  font-family: var(--font-frank), "Frank Ruhl Libre", serif;
+  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
   color: var(--ink);
   letter-spacing: -0.01em;
 }
@@ -135,7 +135,7 @@ html .v2-theme h1,
 html .v2-theme h2,
 html .v2-theme h3 {
   color: inherit;
-  font-family: "Frank Ruhl Libre", var(--font-frank), serif;
+  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
 }
 
 /* gold gradient display text: the KPI numbers (.gk-value) and the coral
@@ -154,7 +154,7 @@ html .bg-clip-text.from-orange-500.to-rose-500 {
   -webkit-text-fill-color: transparent !important;
 }
 html .gk-value {
-  font-family: var(--font-frank), "Frank Ruhl Libre", serif;
+  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
 }
 /* the coral totals sit on a `.from-orange-500.to-rose-500` CTA ramp rule that
    also paints a drop shadow; text has no business carrying one */

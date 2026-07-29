@@ -35,12 +35,12 @@
   grid-template-columns: minmax(0, 1fr);
 }
 
-/* Matches `.v2-blog-card h2` (gold, Frank Ruhl, same rhythm) so the related
+/* Matches `.v2-blog-card h2` (gold, Heebo, same rhythm) so the related
    cards read as the same primitive as the index cards rather than a
    near-miss. One step down in size because this is a secondary block under
    an article, not the page's main content. */
 .v2-theme .v2-related .v2-blog-card h3 {
-  font-family: "Frank Ruhl Libre", var(--font-frank), serif;
+  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
   font-weight: 700;
   font-size: 1.05rem;
   line-height: 1.3;

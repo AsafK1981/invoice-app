@@ -300,10 +300,13 @@
   line-height: 1;
 }
 .v2-theme .v2-logo-word {
-  font-family: "Frank Ruhl Libre", var(--font-frank), serif;
+  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
   font-weight: 700;
   font-size: 22px;
-  letter-spacing: 0.01em;
+  /* Was +0.01em, which opened up Frank Ruhl's tighter serif fit. Heebo already
+     sets loose at 700, and the wordmark must stay no wider than before so the
+     `.v2-logo-sub` kicker under it keeps its one-line guarantee at 360px. */
+  letter-spacing: -0.01em;
 }
 /* nowrap: at 360px the header flex row squeezed the wordmark column until
    "סופר ידידותית" broke onto two lines, turning the two-line logo into three
@@ -387,11 +390,15 @@
    (61.6px at 1100, 76px from 1357 up), so the hero finally responds to a
    wider window instead of being pinned flat from 886px onward. */
 .v2-theme h1.v2-h1 {
-  font-family: "Frank Ruhl Libre", var(--font-frank), serif;
+  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
   font-weight: 900;
   font-size: clamp(36px, 5.6vw, 76px);
   line-height: 1.04;
-  letter-spacing: -0.01em;
+  /* -0.02em, not the -0.01em this carried under Frank Ruhl: Heebo 900 sets
+     wider and rounder than the serif did, so display sizes need the extra
+     step of negative tracking to keep the same optical density (and to buy
+     back some of the width in the 1100px tier's third-line guard below). */
+  letter-spacing: -0.02em;
 }
 .v2-theme .v2-lede {
   margin-top: var(--v2-sp-2);
@@ -542,6 +549,14 @@
 .v2-theme .v2-sh-biz {
   min-width: 0;
 }
+/* SERIF ON PURPOSE, and it stays serif. The hero mock is a portrait of the
+   real printed document, and the real document is Frank Ruhl Libre
+   (`.doc-serif` in src/app/document-paper.css). The 2026-07-28 Heebo swap took
+   the marketing site's own voice; it must not reach inside the mock paper, or
+   the hero starts advertising a product that looks like something else. Same
+   reason for `.v2-sh-num` and `.v2-sh-grand` below. `--font-frank` is exposed
+   by the ROOT layout on <html> (not by the marketing layout, which only loads
+   Heebo + Assistant), and custom properties inherit, so it resolves here. */
 .v2-theme .v2-sh-name {
   font-family: "Frank Ruhl Libre", var(--font-frank), serif;
   font-size: 1.78em;
@@ -578,6 +593,7 @@
 }
 .v2-theme .v2-sh-num {
   margin-top: 0.27em;
+  /* serif: mock paper matches the real document, see `.v2-sh-name` above */
   font-family: "Frank Ruhl Libre", var(--font-frank), serif;
   font-size: 2.14em;
   font-weight: 700;
@@ -720,6 +736,7 @@
   font-weight: 700;
 }
 .v2-theme .v2-sh-grand {
+  /* serif: mock paper matches the real document, see `.v2-sh-name` above */
   font-family: "Frank Ruhl Libre", var(--font-frank), serif;
   font-size: 1.56em;
 }
@@ -813,7 +830,7 @@
   border-bottom: 1px solid var(--v2-line-soft);
 }
 .v2-theme .v2-band-now {
-  font-family: "Frank Ruhl Libre", var(--font-frank), serif;
+  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
   font-size: var(--v2-fs-h2);
   font-weight: 700;
   line-height: 1.3;
@@ -971,11 +988,11 @@
   margin-bottom: 12px;
 }
 .v2-theme h1.v2-doc-title {
-  font-family: "Frank Ruhl Libre", var(--font-frank), serif;
+  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
   font-weight: 900;
   font-size: clamp(30px, 4.4vw, 60px);
   line-height: 1.08;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
 }
 .v2-theme .v2-doc-updated {
   margin-top: 12px;
@@ -1002,7 +1019,7 @@
   margin-top: var(--v2-sp-4);
 }
 .v2-theme .v2-prose h2 {
-  font-family: "Frank Ruhl Libre", var(--font-frank), serif;
+  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
   font-weight: 700;
   font-size: var(--v2-fs-h3);
   color: var(--v2-g1);
@@ -1062,10 +1079,11 @@
 .v2-theme .v2-status-badge .spin { animation: v2-spin 1s linear infinite; }
 .v2-theme .v2-status-badge .pulse { animation: v2-pulse 1.4s ease-in-out infinite; }
 .v2-theme h1.v2-status-title {
-  font-family: "Frank Ruhl Libre", var(--font-frank), serif;
+  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
   font-weight: 900;
   font-size: clamp(26px, 3.4vw, 46px);
   line-height: 1.1;
+  letter-spacing: -0.02em;
 }
 .v2-theme .v2-status-sub {
   margin-top: 6px;
@@ -1117,7 +1135,7 @@
 }
 .v2-theme .v2-status-row.is-ok .val {
   color: var(--v2-g2);
-  font-family: "Frank Ruhl Libre", var(--font-frank), serif;
+  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
 }
 .v2-theme .v2-status-row.is-down .val { color: #e6a15a; }
 
@@ -1189,7 +1207,7 @@
   text-align: center;
 }
 .v2-theme .v2-auth-title {
-  font-family: "Frank Ruhl Libre", var(--font-frank), serif;
+  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
   font-weight: 700;
   font-size: clamp(24px, 2.4vw, 34px);
   line-height: 1.1;
@@ -1476,11 +1494,11 @@
 /* ---------- comparison hero ---------- */
 .v2-theme .v2-cmp-hero { text-align: center; margin-bottom: clamp(28px, 3.4vw, 48px); }
 .v2-theme .v2-cmp-hero h1 {
-  font-family: "Frank Ruhl Libre", var(--font-frank), serif;
+  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
   font-weight: 900;
   font-size: clamp(30px, 4.4vw, 62px);
   line-height: 1.1;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
 }
 .v2-theme .v2-cmp-hero .vs {
   display: inline-block;
@@ -1521,7 +1539,7 @@
   margin-bottom: var(--v2-sp-2);
 }
 .v2-theme .v2-cmp-h h2 {
-  font-family: "Frank Ruhl Libre", var(--font-frank), serif;
+  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
   font-weight: 700;
   font-size: clamp(20px, 2.4vw, 34px);
   white-space: nowrap;
@@ -1586,7 +1604,7 @@
 /* One token, matching .v2-str h3 and .v2-note-panel h3; the three panel
    headings used to be 17/17/18. */
 .v2-theme .v2-price-card h3 {
-  font-family: "Frank Ruhl Libre", var(--font-frank), serif;
+  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
   font-weight: 700;
   font-size: var(--v2-fs-h3);
   margin-bottom: var(--v2-sp-2);
@@ -1661,7 +1679,7 @@
 /* section grouping row */
 .v2-theme table.v2-table tr.grp td {
   padding: 14px 18px 8px;
-  font-family: "Frank Ruhl Libre", var(--font-frank), serif;
+  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
   font-weight: 700;
   font-size: var(--v2-fs-body);
   letter-spacing: 0.02em;
@@ -1724,7 +1742,7 @@
   gap: var(--v2-sp-3);
 }
 .v2-theme .v2-str h3 {
-  font-family: "Frank Ruhl Libre", var(--font-frank), serif;
+  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
   font-weight: 700;
   font-size: var(--v2-fs-h3);
   margin-bottom: var(--v2-sp-2);
@@ -1768,7 +1786,7 @@
 .v2-theme .v2-note-panel .ic svg { width: 24px; height: 24px; }
 .v2-theme .v2-note-panel > div:last-child { flex: 1; min-width: 0; }
 .v2-theme .v2-note-panel h3 {
-  font-family: "Frank Ruhl Libre", var(--font-frank), serif;
+  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
   font-weight: 700;
   font-size: var(--v2-fs-h3);
 }
@@ -1783,9 +1801,10 @@
 /* ---------- comparison CTA ---------- */
 .v2-theme .v2-cmp-cta { text-align: center; padding: 8px 0 20px; }
 .v2-theme .v2-cmp-cta h2 {
-  font-family: "Frank Ruhl Libre", var(--font-frank), serif;
+  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
   font-weight: 900;
   font-size: clamp(24px, 3.2vw, 46px);
+  letter-spacing: -0.02em;
 }
 .v2-theme .v2-cmp-cta p {
   margin: 12px auto 0;
@@ -1856,7 +1875,7 @@
   box-shadow: var(--v2-sh-hover), var(--v2-sh-edge);
 }
 .v2-theme .v2-vs-card h2 {
-  font-family: "Frank Ruhl Libre", var(--font-frank), serif;
+  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
   font-weight: 700;
   font-size: var(--v2-fs-h2);
   line-height: 1.2;
@@ -1950,7 +1969,7 @@
   color: var(--v2-muted);
 }
 .v2-theme .v2-blog-card h2 {
-  font-family: "Frank Ruhl Libre", var(--font-frank), serif;
+  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
   font-weight: 700;
   font-size: var(--v2-fs-h2);
   line-height: 1.2;
@@ -2012,16 +2031,17 @@
 
 /* ---------- article body (extends .v2-prose for markdown) ---------- */
 .v2-theme .v2-prose h1 {
-  font-family: "Frank Ruhl Libre", var(--font-frank), serif;
+  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
   font-weight: 900;
   font-size: clamp(26px, 3.4vw, 46px);
   line-height: 1.15;
+  letter-spacing: -0.02em;
   color: var(--v2-ink);
   margin-bottom: 20px;
 }
 .v2-theme .v2-prose h2 { margin-top: var(--v2-sp-5); }
 .v2-theme .v2-prose h3 {
-  font-family: "Frank Ruhl Libre", var(--font-frank), serif;
+  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
   font-weight: 700;
   font-size: var(--v2-fs-lede);
   color: var(--v2-g1);
@@ -2227,20 +2247,27 @@
     justify-content: space-between;
     padding-block: var(--v2-sp-1) var(--v2-sp-5);
   }
-  /* The copy column is 488px at 1100 and the h1's widest LINE measures 456px
-     there at 6.2vw, so the heading fills the column it was given: at this
-     size it is a co-focal point beside the sheet, not a label on it.
-     The 72px CEILING is the third-line guard, not decoration. `--v2-shell` is
-     frozen at 1060px right across this tier, so the copy column stops growing
-     at ~502px while the vw term keeps climbing. MEASURED (and measure the
-     LINE, not the widest client rect: the line the h1 breaks onto is built
-     from three rects and is 15% longer than the first line, which is the trap
-     here): "יוקרתית כמו העסק" renders at 6.71x the font size in Frank Ruhl
-     Libre 900, so 72px puts it at 483px inside that 502px column. 74px
-     already overflows it and drops "העסק" onto a third line. Lifted again at
-     1400, where the shell finally widens. Written here rather than on the
-     base rule so the phone clamp, tuned for a 360px viewport, is untouched. */
-  .v2-theme h1.v2-h1 { font-size: clamp(56px, 6.2vw, 72px); }
+  /* The copy column is 488px at 1100 and ~502-506px from 1180 up (`--v2-shell`
+     is frozen at 1060px right across this tier, so the column stops growing
+     while the vw term keeps climbing). The h1 must stay TWO lines: the `<br>`
+     after "החשבונית שלך," fixes the first, so the guard is that the second
+     line, "יוקרתית כמו העסק", never wraps.
+     MEASURED (and measure the LINE, not the widest client rect: that line is
+     built from three rects and is ~17% longer than the first, which is the
+     trap here). Re-measured 2026-07-28 for the Frank Ruhl -> Heebo swap:
+       Frank Ruhl Libre 900 @ -0.01em ... 6.71x the font size -> 72px fit
+       Heebo 900 @ -0.02em ......... 7.92x the font size -> 72px does NOT fit
+     Heebo sets ~18% wider, so the old 6.2vw/72px pair put that line at 570px
+     in a 502px column and dropped "העסק" onto a third line at every width
+     from 1000 up. 5.3vw/62px is the widest pair that still clears the column
+     across the whole tier: 53px at 1000 (420px line in a 440px column) and
+     the 62px ceiling from ~1170 up (491px line in a 502px column).
+     The 50px FLOOR is deliberately inert (it would only bite below 944px,
+     outside this query); at 56px it would have overflowed the 440px column at
+     exactly 1000px. Lifted again at 1400, where the shell finally widens.
+     Written here rather than on the base rule so the phone clamp, tuned for a
+     360px viewport, is untouched. */
+  .v2-theme h1.v2-h1 { font-size: clamp(50px, 5.3vw, 62px); }
   .v2-theme .v2-fine { font-size: var(--v2-fs-meta); }
 
   /* The feature rules are the copy column's spine, so they take a section's
@@ -2329,13 +2356,16 @@
   }
   .v2-theme .v2-logo-mark { width: 50px; height: 50px; }
   .v2-theme .v2-logo-word { font-size: 27px; }
-  /* The shell widens to 1220px here, so the hero copy column reaches 582px
-     (578px at the top of the tier, where the viewport gutter bites) and the
-     ceiling held back in tier 1 can be released. At the same measured 6.71x,
-     82px puts the widest h1 line at 550px, 28px of headroom in the narrowest
-     column of the tier. The sheet needs no rule of its own: its column
-     widened by the same 74px and `cqi` did the rest. */
-  .v2-theme h1.v2-h1 { font-size: clamp(56px, 6.2vw, 82px); }
+  /* The shell widens to 1220px here, so the hero copy column reaches 583px
+     (578px at 1600-1799, the narrowest point of the tier, where the viewport
+     gutter bites) and the ceiling held back in tier 1 can be released. At the
+     measured 7.92x for Heebo 900 (see the tier-1 note; it was 82px at Frank's
+     6.71x), 70px puts that widest h1 line at 554px, 24px of headroom in the
+     narrowest column of the tier. 72px would still fit, on 8px; the two are
+     visually indistinguishable and the cushion is worth more. The sheet needs
+     no rule of its own: its column widened by the same 74px and `cqi` did the
+     rest. */
+  .v2-theme h1.v2-h1 { font-size: clamp(50px, 5.3vw, 70px); }
 }
 
 /* ------------------------------------------------------------
