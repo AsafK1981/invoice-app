@@ -555,16 +555,21 @@ html .gk-etable thead th {
    taller); and the action block is four fixed slots whether or not a
    document offers four actions.
 
-   HOW EVERY COLUMN IS ALIGNED is one rule with one exception, written out in
-   full at "cells: THE ALIGNMENT RULE" below. In short: every column that
-   carries words or a datum is start-aligned (flush right, this being RTL),
-   including the labels INSIDE the type chip and the status pill; סכום alone
-   is end-aligned; and the actions are a fixed four-track grid pinned to the
-   row's end. Nothing in this component is centred.
+   HOW EVERY COLUMN IS ALIGNED: EVERYTHING IS CENTRED. One centre line per
+   column, shared by the header label and by all 61 cards. Written out in full
+   at "cells: THE ALIGNMENT RULE" below, including the two columns (סכום,
+   מספר) where plain centring would let the digits wander and something more
+   deliberate is used instead.
 
    Sizes are in `rem` on purpose: the app's root font-size steps 16.5 -> 19.25px
    with viewport width (see GLOBAL TYPE SCALE-UP at the foot of this file) and
    the rows must step with it.
+
+   ONE SPACING SCALE, ONE TYPE SCALE, ONE RADIUS/SHADOW SET. Every gap,
+   padding, font-size, radius and shadow in this section comes from the tokens
+   declared on `.dc-shell` below - nothing in here is an ad-hoc number, and a
+   tier that needs less air moves DOWN A STEP of the same scale rather than
+   inventing a value.
 
    BREAKPOINTS. The shell is narrowest at 1024, NOT at 768: the 288px sidebar
    appears exactly at 1024 and eats 28% of the window, so 1024-1279 has less
@@ -577,10 +582,56 @@ html .gk-etable thead th {
    ===================================================================== */
 
 /* The list sits in its own sand-coloured well inside the white .card-soft the
-   three host pages wrap it in; that is what makes a white row read as a card. */
+   three host pages wrap it in; that is what makes a white row read as a card.
+   It is also where the section's DESIGN TOKENS live, so every rule below is
+   spending from the same four scales and a tier can retune the whole component
+   by moving a token, not by sprinkling per-element overrides. */
 html .dc-shell {
+  /* SPACING - a 0.25rem ladder, four steps, and nothing off it.
+       1  0.25rem  hairline separation (cell gap, row gap, icon gap)
+       2  0.5rem   related things (column gap, actions inset)
+       3  0.75rem  the well's padding, and the DATA-COLUMN GUTTER
+       4  1rem     block padding
+     Two ALIASES name the two jobs that have to retune per tier. Each is a STEP
+     of the scale, never a value of its own:
+       --dc-gutter  the inner air of the six data columns (תאריך, מספר, מייל,
+                    סטטוס, הקצאה, סכום). 2 at full width, 1 on the diet.
+       --dc-edge    the card's own outer inset, on the first and last cell.
+                    3 at full width, 2 on the diet. */
+  --dc-sp-1: 0.25rem;
+  --dc-sp-2: 0.5rem;
+  --dc-sp-3: 0.75rem;
+  --dc-sp-4: 1rem;
+  --dc-gutter: var(--dc-sp-2);
+  --dc-edge: var(--dc-sp-3);
+
+  /* TYPE - four roles on a 1.15 modular scale, so the jump between two roles
+     is always visible and never accidental:
+       1  micro  the overdue note (phone only)
+       2  meta   date, number, subject, chip, pill, mail, header labels
+       3  body   the client name, the row's headline
+       4  amount the loudest thing on the row
+     Three weights, deliberately: 400 for the subject (the only running text
+     in the component), 600 for meta, 700 for the headline data and headers.
+     The ladder is anchored on `meta`, because meta is what the row is mostly
+     made of and what the (content-sized) tracks are measured against. */
+  --dc-fs-1: 0.64rem;
+  --dc-fs-2: 0.74rem;
+  --dc-fs-3: 0.85rem;
+  --dc-fs-4: 0.98rem;
+
+  /* RADIUS - two sizes and a pill, used everywhere; no per-element radii. */
+  --dc-r-1: 8px;
+  --dc-r-2: 12px;
+  --dc-r-pill: 999px;
+
+  /* SHADOW - three named roles, one definition each. */
+  --dc-sh-band: 0 1px 0 0 var(--goldline);
+  --dc-sh-lift: 0 10px 24px -18px rgba(60, 45, 20, 0.55);
+  --dc-sh-focus: 0 0 0 3px rgba(190, 158, 78, 0.28);
+
   background: var(--bg);
-  padding: 0.7rem;
+  padding: var(--dc-sp-3);
 }
 
 /* ---- the one grid ----
@@ -598,8 +649,8 @@ html .dc-table {
     auto /* סטטוס */
     auto /* סכום */
     auto; /* actions */
-  column-gap: 0.55rem;
-  row-gap: 0.35rem;
+  column-gap: var(--dc-sp-2);
+  row-gap: var(--dc-sp-1);
 }
 /* The only list that still has a מספר הקצאה column: a business that can
    receive one AND has at least one in view. */
@@ -638,12 +689,14 @@ html .dc-row {
    column), and labels in confident ink rather than the washed-out muted
    grey they were. */
 html .dc-head {
-  height: 2.4rem;
-  margin-bottom: 0.35rem;
-  border-radius: 12px;
+  /* Tall enough to seat the sort carets UNDER the labels - see the sortable
+     column labels block for why they are under and not beside them. */
+  height: 2.6rem;
+  margin-bottom: var(--dc-sp-1);
+  border-radius: var(--dc-r-2);
   border-color: var(--goldtintline);
   background: linear-gradient(180deg, #fdfaf2 0%, #f6efdc 100%);
-  box-shadow: 0 1px 0 0 var(--goldline);
+  box-shadow: var(--dc-sh-band);
 }
 html .dc-head .dc-cell {
   white-space: nowrap;
@@ -653,7 +706,8 @@ html .dc-hlabel,
 html .dc-head .dc-sort {
   display: inline-flex;
   align-items: center;
-  font-size: 0.8rem;
+  justify-content: center;
+  font-size: var(--dc-fs-2);
   font-weight: 700;
   letter-spacing: 0.02em;
   color: var(--ink);
@@ -663,12 +717,11 @@ html .dc-hlabel {
 }
 /* The actions have no data to line up with, so their label is a quieter
    member of the band: present enough to name the icon column, not loud
-   enough to compete with the columns that carry values. */
-/* NB: no `justify-content` override here. The header's acts cell is the SAME
-   four-track grid as every row's (see the actions block below) and its label
-   spans all four tracks, so the label starts at the first slot's x without
-   the header having to align itself differently from the cards. */
+   enough to compete with the columns that carry values. The header's acts
+   cell is the SAME four-track grid as every row's, so the label spans all
+   four tracks and centres over the whole icon cluster. */
 html .dc-head .dc-cell[data-col="acts"] .dc-hlabel {
+  grid-column: 1 / -1;
   font-weight: 600;
   color: var(--muted);
 }
@@ -681,17 +734,17 @@ html .dc-row {
   height: 3rem;
   background: var(--card);
   border-color: var(--line);
-  border-radius: 13px;
+  border-radius: var(--dc-r-2);
   transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
 }
 html .dc-row:hover {
   border-color: var(--goldline);
-  box-shadow: 0 10px 24px -18px rgba(60, 45, 20, 0.55);
+  box-shadow: var(--dc-sh-lift);
   transform: translateY(-1px);
 }
 html .dc-row:focus-within {
   border-color: var(--goldline);
-  box-shadow: 0 0 0 3px rgba(190, 158, 78, 0.28);
+  box-shadow: var(--dc-sh-focus);
 }
 
 /* ---- cells: THE ALIGNMENT RULE ----
@@ -700,43 +753,75 @@ html .dc-row:focus-within {
    lives on the first and last CELL instead, where it is part of the track
    and therefore identical in the header and in every card.
 
-   ONE RULE FOR THE WHOLE TABLE, and it is a two-line rule:
+   THE RULE (rewritten 2026-07-29 at the user's request; this REVERSES the
+   start-aligned rule that stood here before, deliberately):
 
-     1. every column that carries WORDS or a DATUM you read left-to-right
-        (סוג, לקוח, נושא, תאריך, מספר, הקצאה, מייל, סטטוס) is START-aligned,
-        which in this RTL table means flush RIGHT. That is the default here
-        (`justify-content: flex-start`) and it is never overridden;
-     2. exactly one column is END-aligned - סכום - because money is read off
-        its last digit, so every amount shares its LEFT edge.
+     EVERY COLUMN IS CENTRED. Content and header label share ONE centre line
+     per column, all the way down the header band and all 61 cards. There is
+     no start-aligned and no end-aligned column left in the component.
 
-   The consequence a reader actually feels: one invisible vertical rule per
-   column, down the header band and all 61 cards, with nothing centred
-   anywhere. `text-align: start` is restated on the two wrapping/ellipsising
-   texts (`.dc-name`, `.dc-subj`) so no inherited `text-align` from a host
-   page can ever pull them off that rule, and the two TILES (chip, pill)
-   start-align their own labels for the same reason - see their own blocks.
+   `justify-content: center` + `text-align: center` on `.dc-cell` is the whole
+   rule for seven of the columns. `text-align: center` is restated on the two
+   wrapping/ellipsising texts (`.dc-name`, `.dc-subj`) so no inherited
+   `text-align` from a host page can pull them off it.
 
-   The action column is the one that is neither: it is a fixed 4-slot icon
-   grid anchored to the row's end (left), so slot N is at the same x in every
-   row whether or not the document offers action N. Its header label is
-   start-aligned to the FIRST slot, which is where the icons begin. */
+   THREE PLACES WHERE CENTRING NEEDS CRAFT, not just `center`:
+
+     1. סכום and מספר. Naive centring makes "1,550" and "12,000" wander,
+        because a centred string of a different length sits at a different x.
+        So the cell centres a fixed-width BOX (`width: 100%` of the cell's
+        content box - constant in every row because the track is content-sized
+        and the gutter padding is symmetric) whose CONTENTS are end-aligned.
+        Result: the block is centred in the column AND every numeral run
+        shares one edge. See their own blocks.
+
+     2. The two TILES (type chip, status pill) carry a leading colour dot.
+        A 6px marker in the flex flow pushes the WORD off centre by half its
+        own width, so the dot is absolutely positioned in the tile's inline
+        padding instead: the words centre exactly, and the dots make a
+        straight vertical line of their own.
+
+     3. The sortable header labels carry a trailing arrow, same problem. The
+        arrow is balanced by an empty `::before` spacer of equal width on the
+        label's other side, so the WORD - not the word-plus-arrow group - is
+        what is centred over the column.
+
+   The action column is a fixed 4-slot icon grid; the cluster is centred in
+   its track and its header label spans all four slots and centres over them,
+   so slot N is at the same x in every row.
+
+   THE GUTTERS. The four columns the user called "cramped together" (תאריך,
+   מספר, מייל, סטטוס - and, for the same reason, הקצאה and סכום) each carry
+   `padding-inline: var(--dc-gutter)`. That is what actually separates them:
+   the whitespace lives INSIDE each column, as an even gutter on both sides,
+   so the same padding that pushes the columns apart is the padding that makes
+   the content read as centred. A bigger `column-gap` could not do this - a
+   uniform gap gives the text columns exactly as much air as the data cluster,
+   which is the opposite of what was needed. */
 html .dc-cell {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: var(--dc-sp-1);
   min-width: 0;
-  justify-content: flex-start;
-  text-align: start;
+  justify-content: center;
+  text-align: center;
 }
+/* The row's own end insets. Symmetric, so the chip and the icon cluster are
+   centred in their tracks rather than centred-inside-an-offset-content-box. */
 html .dc-cell[data-col="type"] {
-  padding-inline-start: 0.8rem;
+  padding-inline: var(--dc-edge);
 }
 html .dc-cell[data-col="acts"] {
-  padding-inline-end: 0.5rem;
-  justify-content: flex-end;
+  padding-inline: var(--dc-edge);
 }
+/* The data cluster's breathing room - see THE GUTTERS above. */
+html .dc-cell[data-col="date"],
+html .dc-cell[data-col="number"],
+html .dc-cell[data-col="alloc"],
+html .dc-cell[data-col="mail"],
+html .dc-cell[data-col="status"],
 html .dc-cell[data-col="amount"] {
-  justify-content: flex-end;
+  padding-inline: var(--dc-gutter);
 }
 
 /* ---- סוג: the type chip ----
@@ -745,35 +830,43 @@ html .dc-cell[data-col="amount"] {
    is still content-sized, so they are all as wide as the widest LABEL that
    is actually present - never wider.
 
-   `justify-content: flex-start` is THE ALIGNMENT RULE (see the block comment
-   at the head of this section): a tile that stretches must not centre its
-   own label, or the six type words end up at six different x positions
-   inside six identical rectangles - which is exactly what the leading column
-   of an RTL table must never do. Start-aligned, "קבלה" and "חשבונית מס/קבלה"
-   share one right edge, and the type column reads as one vertical rule. */
+   BECAUSE the chips are one rectangle, centring the LABEL inside the chip is
+   what puts "קבלה" and "חשבונית מס/קבלה" on the same centre line - which is
+   the rule for the whole table now. The colour dot is the catch: in the flex
+   flow it would shift each word by half the dot's own width, off the column's
+   centre. So it is taken out of flow and parked in the chip's inline-start
+   padding, where it also forms a straight vertical line of its own. */
 html .dc-chip {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  justify-content: flex-start;
-  gap: 0.28rem;
+  justify-content: center;
   flex: 1 1 auto;
   min-width: 0;
   height: 1.5rem;
-  padding: 0 0.45rem;
-  border-radius: 8px;
+  padding-inline: var(--dc-sp-3);
+  border-radius: var(--dc-r-1);
   border: 1px solid var(--goldtintline);
   background: var(--goldtint);
   color: var(--gold-text);
-  font-size: 0.7rem;
+  font-size: var(--dc-fs-2);
   font-weight: 600;
   line-height: 1;
   white-space: nowrap;
 }
+html .dc-chiptxt {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 html .dc-tdot {
+  position: absolute;
+  inset-inline-start: var(--dc-sp-1);
+  top: 50%;
+  margin-top: -3px;
   width: 6px;
   height: 6px;
   border-radius: 2px;
-  flex: none;
   background: var(--dc-t-quote);
 }
 html .dc-tdot[data-type="receipt"] { background: var(--dc-t-receipt); }
@@ -792,20 +885,24 @@ html .dc-tdot[data-type="credit_note"] { background: var(--dc-t-credit); }
 html .dc-name {
   font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
   font-weight: 700;
-  font-size: 0.86rem;
+  font-size: var(--dc-fs-3);
   color: var(--ink);
   min-width: 0;
-  max-width: 9.6rem;
+  /* 9rem clears the longest client name in the app at every tier that has a
+     client track (measured: 164px at the 1440 root, 140px at the 768 root), so
+     no name is ever ellipsised - while still capping a content-sized track
+     that would otherwise hoard the width נושא needs. */
+  max-width: 9rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  text-align: start;
+  text-align: center;
 }
 html .dc-name::after {
   content: "";
   position: absolute;
   inset: 0;
-  border-radius: 13px;
+  border-radius: var(--dc-r-2);
   z-index: 1;
 }
 html .dc-row:hover .dc-name { color: var(--gold-text); }
@@ -818,24 +915,24 @@ html .dc-row:hover .dc-name { color: var(--gold-text); }
    height is fixed and two lines of 0.74rem still clear it, so a wrapped
    subject cannot make its card taller than any other card.
 
-   נושא is the widest column, so it is also the column where a centred text
-   would be most visible: a two-word subject would float in the middle of the
-   track, orphaned, while the long ones filled it. `text-align: start` (and
-   the start-aligned cell it sits in) is what makes every subject - "שירות"
-   and a 60-character sentence alike - hug the לקוח column and share ONE
-   right edge with the נושא label above them. The width a short subject does
-   not use is left over as a single clean gap in front of תאריך, which the
-   eye reads as the gap between two columns rather than as empty space
-   around a word. */
+   נושא is centred like every other column, and `max-width` is what keeps that
+   honest. Uncapped, the one flexible track would stretch a single subject
+   line the whole width of the row on a wide window; capped, the surplus stays
+   in the track as EVEN air on both sides of the centred text - which reads as
+   separation from לקוח on one side and from the data cluster on the other,
+   instead of as one long line and one big hole. The cap is generous enough
+   that no real subject is ever clipped by it (30rem over two lines is ~140
+   Hebrew characters; the longest subject in the app is a third of that). */
 html .dc-subj {
   min-width: 0;
-  text-align: start;
+  max-width: 30rem;
+  text-align: center;
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   line-clamp: 2;
   overflow: hidden;
-  font-size: 0.74rem;
+  font-size: var(--dc-fs-2);
   line-height: 1.3;
   color: var(--muted);
   overflow-wrap: anywhere;
@@ -848,19 +945,31 @@ html .dc-subj {
 html .dc-row .dc-cell[data-col="date"],
 html .dc-row .dc-cell[data-col="number"],
 html .dc-row .dc-cell[data-col="alloc"] {
-  font-size: 0.76rem;
+  font-size: var(--dc-fs-2);
   font-weight: 600;
   color: var(--ink2);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
+/* תאריך and הקצאה are FIXED-WIDTH values (DD.MM.YYYY, a 9-digit allocation)
+   in tabular figures, so plain centring already puts every one of them on the
+   same centre line AND gives them a shared edge for free. */
 html .dc-val {
   direction: ltr;
   unicode-bidi: isolate;
 }
+/* מספר is the second column that needs craft (see THE ALIGNMENT RULE, note 1):
+   #7 and #1024 are different widths, so a centred string would sit at a
+   different x in every row. The box is the cell's whole content box - one
+   constant width, symmetric gutters, therefore centred in the column - and
+   the numeral run is pushed to the box's end inside it, so all the numbers
+   share one edge and the sort order is readable straight down the column. */
 html .dc-num {
+  display: block;
+  width: 100%;
   direction: ltr;
   unicode-bidi: isolate;
+  text-align: end;
   font-weight: 700;
   color: var(--gold-text);
 }
@@ -877,8 +986,8 @@ html .dc-none {
 html .dc-mail {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
-  font-size: 0.74rem;
+  gap: var(--dc-sp-1);
+  font-size: var(--dc-fs-2);
   font-weight: 600;
   color: var(--muted);
   white-space: nowrap;
@@ -893,23 +1002,23 @@ html .dc-mailtxt {
   display: none;
 }
 
-/* ---- סטטוס: pill, plus the "unpaid for N days" note beside it ----
-   `min-width` on the pill: four different Hebrew words must not produce four
-   different rectangles. And, for the same reason the type chip does it,
-   `justify-content: flex-start`: a fixed-width pill that centres its label
-   puts טיוטה / נשלח / שולם / מבוטל at four different x positions. Start-aligned
-   they share one right edge with each other and with the סטטוס header. */
+/* ---- סטטוס: the pill ----
+   `min-width`: four different Hebrew words must not produce four different
+   rectangles. Because the rectangles ARE identical, centring the label inside
+   the pill puts טיוטה / נשלח / שולם / מבוטל on one centre line - and the dot
+   comes out of the flex flow, into the pill's inline-start padding, for
+   exactly the reason the type chip's dot does. */
 html .dc-pill {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  justify-content: flex-start;
-  gap: 0.3rem;
-  min-width: 4rem;
+  justify-content: center;
+  min-width: 3.7rem;
   height: 1.5rem;
-  padding: 0 0.5rem;
-  border-radius: 99px;
+  padding-inline: var(--dc-sp-3);
+  border-radius: var(--dc-r-pill);
   border: 1px solid transparent;
-  font-size: 0.72rem;
+  font-size: var(--dc-fs-2);
   font-weight: 600;
   line-height: 1;
   white-space: nowrap;
@@ -919,12 +1028,23 @@ html .dc-pill {
   border-color: var(--dc-draft-line);
 }
 html .dc-pilldot {
+  position: absolute;
+  inset-inline-start: var(--dc-sp-1);
+  top: 50%;
+  margin-top: -3px;
   width: 6px;
   height: 6px;
-  border-radius: 99px;
+  border-radius: var(--dc-r-pill);
   background: currentColor;
   opacity: 0.75;
-  flex: none;
+}
+/* The only overdue signal once there are columns: the pill's dot goes amber
+   and the cell keeps its "N ימים ללא תשלום" title. The note itself is a phone
+   card object (see `.dc-note`) - beside a pill it would drag the pill off the
+   column's centre line on the overdue rows alone. */
+html .dc-cell[data-overdue] .dc-pilldot {
+  background: var(--dc-wait-ink);
+  opacity: 1;
 }
 html .dc-pill[data-status="paid"] {
   background: var(--dc-paid-bg);
@@ -941,25 +1061,26 @@ html .dc-pill[data-status="cancelled"] {
   color: var(--dc-void-ink);
   border-color: var(--dc-void-line);
 }
-/* Inline with the pill and one line tall, so a card with an overdue note is
-   exactly as tall as a card without one. */
+/* PHONE CARD ONLY - switched on in the <= 767.98px block, where the status
+   line has room at both of its ends and there is no column centre line to
+   protect. One line tall either way, so an overdue card is exactly as tall as
+   a card without one. */
 html .dc-note {
-  display: inline-flex;
+  display: none;
   align-items: center;
   height: 1.2rem;
-  padding: 0 0.25rem;
-  border-radius: 6px;
+  padding-inline: var(--dc-sp-1);
+  border-radius: var(--dc-r-1);
   background: var(--dc-wait-bg);
-  font-size: 0.64rem;
+  font-size: var(--dc-fs-1);
   line-height: 1;
   font-weight: 700;
   color: var(--dc-wait-ink);
   white-space: nowrap;
   flex: none;
 }
-/* The full sentence, "N ימים ללא תשלום", is only ever spelled out on the
-   phone card, where the row is not competing for horizontal space; with
-   columns it lives in the note's title. */
+/* The full sentence, "N ימים ללא תשלום", is spelled out on the phone card,
+   where the row is not competing for horizontal space. */
 html .dc-tail {
   display: none;
   /* `.dc-note` is an inline-flex box, so the space in front of this span is
@@ -967,15 +1088,27 @@ html .dc-tail {
   margin-inline-start: 0.25em;
 }
 
-/* ---- סכום: the loudest thing on the row ---- */
+/* ---- סכום: the loudest thing on the row ----
+   The first of the two columns that need craft rather than `center` (see THE
+   ALIGNMENT RULE, note 1). `.dc-amt` is a block of the cell's FULL content
+   width - one constant width in every row, with a symmetric `--dc-gutter` on
+   each side, so the block is centred in the column - and the currency string
+   is end-aligned inside it. Every amount therefore starts its digits at
+   exactly the same x: "1,550 ₪" and "12,000 ₪" share one edge and the column
+   is scannable, which naive centring would have destroyed. */
 html .dc-row .dc-cell[data-col="amount"] {
   font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
   font-weight: 700;
-  font-size: 0.98rem;
+  font-size: var(--dc-fs-4);
   letter-spacing: -0.01em;
   color: var(--ink);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+html .dc-amt {
+  display: block;
+  width: 100%;
+  text-align: end;
 }
 
 /* ---- actions: a fixed FOUR-COLUMN icon grid ----
@@ -988,31 +1121,25 @@ html .dc-row .dc-cell[data-col="amount"] {
    of the CONTAINER and no child can move them. So a row that offers one
    action puts that icon at exactly the x a row with four actions puts its
    third icon, and the icons form four straight vertical lines down the whole
-   list. The group is anchored to the row's END (left, in RTL), so the block
-   is also one width for every row - which is part of what keeps the cards
-   identical rectangles. */
+   list. The cluster is CENTRED in its track (the track is content-sized, so
+   this is a symmetric inset rather than free space) and is one width for
+   every row - which is part of what keeps the cards identical rectangles. */
 html .dc-cell[data-col="acts"] {
   display: grid;
-  grid-template-columns: repeat(4, 1.45rem);
-  justify-content: end;
+  grid-template-columns: repeat(4, 1.3rem);
+  justify-content: center;
   align-items: center;
-  gap: 0.1rem;
+  gap: var(--dc-sp-1);
   position: relative;
   z-index: 2;
 }
-/* The header has no icons, so its label spans all four slots and
-   start-aligns inside them: the word "פעולות" therefore begins at exactly
-   the x of the first icon slot. */
-html .dc-head .dc-cell[data-col="acts"] .dc-hlabel {
-  grid-column: 1 / -1;
-}
 html .dc-act {
-  width: 1.45rem;
-  height: 1.45rem;
+  width: 1.3rem;
+  height: 1.3rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
+  border-radius: var(--dc-r-1);
   color: var(--dc-icon);
   flex: none;
   transition: background-color 0.15s ease, color 0.15s ease;
@@ -1026,6 +1153,14 @@ html .dc-act-empty {
 html .dc-act:hover {
   background: var(--icotile);
   color: var(--gold-text);
+}
+/* Keyboard parity with the mouse: the row's `:focus-within` ring says WHICH
+   row you are on, this says which BUTTON. */
+html .dc-act:focus-visible {
+  background: var(--icotile);
+  color: var(--gold-text);
+  outline: 2px solid var(--g3);
+  outline-offset: 1px;
 }
 html .dc-act[data-tone="paid"][data-on] { color: var(--dc-paid-ink); }
 html .dc-act[data-tone="paid"]:hover {
@@ -1043,31 +1178,43 @@ html .dc-act[data-tone="danger"]:hover {
 
 /* ---- sortable column labels ----
    The label IS the sort control. It stretches to fill its header cell, so
-   (a) its text starts at exactly the x its column's data starts at, and
-   (b) the hover/active tint reads as the whole column head lighting up
-   rather than a word getting a box. */
+   (a) the hover/active tint reads as the whole column head lighting up rather
+   than a word getting a box, and (b) the whole head is a click target.
+
+   THE ARROW SITS UNDER THE WORD, NOT BESIDE IT (see THE ALIGNMENT RULE, note
+   3). Beside the word it cannot be made to work: the columns are
+   CONTENT-SIZED, so anything in the flex flow beside the label widens the
+   track, and to keep the word itself centred the arrow has to be balanced by
+   an equal spacer on the other side - which measured out at ~117px of track
+   across תאריך / מספר / סכום, stolen from the one flexible column (נושא) and
+   enough to collapse it to 20px. Absolutely positioning it beside the word
+   instead makes it overlap the label on the narrow columns.
+
+   So it is centred UNDERNEATH the label, out of flow: zero track width, no
+   overlap, the word dead-centre on the column's centre line, and every header
+   label - sortable or not - still on one vertical centre in the band. It also
+   lands exactly where the active column's gold underline is, which reads as
+   one sort indicator rather than two. */
 html .dc-head .dc-sort {
-  justify-content: flex-start;
-  gap: 0.25rem;
+  position: relative;
+  justify-content: center;
+  gap: 0;
   width: 100%;
   min-width: 0;
   align-self: stretch;
   padding: 0;
   border: 0;
-  border-radius: 7px 7px 0 0;
+  border-radius: var(--dc-r-1) var(--dc-r-1) 0 0;
   background: none;
   cursor: pointer;
   white-space: nowrap;
   transition: background-color 0.15s ease, color 0.15s ease;
 }
-/* סכום is end-aligned (currency reads off its last digit), so its label is
-   too - and the sort glyph moves to the label's other side so the WORD, not
-   the arrow, is what lines up with the column of numbers. */
-html .dc-head .dc-cell[data-col="amount"] .dc-sort {
-  flex-direction: row-reverse;
-  justify-content: flex-start;
-}
 html .dc-head .dc-sort:hover {
+  background: rgba(190, 158, 78, 0.16);
+  color: var(--gold-text);
+}
+html .dc-head .dc-sort:focus-visible {
   background: rgba(190, 158, 78, 0.16);
   color: var(--gold-text);
 }
@@ -1080,16 +1227,23 @@ html .dc-head .dc-sort[data-active] {
   color: var(--gold-text);
 }
 html .dc-sorticon {
-  width: 0.8rem;
-  height: 0.8rem;
-  flex: none;
+  position: absolute;
+  inset-inline: 0;
+  /* An optical placement, not a spacing step: it is the largest offset that
+     still leaves the caret clear of the label above it (measured 2.9px of
+     clearance in a 2.6rem band) without touching the band's bottom rule. */
+  bottom: 0.1rem;
+  margin-inline: auto;
+  width: 0.6rem;
+  height: 0.6rem;
   opacity: 0.45;
 }
 html .dc-sort:hover .dc-sorticon,
+html .dc-sort:focus-visible .dc-sorticon,
 html .dc-sort[data-active] .dc-sorticon { opacity: 1; }
 
 html .dc-empty {
-  padding: 3.5rem 1rem;
+  padding: calc(var(--dc-sp-4) * 3.5) var(--dc-sp-4);
   text-align: center;
 }
 
@@ -1115,36 +1269,32 @@ html .dc-empty {
 
 /* ---- 768-1399: the diet tier ----
    Below 1400 the nine columns have to share 650-880px, so every one of them
-   is a notch smaller. The subject stays - it is the column the list is read
-   for - and takes whatever the diet frees. */
+   is a notch smaller. Because the whole section spends from tokens, the diet
+   is TWO declarations: the type scale drops to its smaller ladder (same 1.15
+   ratio, so every role keeps its relationship to the others) and the data
+   gutter steps down 3 -> 2 on the same spacing scale. Only the three things
+   the tokens cannot express - the well's padding, the chip/pill boxes and the
+   icon tile size - are named individually. */
 @media (min-width: 768px) and (max-width: 1399.98px) {
-  html .dc-shell { padding: 0.5rem; }
-  html .dc-table,
-  html .dc-table[data-alloc] { column-gap: 0.3rem; }
-  html .dc-chip { font-size: 0.66rem; padding: 0 0.35rem; height: 1.35rem; }
-  html .dc-name { font-size: 0.82rem; max-width: 8.6rem; }
-  html .dc-hlabel,
-  html .dc-head .dc-sort { font-size: 0.73rem; }
-  html .dc-subj { font-size: 0.71rem; }
-  html .dc-row .dc-cell[data-col="date"],
-  html .dc-row .dc-cell[data-col="number"] { font-size: 0.71rem; }
-  html .dc-pill { font-size: 0.68rem; padding: 0 0.3rem; min-width: 3.5rem; }
-  html .dc-note { font-size: 0.6rem; padding: 0 0.2rem; }
-  html .dc-row .dc-cell[data-col="amount"] { font-size: 0.88rem; }
-  html .dc-act { width: 1.35rem; height: 1.35rem; }
-  html .dc-cell[data-col="type"] { padding-inline-start: 0.55rem; }
-  /* the four slot tracks step down with the icons, so slot N stays one x */
-  html .dc-cell[data-col="acts"] {
-    padding-inline-end: 0.3rem;
-    grid-template-columns: repeat(4, 1.35rem);
+  html .dc-shell {
+    --dc-fs-1: 0.62rem;
+    --dc-fs-2: 0.71rem;
+    --dc-fs-3: 0.82rem;
+    --dc-fs-4: 0.94rem;
+    --dc-gutter: var(--dc-sp-1);
+    --dc-edge: var(--dc-sp-2);
+    padding: var(--dc-sp-2);
   }
+  html .dc-chip { height: 1.35rem; padding-inline: var(--dc-sp-2); }
+  html .dc-pill { height: 1.35rem; padding-inline: var(--dc-sp-2); min-width: 3.2rem; }
+  html .dc-act { width: 1.2rem; height: 1.2rem; }
+  /* the four slot tracks step down with the icons, so slot N stays one x */
+  html .dc-cell[data-col="acts"] { grid-template-columns: repeat(4, 1.2rem); }
 }
 
-/* ---- 768-1279: the mail glyph and the overdue note step aside ----
-   Both are secondary (the mail state is also a filter and a tooltip; the
-   overdue count is on the document itself), and between them they were
-   spending ~75px of a row that has ~640-715px to give. The overdue signal
-   survives as an amber status dot, and the cell keeps its title. */
+/* ---- 768-1279: the mail glyph steps aside ----
+   It is secondary (the mail state is also a filter and a tooltip) and it was
+   spending ~45px of a row that has ~640-715px to give. */
 @media (min-width: 768px) and (max-width: 1279.98px) {
   html .dc-table,
   html .dc-table[data-alloc] {
@@ -1159,11 +1309,6 @@ html .dc-empty {
       auto; /* actions */
   }
   html .dc-cell[data-col="mail"] { display: none; }
-  html .dc-note { display: none; }
-  html .dc-cell[data-overdue] .dc-pilldot {
-    background: var(--dc-wait-ink);
-    opacity: 1;
-  }
 }
 
 /* ---- 1024-1279: the tightest shell in the whole app ----
@@ -1187,7 +1332,23 @@ html .dc-empty {
       auto; /* actions */
   }
   html .dc-cell[data-col="subj"] { display: none; }
-  html .dc-name { max-width: none; }
+  /* This tier has ~640px for seven columns, so even as the flexible one the
+     client track cannot hold the longest company name on ONE line (measured:
+     the name wants 157px, the track can give 111px). Since the subject is gone
+     here there is vertical room instead, so the name WRAPS to two clamped
+     lines rather than ellipsising: the full name is readable, and because the
+     row height is fixed a two-line name still leaves every card the same
+     rectangle. This is the width the app is worked in daily. */
+  html .dc-name {
+    max-width: none;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    white-space: normal;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+  }
 }
 
 /* ---- phones (below Tailwind's `md`): no columns, a stacked card ----
@@ -1204,11 +1365,30 @@ html .dc-empty {
      line 2  [status pill]  ……  [mail state]  - anchored at both ends
    The mail state used to sit alone at the far left of line 1 while the status
    pill had a whole third line to itself, also alone. Pairing them puts one
-   object at each end of one line and gives the card its height back. */
+   object at each end of one line and gives the card its height back.
+
+   WHY THE CENTRING RULE DOES NOT APPLY DOWN HERE. "Every column is centred"
+   is a rule about COLUMNS: a centre line only means something when 61 rows
+   share it. The phone card has no columns at all - it is one stacked card per
+   document - and centring its six lines would leave every one of them
+   floating with ragged ends. So the card keeps the layout it had: each line
+   anchored at its ends, with the type chip, the meta run and the client name
+   flush to the card's start edge and the amount and the mail state flush to
+   its end edge. The two TILES still centre their own labels, because a pill
+   with a fixed width reads better with its word in the middle. */
 @media (max-width: 767.98px) {
-  html .dc-shell { padding: 0.6rem; }
+  html .dc-shell {
+    /* one step up from the desktop ladder: a phone is held closer but has no
+       column to protect, so the same four roles can each afford a little more */
+    --dc-fs-1: 0.75rem;
+    --dc-fs-2: 0.86rem;
+    --dc-fs-3: 0.99rem;
+    --dc-fs-4: 1.14rem;
+    padding: var(--dc-sp-2);
+  }
   html .dc-table,
-  html .dc-table[data-alloc] { display: flex; flex-direction: column; gap: 0.6rem; }
+  html .dc-table[data-alloc] { display: flex; flex-direction: column; gap: var(--dc-sp-2); }
+  html .dc-note { display: inline-flex; }
   html .dc-tail { display: inline; }
   /* There are no columns down here, so there is nothing for a header band to
      head - but the three sortable labels ARE the only sort control in the
@@ -1218,9 +1398,9 @@ html .dc-empty {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.4rem;
+    gap: var(--dc-sp-2);
     height: auto;
-    padding: 0 0.1rem 0.55rem;
+    padding: 0 0 var(--dc-sp-2);
     margin-bottom: 0;
     border: 0;
     border-radius: 0;
@@ -1229,7 +1409,7 @@ html .dc-empty {
   }
   html .dc-head::before {
     content: "מיון:";
-    font-size: 0.78rem;
+    font-size: var(--dc-fs-2);
     font-weight: 700;
     color: var(--ink2);
   }
@@ -1240,15 +1420,27 @@ html .dc-empty {
     display: inline-flex;
     padding: 0;
   }
+  /* A thumb-sized chip, so the arrow may sit next to the word: there is no
+     column centre line to keep it off. The desktop balance spacer would only
+     make the chip wider for nothing. */
   html .dc-head .dc-sort {
     width: auto;
-    min-height: 2.45rem;
+    min-height: 2.5rem;
     margin-block: 0;
-    padding: 0 0.75rem;
+    padding-inline: var(--dc-sp-3);
     border: 1px solid var(--line);
-    border-radius: 99px;
+    border-radius: var(--dc-r-pill);
     background: var(--card);
-    font-size: 0.82rem;
+    font-size: var(--dc-fs-2);
+  }
+  /* Beside the word down here, not under it: a chip is not a column head, and
+     there is no content-sized track for the glyph to widen. */
+  html .dc-sorticon {
+    position: static;
+    margin-inline: var(--dc-sp-1) 0;
+    width: 0.8rem;
+    height: 0.8rem;
+    flex: none;
   }
   html .dc-head .dc-sort[data-active] {
     background: var(--goldtint);
@@ -1265,9 +1457,25 @@ html .dc-empty {
       "date   number alloc"
       "status status mail"
       "acts   acts   acts";
-    column-gap: 0.6rem;
-    row-gap: 0.15rem;
-    padding: 0.55rem 0.75rem 0.4rem;
+    column-gap: var(--dc-sp-2);
+    row-gap: var(--dc-sp-1);
+    padding: var(--dc-sp-2) var(--dc-sp-3);
+  }
+  /* Back to a two-ends card: no columns down here, so nothing to centre. */
+  html .dc-row .dc-cell {
+    justify-content: flex-start;
+    text-align: start;
+    padding-inline: 0;
+  }
+  html .dc-row .dc-name,
+  html .dc-row .dc-subj { text-align: start; }
+  /* the full-width end-aligned boxes are a COLUMN device; on the card the two
+     numbers sit in a flex line next to their `data-label`, so they go back to
+     being plain inline runs */
+  html .dc-row .dc-num {
+    display: inline;
+    width: auto;
+    text-align: start;
   }
   /* מספר הקצאה is a 9-digit number with a 6-letter label, and on a 390px card
      it does not fit on the same line as תאריך and מספר - the three of them
@@ -1287,7 +1495,7 @@ html .dc-empty {
   /* Scoped to `.dc-row`: the header is a sort strip down here, and an
      unscoped `.dc-cell[data-col=…]` rule would out-specify the rule above
      that hides its non-sortable labels. */
-  html .dc-row .dc-cell[data-col="type"] { grid-area: type; padding-inline-start: 0; }
+  html .dc-row .dc-cell[data-col="type"] { grid-area: type; }
   html .dc-row .dc-cell[data-col="client"] { grid-area: client; }
   html .dc-row .dc-cell[data-col="subj"] { grid-area: subj; display: flex; }
   html .dc-row .dc-cell[data-col="date"] { grid-area: date; }
@@ -1297,7 +1505,7 @@ html .dc-empty {
      deliberately end-aligned besides the amount */
   html .dc-row .dc-cell[data-col="mail"] { grid-area: mail; display: flex; justify-content: flex-end; }
   html .dc-row .dc-cell[data-col="status"] { grid-area: status; }
-  html .dc-row .dc-cell[data-col="amount"] { grid-area: amount; }
+  html .dc-row .dc-cell[data-col="amount"] { grid-area: amount; justify-content: flex-end; }
   html .dc-row .dc-cell[data-col="acts"] {
     grid-area: acts;
     /* a footer bar, so the four slots sit as one centred cluster instead of
@@ -1305,30 +1513,28 @@ html .dc-empty {
        thumb-sized and centred - so slot N is one x on the phone too. */
     grid-template-columns: repeat(4, 2.5rem);
     justify-content: center;
-    gap: 0.35rem;
-    padding-inline-end: 0;
-    margin-top: 0.3rem;
-    padding-top: 0.25rem;
+    gap: var(--dc-sp-1);
+    margin-top: var(--dc-sp-1);
+    padding-top: var(--dc-sp-1);
     border-top: 1px solid var(--dc-hairline);
   }
-  /* The column headers are gone, so the three bare numbers say what they are. */
+  /* The column headers are gone, so the bare numbers say what they are. */
   html .dc-row .dc-cell[data-label]::before {
     content: attr(data-label);
     color: var(--muted);
-    font-weight: 500;
+    font-weight: 600;
     opacity: 0.85;
   }
   html .dc-chip { flex: 0 0 auto; }
   html .dc-mailtxt { display: inline; }
-  html .dc-name { font-size: 1rem; max-width: none; }
+  html .dc-name { max-width: none; }
   /* The phone card has no fixed height, so the subject reserves its two
      lines whether or not it needs both: that is what keeps every card on the
      phone the same rectangle too. */
   html .dc-subj {
-    font-size: 0.82rem;
+    max-width: none;
     min-height: 2.6em;
   }
-  html .dc-row .dc-cell[data-col="amount"] { font-size: 1.05rem; }
   /* Thumb-sized targets: 2.5rem is 41px at the phone root size of 16.5px. */
   html .dc-act { width: 2.5rem; height: 2.5rem; }
 }

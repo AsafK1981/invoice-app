@@ -159,12 +159,12 @@ export function DocumentsTable({ documents, limit, showExport = false }: Props) 
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="חיפוש: מספר, לקוח, סכום, תיאור פריט..."
-            className="input-warm pr-10 pl-9 w-full sm:w-72"
+            className="input-warm min-h-[40px] pr-10 pl-9 w-full sm:w-72"
           />
           {search && (
             <button
               onClick={() => setSearch("")}
-              className="absolute left-2 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700"
+              className="absolute left-1 top-1/2 -translate-y-1/2 w-10 h-10 inline-flex items-center justify-center rounded-lg text-stone-400 hover:text-stone-700 hover:bg-orange-100"
               aria-label="נקה חיפוש"
             >
               <X className="w-4 h-4" />
@@ -219,7 +219,7 @@ export function DocumentsTable({ documents, limit, showExport = false }: Props) 
         {filtersActive && (
           <button
             onClick={clearFilters}
-            className="inline-flex items-center justify-center min-h-[36px] px-3 text-sm font-medium text-orange-700 hover:bg-orange-100 rounded-xl"
+            className="inline-flex items-center justify-center min-h-[40px] px-3 text-sm font-medium text-orange-700 hover:bg-orange-100 rounded-xl"
           >
             נקה הכל
           </button>
@@ -230,7 +230,7 @@ export function DocumentsTable({ documents, limit, showExport = false }: Props) 
               onClick={() =>
                 exportDocuments(filtered, filtersActive ? "filtered" : undefined)
               }
-              className="inline-flex items-center gap-1.5 min-h-[36px] px-4 rounded-xl text-sm font-bold text-white bg-gradient-to-l from-emerald-500 to-teal-500 shadow-sm shadow-emerald-200/70 hover:shadow-md hover:shadow-emerald-300/70 hover:brightness-105 transition-all"
+              className="inline-flex items-center gap-1.5 min-h-[40px] px-4 rounded-xl text-sm font-bold text-white bg-gradient-to-l from-emerald-500 to-teal-500 shadow-sm shadow-emerald-200/70 hover:shadow-md hover:shadow-emerald-300/70 hover:brightness-105 transition-all"
               title="ייצוא לקובץ CSV / Excel"
             >
               <Download className="w-4 h-4" />
@@ -351,9 +351,13 @@ export function DocumentsTable({ documents, limit, showExport = false }: Props) 
  *
  * Every card is exactly the same rectangle: the row height is fixed (not a
  * min-height), the type chip fills its track, the status pill has a fixed
- * width, the "N ימים" overdue note sits inline after the pill instead of
- * under it, and the action slot is four fixed cells whether or not a given
+ * width, and the action slot is four fixed cells whether or not a given
  * document offers four actions.
+ *
+ * EVERY COLUMN IS CENTRED (2026-07-29, at the user's request). Content and
+ * header label share one centre line per column; see "cells: THE ALIGNMENT
+ * RULE" in `app-skin.css` for the two columns that need craft rather than a
+ * plain `justify-content: center` (סכום and מספר).
  *
  * The whole card is clickable via a stretched link on the client name (rather
  * than an onClick on a div), which keeps it reachable by keyboard and
@@ -376,8 +380,12 @@ function DocumentRow({ doc: d, showAlloc }: { doc: InvoiceDocument; showAlloc: b
     <li className="dc-row" data-type={d.type} data-status={d.status}>
       <span className="dc-cell" data-col="type">
         <span className="dc-chip">
+          {/* The dot is absolutely positioned inside the chip so it costs the
+              chip's centring nothing: the WORD is what has to sit on the
+              column's centre line, and a 6px marker in the flex flow would
+              push it off by half its own width. */}
           <i className="dc-tdot" data-type={d.type} aria-hidden="true" />
-          {DOCUMENT_TYPE_LABELS[d.type]}
+          <span className="dc-chiptxt">{DOCUMENT_TYPE_LABELS[d.type]}</span>
         </span>
       </span>
 
@@ -441,10 +449,12 @@ function DocumentRow({ doc: d, showAlloc }: { doc: InvoiceDocument; showAlloc: b
       >
         <span className="dc-pill" data-status={d.status}>
           <i className="dc-pilldot" aria-hidden="true" />
-          {DOCUMENT_STATUS_LABELS[d.status]}
+          <span className="dc-pilltxt">{DOCUMENT_STATUS_LABELS[d.status]}</span>
         </span>
-        {/* Inline, never on a second line: a note under the pill made an
-            overdue card taller than every other card in the list. */}
+        {/* Phone card only (see `.dc-note`). With columns, an extra chip beside
+            the pill would drag the pill off the column's centre line on the
+            overdue rows alone; there the signal is the amber pill dot plus the
+            cell's title. */}
         {unpaidDays >= OVERDUE_DAYS && (
           <span className="dc-note" title={`${unpaidDays} ימים ללא תשלום`}>
             {unpaidDays} ימים<span className="dc-tail"> ללא תשלום</span>
@@ -593,6 +603,10 @@ function ActSlot() {
  * lives where the data is instead of in a separate chip strip. Inactive
  * columns still show the up/down glyph (at low opacity) so it is discoverable
  * that the label is clickable at all.
+ *
+ * The label sits in its own `.dc-sorttxt` span because the WORD, not the
+ * word-plus-arrow group, is what must sit on the column's centre line; the CSS
+ * balances the arrow with an equal empty spacer on the label's other side.
  */
 function SortLabel({
   label,
@@ -623,7 +637,7 @@ function SortLabel({
       aria-pressed={active}
       title={hint}
     >
-      {label}
+      <span className="dc-sorttxt">{label}</span>
       <Icon className="dc-sorticon" aria-hidden="true" />
     </button>
   );
@@ -646,7 +660,7 @@ function FilterSelect({
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="input-warm py-1.5 px-3 text-sm w-auto"
+        className="input-warm min-h-[40px] py-1.5 px-3 text-sm w-auto"
       >
         {options.map((o) => (
           <option key={o.value} value={o.value}>
