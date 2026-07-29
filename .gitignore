@@ -60,6 +60,18 @@ Rashot Hamisim/**/*filled*
 Rashot Hamisim/**/*מולא*
 .gstack/
 
+# Local-only working docs. THIS REPO IS PUBLIC, and each of these directories
+# holds material that must never leave the machine:
+#   docs/tax-authority/  — SIGNED Tax Authority forms (ID number, signature) plus
+#                          the registration package with personal contact details
+#   docs/payments/       — clearing-company onboarding notes with personal
+#                          identifiers (email, phone) and KYC instructions
+#   docs/marketing/      — GTM planning that includes Asaf's home address, phone,
+#                          email and a real Tax Authority allocation number
+docs/tax-authority/
+docs/payments/
+docs/marketing/
+
 # local audit / scratch artifacts
 audit.json
 tmp_audit_local.json
