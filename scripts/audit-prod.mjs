@@ -175,10 +175,13 @@ async function checkAuthConfig() {
   ]) {
     const v = c[k];
     if (v) {
-      const hasName = /MyFriendlyInvoiceApp/i.test(v);
+      const hasName = /MyFriendlyInvoiceApp/.test(v);
       // The old brand surviving here means the remote Supabase template was
       // never re-pushed after the rename (scripts/update-email-templates.mjs).
-      const hasStaleName = /MySuperFriendlyInvoiceApp/i.test(v);
+      // Case-SENSITIVE on purpose: the templates legitimately link to
+      // mysuperfriendlyinvoiceapp.vercel.app, the domain we kept, and an /i
+      // regex reads that as a stale brand on every run.
+      const hasStaleName = /MySuperFriendlyInvoiceApp/.test(v);
       console.log(
         k + ":",
         hasStaleName
