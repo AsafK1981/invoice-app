@@ -597,13 +597,16 @@ html .dc-shell {
        --dc-gutter  the inner air of the six data columns (תאריך, מספר, מייל,
                     סטטוס, הקצאה, סכום). 2 at full width, 1 on the diet.
        --dc-edge    the card's own outer inset, on the first and last cell.
-                    3 at full width, 2 on the diet. */
+                    Step 2 at every tier: step 3 measured out at 19px stolen
+                    from נושא, which was enough to push three subjects onto a
+                    second line with an orphaned year on it. A 5px roomier chip
+                    inset is not worth a ragged second line. */
   --dc-sp-1: 0.25rem;
   --dc-sp-2: 0.5rem;
   --dc-sp-3: 0.75rem;
   --dc-sp-4: 1rem;
   --dc-gutter: var(--dc-sp-2);
-  --dc-edge: var(--dc-sp-3);
+  --dc-edge: var(--dc-sp-2);
 
   /* TYPE - four roles on a 1.15 modular scale, so the jump between two roles
      is always visible and never accidental:
@@ -1282,7 +1285,6 @@ html .dc-empty {
     --dc-fs-3: 0.82rem;
     --dc-fs-4: 0.94rem;
     --dc-gutter: var(--dc-sp-1);
-    --dc-edge: var(--dc-sp-2);
     padding: var(--dc-sp-2);
   }
   html .dc-chip { height: 1.35rem; padding-inline: var(--dc-sp-2); }
