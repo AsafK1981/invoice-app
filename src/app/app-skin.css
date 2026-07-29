@@ -103,6 +103,36 @@ html {
   --shadow: 0 1px 2px rgba(60, 45, 20, 0.05), 0 10px 24px -18px rgba(60, 45, 20, 0.3);
   --shadow-lg: 0 18px 40px -22px rgba(60, 45, 20, 0.35);
   --paperframe: #f0ece2;
+
+  /* --- document cards: status pills ---------------------------------
+     Soft pastels that carry meaning, each ink measured on its OWN fill
+     (sRGB WCAG 2.x): paid 5.9:1 · sent 5.9:1 · draft 5.8:1 · void 5.4:1.
+     `wait` is not a status of its own; it inks the "N days unpaid" note. */
+  --dc-paid-bg: #e6f1e9;
+  --dc-paid-ink: #2c6a45;
+  --dc-paid-line: #cfe3d5;
+  --dc-sent-bg: #e7eef8;
+  --dc-sent-ink: #2b5583;
+  --dc-sent-line: #cddef0;
+  --dc-draft-bg: #f1ece0;
+  --dc-draft-ink: #5c5445;
+  --dc-draft-line: #e0d8c6;
+  --dc-void-bg: #f9eae6;
+  --dc-void-ink: #9a3520;
+  --dc-void-line: #f0d5cd;
+  --dc-wait-ink: #7d5a17;
+
+  /* --- document cards: type dots (6px, decorative, label always present) */
+  --dc-t-receipt: #6f9b7f;
+  --dc-t-tax-receipt: #4f8f8a;
+  --dc-t-quote: #c1a058;
+  --dc-t-proforma: #8494bd;
+  --dc-t-tax: #6f7fae;
+  --dc-t-credit: #b5766a;
+
+  /* --- document cards: neutral furniture --- */
+  --dc-hairline: #f2ede1; /* the card's own internal rule, lighter than --line */
+  --dc-icon: #9a8c72; /* rest-state action glyph, 3.4:1 on white */
 }
 
 /* ---------- base surface + typography ---------- */
@@ -463,16 +493,11 @@ html table thead th {
   border-color: var(--line) !important;
 }
 html table tbody td { border-color: var(--line) !important; }
-/* status-tinted document rows: light washes, ink stays default */
-html tbody tr[data-status="paid"] { background: rgba(63, 122, 85, 0.09) !important; }
-html tbody tr[data-status="sent"] { background: rgba(70, 110, 175, 0.09) !important; }
-html tbody tr[data-status="draft"] { background: rgba(140, 128, 105, 0.09) !important; }
-html tbody tr[data-status="cancelled"] { background: rgba(166, 60, 40, 0.08) !important; }
-html tbody tr[data-status="paid"]:hover { background: rgba(63, 122, 85, 0.15) !important; }
-html tbody tr[data-status="sent"]:hover { background: rgba(70, 110, 175, 0.15) !important; }
-html tbody tr[data-status="draft"]:hover { background: rgba(140, 128, 105, 0.15) !important; }
-html tbody tr[data-status="cancelled"]:hover { background: rgba(166, 60, 40, 0.14) !important; }
-html tbody tr[data-status] td:first-child { color: var(--gold-text) !important; }
+/* The status-tinted document rows that used to live here are GONE (2026-07-29).
+   Four full-row washes on a table whose separators were a 1px #e9e1d0 hairline
+   made every boundary read as a colour change rather than a line, so the list
+   had no visible row separation at all. The documents list is now cards
+   (`.dc-card` below), which separate by GAP; status is carried by a pill. */
 /* Reports data table header (loud coral gradient row). The gold background and
    the gold ink on its <th>s already come from the `.from-orange-500.to-rose-500`
    CTA rules above (the <th>s carry no `bg-*` class, so the descendant rule
@@ -486,6 +511,375 @@ html .gk-etable thead { background: var(--goldtint) !important; }
 html .gk-etable thead th {
   color: var(--ink2) !important;
   border-color: var(--goldtintline) !important;
+}
+
+/* =====================================================================
+   DOCUMENT CARDS (`.dc-*`) - the documents list, 2026-07-29.
+
+   Replaces the 9-column <table> on /documents, /dashboard and the client
+   page. The brief, from the user, was: rows that are actually separated,
+   less clutter, symmetrical, friendlier. So:
+
+   - separation comes from a 10px GAP between white cards on the sand page,
+     not from a hairline that a status wash swallowed;
+   - EVERY datum gets its own slot, and every card shares one grid template,
+     so the slots line up vertically down the whole list;
+   - the subject sits on a line of its own (it used to be crammed under the
+     client name), the number and the date each get their own slot (they
+     used to share one cell), and "emailed" shrank from a full column to a
+     single envelope glyph with a title + screen-reader label.
+
+   Sizes are in `rem` on purpose: the app's root font-size steps 16.5 -> 19.25px
+   with viewport width (see GLOBAL TYPE SCALE-UP at the foot of this file) and
+   the cards must step with it. The two fixed grid columns are rem for the
+   same reason - they hold type, not images.
+   ===================================================================== */
+
+/* The list sits in its own sand-coloured well inside the white .card-soft the
+   three host pages wrap it in; that is what makes a white card read as a card. */
+html .dc-shell {
+  background: var(--bg);
+  padding: 0.85rem;
+}
+
+/* ---- sort strip (replaces the clickable table headers) ---- */
+html .dc-sortbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0 0.15rem 0.7rem;
+}
+html .dc-sortbar-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted);
+  margin-inline-end: 0.15rem;
+}
+html .dc-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 2rem;
+  padding: 0 0.7rem;
+  border-radius: 99px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink2);
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  transition: border-color 0.15s ease, color 0.15s ease, background-color 0.15s ease;
+}
+html .dc-sort:hover {
+  border-color: var(--goldline);
+  color: var(--gold-text);
+}
+html .dc-sort[data-active] {
+  background: var(--goldtint);
+  border-color: var(--goldtintline);
+  color: var(--gold-text);
+}
+
+/* ---- the card grid ---- */
+html .dc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+html .dc-card {
+  position: relative;
+  display: grid;
+  /* The two fixed slots stay narrow up to 1280px: the shell is only ~648px
+     wide at 1024 (a 288px sidebar eats into a 1024 window) and wider slots
+     left the client name with ~130px, i.e. permanently ellipsised. */
+  grid-template-columns: minmax(0, 1fr) 9rem 8.5rem;
+  grid-template-areas:
+    "who  state  amount"
+    "subj subj   subj"
+    "meta meta   acts";
+  align-items: center;
+  column-gap: 1rem;
+  row-gap: 0.25rem;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 0.7rem 1rem 0.45rem;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+html .dc-card:hover {
+  border-color: var(--goldline);
+  box-shadow: 0 10px 24px -18px rgba(60, 45, 20, 0.55);
+  transform: translateY(-1px);
+}
+html .dc-card:focus-within {
+  border-color: var(--goldline);
+  box-shadow: 0 0 0 3px rgba(190, 158, 78, 0.28);
+}
+
+/* line 1 right: type chip + client name */
+html .dc-who {
+  grid-area: who;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+}
+html .dc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 1.5rem;
+  padding: 0 0.55rem;
+  border-radius: 8px;
+  border: 1px solid var(--goldtintline);
+  background: var(--goldtint);
+  color: var(--gold-text);
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  flex: none;
+}
+html .dc-tdot {
+  width: 6px;
+  height: 6px;
+  border-radius: 2px;
+  flex: none;
+  background: var(--dc-t-quote);
+}
+html .dc-tdot[data-type="receipt"] { background: var(--dc-t-receipt); }
+html .dc-tdot[data-type="tax_invoice_receipt"] { background: var(--dc-t-tax-receipt); }
+html .dc-tdot[data-type="quote"] { background: var(--dc-t-quote); }
+html .dc-tdot[data-type="proforma"] { background: var(--dc-t-proforma); }
+html .dc-tdot[data-type="tax_invoice"] { background: var(--dc-t-tax); }
+html .dc-tdot[data-type="credit_note"] { background: var(--dc-t-credit); }
+
+/* The client name carries the stretched link: the WHOLE card is clickable,
+   but the click target is a real <a> so it is keyboard reachable and
+   announced as a link. The action buttons lift above the overlay. */
+html .dc-name {
+  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--ink);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+html .dc-name::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+  z-index: 1;
+}
+html .dc-card:hover .dc-name { color: var(--gold-text); }
+
+/* line 1 middle: status pill + the "unpaid for N days" note */
+html .dc-state {
+  grid-area: state;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.2rem;
+  min-width: 0;
+}
+html .dc-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 1.55rem;
+  padding: 0 0.65rem;
+  border-radius: 99px;
+  border: 1px solid transparent;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  background: var(--dc-draft-bg);
+  color: var(--dc-draft-ink);
+  border-color: var(--dc-draft-line);
+}
+html .dc-pilldot {
+  width: 6px;
+  height: 6px;
+  border-radius: 99px;
+  background: currentColor;
+  opacity: 0.75;
+  flex: none;
+}
+html .dc-pill[data-status="paid"] {
+  background: var(--dc-paid-bg);
+  color: var(--dc-paid-ink);
+  border-color: var(--dc-paid-line);
+}
+html .dc-pill[data-status="sent"] {
+  background: var(--dc-sent-bg);
+  color: var(--dc-sent-ink);
+  border-color: var(--dc-sent-line);
+}
+html .dc-pill[data-status="cancelled"] {
+  background: var(--dc-void-bg);
+  color: var(--dc-void-ink);
+  border-color: var(--dc-void-line);
+}
+html .dc-note {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--dc-wait-ink);
+  white-space: nowrap;
+}
+
+/* line 1 left: the amount, the loudest thing on the card */
+html .dc-amount {
+  grid-area: amount;
+  text-align: left;
+  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 1.15rem;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* line 2: the subject, on a line of its own, full width.
+   It also carries the card's internal rule: it is the one element that spans
+   every column, so the hairline is continuous instead of breaking over the
+   column gap (which is what putting it on the two line-3 cells produced). */
+html .dc-subj {
+  grid-area: subj;
+  min-width: 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--dc-hairline);
+  padding-bottom: 0.5rem;
+}
+
+/* line 3: number | date | mail state ......... actions */
+html .dc-meta,
+html .dc-acts {
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  min-height: 2.1rem;
+}
+html .dc-meta {
+  grid-area: meta;
+  gap: 0.55rem;
+  font-size: 0.76rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+html .dc-num {
+  direction: ltr;
+  unicode-bidi: isolate;
+  font-weight: 700;
+  color: var(--gold-text);
+}
+html .dc-sep {
+  width: 1px;
+  height: 0.7rem;
+  background: var(--line);
+  flex: none;
+}
+html .dc-mail {
+  display: inline-flex;
+  align-items: center;
+  color: var(--dc-icon);
+}
+html .dc-mail[data-sent] { color: var(--dc-paid-ink); }
+
+html .dc-acts {
+  grid-area: acts;
+  justify-content: flex-end;
+  gap: 0.1rem;
+  position: relative;
+  z-index: 2;
+}
+html .dc-act {
+  width: 2rem;
+  height: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  color: var(--dc-icon);
+  flex: none;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+html .dc-act:hover {
+  background: var(--icotile);
+  color: var(--gold-text);
+}
+html .dc-act[data-tone="paid"][data-on] { color: var(--dc-paid-ink); }
+html .dc-act[data-tone="paid"]:hover {
+  background: var(--dc-paid-bg);
+  color: var(--dc-paid-ink);
+}
+html .dc-act[data-tone="convert"]:hover {
+  background: var(--dc-sent-bg);
+  color: var(--dc-sent-ink);
+}
+html .dc-act[data-tone="danger"]:hover {
+  background: var(--dc-void-bg);
+  color: var(--dc-void-ink);
+}
+
+html .dc-empty {
+  padding: 3.5rem 1rem;
+  text-align: center;
+}
+
+/* From 1280px up the shell is wide enough to give the status and money slots
+   room to breathe without starving the client name. */
+@media (min-width: 1280px) {
+  html .dc-card { grid-template-columns: minmax(0, 1fr) 11rem 10rem; }
+}
+
+/* ---- stacked card: phones (below Tailwind's `md`) ----
+   768px and up keeps the three-slot grid: even the narrowest shell above that
+   breakpoint (1024px viewport minus the 288px sidebar) fits it comfortably. */
+@media (max-width: 767.98px) {
+  html .dc-shell { padding: 0.6rem; }
+  html .dc-card {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "who   amount"
+      "subj  subj"
+      "state state"
+      "meta  acts";
+    column-gap: 0.7rem;
+    row-gap: 0.45rem;
+    padding: 0.7rem 0.8rem 0.55rem;
+  }
+  html .dc-who { align-items: flex-start; flex-direction: column; gap: 0.3rem; }
+  html .dc-name { font-size: 1rem; max-width: 100%; }
+  html .dc-amount { font-size: 1.05rem; align-self: start; }
+  /* The card's internal rule moves down one slot so it still reads as the
+     footer rule: who+amount / subject / status | number, date, mail, actions. */
+  html .dc-subj { border-bottom: 0; padding-bottom: 0; }
+  html .dc-state {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--dc-hairline);
+    padding-bottom: 0.5rem;
+  }
+  /* Thumb-sized targets: 2.5rem is 41px at the phone root size of 16.5px. */
+  html .dc-act { width: 2.5rem; height: 2.5rem; }
+  html .dc-acts,
+  html .dc-meta { min-height: 2.9rem; }
 }
 
 /* ---------- marker-class cards: recommended plan + danger zone ----------

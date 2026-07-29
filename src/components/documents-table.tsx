@@ -7,12 +7,6 @@ import {
   Search,
   X,
   Trash2,
-  ReceiptText,
-  FileText as FileTextIcon,
-  FileClock,
-  FileCheck,
-  FileMinus,
-  FileSpreadsheet,
   ArrowUp,
   ArrowDown,
   ArrowUpDown,
@@ -20,7 +14,7 @@ import {
   Circle,
   Download,
   Mail,
-  MailX,
+  MailCheck,
   FilePlus2,
   Pencil,
 } from "lucide-react";
@@ -53,61 +47,17 @@ interface Props {
   showExport?: boolean;
 }
 
-const TYPE_ICONS: Record<DocumentType, typeof ReceiptText> = {
-  receipt: ReceiptText,
-  quote: FileTextIcon,
-  proforma: FileClock,
-  tax_invoice: FileCheck,
-  tax_invoice_receipt: FileSpreadsheet,
-  credit_note: FileMinus,
-};
-
-const TYPE_THEMES: Record<DocumentType, { row: string; badge: string; icon: string }> = {
-  receipt: {
-    row: "hover:bg-emerald-50/60",
-    badge: "bg-emerald-100 text-emerald-800",
-    icon: "text-emerald-500 bg-emerald-100",
-  },
-  quote: {
-    row: "hover:bg-amber-50/60",
-    badge: "bg-amber-100 text-amber-800",
-    icon: "text-amber-600 bg-amber-100",
-  },
-  proforma: {
-    row: "hover:bg-fuchsia-50/60",
-    badge: "bg-fuchsia-100 text-fuchsia-800",
-    icon: "text-fuchsia-600 bg-fuchsia-100",
-  },
-  tax_invoice: {
-    row: "hover:bg-sky-50/60",
-    badge: "bg-sky-100 text-sky-800",
-    icon: "text-sky-500 bg-sky-100",
-  },
-  tax_invoice_receipt: {
-    row: "hover:bg-violet-50/60",
-    badge: "bg-violet-100 text-violet-800",
-    icon: "text-violet-500 bg-violet-100",
-  },
-  credit_note: {
-    row: "hover:bg-rose-50/60",
-    badge: "bg-rose-100 text-rose-800",
-    icon: "text-rose-500 bg-rose-100",
-  },
-};
-
-const STATUS_THEMES: Record<string, string> = {
-  draft: "bg-stone-100 text-stone-700",
-  sent: "bg-sky-100 text-sky-700",
-  paid: "bg-emerald-100 text-emerald-700",
-  cancelled: "bg-rose-100 text-rose-700",
-};
+/**
+ * How many days a `sent` document may sit unpaid before the card calls it out
+ * under the status pill. Receipts are paid by definition and are excluded.
+ */
+const OVERDUE_DAYS = 7;
 
 export function DocumentsTable({ documents, limit, showExport = false }: Props) {
-  const router = useRouter();
   const searchParams = useSearchParams();
   // Read initial filter values from URL search params so dashboard cards
   // (and other deep-links like /documents?type=quote&status=sent) can
-  // pre-filter the table. Validates against known values to ignore noise.
+  // pre-filter the list. Validates against known values to ignore noise.
   type EmailFilter = "all" | "emailed" | "not_emailed";
   const initialType: TypeFilter = (() => {
     const v = searchParams.get("type");
@@ -277,155 +227,142 @@ export function DocumentsTable({ documents, limit, showExport = false }: Props) 
         </div>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full [&_tr]:divide-x [&_tr]:divide-stone-200/60">
-          <thead className="text-xs text-stone-600 bg-stone-50 border-b border-stone-200">
-            <tr>
-              <SortableHeader
-                label="מספר"
-                sortKey="number"
-                currentKey={sortKey}
-                dir={sortDir}
-                onClick={() => toggleSort("number")}
-                align="right"
-              />
-              <th className="text-right px-3 sm:px-6 py-3 font-semibold">סוג</th>
-              <th className="text-right px-3 sm:px-6 py-3 font-semibold">לקוח</th>
-              <th className="text-right px-6 py-3 font-semibold hidden lg:table-cell">נושא</th>
-              <th className="text-right px-3 sm:px-6 py-3 font-semibold hidden md:table-cell">
-                <SortableHeader
-                  label="תאריך"
-                  sortKey="date"
-                  currentKey={sortKey}
-                  dir={sortDir}
-                  onClick={() => toggleSort("date")}
-                  align="right"
-                  inline
-                />
-              </th>
-              <th className="text-right px-3 sm:px-6 py-3 font-semibold">סטטוס</th>
-              <th className="text-right px-3 sm:px-6 py-3 font-semibold">נשלח</th>
-              <SortableHeader
-                label="סכום"
-                sortKey="total"
-                currentKey={sortKey}
-                dir={sortDir}
-                onClick={() => toggleSort("total")}
-                align="left"
-              />
-              <th className="px-2 sm:px-4 py-3 w-20"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.length === 0 ? (
-              <tr>
-                <td colSpan={9} className="px-6 py-16 text-center">
-                  <div className="text-4xl mb-2">{filtersActive ? "🔍" : "📄"}</div>
-                  <div className="text-sm text-stone-500">
-                    {filtersActive ? "אין מסמכים העונים לסינון הנבחר" : "אין מסמכים עדיין"}
-                  </div>
-                  {filtersActive ? (
-                    <button
-                      onClick={clearFilters}
-                      className="text-sm text-orange-600 hover:underline mt-2"
-                    >
-                      נקה את כל הסינונים
-                    </button>
-                  ) : (
-                    <Link
-                      href="/documents/new"
-                      className="btn-glow inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-5 py-2.5 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200/60 hover:-translate-y-0.5 transition-all mt-4"
-                    >
-                      <FilePlus2 className="w-4 h-4" />
-                      צור מסמך ראשון
-                    </Link>
-                  )}
-                </td>
-              </tr>
+      <div className="dc-shell">
+        {/* Sort lives in its own strip instead of clickable column headers:
+            the cards have no columns to head, and three labelled chips are a
+            lot more discoverable than a caret on a table <th>. */}
+        {filtered.length > 0 && (
+          <div className="dc-sortbar" role="group" aria-label="מיון המסמכים">
+            <span className="dc-sortbar-label">מיון לפי:</span>
+            <SortChip
+              label="תאריך"
+              sortKey="date"
+              currentKey={sortKey}
+              dir={sortDir}
+              onClick={() => toggleSort("date")}
+            />
+            <SortChip
+              label="מספר"
+              sortKey="number"
+              currentKey={sortKey}
+              dir={sortDir}
+              onClick={() => toggleSort("number")}
+            />
+            <SortChip
+              label="סכום"
+              sortKey="total"
+              currentKey={sortKey}
+              dir={sortDir}
+              onClick={() => toggleSort("total")}
+            />
+          </div>
+        )}
+
+        {filtered.length === 0 ? (
+          <div className="dc-empty">
+            <div className="text-4xl mb-2">{filtersActive ? "🔍" : "📄"}</div>
+            <div className="text-sm text-stone-500">
+              {filtersActive ? "אין מסמכים העונים לסינון הנבחר" : "אין מסמכים עדיין"}
+            </div>
+            {filtersActive ? (
+              <button
+                onClick={clearFilters}
+                className="text-sm text-orange-600 hover:underline mt-2"
+              >
+                נקה את כל הסינונים
+              </button>
             ) : (
-              filtered.map((d) => {
-                const theme = TYPE_THEMES[d.type];
-                const Icon = TYPE_ICONS[d.type];
-                return (
-                  <tr
-                    key={d.id}
-                    data-status={d.status}
-                    data-type={d.type}
-                    onClick={() => router.push(`/documents/${d.id}`)}
-                    className={`border-t border-stone-200/60 transition-colors cursor-pointer ${theme.row}`}
-                  >
-                    <td className="px-3 sm:px-6 py-3 text-sm font-bold text-stone-900 whitespace-nowrap tabular-nums">
-                      #{d.number}
-                      <div className="text-[10px] font-normal text-stone-500 md:hidden mt-0.5">
-                        {formatDate(d.date)}
-                      </div>
-                    </td>
-                    <td className="px-3 sm:px-6 py-3 text-sm">
-                      <span
-                        className={`inline-flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-full text-xs font-medium ${theme.badge}`}
-                      >
-                        <Icon className="w-3.5 h-3.5" />
-                        <span className="hidden sm:inline">{DOCUMENT_TYPE_LABELS[d.type]}</span>
-                      </span>
-                    </td>
-                    <td className="px-3 sm:px-6 py-3 text-sm font-medium text-stone-900">{d.clientName}</td>
-                    <td className="px-6 py-3 text-sm text-stone-700 hidden lg:table-cell">{d.subject || "-"}</td>
-                    <td className="px-6 py-3 text-sm text-stone-600 hidden md:table-cell">{formatDate(d.date)}</td>
-                    <td className="px-3 sm:px-6 py-3 text-sm">
-                      <div className="flex flex-col gap-1">
-                        <span
-                          className={`inline-block w-fit px-2.5 py-1 rounded-full text-xs font-medium ${STATUS_THEMES[d.status]}`}
-                        >
-                          {DOCUMENT_STATUS_LABELS[d.status]}
-                        </span>
-                        {d.status === "sent" &&
-                          d.type !== "receipt" &&
-                          d.type !== "tax_invoice_receipt" &&
-                          (() => {
-                            const days = Math.floor(
-                              (Date.now() - new Date(d.date).getTime()) / (1000 * 60 * 60 * 24)
-                            );
-                            if (days >= 7) {
-                              return (
-                                <span className="text-xs text-amber-700 font-medium">
-                                  {days} ימים ללא תשלום
-                                </span>
-                              );
-                            }
-                            return null;
-                          })()}
-                      </div>
-                    </td>
-                    <td className="px-3 sm:px-6 py-3 text-sm">
-                      {d.emailedAt ? (
-                        <span
-                          title={`נשלח במייל ב-${formatDate(d.emailedAt)}`}
-                          className="inline-flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800"
-                        >
-                          <Mail className="w-3.5 h-3.5" />
-                          <span className="hidden sm:inline">נשלח</span>
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-full text-xs font-medium bg-stone-100 text-stone-500">
-                          <MailX className="w-3.5 h-3.5" />
-                          <span className="hidden sm:inline">לא נשלח</span>
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-3 sm:px-6 py-3 text-sm font-bold text-left text-stone-900 whitespace-nowrap tabular-nums">
-                      {formatCurrency(d.total)}
-                    </td>
-                    <td className="px-2 sm:px-2 py-3 text-center">
-                      <RowActions doc={d} />
-                    </td>
-                  </tr>
-                );
-              })
+              <Link
+                href="/documents/new"
+                className="btn-glow inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-5 py-2.5 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200/60 hover:-translate-y-0.5 transition-all mt-4"
+              >
+                <FilePlus2 className="w-4 h-4" />
+                צור מסמך ראשון
+              </Link>
             )}
-          </tbody>
-        </table>
+          </div>
+        ) : (
+          <ul className="dc-list" role="list">
+            {filtered.map((d) => (
+              <DocumentCard key={d.id} doc={d} />
+            ))}
+          </ul>
+        )}
       </div>
     </div>
+  );
+}
+
+/**
+ * One document, one card. Every datum gets its OWN slot and every card shares
+ * the same grid template, so the slots line up vertically down the list:
+ *
+ *   line 1   type chip + client name .... status pill .... amount
+ *   line 2   subject, on a line of its own
+ *   line 3   number | date | mail state ................. actions
+ *
+ * The whole card is clickable via a stretched link on the client name (rather
+ * than an onClick on a div), which keeps it reachable by keyboard and
+ * announced as a link, while the action buttons sit above the overlay.
+ */
+function DocumentCard({ doc: d }: { doc: InvoiceDocument }) {
+  const unpaidDays =
+    d.status === "sent" && d.type !== "receipt" && d.type !== "tax_invoice_receipt"
+      ? Math.floor((Date.now() - new Date(d.date).getTime()) / (1000 * 60 * 60 * 24))
+      : 0;
+  const emailed = Boolean(d.emailedAt);
+
+  return (
+    <li className="dc-card" data-type={d.type} data-status={d.status}>
+      <div className="dc-who">
+        <span className="dc-chip">
+          <i className="dc-tdot" data-type={d.type} aria-hidden="true" />
+          {DOCUMENT_TYPE_LABELS[d.type]}
+        </span>
+        <Link href={`/documents/${d.id}`} className="dc-name">
+          {d.clientName}
+        </Link>
+      </div>
+
+      <div className="dc-state">
+        <span className="dc-pill" data-status={d.status}>
+          <i className="dc-pilldot" aria-hidden="true" />
+          {DOCUMENT_STATUS_LABELS[d.status]}
+        </span>
+        {unpaidDays >= OVERDUE_DAYS && (
+          <span className="dc-note">{unpaidDays} ימים ללא תשלום</span>
+        )}
+      </div>
+
+      <div className="dc-amount">{formatCurrency(d.total)}</div>
+
+      <div className="dc-subj">{d.subject || "ללא נושא"}</div>
+
+      <div className="dc-meta">
+        <span className="dc-num">#{d.number}</span>
+        <i className="dc-sep" aria-hidden="true" />
+        <span className="dc-date">{formatDate(d.date)}</span>
+        <i className="dc-sep" aria-hidden="true" />
+        <span
+          className="dc-mail"
+          data-sent={emailed ? "1" : undefined}
+          title={emailed ? `נשלח במייל ב-${formatDate(d.emailedAt!)}` : "לא נשלח במייל"}
+        >
+          {emailed ? (
+            <MailCheck className="w-4 h-4" aria-hidden="true" />
+          ) : (
+            <Mail className="w-4 h-4" aria-hidden="true" />
+          )}
+          <span className="sr-only">
+            {emailed ? `נשלח במייל ב-${formatDate(d.emailedAt!)}` : "לא נשלח במייל"}
+          </span>
+        </span>
+      </div>
+
+      <div className="dc-acts">
+        <RowActions doc={d} />
+      </div>
+    </li>
   );
 }
 
@@ -438,7 +375,7 @@ function RowActions({ doc }: { doc: InvoiceDocument }) {
   const isPaid = doc.status === "paid";
   // Quote that's been issued (sent or paid) and isn't already linked to a
   // receipt can be one-click converted. Mirrors handleConvert() on the doc
-  // detail page so the table button behaves identically.
+  // detail page so the card button behaves identically.
   const canConvertToReceipt =
     (doc.type === "quote" || doc.type === "proforma") &&
     doc.status !== "draft" &&
@@ -473,7 +410,7 @@ function RowActions({ doc }: { doc: InvoiceDocument }) {
   }
 
   return (
-    <div className="flex items-center justify-center gap-1">
+    <>
       {canConvertToReceipt && (
         <button
           onClick={(e) => {
@@ -481,10 +418,11 @@ function RowActions({ doc }: { doc: InvoiceDocument }) {
             const targetType = canIssueTaxInvoices(business) ? "tax-invoice-receipt" : "receipt";
             router.push(`/documents/new/${targetType}?from=${doc.id}&convert=1`);
           }}
-          className="p-1.5 rounded-lg text-stone-300 hover:text-sky-600 hover:bg-sky-50 transition-colors cursor-pointer"
+          className="dc-act"
+          data-tone="convert"
           aria-label="הפק קבלה לחשבון העסקה הזה"
         >
-          <Tooltip label="הפק קבלה: כסף התקבל" side="left">
+          <Tooltip label="הפק קבלה: כסף התקבל" side="top">
             <FilePlus2 className="w-4 h-4" />
           </Tooltip>
         </button>
@@ -499,14 +437,12 @@ function RowActions({ doc }: { doc: InvoiceDocument }) {
               showToast(friendlyError(err, "שגיאה בעדכון"));
             }
           }}
-          className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-            isPaid
-              ? "text-emerald-500 hover:text-emerald-700 hover:bg-emerald-50"
-              : "text-stone-300 hover:text-emerald-500 hover:bg-emerald-50"
-          }`}
+          className="dc-act"
+          data-tone="paid"
+          data-on={isPaid ? "1" : undefined}
           aria-label={isPaid ? "סמן כלא שולם" : "סמן כשולם"}
         >
-          <Tooltip label={isPaid ? "סמן כלא שולם" : "סמן כשולם"} side="left">
+          <Tooltip label={isPaid ? "סמן כלא שולם" : "סמן כשולם"} side="top">
             {isPaid ? <CheckCircle2 className="w-4 h-4" /> : <Circle className="w-4 h-4" />}
           </Tooltip>
         </button>
@@ -516,63 +452,61 @@ function RowActions({ doc }: { doc: InvoiceDocument }) {
           e.stopPropagation();
           router.push(`/documents/${doc.id}`);
         }}
-        className="text-stone-300 hover:text-orange-600 p-1.5 rounded-lg hover:bg-orange-50 transition-colors cursor-pointer"
+        className="dc-act"
         aria-label="ערוך מסמך"
       >
-        <Tooltip label="ערוך" side="left">
+        <Tooltip label="ערוך" side="top">
           <Pencil className="w-4 h-4" />
         </Tooltip>
       </button>
       {isDeletable && (
         <button
           onClick={handleRowDelete}
-          className="text-stone-300 hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer"
+          className="dc-act"
+          data-tone="danger"
           aria-label="מחק מסמך"
         >
-          <Tooltip label="מחק" side="left">
+          <Tooltip label="מחק" side="top">
             <Trash2 className="w-4 h-4" />
           </Tooltip>
         </button>
       )}
-    </div>
+    </>
   );
 }
 
-function SortableHeader({
+function SortChip({
   label,
   sortKey,
   currentKey,
   dir,
   onClick,
-  align,
-  inline = false,
 }: {
   label: string;
   sortKey: SortKey;
   currentKey: SortKey;
   dir: SortDir;
   onClick: () => void;
-  align: "right" | "left";
-  inline?: boolean;
 }) {
   const active = sortKey === currentKey;
   const Icon = !active ? ArrowUpDown : dir === "asc" ? ArrowUp : ArrowDown;
-  const button = (
+  const hint = !active
+    ? `מיין לפי ${label}`
+    : dir === "asc"
+      ? `${label}: מהנמוך לגבוה, לחץ להיפוך`
+      : `${label}: מהגבוה לנמוך, לחץ להיפוך`;
+  return (
     <button
+      type="button"
       onClick={onClick}
-      className={`inline-flex items-center gap-1 hover:text-orange-700 transition-colors ${
-        active ? "text-orange-700" : "text-stone-700"
-      }`}
+      className="dc-sort"
+      data-active={active ? "1" : undefined}
+      aria-pressed={active}
+      title={hint}
     >
       {label}
-      <Icon className="w-3 h-3" />
+      <Icon className="w-3.5 h-3.5" aria-hidden="true" />
     </button>
-  );
-  if (inline) return button;
-  return (
-    <th className={`text-${align} px-3 sm:px-6 py-3 font-semibold`}>
-      {button}
-    </th>
   );
 }
 
