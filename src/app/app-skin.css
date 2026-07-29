@@ -555,6 +555,13 @@ html .gk-etable thead th {
    taller); and the action block is four fixed slots whether or not a
    document offers four actions.
 
+   HOW EVERY COLUMN IS ALIGNED is one rule with one exception, written out in
+   full at "cells: THE ALIGNMENT RULE" below. In short: every column that
+   carries words or a datum is start-aligned (flush right, this being RTL),
+   including the labels INSIDE the type chip and the status pill; סכום alone
+   is end-aligned; and the actions are a fixed four-track grid pinned to the
+   row's end. Nothing in this component is centred.
+
    Sizes are in `rem` on purpose: the app's root font-size steps 16.5 -> 19.25px
    with viewport width (see GLOBAL TYPE SCALE-UP at the foot of this file) and
    the rows must step with it.
@@ -657,10 +664,10 @@ html .dc-hlabel {
 /* The actions have no data to line up with, so their label is a quieter
    member of the band: present enough to name the icon column, not loud
    enough to compete with the columns that carry values. */
-html .dc-head .dc-cell[data-col="acts"] {
-  /* the four action slots fill the cell, so the label starts where they do */
-  justify-content: flex-start;
-}
+/* NB: no `justify-content` override here. The header's acts cell is the SAME
+   four-track grid as every row's (see the actions block below) and its label
+   spans all four tracks, so the label starts at the first slot's x without
+   the header having to align itself differently from the cards. */
 html .dc-head .dc-cell[data-col="acts"] .dc-hlabel {
   font-weight: 600;
   color: var(--muted);
@@ -687,16 +694,39 @@ html .dc-row:focus-within {
   box-shadow: 0 0 0 3px rgba(190, 158, 78, 0.28);
 }
 
-/* ---- cells ----
+/* ---- cells: THE ALIGNMENT RULE ----
    The row itself carries no side padding (that would inset the first and
    last subgrid track and pull them out of line with the header); the inset
    lives on the first and last CELL instead, where it is part of the track
-   and therefore identical in the header and in every card. */
+   and therefore identical in the header and in every card.
+
+   ONE RULE FOR THE WHOLE TABLE, and it is a two-line rule:
+
+     1. every column that carries WORDS or a DATUM you read left-to-right
+        (סוג, לקוח, נושא, תאריך, מספר, הקצאה, מייל, סטטוס) is START-aligned,
+        which in this RTL table means flush RIGHT. That is the default here
+        (`justify-content: flex-start`) and it is never overridden;
+     2. exactly one column is END-aligned - סכום - because money is read off
+        its last digit, so every amount shares its LEFT edge.
+
+   The consequence a reader actually feels: one invisible vertical rule per
+   column, down the header band and all 61 cards, with nothing centred
+   anywhere. `text-align: start` is restated on the two wrapping/ellipsising
+   texts (`.dc-name`, `.dc-subj`) so no inherited `text-align` from a host
+   page can ever pull them off that rule, and the two TILES (chip, pill)
+   start-align their own labels for the same reason - see their own blocks.
+
+   The action column is the one that is neither: it is a fixed 4-slot icon
+   grid anchored to the row's end (left), so slot N is at the same x in every
+   row whether or not the document offers action N. Its header label is
+   start-aligned to the FIRST slot, which is where the icons begin. */
 html .dc-cell {
   display: flex;
   align-items: center;
   gap: 0.35rem;
   min-width: 0;
+  justify-content: flex-start;
+  text-align: start;
 }
 html .dc-cell[data-col="type"] {
   padding-inline-start: 0.8rem;
@@ -713,11 +743,18 @@ html .dc-cell[data-col="amount"] {
    `flex: 1` makes every chip fill the type track, so the chips are one
    rectangle down the whole list instead of six different widths. The track
    is still content-sized, so they are all as wide as the widest LABEL that
-   is actually present - never wider. */
+   is actually present - never wider.
+
+   `justify-content: flex-start` is THE ALIGNMENT RULE (see the block comment
+   at the head of this section): a tile that stretches must not centre its
+   own label, or the six type words end up at six different x positions
+   inside six identical rectangles - which is exactly what the leading column
+   of an RTL table must never do. Start-aligned, "קבלה" and "חשבונית מס/קבלה"
+   share one right edge, and the type column reads as one vertical rule. */
 html .dc-chip {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 0.28rem;
   flex: 1 1 auto;
   min-width: 0;
@@ -762,6 +799,7 @@ html .dc-name {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  text-align: start;
 }
 html .dc-name::after {
   content: "";
@@ -778,9 +816,20 @@ html .dc-row:hover .dc-name { color: var(--gold-text); }
    read his own subjects, which is the complaint that started this pass. So
    the subject - and only the subject - wraps, clamped at two lines. The row
    height is fixed and two lines of 0.74rem still clear it, so a wrapped
-   subject cannot make its card taller than any other card. */
+   subject cannot make its card taller than any other card.
+
+   נושא is the widest column, so it is also the column where a centred text
+   would be most visible: a two-word subject would float in the middle of the
+   track, orphaned, while the long ones filled it. `text-align: start` (and
+   the start-aligned cell it sits in) is what makes every subject - "שירות"
+   and a 60-character sentence alike - hug the לקוח column and share ONE
+   right edge with the נושא label above them. The width a short subject does
+   not use is left over as a single clean gap in front of תאריך, which the
+   eye reads as the gap between two columns rather than as empty space
+   around a word. */
 html .dc-subj {
   min-width: 0;
+  text-align: start;
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -846,11 +895,14 @@ html .dc-mailtxt {
 
 /* ---- סטטוס: pill, plus the "unpaid for N days" note beside it ----
    `min-width` on the pill: four different Hebrew words must not produce four
-   different rectangles. */
+   different rectangles. And, for the same reason the type chip does it,
+   `justify-content: flex-start`: a fixed-width pill that centres its label
+   puts טיוטה / נשלח / שולם / מבוטל at four different x positions. Start-aligned
+   they share one right edge with each other and with the סטטוס header. */
 html .dc-pill {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 0.3rem;
   min-width: 4rem;
   height: 1.5rem;
@@ -926,14 +978,33 @@ html .dc-row .dc-cell[data-col="amount"] {
   white-space: nowrap;
 }
 
-/* ---- actions: four fixed slots ----
-   Every card renders four slots in the same order, empty ones included, so
-   the icons form four straight vertical lines down the list and the block
-   is one width for every row. */
+/* ---- actions: a fixed FOUR-COLUMN icon grid ----
+   Every card renders four slots in the same order, empty ones included. This
+   is a real `grid` of four fixed tracks rather than a flex row of
+   fixed-width children: with flex, the promise "slot N is always at the same
+   x" rests on every child actually being `flex: none` and on gap rounding
+   being identical in every row; with an explicit
+   `grid-template-columns: repeat(4, …)` the four x positions are properties
+   of the CONTAINER and no child can move them. So a row that offers one
+   action puts that icon at exactly the x a row with four actions puts its
+   third icon, and the icons form four straight vertical lines down the whole
+   list. The group is anchored to the row's END (left, in RTL), so the block
+   is also one width for every row - which is part of what keeps the cards
+   identical rectangles. */
 html .dc-cell[data-col="acts"] {
+  display: grid;
+  grid-template-columns: repeat(4, 1.45rem);
+  justify-content: end;
+  align-items: center;
   gap: 0.1rem;
   position: relative;
   z-index: 2;
+}
+/* The header has no icons, so its label spans all four slots and
+   start-aligns inside them: the word "פעולות" therefore begins at exactly
+   the x of the first icon slot. */
+html .dc-head .dc-cell[data-col="acts"] .dc-hlabel {
+  grid-column: 1 / -1;
 }
 html .dc-act {
   width: 1.45rem;
@@ -946,8 +1017,11 @@ html .dc-act {
   flex: none;
   transition: background-color 0.15s ease, color 0.15s ease;
 }
+/* Inert and invisible, but it still occupies its grid track - that is its
+   whole job. */
 html .dc-act-empty {
   pointer-events: none;
+  visibility: hidden;
 }
 html .dc-act:hover {
   background: var(--icotile);
@@ -1059,7 +1133,11 @@ html .dc-empty {
   html .dc-row .dc-cell[data-col="amount"] { font-size: 0.88rem; }
   html .dc-act { width: 1.35rem; height: 1.35rem; }
   html .dc-cell[data-col="type"] { padding-inline-start: 0.55rem; }
-  html .dc-cell[data-col="acts"] { padding-inline-end: 0.3rem; }
+  /* the four slot tracks step down with the icons, so slot N stays one x */
+  html .dc-cell[data-col="acts"] {
+    padding-inline-end: 0.3rem;
+    grid-template-columns: repeat(4, 1.35rem);
+  }
 }
 
 /* ---- 768-1279: the mail glyph and the overdue note step aside ----
@@ -1116,7 +1194,17 @@ html .dc-empty {
    A nine-column single line cannot be made to work at 390px, so the row
    stops being a row: client + amount, subject, then the meta on two lines
    and the actions as a footer bar. Every datum that loses its column header
-   grows an inline label via `data-label`. */
+   grows an inline label via `data-label`.
+
+   THE TWO META LINES, and why they are two and not three. Each meta line has
+   to be a line a reader can finish, with something at BOTH of its ends -
+   otherwise the card is a stack of half-empty rows and it just looks tall
+   and empty:
+     line 1  תאריך · מספר · [הקצאה]  - one start-aligned run of small facts
+     line 2  [status pill]  ……  [mail state]  - anchored at both ends
+   The mail state used to sit alone at the far left of line 1 while the status
+   pill had a whole third line to itself, also alone. Pairing them puts one
+   object at each end of one line and gives the card its height back. */
 @media (max-width: 767.98px) {
   html .dc-shell { padding: 0.6rem; }
   html .dc-table,
@@ -1174,12 +1262,27 @@ html .dc-empty {
       "type   type   amount"
       "client client client"
       "subj   subj   subj"
-      "date   number mail"
-      "status status alloc"
+      "date   number alloc"
+      "status status mail"
       "acts   acts   acts";
     column-gap: 0.6rem;
-    row-gap: 0.3rem;
-    padding: 0.7rem 0.8rem 0.5rem;
+    row-gap: 0.15rem;
+    padding: 0.55rem 0.75rem 0.4rem;
+  }
+  /* מספר הקצאה is a 9-digit number with a 6-letter label, and on a 390px card
+     it does not fit on the same line as תאריך and מספר - the three of them
+     together overflow the card. The lists that HAVE an allocation column
+     therefore get one extra line for it, and only those: more data, more
+     room. The status/mail pairing below is untouched either way. */
+  html .dc-table[data-alloc] .dc-row {
+    grid-template-areas:
+      "type   type   amount"
+      "client client client"
+      "subj   subj   subj"
+      "date   number number"
+      "alloc  alloc  alloc"
+      "status status mail"
+      "acts   acts   acts";
   }
   /* Scoped to `.dc-row`: the header is a sort strip down here, and an
      unscoped `.dc-cell[data-col=…]` rule would out-specify the rule above
@@ -1190,18 +1293,22 @@ html .dc-empty {
   html .dc-row .dc-cell[data-col="date"] { grid-area: date; }
   html .dc-row .dc-cell[data-col="number"] { grid-area: number; }
   html .dc-row .dc-cell[data-col="alloc"] { grid-area: alloc; display: flex; }
+  /* the far end of the status line - the only thing on the card that is
+     deliberately end-aligned besides the amount */
   html .dc-row .dc-cell[data-col="mail"] { grid-area: mail; display: flex; justify-content: flex-end; }
   html .dc-row .dc-cell[data-col="status"] { grid-area: status; }
   html .dc-row .dc-cell[data-col="amount"] { grid-area: amount; }
   html .dc-row .dc-cell[data-col="acts"] {
     grid-area: acts;
     /* a footer bar, so the four slots sit as one centred cluster instead of
-       hugging one edge of the card */
+       hugging one edge of the card. Still the same four fixed tracks - only
+       thumb-sized and centred - so slot N is one x on the phone too. */
+    grid-template-columns: repeat(4, 2.5rem);
     justify-content: center;
     gap: 0.35rem;
     padding-inline-end: 0;
-    margin-top: 0.15rem;
-    padding-top: 0.35rem;
+    margin-top: 0.3rem;
+    padding-top: 0.25rem;
     border-top: 1px solid var(--dc-hairline);
   }
   /* The column headers are gone, so the three bare numbers say what they are. */
