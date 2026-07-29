@@ -294,12 +294,20 @@ export function DocumentsTable({ documents, limit, showExport = false }: Props) 
 }
 
 /**
- * One document, one card. Every datum gets its OWN slot and every card shares
- * the same grid template, so the slots line up vertically down the list:
+ * One document, one card. Every datum gets its OWN row and every card shares
+ * the same grid template, so the values line up vertically down the list:
  *
  *   line 1   type chip + client name .... status pill .... amount
  *   line 2   subject, on a line of its own
- *   line 3   number | date | mail state ................. actions
+ *   then     a labelled <dl>, ONE datum per row:
+ *              תאריך        05.07.2026
+ *              מספר         #90004
+ *              מספר הקצאה   187025961      (only when the doc has one)
+ *              נשלח במייל   [icon] נשלח ב-05.07.2026 / [icon] לא נשלח
+ *            with the actions pinned at the card's bottom-left.
+ *
+ * The label column is a fixed rem width, so the values start at the same x in
+ * every card, not just within one card.
  *
  * The whole card is clickable via a stretched link on the client name (rather
  * than an onClick on a div), which keeps it reachable by keyboard and
@@ -311,6 +319,10 @@ function DocumentCard({ doc: d }: { doc: InvoiceDocument }) {
       ? Math.floor((Date.now() - new Date(d.date).getTime()) / (1000 * 60 * 60 * 24))
       : 0;
   const emailed = Boolean(d.emailedAt);
+  // מספר הקצאה, the Tax Authority allocation number (חשבונית ישראל). Set on
+  // tax invoices above the annual threshold, either by the gov API integration
+  // or by hand; most documents don't have one, so the row is conditional.
+  const allocation = d.allocationNumber?.trim();
 
   return (
     <li className="dc-card" data-type={d.type} data-status={d.status}>
@@ -338,26 +350,38 @@ function DocumentCard({ doc: d }: { doc: InvoiceDocument }) {
 
       <div className="dc-subj">{d.subject || "ללא נושא"}</div>
 
-      <div className="dc-meta">
-        <span className="dc-num">#{d.number}</span>
-        <i className="dc-sep" aria-hidden="true" />
-        <span className="dc-date">{formatDate(d.date)}</span>
-        <i className="dc-sep" aria-hidden="true" />
-        <span
-          className="dc-mail"
-          data-sent={emailed ? "1" : undefined}
-          title={emailed ? `נשלח במייל ב-${formatDate(d.emailedAt!)}` : "לא נשלח במייל"}
-        >
-          {emailed ? (
-            <MailCheck className="w-4 h-4" aria-hidden="true" />
-          ) : (
-            <Mail className="w-4 h-4" aria-hidden="true" />
-          )}
-          <span className="sr-only">
-            {emailed ? `נשלח במייל ב-${formatDate(d.emailedAt!)}` : "לא נשלח במייל"}
+      <dl className="dc-data">
+        <dt className="dc-dt">תאריך</dt>
+        <dd className="dc-dd">
+          <span className="dc-val">{formatDate(d.date)}</span>
+        </dd>
+
+        <dt className="dc-dt">מספר</dt>
+        <dd className="dc-dd">
+          <span className="dc-num">#{d.number}</span>
+        </dd>
+
+        {allocation && (
+          <>
+            <dt className="dc-dt">מספר הקצאה</dt>
+            <dd className="dc-dd">
+              <span className="dc-val">{allocation}</span>
+            </dd>
+          </>
+        )}
+
+        <dt className="dc-dt">נשלח במייל</dt>
+        <dd className="dc-dd">
+          <span className="dc-mailv" data-sent={emailed ? "1" : undefined}>
+            {emailed ? (
+              <MailCheck className="dc-mailicon" aria-hidden="true" />
+            ) : (
+              <Mail className="dc-mailicon" aria-hidden="true" />
+            )}
+            {emailed ? `נשלח ב-${formatDate(d.emailedAt!)}` : "לא נשלח"}
           </span>
-        </span>
-      </div>
+        </dd>
+      </dl>
 
       <div className="dc-acts">
         <RowActions doc={d} />
