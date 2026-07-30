@@ -27,6 +27,7 @@ import { AuditLogSection } from "@/components/audit-log-section";
 import { TaxAuthoritySection } from "@/components/tax-authority-section";
 import { DunningSettingsSection } from "@/components/dunning-settings-section";
 import { TwoFactorSection } from "@/components/two-factor-section";
+import { ALLOCATION_THRESHOLD_SCHEDULE, formatThreshold } from "@/lib/tax-authority";
 import { DangerZoneSection } from "@/components/danger-zone-section";
 import { BUSINESS_TYPE_LABELS } from "@/lib/types";
 
@@ -183,26 +184,36 @@ export default function SettingsPage() {
             <h2 className="font-semibold text-stone-900">חשבונית ישראל (רשות המסים)</h2>
           </div>
           <p className="text-sm text-stone-700 leading-relaxed">
-            עוסק מורשה חייב במספר הקצאה (חשבונית ישראל) על חשבוניות מס מעל לסף השנתי שקבעה רשות המסים.
-            המערכת מציגה אזהרה אדומה על מסמכים שדורשים הקצאה, ואינה מאפשרת שליחה ללקוח לפני שהמספר משויך אליהם.
+            עוסק מורשה חייב במספר הקצאה (חשבונית ישראל) על חשבונית מס ללקוח עסקי מעל הסף שקבעה
+            רשות המסים. על כל מסמך כזה המערכת מציגה את השלב הבא ואת הכפתור לקבלת המספר, ואינה
+            מאפשרת לשלוח את המסמך ללקוח לפני שהמספר התקבל.
           </p>
           <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
             <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-3">
-              <p className="font-semibold text-emerald-900 mb-1">✓ פעיל היום</p>
+              <p className="font-semibold text-emerald-900 mb-1">✓ בקשה בלחיצה אחת</p>
               <p className="text-emerald-800 leading-relaxed">
-                הקלדת מספר הקצאה ידנית במסמך לאחר קבלתו מהפורטל. המספר יודפס על ה-PDF.
+                שומרים את המסמך, ובעמוד המסמך לוחצים על &quot;קבל מספר הקצאה מרשות המסים&quot;.
+                המספר נשמר על המסמך ומודפס עליו. הבקשה אינה נשלחת מעצמה בשמירה.
               </p>
             </div>
             <div className="rounded-xl bg-stone-50 border border-stone-200 p-3">
-              <p className="font-semibold text-stone-900 mb-1">⏳ בקרוב</p>
+              <p className="font-semibold text-stone-900 mb-1">הקלדה ידנית</p>
               <p className="text-stone-700 leading-relaxed">
-                שליחה אוטומטית ישירות לרשות המסים וקבלת המספר חזרה. דורש תעודת חתימה דיגיטלית (Comsign / PersonalID).
+                אם כבר קיבלת מספר הקצאה במקום אחר, אפשר להקליד אותו על המסמך והוא יודפס עליו
+                בדיוק כמו מספר שהתקבל דרך המערכת.
               </p>
             </div>
             <div className="rounded-xl bg-stone-50 border border-stone-200 p-3">
-              <p className="font-semibold text-stone-900 mb-1">סף הקצאה שנתי</p>
+              <p className="font-semibold text-stone-900 mb-1">סף חובת ההקצאה</p>
               <p className="text-stone-700 leading-relaxed">
-                <span dir="ltr">2024: ₪25,000</span> · <span dir="ltr">2025: ₪20,000</span> · <span dir="ltr">2026: ₪5,000</span>. כל שנה בינואר רשות המסים מורידה את הסף. (אין קשר לתקרת מחזור עוסק פטור, זה סף לחובת מספר הקצאה.)
+                {ALLOCATION_THRESHOLD_SCHEDULE.map((s, i) => (
+                  <span key={s.label}>
+                    {i > 0 && " · "}
+                    {s.label}: <span dir="ltr">{formatThreshold(s.amount)}</span>
+                  </span>
+                ))}
+                . הסף נמדד על הסכום לפני מע״מ, ורשות המסים מורידה אותו בשלבים. (אין קשר לתקרת
+                המחזור של עוסק פטור, זה סף לחובת מספר הקצאה.)
               </p>
             </div>
           </div>

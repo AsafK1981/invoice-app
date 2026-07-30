@@ -196,7 +196,7 @@ export function TaxAuthoritySection() {
             חשבונית ישראל: מספרי הקצאה
           </h2>
           <p className="text-sm text-stone-600 mt-1.5 leading-relaxed">
-            חיבור פעם אחת, וכל חשבונית מס מעל הסף מקבלת מספר הקצאה רשמי אוטומטית.
+            חיבור פעם אחת, ואז כל חשבונית מס מעל הסף מקבלת מספר הקצאה רשמי בלחיצה אחת.
           </p>
           <span className="inline-flex items-center gap-1 mt-2.5 px-2.5 py-1 rounded-full bg-stone-100/80 border border-stone-200/70 text-[11px] font-semibold text-stone-600">
             סף נוכחי
@@ -315,7 +315,7 @@ export function TaxAuthoritySection() {
                   )}
                 </div>
                 <p className="text-[11px] text-emerald-700/80 mt-1.5">
-                  מספרי הקצאה יופקו אוטומטית לחשבוניות מעל הסף
+                  אפשר לבקש מספר הקצאה בלחיצה אחת מכל מסמך שדורש זאת
                 </p>
               </div>
             </div>

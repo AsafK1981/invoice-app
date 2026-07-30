@@ -676,6 +676,12 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
         </div>
       </div>
 
+      {/* The allocation-number step comes FIRST when a number is still needed:
+          it is what the user must do next, and burying it under the delivery /
+          payment cards is how people ended up sending nothing. It self-hides
+          for every document that doesn't need a number. */}
+      <AllocationNumberSection doc={doc} customerTaxId={customerTaxId} />
+
       {doc.type === "quote" && doc.approvedAt && (
         <div className="no-print card-soft p-4 flex items-start gap-3 max-w-[210mm] mx-auto bg-emerald-50 border-emerald-200">
           <div className="w-10 h-10 rounded-2xl bg-emerald-500 flex items-center justify-center flex-shrink-0">
@@ -865,8 +871,6 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
       {(doc.type === "tax_invoice" ||
         doc.type === "tax_invoice_receipt" ||
         doc.type === "credit_note") && <DocumentCustomerTaxEditor doc={doc} />}
-
-      <AllocationNumberSection doc={doc} customerTaxId={customerTaxId} />
 
       <ReceiptView
         business={business}

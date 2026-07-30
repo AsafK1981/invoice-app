@@ -2,6 +2,7 @@
 
 import { formatCurrency, formatDate } from "@/lib/format";
 import { formatMoney } from "@/lib/currencies";
+import { netAfterWithholding } from "@/lib/withholding";
 import { Ltr } from "@/components/ui/ltr";
 import { CANONICAL_HOST } from "@/lib/public-url";
 import {
@@ -375,7 +376,7 @@ export function DocumentBody({
           <div className="doc-paid">
             <div className="doc-paid-top">שולם בפועל</div>
             <div className="doc-paid-amount doc-serif doc-tab">
-              {money(total - (withholdingAmount as number))}
+              {money(netAfterWithholding(total, withholdingAmount as number))}
             </div>
             <div className="doc-paid-note">
               הסכום נטו שהתקבל, אחרי ניכוי מס במקור

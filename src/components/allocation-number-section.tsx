@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { ShieldCheck, AlertTriangle, ExternalLink, Pencil, X, Sparkles, Loader2 } from "lucide-react";
+import { ShieldCheck, Landmark, ExternalLink, Pencil, X, Loader2, ChevronDown } from "lucide-react";
 import { setAllocationNumber } from "@/lib/document-store";
-import { requiresAllocationNumber, allocationRequiredThreshold } from "@/lib/tax-authority";
-import { formatCurrency } from "@/lib/format";
+import { requiresAllocationNumber, allocationThresholdSentence } from "@/lib/tax-authority";
+import { AllocationSteps } from "@/components/allocation-steps";
 import { supabase } from "@/lib/supabase";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import type { InvoiceDocument } from "@/lib/types";
@@ -28,15 +28,21 @@ const GOV_PORTAL_URL = "https://www.gov.il/he/pages/invoices-israel";
  * Three states:
  *   1. Doc doesn't need an allocation number (under threshold), section
  *      is hidden entirely.
- *   2. Required and not yet set, red warning + input to paste the number
- *      after getting it from the gov portal.
+ *   2. Required and not yet set: the calm "next step" card, step 2 of the
+ *      shared 3-step story, with ONE primary button that asks the Tax
+ *      Authority for the number. Typing a number received elsewhere is
+ *      folded away behind a disclosure so it doesn't compete with it.
  *   3. Set: green "received" card with the number + when it was entered
  *      + a small edit button to replace it.
+ *
+ * Deliberately NOT an alarming red panic card: needing a number is the normal,
+ * expected next step of issuing a tax invoice, not an error the user caused.
  */
 export function AllocationNumberSection({ doc, customerTaxId }: Props) {
   // All hooks must run unconditionally; early return MUST come after.
   // Same trap that produced the React #310 bug yesterday.
   const [editing, setEditing] = useState(false);
+  const [manualOpen, setManualOpen] = useState(false);
   const [value, setValue] = useState(doc.allocationNumber || "");
   const [saving, setSaving] = useState(false);
   const [fetching, setFetching] = useState(false);
@@ -52,11 +58,12 @@ export function AllocationNumberSection({ doc, customerTaxId }: Props) {
   const required = requiresAllocationNumber(doc, customerTaxId ?? doc.clientTaxId);
   if (!isTaxDoc || !required) return null;
 
-  const docYear = parseInt(doc.date.slice(0, 4), 10) || new Date().getFullYear();
   // Use the date-aware threshold (honours the mid-2026 drop to ₪5,000) so the
   // displayed number matches what requiresAllocationNumber() actually gates on.
   // Otherwise a ₪7,000 June-2026 doc would claim a ₪10,000 threshold.
-  const threshold = allocationRequiredThreshold(doc.date ? new Date(doc.date) : new Date());
+  const thresholdSentence = allocationThresholdSentence(
+    doc.date ? new Date(doc.date) : new Date(),
+  );
   const hasNumber = Boolean(doc.allocationNumber);
 
   // Tries our /api/tax-authority/request-allocation endpoint, which
@@ -147,15 +154,18 @@ export function AllocationNumberSection({ doc, customerTaxId }: Props) {
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-baseline justify-between gap-2 flex-wrap">
-              <p className="text-sm font-bold text-stone-900">מספר הקצאה התקבל ✓</p>
+              <p className="text-sm font-bold text-stone-900">מספר ההקצאה התקבל ✓</p>
               <button
                 onClick={() => setEditing(true)}
-                className="inline-flex items-center gap-1 text-xs font-semibold text-stone-600 hover:text-stone-900"
+                className="inline-flex items-center gap-1 min-h-[40px] px-1 text-xs font-semibold text-stone-600 hover:text-stone-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 rounded-lg"
               >
                 <Pencil className="w-3 h-3" />
                 ערוך
               </button>
             </div>
+            <p className="text-xs text-stone-700 mt-0.5">
+              המספר מודפס על המסמך. אפשר לשלוח אותו ללקוח.
+            </p>
             <p className="mt-1 text-base font-mono font-bold text-stone-900" dir="ltr">
               {doc.allocationNumber}
             </p>
@@ -177,110 +187,150 @@ export function AllocationNumberSection({ doc, customerTaxId }: Props) {
     );
   }
 
-  // STATE 2: Required, not yet set, OR editing
+  // Typing a number the user already received elsewhere. Shared by the
+  // disclosure inside the "next step" card and by the edit-existing state.
+  const manualForm = (
+    <>
+      <div className="flex flex-col sm:flex-row gap-2">
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          placeholder="הקלד כאן את מספר ההקצאה"
+          aria-label="מספר הקצאה"
+          className="flex-1 px-3 min-h-[44px] rounded-xl border border-stone-300 bg-white text-sm font-mono focus:border-indigo-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200"
+          dir="ltr"
+          disabled={saving}
+          inputMode="numeric"
+          autoComplete="off"
+        />
+        <button
+          onClick={handleSave}
+          disabled={saving || value.trim().length === 0}
+          className="inline-flex items-center justify-center gap-2 min-h-[44px] bg-gradient-to-l from-emerald-500 to-teal-500 text-white px-4 rounded-xl text-sm font-semibold transition-shadow hover:shadow-md hover:shadow-emerald-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {saving ? "שומר..." : "שמור את המספר"}
+        </button>
+        {hasNumber && (
+          <button
+            onClick={() => {
+              setEditing(false);
+              setValue(doc.allocationNumber || "");
+              setError(null);
+            }}
+            className="inline-flex items-center justify-center gap-1 min-h-[44px] px-3 rounded-xl text-sm font-medium text-stone-700 hover:bg-stone-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-300"
+          >
+            <X className="w-4 h-4" />
+            ביטול
+          </button>
+        )}
+      </div>
+      <a
+        href={GOV_PORTAL_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="mt-2 inline-flex items-center gap-1.5 min-h-[40px] text-xs font-semibold text-indigo-700 hover:text-indigo-900 underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 rounded-lg"
+      >
+        <ExternalLink className="w-3.5 h-3.5" />
+        לאתר חשבונית ישראל של רשות המסים
+      </a>
+      {hasNumber && (
+        <button
+          onClick={handleClear}
+          disabled={saving}
+          className="mt-1 block text-xs text-stone-500 hover:text-rose-700 underline min-h-[40px]"
+        >
+          נקה את המספר השמור
+        </button>
+      )}
+    </>
+  );
+
+  const errorNote = error && (
+    <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 p-3" dir="rtl">
+      <p className="text-xs text-rose-800 font-semibold break-words">
+        לא הצלחנו לקבל את המספר: {error}
+      </p>
+      <p className="text-xs text-rose-700 mt-1 leading-relaxed">
+        אפשר לנסות שוב עוד רגע. אם זה חוזר, קבל את המספר באתר חשבונית ישראל והקלד אותו כאן.
+      </p>
+    </div>
+  );
+
+  // STATE 2b: replacing a number that is already saved. Just the form, no pitch.
+  if (hasNumber) {
+    return (
+      <div className="no-print card-soft p-4 max-w-[210mm] mx-auto">
+        <p className="text-sm font-bold text-stone-900 mb-2">עריכת מספר ההקצאה</p>
+        {manualForm}
+        {errorNote}
+      </div>
+    );
+  }
+
+  // STATE 2: required, not yet received. The next step of a normal flow, not an
+  // error: calm indigo (the חשבונית ישראל identity), one primary button, and
+  // the same 3-step story the editor showed before saving.
   return (
-    <div className="no-print card-soft p-4 max-w-[210mm] mx-auto bg-rose-50/40 border-rose-200">
+    // card-soft sets `background` and `border` as shorthands, so tint/border
+    // utilities on this element would be dead CSS; the indigo identity comes
+    // from the inset ring + the medallion instead.
+    <div className="no-print card-soft p-4 sm:p-5 max-w-[210mm] mx-auto ring-1 ring-inset ring-indigo-100">
       <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-2xl bg-rose-100 flex items-center justify-center flex-shrink-0">
-          <AlertTriangle className="w-5 h-5 text-rose-700" />
+        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center flex-shrink-0 shadow-sm">
+          <Landmark className="w-5 h-5 text-white" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-bold text-stone-900">
-            נדרש מספר הקצאה (חשבונית ישראל)
+          <p className="text-[11px] font-bold tracking-wide text-indigo-600/90">השלב הבא</p>
+          <p className="text-[15px] font-extrabold text-stone-900 leading-tight mt-0.5">
+            קבל מספר הקצאה מרשות המסים
           </p>
-          <p className="text-xs text-stone-700 mt-1 leading-relaxed">
-            המסמך הזה מעל סף החובה ל-{docYear} ({formatCurrency(threshold)}).{" "}
-            הגש את המסמך בפורטל רשות המסים, קבל מספר הקצאה, והדבק אותו כאן.
-            אסור לשלוח את המסמך ללקוח לפני שמספר ההקצאה משויך אליו.
+          <p className="text-xs text-stone-700 mt-1.5 leading-relaxed">
+            המסמך נשמר. {thresholdSentence} לוחצים על הכפתור, ורשות המסים שולחת את המספר תוך
+            שניות והוא נשמר על המסמך. עד שהמספר מתקבל אי אפשר לשלוח את המסמך ללקוח.
           </p>
-
-          {/* Auto-fetch via our /api/tax-authority/request-allocation; works
-              if the business has connected to gov.il in /settings. Falls
-              back gracefully (just shows an error in this card) if the
-              connection isn't set up; the manual paste flow below stays
-              available either way. */}
-          <button
-            onClick={handleAutoFetch}
-            disabled={fetching || saving}
-            className="mt-3 w-full inline-flex items-center justify-center gap-2 bg-gradient-to-l from-blue-500 to-indigo-500 text-white py-2.5 rounded-xl text-sm font-semibold hover:shadow-lg hover:shadow-blue-200/60 disabled:opacity-50"
-          >
-            {fetching ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                שולח בקשה לרשות המיסים...
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4" />
-                קבל אוטומטית מרשות המיסים
-              </>
-            )}
-          </button>
-
-          <div className="mt-3 flex items-center gap-2 flex-wrap">
-            <p className="text-xs text-stone-600">או הזן את המספר ידנית אם קיבלת אותו במקום אחר:</p>
-            <a
-              href={GOV_PORTAL_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-rose-700 hover:text-rose-900 underline"
-            >
-              <ExternalLink className="w-3.5 h-3.5" />
-              פתח את חשבונית ישראל
-            </a>
-          </div>
-
-          <div className="mt-2 flex flex-col sm:flex-row gap-2">
-            <input
-              type="text"
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              placeholder="הדבק כאן את מספר ההקצאה"
-              className="flex-1 px-3 py-2 rounded-xl border border-stone-300 bg-white focus:border-rose-400 focus:outline-none text-sm font-mono"
-              dir="ltr"
-              disabled={saving}
-              inputMode="numeric"
-              autoComplete="off"
-            />
-            <button
-              onClick={handleSave}
-              disabled={saving || value.trim().length === 0}
-              className="inline-flex items-center justify-center gap-2 bg-gradient-to-l from-emerald-500 to-teal-500 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:shadow-md hover:shadow-emerald-200 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {saving ? "שומר..." : "שמור"}
-            </button>
-            {hasNumber && (
-              <button
-                onClick={() => {
-                  setEditing(false);
-                  setValue(doc.allocationNumber || "");
-                  setError(null);
-                }}
-                className="inline-flex items-center justify-center gap-1 px-3 py-2 rounded-xl text-sm font-medium text-stone-700 hover:bg-stone-100"
-              >
-                <X className="w-4 h-4" />
-                ביטול
-              </button>
-            )}
-          </div>
-          {hasNumber && (
-            <button
-              onClick={handleClear}
-              disabled={saving}
-              className="mt-2 text-xs text-stone-500 hover:text-rose-700 underline"
-            >
-              נקה את המספר השמור
-            </button>
-          )}
-          {error && (
-            <p
-              className="mt-2 text-xs text-rose-700 font-medium break-words"
-              dir="rtl"
-            >
-              {error}
-            </p>
-          )}
         </div>
+      </div>
+
+      <AllocationSteps current={2} className="mt-3.5" />
+
+      {/* One primary action: ask the Tax Authority for the number now. Uses
+          /api/tax-authority/request-allocation with the business's stored
+          credentials; if the business never connected, the failure shows up
+          right here and the manual route below stays open. */}
+      <button
+        onClick={handleAutoFetch}
+        disabled={fetching || saving}
+        className="mt-3.5 w-full inline-flex items-center justify-center gap-2 min-h-[52px] bg-gradient-to-l from-indigo-600 to-blue-600 text-white rounded-2xl text-[15px] font-bold shadow-lg shadow-indigo-500/20 transition-all hover:shadow-xl hover:shadow-indigo-500/25 hover:-translate-y-0.5 active:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:hover:translate-y-0"
+      >
+        {fetching ? (
+          <>
+            <Loader2 className="w-4 h-4 animate-spin" />
+            מבקש את המספר מרשות המסים...
+          </>
+        ) : (
+          <>
+            <ShieldCheck className="w-[18px] h-[18px]" />
+            קבל מספר הקצאה מרשות המסים
+          </>
+        )}
+      </button>
+
+      {errorNote}
+
+      <div className="mt-3 pt-3 border-t border-indigo-100">
+        <button
+          type="button"
+          onClick={() => setManualOpen((s) => !s)}
+          aria-expanded={manualOpen}
+          className="inline-flex items-center gap-1.5 min-h-[44px] text-xs font-semibold text-stone-700 hover:text-indigo-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 rounded-lg"
+        >
+          <ChevronDown
+            className={`w-4 h-4 transition-transform ${manualOpen ? "rotate-180" : ""}`}
+          />
+          כבר קיבלתי מספר הקצאה, אקליד אותו בעצמי
+        </button>
+        {manualOpen && <div className="mt-2">{manualForm}</div>}
       </div>
     </div>
   );

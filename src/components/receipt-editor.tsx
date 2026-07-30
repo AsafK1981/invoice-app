@@ -30,6 +30,8 @@ import { createDocument, getNextDocumentNumber, linkConvertedDocument, markDocum
 import { getBusinessId, isPlaceholderBusinessName, isPlaceholderBusinessTaxId } from "@/lib/business-init";
 import { parseEmails, joinEmails, isValidEmail } from "@/lib/emails";
 import { getVatRate, computeAmounts, round2, canIssueTaxInvoices, type VatMode } from "@/lib/vat";
+import { suggestedWithholding, netAfterWithholding } from "@/lib/withholding";
+import { requiresAllocationNumber } from "@/lib/tax-authority";
 import { CURRENCIES, formatMoney } from "@/lib/currencies";
 import { ilsEquivalents } from "@/lib/exchange-rate";
 import { todayInIsrael } from "@/lib/date";
@@ -413,17 +415,16 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   );
   const { subtotal, vat, total, rounding, netUnitPriceFactor } = amounts;
 
-  // ניכוי מס במקור, computed on the total incl. VAT. Keep the amount synced to
-  // (rate × total) until the user manually edits the amount field.
+  // ניכוי מס במקור, computed on the total incl. VAT and rounded to the nearest
+  // whole shekel (Israeli practice: withholding is reported in whole shekels).
+  // Keep the amount synced to that suggestion until the user manually edits the
+  // amount field; a hand-typed amount is never rewritten.
   const withholdingEntered =
     isPaymentRecording && showWithholding && withholdingRateInput.trim() !== "";
   const withholdingRate = parseFloat(withholdingRateInput);
   useEffect(() => {
     if (withholdingTouched || !withholdingEntered) return;
-    const c =
-      Number.isFinite(withholdingRate) && withholdingRate > 0
-        ? round2((total * withholdingRate) / 100)
-        : 0;
+    const c = suggestedWithholding(total, withholdingRate);
     setWithholdingAmountInput(c > 0 ? String(c) : "");
   }, [total, withholdingRate, withholdingTouched, withholdingEntered]);
   const withholdingAmount = withholdingEntered
@@ -685,13 +686,66 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
     [isCreditNote, allDocuments],
   );
 
+  // Will this document need a מספר הקצאה the user does not have yet? Same
+  // gate the in-editor banner uses (type + date-aware threshold on the PRE-VAT
+  // ₪ amount + a BUSINESS customer), so the save button and the banner can
+  // never tell two different stories.
+  const allocCustomerTaxId =
+    (adhocMode ? adhocTaxId.trim() : selectedClient?.taxId) || undefined;
+  const allocSubtotalIls = currency === "ILS" ? subtotal : round2(subtotal * rate);
+  const willNeedAllocation =
+    !allocationNumber.trim() &&
+    requiresAllocationNumber(
+      {
+        type: documentType,
+        date,
+        subtotal: allocSubtotalIls,
+        subtotalIls: allocSubtotalIls,
+      } as Pick<InvoiceDocument, "type" | "date" | "subtotal" | "subtotalIls"> as InvoiceDocument,
+      allocCustomerTaxId,
+    );
+  // The document may not go out to the customer before its allocation number
+  // exists (same rule the document page enforces on its send buttons). So the
+  // "email it on save" option is held back rather than silently emailing a tax
+  // invoice that is missing its number.
+  const willSendEmail = sendEmail && !willNeedAllocation;
+
   const canSave =
     clientReady &&
     items.every((i) => i.description.trim() && i.quantity > 0 && i.unitPrice >= 0) &&
-    (!sendEmail || allEmailsValid) &&
+    (!willSendEmail || allEmailsValid) &&
     creditRefValid &&
     discountValid &&
     withholdingValid;
+
+  // Why the save button is disabled, in one plain sentence. Rendered next to
+  // BOTH save affordances (the desktop summary card and the mobile action bar),
+  // so the mobile user is never left tapping a dead button with no explanation.
+  const blockReason: string | null = canSave
+    ? null
+    : !clientReady
+      ? "יש לבחור לקוח או למלא שם של לקוח מזדמן"
+      : isCreditNote && !creditRefValid
+        ? "יש לבחור/להזין את חשבונית המס המקורית שאותה מזכים"
+        : !discountValid
+          ? "יש לתקן את סכום ההנחה"
+          : !withholdingValid
+            ? "יש לתקן את סכום ניכוי המס במקור"
+            : willSendEmail && !allEmailsValid
+              ? 'יש להזין אימייל תקין בכרטיס "שליחה ללקוח"'
+              : "כל פריט חייב תיאור, כמות חיובית ומחיר";
+
+  // What the primary button says. When an allocation number will be needed, the
+  // label names the next step instead of promising a finished document.
+  const saveLabel = saving
+    ? "שומר..."
+    : rateLoading
+      ? "טוען שער חליפין…"
+      : willNeedAllocation
+        ? "שמור והמשך לקבלת מספר הקצאה"
+        : willSendEmail
+          ? "שמור, הפק ושלח"
+          : `שמור והפק ${docLabel}`;
 
   // Build the persisted PaymentDetails, keeping only the fields relevant to the
   // chosen method and dropping empties. Returns undefined when nothing was set.
@@ -935,7 +989,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
         ? " שים לב: קישור הצעת המחיר המקורית נכשל, סמן אותה כשולמה ידנית."
         : "";
 
-      if (sendEmail) {
+      if (willSendEmail) {
         const result = await sendReceiptEmail({
           to: joinEmails(emailRecipients),
           clientName,
@@ -1791,11 +1845,12 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                       </div>
                     </div>
                     <p className="text-xs text-stone-600">
-                      מחושב על הסכום כולל מע״מ. סכום המסמך אינו משתנה, זהו פיצול של התשלום.
+                      מחושב על הסכום כולל מע״מ ומעוגל לשקל השלם הקרוב. אפשר לשנות את הסכום ידנית.
+                      סכום המסמך אינו משתנה, זהו פיצול של התשלום.
                     </p>
                     {withholdingEntered && withholdingValid && withholdingAmount > 0 && (
                       <p className="text-sm font-semibold text-stone-800">
-                        שולם בפועל: {formatCurrency(total - withholdingAmount)}
+                        שולם בפועל: {formatCurrency(netAfterWithholding(total, withholdingAmount))}
                       </p>
                     )}
                     {withholdingEntered && !withholdingValid && (
@@ -1824,17 +1879,28 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
 
         {/* ── שליחה ללקוח ── */}
         <EditorCard title="שליחה ללקוח" icon={Mail}>
-          <label className="flex items-center gap-2 text-sm mb-3 cursor-pointer">
+          <label
+            className={`flex items-center gap-2 text-sm mb-3 ${
+              willNeedAllocation ? "cursor-not-allowed opacity-60" : "cursor-pointer"
+            }`}
+          >
             <input
               type="checkbox"
-              checked={sendEmail}
+              checked={sendEmail && !willNeedAllocation}
+              disabled={willNeedAllocation}
               onChange={(e) => setSendEmail(e.target.checked)}
               className="w-4 h-4 accent-orange-500"
             />
             <span className="text-stone-700">
-              שלח את ה{docLabel} אוטומטית במייל ללקוח כשאני לוחץ שמור
+              שלח את ה{docLabel} במייל ללקוח מיד כשאני לוחץ שמור
             </span>
           </label>
+          {willNeedAllocation && (
+            <p className="text-xs text-stone-700 bg-indigo-50 border border-indigo-100 rounded-xl p-3 mb-3 leading-relaxed">
+              המסמך הזה צריך קודם מספר הקצאה מרשות המסים, ולכן אי אפשר לשלוח אותו כבר עכשיו.
+              שומרים, מבקשים את המספר בלחיצה אחת, ואז שולחים ללקוח מעמוד המסמך.
+            </p>
+          )}
           <FormField label="אימייל לשליחה">
             <div className="space-y-2">
               {emails.map((em, i) => (
@@ -1890,7 +1956,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
               </p>
             )}
           </FormField>
-          {sendEmail && (
+          {willSendEmail && (
             <p className="text-xs text-stone-600 mt-2">
               {emailRecipients.length > 0
                 ? `יישלח ל-${emailRecipients.length} נמענים: ${emailTo}`
@@ -1898,19 +1964,19 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
             </p>
           )}
         </EditorCard>
+
+        {/* Breathing room so the fixed mobile action bar never sits on top of
+            the last field. Desktop keeps its action in the sticky aside. */}
+        <div className="lg:hidden h-24" aria-hidden />
       </div>
 
       {/* ── PREVIEW + ACTION COLUMN (inline-end / left in RTL) ──────────── */}
       <aside className="lg:col-span-5">
+        {/* Summary + primary action come FIRST in this column: the aside is a
+            scroll container of its own, and with the A4 preview on top the save
+            button sat below its fold, so the user had to scroll a pane they
+            didn't know was scrollable to find it. */}
         <div className="lg:sticky lg:top-4 space-y-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto lg:pl-1">
-          <div className="hidden lg:block">
-            <p className="flex items-center gap-2 text-xs font-semibold text-stone-700 mb-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-emerald-200" />
-              תצוגה חיה, מתעדכנת תוך כדי הקלדה
-            </p>
-            <DocumentPreview {...previewProps} />
-          </div>
-
           <div className="card-soft p-5 bg-gradient-to-br from-orange-50/50 to-amber-50/50 border-orange-200">
             <h3 className="font-semibold text-stone-900 mb-3 flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-orange-500" />
@@ -1942,7 +2008,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                 <div className="flex justify-between items-baseline pt-2 mt-1 border-t border-orange-100">
                   <span className="text-stone-800 font-semibold">שולם בפועל</span>
                   <span className="text-lg font-bold text-stone-900">
-                    {formatCurrency(total - withholdingAmount)}
+                    {formatCurrency(netAfterWithholding(total, withholdingAmount))}
                   </span>
                 </div>
               )}
@@ -1951,24 +2017,18 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
               <button
                 onClick={handleSave}
                 disabled={!canSave || saving || rateLoading || businessProfileIncomplete}
-                className="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white py-3 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200 disabled:from-stone-300 disabled:to-stone-300 disabled:cursor-not-allowed disabled:shadow-none transition-all"
+                className="w-full inline-flex items-center justify-center gap-2 min-h-[48px] bg-gradient-to-l from-orange-500 to-rose-500 text-white py-3 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:from-stone-300 disabled:to-stone-300 disabled:cursor-not-allowed disabled:shadow-none transition-all"
               >
-                {saving ? (
-                  "שולח..."
-                ) : rateLoading ? (
-                  "טוען שער חליפין…"
-                ) : sendEmail ? (
-                  <>
-                    <Send className="w-4 h-4" />
-                    שמור, הפק ושלח
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-4 h-4" />
-                    שמור והפק {docLabel}
-                  </>
+                {!saving && !rateLoading && (
+                  willSendEmail ? <Send className="w-4 h-4" /> : <Save className="w-4 h-4" />
                 )}
+                {saveLabel}
               </button>
+              {willNeedAllocation && !saving && (
+                <p className="text-xs text-stone-600 text-center leading-relaxed">
+                  אחרי השמירה תגיע לעמוד המסמך, ושם תבקש את מספר ההקצאה בלחיצה אחת.
+                </p>
+              )}
               <button
                 onClick={handleSaveDraft}
                 disabled={savingDraft || saving}
@@ -1992,22 +2052,10 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                 </span>
               </div>
             )}
-            {!canSave && !businessProfileIncomplete && (
+            {blockReason && !businessProfileIncomplete && (
               <div className="mt-3 flex items-start gap-2 text-xs text-amber-800 bg-amber-50 p-3 rounded-xl border border-amber-200">
                 <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                <span>
-                  {!clientReady
-                    ? "יש לבחור לקוח או למלא שם של לקוח מזדמן"
-                    : isCreditNote && !creditRefValid
-                    ? "יש לבחור/להזין את חשבונית המס המקורית שאותה מזכים"
-                    : !discountValid
-                    ? "יש לתקן את סכום ההנחה"
-                    : !withholdingValid
-                    ? "יש לתקן את סכום ניכוי המס במקור"
-                    : sendEmail && !allEmailsValid
-                    ? 'יש להזין אימייל תקין בכרטיס "שליחה ללקוח"'
-                    : "כל פריט חייב תיאור, כמות חיובית ומחיר"}
-                </span>
+                <span>{blockReason}</span>
               </div>
             )}
             {toast && (
@@ -2027,8 +2075,77 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
               </div>
             )}
           </div>
+
+          <div className="hidden lg:block">
+            <p className="flex items-center gap-2 text-xs font-semibold text-stone-700 mb-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-emerald-200" />
+              תצוגה חיה, מתעדכנת תוך כדי הקלדה
+            </p>
+            <DocumentPreview {...previewProps} />
+          </div>
         </div>
       </aside>
+    </div>
+
+    {/* ── MOBILE ACTION BAR ────────────────────────────────────────────
+        On a phone the summary card sits below the entire form, so the save
+        button was effectively hidden. This bar rides along with the user:
+        running total on one side, the primary action on the other, plus the
+        reason it is disabled and the result toast, so nothing about saving
+        happens off-screen. Hidden from lg up, where the sticky aside owns it. */}
+    <div className="lg:hidden fixed inset-x-0 bottom-0 z-40 no-print border-t border-orange-200 bg-white/95 backdrop-blur shadow-[0_-6px_20px_rgba(120,53,15,0.10)]">
+      <div className="max-w-7xl mx-auto px-4 pt-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))]">
+        {toast && (
+          <div
+            className={`mb-2 text-xs p-2.5 rounded-xl flex items-start gap-2 ${
+              toast.kind === "success"
+                ? "bg-emerald-50 text-emerald-900 border border-emerald-200"
+                : "bg-rose-50 text-rose-900 border border-rose-200"
+            }`}
+          >
+            {toast.kind === "success" ? (
+              <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5 text-emerald-600" />
+            ) : (
+              <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-rose-600" />
+            )}
+            <span>{toast.text}</span>
+          </div>
+        )}
+        {(blockReason || businessProfileIncomplete) && (
+          <p className="mb-2 text-[11px] text-amber-800 leading-snug flex items-start gap-1.5">
+            <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+            <span>
+              {businessProfileIncomplete
+                ? "יש להשלים את שם העסק ומספר העוסק/ח.פ בהגדרות"
+                : blockReason}
+            </span>
+          </p>
+        )}
+        <div className="flex items-center gap-3">
+          <div className="min-w-0">
+            <p className="text-[11px] font-medium text-stone-600 leading-none">
+              {isQuote ? "סה״כ הצעה" : isCreditNote ? "סה״כ זיכוי" : "סה״כ לתשלום"}
+            </p>
+            <p className="mt-1 text-lg font-bold text-stone-900 leading-none tabular-nums">
+              {formatCurrency(total)}
+            </p>
+          </div>
+          <button
+            onClick={handleSave}
+            disabled={!canSave || saving || rateLoading || businessProfileIncomplete}
+            className="flex-1 inline-flex items-center justify-center gap-2 min-h-[48px] px-3 bg-gradient-to-l from-orange-500 to-rose-500 text-white rounded-2xl text-sm font-bold text-center leading-tight hover:shadow-lg hover:shadow-orange-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:from-stone-300 disabled:to-stone-300 disabled:cursor-not-allowed disabled:shadow-none transition-all"
+          >
+            {!saving && !rateLoading && (
+              willSendEmail ? (
+                <Send className="w-4 h-4 flex-shrink-0" />
+              ) : (
+                <Save className="w-4 h-4 flex-shrink-0" />
+              )
+            )}
+            {saveLabel}
+          </button>
+        </div>
+      </div>
     </div>
     </>
   );

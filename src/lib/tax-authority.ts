@@ -140,6 +140,38 @@ export function allocationRequiredThreshold(date: Date = new Date()): number {
 export const ALLOCATION_THRESHOLD_NIS = getAllocationThresholdForYear(new Date().getFullYear());
 
 /**
+ * ₪ amount for UI copy ("₪5,000"), wrapped in a bidi isolate so it keeps its
+ * LTR shape when it sits inside a Hebrew sentence (without it the shekel sign
+ * flips to the far side and reads "5,000₪").
+ */
+export function formatThreshold(amount: number): string {
+  // Wrapped in U+2066 LEFT-TO-RIGHT ISOLATE / U+2069 POP DIRECTIONAL ISOLATE.
+  return `⁦₪${amount.toLocaleString("en-US")}⁩`;
+}
+
+/**
+ * One sentence explaining WHY this document needs a number, with the amount
+ * read straight off allocationRequiredThreshold so the copy can never drift
+ * from what the app actually enforces.
+ */
+export function allocationThresholdSentence(date: Date = new Date()): string {
+  const amount = formatThreshold(allocationRequiredThreshold(date));
+  return `חשבונית מס ללקוח עסקי בסכום ${amount} ומעלה (לפני מע״מ) חייבת במספר הקצאה מרשות המסים.`;
+}
+
+/**
+ * The legislated step-down, derived from allocationRequiredThreshold rather
+ * than typed out a second time. Rendered in settings; the dates are the
+ * midpoints of each bracket, so each entry asks the real function.
+ */
+export const ALLOCATION_THRESHOLD_SCHEDULE: { label: string; amount: number }[] = [
+  { label: "2024", amount: allocationRequiredThreshold(new Date("2024-06-15")) },
+  { label: "2025", amount: allocationRequiredThreshold(new Date("2025-06-15")) },
+  { label: "ינואר עד מאי 2026", amount: allocationRequiredThreshold(new Date("2026-03-15")) },
+  { label: "מיוני 2026 והלאה", amount: allocationRequiredThreshold(new Date("2026-06-15")) },
+];
+
+/**
  * Normalize a customer's business/VAT number to digits only, treating an
  * empty value or an all-zeros placeholder ("000000000") as "no number"
  * (returns ""). This is how we tell a business customer (deducts input VAT)
