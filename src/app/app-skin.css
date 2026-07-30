@@ -551,9 +551,17 @@ html .gk-etable thead th {
    EVERY CARD IS THE SAME RECTANGLE. The row height is FIXED (not a
    min-height); the type chip stretches to its track so all chips are one
    size; the status pill has a min-width so all pills are one size; the
-   overdue note sits inline after the pill (under it, it made overdue rows
-   taller); and the action block is four fixed slots whether or not a
-   document offers four actions.
+   overdue tag is absolutely positioned in the slack under the amount, so an
+   overdue card is the same rectangle as every other card and the 59 cards
+   that are not overdue reserve nothing for it; and the action block is four
+   fixed slots whether or not a document offers four actions.
+
+   THE HEADER BAND IS THE CONTROL SURFACE. Every label does something: תאריך /
+   מספר / סכום sort, and סוג / לקוח / סטטוס / מייל open a multi-select filter
+   menu for their column. No column is both. Both kinds put their glyph
+   UNDERNEATH the word, out of flow, for the same two reasons - a glyph in the
+   flow widens a content-sized track, and it pushes the word off the column's
+   centre line.
 
    HOW EVERY COLUMN IS ALIGNED: EVERYTHING IS CENTRED. One centre line per
    column, shared by the header label and by all 61 cards. Written out in full
@@ -581,12 +589,14 @@ html .gk-etable thead th {
      <= 767.98   no columns at all - the row stacks into a phone card
    ===================================================================== */
 
-/* The list sits in its own sand-coloured well inside the white .card-soft the
-   three host pages wrap it in; that is what makes a white row read as a card.
-   It is also where the section's DESIGN TOKENS live, so every rule below is
-   spending from the same four scales and a tier can retune the whole component
-   by moving a token, not by sprinkling per-element overrides. */
-html .dc-shell {
+/* THE SECTION'S DESIGN TOKENS. Declared on `html`, not on `.dc-shell`, for one
+   reason: the column filter menu is rendered in a PORTAL on <body> (so that no
+   ancestor's overflow can clip it and no content-sized grid track can be
+   widened by it), and a token declared on the shell would not reach it. Every
+   `.dc-*` rule below - inside the shell or in the portal - therefore spends
+   from the same four scales, and a tier retunes the whole component by moving
+   a token rather than by sprinkling per-element overrides. */
+html {
   /* SPACING - a 0.25rem ladder, four steps, and nothing off it.
        1  0.25rem  hairline separation (cell gap, row gap, icon gap)
        2  0.5rem   related things (column gap, actions inset)
@@ -632,7 +642,12 @@ html .dc-shell {
   --dc-sh-band: 0 1px 0 0 var(--goldline);
   --dc-sh-lift: 0 10px 24px -18px rgba(60, 45, 20, 0.55);
   --dc-sh-focus: 0 0 0 3px rgba(190, 158, 78, 0.28);
+  --dc-sh-pop: 0 18px 40px -20px rgba(60, 45, 20, 0.55), 0 2px 8px -4px rgba(60, 45, 20, 0.3);
+}
 
+/* The list sits in its own sand-coloured well inside the white .card-soft the
+   three host pages wrap it in; that is what makes a white row read as a card. */
+html .dc-shell {
   background: var(--bg);
   padding: var(--dc-sp-3);
 }
@@ -1041,10 +1056,13 @@ html .dc-pilldot {
   background: currentColor;
   opacity: 0.75;
 }
-/* The only overdue signal once there are columns: the pill's dot goes amber
-   and the cell keeps its "N ימים ללא תשלום" title. The note itself is a phone
-   card object (see `.dc-note`) - beside a pill it would drag the pill off the
-   column's centre line on the overdue rows alone. */
+/* The overdue signal ON THE STATUS COLUMN: the pill's dot goes amber. It is
+   KEPT now that `.dc-late` spells the days out under the amount, because the
+   two are not the same signal - the dot is what makes an overdue row findable
+   by peripheral scan down the status column (which is where a reader looks for
+   "is this paid"), and the tag is what says how bad it is once the eye lands.
+   Colour plus text, one row apart, is also the accessible pairing: neither is
+   carrying the meaning alone. */
 html .dc-cell[data-overdue] .dc-pilldot {
   background: var(--dc-wait-ink);
   opacity: 1;
@@ -1067,7 +1085,8 @@ html .dc-pill[data-status="cancelled"] {
 /* PHONE CARD ONLY - switched on in the <= 767.98px block, where the status
    line has room at both of its ends and there is no column centre line to
    protect. One line tall either way, so an overdue card is exactly as tall as
-   a card without one. */
+   a card without one. (With columns, the same sentence is `.dc-late` under the
+   amount instead; the two never render together.) */
 html .dc-note {
   display: none;
   align-items: center;
@@ -1108,10 +1127,69 @@ html .dc-row .dc-cell[data-col="amount"] {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
+/* The wrapper is the positioning context for the overdue tag and NOTHING else:
+   it is the same full-width block `.dc-amt` used to be, so the amount's box,
+   its centre and its shared digit edge are all exactly what they were. */
+html .dc-amtwrap {
+  position: relative;
+  display: block;
+  width: 100%;
+}
 html .dc-amt {
   display: block;
   width: 100%;
   text-align: end;
+  /* A tight line box, so the slack a 3rem row leaves under the amount is real
+     estate the overdue tag can use. It cannot move the amount: a flex item's
+     line box shrinks symmetrically around its own glyphs, so the number stays
+     on the row's vertical centre - it just stops reserving 8px of leading it
+     never draws in. Measured gain: +3.4px of clearance at every tier. */
+  line-height: 1.15;
+}
+/* ---- "N ימים ללא תשלום" ----
+   The overdue call-out, back on the desktop row (2026-07-30) after being cut
+   from beside the status pill, where it dragged the pill off the column's
+   centre line on the overdue rows alone.
+
+   It costs the layout NOTHING. `position: absolute` at `top: 100%` of the
+   amount block means it is out of flow: it cannot make the row taller, it
+   cannot push the amount off the vertical centre it shares with the rest of
+   the row, and on the 59 rows that are not overdue it does not exist at all,
+   so it reserves no space and every card stays the same rectangle. It hangs in
+   the slack a 3rem row leaves under a 1-line amount - measured at 1440: the
+   tag's box ends 4.6px above the card's bottom border and 9.3px above the next
+   card's top edge.
+
+   IT IS CENTRED BY TRANSFORM, NOT BY `inset-inline: 0` + `text-align: center`.
+   The sentence is wider than the amount column (97px of text in a 71-88px
+   track), and a centred line that OVERFLOWS an RTL box does not stay centred -
+   the overflow all goes to one side, which measured 17.5px off the column's
+   centre line. `left: 50%` + `translateX(-50%)` on a `max-content` box is
+   centre-by-construction at any width: the tag's own centre sits on the
+   amount block's centre, which is the column's centre line, so the tag and the
+   number read as one object and the spill is symmetric. The spill lands in the
+   band under the neighbouring columns, which is empty at that height (the pill
+   and the action icons are vertically centred), so it covers nothing.
+
+   Amber from the same wait tokens the phone card's note uses; no background,
+   because a filled chip at this size under a bold amount reads as clutter and
+   the colour alone already says "warning". */
+html .dc-late {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: none;
+  margin-top: 1px;
+  font-size: var(--dc-fs-1);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0;
+  color: var(--dc-wait-ink);
+  text-align: center;
+  white-space: nowrap;
+  pointer-events: none;
 }
 
 /* ---- actions: a fixed FOUR-COLUMN icon grid ----
@@ -1198,8 +1276,11 @@ html .dc-act[data-tone="danger"]:hover {
    label - sortable or not - still on one vertical centre in the band. It also
    lands exactly where the active column's gold underline is, which reads as
    one sort indicator rather than two. */
-html .dc-head .dc-sort {
+html .dc-head .dc-sort,
+html .dc-head .dc-filter {
   position: relative;
+  display: inline-flex;
+  align-items: center;
   justify-content: center;
   gap: 0;
   width: 100%;
@@ -1213,13 +1294,17 @@ html .dc-head .dc-sort {
   white-space: nowrap;
   transition: background-color 0.15s ease, color 0.15s ease;
 }
-html .dc-head .dc-sort:hover {
+html .dc-head .dc-sort:hover,
+html .dc-head .dc-filter:hover {
   background: rgba(190, 158, 78, 0.16);
   color: var(--gold-text);
 }
-html .dc-head .dc-sort:focus-visible {
+html .dc-head .dc-sort:focus-visible,
+html .dc-head .dc-filter:focus-visible {
   background: rgba(190, 158, 78, 0.16);
   color: var(--gold-text);
+  outline: 2px solid var(--g3);
+  outline-offset: -2px;
 }
 /* The column the list is sorted by keeps its own segment of the band's
    bottom rule, in gold and twice as thick: the classic table-header tell,
@@ -1244,6 +1329,153 @@ html .dc-sorticon {
 html .dc-sort:hover .dc-sorticon,
 html .dc-sort:focus-visible .dc-sorticon,
 html .dc-sort[data-active] .dc-sorticon { opacity: 1; }
+
+/* ---- filterable column labels (סוג, לקוח, סטטוס, מייל) ----
+   The other half of the header band: these four labels are not sort controls,
+   they open an Excel-style checkbox menu for their column. They are built out
+   of exactly the same parts as the sortable labels - a full-bleed button, the
+   word dead-centre, one glyph centred UNDERNEATH it - so the band reads as one
+   row of column heads rather than two kinds of thing, and for the same two
+   structural reasons: a glyph BESIDE the word would widen a content-sized
+   track and would push the word off the column's centre line.
+
+   An ACTIVE filter is loud on purpose, because a list that is quietly showing
+   14 of 61 rows is how a user loses an hour: the head takes the gold tint and
+   the gold underline the active sort column takes, and the chevron becomes a
+   filled funnel at full opacity. The two states cannot be confused - no column
+   is both sortable and filterable. */
+html .dc-head .dc-filter[data-open] {
+  background: rgba(190, 158, 78, 0.16);
+  color: var(--gold-text);
+}
+html .dc-head .dc-filter[data-active] {
+  background: rgba(190, 158, 78, 0.2);
+  box-shadow: inset 0 -2px 0 0 var(--g3);
+  color: var(--gold-text);
+}
+html .dc-filticon {
+  position: absolute;
+  inset-inline: 0;
+  /* the sort caret's optical placement, shared so the two kinds of head put
+     their glyph on exactly the same baseline across the band */
+  bottom: 0.1rem;
+  margin-inline: auto;
+  width: 0.6rem;
+  height: 0.6rem;
+  opacity: 0.45;
+}
+html .dc-filter:hover .dc-filticon,
+html .dc-filter:focus-visible .dc-filticon,
+html .dc-filter[data-open] .dc-filticon,
+html .dc-filter[data-active] .dc-filticon { opacity: 1; }
+html .dc-filter[data-active] .dc-filticon { fill: currentColor; }
+
+/* ---- the filter menu itself ----
+   A portal on <body>, placed from its trigger's rect (see `ColumnFilter` in
+   `documents-table.tsx`): out of the grid entirely, so it can be neither
+   clipped by an ancestor nor able to widen a content-sized column. Radius,
+   shadow, spacing and type all come from the same tokens as the rows, which is
+   why the tokens are declared on `html` rather than on `.dc-shell`. */
+html .dc-fpanel {
+  position: fixed;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: var(--dc-sp-1);
+  border: 1px solid var(--goldtintline);
+  border-radius: var(--dc-r-2);
+  background: var(--card);
+  box-shadow: var(--dc-sh-pop);
+  text-align: start;
+}
+html .dc-fsearch {
+  flex: none;
+  margin: var(--dc-sp-1) var(--dc-sp-1) var(--dc-sp-2);
+  min-height: 2.25rem;
+  padding-inline: var(--dc-sp-2);
+  border: 1px solid var(--line);
+  border-radius: var(--dc-r-1);
+  background: var(--bg);
+  font-size: var(--dc-fs-2);
+  color: var(--ink);
+}
+html .dc-fsearch:focus-visible {
+  outline: 2px solid var(--g3);
+  outline-offset: 1px;
+  border-color: var(--goldline);
+}
+html .dc-flist {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+/* One option row. `min-height` is the touch floor (40px at the phone root,
+   and the menu is reachable on a tablet too), and the whole row is the target
+   - not just the 16px box - so it can be hit without aiming. */
+html .dc-fopt {
+  display: flex;
+  align-items: center;
+  gap: var(--dc-sp-2);
+  /* the touch floor, 41px at the smallest root size in the app */
+  min-height: 2.5rem;
+  padding-inline: var(--dc-sp-2);
+  border-radius: var(--dc-r-1);
+  font-size: var(--dc-fs-2);
+  font-weight: 600;
+  color: var(--ink2);
+  cursor: pointer;
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+html .dc-fopt:hover {
+  background: var(--goldtint);
+  color: var(--gold-text);
+}
+/* The row, not the checkbox, shows the focus ring: the checkbox is the thing
+   that is focused, but the row is the thing the eye is looking for. */
+html .dc-fopt:has(input:focus-visible) {
+  background: var(--goldtint);
+  color: var(--gold-text);
+  outline: 2px solid var(--g3);
+  outline-offset: -2px;
+}
+html .dc-fopt input {
+  flex: none;
+  width: 0.95rem;
+  height: 0.95rem;
+  accent-color: var(--g3);
+  cursor: pointer;
+}
+html .dc-ftxt {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* The count in the FULL list, so "קבלה (28)" is a fact about the data and not
+   about whatever is filtered at that moment. */
+html .dc-fcount {
+  flex: none;
+  font-size: var(--dc-fs-1);
+  font-weight: 700;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+html .dc-fopt:hover .dc-fcount { color: var(--gold-text); }
+/* "הכל" is the clear-this-column row, so it is separated from the values. */
+html .dc-fopt[data-all] {
+  margin-bottom: var(--dc-sp-1);
+  padding-bottom: var(--dc-sp-1);
+  border-bottom: 1px solid var(--dc-hairline);
+  border-radius: var(--dc-r-1) var(--dc-r-1) 0 0;
+}
+html .dc-fempty {
+  padding: var(--dc-sp-3) var(--dc-sp-2);
+  font-size: var(--dc-fs-2);
+  color: var(--muted);
+}
 
 html .dc-empty {
   padding: calc(var(--dc-sp-4) * 3.5) var(--dc-sp-4);
@@ -1279,12 +1511,14 @@ html .dc-empty {
    the tokens cannot express - the well's padding, the chip/pill boxes and the
    icon tile size - are named individually. */
 @media (min-width: 768px) and (max-width: 1399.98px) {
-  html .dc-shell {
+  html {
     --dc-fs-1: 0.62rem;
     --dc-fs-2: 0.71rem;
     --dc-fs-3: 0.82rem;
     --dc-fs-4: 0.94rem;
     --dc-gutter: var(--dc-sp-1);
+  }
+  html .dc-shell {
     padding: var(--dc-sp-2);
   }
   html .dc-chip { height: 1.35rem; padding-inline: var(--dc-sp-2); }
@@ -1379,19 +1613,31 @@ html .dc-empty {
    its end edge. The two TILES still centre their own labels, because a pill
    with a fixed width reads better with its word in the middle. */
 @media (max-width: 767.98px) {
-  html .dc-shell {
+  html {
     /* one step up from the desktop ladder: a phone is held closer but has no
        column to protect, so the same four roles can each afford a little more */
     --dc-fs-1: 0.75rem;
     --dc-fs-2: 0.86rem;
     --dc-fs-3: 0.99rem;
     --dc-fs-4: 1.14rem;
+  }
+  html .dc-shell {
     padding: var(--dc-sp-2);
   }
   html .dc-table,
   html .dc-table[data-alloc] { display: flex; flex-direction: column; gap: var(--dc-sp-2); }
   html .dc-note { display: inline-flex; }
   html .dc-tail { display: inline; }
+  /* The phone card says the same thing in its own place - a chip on the status
+     line, which down here has room at both of its ends. A tag hanging under
+     the amount is a COLUMN device: it needs a fixed row height with slack in
+     it, and the phone card has neither. */
+  html .dc-late { display: none; }
+  /* ...so the tight line box it needed goes too. Down here the amount is a
+     real item in the card's first line, sharing that line with the type chip:
+     at 1.15 it stopped being the tallest thing on the line and the whole card
+     lost 3.5px. Back to the body's 1.5, which is what shipped. */
+  html .dc-amt { line-height: 1.5; }
   /* There are no columns down here, so there is nothing for a header band to
      head - but the three sortable labels ARE the only sort control in the
      component, and a phone must not lose sorting. The header collapses into

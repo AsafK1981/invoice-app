@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -10,6 +11,8 @@ import {
   ArrowUp,
   ArrowDown,
   ArrowUpDown,
+  ChevronDown,
+  Filter,
   CheckCircle2,
   Circle,
   Download,
@@ -36,8 +39,6 @@ import {
   type DocumentStatus,
 } from "@/lib/types";
 
-type TypeFilter = "all" | DocumentType;
-type StatusFilter = "all" | DocumentStatus;
 type SortKey = "date" | "number" | "total";
 type SortDir = "asc" | "desc";
 
@@ -49,57 +50,167 @@ interface Props {
 
 /**
  * How many days a `sent` document may sit unpaid before the row calls it out
- * next to the status pill. Receipts are paid by definition and are excluded.
+ * under its amount. Receipts are paid by definition and are excluded.
  */
 const OVERDUE_DAYS = 7;
+
+/* =====================================================================
+   ONE FILTER STATE, TWO CONTROLS (2026-07-30)
+
+   The list is filtered by five columns. Each one is a MULTI-select set of
+   values (an empty set means "no filter on this column"), and each one is
+   driven by TWO controls that are always in agreement because they read and
+   write the very same piece of state:
+
+     - the select in the filter bar above the table (the only control a phone
+       has, since the phone card has no header band), and
+     - the Excel-style checkbox menu on the column header itself.
+
+   Everything a column filter needs is declared once, here: how to read the
+   column's value off a document, how to label a value, and how to order the
+   options. `filtered`, the options list with its counts, both controls,
+   "נקה הכל", the document count, the export button and the empty state are
+   all derived from that one declaration - so there is no second filter state
+   anywhere and no way for the two controls to drift apart.
+   ===================================================================== */
+type FilterKey = "type" | "client" | "status" | "mail" | "month";
+type Selections = Record<FilterKey, string[]>;
+
+const FILTER_KEYS: FilterKey[] = ["type", "client", "status", "mail", "month"];
+
+const EMPTY_SELECTIONS: Selections = { type: [], client: [], status: [], mail: [], month: [] };
+
+/** The value a document has in a filterable column. One string per document. */
+const VALUE_OF: Record<FilterKey, (d: InvoiceDocument) => string> = {
+  type: (d) => d.type,
+  client: (d) => d.clientName,
+  status: (d) => d.status,
+  // A true partition: every document is either emailed or not, so the option
+  // counts in the menu always add up to the full list.
+  mail: (d) => (d.emailedAt ? "emailed" : "not_emailed"),
+  month: (d) => d.date.slice(0, 7),
+};
+
+const MAIL_LABELS: Record<string, string> = { emailed: "נשלח במייל", not_emailed: "טרם נשלח" };
+
+function filterValueLabel(key: FilterKey, value: string): string {
+  if (key === "type") return DOCUMENT_TYPE_LABELS[value as DocumentType] ?? value;
+  if (key === "status") return DOCUMENT_STATUS_LABELS[value as DocumentStatus] ?? value;
+  if (key === "mail") return MAIL_LABELS[value] ?? value;
+  if (key === "month") return formatMonthLabel(value);
+  return value;
+}
+
+/** The order the options are listed in, per column. */
+const TYPE_ORDER: DocumentType[] = [
+  "receipt",
+  "tax_invoice_receipt",
+  "tax_invoice",
+  "quote",
+  "proforma",
+  "credit_note",
+];
+const STATUS_ORDER: DocumentStatus[] = ["draft", "sent", "paid", "cancelled"];
+
+function orderOptions(key: FilterKey, values: string[]): string[] {
+  if (key === "type") return TYPE_ORDER.filter((t) => values.includes(t));
+  if (key === "status") return STATUS_ORDER.filter((s) => values.includes(s));
+  if (key === "mail") return ["emailed", "not_emailed"].filter((m) => values.includes(m));
+  if (key === "month") return [...values].sort().reverse();
+  return [...values].sort((a, b) => a.localeCompare(b, "he"));
+}
+
+/** The label of the "no filter" option, per column - both controls use it. */
+const ALL_LABEL: Record<FilterKey, string> = {
+  type: "כל הסוגים",
+  client: "כל הלקוחות",
+  status: "כל הסטטוסים",
+  mail: "הכל",
+  month: "כל החודשים",
+};
+
+/** The header label of the column, per column - both controls use it. */
+const COL_LABEL: Record<FilterKey, string> = {
+  type: "סוג",
+  client: "לקוח",
+  status: "סטטוס",
+  mail: "מייל",
+  month: "חודש",
+};
+
+interface FilterOption {
+  value: string;
+  label: string;
+  count: number;
+}
+
+/** The sentinel a <select> shows when the set holds more than one value. */
+const MULTI = "__multi";
 
 export function DocumentsTable({ documents, limit, showExport = false }: Props) {
   const searchParams = useSearchParams();
   const { business } = useBusiness();
   // Read initial filter values from URL search params so dashboard cards
   // (and other deep-links like /documents?type=quote&status=sent) can
-  // pre-filter the list. Validates against known values to ignore noise.
-  type EmailFilter = "all" | "emailed" | "not_emailed";
-  const initialType: TypeFilter = (() => {
-    const v = searchParams.get("type");
-    if (v === "receipt" || v === "quote" || v === "proforma" || v === "tax_invoice" || v === "tax_invoice_receipt" || v === "credit_note") return v;
-    return "all";
-  })();
-  const initialStatus: StatusFilter = (() => {
-    const v = searchParams.get("status");
-    if (v === "draft" || v === "sent" || v === "paid" || v === "cancelled") return v;
-    return "all";
-  })();
-  const initialMonth = (() => {
-    const v = searchParams.get("month");
-    return v && /^\d{4}-\d{2}$/.test(v) ? v : "all";
-  })();
-  const initialEmail: EmailFilter = (() => {
-    const v = searchParams.get("email");
-    if (v === "emailed" || v === "not_emailed") return v;
-    return "all";
-  })();
-  const [typeFilter, setTypeFilter] = useState<TypeFilter>(initialType);
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>(initialStatus);
-  const [monthFilter, setMonthFilter] = useState<string>(initialMonth);
-  const [emailFilter, setEmailFilter] = useState<EmailFilter>(initialEmail);
+  // pre-filter the list. A param may carry several comma-separated values,
+  // since the sets are multi-select; unknown values are dropped as noise.
+  const [selections, setSelections] = useState<Selections>(() => {
+    const param = (name: string) => (searchParams.get(name) ?? "").split(",").filter(Boolean);
+    const known = <T extends string>(list: readonly T[], vals: string[]) =>
+      vals.filter((v): v is T => (list as readonly string[]).includes(v));
+    return {
+      type: known(TYPE_ORDER, param("type")),
+      client: param("client"),
+      status: known(STATUS_ORDER, param("status")),
+      mail: known(["emailed", "not_emailed"] as const, param("email")),
+      month: param("month").filter((v) => /^\d{4}-\d{2}$/.test(v)),
+    };
+  });
   const [search, setSearch] = useState<string>("");
   const [sortKey, setSortKey] = useState<SortKey>("date");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
-  const availableMonths = useMemo(() => {
-    const set = new Set(documents.map((d) => d.date.slice(0, 7)));
-    return Array.from(set).sort().reverse();
+  /**
+   * The options every filter control offers, derived from ALL the documents
+   * and never from the currently filtered subset - so an option can never
+   * vanish from under the pointer while it is being used, and the count beside
+   * it always reads as "this many in the whole list".
+   */
+  const options = useMemo(() => {
+    const out = {} as Record<FilterKey, FilterOption[]>;
+    for (const key of FILTER_KEYS) {
+      const counts = new Map<string, number>();
+      for (const d of documents) {
+        const v = VALUE_OF[key](d);
+        counts.set(v, (counts.get(v) ?? 0) + 1);
+      }
+      out[key] = orderOptions(key, [...counts.keys()]).map((value) => ({
+        value,
+        label: filterValueLabel(key, value),
+        count: counts.get(value) ?? 0,
+      }));
+    }
+    return out;
   }, [documents]);
 
+  const setColumn = useCallback((key: FilterKey, values: string[]) => {
+    setSelections((prev) => ({ ...prev, [key]: values }));
+  }, []);
+
+  const toggleValue = useCallback((key: FilterKey, value: string) => {
+    setSelections((prev) => {
+      const cur = prev[key];
+      return {
+        ...prev,
+        [key]: cur.includes(value) ? cur.filter((v) => v !== value) : [...cur, value],
+      };
+    });
+  }, []);
+
   const filtered = useMemo(() => {
-    let result = documents;
-    if (typeFilter !== "all") result = result.filter((d) => d.type === typeFilter);
-    if (statusFilter !== "all") result = result.filter((d) => d.status === statusFilter);
-    if (monthFilter !== "all") result = result.filter((d) => d.date.startsWith(monthFilter));
-    if (emailFilter === "emailed") result = result.filter((d) => Boolean(d.emailedAt));
-    else if (emailFilter === "not_emailed")
-      result = result.filter((d) => !d.emailedAt && d.status !== "draft" && d.status !== "cancelled");
+    let result = documents.filter((d) =>
+      FILTER_KEYS.every((key) => selections[key].length === 0 || selections[key].includes(VALUE_OF[key](d))),
+    );
     if (search.trim()) result = result.filter((d) => matchDocument(d, search));
     result = [...result].sort((a, b) => {
       let cmp = 0;
@@ -110,7 +221,7 @@ export function DocumentsTable({ documents, limit, showExport = false }: Props) 
     });
     if (limit) result = result.slice(0, limit);
     return result;
-  }, [documents, typeFilter, statusFilter, monthFilter, emailFilter, search, limit, sortKey, sortDir]);
+  }, [documents, selections, search, limit, sortKey, sortDir]);
 
   /**
    * מספר הקצאה is a column only a business that can actually receive one
@@ -134,25 +245,30 @@ export function DocumentsTable({ documents, limit, showExport = false }: Props) 
     }
   }
 
+  /** Clears BOTH controls of every column, because there is only one state. */
   function clearFilters() {
-    setTypeFilter("all");
-    setStatusFilter("all");
-    setMonthFilter("all");
-    setEmailFilter("all");
+    setSelections(EMPTY_SELECTIONS);
     setSearch("");
   }
 
   const filtersActive =
-    typeFilter !== "all" ||
-    statusFilter !== "all" ||
-    monthFilter !== "all" ||
-    emailFilter !== "all" ||
-    search.trim() !== "";
+    FILTER_KEYS.some((key) => selections[key].length > 0) || search.trim() !== "";
 
   return (
     <div>
       <div className="flex flex-wrap items-center gap-3 px-3 sm:px-6 py-4 bg-orange-50 border-b border-orange-100 sticky top-0 z-10">
-        <div className="relative">
+        {/* Two fixes to the bar, both about the fifth select (לקוח) that this
+            pass added to a row that was already full:
+              - the WIDTH lives on this wrapper, not on the input. `.input-warm`
+                declares `width: 100%` unlayered, which beats Tailwind's
+                (layered) `sm:w-72`, so the input was sizing to the wrapper and
+                the wrapper was shrink-to-fitting to 196px: the placeholder came
+                out clipped mid-word, under the magnifier glyph.
+              - `shrink-0`, here and on every other control in the bar. The bar
+                is `flex-wrap`, and a SHRINKABLE item does not wrap - it
+                squeezes. Unshrinkable, a bar that runs out of room grows a row
+                instead of crushing what is on it. */}
+        <div className="relative shrink-0 w-full sm:w-72">
           <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-stone-400" />
           <input
             type="text"
@@ -171,60 +287,24 @@ export function DocumentsTable({ documents, limit, showExport = false }: Props) 
             </button>
           )}
         </div>
-        <FilterSelect
-          label="סוג"
-          value={typeFilter}
-          onChange={(v) => setTypeFilter(v as TypeFilter)}
-          options={[
-            { value: "all", label: "כל הסוגים" },
-            { value: "receipt", label: DOCUMENT_TYPE_LABELS.receipt },
-            { value: "quote", label: DOCUMENT_TYPE_LABELS.quote },
-            { value: "proforma", label: DOCUMENT_TYPE_LABELS.proforma },
-            { value: "tax_invoice", label: DOCUMENT_TYPE_LABELS.tax_invoice },
-            { value: "tax_invoice_receipt", label: DOCUMENT_TYPE_LABELS.tax_invoice_receipt },
-            { value: "credit_note", label: DOCUMENT_TYPE_LABELS.credit_note },
-          ]}
-        />
-        <FilterSelect
-          label="סטטוס"
-          value={statusFilter}
-          onChange={(v) => setStatusFilter(v as StatusFilter)}
-          options={[
-            { value: "all", label: "כל הסטטוסים" },
-            { value: "draft", label: DOCUMENT_STATUS_LABELS.draft },
-            { value: "sent", label: DOCUMENT_STATUS_LABELS.sent },
-            { value: "paid", label: DOCUMENT_STATUS_LABELS.paid },
-            { value: "cancelled", label: DOCUMENT_STATUS_LABELS.cancelled },
-          ]}
-        />
-        <FilterSelect
-          label="חודש"
-          value={monthFilter}
-          onChange={setMonthFilter}
-          options={[
-            { value: "all", label: "כל החודשים" },
-            ...availableMonths.map((m) => ({ value: m, label: formatMonthLabel(m) })),
-          ]}
-        />
-        <FilterSelect
-          label="מייל"
-          value={emailFilter}
-          onChange={(v) => setEmailFilter(v as EmailFilter)}
-          options={[
-            { value: "all", label: "הכל" },
-            { value: "emailed", label: "נשלח במייל" },
-            { value: "not_emailed", label: "טרם נשלח" },
-          ]}
-        />
+        {FILTER_KEYS.map((key) => (
+          <FilterSelect
+            key={key}
+            filterKey={key}
+            options={options[key]}
+            selected={selections[key]}
+            onChange={(values) => setColumn(key, values)}
+          />
+        ))}
         {filtersActive && (
           <button
             onClick={clearFilters}
-            className="inline-flex items-center justify-center min-h-[40px] px-3 text-sm font-medium text-orange-700 hover:bg-orange-100 rounded-xl"
+            className="inline-flex shrink-0 items-center justify-center min-h-[40px] px-3 text-sm font-medium text-orange-700 hover:bg-orange-100 rounded-xl"
           >
             נקה הכל
           </button>
         )}
-        <div className="text-sm font-medium text-stone-700 mr-auto flex items-center gap-3">
+        <div className="text-sm font-medium text-stone-700 mr-auto flex shrink-0 items-center gap-3">
           {showExport && filtered.length > 0 && (
             <button
               onClick={() =>
@@ -269,14 +349,31 @@ export function DocumentsTable({ documents, limit, showExport = false }: Props) 
           <div className="dc-table" data-alloc={showAlloc ? "1" : undefined}>
             {/* One header band for the whole list. It is a subgrid item like
                 every card, so each label sits exactly over the column it
-                names, and the three numeric labels double as the sort control
-                (the old "מיון לפי" chip strip is gone). */}
+                names, and every label DOES something:
+                  תאריך / מספר / סכום  sort the list
+                  סוג / לקוח / סטטוס / מייל  open an Excel-style filter menu
+                No column is both, which keeps the affordance unambiguous, and
+                in both cases the glyph sits UNDER the word rather than beside
+                it so the word stays on the column's centre line and the
+                content-sized track never widens. */}
             <div className="dc-head">
               <span className="dc-cell" data-col="type">
-                <span className="dc-hlabel">סוג</span>
+                <ColumnFilter
+                  filterKey="type"
+                  options={options.type}
+                  selected={selections.type}
+                  onToggle={toggleValue}
+                  onClear={setColumn}
+                />
               </span>
               <span className="dc-cell" data-col="client">
-                <span className="dc-hlabel">לקוח</span>
+                <ColumnFilter
+                  filterKey="client"
+                  options={options.client}
+                  selected={selections.client}
+                  onToggle={toggleValue}
+                  onClear={setColumn}
+                />
               </span>
               <span className="dc-cell" data-col="subj">
                 <span className="dc-hlabel">נושא</span>
@@ -305,10 +402,22 @@ export function DocumentsTable({ documents, limit, showExport = false }: Props) 
                 </span>
               )}
               <span className="dc-cell" data-col="mail">
-                <span className="dc-hlabel">מייל</span>
+                <ColumnFilter
+                  filterKey="mail"
+                  options={options.mail}
+                  selected={selections.mail}
+                  onToggle={toggleValue}
+                  onClear={setColumn}
+                />
               </span>
               <span className="dc-cell" data-col="status">
-                <span className="dc-hlabel">סטטוס</span>
+                <ColumnFilter
+                  filterKey="status"
+                  options={options.status}
+                  selected={selections.status}
+                  onToggle={toggleValue}
+                  onClear={setColumn}
+                />
               </span>
               <span className="dc-cell" data-col="amount">
                 <SortLabel
@@ -445,16 +554,16 @@ function DocumentRow({ doc: d, showAlloc }: { doc: InvoiceDocument; showAlloc: b
         className="dc-cell"
         data-col="status"
         data-overdue={unpaidDays >= OVERDUE_DAYS ? "1" : undefined}
-        title={unpaidDays >= OVERDUE_DAYS ? `${unpaidDays} ימים ללא תשלום` : undefined}
       >
         <span className="dc-pill" data-status={d.status}>
           <i className="dc-pilldot" aria-hidden="true" />
           <span className="dc-pilltxt">{DOCUMENT_STATUS_LABELS[d.status]}</span>
         </span>
-        {/* Phone card only (see `.dc-note`). With columns, an extra chip beside
-            the pill would drag the pill off the column's centre line on the
-            overdue rows alone; there the signal is the amber pill dot plus the
-            cell's title. */}
+        {/* Phone card only (see `.dc-note`): down there the status line has
+            room at both ends and there is no column centre line to protect.
+            With columns the same sentence is the `.dc-late` tag under the
+            amount instead - beside the pill it dragged the pill off the
+            column's centre line on the overdue rows alone. */}
         {unpaidDays >= OVERDUE_DAYS && (
           <span className="dc-note" title={`${unpaidDays} ימים ללא תשלום`}>
             {unpaidDays} ימים<span className="dc-tail"> ללא תשלום</span>
@@ -462,8 +571,19 @@ function DocumentRow({ doc: d, showAlloc }: { doc: InvoiceDocument; showAlloc: b
         )}
       </span>
 
+      {/* סכום, and - only when the document is overdue - the unpaid-days tag
+          hanging in the row's vertical slack underneath it. The wrapper is the
+          full width of the cell's content box (exactly what `.dc-amt` was
+          before), so the amount keeps its shared digit edge, the tag is
+          centred on the amount's own centre axis, and because the tag is out
+          of flow it reserves nothing on the 59 rows that are not overdue. */}
       <span className="dc-cell" data-col="amount">
-        <span className="dc-amt">{formatCurrency(d.total)}</span>
+        <span className="dc-amtwrap">
+          <span className="dc-amt">{formatCurrency(d.total)}</span>
+          {unpaidDays >= OVERDUE_DAYS && (
+            <span className="dc-late">{unpaidDays} ימים ללא תשלום</span>
+          )}
+        </span>
       </span>
 
       <span className="dc-cell" data-col="acts">
@@ -643,25 +763,50 @@ function SortLabel({
   );
 }
 
+/**
+ * The filter bar's control for one column: the same multi-select set, seen
+ * through a <select>.
+ *
+ * A native select can only show one row at a time, so it shows the set's ONE
+ * value when the set holds one, and a "נבחרו N" summary row when it holds
+ * more (the summary row only exists while it is the selected one, so it never
+ * offers itself as a choice). Picking any value REPLACES the set - which is
+ * exactly what a single-choice control should mean - and "הכל" empties it.
+ * Every path here goes through the same `onChange` the header menu uses, so
+ * the two controls cannot disagree.
+ */
 function FilterSelect({
-  label,
-  value,
-  onChange,
+  filterKey,
   options,
+  selected,
+  onChange,
 }: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  options: { value: string; label: string }[];
+  filterKey: FilterKey;
+  options: FilterOption[];
+  selected: string[];
+  onChange: (values: string[]) => void;
 }) {
+  const value = selected.length === 0 ? "all" : selected.length === 1 ? selected[0] : MULTI;
   return (
-    <label className="flex items-center gap-2 text-sm">
-      <span className="text-stone-500">{label}:</span>
+    // On a phone this is the ONLY filter control (the header band has no
+    // labels down there), and there are five of them, so each one takes a full
+    // row with the label in a fixed-width gutter: five selects with one shared
+    // start edge and one shared end edge read as a form, whereas five
+    // shrink-to-fit selects read as debris. From `sm` up they go back to
+    // sitting inline in the bar, sized to their own content.
+    <label className="flex shrink-0 items-center gap-2 text-sm max-sm:w-full">
+      <span className="text-stone-500 shrink-0 max-sm:min-w-[3.5rem]">{COL_LABEL[filterKey]}:</span>
       <select
         value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="input-warm min-h-[40px] py-1.5 px-3 text-sm w-auto"
+        onChange={(e) => {
+          const v = e.target.value;
+          if (v === MULTI) return;
+          onChange(v === "all" ? [] : [v]);
+        }}
+        className="input-warm min-h-[40px] py-1.5 px-3 text-sm w-auto max-sm:flex-1 max-sm:min-w-0"
       >
+        <option value="all">{ALL_LABEL[filterKey]}</option>
+        {value === MULTI && <option value={MULTI}>נבחרו {selected.length}</option>}
         {options.map((o) => (
           <option key={o.value} value={o.value}>
             {o.label}
@@ -669,6 +814,196 @@ function FilterSelect({
         ))}
       </select>
     </label>
+  );
+}
+
+/**
+ * THE COLUMN HEADER FILTER MENU - "like every other Excel sheet table".
+ *
+ * The header cell becomes a button. Clicking it drops a white card of
+ * checkboxes under that column: one row per distinct value with its count in
+ * the FULL document set, plus a "הכל" row that clears the column. Every tick
+ * applies immediately - no OK button - and writes to the same `selections`
+ * state the filter bar's <select> reads, so the bar always shows what the menu
+ * did and "נקה הכל" clears both.
+ *
+ * WHY THE PANEL IS A PORTAL. Two hard constraints:
+ *   1. It must not be clipped. The band, the well and the host page's card all
+ *      have radii and their own stacking, and a menu that gets a corner shaved
+ *      off looks broken.
+ *   2. It must not disturb the subgrid tracks. The columns are CONTENT-SIZED,
+ *      so anything rendered inside a header cell that is wider than the label
+ *      widens that column for all 61 cards.
+ * A `position: fixed` card in a portal, placed from the trigger's own rect,
+ * satisfies both by construction: it is not a descendant of the grid at all,
+ * and it cannot be clipped by an ancestor's overflow because it has none.
+ * It is re-placed on scroll and resize so it stays welded to its header.
+ *
+ * WHY THE CHEVRON IS UNDER THE WORD. Same reason the sort caret is (see the
+ * header-label block in `app-skin.css`): beside the word it both widens the
+ * content-sized track and pushes the word off the column's centre line.
+ */
+function ColumnFilter({
+  filterKey,
+  options,
+  selected,
+  onToggle,
+  onClear,
+}: {
+  filterKey: FilterKey;
+  options: FilterOption[];
+  selected: string[];
+  onToggle: (key: FilterKey, value: string) => void;
+  onClear: (key: FilterKey, values: string[]) => void;
+}) {
+  const label = COL_LABEL[filterKey];
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [box, setBox] = useState<{ top: number; left: number; width: number; maxHeight: number } | null>(null);
+  const active = selected.length > 0;
+  // Only the columns that can carry many values earn a search field; on a
+  // four-row menu it would be one more thing to read for nothing.
+  const searchable = options.length > 8;
+  const shown = query.trim()
+    ? options.filter((o) => o.label.toLowerCase().includes(query.trim().toLowerCase()))
+    : options;
+  const total = options.reduce((sum, o) => sum + o.count, 0);
+
+  const place = useCallback(() => {
+    const b = btnRef.current?.getBoundingClientRect();
+    if (!b) return;
+    const width = Math.min(Math.max(b.width, 208), Math.max(208, window.innerWidth - 16));
+    // RTL: the panel hangs from the trigger's inline-start edge, i.e. its
+    // RIGHT edge lines up with the header cell's right edge, then it is
+    // clamped into the viewport so it can never be half off-screen.
+    const left = Math.min(Math.max(8, b.right - width), window.innerWidth - width - 8);
+    const top = b.bottom + 4;
+    setBox({ top, left, width, maxHeight: Math.min(320, window.innerHeight - top - 12) });
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    place();
+    const onMove = () => place();
+    window.addEventListener("scroll", onMove, true);
+    window.addEventListener("resize", onMove);
+    return () => {
+      window.removeEventListener("scroll", onMove, true);
+      window.removeEventListener("resize", onMove);
+    };
+  }, [open, place]);
+
+  const close = useCallback(() => {
+    setOpen(false);
+    setQuery("");
+    btnRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent | TouchEvent) => {
+      const t = e.target as Node;
+      if (panelRef.current?.contains(t) || btnRef.current?.contains(t)) return;
+      setOpen(false);
+      setQuery("");
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        close();
+      }
+    };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("touchstart", onDown);
+    document.addEventListener("keydown", onKey, true);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("touchstart", onDown);
+      document.removeEventListener("keydown", onKey, true);
+    };
+  }, [open, close]);
+
+  // Opening puts the caret where the work is: the search field when there is
+  // one, otherwise the first checkbox.
+  useEffect(() => {
+    if (!open) return;
+    const el = panelRef.current?.querySelector<HTMLElement>("input");
+    el?.focus();
+  }, [open]);
+
+  const Glyph = active ? Filter : ChevronDown;
+
+  return (
+    <>
+      <button
+        ref={btnRef}
+        type="button"
+        className="dc-filter"
+        data-active={active ? "1" : undefined}
+        data-open={open ? "1" : undefined}
+        aria-expanded={open}
+        aria-haspopup="true"
+        title={
+          active
+            ? `${label}: ${selected.map((v) => filterValueLabel(filterKey, v)).join(", ")}`
+            : `סינון לפי ${label}`
+        }
+        onClick={() => (open ? close() : setOpen(true))}
+      >
+        <span className="dc-hlabel">{label}</span>
+        <Glyph className="dc-filticon" aria-hidden="true" />
+        {active && <span className="sr-only">(מסונן)</span>}
+      </button>
+      {open &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            ref={panelRef}
+            className="dc-fpanel"
+            role="group"
+            aria-label={`סינון לפי ${label}`}
+            dir="rtl"
+            style={box ? { top: box.top, left: box.left, width: box.width, maxHeight: box.maxHeight } : { opacity: 0 }}
+          >
+            {searchable && (
+              <input
+                type="text"
+                className="dc-fsearch"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={`חיפוש ב${label}`}
+                aria-label={`חיפוש ב${label}`}
+              />
+            )}
+            <div className="dc-flist">
+              <label className="dc-fopt" data-all="1">
+                <input
+                  type="checkbox"
+                  checked={!active}
+                  onChange={() => onClear(filterKey, [])}
+                />
+                <span className="dc-ftxt">הכל</span>
+                <span className="dc-fcount">{total}</span>
+              </label>
+              {shown.map((o) => (
+                <label className="dc-fopt" key={o.value}>
+                  <input
+                    type="checkbox"
+                    checked={selected.includes(o.value)}
+                    onChange={() => onToggle(filterKey, o.value)}
+                  />
+                  <span className="dc-ftxt">{o.label}</span>
+                  <span className="dc-fcount">{o.count}</span>
+                </label>
+              ))}
+              {shown.length === 0 && <p className="dc-fempty">אין תוצאות</p>}
+            </div>
+          </div>,
+          document.body,
+        )}
+    </>
   );
 }
 
