@@ -1896,7 +1896,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
             </span>
           </label>
           {willNeedAllocation && (
-            <p className="text-xs text-stone-700 bg-indigo-50 border border-indigo-100 rounded-xl p-3 mb-3 leading-relaxed">
+            <p className="text-xs text-stone-700 bg-amber-50 border border-orange-100 rounded-xl p-3 mb-3 leading-relaxed">
               המסמך הזה צריך קודם מספר הקצאה מרשות המסים, ולכן אי אפשר לשלוח אותו כבר עכשיו.
               שומרים, מבקשים את המספר בלחיצה אחת, ואז שולחים ללקוח מעמוד המסמך.
             </p>

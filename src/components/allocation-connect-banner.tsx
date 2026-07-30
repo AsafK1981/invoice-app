@@ -34,6 +34,13 @@ interface Props {
  * right where the user is, instead of buried in settings; the allocation flow
  * was hard to find. Self-hides for עוסק פטור and for documents under the
  * threshold (where no allocation number is required).
+ *
+ * PALETTE. Gold, like the rest of the app - NOT a חשבונית ישראל blue. The card
+ * and the medallion use the coral utilities app-skin.css re-tints to the gold
+ * ramp, and the connect button carries `.pgbtn-primary`, the app's ONE filled
+ * button treatment (the same class מסמך חדש wears on /documents), so the two
+ * are byte-identical gradients rather than two copies of one gradient string.
+ * The only non-gold colour left is the emerald "מחובר" line, which is success.
  */
 export function AllocationConnectBanner({
   documentType,
@@ -181,10 +188,10 @@ export function AllocationConnectBanner({
 
   if (connected) {
     return (
-      <div className="rounded-2xl border border-indigo-200 bg-gradient-to-l from-indigo-50/80 to-blue-50/40 px-4 py-3.5">
+      <div className="rounded-2xl border border-orange-200 bg-gradient-to-l from-orange-50/80 to-amber-50/50 px-4 py-3.5">
         <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center flex-shrink-0 shadow-sm">
-            <Landmark className="w-5 h-5 text-white" />
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center flex-shrink-0 shadow-sm">
+            <Landmark className="w-5 h-5" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-bold text-stone-900">
@@ -208,10 +215,10 @@ export function AllocationConnectBanner({
   }
 
   return (
-    <div className="rounded-2xl border border-indigo-200 bg-gradient-to-l from-indigo-50 to-blue-50/50 px-4 py-3.5">
+    <div className="rounded-2xl border border-orange-200 bg-gradient-to-l from-orange-50/80 to-amber-50/50 px-4 py-3.5">
       <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center flex-shrink-0 shadow-sm">
-          <Landmark className="w-5 h-5 text-white" />
+        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center flex-shrink-0 shadow-sm">
+          <Landmark className="w-5 h-5" />
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-bold text-stone-900">
@@ -226,7 +233,7 @@ export function AllocationConnectBanner({
             type="button"
             onClick={connect}
             disabled={connecting}
-            className="mt-2.5 inline-flex items-center justify-center gap-2 min-h-[44px] bg-gradient-to-l from-indigo-500 to-blue-600 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-shadow hover:shadow-lg hover:shadow-indigo-200/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 disabled:opacity-50"
+            className="pgbtn-primary mt-2.5 inline-flex items-center justify-center gap-2 min-h-[44px] px-4 py-2 rounded-xl text-sm font-semibold disabled:opacity-50"
           >
             {connecting ? (
               <Loader2 className="w-4 h-4 animate-spin" />

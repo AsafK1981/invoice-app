@@ -39,6 +39,13 @@ interface Props {
  * The 3-step progression, with the current step called out. Steps already
  * behind the user get a check and go quiet; steps ahead stay muted so the eye
  * lands on the one that matters now.
+ *
+ * PALETTE. The app is one warm black-and-gold system, so this is written in the
+ * coral utility vocabulary (`orange`/`amber`/`rose`) that app-skin.css re-tints
+ * to the gold ramp - the active badge's `from-orange-500 to-rose-500` resolves
+ * to --gold-grad-cta with --gold-ink on the numeral, exactly like the app's
+ * other filled controls. The ONLY colour that is not gold here is the emerald
+ * check on a finished step, which means "done" and is kept for that reason.
  */
 export function AllocationSteps({ current, className = "" }: Props) {
   return (
@@ -53,7 +60,7 @@ export function AllocationSteps({ current, className = "" }: Props) {
             aria-current={active ? "step" : undefined}
             className={`flex items-start gap-2.5 rounded-xl border px-3 py-2.5 ${
               active
-                ? "border-indigo-200 bg-white shadow-sm shadow-indigo-100/70"
+                ? "border-orange-200 bg-white shadow-sm shadow-orange-100/70"
                 : "border-transparent bg-white/45"
             }`}
           >
@@ -63,7 +70,7 @@ export function AllocationSteps({ current, className = "" }: Props) {
                 done
                   ? "bg-emerald-100 text-emerald-700"
                   : active
-                    ? "bg-gradient-to-br from-indigo-500 to-blue-600 text-white shadow-sm shadow-indigo-300/60"
+                    ? "bg-gradient-to-br from-orange-500 to-rose-500"
                     : "bg-stone-100 text-stone-500"
               }`}
             >
@@ -77,7 +84,7 @@ export function AllocationSteps({ current, className = "" }: Props) {
               >
                 {step.title}
                 {active && (
-                  <span className="ms-2 inline-block whitespace-nowrap rounded-full bg-indigo-100 px-2 py-0.5 align-middle text-[10px] font-bold text-indigo-700">
+                  <span className="ms-2 inline-block whitespace-nowrap rounded-full bg-amber-100 px-2 py-0.5 align-middle text-[10px] font-bold text-amber-800">
                     אתה כאן
                   </span>
                 )}

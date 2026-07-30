@@ -630,6 +630,23 @@ html .pgbtn-quiet:disabled {
   box-shadow: none;
 }
 
+/* THE APP'S ONE FILLED-BUTTON TREATMENT, and it is deliberately NOT confined to
+   `.pgactions`. It is worn by מסמך חדש on /documents and, since 2026-07-30, by
+   the three filled buttons of the חשבונית ישראל flow (connect, ask for a מספר
+   הקצאה, save a hand-typed one), which used to paint their own indigo gradient.
+   Reusing the class rather than copying `--gold-grad-cta` into a component is
+   what makes those buttons' computed background-image byte-identical to מסמך
+   חדש's instead of merely similar.
+
+   It carries PAINT ONLY - background, ink, border-colour, shadow, hover - never
+   size, padding, radius or type, so a host may be 2.8rem in a header row or
+   52px and full-width in a card and still read as the same control.
+
+   FOCUS. There is none here on purpose. A Tailwind `ring-*` is a box-shadow and
+   would lose to the box-shadow above (unlayered beats a utility), so a ring
+   written on one of these buttons would be markup that never renders. The gold
+   `:focus-visible` OUTLINE from globals.css (recoloured to --g3 above) is the
+   ring for every one of them. */
 html .pgbtn-primary {
   background: var(--gold-grad-cta);
   color: var(--gold-ink);
@@ -641,7 +658,10 @@ html .pgbtn-primary {
 html .pgbtn-primary svg {
   color: var(--gold-ink);
 }
-html .pgbtn-primary:hover {
+/* `:not(:disabled)`: on /documents the primary is a <a>, but the allocation
+   buttons above are real <button>s that disable while a request is in flight,
+   and a disabled control must not light up under the cursor. */
+html .pgbtn-primary:hover:not(:disabled) {
   filter: brightness(1.05);
   box-shadow:
     0 14px 26px -12px rgba(160, 120, 40, 0.7),

@@ -36,6 +36,15 @@ import { useConfirm } from "@/components/ui/confirm-dialog";
  * an eyebrow trust label, a connected gradient stepper, and a faint
  * security-pattern dot texture) while staying cohesive with the app's
  * warm card-soft language.
+ *
+ * PALETTE. That composition used to be indigo/blue, as a "חשבונית ישראל
+ * identity". The app has ONE palette - warm black and gold - so an indigo panel
+ * read as a stray control rather than as a brand cue, exactly the complaint the
+ * green import button drew. Every surface here is now the gold ramp (the coral
+ * utilities app-skin.css re-tints, plus `.pgbtn-primary` on the connect button,
+ * the app's one filled-button treatment). Two colours survive on purpose:
+ * EMERALD for the connected state, because it means success, and ROSE for the
+ * error rows and the disconnect link, because they mean danger.
  */
 interface Status {
   ok: boolean;
@@ -61,10 +70,13 @@ const CONNECT_STEPS = [
   "מכאן, כל חשבונית מס מעל הסף תקבל מספר הקצאה מרשות המסים בלחיצה אחת.",
 ];
 
-// Faint banknote-style dot guilloché; signals "official / secure" without shouting.
+// Faint banknote-style dot guilloché; signals "official / secure" without
+// shouting. The dot is the brand's deep gold (--g3, #8f6f2a) at 9%, not the
+// indigo it used to be, so the texture sits under the gold stepper instead of
+// tinting it cool.
 const SECURITY_TEXTURE: React.CSSProperties = {
   backgroundImage:
-    "radial-gradient(circle at 1px 1px, rgba(79,70,229,0.07) 1px, transparent 0)",
+    "radial-gradient(circle at 1px 1px, rgba(143,111,42,0.09) 1px, transparent 0)",
   backgroundSize: "15px 15px",
 };
 
@@ -170,25 +182,25 @@ export function TaxAuthoritySection() {
       {/* Atmospheric corner glow: adds depth to an otherwise flat white card. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -top-20 -left-16 w-56 h-56 rounded-full bg-indigo-300/20 blur-3xl"
+        className="pointer-events-none absolute -top-20 -left-16 w-56 h-56 rounded-full bg-[color:var(--g1)]/25 blur-3xl"
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute top-0 right-0 h-1 w-full bg-gradient-to-l from-indigo-500 via-blue-500 to-transparent"
+        className="pointer-events-none absolute top-0 right-0 h-1 w-full bg-gradient-to-l from-[color:var(--g2)] via-[color:var(--g1)] to-transparent"
       />
 
       <div className="relative flex items-start gap-3.5">
         {/* Medallion: layered gradient + inset highlight + soft halo ring */}
         <div className="relative flex-shrink-0">
-          <div className="absolute inset-0 rounded-2xl bg-indigo-400/30 blur-md" aria-hidden />
-          <div className="relative w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 via-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-indigo-400/40 ring-1 ring-inset ring-white/25">
-            <Landmark className="w-[22px] h-[22px] text-white" />
+          <div className="absolute inset-0 rounded-2xl bg-[color:var(--g2)]/30 blur-md" aria-hidden />
+          <div className="relative w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center shadow-lg shadow-orange-400/40 ring-1 ring-inset ring-white/25">
+            <Landmark className="w-[22px] h-[22px]" />
           </div>
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 mb-1">
-            <ShieldCheck className="w-3.5 h-3.5 text-indigo-500 flex-shrink-0" />
-            <span className="text-[11px] font-bold tracking-wide text-indigo-600/90">
+            <ShieldCheck className="w-3.5 h-3.5 text-amber-700 flex-shrink-0" />
+            <span className="text-[11px] font-bold tracking-wide text-amber-700">
               שירות רשמי · רשות המסים
             </span>
           </div>
@@ -250,25 +262,25 @@ export function TaxAuthoritySection() {
         !status?.connected && (
         <div className="relative space-y-4">
           {/* Connect walkthrough: a connected gradient stepper over a faint security texture */}
-          <div className="relative overflow-hidden rounded-2xl border border-indigo-100/80 bg-gradient-to-b from-indigo-50/60 to-white p-5">
+          <div className="relative overflow-hidden rounded-2xl border border-orange-100 bg-gradient-to-b from-amber-50 to-white p-5">
             <div aria-hidden className="absolute inset-0 opacity-60" style={SECURITY_TEXTURE} />
             <div className="relative">
-              <p className="text-[11px] font-bold tracking-wide text-indigo-600/80 mb-0.5">
+              <p className="text-[11px] font-bold tracking-wide text-amber-700 mb-0.5">
                 איך מתחברים
               </p>
               <p className="font-bold text-stone-900 mb-4">פעם אחת · פחות מדקה</p>
               <ol className="relative">
                 {CONNECT_STEPS.map((step, i) => (
                   <li key={i}>
-                    <div className="flex items-start gap-3 rounded-2xl border border-indigo-100/90 bg-white/80 p-3.5 shadow-sm shadow-indigo-100/60">
-                      <span className="flex-shrink-0 w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-blue-600 text-white text-xs font-bold flex items-center justify-center shadow-sm shadow-indigo-400/50 ring-2 ring-white">
+                    <div className="flex items-start gap-3 rounded-2xl border border-orange-100 bg-white/80 p-3.5 shadow-sm shadow-orange-100/60">
+                      <span className="flex-shrink-0 w-7 h-7 rounded-full bg-gradient-to-br from-orange-500 to-rose-500 text-xs font-bold flex items-center justify-center ring-2 ring-white">
                         {i + 1}
                       </span>
                       <span className="text-sm text-stone-700 leading-relaxed pt-0.5">{step}</span>
                     </div>
                     {i < CONNECT_STEPS.length - 1 && (
                       <div className="flex justify-center py-1.5" aria-hidden>
-                        <span className="flex items-center justify-center w-6 h-6 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-500 shadow-sm">
+                        <span className="flex items-center justify-center w-6 h-6 rounded-full bg-amber-50 border border-orange-100 text-amber-700 shadow-sm">
                           <ArrowDown className="w-3.5 h-3.5" strokeWidth={2.5} />
                         </span>
                       </div>
@@ -282,15 +294,15 @@ export function TaxAuthoritySection() {
           <button
             onClick={handleConnect}
             disabled={acting}
-            className="group relative w-full inline-flex items-center justify-center gap-2 overflow-hidden bg-gradient-to-l from-indigo-600 to-blue-600 text-white py-3.5 rounded-2xl text-sm font-semibold shadow-lg shadow-indigo-500/25 ring-1 ring-inset ring-white/15 transition-all duration-300 hover:shadow-xl hover:shadow-indigo-500/30 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:hover:translate-y-0"
+            className="pgbtn-primary group relative w-full inline-flex items-center justify-center gap-2 overflow-hidden py-3.5 rounded-2xl text-sm font-semibold transition-transform duration-300 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:hover:translate-y-0"
           >
             <span
               aria-hidden
-              className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-out bg-gradient-to-r from-transparent via-white/20 to-transparent"
+              className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-out bg-gradient-to-r from-transparent via-white/30 to-transparent"
             />
             <ShieldCheck className="relative w-4 h-4" />
             <span className="relative">{acting ? "מעביר..." : "חבר לרשות המיסים"}</span>
-            {!acting && <span className="relative text-white/70 text-xs font-normal">· פעם אחת</span>}
+            {!acting && <span className="relative text-xs font-normal opacity-70">· פעם אחת</span>}
           </button>
           <p className="text-center text-[11px] text-stone-400">
             מאובטח · החיבור מתבצע ישירות מול רשות המסים

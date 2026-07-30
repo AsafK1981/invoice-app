@@ -9,6 +9,13 @@ import type { InvoiceDocument } from "@/lib/types";
  * Inline editor for the customer's עוסק/ח.פ number on a document. Surfaced on
  * tax-invoice documents because חשבונית ישראל allocation requires it; lets the
  * user add it to an invoice that was created for an ad-hoc client without one.
+ *
+ * PALETTE. Gold. This card sits directly under the מספר הקצאה card and says so
+ * in its own subtitle, so its sky-blue tile and sky "ערוך" link (a one-off, not
+ * part of the app's per-document-type colour set) read as a stray control next
+ * to it. Emerald is kept for "נשמר ✓" and rose for the error, because those two
+ * mean success and failure; the save BUTTON is the gold `.pgbtn-primary`, since
+ * a save is an action and not a success.
  */
 export function DocumentCustomerTaxEditor({ doc }: { doc: InvoiceDocument }) {
   const [editing, setEditing] = useState(false);
@@ -45,8 +52,8 @@ export function DocumentCustomerTaxEditor({ doc }: { doc: InvoiceDocument }) {
     <div className="no-print card-soft p-4 max-w-[210mm] mx-auto">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-9 h-9 rounded-xl bg-sky-50 flex items-center justify-center flex-shrink-0">
-            <IdCard className="w-4 h-4 text-sky-600" />
+          <div className="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center flex-shrink-0">
+            <IdCard className="w-4 h-4 text-amber-700" />
           </div>
           <div className="min-w-0">
             <p className="text-sm font-semibold text-stone-900">
@@ -76,7 +83,7 @@ export function DocumentCustomerTaxEditor({ doc }: { doc: InvoiceDocument }) {
             <button
               onClick={save}
               disabled={saving}
-              className="inline-flex items-center gap-1.5 min-h-[36px] px-3 rounded-xl text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50"
+              className="pgbtn-primary inline-flex items-center gap-1.5 min-h-[36px] px-3 rounded-xl text-sm font-semibold disabled:opacity-50"
             >
               <Check className="w-4 h-4" />
               {saving ? "שומר…" : "שמור"}
@@ -99,7 +106,7 @@ export function DocumentCustomerTaxEditor({ doc }: { doc: InvoiceDocument }) {
             </span>
             <button
               onClick={start}
-              className="inline-flex items-center gap-1.5 min-h-[36px] px-3 rounded-xl text-sm font-medium text-sky-700 hover:bg-sky-50"
+              className="inline-flex items-center gap-1.5 min-h-[36px] px-3 rounded-xl text-sm font-medium text-amber-800 hover:bg-amber-50"
             >
               <Pencil className="w-3.5 h-3.5" />
               {current ? "ערוך" : "הוסף"}

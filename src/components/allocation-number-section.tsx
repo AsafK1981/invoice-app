@@ -198,7 +198,7 @@ export function AllocationNumberSection({ doc, customerTaxId }: Props) {
           onChange={(e) => setValue(e.target.value)}
           placeholder="הקלד כאן את מספר ההקצאה"
           aria-label="מספר הקצאה"
-          className="flex-1 px-3 min-h-[44px] rounded-xl border border-stone-300 bg-white text-sm font-mono focus:border-indigo-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200"
+          className="flex-1 px-3 min-h-[44px] rounded-xl border border-stone-300 bg-white text-sm font-mono focus:border-[color:var(--inputfocusline)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--goldline)]"
           dir="ltr"
           disabled={saving}
           inputMode="numeric"
@@ -207,7 +207,7 @@ export function AllocationNumberSection({ doc, customerTaxId }: Props) {
         <button
           onClick={handleSave}
           disabled={saving || value.trim().length === 0}
-          className="inline-flex items-center justify-center gap-2 min-h-[44px] bg-gradient-to-l from-emerald-500 to-teal-500 text-white px-4 rounded-xl text-sm font-semibold transition-shadow hover:shadow-md hover:shadow-emerald-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="pgbtn-primary inline-flex items-center justify-center gap-2 min-h-[44px] px-4 rounded-xl text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {saving ? "שומר..." : "שמור את המספר"}
         </button>
@@ -229,7 +229,7 @@ export function AllocationNumberSection({ doc, customerTaxId }: Props) {
         href={GOV_PORTAL_URL}
         target="_blank"
         rel="noopener noreferrer"
-        className="mt-2 inline-flex items-center gap-1.5 min-h-[40px] text-xs font-semibold text-indigo-700 hover:text-indigo-900 underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 rounded-lg"
+        className="mt-2 inline-flex items-center gap-1.5 min-h-[40px] text-xs font-semibold text-amber-800 hover:text-[color:var(--ink)] underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--goldline)] rounded-lg"
       >
         <ExternalLink className="w-3.5 h-3.5" />
         לאתר חשבונית ישראל של רשות המסים
@@ -269,19 +269,19 @@ export function AllocationNumberSection({ doc, customerTaxId }: Props) {
   }
 
   // STATE 2: required, not yet received. The next step of a normal flow, not an
-  // error: calm indigo (the חשבונית ישראל identity), one primary button, and
-  // the same 3-step story the editor showed before saving.
+  // error: calm gold (the app's one palette), one primary button, and the same
+  // 3-step story the editor showed before saving.
   return (
     // card-soft sets `background` and `border` as shorthands, so tint/border
-    // utilities on this element would be dead CSS; the indigo identity comes
-    // from the inset ring + the medallion instead.
-    <div className="no-print card-soft p-4 sm:p-5 max-w-[210mm] mx-auto ring-1 ring-inset ring-indigo-100">
+    // utilities on this element would be dead CSS; the gold accent comes from
+    // the inset ring + the medallion instead.
+    <div className="no-print card-soft p-4 sm:p-5 max-w-[210mm] mx-auto ring-1 ring-inset ring-[color:var(--goldtintline)]">
       <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center flex-shrink-0 shadow-sm">
-          <Landmark className="w-5 h-5 text-white" />
+        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center flex-shrink-0 shadow-sm">
+          <Landmark className="w-5 h-5" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[11px] font-bold tracking-wide text-indigo-600/90">השלב הבא</p>
+          <p className="text-[11px] font-bold tracking-wide text-amber-700">השלב הבא</p>
           <p className="text-[15px] font-extrabold text-stone-900 leading-tight mt-0.5">
             קבל מספר הקצאה מרשות המסים
           </p>
@@ -297,11 +297,25 @@ export function AllocationNumberSection({ doc, customerTaxId }: Props) {
       {/* One primary action: ask the Tax Authority for the number now. Uses
           /api/tax-authority/request-allocation with the business's stored
           credentials; if the business never connected, the failure shows up
-          right here and the manual route below stays open. */}
+          right here and the manual route below stays open.
+
+          It wears `.pgbtn-primary` - the app's ONE filled-button treatment,
+          the same class מסמך חדש wears on /documents - rather than its own copy
+          of the gold gradient, so this reads as a primary action in exactly the
+          visual language the user already knows. The class carries only the
+          paint (background / ink / border-colour / shadow, plus the hover), so
+          the size, radius and type below are still this button's own.
+
+          NO `focus-visible:ring-*` here, deliberately: a Tailwind ring IS a
+          box-shadow, and `.pgbtn-primary`'s own (unlayered) box-shadow would
+          overwrite it, leaving a focus style that is in the markup and not on
+          the screen. The app's global gold `:focus-visible` OUTLINE (globals.css
+          + app-skin's `outline-color: var(--g3)`) is what rings this button -
+          the same ring מסמך חדש gets, for the same reason. */}
       <button
         onClick={handleAutoFetch}
         disabled={fetching || saving}
-        className="mt-3.5 w-full inline-flex items-center justify-center gap-2 min-h-[52px] bg-gradient-to-l from-indigo-600 to-blue-600 text-white rounded-2xl text-[15px] font-bold shadow-lg shadow-indigo-500/20 transition-all hover:shadow-xl hover:shadow-indigo-500/25 hover:-translate-y-0.5 active:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:hover:translate-y-0"
+        className="pgbtn-primary mt-3.5 w-full inline-flex items-center justify-center gap-2 min-h-[52px] rounded-2xl text-[15px] font-bold transition-transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:hover:translate-y-0"
       >
         {fetching ? (
           <>
@@ -318,12 +332,12 @@ export function AllocationNumberSection({ doc, customerTaxId }: Props) {
 
       {errorNote}
 
-      <div className="mt-3 pt-3 border-t border-indigo-100">
+      <div className="mt-3 pt-3 border-t border-orange-100">
         <button
           type="button"
           onClick={() => setManualOpen((s) => !s)}
           aria-expanded={manualOpen}
-          className="inline-flex items-center gap-1.5 min-h-[44px] text-xs font-semibold text-stone-700 hover:text-indigo-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 rounded-lg"
+          className="inline-flex items-center gap-1.5 min-h-[44px] text-xs font-semibold text-stone-700 hover:text-[color:var(--gold-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--goldline)] rounded-lg"
         >
           <ChevronDown
             className={`w-4 h-4 transition-transform ${manualOpen ? "rotate-180" : ""}`}
