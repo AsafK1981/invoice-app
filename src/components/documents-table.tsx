@@ -45,7 +45,23 @@ type SortDir = "asc" | "desc";
 interface Props {
   documents: InvoiceDocument[];
   limit?: number;
-  showExport?: boolean;
+  /**
+   * WHERE THE EXPORT BUTTON GOES (2026-07-30).
+   *
+   * "ייצוא ל-Excel" used to be a loud green button INSIDE the filter bar,
+   * beside the document count - which read as the screen's call to action for
+   * something a freelancer does once a year. It belongs on the page's action
+   * row next to "ייבוא היסטורי": import and export are the same kind of
+   * once-in-a-while chore and should look like each other, with "מסמך חדש"
+   * left as the only filled button on the page.
+   *
+   * The page owns that row, but only THIS component knows what is currently
+   * filtered - which is the whole reason the button sat beside the count. So
+   * the page hands over an empty `display: contents` element and the button is
+   * rendered into it through a portal: one filter state, no callback echoing
+   * `filtered` back up on every keystroke, and the label keeps its count.
+   */
+  exportSlot?: HTMLElement | null;
 }
 
 /**
@@ -120,12 +136,19 @@ function orderOptions(key: FilterKey, values: string[]): string[] {
   return [...values].sort((a, b) => a.localeCompare(b, "he"));
 }
 
-/** The label of the "no filter" option, per column - both controls use it. */
+/**
+ * The label of the "no filter" option in the FILTER BAR's select. It has to
+ * name its own column, because the bar's external labels ("סוג:", "לקוח:" …)
+ * are gone: every one of them repeated a word the select itself was already
+ * saying, and the ~60px each stole is exactly what kept the six controls from
+ * fitting on one line. מייל is the only column whose natural "all" wording
+ * ("הכל") says nothing on its own, so it keeps its column name in front.
+ */
 const ALL_LABEL: Record<FilterKey, string> = {
   type: "כל הסוגים",
   client: "כל הלקוחות",
   status: "כל הסטטוסים",
-  mail: "הכל",
+  mail: "מייל: הכל",
   month: "כל החודשים",
 };
 
@@ -147,7 +170,7 @@ interface FilterOption {
 /** The sentinel a <select> shows when the set holds more than one value. */
 const MULTI = "__multi";
 
-export function DocumentsTable({ documents, limit, showExport = false }: Props) {
+export function DocumentsTable({ documents, limit, exportSlot }: Props) {
   const searchParams = useSearchParams();
   const { business } = useBusiness();
   // Read initial filter values from URL search params so dashboard cards
@@ -256,70 +279,90 @@ export function DocumentsTable({ documents, limit, showExport = false }: Props) 
 
   return (
     <div>
-      <div className="flex flex-wrap items-center gap-3 px-3 sm:px-6 py-4 bg-orange-50 border-b border-orange-100 sticky top-0 z-10">
-        {/* Two fixes to the bar, both about the fifth select (לקוח) that this
-            pass added to a row that was already full:
-              - the WIDTH lives on this wrapper, not on the input. `.input-warm`
-                declares `width: 100%` unlayered, which beats Tailwind's
-                (layered) `sm:w-72`, so the input was sizing to the wrapper and
-                the wrapper was shrink-to-fitting to 196px: the placeholder came
-                out clipped mid-word, under the magnifier glyph.
-              - `shrink-0`, here and on every other control in the bar. The bar
-                is `flex-wrap`, and a SHRINKABLE item does not wrap - it
-                squeezes. Unshrinkable, a bar that runs out of room grows a row
-                instead of crushing what is on it. */}
-        <div className="relative shrink-0 w-full sm:w-72">
-          <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-stone-400" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="חיפוש: מספר, לקוח, סכום, תיאור פריט..."
-            className="input-warm min-h-[40px] pr-10 pl-9 w-full sm:w-72"
-          />
-          {search && (
-            <button
-              onClick={() => setSearch("")}
-              className="absolute left-1 top-1/2 -translate-y-1/2 w-10 h-10 inline-flex items-center justify-center rounded-lg text-stone-400 hover:text-stone-700 hover:bg-orange-100"
-              aria-label="נקה חיפוש"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          )}
-        </div>
-        {FILTER_KEYS.map((key) => (
-          <FilterSelect
-            key={key}
-            filterKey={key}
-            options={options[key]}
-            selected={selections[key]}
-            onChange={(values) => setColumn(key, values)}
-          />
-        ))}
-        {filtersActive && (
-          <button
-            onClick={clearFilters}
-            className="inline-flex shrink-0 items-center justify-center min-h-[40px] px-3 text-sm font-medium text-orange-700 hover:bg-orange-100 rounded-xl"
-          >
-            נקה הכל
-          </button>
-        )}
-        <div className="text-sm font-medium text-stone-700 mr-auto flex shrink-0 items-center gap-3">
-          {showExport && filtered.length > 0 && (
-            <button
-              onClick={() =>
-                exportDocuments(filtered, filtersActive ? "filtered" : undefined)
-              }
-              className="inline-flex items-center gap-1.5 min-h-[40px] px-4 rounded-xl text-sm font-bold text-white bg-gradient-to-l from-emerald-500 to-teal-500 shadow-sm shadow-emerald-200/70 hover:shadow-md hover:shadow-emerald-300/70 hover:brightness-105 transition-all"
-              title="ייצוא לקובץ CSV / Excel"
-            >
-              <Download className="w-4 h-4" />
-              ייצוא ל-Excel ({filtered.length})
-            </button>
-          )}
-          <span>{filtered.length} מסמכים</span>
+      {/* THE FILTER BAR: SIX CONTROLS, ONE GRID (2026-07-30).
+          It used to be `flex-wrap`, and it wrapped ragged: search + סוג + לקוח
+          on one line, then סטטוס + מייל + חודש + the export button on a second,
+          every one of them a different width because each was sized by its own
+          longest Hebrew option. Three changes make it a block instead of a pile:
+            1. the five external labels are gone (see ALL_LABEL) - that is the
+               ~60px per control that buys the single line;
+            2. the six controls are ONE grid with equal fr tracks, so a row is
+               either full or does not exist, and every control on a row is the
+               same width by construction rather than by luck;
+            3. "נקה הכל" and the count sit on their own line UNDER the grid, so
+               a seventh and eighth item can never make a row uneven.
+          The tiers (6 / 3 / 2 / 1 columns - every one of them divides 6) are
+          CONTAINER queries, not media queries: the bar's width depends on
+          whether the 288px sidebar is showing, so the only honest question is
+          how wide the bar itself is. See `.dcbar` in app-skin.css. */}
+      <div className="dcbar">
+        <div className="dcbar-in">
+          <div className="dcbar-grid">
+            <div className="dcbar-search">
+              <Search className="dcbar-glyph" aria-hidden="true" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="חיפוש: מספר, לקוח, סכום, תיאור פריט..."
+                aria-label="חיפוש במסמכים"
+                // The field is one of six equal tracks, so on a narrow window
+                // the placeholder ellipsises to "חיפוש: …". The hover title is
+                // where the full list of what is searchable stays available.
+                title="חיפוש: מספר, לקוח, סכום, תיאור פריט"
+                className="input-warm dcbar-input"
+              />
+              {search && (
+                <button
+                  onClick={() => setSearch("")}
+                  className="dcbar-clear"
+                  aria-label="נקה חיפוש"
+                >
+                  <X className="w-4 h-4" aria-hidden="true" />
+                </button>
+              )}
+            </div>
+            {FILTER_KEYS.map((key) => (
+              <FilterSelect
+                key={key}
+                filterKey={key}
+                options={options[key]}
+                selected={selections[key]}
+                onChange={(values) => setColumn(key, values)}
+              />
+            ))}
+          </div>
+          <div className="dcbar-foot">
+            <span className="dcbar-count">{filtered.length} מסמכים</span>
+            {filtersActive && (
+              <button onClick={clearFilters} className="dcbar-reset">
+                נקה הכל
+              </button>
+            )}
+          </div>
         </div>
       </div>
+
+      {/* The export button, rendered up into the page's action row beside
+          "ייבוא היסטורי" - but from HERE, so its label and its payload are the
+          currently filtered list. See the `exportSlot` prop. */}
+      {exportSlot &&
+        createPortal(
+          <button
+            onClick={() => exportDocuments(filtered, filtersActive ? "filtered" : undefined)}
+            disabled={filtered.length === 0}
+            className="inline-flex items-center gap-2 bg-white border border-orange-200 text-stone-800 px-4 py-3 rounded-2xl text-sm font-semibold hover:bg-orange-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            title={
+              filtersActive
+                ? `ייצוא ${filtered.length} המסמכים המסוננים לקובץ CSV / Excel`
+                : "ייצוא כל המסמכים לקובץ CSV / Excel"
+            }
+          >
+            <Download className="w-4 h-4" aria-hidden="true" />
+            ייצוא ל-Excel ({filtered.length})
+          </button>,
+          exportSlot,
+        )}
 
       <div className="dc-shell">
         {filtered.length === 0 ? (
@@ -774,6 +817,13 @@ function SortLabel({
  * exactly what a single-choice control should mean - and "הכל" empties it.
  * Every path here goes through the same `onChange` the header menu uses, so
  * the two controls cannot disagree.
+ *
+ * IT HAS NO VISIBLE LABEL BESIDE IT, and it does not need one: at rest it says
+ * "כל הסוגים" / "כל הלקוחות", which names its column already, and once it IS
+ * filtering, every one of its option texts carries the column in front of the
+ * value ("סוג: קבלה", not a bare "קבלה") - so the reader can never look at the
+ * bar and wonder which column a stray "קבלה" belongs to. The column name is
+ * also the control's `aria-label`, which is what a screen reader announces.
  */
 function FilterSelect({
   filterKey,
@@ -787,33 +837,36 @@ function FilterSelect({
   onChange: (values: string[]) => void;
 }) {
   const value = selected.length === 0 ? "all" : selected.length === 1 ? selected[0] : MULTI;
+  const col = COL_LABEL[filterKey];
+  const active = selected.length > 0;
+  const multiLabel = `${col}: נבחרו ${selected.length}`;
   return (
-    // On a phone this is the ONLY filter control (the header band has no
-    // labels down there), and there are five of them, so each one takes a full
-    // row with the label in a fixed-width gutter: five selects with one shared
-    // start edge and one shared end edge read as a form, whereas five
-    // shrink-to-fit selects read as debris. From `sm` up they go back to
-    // sitting inline in the bar, sized to their own content.
-    <label className="flex shrink-0 items-center gap-2 text-sm max-sm:w-full">
-      <span className="text-stone-500 shrink-0 max-sm:min-w-[3.5rem]">{COL_LABEL[filterKey]}:</span>
-      <select
-        value={value}
-        onChange={(e) => {
-          const v = e.target.value;
-          if (v === MULTI) return;
-          onChange(v === "all" ? [] : [v]);
-        }}
-        className="input-warm min-h-[40px] py-1.5 px-3 text-sm w-auto max-sm:flex-1 max-sm:min-w-0"
-      >
-        <option value="all">{ALL_LABEL[filterKey]}</option>
-        {value === MULTI && <option value={MULTI}>נבחרו {selected.length}</option>}
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
-    </label>
+    <select
+      value={value}
+      onChange={(e) => {
+        const v = e.target.value;
+        if (v === MULTI) return;
+        onChange(v === "all" ? [] : [v]);
+      }}
+      className="input-warm dcbar-input"
+      data-active={active ? "1" : undefined}
+      aria-label={`סינון לפי ${col}`}
+      title={
+        active
+          ? selected.length === 1
+            ? `${col}: ${filterValueLabel(filterKey, selected[0])}`
+            : multiLabel
+          : `סינון לפי ${col}`
+      }
+    >
+      <option value="all">{ALL_LABEL[filterKey]}</option>
+      {value === MULTI && <option value={MULTI}>{multiLabel}</option>}
+      {options.map((o) => (
+        <option key={o.value} value={o.value}>
+          {col}: {o.label}
+        </option>
+      ))}
+    </select>
   );
 }
 

@@ -17,6 +17,10 @@ export default function DocumentsPage() {
   const [tab, setTab] = useState<"documents" | "drafts">("documents");
   const [importOpen, setImportOpen] = useState(false);
   const [bankImportOpen, setBankImportOpen] = useState(false);
+  // The action row's slot for "ייצוא ל-Excel". The button itself is rendered
+  // by <DocumentsTable>, which is the only thing that knows what is currently
+  // filtered; this page just says WHERE it goes. See the `exportSlot` prop.
+  const [exportSlot, setExportSlot] = useState<HTMLElement | null>(null);
 
   const unpaidDocuments = useMemo(
     () =>
@@ -99,6 +103,11 @@ export default function DocumentsPage() {
             <Upload className="w-4 h-4" />
             ייבוא היסטורי
           </button>
+          {/* Import's opposite number lands here, immediately beside it and in
+              the same soft outlined treatment: `display: contents`, so the
+              portalled button is a direct flex item of this row and the slot
+              costs nothing while the drafts tab is open. */}
+          <div ref={setExportSlot} className="contents" />
           <Link
             href="/documents/new"
             className="inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-5 py-3 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200 transition-all"
@@ -139,7 +148,7 @@ export default function DocumentsPage() {
 
       <div className="card-soft overflow-hidden">
         {tab === "documents" ? (
-          <DocumentsTable documents={documents} showExport />
+          <DocumentsTable documents={documents} exportSlot={exportSlot} />
         ) : (
           <DraftsList />
         )}
