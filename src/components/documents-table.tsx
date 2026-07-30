@@ -351,14 +351,14 @@ export function DocumentsTable({ documents, limit, exportSlot }: Props) {
           <button
             onClick={() => exportDocuments(filtered, filtersActive ? "filtered" : undefined)}
             disabled={filtered.length === 0}
-            className="inline-flex items-center gap-2 bg-white border border-orange-200 text-stone-800 px-4 py-3 rounded-2xl text-sm font-semibold hover:bg-orange-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="pgbtn pgbtn-quiet"
             title={
               filtersActive
                 ? `ייצוא ${filtered.length} המסמכים המסוננים לקובץ CSV / Excel`
                 : "ייצוא כל המסמכים לקובץ CSV / Excel"
             }
           >
-            <Download className="w-4 h-4" aria-hidden="true" />
+            <Download aria-hidden="true" />
             ייצוא ל-Excel ({filtered.length})
           </button>,
           exportSlot,

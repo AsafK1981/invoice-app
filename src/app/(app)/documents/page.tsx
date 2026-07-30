@@ -85,34 +85,37 @@ export default function DocumentsPage() {
             )}
           </div>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
+        {/* Three quiet file chores and one call to action. All four wear the
+            one `.pgbtn` treatment (see "PAGE ACTION ROW" in app-skin.css):
+            one height, one radius, one gap, one icon size, and colour spent
+            only on the primary. The bank button used to be the odd one out in
+            stock-Tailwind emerald, which this skin does not re-tint, so it
+            rendered mint-green between two gold-outlined siblings. */}
+        <div className="pgactions">
           <button
             onClick={() => setBankImportOpen(true)}
             disabled={unpaidDocuments.length === 0}
-            className="inline-flex items-center gap-2 bg-white border border-emerald-200 text-stone-800 px-4 py-3 rounded-2xl text-sm font-semibold hover:bg-emerald-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="pgbtn pgbtn-quiet"
             title="העלאת תדפיס חשבון בנק לזיהוי תשלומים וסימון אוטומטי של חשבוניות"
           >
-            <Banknote className="w-4 h-4 text-emerald-600" />
+            <Banknote aria-hidden="true" />
             ייבוא תנועות מהבנק
           </button>
           <button
             onClick={() => setImportOpen(true)}
-            className="inline-flex items-center gap-2 bg-white border border-orange-200 text-stone-800 px-4 py-3 rounded-2xl text-sm font-semibold hover:bg-orange-50"
+            className="pgbtn pgbtn-quiet"
             title="ייבוא מסמכים היסטוריים מקובץ CSV"
           >
-            <Upload className="w-4 h-4" />
+            <Upload aria-hidden="true" />
             ייבוא היסטורי
           </button>
           {/* Import's opposite number lands here, immediately beside it and in
-              the same soft outlined treatment: `display: contents`, so the
-              portalled button is a direct flex item of this row and the slot
-              costs nothing while the drafts tab is open. */}
+              the same treatment: `display: contents`, so the portalled button
+              is a direct child of this row (a flex item, or a grid item on a
+              phone) and the slot costs nothing while the drafts tab is open. */}
           <div ref={setExportSlot} className="contents" />
-          <Link
-            href="/documents/new"
-            className="inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-5 py-3 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200 transition-all"
-          >
-            <Plus className="w-4 h-4" />
+          <Link href="/documents/new" className="pgbtn pgbtn-primary">
+            <Plus aria-hidden="true" />
             מסמך חדש
           </Link>
         </div>

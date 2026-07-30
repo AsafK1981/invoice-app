@@ -515,6 +515,164 @@ html .gk-etable thead th {
 }
 
 /* =====================================================================
+   PAGE ACTION ROW (`.pgactions` / `.pgbtn`) - 2026-07-30.
+
+   The block of buttons that sits opposite a page title. On /documents that is
+   four of them: ייבוא תנועות מהבנק / ייבוא היסטורי / ייצוא ל-Excel (N) /
+   מסמך חדש.
+
+   WHY IT IS A COMPONENT AND NOT FOUR UTILITY STRINGS. Written as Tailwind
+   strings the four drifted apart, and every way they drifted was visible:
+
+     a. COLOUR. The bank button was `border-emerald-200` + a `text-emerald-600`
+        icon. This skin re-tints only the coral family (orange/amber/rose), by
+        design - so its two neighbours' `border-orange-200` resolved to gold
+        #c9ab63 while the bank button kept STOCK Tailwind emerald and rendered
+        as a mint-green rectangle between two gold ones. Three buttons that do
+        the same kind of job (a once-in-a-while file chore) now share one
+        surface, and colour is spent only on the one thing that is different.
+     b. HEIGHT. The outlined buttons were `py-3` + a 1px border and the filled
+        one `py-3` with none, so the primary was 2px shorter than its siblings
+        and sat 1px lower, at every width. One `min-height` and a border on all
+        four (transparent on the primary) puts the four on one baseline.
+     c. WRAPPING. At 1024 the four measured 664.9px inside a 664px column and
+        the primary alone dropped to a second line. See the tiers below.
+
+   HIERARCHY. Exactly one filled control: `.pgbtn-primary` carries the gold
+   gradient, the drop shadow and the darkest ink. The other three are white
+   with a hairline gold outline; their only accent is the icon, in --gold-text.
+
+   ORDER AND ALIGNMENT. The group is aligned to the INLINE-END of the content
+   column (visually the left edge, this being an RTL app), which is where the
+   header's `justify-between` was already pushing it, and the primary is the
+   LAST item - the inline-end of the group, hard against the column edge. Two
+   reasons over putting it first: it is where /dashboard and the client page
+   already put מסמך חדש, so the CTA does not move as you navigate; and at the
+   edge it has the page margin as its own outer whitespace, which is what lets
+   one filled button hold its own against three outlined ones instead of
+   reading as a fourth item in a list of four.
+
+   TIERS (one gap, one radius, one height at all of them):
+     >= 1280     one row, full padding (step 4).
+     640-1279    one row, padding down ONE STEP of the same scale (step 3).
+                 Not a new value: the 1024 sidebar takes 288px out of the
+                 window exactly where the root font-size steps 16.5 -> 18px,
+                 so the row needs the diet precisely there. Measured after:
+                 629px of buttons in a 664px column at 1024.
+     <= 639.98   a 2x2 grid, `max-content` columns, still inline-end. Phone
+                 widths cannot hold the four on one line at any padding on the
+                 scale, and the grid is the only form that CANNOT produce a
+                 3+1 orphan the way wrapping flex does.
+   ===================================================================== */
+html .pgactions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--dc-sp-2);
+  /* The header is `justify-between`, which only puts the group at the column's
+     inline-end while the title and the group share a line. They rarely do: the
+     title block carries a second line of totals, so the group wraps onto a line
+     of its own at most widths and `justify-between` then leaves it hugging the
+     inline-START, directly under the title. The auto margin is what actually
+     anchors it to the inline-end (visually the left edge) on BOTH kinds of
+     line, which is where the user asked for it: title anchored right, actions
+     anchored left, and the column's two edges doing the aligning. */
+  margin-inline-start: auto;
+}
+html .pgbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--dc-sp-2);
+  min-height: 2.8rem;
+  padding-block: var(--dc-sp-2);
+  padding-inline: var(--dc-sp-4);
+  border: 1px solid transparent;
+  border-radius: 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.25;
+  white-space: nowrap;
+  text-align: center;
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+}
+/* One icon size for all four, and it may never be squeezed by a long label. */
+html .pgbtn svg {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+}
+html .pgbtn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+html .pgbtn-quiet {
+  background: var(--card);
+  border-color: var(--goldline);
+  color: var(--ink);
+  box-shadow: 0 1px 2px rgba(60, 45, 20, 0.05);
+}
+html .pgbtn-quiet svg {
+  color: var(--gold-text);
+}
+html .pgbtn-quiet:hover:not(:disabled) {
+  background: var(--goldtint);
+  box-shadow: var(--dc-sh-lift);
+}
+html .pgbtn-quiet:disabled {
+  opacity: 0.5;
+  box-shadow: none;
+}
+
+html .pgbtn-primary {
+  background: var(--gold-grad-cta);
+  color: var(--gold-ink);
+  border-color: transparent;
+  box-shadow:
+    0 10px 22px -12px rgba(160, 120, 40, 0.65),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+html .pgbtn-primary svg {
+  color: var(--gold-ink);
+}
+html .pgbtn-primary:hover {
+  filter: brightness(1.05);
+  box-shadow:
+    0 14px 26px -12px rgba(160, 120, 40, 0.7),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+@media (max-width: 1279.98px) {
+  html .pgbtn {
+    padding-inline: var(--dc-sp-3);
+  }
+}
+
+@media (max-width: 639.98px) {
+  html .pgactions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    /* `stretch`, not the row's `center`: if one label takes a second line at
+       320px its neighbour grows with it rather than floating in a taller cell. */
+    align-items: stretch;
+    width: 100%;
+  }
+  /* The one tier where a label may run out of room (ייבוא תנועות מהבנק needs
+     133px of glyphs and a 320px phone gives its cell 108px). Letting it take a
+     second line inside a taller button is the only failure mode here that is
+     not a horizontal overflow; `min-height` already guarantees the target. */
+  html .pgbtn {
+    white-space: normal;
+  }
+}
+
+/* =====================================================================
    DOCUMENT ROWS (`.dc-*`) - the documents list, 2026-07-29.
 
    Replaces the 9-column <table> on /documents, /dashboard and the client
