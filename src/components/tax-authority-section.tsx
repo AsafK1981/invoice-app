@@ -294,7 +294,7 @@ export function TaxAuthoritySection() {
           <button
             onClick={handleConnect}
             disabled={acting}
-            className="pgbtn-primary group relative w-full inline-flex items-center justify-center gap-2 overflow-hidden py-3.5 rounded-2xl text-sm font-semibold transition-transform duration-300 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:hover:translate-y-0"
+            className="pgbtn-primary group relative w-full inline-flex items-center justify-center gap-2 overflow-hidden py-3.5 rounded-2xl text-sm font-semibold hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:hover:translate-y-0"
           >
             <span
               aria-hidden

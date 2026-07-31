@@ -658,6 +658,15 @@ html .pgbtn-primary {
 html .pgbtn-primary svg {
   color: var(--gold-ink);
 }
+/* The header row's primary gets its transition from `.pgbtn`. A primary worn on
+   its own (the allocation buttons) has no `.pgbtn` to inherit one from, so its
+   hover would snap; `:not(.pgbtn)` states it here without touching the row. */
+html .pgbtn-primary:not(.pgbtn) {
+  transition:
+    filter 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+}
 /* `:not(:disabled)`: on /documents the primary is a <a>, but the allocation
    buttons above are real <button>s that disable while a request is in flight,
    and a disabled control must not light up under the cursor. */

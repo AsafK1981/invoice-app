@@ -315,7 +315,7 @@ export function AllocationNumberSection({ doc, customerTaxId }: Props) {
       <button
         onClick={handleAutoFetch}
         disabled={fetching || saving}
-        className="pgbtn-primary mt-3.5 w-full inline-flex items-center justify-center gap-2 min-h-[52px] rounded-2xl text-[15px] font-bold transition-transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:hover:translate-y-0"
+        className="pgbtn-primary mt-3.5 w-full inline-flex items-center justify-center gap-2 min-h-[52px] rounded-2xl text-[15px] font-bold hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:hover:translate-y-0"
       >
         {fetching ? (
           <>
