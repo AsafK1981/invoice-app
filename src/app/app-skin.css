@@ -1149,9 +1149,10 @@ html .dc-row {
   background: var(--card);
   border-color: var(--line);
   border-radius: var(--dc-r-2);
-  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease, background-color 0.18s ease;
 }
 html .dc-row:hover {
+  background-color: var(--goldtint);
   border-color: var(--goldline);
   box-shadow: var(--dc-sh-lift);
   transform: translateY(-1px);
