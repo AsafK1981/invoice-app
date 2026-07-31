@@ -359,7 +359,7 @@ export function DocumentsTable({ documents, limit, exportSlot }: Props) {
             }
           >
             <Download aria-hidden="true" />
-            ייצוא ל-Excel ({filtered.length})
+            ייצוא ל-Excel
           </button>,
           exportSlot,
         )}

@@ -888,13 +888,13 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
       </div>
 
       {!tipDismissed && (
-        <div className="no-print card-soft p-4 bg-blue-50 border-blue-200 max-w-[210mm] mx-auto flex items-start gap-3">
-          <p className="text-sm text-blue-900 flex-1">
+        <div className="no-print card-soft p-4 bg-amber-50 border-orange-200 max-w-[210mm] mx-auto flex items-start gap-3">
+          <p className="text-sm text-amber-900 flex-1">
             <strong>טיפ:</strong> &quot;הורד PDF&quot; שומר את המסמך כקובץ PDF בלחיצה אחת. &quot;הדפס&quot; פותח את חלון ההדפסה של הדפדפן.
           </p>
           <button
             onClick={dismissTip}
-            className="text-blue-700 hover:text-blue-900 hover:bg-blue-100 rounded-lg p-1 flex-shrink-0"
+            className="text-amber-700 hover:text-amber-900 hover:bg-amber-100 rounded-lg p-1 flex-shrink-0"
             title="אל תציג שוב"
             aria-label="סגור טיפ"
           >
