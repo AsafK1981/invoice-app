@@ -1,3 +1,21 @@
+-- ============================================================================
+-- ⚠️  SUPERSEDED — DO NOT RE-RUN THIS FILE AGAINST ANY LIVE DATABASE  ⚠️
+--
+-- The canonical definition of enforce_document_immutability() is
+--     scripts/migrations/20260707-documents-deletable-when-unsent.sql
+-- (verified byte-for-byte against production's pg_proc.prosrc on 2026-08-02).
+--
+-- The UPDATE branch below IS current (it is the one live today, rounding /
+-- round_total guards included), but the DELETE branch is NOT: this file still
+-- blocks DELETE on `OLD.status <> 'draft'`, whereas production blocks on
+-- `OLD.emailed_at IS NOT NULL` (20260707). Re-running this file would revert
+-- the deletable-when-unsent behaviour and break deletion of issued-but-never-
+-- emailed documents.
+--
+-- Migration order for this function: 20260705 -> 20260706 (this) -> 20260707.
+-- Apply only the LAST one.
+-- ============================================================================
+--
 -- Extend the document-immutability trigger to protect the rounding fields.
 --
 -- The optional final-total rounding (הפרש עיגול) feature adds two columns that

@@ -1,3 +1,23 @@
+-- ============================================================================
+-- ⚠️  SUPERSEDED — DO NOT RE-RUN THIS FILE AGAINST ANY LIVE DATABASE  ⚠️
+--
+-- The canonical definition of enforce_document_immutability() is
+--     scripts/migrations/20260707-documents-deletable-when-unsent.sql
+-- (verified byte-for-byte against production's pg_proc.prosrc on 2026-08-02).
+--
+-- This file is kept ONLY as the historical first version. Re-running it would
+-- CREATE OR REPLACE the live function with an older, weaker body and silently
+-- revert two production protections:
+--   1. the rounding / round_total immutability guards (added 20260706), and
+--   2. the deletable-when-unsent DELETE branch (added 20260707) — this file
+--      still blocks DELETE on `OLD.status <> 'draft'` instead of
+--      `OLD.emailed_at IS NOT NULL`, which would break deletion of issued
+--      documents that were never sent to the customer.
+--
+-- Migration order for this function: 20260705 (this) -> 20260706 -> 20260707.
+-- Apply only the LAST one.
+-- ============================================================================
+--
 -- Defense-in-depth: enforce Israeli-law document immutability at the DB level.
 --
 -- Issued tax documents (status <> 'draft') are legally immutable: they cannot be
@@ -7,7 +27,9 @@
 -- This BEFORE trigger closes that gap.
 --
 -- SCOPE / column decisions (derived from information_schema + a codebase audit of
--- every documents UPDATE/DELETE, 2026-07-05):
+-- every documents UPDATE/DELETE, 2026-07-05). NOTE: this is the 2026-07-05
+-- SNAPSHOT and is now out of date — the CURRENT immutable/allowed inventory is
+-- maintained in the canonical file, 20260707-documents-deletable-when-unsent.sql.
 --
 --   IMMUTABLE (blocked on change when OLD.status <> 'draft'):
 --     number, type, date,
@@ -19,9 +41,6 @@
 --     allocation_number, allocation_set_at         (חשבונית ישראל allocation)
 --     converted_to_id                              (quote->receipt convert)
 --     emailed_at, email_opened_at, email_open_count (email send/open tracking)
---     emailed_to                                   (recipients of the last send,
---                                                   added 20260802; rewritten on
---                                                   every resend, post-issue)
 --     approved_at, approval_signature              (quote approval)
 --     client_tax_id                                (see note below)
 --     notes, subject, payment_method               (editable metadata)
