@@ -69,6 +69,10 @@ export async function GET(
   for (const f of [
     "email_opened_at",
     "email_open_count",
+    // Who else this document was mailed to is the sender's business. A
+    // customer holding the link must not be able to enumerate the other
+    // recipients (their accountant, a second contact at the buyer, etc.).
+    "emailed_to",
     "payment_reference",
     "paid_at",
     "converted_to_id",

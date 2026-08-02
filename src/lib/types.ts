@@ -117,6 +117,13 @@ export interface InvoiceDocument {
   approvalSignature?: string;
   emailedAt?: string;
   /**
+   * Comma-joined recipient addresses of the most recent successful send (the
+   * accepted ones only). Overwritten on every resend. Undefined for documents
+   * emailed before 2026-08-02, when we started recording it — never inferred
+   * from the client's address, so it is safe to present as fact.
+   */
+  emailedTo?: string;
+  /**
    * When the document's מקור (original) was first emitted to the customer,
    * first email send / PDF download / print. NULL ⇒ the doc still renders the
    * legally-required "מקור" label; once set, every reprint/re-download/re-send

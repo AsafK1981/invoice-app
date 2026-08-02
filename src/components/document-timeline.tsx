@@ -104,6 +104,9 @@ export function DocumentTimeline({ document: doc }: Props) {
       out.push({
         at: doc.emailedAt,
         title: "המסמך נשלח במייל",
+        // Recipients are only known for sends recorded from 2026-08-02 on;
+        // older rows keep the bare title rather than guess an address.
+        body: doc.emailedTo ? `אל: ${doc.emailedTo}` : undefined,
         icon: Send,
         color: "violet",
       });

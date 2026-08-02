@@ -718,8 +718,33 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                 <p className="text-sm font-semibold text-stone-900">
                   {doc.emailOpenedAt ? "הלקוח פתח את המייל 👀" : "המסמך נשלח במייל ✓"}
                 </p>
-                <p className="text-xs text-stone-600">
-                  נשלח{" "}
+                <p className="text-xs text-stone-600 break-words">
+                  {/* Who it went to. doc.emailedTo is recorded server-side from
+                      the addresses the mail server actually accepted, so it is
+                      stated as fact. Documents sent before we started recording
+                      it fall back to the linked client's address, explicitly
+                      labelled "(כתובת הלקוח)" — that is an inference about
+                      where the mail probably went, and must not be dressed up
+                      as a record. With neither, we say only when. */}
+                  {doc.emailedTo ? (
+                    <>
+                      נשלח אל{" "}
+                      <span dir="ltr" className="break-all">
+                        {doc.emailedTo}
+                      </span>{" "}
+                      ·{" "}
+                    </>
+                  ) : client?.email ? (
+                    <>
+                      נשלח אל{" "}
+                      <span dir="ltr" className="break-all">
+                        {client.email}
+                      </span>{" "}
+                      <span className="text-stone-400">(כתובת הלקוח)</span> ·{" "}
+                    </>
+                  ) : (
+                    <>נשלח{" "}</>
+                  )}
                   {new Date(doc.emailedAt).toLocaleString("he-IL", {
                     day: "2-digit",
                     month: "2-digit",
@@ -840,30 +865,36 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
       {doc.status === "draft" ? (
         <DocumentNumberEditor doc={doc} />
       ) : (
-        <div className="no-print card-soft p-4 max-w-[210mm] mx-auto">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-stone-100 flex items-center justify-center flex-shrink-0">
-              <Hash className="w-4 h-4 text-stone-500" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-stone-900" dir="ltr">
-                {DOCUMENT_TYPE_LABELS[doc.type]} #{doc.number}
-              </p>
-              <p className="text-xs text-stone-600">
-                {/* The "cannot be deleted / cancel via credit note" line only
-                    applies once the doc was actually delivered to the customer
-                    (emailed). An issued-but-unsent doc is still deletable, so we
-                    show only the number-immutability note for it and avoid a
-                    line that would contradict the delete button. */}
-                {doc.emailedAt &&
-                (doc.type === "receipt" ||
-                  doc.type === "tax_invoice" ||
-                  doc.type === "tax_invoice_receipt" ||
-                  doc.type === "credit_note")
-                  ? "מסמך שנשלח ללקוח: מספרו סופי ואינו ניתן למחיקה. לביטול יש להפיק חשבונית זיכוי."
-                  : "מסמך שהופק: מספרו סופי ואינו ניתן לשינוי."}
-              </p>
-            </div>
+        /* Same skeleton as the delivery card above: one flex row on the card
+           itself (no extra wrapper), w-9 icon box, min-w-0 flex-1 text. The
+           old markup put dir="ltr" on the TITLE paragraph, which inside the
+           RTL page flipped its text-align to left — so the number drifted to
+           the far edge of the (wide, because of the long guidance sentence
+           below it) text column and detached from the icon. The paragraph now
+           inherits RTL and only the "#30040" run is isolated LTR, which is all
+           that ever needed direction. */
+        <div className="no-print card-soft p-3 flex items-center gap-3 max-w-[210mm] mx-auto">
+          <div className="w-9 h-9 rounded-2xl bg-stone-100 flex items-center justify-center shrink-0">
+            <Hash className="w-4 h-4 text-stone-500" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-stone-900">
+              {DOCUMENT_TYPE_LABELS[doc.type]} <span dir="ltr">#{doc.number}</span>
+            </p>
+            <p className="text-xs text-stone-600">
+              {/* The "cannot be deleted / cancel via credit note" line only
+                  applies once the doc was actually delivered to the customer
+                  (emailed). An issued-but-unsent doc is still deletable, so we
+                  show only the number-immutability note for it and avoid a
+                  line that would contradict the delete button. */}
+              {doc.emailedAt &&
+              (doc.type === "receipt" ||
+                doc.type === "tax_invoice" ||
+                doc.type === "tax_invoice_receipt" ||
+                doc.type === "credit_note")
+                ? "מסמך שנשלח ללקוח: מספרו סופי ואינו ניתן למחיקה. לביטול יש להפיק חשבונית זיכוי."
+                : "מסמך שהופק: מספרו סופי ואינו ניתן לשינוי."}
+            </p>
           </div>
         </div>
       )}

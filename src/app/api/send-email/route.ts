@@ -90,6 +90,34 @@ export async function POST(req: NextRequest) {
         console.error("[send-email] failed to stamp original_issued_at", { documentId, err });
       }
     };
+    // Delivery evidence: WHO the document was sent to, not just when. Written
+    // server-side (the client only knows what it typed into the box; the server
+    // knows what the SMTP server actually accepted) and UNCONDITIONALLY — a
+    // resend overwrites with the latest recipients, so the card always shows
+    // where the document currently stands delivered.
+    //
+    // Awaited before the response so the client's post-send refetch already
+    // sees it. Best-effort like stampOriginalIssued: the mail is already gone,
+    // a bookkeeping failure must not turn a successful send into an error. But
+    // unlike that helper we DO inspect supabase's `error` field — a silently
+    // swallowed PostgREST error is how a column ends up permanently NULL in
+    // production with nothing in the logs.
+    const stampEmailedTo = async (addresses: string[]) => {
+      try {
+        const { error } = await admin
+          .from("documents")
+          .update({
+            emailed_at: new Date().toISOString(),
+            emailed_to: addresses.join(", "),
+          })
+          .eq("id", documentId);
+        if (error) {
+          console.error("[send-email] failed to stamp emailed_to", { documentId, error });
+        }
+      } catch (err) {
+        console.error("[send-email] failed to stamp emailed_to", { documentId, err });
+      }
+    };
     const { data: docRow } = await admin
       .from("documents")
       .select(
@@ -292,6 +320,10 @@ export async function POST(req: NextRequest) {
         // At least one recipient accepted → the מקור has been delivered. Stamp
         // original_issued_at once (18ב) so future renders become העתק.
         await stampOriginalIssued();
+        // Record ONLY the accepted addresses: on a 207 partial success the
+        // rejected ones never received anything, and showing them as
+        // "נשלח אל" would be a lie the user acts on.
+        await stampEmailedTo(accepted);
 
         // Some (but not all) recipients rejected → partial success (207).
         if (rejected.length > 0) {
@@ -353,6 +385,9 @@ export async function POST(req: NextRequest) {
 
     // מקור delivered via Resend → stamp original_issued_at once (18ב).
     await stampOriginalIssued();
+    // Resend exposes no per-recipient outcome, so the handed-off list is the
+    // best (and only) record of who it went to.
+    await stampEmailedTo(recipients);
 
     return NextResponse.json({
       ok: true,

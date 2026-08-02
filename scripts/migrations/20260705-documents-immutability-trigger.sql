@@ -19,6 +19,9 @@
 --     allocation_number, allocation_set_at         (חשבונית ישראל allocation)
 --     converted_to_id                              (quote->receipt convert)
 --     emailed_at, email_opened_at, email_open_count (email send/open tracking)
+--     emailed_to                                   (recipients of the last send,
+--                                                   added 20260802; rewritten on
+--                                                   every resend, post-issue)
 --     approved_at, approval_signature              (quote approval)
 --     client_tax_id                                (see note below)
 --     notes, subject, payment_method               (editable metadata)
