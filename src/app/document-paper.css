@@ -370,8 +370,8 @@
 }
 
 /* ---------- payment / bank / notes cards ---------- */
-/* Two columns, so a lone card takes half the sheet instead of stretching into
-   an empty band, and a third wraps to a half-width slot on the next row. */
+/* Two columns for the payment/bank pair; notes always spans the full sheet
+   width (same width as the line-items table) via .doc-info-full. */
 .doc-paper .doc-infos {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -382,6 +382,9 @@
 .doc-paper .doc-info {
   min-width: 0;
   padding: 16px 20px;
+}
+.doc-paper .doc-info-full {
+  grid-column: 1 / -1;
 }
 .doc-paper .doc-info-body {
   font-size: 13.5px;

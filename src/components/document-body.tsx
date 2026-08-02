@@ -423,7 +423,7 @@ export function DocumentBody({
             </div>
           )}
           {notes && (
-            <div className="doc-card doc-info">
+            <div className="doc-card doc-info doc-info-full">
               <div className="doc-glabel">הערות</div>
               <div className="doc-info-body">{notes}</div>
             </div>
