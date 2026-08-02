@@ -1276,7 +1276,13 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
 
         {/* ── פרטי המסמך ── */}
         <EditorCard title="פרטי המסמך" icon={FileTextIcon}>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {/* The date and the document number are known-width facts (a date, a
+              5-6 digit number), so they get fixed tracks; the subject is free
+              text ("הופעות עם פיניש עבור יוני 5") and takes everything that's
+              left. Equal thirds cut it off. 9rem for the number is set by its
+              LABEL, not its value: "מספר חשבונית מס/קבלה" is 135px and a wrap
+              there would push that one input a line below its neighbours. */}
+          <div className="grid grid-cols-1 md:grid-cols-[9.5rem_9rem_minmax(0,1fr)] gap-3">
             <FormField label="תאריך">
               <input
                 type="date"
@@ -1489,11 +1495,15 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
               <div
                 key={item.id}
                 onDragOver={(e) => handleDragOver(e, item.id)}
-                className={`grid grid-cols-12 gap-2 items-start transition-opacity ${
+                className={`grid grid-cols-12 md:grid-cols-[minmax(0,1fr)_4.5rem_6.5rem_6rem_2rem] gap-2 items-start transition-opacity ${
                   draggedId === item.id ? "opacity-40" : ""
                 }`}
               >
-                <div className="col-span-12 md:col-span-5">
+                {/* From md up the row stops being twelfths: quantity, price,
+                    total and the bin are sized to their content (a quantity is
+                    1-3 digits, not a fifth of the row) and the description
+                    absorbs the rest. Below md the col-span-* fallbacks stack it. */}
+                <div className="col-span-12 md:col-span-1">
                   {idx === 0 && <label className="text-xs font-semibold text-stone-700 mb-1 block">תיאור</label>}
                   <div className="flex gap-1 items-center">
                     {items.length > 1 && (
@@ -1533,7 +1543,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                     </div>
                   </div>
                 </div>
-                <div className="col-span-6 md:col-span-2">
+                <div className="col-span-6 md:col-span-1">
                   {idx === 0 && <label className="text-xs font-semibold text-stone-700 mb-1 block">כמות</label>}
                   <NumberInput
                     min="0"
@@ -1545,7 +1555,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                     aria-label="כמות"
                   />
                 </div>
-                <div className="col-span-6 md:col-span-2">
+                <div className="col-span-6 md:col-span-1">
                   {idx === 0 && (
                     <label className="text-xs font-semibold text-stone-700 mb-1 block">
                       מחיר יחידה
@@ -1561,7 +1571,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                     aria-label="מחיר יחידה"
                   />
                 </div>
-                <div className="col-span-10 md:col-span-2">
+                <div className="col-span-10 md:col-span-1">
                   {idx === 0 && <label className="text-xs font-semibold text-stone-700 mb-1 block">סה״כ</label>}
                   <div className="input-warm bg-gradient-to-br from-orange-50 to-amber-50 border-orange-200 text-stone-900 font-bold text-left">
                     {formatCurrency(item.quantity * item.unitPrice)}
