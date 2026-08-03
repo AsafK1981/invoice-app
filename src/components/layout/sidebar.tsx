@@ -78,6 +78,14 @@ export function Sidebar() {
           </div>
         </div>
       </div>
+      {/* No entrance animation on this nav (or the <aside> below): combining
+          the sidebar's own transform animation with staggered per-link
+          fadeInUp animations left Chromium's compositor painting most links
+          blank after the animation settled - computed style read opacity 1
+          the whole time, but the pixels stayed empty. Reproduced in both
+          headless and headed real Chrome; confirmed fixed by dropping
+          `animation` entirely. Primary nav must not be allowed to render
+          invisible, so don't re-add stagger/slide-in here. */}
       <nav className="flex-1 p-3 space-y-1">
         {[
           ...navItems,
@@ -91,7 +99,7 @@ export function Sidebar() {
           ...(isAdmin
             ? [{ href: "/admin", label: "ניהול מערכת", icon: ShieldAlert }]
             : []),
-        ].map((item, idx) => {
+        ].map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
           const Icon = item.icon;
           return (
@@ -99,7 +107,7 @@ export function Sidebar() {
               key={item.href}
               href={item.href}
               onClick={() => setMobileOpen(false)}
-              className={`group flex items-center gap-3 px-3 py-2.5 rounded-2xl text-sm font-semibold transition-all duration-200 animate-fade-in-up stagger-${idx + 1} ${
+              className={`group flex items-center gap-3 px-3 py-2.5 rounded-2xl text-sm font-semibold transition-all duration-200 ${
                 isActive
                   ? "bg-gradient-to-l from-orange-100 to-amber-50 dark:from-orange-900/35 dark:to-amber-900/20 text-orange-700 shadow-sm shadow-orange-100 dark:shadow-orange-950/30"
                   : "text-stone-900 hover:bg-orange-50/80 dark:hover:bg-orange-900/25 hover:text-orange-700 hover:translate-x-[-2px]"
@@ -120,7 +128,7 @@ export function Sidebar() {
               </div>
               <span>{item.label}</span>
               {isActive && (
-                <div className="mr-auto w-1.5 h-1.5 rounded-full bg-orange-400 animate-scale-in" />
+                <div className="mr-auto w-1.5 h-1.5 rounded-full bg-orange-400" />
               )}
             </Link>
           );
@@ -222,7 +230,7 @@ export function Sidebar() {
       </aside>
 
       {/* Desktop sidebar */}
-      <aside className="hidden lg:flex w-64 bg-white/80 backdrop-blur-xl border-l border-orange-100/60 flex-col animate-slide-in-right">
+      <aside className="hidden lg:flex w-64 bg-white/80 backdrop-blur-xl border-l border-orange-100/60 flex-col">
         {sidebarContent}
       </aside>
 
