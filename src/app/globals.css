@@ -17,6 +17,19 @@
 html {
   font-family: var(--font-heebo), "Heebo", system-ui, sans-serif;
   scroll-behavior: smooth;
+  /* Site-wide horizontal-overflow guard. `.v2-theme` already does this on
+     itself (see v2.css) for a documented reason: `overflow-x: hidden` would
+     force `overflow-y` to compute to `auto`, turning the element into a
+     scroll container and breaking `position: sticky` on the marketing
+     header. `clip` avoids that (it does not promote the box to a scroll
+     container), so it is safe to set here too, on <html> itself, as a
+     belt-and-braces net against any transient reflow (font swap, a
+     not-yet-upgraded custom element, a third-party script) that briefly
+     renders something wider than the viewport on a public, unauthenticated
+     page and leaves the RTL document scrolled to expose it. Purely
+     defensive: it must never clip real, intentionally wide content, only
+     accidental overflow that should not exist in the first place. */
+  overflow-x: clip;
 }
 
 /* Latin runs inside RTL copy: isolate so adjacent Hebrew punctuation resolves
