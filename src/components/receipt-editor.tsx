@@ -180,6 +180,14 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   // "שמור טיוטה"); subsequent saves update the same row, and finalizing deletes it.
   const serverDraftIdRef = useRef<string | null>(resumeDraftId);
   const [savingDraft, setSavingDraft] = useState<boolean>(false);
+  // Set once handleSave successfully creates the real document, so the
+  // exit-autosave effect below doesn't resurrect a server draft for a
+  // document that just got finalized.
+  const finalizedRef = useRef(false);
+  // Kept in sync on every render with what a "שמור טיוטה" right now would
+  // send, so the unmount cleanup (which can't read fresh state) has
+  // something current to persist.
+  const exitAutosaveRef = useRef<{ payload: DraftPayload; title: string } | null>(null);
   const [currency, setCurrency] = useState("ILS");
   const [zeroRated, setZeroRated] = useState(false);
   const [rate, setRate] = useState(1);
@@ -314,6 +322,98 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
     withholdingTouched,
     payDetails,
   ]);
+
+  // Keep a live snapshot of "what a שמור טיוטה right now would send", so the
+  // exit-autosave effect below (mount/unmount only, closed over stale state)
+  // always has the latest content to persist instead of what existed at mount.
+  useEffect(() => {
+    const payload: DraftPayload = {
+      clientId,
+      adhocMode,
+      adhocName,
+      adhocTaxId,
+      adhocEmail,
+      date,
+      subject,
+      validUntil,
+      paymentMethod,
+      notes,
+      vatMode,
+      roundTotal,
+      items: items.map((i) => ({
+        id: i.id,
+        productId: i.productId,
+        description: i.description,
+        quantity: i.quantity,
+        unitPrice: i.unitPrice,
+      })),
+      showDiscount,
+      discountMode,
+      discountInput,
+      showWithholding,
+      withholdingRateInput,
+      withholdingAmountInput,
+      withholdingTouched,
+      payDetails,
+      documentType,
+      currency,
+      zeroRated,
+      rate,
+      allocationNumber,
+      documentNumber: docNumber,
+    };
+    exitAutosaveRef.current = isDraftEmpty(payload)
+      ? null
+      : { payload, title: buildClientName() || "ללא לקוח" };
+  }, [
+    clientId,
+    adhocMode,
+    adhocName,
+    adhocTaxId,
+    adhocEmail,
+    date,
+    subject,
+    validUntil,
+    paymentMethod,
+    notes,
+    vatMode,
+    roundTotal,
+    items,
+    showDiscount,
+    discountMode,
+    discountInput,
+    showWithholding,
+    withholdingRateInput,
+    withholdingAmountInput,
+    withholdingTouched,
+    payDetails,
+    documentType,
+    currency,
+    zeroRated,
+    rate,
+    allocationNumber,
+    docNumber,
+  ]);
+
+  // Auto-save the in-progress document as a server draft when the user leaves
+  // the editor without finishing it - same call as the manual "שמור טיוטה"
+  // button, just fired from the unmount cleanup instead of a click. Runs on
+  // every client-side route change away from this editor; skipped once the
+  // document has actually been finalized (finalizedRef) or when there's
+  // nothing worth keeping (exitAutosaveRef is null).
+  useEffect(() => {
+    return () => {
+      if (finalizedRef.current) return;
+      const snapshot = exitAutosaveRef.current;
+      if (!snapshot) return;
+      saveDraftToServer({
+        id: serverDraftIdRef.current,
+        documentType: snapshot.payload.documentType,
+        title: snapshot.title,
+        payload: snapshot.payload,
+      }).catch(() => {});
+    };
+  }, []);
 
   function discardDraft() {
     clearDraft(documentType);
@@ -959,8 +1059,10 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
       const doc = { ...draft, id: docId, number: allocatedNumber };
 
       // The doc actually persisted; clear the localStorage draft so it doesn't
-      // come back to haunt the next "new document" session.
+      // come back to haunt the next "new document" session, and stop the
+      // exit-autosave effect from resurrecting a server draft for it.
       clearDraft(documentType);
+      finalizedRef.current = true;
 
       // If this was resumed from / saved as a server draft, remove it now that
       // it's become a real numbered document.
@@ -1276,32 +1378,42 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
 
         {/* ── פרטי המסמך ── */}
         <EditorCard title="פרטי המסמך" icon={FileTextIcon}>
-          {/* The date and the document number are known-width facts (a date, a
-              5-6 digit number), so they get fixed tracks; the subject is free
-              text ("הופעות עם פיניש עבור יוני 5") and takes everything that's
-              left. Equal thirds cut it off. 9rem for the number is set by its
-              LABEL, not its value: "מספר חשבונית מס/קבלה" is 135px and a wrap
-              there would push that one input a line below its neighbours. */}
-          <div className="grid grid-cols-1 md:grid-cols-[9.5rem_9rem_minmax(0,1fr)] gap-3">
-            <FormField label="תאריך">
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="input-warm"
-              />
-            </FormField>
+          {/* Two rows, by field NATURE rather than by equal share:
+              row 1 holds the two known-width facts (a date, a 5-6 digit
+              number) at their real size; row 2 gives the subject - free text,
+              sentence length ("הופעות עם פיניש עבור יוני 5") - the whole card.
+              The earlier one-row/three-track version starved the subject even
+              after widening it, because a date input plus a number input eat
+              ~19rem of a form column that is only ~31rem wide at lg.
+              The number's LABEL is short ("מספר") on purpose: the doc type is
+              already in the page heading, and "מספר חשבונית מס/קבלה" is 135px,
+              which would have set the track width instead of the value. */}
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-start gap-3">
+              <FormField label="תאריך" className="w-[8.75rem] shrink-0">
+                <input
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  className="input-warm"
+                />
+              </FormField>
 
-            <FormField label={`מספר ${docLabel}`} hint="ישוריין בעת ההפקה">
-              <input
-                type="number"
-                min={1}
-                value={docNumber}
-                onChange={(e) => setDocNumber(e.target.value)}
-                className="input-warm tabular-nums text-center"
-                dir="ltr"
-              />
-            </FormField>
+              <FormField
+                label="מספר"
+                hint="ישוריין בעת ההפקה"
+                className="w-[7rem] shrink-0"
+              >
+                <input
+                  type="number"
+                  min={1}
+                  value={docNumber}
+                  onChange={(e) => setDocNumber(e.target.value)}
+                  className="input-warm tabular-nums text-center"
+                  dir="ltr"
+                />
+              </FormField>
+            </div>
 
             <FormField label="נושא">
               <input
@@ -1495,15 +1607,23 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
               <div
                 key={item.id}
                 onDragOver={(e) => handleDragOver(e, item.id)}
-                className={`grid grid-cols-12 md:grid-cols-[minmax(0,1fr)_4.5rem_6.5rem_6rem_2rem] gap-2 items-start transition-opacity ${
+                className={`rounded-xl border border-orange-100 p-3 space-y-2 transition-opacity ${
                   draggedId === item.id ? "opacity-40" : ""
                 }`}
               >
-                {/* From md up the row stops being twelfths: quantity, price,
-                    total and the bin are sized to their content (a quantity is
-                    1-3 digits, not a fifth of the row) and the description
-                    absorbs the rest. Below md the col-span-* fallbacks stack it. */}
-                <div className="col-span-12 md:col-span-1">
+                {/* An item is TWO rows inside its own hairline box, not one
+                    five-track row. Every width tier we tried for the single row
+                    lost the same fight: the description is free text, but the
+                    row it shared is not the viewport - from lg the preview
+                    aside takes 5/12 and this column is only ~497px, so ~21.5rem
+                    of fixed number tracks left the description input at 33px.
+                    Splitting by NATURE settles it at every width: the free-text
+                    field owns a full row, and the three numbers - each of known
+                    width - sit below it at their real size.
+                    The hairline box is what keeps two-row items from reading as
+                    four loose rows once there is more than one item; it also
+                    gives the drag-to-reorder target a visible shape. */}
+                <div>
                   {idx === 0 && <label className="text-xs font-semibold text-stone-700 mb-1 block">תיאור</label>}
                   <div className="flex gap-1 items-center">
                     {items.length > 1 && (
@@ -1543,56 +1663,69 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                     </div>
                   </div>
                 </div>
-                <div className="col-span-6 md:col-span-1">
-                  {idx === 0 && <label className="text-xs font-semibold text-stone-700 mb-1 block">כמות</label>}
-                  <NumberInput
-                    min="0"
-                    step="0.5"
-                    value={item.quantity}
-                    onValueChange={(v) => updateItem(item.id, { quantity: v })}
-                    className="input-warm"
-                    placeholder="1"
-                    aria-label="כמות"
-                  />
-                </div>
-                <div className="col-span-6 md:col-span-1">
-                  {idx === 0 && (
-                    <label className="text-xs font-semibold text-stone-700 mb-1 block">
-                      מחיר יחידה
-                    </label>
-                  )}
-                  <NumberInput
-                    min="0"
-                    step="0.01"
-                    value={item.unitPrice}
-                    onValueChange={(v) => updateItem(item.id, { unitPrice: v })}
-                    className="input-warm"
-                    placeholder="0"
-                    aria-label="מחיר יחידה"
-                  />
-                </div>
-                <div className="col-span-10 md:col-span-1">
-                  {idx === 0 && <label className="text-xs font-semibold text-stone-700 mb-1 block">סה״כ</label>}
-                  <div className="input-warm bg-gradient-to-br from-orange-50 to-amber-50 border-orange-200 text-stone-900 font-bold text-left">
-                    {formatCurrency(item.quantity * item.unitPrice)}
+                {/* The numbers row. Phone: twelfths, so כמות+מחיר share one
+                    line and סה״כ+bin the next (280px of card interior can't
+                    hold all four). From sm the same four sit on one line at
+                    their true widths - 4.5rem holds a 1-2 digit quantity, 8rem
+                    a price, 6.5rem the "999,999.99 ₪" total (6rem gave it a
+                    97px content box and the ₪ sat on the border) - and the bin
+                    is pushed to the row's end so it lines up across items. */}
+                <div className="grid grid-cols-12 sm:flex sm:items-end gap-2 items-end">
+                  <div className="col-span-4 sm:w-[4.5rem] sm:shrink-0">
+                    {idx === 0 && <label className="text-xs font-semibold text-stone-700 mb-1 block">כמות</label>}
+                    <NumberInput
+                      min="0"
+                      step="0.5"
+                      value={item.quantity}
+                      onValueChange={(v) => updateItem(item.id, { quantity: v })}
+                      className="input-warm tabular-nums text-center"
+                      placeholder="1"
+                      aria-label="כמות"
+                    />
                   </div>
-                </div>
-                <div className="col-span-2 md:col-span-1 flex items-end justify-end md:justify-start h-full">
-                  <button
-                    onClick={() => removeItem(item.id)}
-                    disabled={items.length === 1}
-                    className="text-stone-400 hover:text-rose-500 disabled:opacity-30 disabled:cursor-not-allowed p-2.5 md:p-2 rounded-lg hover:bg-rose-50 transition-colors"
-                    title="הסר פריט"
-                    aria-label="הסר פריט"
-                  >
-                    <Trash2 className="w-5 h-5 md:w-4 md:h-4" />
-                  </button>
+                  <div className="col-span-8 sm:w-32 sm:shrink-0">
+                    {idx === 0 && (
+                      <label className="text-xs font-semibold text-stone-700 mb-1 block">
+                        מחיר יחידה
+                      </label>
+                    )}
+                    <NumberInput
+                      min="0"
+                      step="0.01"
+                      value={item.unitPrice}
+                      onValueChange={(v) => updateItem(item.id, { unitPrice: v })}
+                      className="input-warm tabular-nums"
+                      placeholder="0"
+                      aria-label="מחיר יחידה"
+                    />
+                  </div>
+                  <div className="col-span-10 sm:w-[6.5rem] sm:shrink-0">
+                    {idx === 0 && <label className="text-xs font-semibold text-stone-700 mb-1 block">סה״כ</label>}
+                    <div className="input-warm bg-gradient-to-br from-orange-50 to-amber-50 border-orange-200 text-stone-900 font-bold text-left">
+                      {formatCurrency(item.quantity * item.unitPrice)}
+                    </div>
+                  </div>
+                  <div className="col-span-2 flex justify-end sm:ms-auto">
+                    <button
+                      onClick={() => removeItem(item.id)}
+                      disabled={items.length === 1}
+                      className="text-stone-400 hover:text-rose-500 disabled:opacity-30 disabled:cursor-not-allowed p-2.5 md:p-2 rounded-lg hover:bg-rose-50 transition-colors"
+                      title="הסר פריט"
+                      aria-label="הסר פריט"
+                    >
+                      <Trash2 className="w-5 h-5 md:w-4 md:h-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
+            {/* Same dashed affordance as "הוסף הנחה" below - one visual idea for
+                "add another thing to this document". (It used to be blue text,
+                the only blue in an orange/gold app, and the gold skin has no
+                mapping for blue, so it stayed blue there too.) */}
             <button
               onClick={addItem}
-              className="inline-flex items-center gap-1.5 min-h-[44px] text-sm text-blue-700 hover:text-blue-900 font-semibold"
+              className="inline-flex items-center gap-1.5 min-h-[40px] rounded-xl border border-dashed border-orange-300 text-orange-700 hover:bg-orange-50 px-3.5 py-2 text-xs font-semibold"
             >
               <Plus className="w-4 h-4" />
               הוסף פריט
@@ -1881,7 +2014,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="הערות אופציונליות שיופיעו על המסמך"
-            rows={3}
+            rows={8}
             className="input-warm"
             aria-label="הערות"
           />
