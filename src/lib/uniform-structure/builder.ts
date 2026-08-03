@@ -23,7 +23,7 @@ import {
   type FileMeta,
   type RecordCounts,
 } from "./records";
-import type { Business, Client, Expense, InvoiceDocument } from "../types";
+import { isCountableRevenue, type Business, type Client, type Expense, type InvoiceDocument } from "../types";
 
 export interface UniformInput {
   business: Business;
@@ -188,11 +188,19 @@ export function buildUniformStructure(input: UniformInput): UniformOutput {
   // ── B100 journal entries ───────────────────────────────────────────
   // Each paid document: dr customer / cr sales / [cr vat]
   // Each expense: dr expense / cr cash
+  //
+  // isCountableRevenue() excludes documents with convertedToId set (e.g. a
+  // quote/proforma marked "paid" on conversion into the receipt/tax invoice
+  // that actually represents the revenue) - without it this ledger would
+  // book the same money twice, once under the source doc and once under the
+  // converted target. C100/D110 above intentionally do NOT apply this
+  // filter: they're a registry of every document number issued, not a
+  // revenue ledger, so converted docs still belong there.
   const b100Lines: string[] = [];
   let txNum = 1;
 
   for (const doc of docs) {
-    if (doc.status !== "paid") continue;
+    if (doc.status !== "paid" || !isCountableRevenue(doc)) continue;
     const client = doc.clientId ? clientById.get(doc.clientId) || null : null;
     const docTypeCode = DOC_TYPE_CODE[doc.type];
     const customerAcct = client ? `CLI-${client.id.slice(0, 10)}` : "CASH";
