@@ -26,8 +26,14 @@
 -- `OLD.status <> 'draft'`. The UPDATE branch (financial/identity-field lock on
 -- issued docs) is byte-for-byte identical and stays fully in force.
 --
--- CURRENT SCOPE / column inventory (canonical; supersedes the 2026-07-05
--- snapshot in 20260705-documents-immutability-trigger.sql):
+-- CURRENT SCOPE / column inventory. The DELETE branch and the 15 UPDATE
+-- guards below are canonical and unchanged since this file. As of
+-- 2026-08-03, three more UPDATE guards (withholding_rate, withholding_amount,
+-- discount_amount) were added on top of this exact function body — see
+-- 20260803-documents-immutability-withholding-discount.sql, which is now
+-- the current live prosrc. Read this file + 20260803 together as the
+-- canonical pair; do not rebuild from 20260705/20260706 (SUPERSEDED, wrong
+-- DELETE branch).
 --
 --   DELETE is blocked only when: emailed_at IS NOT NULL (document was actually
 --     delivered). Drafts AND issued-but-never-sent documents are deletable.
@@ -36,9 +42,14 @@
 --     number, type, date,
 --     subtotal, vat, total, rounding, round_total,
 --     subtotal_ils, vat_ils, total_ils,
---     currency, exchange_rate, zero_rated, client_name
+--     currency, exchange_rate, zero_rated, client_name,
+--     withholding_rate, withholding_amount, discount_amount
+--                                                  (added 20260719; guard
+--                                                   added 20260803, closing
+--                                                   the KNOWN GAP formerly
+--                                                   documented here)
 --
---   NOT CHECKED (the other 26 of the table's 41 columns, verified against
+--   NOT CHECKED (the other 23 of the table's 41 columns, verified against
 --   information_schema 2026-08-02 — this list is exhaustive):
 --     id, business_id, client_id, created_at      (identity / FK, never rewritten
 --                                                   by app code)
@@ -58,18 +69,16 @@
 --                                                   be requested — v2 mandates
 --                                                   customer_vat_number)
 --     notes, subject, payment_method, payment_details (editable metadata)
---     withholding_rate, withholding_amount, discount_amount
---                                                  (added 20260719 — KNOWN GAP:
---                                                   these are financial fields
---                                                   that the trigger does NOT
---                                                   guard. Left as-is here on
---                                                   purpose; this file only
---                                                   documents production, it
---                                                   does not change it. Close
---                                                   the gap in a NEW migration
---                                                   if/when that is decided.)
 --
 -- Idempotent: CREATE OR REPLACE FUNCTION + DROP TRIGGER IF EXISTS.
+--
+-- NOTE: the function body reproduced below is the ORIGINAL 15-guard version
+-- (2026-07-06/07). It no longer matches live prosrc as of 2026-08-03 — see
+-- 20260803-documents-immutability-withholding-discount.sql for the current
+-- 18-guard body actually running in production. Kept here unmodified as the
+-- historical base; do not re-run this file's CREATE OR REPLACE after
+-- 20260803 without also re-adding the withholding/discount guards, or you
+-- will revert the gap-closing fix.
 
 CREATE OR REPLACE FUNCTION public.enforce_document_immutability()
 RETURNS trigger
