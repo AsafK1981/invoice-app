@@ -57,9 +57,8 @@ export const NOTIFICATION_KIND_LABELS: Record<NotificationKind, string> = {
   tax_token_expiring: "האישור לרשות המסים פג בקרוב",
 };
 
-/** Same-origin guard for href values stored in notifications. Same shape
- *  as the AI insights guard; never let a notification navigate off-site
- *  even if a producer was sloppy. */
+/** Same-origin guard for href values stored in notifications. Never let a
+ *  notification navigate off-site even if a producer was sloppy. */
 const SAFE_HREF = /^\/(?!\/)[A-Za-z0-9_\-/?=&.%#]*$/;
 export function isSafeHref(s: string | null | undefined): s is string {
   return typeof s === "string" && SAFE_HREF.test(s);
