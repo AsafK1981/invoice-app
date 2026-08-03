@@ -180,13 +180,18 @@ export default function ReportsPage() {
           </h1>
           <p className="text-sm text-stone-700 mt-2 mr-14">סיכום פיננסי לפי תקופה</p>
         </div>
-        <div className="flex gap-2 flex-wrap items-center">
+        {/* Seven quiet chores, none of them THE page CTA, so none wears
+            `.pgbtn-primary` (see "PAGE ACTION ROW" in app-skin.css). They used
+            to each carry a different border colour (orange/purple/fuchsia/
+            emerald/teal/sky/rose) and two different heights, which read as
+            seven unrelated widgets rather than one row of report exports. */}
+        <div className="pgactions">
           <label className="flex items-center gap-2 text-sm">
             <span className="text-stone-500">תקופה:</span>
             <select
               value={period}
               onChange={(e) => setPeriod(e.target.value)}
-              className="input-warm py-1.5 px-3 text-sm w-auto"
+              className="input-warm py-2 px-3 text-sm w-auto min-h-[2.8rem]"
             >
               {periodOptions.map((o) => (
                 <option key={o.value} value={o.value}>
@@ -198,67 +203,67 @@ export default function ReportsPage() {
           <button
             onClick={() => exportDocuments(filteredDocs, exportSuffix)}
             disabled={filteredDocs.length === 0}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border-2 border-orange-200 text-stone-800 hover:bg-orange-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="pgbtn pgbtn-quiet"
           >
-            <Download className="w-4 h-4" />
+            <Download aria-hidden="true" />
             ייצוא מסמכים ({filteredDocs.length})
           </button>
           <button
             onClick={() => exportExpenses(filteredExpenses, exportSuffix)}
             disabled={filteredExpenses.length === 0}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border-2 border-orange-200 text-stone-800 hover:bg-orange-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="pgbtn pgbtn-quiet"
           >
-            <Download className="w-4 h-4" />
+            <Download aria-hidden="true" />
             ייצוא הוצאות ({filteredExpenses.length})
           </button>
           <button
             onClick={() => downloadUniformStructure(false)}
             title="ייצוא קבצי מבנה אחיד (OPENFORMAT 1.31) מהנתונים האמיתיים, לאודיט"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border-2 border-purple-200 text-stone-800 hover:bg-purple-50"
+            className="pgbtn pgbtn-quiet"
           >
-            <FileArchive className="w-4 h-4 text-purple-600" />
+            <FileArchive aria-hidden="true" />
             מבנה אחיד {selectedYear ? `(${selectedYear})` : "(שנה נוכחית)"}
           </button>
           <button
             onClick={() => downloadUniformStructure(true)}
             title="ייצוא קבצי מבנה אחיד דוגמה (2500+ רשומות סינתטיות), לסימולטור רשות המסים לצורך רישום במרשם תוכנות"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border-2 border-fuchsia-200 text-stone-800 hover:bg-fuchsia-50"
+            className="pgbtn pgbtn-quiet"
           >
-            <FileArchive className="w-4 h-4 text-fuchsia-600" />
+            <FileArchive aria-hidden="true" />
             מבנה אחיד: דוגמה ({selectedYear || "שנה"})
           </button>
           {selectedYear && (
             <Link
               href={`/reports/journal/${selectedYear}`}
               title="יומן הוצאות והכנסות שנתי, מסמך מעוצב להדפסה / שמירה כ-PDF"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border-2 border-emerald-200 text-stone-800 hover:bg-emerald-50"
+              className="pgbtn pgbtn-quiet"
             >
-              <BookOpen className="w-4 h-4 text-emerald-600" />
+              <BookOpen aria-hidden="true" />
               יומן שנתי ({selectedYear})
             </Link>
           )}
           <Link
             href="/reports/tax-projection"
             title="צפי מס + ביטוח לאומי לסוף השנה, דע מראש כמה לשמור בצד"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border-2 border-teal-200 text-stone-800 hover:bg-teal-50"
+            className="pgbtn pgbtn-quiet"
           >
-            <Calculator className="w-4 h-4 text-teal-600" />
+            <Calculator aria-hidden="true" />
             צפי מס שנתי
           </Link>
           <Link
             href="/reports/invoices-period"
             title="דוח חשבוניות תקופתי (חודש / חודשיים / 3 / חצי שנה): ת.ז/ח.פ, מספר, תאריך, סכום לפני ואחרי מע״מ, מספר הקצאה"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border-2 border-sky-200 text-stone-800 hover:bg-sky-50"
+            className="pgbtn pgbtn-quiet"
           >
-            <FileSpreadsheet className="w-4 h-4 text-sky-600" />
+            <FileSpreadsheet aria-hidden="true" />
             דוח חשבוניות תקופתי
           </Link>
           <Link
             href="/reports/custom"
             title="דוח מותאם: שלב מסננים חופשי (תאריך, הקצאה, לקוח, סוג מסמך, סטטוס) והפק כל חתך"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border-2 border-rose-200 text-stone-800 hover:bg-rose-50"
+            className="pgbtn pgbtn-quiet"
           >
-            <SlidersHorizontal className="w-4 h-4 text-rose-600" />
+            <SlidersHorizontal aria-hidden="true" />
             דוח מותאם
           </Link>
         </div>
