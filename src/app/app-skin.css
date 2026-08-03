@@ -702,6 +702,73 @@ html .pgbtn-primary:hover:not(:disabled) {
 }
 
 /* =====================================================================
+   REPORT PERIOD GROUP PANEL (`.rp-*`) - /reports, 2026-08-03.
+
+   The תקופה selector drives the three summary cards below it (income /
+   expense / profit); a separate control that merely echoed their border
+   color still read as four unrelated boxes. Enclosure beats color: the
+   selector and the three cards now sit inside one gold-tinted panel, so the
+   relationship reads as one unit before the labels are even processed.
+
+   `.rp-card-*` sets the card fill directly (not via a Tailwind gradient
+   utility) because `.card-soft` above wins `background` under !important for
+   any combo that isn't already remapped by name (only the coral/orange-50
+   family is); an emerald-50/rose-50 gradient utility on a `.card-soft` node
+   would silently lose that tie and render plain white. */
+html .rp-period-group {
+  background: linear-gradient(170deg, var(--goldtint), #fffef9);
+  border: 1.5px solid var(--goldline);
+  border-radius: 20px;
+  padding: 16px 16px 18px;
+}
+html .rp-period-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 4px 6px 14px;
+}
+html .rp-period-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--g3);
+}
+html .rp-period-label::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--gold-grad);
+  flex-shrink: 0;
+}
+html .rp-card-income {
+  background: linear-gradient(160deg, #ecfdf5, #f0fdfa) !important;
+  border-color: transparent !important;
+}
+html .rp-card-expense {
+  background: linear-gradient(160deg, #fff1f2, #fdf2f8) !important;
+  border-color: transparent !important;
+}
+html .rp-card-profit {
+  background: linear-gradient(160deg, #fdf8ec, #fffdf8) !important;
+  border-color: transparent !important;
+}
+
+@media (max-width: 639.98px) {
+  html .rp-period-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  html .rp-period-row select {
+    width: 100%;
+  }
+}
+
+/* =====================================================================
    DOCUMENT ROWS (`.dc-*`) - the documents list, 2026-07-29.
 
    Replaces the 9-column <table> on /documents, /dashboard and the client

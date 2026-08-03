@@ -119,23 +119,26 @@ export default function ReportsPage() {
       value: formatCurrency(totalIncome),
       icon: TrendingUp,
       gradient: "from-emerald-400 to-teal-500",
-      bgGradient: "from-emerald-50 to-teal-50",
+      tone: "income",
     },
     {
       label: "סה״כ הוצאות",
       value: formatCurrency(totalExpenses),
       icon: TrendingDown,
       gradient: "from-rose-400 to-pink-500",
-      bgGradient: "from-rose-50 to-pink-50",
+      tone: "expense",
     },
     {
       label: "רווח נטו",
       value: formatCurrency(totalIncome - totalExpenses),
       icon: PiggyBank,
       gradient: "from-orange-400 to-amber-500",
-      bgGradient: "from-orange-50 to-amber-50",
+      tone: "profit",
     },
   ];
+
+  const currentPeriodLabel =
+    periodOptions.find((o) => o.value === period)?.label ?? "כל הזמנים";
 
   const exportSuffix = periodLabelShort(period);
 
@@ -184,22 +187,11 @@ export default function ReportsPage() {
             `.pgbtn-primary` (see "PAGE ACTION ROW" in app-skin.css). They used
             to each carry a different border colour (orange/purple/fuchsia/
             emerald/teal/sky/rose) and two different heights, which read as
-            seven unrelated widgets rather than one row of report exports. */}
+            seven unrelated widgets rather than one row of report exports.
+            The period selector used to live here too, but it drives the
+            three summary cards below, not these exports - it now sits with
+            them inside .rp-period-group instead. */}
         <div className="pgactions">
-          <label className="flex items-center gap-2 text-sm">
-            <span className="text-stone-500">תקופה:</span>
-            <select
-              value={period}
-              onChange={(e) => setPeriod(e.target.value)}
-              className="input-warm py-2 px-3 text-sm w-auto min-h-[2.8rem]"
-            >
-              {periodOptions.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          </label>
           <button
             onClick={() => exportDocuments(filteredDocs, exportSuffix)}
             disabled={filteredDocs.length === 0}
@@ -269,28 +261,45 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {summaries.map((s) => {
-          const Icon = s.icon;
-          return (
-            <div
-              key={s.label}
-              className={`card-soft p-5 bg-gradient-to-br ${s.bgGradient} border-transparent`}
-            >
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm font-medium text-stone-700">{s.label}</p>
-                  <p className="text-2xl font-bold mt-2 text-stone-900">{s.value}</p>
-                </div>
-                <div
-                  className={`w-11 h-11 rounded-2xl bg-gradient-to-br ${s.gradient} flex items-center justify-center shadow-sm`}
-                >
-                  <Icon className="w-5 h-5 text-white" />
+      {/* The period selector drives these three cards, so instead of a
+          separate control that merely shares a border color with them, they
+          all sit inside one gold-tinted panel - proximity + enclosure reads
+          as "these are linked" before you even process the labels. */}
+      <div className="rp-period-group">
+        <div className="rp-period-row">
+          <span className="rp-period-label">מסונן לפי תקופה — {currentPeriodLabel}</span>
+          <select
+            value={period}
+            onChange={(e) => setPeriod(e.target.value)}
+            className="input-warm py-2 px-3 text-sm w-auto min-h-[2.8rem]"
+          >
+            {periodOptions.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {summaries.map((s) => {
+            const Icon = s.icon;
+            return (
+              <div key={s.label} className={`card-soft p-5 rp-card rp-card-${s.tone}`}>
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-stone-700">{s.label}</p>
+                    <p className="text-2xl font-bold mt-2 text-stone-900">{s.value}</p>
+                  </div>
+                  <div
+                    className={`w-11 h-11 rounded-2xl bg-gradient-to-br ${s.gradient} flex items-center justify-center shadow-sm`}
+                  >
+                    <Icon className="w-5 h-5 text-white" />
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
 
       <AgingReport documents={documents} />
