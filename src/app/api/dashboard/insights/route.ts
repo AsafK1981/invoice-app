@@ -241,6 +241,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, insights });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "unknown";
+    // Was silent before: the client swallows this into "hide the card", so
+    // without a server-side log a failure here was undebuggable after the
+    // fact (the response body isn't retained in Vercel's log stream).
+    console.error("dashboard/insights failed:", msg);
     return NextResponse.json({ ok: false, error: msg }, { status: 500 });
   }
 }
