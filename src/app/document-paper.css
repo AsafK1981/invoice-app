@@ -293,12 +293,8 @@
   padding: 18px 22px;
   min-width: 0;
 }
-/* no withholding → the breakdown alone, pushed to the inline-end (left in RTL)
-   exactly like the totals column it replaces */
-.doc-paper .doc-money.is-solo .doc-breakdown {
-  flex: 0 1 62%;
-  margin-inline-start: auto;
-}
+/* no withholding → the breakdown alone spans the full document width,
+   matching the line-items table and the notes card */
 .doc-paper .doc-brow {
   display: flex;
   justify-content: space-between;
@@ -444,9 +440,6 @@
   .doc-paper.is-fluid .doc-breakdown,
   .doc-paper.is-fluid .doc-paid {
     flex: 0 0 auto;
-  }
-  .doc-paper.is-fluid .doc-money.is-solo .doc-breakdown {
-    margin-inline-start: 0;
   }
   .doc-paper.is-fluid .doc-name {
     font-size: 22px;
