@@ -239,6 +239,15 @@ export async function POST(req: NextRequest) {
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "unknown";
-    return NextResponse.json({ ok: false, error: msg }, { status: 500 });
+    // Log the real error (Anthropic SDK errors include the raw JSON body,
+    // e.g. account-level "credit balance too low") but never forward it to
+    // the client: it's in English, exposes API internals, and reads as
+    // broken/untrustworthy in a Hebrew UI. Same undebuggable-until-logged
+    // gap as /api/dashboard/insights had.
+    console.error("expenses/scan failed:", msg);
+    return NextResponse.json(
+      { ok: false, error: "סריקת הקבלה נכשלה. נסה שוב, או הזן את הפרטים ידנית." },
+      { status: 500 },
+    );
   }
 }
