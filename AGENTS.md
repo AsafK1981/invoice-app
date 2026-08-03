@@ -23,6 +23,7 @@ This is a live SaaS with real users (Israeli עוסק פטור freelancers). Tre
 - After ANY CSS edit: run the `desktop-polish` and `mobile-polish` skills in the same commit
 - After non-trivial code changes: run `simplify` (3-agent reuse/quality/efficiency review)
 - Before any creative work (new feature/component/behavior change): run `brainstorming` first
+- After ANY change touching UI rendering (components, CSS, fonts, layout): screenshot the affected screens at desktop + mobile widths (gstack browse or headless Chrome), READ the PNGs and visually verify: text is sharp (no transform-scale blur), nothing invisible/clipped/overlapping, RTL intact - before claiming done. "Build passes" proves nothing about pixels.
 
 ## Security floor — non-negotiable for this project
 

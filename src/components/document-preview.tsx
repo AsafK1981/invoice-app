@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import type { CSSProperties } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Maximize2, X } from "lucide-react";
 import {
@@ -11,9 +12,6 @@ import {
   type PaymentMethod,
 } from "@/lib/types";
 import { DocumentBody, type DocumentBodyClient } from "./document-body";
-
-const useIsoLayoutEffect =
-  typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 export type PreviewClient = DocumentBodyClient;
 
@@ -48,9 +46,7 @@ const PAGE_WIDTH_PX = 794;
 
 export function DocumentPreview(props: Props) {
   const wrapRef = useRef<HTMLDivElement>(null);
-  const pageRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.5);
-  const [naturalHeight, setNaturalHeight] = useState<number>(1100);
   const [zoomed, setZoomed] = useState(false);
 
   useEffect(() => {
@@ -59,21 +55,6 @@ export function DocumentPreview(props: Props) {
     const update = () => {
       const w = el.clientWidth;
       if (w > 0) setScale(Math.min(1, w / PAGE_WIDTH_PX));
-    };
-    update();
-    const ro = new ResizeObserver(update);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-
-  useIsoLayoutEffect(() => {
-    if (!pageRef.current) return;
-    const el = pageRef.current;
-    const update = () => {
-      const h = el.offsetHeight;
-      if (h > 0) {
-        setNaturalHeight((prev) => (Math.abs(prev - h) < 1 ? prev : h));
-      }
     };
     update();
     const ro = new ResizeObserver(update);
@@ -133,23 +114,15 @@ export function DocumentPreview(props: Props) {
           aria-label="הגדל תצוגה מקדימה"
         >
           <div
-            style={{
-              height: naturalHeight * scale,
-              overflow: "hidden",
-            }}
-          >
-            <div
-              style={{
+            style={
+              {
                 width: PAGE_WIDTH_PX,
-                transform: `scale(${scale})`,
-                transformOrigin: "top right",
-              }}
-            >
-              <div ref={pageRef}>
-                <div className="receipt-view doc-paper shadow-md" dir="rtl">
-                  {body}
-                </div>
-              </div>
+                zoom: scale,
+              } as CSSProperties
+            }
+          >
+            <div className="receipt-view doc-paper shadow-md" dir="rtl">
+              {body}
             </div>
           </div>
           <div
