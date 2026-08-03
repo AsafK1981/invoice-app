@@ -176,12 +176,9 @@ export default function CustomReportPage() {
 
   return (
     <div className="space-y-6">
-      <div className="no-print">
-        <Link
-          href="/reports"
-          className="inline-flex items-center gap-1 text-sm text-orange-600 hover:text-orange-700 font-medium"
-        >
-          <ArrowRight className="w-4 h-4" />
+      <div className="flex justify-end no-print">
+        <Link href="/reports" className="pgbtn pgbtn-quiet">
+          <ArrowRight aria-hidden="true" />
           חזרה לדוחות
         </Link>
       </div>
@@ -198,21 +195,21 @@ export default function CustomReportPage() {
             שלב מסננים חופשי (תאריך, הקצאה, לקוח, סוג מסמך וסטטוס) כדי להפיק כל חתך שתרצה.
           </p>
         </div>
-        <div className="flex items-center gap-2 no-print">
+        <div className="pgactions no-print">
           <button
             onClick={exportCsv}
             disabled={rows.length === 0}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-white border-2 border-emerald-200 text-stone-800 hover:bg-emerald-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="pgbtn pgbtn-quiet"
           >
-            <Download className="w-4 h-4 text-emerald-600" />
+            <Download aria-hidden="true" />
             ייצוא Excel/CSV
           </button>
           <button
             onClick={() => window.print()}
             disabled={rows.length === 0}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-white border-2 border-orange-200 text-stone-800 hover:bg-orange-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="pgbtn pgbtn-quiet"
           >
-            <Printer className="w-4 h-4 text-orange-600" />
+            <Printer aria-hidden="true" />
             הדפסה / PDF
           </button>
         </div>
