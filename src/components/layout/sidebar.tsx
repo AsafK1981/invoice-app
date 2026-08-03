@@ -18,6 +18,7 @@ import {
   User,
   RefreshCw,
   Bug,
+  MessageCircle,
   ShieldAlert,
   Landmark,
 } from "lucide-react";
@@ -26,6 +27,7 @@ import { signOut } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin";
 import { supabase } from "@/lib/supabase";
 import { AccountSettingsModal } from "@/components/account-settings-modal";
+import { CANONICAL_ORIGIN } from "@/lib/public-url";
 
 const navItems = [
   { href: "/dashboard", label: "דשבורד", icon: LayoutDashboard },
@@ -146,6 +148,22 @@ export function Sidebar() {
         >
           <Bug className="w-4 h-4" />
           דווח על באג / רעיון
+        </a>
+        {/* Referral link: pre-fills a WhatsApp message inviting a friend
+            to try the app. No fixed recipient - the user picks who to
+            send it to from their own WhatsApp contacts. */}
+        <a
+          href={(() => {
+            const text = `היי! אני משתמש באפליקציה MyFriendlyInvoiceApp להוצאת חשבוניות - פשוטה, מהירה וחינמית לעוסק פטור. נראה לי שיכול להתאים לך:\n${CANONICAL_ORIGIN}`;
+            return `https://wa.me/?text=${encodeURIComponent(text)}`;
+          })()}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => setMobileOpen(false)}
+          className="flex items-center gap-2 w-full px-3 py-2 rounded-xl text-sm text-stone-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
+        >
+          <MessageCircle className="w-4 h-4" />
+          הזמן חבר בוואטסאפ
         </a>
         <button
           onClick={() => {
