@@ -11,6 +11,14 @@ const anthropicKey = process.env.ANTHROPIC_API_KEY;
 
 const RECEIPT_BUCKET = "expense-receipts";
 
+// The hourly checkRate below only throttles request RATE and is in-memory
+// (resets on every cold start) - it doesn't bound total monthly spend on the
+// one ANTHROPIC_API_KEY every user's scan draws from, and this feature isn't
+// plan-gated. 300/month is generous headroom over measured light/heavy
+// legitimate usage (5-50/month) while bounding worst case to ~$0.90/user/month
+// instead of the ~$130 a sustained-hourly-limit account could otherwise run up.
+const MONTHLY_SCAN_CAP = 300;
+
 function extForMediaType(mt: string): string {
   if (mt === "image/jpeg") return "jpg";
   if (mt === "image/png") return "png";
@@ -106,6 +114,28 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { ok: false, error: "חרגת ממכסת הסריקה השעתית (60 סריקות לשעה)." },
         { status: 429, headers: { "Retry-After": String(Math.ceil(userLimit.resetIn / 1000)) } },
+      );
+    }
+
+    const admin = createClient(supabaseUrl, supabaseServiceRoleKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+
+    // Persistent monthly cap - see MONTHLY_SCAN_CAP above for why the
+    // in-memory hourly limit above isn't enough on its own. Checked before
+    // touching the file or Anthropic so an over-cap request costs nothing.
+    const scanMonth = todayInIsrael().slice(0, 7);
+    const { data: monthlyCount, error: monthlyErr } = await admin.rpc("increment_expense_scan_usage", {
+      p_user_id: user.id,
+      p_month: scanMonth,
+    });
+    if (monthlyErr) {
+      console.error("[scan] monthly usage check failed:", monthlyErr.message);
+      // Fail open: don't block scanning over a bug in the cap check itself.
+    } else if ((monthlyCount as number) > MONTHLY_SCAN_CAP) {
+      return NextResponse.json(
+        { ok: false, error: `חרגת ממכסת הסריקה החודשית (${MONTHLY_SCAN_CAP} סריקות לחודש).` },
+        { status: 429 },
       );
     }
 
@@ -210,9 +240,6 @@ export async function POST(req: NextRequest) {
       const fileBytes = Buffer.from(data, "base64");
       const uuid = crypto.randomUUID();
       const path = `${user.id}/${uuid}.${ext}`;
-      const admin = createClient(supabaseUrl, supabaseServiceRoleKey, {
-        auth: { autoRefreshToken: false, persistSession: false },
-      });
       const { error: upErr } = await admin.storage
         .from(RECEIPT_BUCKET)
         .upload(path, fileBytes, { contentType: mediaType, upsert: false });
