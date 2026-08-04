@@ -8,12 +8,17 @@ import { track } from "@vercel/analytics";
 
 type Mode = "login" | "signup" | "forgot";
 
-// Was hidden while the Google OAuth consent screen was unconfigured: it showed
-// the raw Supabase project URL instead of an app name, which reads like a
-// phishing prompt. Enabled 2026-08-04 once the consent screen was branded (app
+// Still hidden. On 2026-08-04 the Google consent screen was fully branded (app
 // name, logo, home/privacy/terms links, authorized domain) and the app was
-// published to production in the Google Cloud console.
-const GOOGLE_SIGNIN_ENABLED = true;
+// published to production, then the live flow was tested end to end. Google
+// still renders "Sign in to continue to <project-ref>.supabase.co", because it
+// derives that line from the redirect URI's host, and the redirect URI has to
+// live on Supabase's domain. Branding alone does not override it; Google only
+// shows the app name once brand verification passes, and that requires proving
+// ownership of every authorized domain - supabase.co included, which we cannot
+// do. The real fix is a Supabase custom auth domain (paid add-on, and it needs
+// a domain we own) so the callback stops living on supabase.co.
+const GOOGLE_SIGNIN_ENABLED = false;
 
 function LoginForm() {
   const router = useRouter();
