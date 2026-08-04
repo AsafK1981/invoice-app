@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Sparkles, CheckCircle2, AlertCircle } from "lucide-react";
+import { track } from "@vercel/analytics";
 import { supabase } from "@/lib/supabase";
 
 function ConfirmInner() {
@@ -25,6 +26,7 @@ function ConfirmInner() {
       if (fallbackTimer) clearTimeout(fallbackTimer);
       if (session) {
         setStatus("ok");
+        track("email_confirmed");
         // Fire-and-forget welcome email. Server side de-dupes via
         // user_metadata.welcomed_at so re-clicks of the link don't double-send.
         if (session.access_token) {

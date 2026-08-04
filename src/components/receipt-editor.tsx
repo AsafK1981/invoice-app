@@ -1642,6 +1642,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                       value={item.description}
                       onChange={(e) => updateItem(item.id, { description: e.target.value })}
                       placeholder="תיאור השירות/מוצר"
+                      aria-label="תיאור השירות/מוצר"
                       className="input-warm flex-1"
                     />
                     <div className="relative">

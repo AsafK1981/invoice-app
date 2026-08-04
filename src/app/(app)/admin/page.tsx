@@ -16,11 +16,19 @@ import {
   Gift,
   Upload,
 } from "lucide-react";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import dynamic from "next/dynamic";
 import { supabase } from "@/lib/supabase";
 import { isAdminEmail } from "@/lib/admin";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { DOCUMENT_TYPE_LABELS, type DocumentType } from "@/lib/types";
+
+const AdminDailyChart = dynamic(
+  () => import("@/components/admin-daily-chart").then((mod) => mod.AdminDailyChart),
+  {
+    ssr: false,
+    loading: () => <div className="w-full h-full rounded-xl bg-stone-100 animate-pulse" />,
+  },
+);
 
 interface Stats {
   generatedAt: string;
@@ -323,15 +331,7 @@ export default function AdminPage() {
           <div className="card-soft p-5">
             <h2 className="font-semibold text-stone-900 mb-4">מסמכים שנוצרו: 14 ימים אחרונים</h2>
             <div className="h-56">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={stats.documents.dailyChart}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#fed7aa" opacity={0.4} />
-                  <XAxis dataKey="date" tick={{ fontSize: 10 }} reversed />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 10 }} />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="count" stroke="#f97316" strokeWidth={2} dot={{ r: 3 }} />
-                </LineChart>
-              </ResponsiveContainer>
+              <AdminDailyChart data={stats.documents.dailyChart} />
             </div>
           </div>
 

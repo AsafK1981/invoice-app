@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import chromium from "@sparticuz/chromium";
-import puppeteer from "puppeteer-core";
 import { CANONICAL_ORIGIN } from "@/lib/public-url";
 import { DOCUMENT_TYPE_LABELS } from "@/lib/types";
 import { clientIp } from "@/lib/rate-limit";
@@ -97,6 +95,15 @@ export async function GET(
   if (existsRes.error || !existsRes.data) {
     return NextResponse.json({ ok: false, error: "המסמך לא נמצא." }, { status: 404 });
   }
+
+  // Load the ~50MB chromium binary + puppeteer-core only once we know the
+  // document exists and the request survived the rate limiter. Importing
+  // these at module scope would pull the binary into memory on cold start
+  // even for requests rejected above (429 / 400 / 404).
+  const [{ default: chromium }, { default: puppeteer }] = await Promise.all([
+    import("@sparticuz/chromium"),
+    import("puppeteer-core"),
+  ]);
 
   // Navigate Chrome to the app's own public /view page so the PDF reuses the
   // exact print CSS (RTL, print-color-adjust, page breaks, allocation number).

@@ -174,6 +174,7 @@ export function ClientFormModal({ open, onClose, client }: Props) {
                       value={email}
                       onChange={(e) => updateEmail(idx, e.target.value)}
                       placeholder={idx === 0 ? "primary@company.com" : "additional@company.com"}
+                      aria-label={idx === 0 ? "אימייל ראשי" : `אימייל נוסף ${idx}`}
                       className={`input-warm pr-10 ${invalid ? "border-rose-400" : ""}`}
                     />
                   </div>

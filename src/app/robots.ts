@@ -12,6 +12,20 @@ import { absoluteUrl } from "@/lib/public-url";
 // "crawl everything" and those documents become indexable. Treat any change
 // to the /view/ line as a security change.
 export default function robots(): MetadataRoute.Robots {
+  // Preview deploys (Vercel branch/PR builds) live at throwaway URLs that
+  // still serve real, crawlable HTML. Without this they're indexable
+  // duplicate-content copies of production under a different host. Only
+  // production (VERCEL_ENV === "production") gets the real rules below;
+  // any other value (including unset, e.g. local dev) blocks everything.
+  if (process.env.VERCEL_ENV && process.env.VERCEL_ENV !== "production") {
+    return {
+      rules: {
+        userAgent: "*",
+        disallow: "/",
+      },
+    };
+  }
+
   return {
     rules: {
       userAgent: "*",

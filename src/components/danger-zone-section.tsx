@@ -15,7 +15,6 @@ import { useClients } from "@/lib/client-store";
 import { useProducts } from "@/lib/product-store";
 import { useDocuments } from "@/lib/document-store";
 import { useExpenses } from "@/lib/expense-store";
-import { downloadFullBackupZip } from "@/lib/backup-zip";
 
 type Stage = "idle" | "warning" | "confirm" | "running" | "done";
 
@@ -70,6 +69,7 @@ export function DangerZoneSection() {
   async function handleDownloadBackup() {
     setBackupError(null);
     try {
+      const { downloadFullBackupZip } = await import("@/lib/backup-zip");
       await downloadFullBackupZip({
         business,
         clients,
@@ -324,7 +324,7 @@ function ConfirmStage({
           dir="auto"
           autoComplete="off"
           autoFocus
-          className="w-full px-3 py-2 rounded-xl border-2 border-stone-300 bg-white focus:border-rose-400 focus:outline-none text-sm"
+          className="w-full px-3 py-2 rounded-xl border-2 border-stone-300 bg-white focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-200 text-sm"
           placeholder={businessName}
         />
         {confirmText.length > 0 && !nameMatches && (

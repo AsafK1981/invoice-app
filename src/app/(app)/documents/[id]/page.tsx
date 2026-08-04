@@ -410,6 +410,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
               onClick={handleConvertToReceipt}
               className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100"
               title="המר את ההצעה לקבלה / חשבונית, הצעה תסומן כשולמה"
+              aria-label="המר את ההצעה לקבלה / חשבונית, הצעה תסומן כשולמה"
             >
               <RefreshCw className="w-4 h-4" />
               <span className="hidden sm:inline">המר ל{canIssueTaxInvoices(business) ? "חשבונית מס/קבלה" : "קבלה"}</span>
@@ -557,6 +558,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
             disabled={downloadingPdf}
             className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-orange-500 border border-orange-600 text-white hover:bg-orange-600 disabled:opacity-60 disabled:cursor-not-allowed"
             title="הורד את המסמך כקובץ PDF"
+            aria-label="הורד את המסמך כקובץ PDF"
           >
             <Download className="w-4 h-4" />
             <span className="hidden sm:inline">{downloadingPdf ? "מכין PDF..." : "הורד PDF"}</span>
@@ -565,6 +567,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
             onClick={handlePrint}
             className="hidden sm:inline-flex items-center gap-2 bg-white border border-orange-200 text-stone-800 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold hover:bg-orange-50"
             title="הדפס דרך הדפדפן"
+            aria-label="הדפס דרך הדפדפן"
           >
             <Printer className="w-4 h-4" />
             <span className="hidden sm:inline">הדפס</span>
@@ -583,6 +586,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
               aria-expanded={moreOpen}
               aria-haspopup="menu"
               title="עוד פעולות"
+              aria-label="עוד פעולות"
             >
               <MoreHorizontal className="w-4 h-4" />
             </button>

@@ -58,7 +58,7 @@ export default function V2VsIndex() {
 
       <HeaderV2 />
 
-      <main className="v2-cmp">
+      <main id="main-content" className="v2-cmp">
         <Link href="/" className="v2-back">
           <ArrowRight />
           חזרה לעמוד הבית

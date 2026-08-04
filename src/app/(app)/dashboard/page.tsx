@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import {
   TrendingUp,
   TrendingDown,
@@ -24,12 +25,28 @@ import { useProducts } from "@/lib/product-store";
 import { DocumentsTable } from "@/components/documents-table";
 import { DashboardChart } from "@/components/dashboard-chart";
 import { TopClients } from "@/components/top-clients";
-import { ExpenseCategoriesChart } from "@/components/expense-categories-chart";
 import { QuoteAging } from "@/components/quote-aging";
 import { OnboardingChecklist } from "@/components/onboarding-checklist";
 import { ExemptCeilingTracker } from "@/components/exempt-ceiling-tracker";
 import { RecurringDueAlert } from "@/components/recurring-due-alert";
 import { BetaBanner } from "@/components/beta-banner";
+
+const ExpenseCategoriesChart = dynamic(
+  () => import("@/components/expense-categories-chart").then((mod) => mod.ExpenseCategoriesChart),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center animate-pulse">
+        <div className="mx-auto rounded-full bg-stone-100" style={{ width: 176, height: 176 }} />
+        <div className="space-y-1.5">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-5 rounded bg-stone-100" />
+          ))}
+        </div>
+      </div>
+    ),
+  },
+);
 
 type DateRange = "this_month" | "last_3_months" | "this_year" | "all_time";
 

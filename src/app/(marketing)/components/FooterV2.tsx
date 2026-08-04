@@ -20,6 +20,9 @@ export default function FooterV2() {
           <Link href="/terms">תנאי שימוש</Link>
           <Link href="/privacy">פרטיות</Link>
           <Link href="/login">התחברות</Link>
+          <Link href="/login?mode=signup" className="v2-btn-gold v2-footer-cta">
+            התחילו בחינם
+          </Link>
         </nav>
       </div>
     </footer>

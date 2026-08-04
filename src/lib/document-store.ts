@@ -9,6 +9,13 @@ import { track } from "@vercel/analytics";
 
 const CHANGE_EVENT = "invoice-app:documents-changed";
 
+// Opportunistic cache of the last known document count, kept in sync by
+// useDocuments()'s fetch(). Lets createDocument() detect "this is the user's
+// first document" for the first_document_created analytics event without an
+// extra DB query. null = unknown (no fetch happened yet in this session), in
+// which case we don't guess.
+let lastKnownDocumentCount: number | null = null;
+
 function mapDocRow(row: Record<string, unknown>, items: DocumentItem[]): InvoiceDocument {
   return {
     id: row.id as string,
@@ -75,32 +82,28 @@ export function useDocuments() {
 
     const { data: docs } = await supabase
       .from("documents")
-      .select("*")
+      .select("*, document_items(*)")
       .eq("business_id", bid)
-      .order("date", { ascending: false });
+      .order("date", { ascending: false })
+      .order("sort_order", { foreignTable: "document_items" });
 
     if (!docs || docs.length === 0) {
       setDocuments([]);
       setReady(true);
+      lastKnownDocumentCount = 0;
       return;
     }
 
-    const docIds = docs.map((d) => d.id);
-    const { data: items } = await supabase
-      .from("document_items")
-      .select("*")
-      .in("document_id", docIds)
-      .order("sort_order");
-
-    const itemsByDoc = new Map<string, DocumentItem[]>();
-    (items || []).forEach((row) => {
-      const docId = row.document_id as string;
-      if (!itemsByDoc.has(docId)) itemsByDoc.set(docId, []);
-      itemsByDoc.get(docId)!.push(mapItemRow(row));
-    });
-
-    setDocuments(docs.map((d) => mapDocRow(d, itemsByDoc.get(d.id) || [])));
+    setDocuments(
+      docs.map((d) => {
+        const { document_items, ...docRow } = d as Record<string, unknown> & {
+          document_items?: Record<string, unknown>[];
+        };
+        return mapDocRow(docRow, (document_items || []).map(mapItemRow));
+      }),
+    );
     setReady(true);
+    lastKnownDocumentCount = docs.length;
   }, []);
 
   useEffect(() => {
@@ -148,6 +151,10 @@ export async function createDocument(
 ): Promise<{ id: string; number: number }> {
   const bid = getBusinessId();
   if (!bid) throw new Error("אין עסק פעיל");
+
+  // Snapshot BEFORE the insert: was the cache showing zero documents? Used
+  // below to fire first_document_created without a dedicated query.
+  const wasFirstDocument = lastKnownDocumentCount === 0;
 
   const { data, error } = await supabase.rpc("create_document_atomic", {
     p_business_id: bid,
@@ -217,6 +224,12 @@ export async function createDocument(
 
   window.dispatchEvent(new Event(CHANGE_EVENT));
   track("document_created", { type: doc.type });
+  if (wasFirstDocument) {
+    track("first_document_created", { type: doc.type });
+  }
+  if (lastKnownDocumentCount !== null) {
+    lastKnownDocumentCount += 1;
+  }
 
   // A manually-entered allocation number isn't part of create_document_atomic
   // (the number normally arrives later from the Tax Authority). Persist it in a

@@ -55,6 +55,16 @@ export function Sidebar() {
   }, []);
   const [accountOpen, setAccountOpen] = useState(false);
 
+  // Escape closes the mobile drawer, matching the existing backdrop-click handler.
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMobileOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [mobileOpen]);
+
   const sidebarContent = (
     <>
       <div className="px-6 py-6 border-b border-orange-100/60">
@@ -215,6 +225,8 @@ export function Sidebar() {
 
       {/* Mobile sidebar */}
       <aside
+        aria-hidden={!mobileOpen}
+        inert={!mobileOpen}
         className={`lg:hidden fixed inset-y-0 right-0 z-50 w-72 bg-white/95 backdrop-blur-xl flex flex-col shadow-2xl transition-transform duration-300 ${
           mobileOpen ? "translate-x-0" : "translate-x-full"
         }`}

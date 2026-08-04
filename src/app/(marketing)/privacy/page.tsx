@@ -2,10 +2,15 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import HeaderV2 from "../components/HeaderV2";
 import FooterV2 from "../components/FooterV2";
+import { pageMetadata } from "@/lib/page-metadata";
 
-export const metadata = {
-  title: "מדיניות פרטיות | חשבונית",
-};
+export const metadata = pageMetadata({
+  path: "/privacy",
+  title: "מדיניות פרטיות",
+  ogTitle: "מדיניות פרטיות | חשבונית ידידותית",
+  description:
+    "מדיניות הפרטיות של חשבונית ידידותית: אילו נתונים אנחנו אוספים, איך הם מאובטחים ב-Supabase, ואילו זכויות יש לך - כולל ייצוא ומחיקת חשבון.",
+});
 
 /**
  * /v2/privacy, the same privacy-policy copy as /privacy, re-themed in
@@ -23,7 +28,7 @@ export default function V2PrivacyPage() {
 
       <HeaderV2 />
 
-      <main className="v2-main">
+      <main id="main-content" className="v2-main">
         <div className="v2-doc">
           <Link href="/" className="v2-back">
             <ArrowRight />

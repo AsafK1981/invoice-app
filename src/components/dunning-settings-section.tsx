@@ -87,7 +87,7 @@ export function DunningSettingsSection() {
                 value={fromName}
                 onChange={(e) => setFromName(e.target.value)}
                 placeholder={business.name || "שם העסק"}
-                className="flex-1 min-w-[200px] px-3 py-2 rounded-xl border border-stone-300 bg-white text-sm focus:border-orange-400 focus:outline-none"
+                className="flex-1 min-w-[200px] px-3 py-2 rounded-xl border border-stone-300 bg-white text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200"
               />
               <button
                 type="button"

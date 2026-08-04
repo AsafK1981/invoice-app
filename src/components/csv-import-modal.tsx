@@ -359,7 +359,7 @@ export function CsvImportModal({ open, onClose, entityType }: Props) {
             <p className="text-xs font-semibold text-stone-700 mb-2">
               תצוגה מקדימה ({preview.length} רשומות):
             </p>
-            <div className="max-h-60 overflow-y-auto rounded-xl border border-orange-100 bg-white">
+            <div className="max-h-60 overflow-auto rounded-xl border border-orange-100 bg-white">
               <table className="w-full text-xs">
                 <thead className="bg-orange-50 sticky top-0">
                   <tr>

@@ -96,7 +96,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "MyInvoice",
+    title: "חשבונית ידידותית",
   },
   openGraph: {
     type: "website",

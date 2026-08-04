@@ -213,7 +213,7 @@ export default function ClientsPage() {
                       e.stopPropagation();
                       openEdit(c);
                     }}
-                    className="w-8 h-8 rounded-xl bg-white hover:bg-orange-50 text-stone-600 hover:text-orange-600 flex items-center justify-center shadow-sm border border-orange-100"
+                    className="w-10 h-10 sm:w-8 sm:h-8 rounded-xl bg-white hover:bg-orange-50 text-stone-600 hover:text-orange-600 flex items-center justify-center shadow-sm border border-orange-100"
                     aria-label="עריכת לקוח"
                   >
                     <Pencil className="w-3.5 h-3.5" />
@@ -226,7 +226,7 @@ export default function ClientsPage() {
                       e.stopPropagation();
                       remove(c);
                     }}
-                    className="w-8 h-8 rounded-xl bg-white hover:bg-rose-50 text-stone-600 hover:text-rose-600 flex items-center justify-center shadow-sm border border-orange-100"
+                    className="w-10 h-10 sm:w-8 sm:h-8 rounded-xl bg-white hover:bg-rose-50 text-stone-600 hover:text-rose-600 flex items-center justify-center shadow-sm border border-orange-100"
                     aria-label="מחיקת לקוח"
                   >
                     <Trash2 className="w-3.5 h-3.5" />

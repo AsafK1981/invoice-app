@@ -7,6 +7,12 @@ import { NotificationsBell } from "@/components/notifications-bell";
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <AppProviders>
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:right-4 focus:z-[100] focus:px-4 focus:py-2 focus:rounded-xl focus:bg-white focus:text-stone-900 focus:shadow-lg focus:border focus:border-orange-200"
+      >
+        דלג לתוכן
+      </a>
       <div className="flex min-h-screen w-full">
         <Sidebar />
         {/* NOTE: `overflow-y-auto` was removed here (2026-07-19). It never did
@@ -14,7 +20,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             DID create a scroll container, which silently disabled every
             `position: sticky` descendant (the document editor's live-preview
             pane among them). */}
-        <main className="flex-1 min-w-0">
+        <main id="main-content" className="flex-1 min-w-0">
           <div className="max-w-7xl mx-auto p-4 pt-16 lg:p-8 print:p-0 print:max-w-none">
             <div className="no-print flex items-center justify-end gap-2 mb-4 print:hidden">
               <NotificationsBell />

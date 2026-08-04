@@ -218,7 +218,7 @@ export function GlobalSearch() {
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={onKeyDown}
             placeholder="חפש לפי מספר, לקוח, סכום, תיאור פריט..."
-            className="flex-1 bg-transparent outline-none text-stone-900 placeholder:text-stone-400"
+            className="flex-1 bg-transparent outline-none text-stone-900 placeholder:text-stone-400 focus-visible:ring-2 focus-visible:ring-orange-300 rounded-lg"
           />
           <button
             onClick={() => setOpen(false)}

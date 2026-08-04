@@ -52,34 +52,29 @@ export async function GET(
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
+  // Explicit allowlist: never select("*") on a publicly-visible resource.
+  // Covers exactly the columns the /view page (src/app/view/[id]/page.tsx)
+  // reads off `document`, plus `business_id`/`client_id` which this route
+  // itself needs below to fetch the related business/client rows.
+  // Deliberately excluded (same columns the old post-select strip removed):
+  // email_opened_at, email_open_count, emailed_to, payment_reference,
+  // paid_at, converted_to_id, user_id - the recipient of a shared invoice
+  // has no business seeing the sender's read-receipt tracking, who else it
+  // was mailed to, or their private payment reference. Any future column
+  // added to documents (new internal/tracking field) won't accidentally
+  // leak via every shared document URL the way select("*") would.
   const docRes = await admin
     .from("documents")
-    .select("*")
+    .select(
+      "id, business_id, type, number, date, client_id, client_name, subject, status, subtotal, vat, total, rounding, round_total, payment_method, payment_details, withholding_rate, withholding_amount, discount_amount, notes, approved_at, approval_signature, original_issued_at, allocation_number, allocation_set_at, currency, exchange_rate, subtotal_ils, vat_ils, total_ils, zero_rated",
+    )
     .eq("id", id)
     .maybeSingle();
 
   if (docRes.error || !docRes.data) {
     return NextResponse.json({ ok: false, error: "Not found" }, { status: 404 });
   }
-  // Strip internal/tracking columns before returning to a public (auth-less)
-  // viewer. The recipient of a shared invoice has no business seeing the
-  // sender's read-receipt tracking or private payment reference. Keep
-  // allocation_number: it's legally required to appear on the invoice.
-  const doc = { ...docRes.data } as Record<string, unknown>;
-  for (const f of [
-    "email_opened_at",
-    "email_open_count",
-    // Who else this document was mailed to is the sender's business. A
-    // customer holding the link must not be able to enumerate the other
-    // recipients (their accountant, a second contact at the buyer, etc.).
-    "emailed_to",
-    "payment_reference",
-    "paid_at",
-    "converted_to_id",
-    "user_id",
-  ]) {
-    delete doc[f];
-  }
+  const doc = docRes.data as Record<string, unknown>;
 
   const [itemsRes, bizRes, cliRes] = await Promise.all([
     admin

@@ -76,7 +76,7 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
           >
             <button
               onClick={() => close(false)}
-              className="absolute top-3 left-3 w-8 h-8 rounded-lg text-stone-400 hover:bg-stone-100 hover:text-stone-700 flex items-center justify-center"
+              className="absolute top-3 left-3 w-10 h-10 sm:w-8 sm:h-8 rounded-lg text-stone-400 hover:bg-stone-100 hover:text-stone-700 flex items-center justify-center"
               aria-label="סגור"
             >
               <X className="w-4 h-4" />

@@ -1,4 +1,3 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, ArrowLeft } from "lucide-react";
 import HeaderV2 from "../components/HeaderV2";
@@ -13,13 +12,15 @@ import {
   itemList,
   breadcrumbList,
 } from "@/lib/jsonld";
+import { pageMetadata } from "@/lib/page-metadata";
 
-export const metadata: Metadata = {
-  title: "מגזין | חשבונית ידידותית",
+export const metadata = pageMetadata({
+  path: "/blog",
+  title: "מגזין",
+  ogTitle: "מגזין | חשבונית ידידותית",
   description:
     "מדריכים פשוטים לעצמאים בישראל: עוסק פטור ומורשה, מספר הקצאה, רפורמת חשבונית ישראל, והוצאת חשבוניות כחוק, בשפה ברורה, בלי ז׳רגון.",
-  alternates: { canonical: "/blog" },
-};
+});
 
 /**
  * /blog, magazine index. Lists ONLY published posts (published: true),
@@ -60,7 +61,7 @@ export default function BlogIndexPage() {
       {/* `v2-doc-wide`: the index body is a card GRID, not prose, so it wants
           the wide container rather than the narrow reading column that
           /blog/<slug>, /terms and /privacy use. */}
-      <main className="v2-main">
+      <main id="main-content" className="v2-main">
         <div className="v2-doc v2-doc-wide">
           <Link href="/" className="v2-back">
             <ArrowRight />

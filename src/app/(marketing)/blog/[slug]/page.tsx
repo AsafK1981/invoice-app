@@ -113,7 +113,7 @@ export default async function BlogPostPage({
 
       <HeaderV2 />
 
-      <main className="v2-main">
+      <main id="main-content" className="v2-main">
         <div className="v2-doc">
           <Link href="/blog" className="v2-back">
             <ArrowRight />

@@ -273,6 +273,11 @@
   border-radius: var(--v2-r-pill);
   background: var(--v2-gold-grad);
   box-shadow: var(--v2-glow-rest);
+  /* nowrap: at 320px the footer row previously squeezed this pill until its
+     own label broke onto two lines, turning the rounded pill into an oval
+     lozenge. The label must always read as one word; the row around it
+     wraps instead (see .v2-footer-links in the 520px query). */
+  white-space: nowrap;
   transition: transform 0.15s ease, box-shadow 0.2s ease;
 }
 .v2-theme .v2-btn-gold:hover {
@@ -460,6 +465,15 @@
 .v2-theme .v2-stage .v2-eyebrow-row {
   justify-content: flex-start;
 }
+.v2-theme .v2-stage .v2-eyebrow-row span {
+  color: var(--v2-accent);
+}
+.v2-theme .v2-stage .v2-eyebrow-row .ln {
+  background: linear-gradient(90deg, transparent, var(--v2-accent));
+}
+.v2-theme .v2-stage .v2-eyebrow-row .ln.r {
+  background: linear-gradient(90deg, var(--v2-accent), transparent);
+}
 /* The column IS the measure at every tier (52-60 Hebrew characters), so the
    shared centring/cap on `.v2-lede` would only ever subtract width here. */
 .v2-theme .v2-stage-lead .v2-lede {
@@ -549,16 +563,15 @@
 .v2-theme .v2-sh-biz {
   min-width: 0;
 }
-/* SERIF ON PURPOSE, and it stays serif. The hero mock is a portrait of the
-   real printed document, and the real document is Frank Ruhl Libre
-   (`.doc-serif` in src/app/document-paper.css). The 2026-07-28 Heebo swap took
-   the marketing site's own voice; it must not reach inside the mock paper, or
-   the hero starts advertising a product that looks like something else. Same
-   reason for `.v2-sh-num` and `.v2-sh-grand` below. `--font-frank` is exposed
-   by the ROOT layout on <html> (not by the marketing layout, which only loads
-   Heebo + Assistant), and custom properties inherit, so it resolves here. */
+/* HEEBO ON PURPOSE, as of 2026-08-04. The hero mock no longer mirrors the
+   real document's serif (Frank Ruhl Libre, `.doc-serif` in
+   src/app/document-paper.css) - Asaf found the serif read as dated on the
+   marketing page and asked for the mock only to move to the site's own
+   Heebo voice. The real document is UNCHANGED and still sets Frank Ruhl
+   Libre; this is a deliberate, scoped divergence between mock and product,
+   not a re-sync. Same reasoning for `.v2-sh-num` and `.v2-sh-grand` below. */
 .v2-theme .v2-sh-name {
-  font-family: "Frank Ruhl Libre", var(--font-frank), serif;
+  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
   font-size: 1.78em;
   font-weight: 700;
   letter-spacing: -0.01em;
@@ -584,17 +597,19 @@
   display: inline-block;
   margin-top: 0.44em;
   padding: 0.37em 1.11em;
-  border: 1px solid var(--v2-paper-goldline);
+  /* iOS-blue accent, marketing-hero-only (see --v2-accent) - the real
+     document's badge stays gold, this is the mock's secondary tag. */
+  border: 1px solid color-mix(in srgb, var(--v2-accent) 45%, transparent);
   border-radius: 3px;
-  color: var(--v2-paper-gold);
+  color: var(--v2-accent);
   font-weight: 600;
   font-size: 0.96em;
   white-space: nowrap;
 }
 .v2-theme .v2-sh-num {
   margin-top: 0.27em;
-  /* serif: mock paper matches the real document, see `.v2-sh-name` above */
-  font-family: "Frank Ruhl Libre", var(--font-frank), serif;
+  /* Heebo: see `.v2-sh-name` above */
+  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
   font-size: 2.14em;
   font-weight: 700;
   line-height: 1;
@@ -736,8 +751,8 @@
   font-weight: 700;
 }
 .v2-theme .v2-sh-grand {
-  /* serif: mock paper matches the real document, see `.v2-sh-name` above */
-  font-family: "Frank Ruhl Libre", var(--font-frank), serif;
+  /* Heebo: see `.v2-sh-name` above */
+  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
   font-size: 1.56em;
 }
 
@@ -849,6 +864,78 @@
   color: #7d7467;
 }
 
+/* ---------- tax-authority differentiator band ----------
+   The one genuinely rare capability (automatic allocation-number requests to
+   רשות המסים) gets its own quiet card instead of sitting as one bullet among
+   three, same restrained language as the rest of the page: a hairline frame,
+   no shouting box-shadow. */
+.v2-theme .v2-tax-band {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--v2-sp-3);
+  margin-top: var(--v2-sp-5);
+  padding: var(--v2-sp-4);
+  border: 1px solid var(--v2-line-soft);
+  border-radius: var(--v2-r-xl);
+  background: linear-gradient(180deg, rgba(216, 190, 119, 0.07), transparent);
+}
+.v2-theme .v2-tax-band-icon {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--v2-r-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--v2-gold-grad);
+  color: #191206;
+}
+.v2-theme .v2-tax-band-icon svg { width: 22px; height: 22px; }
+.v2-theme .v2-tax-band h2 {
+  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+  font-size: var(--v2-fs-h2);
+  font-weight: 700;
+  color: var(--v2-ink);
+}
+.v2-theme .v2-tax-band p {
+  margin-top: 6px;
+  font-size: var(--v2-fs-body);
+  line-height: 1.7;
+  color: var(--v2-muted);
+}
+
+/* ---------- landing FAQ ----------
+   Same hairline-and-type language as the pricing band above it: a title,
+   then Q/A rows separated by top rules, no accordion chrome. */
+.v2-theme .v2-faq {
+  margin-top: var(--v2-sp-5);
+}
+.v2-theme .v2-faq-title {
+  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+  font-size: var(--v2-fs-h2);
+  font-weight: 700;
+  color: var(--v2-ink);
+  margin-bottom: var(--v2-sp-2);
+}
+.v2-theme .v2-faq-item {
+  padding-block: var(--v2-sp-3);
+  border-top: 1px solid var(--v2-line-soft);
+}
+.v2-theme .v2-faq-item:last-child {
+  border-bottom: 1px solid var(--v2-line-soft);
+}
+.v2-theme .v2-faq-q {
+  font-weight: 700;
+  font-size: var(--v2-fs-body);
+  color: var(--v2-ink);
+}
+.v2-theme .v2-faq-a {
+  margin-top: 6px;
+  font-size: var(--v2-fs-body);
+  line-height: 1.7;
+  color: var(--v2-muted);
+}
+
 /* ---------- primary CTA ---------- */
 .v2-theme .v2-cta {
   display: inline-block;
@@ -938,6 +1025,15 @@
   transition: color 0.2s ease;
 }
 .v2-theme .v2-footer-links a:hover { color: var(--v2-g1); }
+/* The signup CTA is a gold pill, not a muted text link. `.v2-footer-links a`
+   carries an extra element selector, so it outranks `.v2-btn-gold` and was
+   painting the label footer-grey on gold - all but unreadable. Restore the
+   button's own colour and type size, hover included. */
+.v2-theme .v2-footer-links a.v2-footer-cta,
+.v2-theme .v2-footer-links a.v2-footer-cta:hover {
+  color: #191206;
+  font-size: var(--v2-fs-body);
+}
 
 /* ============================================================
    Sub-pages: legal documents (terms / privacy) + system status.
@@ -2127,6 +2223,11 @@
 
 @media (max-width: 520px) {
   .v2-theme .v2-footer-inner { justify-content: center; }
+  /* The footer CTA button joined this row as a 4th item; below ~340px the
+     three links + the pill no longer fit one line. Let the row wrap onto
+     two centred lines rather than squeezing the pill's own label (see
+     `white-space: nowrap` on .v2-btn-gold above). */
+  .v2-theme .v2-footer-links { flex-wrap: wrap; justify-content: center; }
 
   /* Card padding stays at the 20px floor, never tighter. */
   .v2-theme .v2-panel,

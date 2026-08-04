@@ -155,7 +155,10 @@ export default function OnboardingPage() {
                   <ArrowLeft className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={() => finish("dashboard")}
+                  onClick={() => {
+                    track("onboarding_skipped", { step: "welcome" });
+                    finish("dashboard");
+                  }}
                   className="inline-flex items-center gap-1.5 text-sm font-medium text-stone-600 hover:text-orange-700 underline decoration-stone-300 hover:decoration-orange-500 underline-offset-4 cursor-pointer transition-colors"
                 >
                   <SkipForward className="w-3.5 h-3.5" />
@@ -360,7 +363,10 @@ export default function OnboardingPage() {
                 </button>
                 <div className="flex gap-2">
                   <button
-                    onClick={() => setStep("done")}
+                    onClick={() => {
+                      track("onboarding_skipped", { step: "client" });
+                      setStep("done");
+                    }}
                     className="inline-flex items-center gap-1 text-sm text-stone-600 hover:text-stone-900 px-3 py-2.5"
                   >
                     <SkipForward className="w-3.5 h-3.5" />

@@ -408,7 +408,7 @@ export default function ExpensesPage() {
                           <Tooltip label="עריכת הוצאה" side="top">
                             <button
                               onClick={() => openEdit(e)}
-                              className="w-8 h-8 rounded-xl text-stone-400 hover:text-orange-600 hover:bg-orange-50 flex items-center justify-center"
+                              className="w-10 h-10 sm:w-8 sm:h-8 rounded-xl text-stone-400 hover:text-orange-600 hover:bg-orange-50 flex items-center justify-center"
                               aria-label="עריכת הוצאה"
                             >
                               <Pencil className="w-3.5 h-3.5" />
@@ -417,7 +417,7 @@ export default function ExpensesPage() {
                           <Tooltip label="מחיקת הוצאה" side="top">
                             <button
                               onClick={() => remove(e)}
-                              className="w-8 h-8 rounded-xl text-stone-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center"
+                              className="w-10 h-10 sm:w-8 sm:h-8 rounded-xl text-stone-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center"
                               aria-label="מחיקת הוצאה"
                             >
                               <Trash2 className="w-3.5 h-3.5" />

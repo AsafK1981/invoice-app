@@ -2,10 +2,15 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import HeaderV2 from "../components/HeaderV2";
 import FooterV2 from "../components/FooterV2";
+import { pageMetadata } from "@/lib/page-metadata";
 
-export const metadata = {
-  title: "תנאי שימוש | חשבונית",
-};
+export const metadata = pageMetadata({
+  path: "/terms",
+  title: "תנאי שימוש",
+  ogTitle: "תנאי שימוש | חשבונית ידידותית",
+  description:
+    "תנאי השימוש בחשבונית ידידותית: אחריות המשתמש למידע ולעמידה בדיני המס, הגבלת האחריות של השירות, וכללי סיום החשבון - בשפה פשוטה.",
+});
 
 /**
  * /v2/terms, the same terms-of-use copy as /terms, re-themed in the
@@ -23,7 +28,7 @@ export default function V2TermsPage() {
 
       <HeaderV2 />
 
-      <main className="v2-main">
+      <main id="main-content" className="v2-main">
         <div className="v2-doc">
           <Link href="/" className="v2-back">
             <ArrowRight />

@@ -291,7 +291,7 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
                   placeholder="שם מלא (רק אם בוחרים לאשר)"
                   autoComplete="name"
                   inputMode="text"
-                  className="flex-1 px-3 py-2 rounded-xl border border-stone-300 bg-white focus:border-stone-400 focus:outline-none text-sm"
+                  className="flex-1 px-3 py-2 rounded-xl border border-stone-300 bg-white focus:border-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-300 text-sm"
                   disabled={approving}
                 />
                 <button

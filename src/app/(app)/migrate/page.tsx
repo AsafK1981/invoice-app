@@ -17,9 +17,23 @@ import {
   ChevronUp,
   Image as ImageIcon,
 } from "lucide-react";
+import dynamic from "next/dynamic";
 import { CsvImportModal } from "@/components/csv-import-modal";
-import { BulkImportZone } from "@/components/bulk-import-zone";
 import { Ltr, LtrText } from "@/components/ui/ltr";
+
+const BulkImportZone = dynamic(
+  () => import("@/components/bulk-import-zone").then((mod) => mod.BulkImportZone),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="card-soft border-2 border-dashed border-orange-200 bg-gradient-to-br from-orange-50/60 to-amber-50/40 p-8 text-center animate-pulse">
+        <div className="w-14 h-14 rounded-2xl bg-orange-200/60 mx-auto mb-3" />
+        <div className="h-4 w-64 bg-orange-200/50 rounded mx-auto mb-2" />
+        <div className="h-3 w-80 bg-orange-100 rounded mx-auto" />
+      </div>
+    ),
+  },
+);
 
 type Vendor =
   | "invoice4u"

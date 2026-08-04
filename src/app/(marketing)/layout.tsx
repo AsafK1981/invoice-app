@@ -13,10 +13,11 @@ import "./internal-links.css";
 // (`.v2-status-row .val`), which used to be faked by the browser from Frank's
 // 500.
 //
-// The hero's mock invoice is the deliberate exception and stayed serif
-// (`.v2-sh-name` / `.v2-sh-num` / `.v2-sh-grand`): it depicts the real printed
-// document, which is still Frank Ruhl Libre. Those rules read `--font-frank`,
-// which the ROOT layout puts on <html>, not this layout.
+// The hero's mock invoice (`.v2-sh-name` / `.v2-sh-num` / `.v2-sh-grand`)
+// used to stay serif on purpose, to depict the real printed document (still
+// Frank Ruhl Libre). As of 2026-08-04 that exception is gone too - Asaf
+// wanted the mock itself modernized - so those rules now read Heebo like
+// everything else here. The real document is untouched.
 const heebo = Heebo({
   weight: ["400", "500", "700", "800", "900"],
   subsets: ["hebrew", "latin"],
@@ -44,6 +45,12 @@ export default function MarketingLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <div className={`v2-theme ${heebo.variable} ${assistant.variable}`}>
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:right-4 focus:z-[100] focus:px-4 focus:py-2 focus:rounded-xl focus:bg-white focus:text-stone-900 focus:shadow-lg focus:border"
+      >
+        דלג לתוכן
+      </a>
       {children}
     </div>
   );

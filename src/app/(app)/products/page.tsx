@@ -154,7 +154,7 @@ export default function ProductsPage() {
                 <Tooltip label="עריכת מוצר" align="start">
                   <button
                     onClick={() => openEdit(p)}
-                    className="w-8 h-8 rounded-xl bg-white hover:bg-orange-50 text-stone-600 hover:text-orange-600 flex items-center justify-center shadow-sm border border-orange-100"
+                    className="w-10 h-10 sm:w-8 sm:h-8 rounded-xl bg-white hover:bg-orange-50 text-stone-600 hover:text-orange-600 flex items-center justify-center shadow-sm border border-orange-100"
                     aria-label="עריכת מוצר"
                   >
                     <Pencil className="w-3.5 h-3.5" />
@@ -163,7 +163,7 @@ export default function ProductsPage() {
                 <Tooltip label="מחיקת מוצר" align="start">
                   <button
                     onClick={() => remove(p)}
-                    className="w-8 h-8 rounded-xl bg-white hover:bg-rose-50 text-stone-600 hover:text-rose-600 flex items-center justify-center shadow-sm border border-orange-100"
+                    className="w-10 h-10 sm:w-8 sm:h-8 rounded-xl bg-white hover:bg-rose-50 text-stone-600 hover:text-rose-600 flex items-center justify-center shadow-sm border border-orange-100"
                     aria-label="מחיקת מוצר"
                   >
                     <Trash2 className="w-3.5 h-3.5" />

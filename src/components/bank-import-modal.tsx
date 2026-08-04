@@ -341,7 +341,7 @@ export function BankImportModal({ open, onClose, unpaidDocuments, onPaid }: Prop
               </div>
             </div>
 
-            <div className="rounded-2xl border border-stone-200 overflow-hidden">
+            <div className="rounded-2xl border border-stone-200 overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-stone-100">
                   <tr>

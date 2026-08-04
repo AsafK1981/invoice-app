@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Sparkles, Lock, Eye, EyeOff, CheckCircle2, AlertCircle } from "lucide-react";
@@ -8,6 +8,8 @@ import { supabase } from "@/lib/supabase";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
+  const passwordId = useId();
+  const confirmPasswordId = useId();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -75,17 +77,18 @@ export default function ResetPasswordPage() {
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="text-xs font-semibold text-stone-700 mb-1 block">סיסמה חדשה</label>
+                <label htmlFor={passwordId} className="text-xs font-semibold text-stone-700 mb-1 block">סיסמה חדשה</label>
                 <div className="relative">
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700"
-                    tabIndex={-1}
+                    aria-label={showPassword ? "הסתר סיסמה" : "הצג סיסמה"}
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                   <input
+                    id={passwordId}
                     type={showPassword ? "text" : "password"}
                     dir="ltr"
                     value={password}
@@ -100,10 +103,11 @@ export default function ResetPasswordPage() {
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-stone-700 mb-1 block">אישור סיסמה</label>
+                <label htmlFor={confirmPasswordId} className="text-xs font-semibold text-stone-700 mb-1 block">אישור סיסמה</label>
                 <div className="relative">
                   <Lock className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-stone-400" />
                   <input
+                    id={confirmPasswordId}
                     type={showPassword ? "text" : "password"}
                     dir="ltr"
                     value={confirmPassword}

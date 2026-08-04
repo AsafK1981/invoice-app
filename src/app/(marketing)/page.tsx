@@ -5,7 +5,49 @@ import HeaderV2 from "./components/HeaderV2";
 import FooterV2 from "./components/FooterV2";
 import RedirectIfAuthed from "./components/RedirectIfAuthed";
 import JsonLd from "./components/JsonLd";
-import { graph, organization, website, softwareApplication } from "@/lib/jsonld";
+import { graph, organization, website, softwareApplication, faqPage } from "@/lib/jsonld";
+
+/**
+ * Landing-page FAQ. Every answer is a factual claim about THIS app, verified
+ * against the actual code before writing (not generic SaaS marketing copy):
+ *   - launch-period billing: no plan-enforcement/auto-charge code exists;
+ *     the only way to start paying is the explicit checkout flow in
+ *     src/app/api/billing/checkout/route.ts, which always requires the user
+ *     to click "subscribe" and complete a hosted checkout.
+ *   - no credit card required to start: src/lib/plans.ts docstring
+ *     ("Trial: 30 days, no credit card required") + the /billing page's
+ *     own launch-period banner.
+ *   - cancel anytime: src/app/(app)/billing/page.tsx cancel flow keeps
+ *     access until period end, no lock-in.
+ *   - allocation numbers: src/lib/tax-authority.ts + the one-click flow in
+ *     src/app/api/tax-authority/request-allocation/route.ts (server-side
+ *     API call to רשות המסים, not a manual copy/paste form).
+ * This list is also fed into faqPage() below so the same questions are
+ * eligible for a rich FAQ result, kept in sync by construction, no
+ * duplicate copy to drift.
+ */
+const FAQ_ITEMS: { q: string; a: string }[] = [
+  {
+    q: "מה קורה כשתקופת ההשקה נגמרת?",
+    a: "שום חיוב לא מתבצע אוטומטית. כדי לעבור למסלול בתשלום צריך להירשם במפורש דרך עמוד החיוב ולאשר את הפרטים - בלי הפתעות בכרטיס האשראי.",
+  },
+  {
+    q: "האם צריך כרטיס אשראי כדי להתחיל?",
+    a: "לא. אפשר להתחיל להשתמש במערכת בלי להזין פרטי אשראי.",
+  },
+  {
+    q: "האם אפשר לבטל בכל עת?",
+    a: "כן. ביטול נעשה בלחיצה מתוך עמוד \"חיוב ומסלולים\", והגישה נשארת פעילה עד סוף התקופה ששולמה.",
+  },
+  {
+    q: "האם המסמכים עומדים בדרישות רשות המסים?",
+    a: "כן. המערכת שומרת מספור רציף לכל סוג מסמך, מסמנת נכון מקור מול העתק לפי הוראות ניהול ספרים, ותומכת בבקשת מספר הקצאה מרשות המסים כשנדרש.",
+  },
+  {
+    q: "מה זה מספר הקצאה ואיך זה עובד כאן?",
+    a: "זה מספר שרשות המסים מנפיקה לחשבוניות מעל סכום מסוים (מ-2026: מעל 5,000 ש\"ח לפני מע\"מ ללקוח עסקי), נדרש כדי שהלקוח יוכל לנכות מע\"מ. אחרי חיבור חד-פעמי מול רשות המסים, המערכת מבקשת את המספר ישירות מולה בלחיצה אחת, בלי טפסים ידניים.",
+  },
+];
 
 /**
  * Self-canonical only, and DELIBERATELY nothing else.
@@ -51,7 +93,14 @@ export default function MarketingLanding() {
   return (
     <>
       <RedirectIfAuthed />
-      <JsonLd data={graph(organization(), website(), softwareApplication())} />
+      <JsonLd
+        data={graph(
+          organization(),
+          website(),
+          softwareApplication(),
+          faqPage(FAQ_ITEMS),
+        )}
+      />
       {/* deco outer frame */}
       <div className="v2-frame" aria-hidden="true">
         <i className="tl" />
@@ -62,7 +111,7 @@ export default function MarketingLanding() {
 
       <HeaderV2 />
 
-      <main className="v2-main">
+      <main id="main-content" className="v2-main">
         <div className="v2-wrap">
           <section className="v2-stage">
             <div className="v2-stage-in">
@@ -257,6 +306,34 @@ export default function MarketingLanding() {
             </div>
           </section>
 
+          {/* The one genuinely rare capability (per the /vs comparison pages)
+              was one bullet among three above, equal weight to generic
+              claims. It earns its own quiet card here instead. */}
+          <section className="v2-tax-band">
+            <div className="v2-tax-band-icon" aria-hidden="true">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z" />
+                <path d="M9 12l2 2 4-4" />
+              </svg>
+            </div>
+            <div>
+              <h2>הקצאה אוטומטית מרשות המסים, לא ידני ולא בהעתק-הדבק</h2>
+              <p>
+                מ-2026 חשבונית מעל 5,000 ש״ח לפני מע״מ ללקוח עסקי חייבת מספר
+                הקצאה, אחרת הלקוח לא יכול לנכות מע״מ. אחרי חיבור חד-פעמי מול
+                רשות המסים, המערכת מבקשת את המספר ישירות ממנה בלחיצה אחת
+                ומציגה אותו על המסמך - בלי טפסים ובלי להעתיק תוצאה מאתר אחר.
+              </p>
+            </div>
+          </section>
+
           {/* Launch pricing, deliberately quiet: two hairlines and type. The
               sheet is the only object on this page, so the offer states the
               facts and gets out of the way. */}
@@ -271,6 +348,16 @@ export default function MarketingLanding() {
             <p className="v2-band-terms">
               ביטול בכל עת · נעדכן מראש לפני כל שינוי מחיר
             </p>
+          </section>
+
+          <section className="v2-faq">
+            <h2 className="v2-faq-title">שאלות נפוצות</h2>
+            {FAQ_ITEMS.map((item) => (
+              <div className="v2-faq-item" key={item.q}>
+                <p className="v2-faq-q">{item.q}</p>
+                <p className="v2-faq-a">{item.a}</p>
+              </div>
+            ))}
           </section>
 
           <div className="v2-credit">

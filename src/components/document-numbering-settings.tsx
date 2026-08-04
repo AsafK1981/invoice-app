@@ -183,6 +183,7 @@ export function DocumentNumberingSettings() {
                     disabled={saving}
                     className="inline-flex items-center justify-center min-h-[36px] min-w-[36px] rounded-lg bg-emerald-100 text-emerald-700 hover:bg-emerald-200 disabled:opacity-50"
                     title="שמור"
+                    aria-label="שמור"
                   >
                     <Check className="w-4 h-4" />
                   </button>
@@ -190,6 +191,7 @@ export function DocumentNumberingSettings() {
                     onClick={cancelEdit}
                     className="inline-flex items-center justify-center min-h-[36px] min-w-[36px] rounded-lg bg-stone-100 text-stone-700 hover:bg-stone-200"
                     title="בטל"
+                    aria-label="בטל"
                   >
                     <X className="w-4 h-4" />
                   </button>

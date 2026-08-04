@@ -127,7 +127,7 @@ export function ComparisonViewV2({ competitor }: { competitor: Competitor }) {
 
       <HeaderV2 />
 
-      <main className="v2-cmp">
+      <main id="main-content" className="v2-cmp">
         <Link href="/vs" className="v2-back">
           <ArrowRight />
           חזרה לכל ההשוואות

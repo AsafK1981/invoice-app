@@ -54,9 +54,19 @@ export default function BillingPage() {
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
-      setPlanStatus(getPlanStatus(user));
+      const status = getPlanStatus(user);
+      setPlanStatus(status);
       setLoading(false);
+      // Client-side signal only: fires on the return redirect, using
+      // whatever plan_tier is on the user record at that moment. The
+      // provider's webhook may not have landed yet, so `tier` can be stale
+      // or missing; a server-side track in the webhook handler would be
+      // more reliable but is out of scope here.
+      if (searchParams.get("success") === "1") {
+        track("subscription_started", { tier: status.tier });
+      }
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Step 1: clicking the plan card just opens the confirm modal,
@@ -152,6 +162,7 @@ export default function BillingPage() {
       if (data.ok) {
         setConfirmingCancel(false);
         setPlanStatus((prev) => ({ ...prev, cancelAtPeriodEnd: true }));
+        track("subscription_canceled", { tier: planStatus.tier });
         setToast({
           kind: "success",
           text: "המנוי יבוטל בסוף התקופה. הגישה שלך נשמרת עד אז.",

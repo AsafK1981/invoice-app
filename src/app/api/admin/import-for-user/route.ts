@@ -10,6 +10,7 @@ import {
   createSkipAccumulator,
   createUnmappedTypeCollector,
   type SkipSummaryEntry,
+  type MapDocumentRowResult,
 } from "@/lib/import-documents";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -298,10 +299,17 @@ async function importDocuments(sb: SB, businessId: string, rows: ImportRow[]): P
   // afterwards. Without this, the next live "create document" call would
   // pick a number that already exists in the DB.
   const maxByType = new Map<string, number>();
-  const docsToInsert: Array<Record<string, unknown>> = [];
   // Rows dropped because their client couldn't be created (not a mapDocumentRow
   // skip reason); folded into the skipped total but not the per-reason summary.
   let clientErrorSkips = 0;
+
+  // Pass 1: map every row, and collect the set of client names that don't
+  // exist yet. Deferring the doc-row build until pass 2 lets us resolve all
+  // missing clients in a single batch insert instead of one round-trip per
+  // row (a CSV with thousands of new clients used to mean thousands of
+  // sequential inserts here).
+  const mappedRows: Array<Extract<MapDocumentRowResult, { ok: true }>> = [];
+  const missingClientNames = new Set<string>();
 
   for (const row of rows) {
     const mapped = mapDocumentRow(row, headersMap, today);
@@ -310,26 +318,59 @@ async function importDocuments(sb: SB, businessId: string, rows: ImportRow[]): P
       continue;
     }
     const { record, typeMatched, typeRaw } = mapped;
-    const { description, ...docFields } = record;
-
     if (!typeMatched) unmappedTypes.add(typeRaw);
 
-    // Find or create client by name.
-    const clientName = record.client_name;
-    let clientId = clientByName.get(clientName.toLowerCase().trim());
-    if (!clientId) {
-      const { data: newClient, error: clientErr } = await sb
-        .from("clients")
-        .insert({ business_id: businessId, name: clientName })
-        .select("id")
-        .single();
-      if (clientErr) {
-        out.errors.push(`קליינט ${clientName}: ${clientErr.message}`);
-        clientErrorSkips++;
-        continue;
+    const key = record.client_name.toLowerCase().trim();
+    if (!clientByName.has(key)) missingClientNames.add(key);
+
+    mappedRows.push(mapped);
+  }
+
+  // Batch-create all missing clients in one insert instead of one per row.
+  // Dedupe by lowercased name (same rule the original per-row lookup used),
+  // preserving the first-seen original casing for the inserted row.
+  if (missingClientNames.size > 0) {
+    const firstSeenName = new Map<string, string>();
+    for (const mapped of mappedRows) {
+      const name = mapped.record.client_name;
+      const key = name.toLowerCase().trim();
+      if (missingClientNames.has(key) && !firstSeenName.has(key)) {
+        firstSeenName.set(key, name);
       }
-      clientId = newClient.id;
-      clientByName.set(clientName.toLowerCase().trim(), clientId!);
+    }
+    const toInsert = Array.from(firstSeenName.entries()).map(([, name]) => ({
+      business_id: businessId,
+      name,
+    }));
+    const { data: newClients, error: clientErr } = await sb
+      .from("clients")
+      .insert(toInsert)
+      .select("id, name");
+    if (clientErr) {
+      // Same failure mode as before (per-row insert error), just reported
+      // once for the whole batch: every row whose client couldn't be
+      // created is skipped, not just the first one that hit the error.
+      out.errors.push(`קליינטים: ${clientErr.message}`);
+      clientErrorSkips += mappedRows.filter((m) =>
+        missingClientNames.has(m.record.client_name.toLowerCase().trim()),
+      ).length;
+    } else {
+      for (const c of newClients || []) {
+        clientByName.set(String(c.name).toLowerCase().trim(), String(c.id));
+      }
+    }
+  }
+
+  const docsToInsert: Array<Record<string, unknown>> = [];
+  for (const mapped of mappedRows) {
+    const { record } = mapped;
+    const { description, ...docFields } = record;
+    const clientId = clientByName.get(record.client_name.toLowerCase().trim());
+    if (!clientId) {
+      // The batch client insert failed (or, in principle, didn't cover this
+      // name) - skip this row exactly as the original per-row path did on
+      // a client-insert error.
+      continue;
     }
 
     maxByType.set(record.type, Math.max(maxByType.get(record.type) ?? 0, record.number));
