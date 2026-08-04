@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Wallet, Plus, ShoppingBag, Pencil, Trash2, Upload, Search, X, ScanLine, Loader2, Paperclip } from "lucide-react";
 import { useExpenses, expenseStore } from "@/lib/expense-store";
 import { formatCurrency, formatDate } from "@/lib/format";
@@ -9,8 +9,24 @@ import { CsvImportModal } from "@/components/csv-import-modal";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { Tooltip } from "@/components/ui/tooltip";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Pagination } from "@/components/ui/pagination";
 import { supabase } from "@/lib/supabase";
 import type { Expense } from "@/lib/types";
+
+/**
+ * Rows shown per page in the expenses table.
+ *
+ * NOT wired into the Supabase fetch: useExpenses() stays a full fetch (see
+ * expense-store.ts). This page derives grandTotal/filteredTotal - real money
+ * figures - by summing over EVERY expense, filtered or not, and the category/
+ * month filter dropdowns list every distinct value that exists. Fetching only
+ * one page server-side would quietly turn both into "total of this page only"
+ * and "options seen on this page only" - a wrong-numbers bug, not a UX one.
+ * So the pagination here only controls how many of the already-fetched,
+ * already-filtered rows get RENDERED at once; the filters/totals still see
+ * the whole list.
+ */
+const PAGE_SIZE = 50;
 
 type ScanPrefill = {
   date?: string;
@@ -67,6 +83,7 @@ export default function ExpensesPage() {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [monthFilter, setMonthFilter] = useState<string>("all");
+  const [page, setPage] = useState(0);
   const confirm = useConfirm();
 
   const availableMonths = useMemo(() => {
@@ -90,6 +107,18 @@ export default function ExpensesPage() {
   const filteredTotal = filtered.reduce((sum, e) => sum + e.amount, 0);
   const grandTotal = expenses.reduce((sum, e) => sum + e.amount, 0);
   const filtersActive = search.trim() !== "" || categoryFilter !== "all" || monthFilter !== "all";
+
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const paginated = useMemo(
+    () => filtered.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE),
+    [filtered, page]
+  );
+  // Any change to what's filtered (new search, new filter selection, or the
+  // list itself changing after an add/edit/delete) can leave `page` pointing
+  // past the new last page - reset to page 1 whenever the filtered set does.
+  useEffect(() => {
+    setPage(0);
+  }, [search, categoryFilter, monthFilter]);
 
   function openNew() {
     setEditing(null);
@@ -371,7 +400,7 @@ export default function ExpensesPage() {
                     </td>
                   </tr>
                 ) : (
-                  filtered.map((e) => (
+                  paginated.map((e) => (
                     <tr
                       key={e.id}
                       className="border-t border-orange-50 hover:bg-rose-50/40 transition-colors group"
@@ -431,6 +460,7 @@ export default function ExpensesPage() {
               </tbody>
             </table>
           </div>
+          <Pagination page={page} pageCount={pageCount} onPageChange={setPage} />
         </div>
       )}
 

@@ -17,7 +17,7 @@ import {
   Search,
   X,
 } from "lucide-react";
-import { useClients, clientStore } from "@/lib/client-store";
+import { useClients, useClientsPage, clientStore } from "@/lib/client-store";
 import { useDocuments } from "@/lib/document-store";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { parseEmails } from "@/lib/emails";
@@ -26,6 +26,7 @@ import { CsvImportModal } from "@/components/csv-import-modal";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { Tooltip } from "@/components/ui/tooltip";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Pagination } from "@/components/ui/pagination";
 import { exportClients } from "@/lib/csv-export";
 import type { Client, InvoiceDocument } from "@/lib/types";
 
@@ -50,37 +51,35 @@ function buildStatsByClient(documents: InvoiceDocument[]): Map<string, ClientSta
   return m;
 }
 
-function matchesClient(client: Client, query: string): boolean {
-  const q = query.trim().toLowerCase();
-  if (!q) return true;
-  const haystack = [
-    client.name,
-    client.taxId || "",
-    client.address || "",
-    client.phone || "",
-    client.email || "",
-    client.notes || "",
-  ]
-    .join(" ")
-    .toLowerCase();
-  return q.split(/\s+/).every((t) => haystack.includes(t));
-}
+// Search used to be matched in-memory here (matchesClient); it now happens
+// server-side in useClientsPage() (see client-store.ts) so a search over a
+// list bigger than one page still searches the WHOLE list, not just the
+// current page.
 
 export default function ClientsPage() {
+  // Full, unpaginated list: needed for the unfiltered "X לקוחות בספר" count,
+  // the "export all" button (which must export every client regardless of
+  // what's on screen), and the empty-catalog check - none of which may ever
+  // be silently truncated to one page. The rendered grid below reads from
+  // useClientsPage() instead, which does the real server-side pagination.
   const { items: clients } = useClients();
   const { documents } = useDocuments();
   const [modalOpen, setModalOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [editing, setEditing] = useState<Client | null>(null);
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(0);
   const confirm = useConfirm();
 
   const statsByClient = useMemo(() => buildStatsByClient(documents), [documents]);
 
-  const filtered = useMemo(
-    () => clients.filter((c) => matchesClient(c, search)),
-    [clients, search]
-  );
+  const { items: filtered, total: filteredTotal, pageSize } = useClientsPage({ page, search });
+  const pageCount = Math.max(1, Math.ceil(filteredTotal / pageSize));
+
+  function updateSearch(value: string) {
+    setSearch(value);
+    setPage(0); // a new search always starts back at page 1
+  }
 
   function openNew() {
     setEditing(null);
@@ -114,7 +113,7 @@ export default function ClientsPage() {
           </h1>
           <p className="text-sm text-stone-700 mt-2 mr-14">
             {search.trim()
-              ? `${filtered.length} מתוך ${clients.length} לקוחות`
+              ? `${filteredTotal} מתוך ${clients.length} לקוחות`
               : `${clients.length} לקוחות בספר`}
           </p>
         </div>
@@ -152,13 +151,13 @@ export default function ClientsPage() {
           <input
             type="text"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => updateSearch(e.target.value)}
             placeholder="חיפוש: שם, ח.פ, אימייל, טלפון, הערות..."
             className="input-warm pr-10 pl-9"
           />
           {search && (
             <button
-              onClick={() => setSearch("")}
+              onClick={() => updateSearch("")}
               className="absolute left-2 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700"
               aria-label="נקה חיפוש"
             >
@@ -191,13 +190,14 @@ export default function ClientsPage() {
             אין לקוחות התואמים ל-&quot;{search}&quot;
           </p>
           <button
-            onClick={() => setSearch("")}
+            onClick={() => updateSearch("")}
             className="text-sm text-orange-600 hover:underline"
           >
             נקה חיפוש
           </button>
         </div>
       ) : (
+        <>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((c) => (
             <Link
@@ -319,6 +319,8 @@ export default function ClientsPage() {
             </Link>
           ))}
         </div>
+        <Pagination page={page} pageCount={pageCount} onPageChange={setPage} />
+        </>
       )}
 
       <ClientFormModal

@@ -29,6 +29,7 @@ import { useConfirm } from "@/components/ui/confirm-dialog";
 import { useToast } from "@/components/ui/toast";
 import { friendlyError } from "@/lib/error-message";
 import { Tooltip } from "@/components/ui/tooltip";
+import { Pagination } from "@/components/ui/pagination";
 import { useBusiness } from "@/lib/business-store";
 import { canIssueTaxInvoices } from "@/lib/vat";
 import {
@@ -170,6 +171,22 @@ interface FilterOption {
 /** The sentinel a <select> shows when the set holds more than one value. */
 const MULTI = "__multi";
 
+/**
+ * Rows rendered per page below the table.
+ *
+ * NOT wired into the documents fetch: useDocuments() (document-store.ts)
+ * stays a full fetch. This table's filter menus derive their option COUNTS
+ * from every document regardless of the current filter (see `options`
+ * below), and the page that hosts this table sums totals - "שולם" /
+ * "ממתין לתשלום" - over the whole list too. Fetching only one page
+ * server-side would quietly turn both into page-local numbers, which is
+ * exactly the wrong-numbers failure mode this feature must not introduce.
+ * So pagination here only limits how many of the already-filtered rows get
+ * mounted as `<li>`s at once; filtering, sorting, option counts and the
+ * page-level KPI totals still see the whole list.
+ */
+const PAGE_SIZE = 50;
+
 export function DocumentsTable({ documents, limit, exportSlot }: Props) {
   const searchParams = useSearchParams();
   const { business } = useBusiness();
@@ -192,6 +209,7 @@ export function DocumentsTable({ documents, limit, exportSlot }: Props) {
   const [search, setSearch] = useState<string>("");
   const [sortKey, setSortKey] = useState<SortKey>("date");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [page, setPage] = useState(0);
 
   /**
    * The options every filter control offers, derived from ALL the documents
@@ -245,6 +263,22 @@ export function DocumentsTable({ documents, limit, exportSlot }: Props) {
     if (limit) result = result.slice(0, limit);
     return result;
   }, [documents, selections, search, limit, sortKey, sortDir]);
+
+  // A new filter/search/sort, or the underlying document list changing (an
+  // add/delete/status change refetch), can leave `page` pointing past the
+  // new last page - reset to page 1 whenever what's being paginated changes.
+  useEffect(() => {
+    setPage(0);
+  }, [selections, search, sortKey, sortDir, documents]);
+
+  // `limit` mode (the dashboard's "latest documents" widget) is already an
+  // intentionally short, unpaginated preview - pagination only applies to
+  // the real, unlimited table.
+  const pageCount = limit ? 1 : Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const paginated = useMemo(
+    () => (limit ? filtered : filtered.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE)),
+    [filtered, page, limit]
+  );
 
   /**
    * מספר הקצאה is a column only a business that can actually receive one
@@ -476,12 +510,13 @@ export function DocumentsTable({ documents, limit, exportSlot }: Props) {
               </span>
             </div>
             <ul className="dc-rows" role="list">
-              {filtered.map((d) => (
+              {paginated.map((d) => (
                 <DocumentRow key={d.id} doc={d} showAlloc={showAlloc} />
               ))}
             </ul>
           </div>
         )}
+        {!limit && <Pagination page={page} pageCount={pageCount} onPageChange={setPage} />}
       </div>
     </div>
   );

@@ -1,43 +1,40 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Package, Plus, Tag, Pencil, Trash2, Upload, Search, X } from "lucide-react";
-import { useProducts, productStore } from "@/lib/product-store";
+import { useProducts, useProductsPage, productStore } from "@/lib/product-store";
 import { formatCurrency } from "@/lib/format";
 import { ProductFormModal } from "@/components/product-form-modal";
 import { CsvImportModal } from "@/components/csv-import-modal";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { Tooltip } from "@/components/ui/tooltip";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Pagination } from "@/components/ui/pagination";
 import type { Product } from "@/lib/types";
 
-function matchesProduct(p: Product, query: string): boolean {
-  const q = query.trim().toLowerCase();
-  if (!q) return true;
-  const haystack = [
-    p.name,
-    p.description || "",
-    p.unit,
-    String(p.price),
-    formatCurrency(p.price),
-  ]
-    .join(" ")
-    .toLowerCase();
-  return q.split(/\s+/).every((t) => haystack.includes(t));
-}
+// Search used to be matched in-memory here; it now happens server-side in
+// useProductsPage() (see product-store.ts) so a search over a catalog bigger
+// than one page still searches the WHOLE catalog, not just the current page.
 
 export default function ProductsPage() {
+  // Full, unpaginated list: needed for the unfiltered "X פריטים בקטלוג" count
+  // and the empty-catalog check, which may never be silently truncated to
+  // one page. The rendered grid below reads from useProductsPage() instead.
   const { items: products } = useProducts();
   const [modalOpen, setModalOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(0);
   const confirm = useConfirm();
 
-  const filtered = useMemo(
-    () => products.filter((p) => matchesProduct(p, search)),
-    [products, search]
-  );
+  const { items: filtered, total: filteredTotal, pageSize } = useProductsPage({ page, search });
+  const pageCount = Math.max(1, Math.ceil(filteredTotal / pageSize));
+
+  function updateSearch(value: string) {
+    setSearch(value);
+    setPage(0);
+  }
 
   function openNew() {
     setEditing(null);
@@ -70,7 +67,7 @@ export default function ProductsPage() {
           </h1>
           <p className="text-sm text-stone-700 mt-2 mr-14">
             {search.trim()
-              ? `${filtered.length} מתוך ${products.length} פריטים`
+              ? `${filteredTotal} מתוך ${products.length} פריטים`
               : `${products.length} פריטים בקטלוג`}
           </p>
         </div>
@@ -98,13 +95,13 @@ export default function ProductsPage() {
           <input
             type="text"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="חיפוש: שם, תיאור, מחיר..."
+            onChange={(e) => updateSearch(e.target.value)}
+            placeholder="חיפוש: שם, תיאור..."
             className="input-warm pr-10 pl-9"
           />
           {search && (
             <button
-              onClick={() => setSearch("")}
+              onClick={() => updateSearch("")}
               className="absolute left-2 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700"
               aria-label="נקה חיפוש"
             >
@@ -137,13 +134,14 @@ export default function ProductsPage() {
             אין פריטים התואמים ל-&quot;{search}&quot;
           </p>
           <button
-            onClick={() => setSearch("")}
+            onClick={() => updateSearch("")}
             className="text-sm text-orange-600 hover:underline"
           >
             נקה חיפוש
           </button>
         </div>
       ) : (
+        <>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((p) => (
             <div
@@ -191,6 +189,8 @@ export default function ProductsPage() {
             </div>
           ))}
         </div>
+        <Pagination page={page} pageCount={pageCount} onPageChange={setPage} />
+        </>
       )}
 
       <ProductFormModal
