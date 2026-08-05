@@ -28,7 +28,13 @@ const env = readFileSync(new URL(".env.local", ROOT), "utf8")
     return a;
   }, {});
 
-const BASE = process.env.BASE_URL || "https://friendlyinvoice.co.il";
+// Still the old host on purpose. This script runs unattended as the
+// `invoice-app-health` scheduled task and pushes failures to WhatsApp, so it
+// must point at whatever is actually serving RIGHT NOW. friendlyinvoice.co.il
+// is bought and wired but its .il delegation has not published yet; pointing
+// here early would fire false alarms every run. Flip this literal in the same
+// change that sets NEXT_PUBLIC_SITE_ORIGIN. domain-literal-ok
+const BASE = process.env.BASE_URL || "https://mysuperfriendlyinvoiceapp.vercel.app";
 const PROJECT_ID = env.VERCEL_PROJECT_ID || "prj_TvmyEkfULUU4vcQSvEySbrEhuqGB";
 // Gaya push creds come from .env.local (gitignored); never hardcode a secret.
 const GAYA_PUSH_URL = env.GAYA_PUSH_URL;
