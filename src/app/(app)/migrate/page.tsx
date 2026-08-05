@@ -37,7 +37,6 @@ const BulkImportZone = dynamic(
 
 type Vendor =
   | "invoice4u"
-  | "greeninvoice"
   | "icount"
   | "rivhit"
   | "morning"
@@ -116,15 +115,17 @@ const EXPORT_GUIDES: Record<Exclude<Vendor, null>, ExportStep[]> = {
       ],
     },
   ],
-  greeninvoice: [
+  icount: GENERIC_STEPS("https://app.icount.co.il", "iCount"),
+  rivhit: GENERIC_STEPS("https://invoice.rivhit.co.il", "ריווחית"),
+  morning: [
     {
       title: "ייצוא לקוחות",
       steps: [
-        'התחבר ל-Greeninvoice',
+        'התחבר ל-Morning (חשבונית ירוקה)',
         'הגדרות → "גיבוי נתונים" → "ייצוא לקוחות"',
         'הורד את קובץ ה-Excel',
       ],
-      link: "https://app.greeninvoice.co.il/",
+      link: "https://app.morning.co.il/",
     },
     {
       title: "ייצוא מוצרים",
@@ -142,9 +143,6 @@ const EXPORT_GUIDES: Record<Exclude<Vendor, null>, ExportStep[]> = {
       ],
     },
   ],
-  icount: GENERIC_STEPS("https://app.icount.co.il", "iCount"),
-  rivhit: GENERIC_STEPS("https://invoice.rivhit.co.il", "ריווחית"),
-  morning: GENERIC_STEPS("https://app.morning.co.il", "Morning"),
   hashavshevet: GENERIC_STEPS("https://www.hashavshevet.co.il", "חשבשבת"),
   other: [
     {
@@ -164,11 +162,6 @@ const VENDOR_META: Record<Exclude<Vendor, null>, { name: string; color: string; 
     color: "from-rose-400 to-orange-500",
     tagline: "מדריך ספציפי, 5 דקות",
   },
-  greeninvoice: {
-    name: "חשבונית ירוקה",
-    color: "from-emerald-400 to-teal-500",
-    tagline: "מדריך ספציפי, 5 דקות",
-  },
   icount: {
     name: "iCount",
     color: "from-blue-400 to-indigo-500",
@@ -180,9 +173,9 @@ const VENDOR_META: Record<Exclude<Vendor, null>, { name: string; color: string; 
     tagline: "מדריך כללי, 5-10 דקות",
   },
   morning: {
-    name: "Morning",
-    color: "from-amber-400 to-yellow-500",
-    tagline: "מדריך כללי, 5-10 דקות",
+    name: "Morning (חשבונית ירוקה)",
+    color: "from-emerald-400 to-teal-500",
+    tagline: "מדריך ספציפי, 5 דקות",
   },
   hashavshevet: {
     name: "חשבשבת",
@@ -219,7 +212,8 @@ export default function MigratePage() {
           מעבר מתוכנה אחרת
         </h1>
         <p className="text-sm text-stone-700 mt-2 mr-14 leading-relaxed">
-          מעבירים אותך ביד מ-<Ltr>Invoice4U</Ltr> / חשבונית ירוקה / <Ltr>Excel</Ltr>. כל הלקוחות
+          מעבירים אותך ביד מ-<Ltr>Invoice4U</Ltr> / <Ltr>Morning</Ltr> (חשבונית ירוקה) /{" "}
+          <Ltr>Excel</Ltr>. כל הלקוחות
           והמוצרים והמסמכים שלך, בכמה דקות.
         </p>
       </div>
