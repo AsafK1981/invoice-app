@@ -114,7 +114,7 @@ console.log(`✓ Prompt is being followed (got ${parsed.error ? "expected error"
 
 // Step 2: hit the production endpoint without auth; should get 401.
 console.log("[2/3] testing /api/expenses/scan auth gate...");
-const probe = await fetch("https://mysuperfriendlyinvoiceapp.vercel.app/api/expenses/scan", {
+const probe = await fetch("https://friendlyinvoice.co.il/api/expenses/scan", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({ image: `data:image/png;base64,${TINY_PNG_B64}` }),

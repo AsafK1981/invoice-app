@@ -13,12 +13,13 @@ This is a live SaaS with real users (Israeli עוסק פטור freelancers). Tre
 
 1. **Vercel deploys from `master`, not `main`.** After every commit, run `git push origin main:master` too. Pushing only to `main` does nothing for production.
 2. **`ssoProtection` should stay `null` on the project.** If it gets enabled, the public URL returns 401. Reset via `PATCH /v9/projects/{id}` with `ssoProtection: null`.
-3. **Canonical alias auto-advance** — fixed 2026-05-03. `mysuperfriendlyinvoiceapp.vercel.app` is now an assigned production domain on the Vercel project (not a manual alias), so it advances automatically with each production deploy. `scripts/check-alias.mjs` exists as a fallback verifier; you should NOT need to repoint manually anymore. If you do see drift, something regressed at the project-domain level — investigate, don't just repoint.
+3. **Canonical alias auto-advance** — fixed 2026-05-03. `friendlyinvoice.co.il` is the canonical production domain on the Vercel project (not a manual alias), so it advances automatically with each production deploy. `scripts/check-alias.mjs` exists as a fallback verifier; you should NOT need to repoint manually anymore. If you do see drift, something regressed at the project-domain level — investigate, don't just repoint.
+4. **Old domain stays attached on purpose.** `mysuperfriendlyinvoiceapp.vercel.app` remains attached to the Vercel project forever so previously-emailed/shared document links keep resolving. Do not remove it, even though `friendlyinvoice.co.il` is now canonical.
 
 ## Required checks before claiming "shipped" or "done"
 
 - `npx next build` exits 0
-- After push: production deploy READY at the latest commit AND alias points to it AND key routes return 200 on `mysuperfriendlyinvoiceapp.vercel.app` (NOT just on the deployment-hash URL — they diverge)
+- After push: production deploy READY at the latest commit AND alias points to it AND key routes return 200 on `friendlyinvoice.co.il` (NOT just on the deployment-hash URL — they diverge)
 - For new strings/components: grep production JS chunks to confirm the new content is actually being served. "Build passes + deploy READY" does not prove the canonical URL serves the new code.
 - After ANY CSS edit: run the `desktop-polish` and `mobile-polish` skills in the same commit
 - After non-trivial code changes: run `simplify` (3-agent reuse/quality/efficiency review)

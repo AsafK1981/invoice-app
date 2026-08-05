@@ -5,7 +5,7 @@ const env = (()=>{try{return readFileSync(new URL("../.env.local", import.meta.u
   .reduce((a,l)=>{const[k,...r]=l.split("=");if(k)a[k.trim()]=r.join("=").trim();return a;},{});
 const SUPA_URL=env.NEXT_PUBLIC_SUPABASE_URL, SK=env.SUPABASE_SERVICE_ROLE_KEY, AK=env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const EMAIL="asafkotlar@gmail.com";
-const BASE=process.env.BASE_URL || "https://mysuperfriendlyinvoiceapp.vercel.app";
+const BASE=process.env.BASE_URL || "https://friendlyinvoice.co.il";
 const admin=createClient(SUPA_URL,SK,{auth:{autoRefreshToken:false,persistSession:false}});
 const anon=createClient(SUPA_URL,AK,{auth:{persistSession:false}});
 

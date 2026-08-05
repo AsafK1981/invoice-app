@@ -27,7 +27,7 @@ jobs:
             exit 1
           fi
           RESPONSE=$(curl -sS -X POST \
-            "https://mysuperfriendlyinvoiceapp.vercel.app/api/dunning/run" \
+            "https://friendlyinvoice.co.il/api/dunning/run" \
             -H "x-cron-secret: $DUNNING_CRON_SECRET" \
             -H "content-type: application/json" \
             -d '{}' \

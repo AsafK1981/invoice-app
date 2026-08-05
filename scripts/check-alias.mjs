@@ -1,4 +1,4 @@
-// Verifies the canonical alias mysuperfriendlyinvoiceapp.vercel.app points to
+// Verifies the canonical alias friendlyinvoice.co.il points to
 // the latest production deployment. If it doesn't, repoints automatically.
 //
 // AGENTS.md trap #2: the alias does NOT auto-advance when a new deploy goes
@@ -27,7 +27,7 @@ if (!TOKEN) {
 }
 
 const PROJECT_ID = "prj_TvmyEkfULUU4vcQSvEySbrEhuqGB";
-const ALIAS = "mysuperfriendlyinvoiceapp.vercel.app";
+const ALIAS = process.env.ALIAS || "friendlyinvoice.co.il";
 const repoint = process.argv.includes("--repoint");
 
 async function api(path, init = {}) {

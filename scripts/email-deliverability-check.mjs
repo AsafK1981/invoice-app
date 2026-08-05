@@ -36,7 +36,7 @@ const SUBJECT = `EMAIL-DELIVERABILITY-CHECK ${STAMP}`;
 // these tests out of the main view via the +deliverability suffix.
 const RECIPIENT = GMAIL_USER.replace(/@/, "+deliverability@");
 
-const SAMPLE_VIEW_URL = "https://mysuperfriendlyinvoiceapp.vercel.app/view/deliverability-check";
+const SAMPLE_VIEW_URL = "https://friendlyinvoice.co.il/view/deliverability-check";
 
 // HTML used for the send. Has to satisfy the same structural rules
 // production HTML does; layer 1 (vitest) already enforces those rules

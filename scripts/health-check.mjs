@@ -28,7 +28,7 @@ const env = readFileSync(new URL(".env.local", ROOT), "utf8")
     return a;
   }, {});
 
-const BASE = "https://mysuperfriendlyinvoiceapp.vercel.app";
+const BASE = process.env.BASE_URL || "https://friendlyinvoice.co.il";
 const PROJECT_ID = env.VERCEL_PROJECT_ID || "prj_TvmyEkfULUU4vcQSvEySbrEhuqGB";
 // Gaya push creds come from .env.local (gitignored); never hardcode a secret.
 const GAYA_PUSH_URL = env.GAYA_PUSH_URL;

@@ -54,7 +54,7 @@ console.log(`  result URL:   ${resultUrl}`);
 
 // Step 2: send a representative invoice-style email
 console.log("[2/5] sending representative invoice email…");
-const SAMPLE_VIEW_URL = "https://mysuperfriendlyinvoiceapp.vercel.app/view/sample";
+const SAMPLE_VIEW_URL = "https://friendlyinvoice.co.il/view/sample";
 const html = `<!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>

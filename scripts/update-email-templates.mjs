@@ -12,7 +12,7 @@ if (!TOKEN || !REF) {
 }
 
 const APP_NAME = "MyFriendlyInvoiceApp";
-const APP_URL = "https://mysuperfriendlyinvoiceapp.vercel.app";
+const APP_URL = "https://friendlyinvoice.co.il";
 
 const confirmationHtml = `
 <div dir="rtl" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Heebo, Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 24px; color: #1c1917; background: #fff7ed; border-radius: 16px;">

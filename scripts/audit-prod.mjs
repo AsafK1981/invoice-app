@@ -14,7 +14,7 @@ const VERCEL_TOKEN = env.VERCEL_ACCESS_TOKEN;
 const SUPA_TOKEN = env.SUPABASE_ACCESS_TOKEN;
 const SUPA_REF = env.SUPABASE_PROJECT_REF;
 const VERCEL_PROJECT_ID = "prj_TvmyEkfULUU4vcQSvEySbrEhuqGB";
-const PROD_URL = "https://mysuperfriendlyinvoiceapp.vercel.app";
+const PROD_URL = process.env.PROD_URL || "https://friendlyinvoice.co.il";
 
 const sectionArg = process.argv[2] || "all";
 
@@ -179,8 +179,9 @@ async function checkAuthConfig() {
       // The old brand surviving here means the remote Supabase template was
       // never re-pushed after the rename (scripts/update-email-templates.mjs).
       // Case-SENSITIVE on purpose: the templates legitimately link to
-      // mysuperfriendlyinvoiceapp.vercel.app, the domain we kept, and an /i
-      // regex reads that as a stale brand on every run.
+      // friendlyinvoice.co.il (or, pre-cutover, mysuperfriendlyinvoiceapp.vercel.app,
+      // which stays attached deliberately), and an /i regex reads that as a
+      // stale brand on every run.
       const hasStaleName = /MySuperFriendlyInvoiceApp/.test(v);
       console.log(
         k + ":",
