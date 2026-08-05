@@ -58,6 +58,7 @@ interface BusinessRow {
   dunning_enabled: boolean;
   dunning_from_name: string | null;
   email: string | null;
+  user_id: string;
 }
 
 interface ClientRow {
@@ -194,16 +195,39 @@ export async function POST(req: NextRequest) {
 
   const { data: bizs } = await admin
     .from("businesses")
-    .select("id, name, dunning_enabled, dunning_from_name, email")
+    .select("id, name, dunning_enabled, dunning_from_name, email, user_id")
     .eq("dunning_enabled", true);
 
   if (!bizs || bizs.length === 0) {
     return NextResponse.json({ ok: true, sent: 0, skipped: 0, message: "no businesses opted in" });
   }
 
+  // Gate: an unverified account must not be able to get the cron to email
+  // real clients on a schedule - that would bypass the /api/send-email
+  // verification gate entirely (this route has no user session, only the
+  // cron secret). Resolve each dunning-enabled business's OWNER once, up
+  // front, in parallel - not per-business inside the loop below - and skip
+  // any business whose owner hasn't confirmed their email yet. Owners are
+  // deduplicated so a user with multiple businesses only costs one lookup.
+  const ownerIds = Array.from(new Set((bizs as BusinessRow[]).map((b) => b.user_id).filter(Boolean)));
+  const ownerConfirmed = new Map<string, boolean>();
+  await Promise.all(
+    ownerIds.map(async (uid) => {
+      try {
+        const { data, error } = await admin.auth.admin.getUserById(uid);
+        ownerConfirmed.set(uid, !error && Boolean(data?.user?.email_confirmed_at));
+      } catch {
+        // Fail closed: if we can't confirm the owner's status, don't email
+        // on their behalf.
+        ownerConfirmed.set(uid, false);
+      }
+    }),
+  );
+
   let sent = 0;
   let skipped = 0;
   let errors = 0;
+  let skippedUnverifiedBusinesses = 0;
   const details: Array<{ doc: string; bucket: number; outcome: string }> = [];
 
   const transporter = nodemailer.createTransport({
@@ -214,6 +238,11 @@ export async function POST(req: NextRequest) {
   });
 
   for (const biz of bizs as BusinessRow[]) {
+    if (!ownerConfirmed.get(biz.user_id)) {
+      skippedUnverifiedBusinesses++;
+      details.push({ doc: biz.id, bucket: 0, outcome: "skipped: owner email not verified" });
+      continue;
+    }
     const { data: docs } = await admin
       .from("documents")
       .select("id, business_id, client_id, client_name, number, date, total, type, status, paid_at")
@@ -341,6 +370,7 @@ export async function POST(req: NextRequest) {
     skipped,
     errors,
     businesses: bizs.length,
+    skippedUnverifiedBusinesses,
     details: details.slice(0, 50),
   });
 }

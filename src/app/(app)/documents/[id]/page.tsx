@@ -32,6 +32,7 @@ import { useConfirm } from "@/components/ui/confirm-dialog";
 import { useClients } from "@/lib/client-store";
 import { useBusiness } from "@/lib/business-store";
 import { sendReceiptEmail } from "@/lib/email";
+import { EmailVerificationModal } from "@/components/email-verification-modal";
 import { ReceiptView } from "@/components/receipt-view";
 import { canIssueTaxInvoices } from "@/lib/vat";
 import { requiresAllocationNumber } from "@/lib/tax-authority";
@@ -50,6 +51,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
   const [statusUpdating, setStatusUpdating] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [toast, setToast] = useState<{ kind: "success" | "error"; text: string } | null>(null);
+  const [emailVerifyModalOpen, setEmailVerifyModalOpen] = useState(false);
   // Mobile-only overflow menu state. The action row has too many buttons
   // to fit on a phone width; on mobile, secondary actions collapse into
   // a "⋯" popover. Desktop (sm+) keeps showing everything inline.
@@ -278,6 +280,8 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
               ? `תזכורת נשלחה ל-${to}`
               : `המסמך נשלח ל-${to}`,
         });
+      } else if (res.code === "EMAIL_NOT_VERIFIED") {
+        setEmailVerifyModalOpen(true);
       } else {
         setToast({ kind: "error", text: res.error || "שגיאה בשליחה" });
       }
@@ -396,6 +400,10 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
 
   return (
     <div className="space-y-6">
+      <EmailVerificationModal
+        open={emailVerifyModalOpen}
+        onClose={() => setEmailVerifyModalOpen(false)}
+      />
       <div className="no-print flex items-center justify-between flex-wrap gap-3">
         <Link
           href="/documents"

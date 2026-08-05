@@ -49,6 +49,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
     }
 
+    // Deferred email verification: signup gets the user into the app
+    // immediately, but sending mail to a real third party (the client)
+    // requires proving the sender's own email address is real. This is the
+    // primary gate; strictly a null-check so all pre-existing verified
+    // users (email_confirmed_at already set) see zero behaviour change.
+    if (!user.email_confirmed_at) {
+      return NextResponse.json(
+        {
+          ok: false,
+          code: "EMAIL_NOT_VERIFIED",
+          error: "צריך לאמת את כתובת המייל שלך לפני שליחת מסמכים ללקוחות.",
+        },
+        { status: 403 },
+      );
+    }
+
     // Per-user limit on top of per-IP. A legitimate user behind a NAT
     // shouldn't see this; a single user account being abused will.
     const userLimit = checkRate({ key: `send-email:user:${user.id}`, max: 60, windowMs: 60 * 60_000 });

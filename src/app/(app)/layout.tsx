@@ -3,6 +3,7 @@ import { AppProviders } from "@/components/providers";
 import { GlobalSearch } from "@/components/global-search";
 import { InstallPrompt } from "@/components/install-prompt";
 import { NotificationsBell } from "@/components/notifications-bell";
+import { EmailVerificationBanner } from "@/components/email-verification-banner";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -21,7 +22,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             `position: sticky` descendant (the document editor's live-preview
             pane among them). */}
         <main id="main-content" className="flex-1 min-w-0">
+          {/* Below `pt-16` so it clears the mobile hamburger button (fixed
+              top-4 right-4), instead of a full-bleed row above the flex
+              layout that it would otherwise overlap. */}
           <div className="max-w-7xl mx-auto p-4 pt-16 lg:p-8 print:p-0 print:max-w-none">
+            <EmailVerificationBanner />
             <div className="no-print flex items-center justify-end gap-2 mb-4 print:hidden">
               <NotificationsBell />
               <GlobalSearch />

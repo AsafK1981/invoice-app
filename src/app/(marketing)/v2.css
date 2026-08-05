@@ -16,7 +16,11 @@
   --v2-line: rgba(214, 178, 108, 0.32);
   --v2-line-soft: rgba(214, 178, 108, 0.14);
   --v2-ink: #d6d0c2;
-  --v2-muted: #a79f90;
+  /* Brightened 2026-08-04 (was #a79f90, ~7.7:1 on --v2-obsidian): Asaf found
+     the muted/secondary text across the page - the sheet caption, FAQ
+     answers, pricing fine print, footer credit line - too hard to read
+     against the near-black field. Now ~10.5:1. */
+  --v2-muted: #c2b9a8;
   --v2-card: #151109;
   --v2-obsidian: #070504;
 
@@ -465,15 +469,6 @@
 .v2-theme .v2-stage .v2-eyebrow-row {
   justify-content: flex-start;
 }
-.v2-theme .v2-stage .v2-eyebrow-row span {
-  color: var(--v2-accent);
-}
-.v2-theme .v2-stage .v2-eyebrow-row .ln {
-  background: linear-gradient(90deg, transparent, var(--v2-accent));
-}
-.v2-theme .v2-stage .v2-eyebrow-row .ln.r {
-  background: linear-gradient(90deg, var(--v2-accent), transparent);
-}
 /* The column IS the measure at every tier (52-60 Hebrew characters), so the
    shared centring/cap on `.v2-lede` would only ever subtract width here. */
 .v2-theme .v2-stage-lead .v2-lede {
@@ -597,11 +592,9 @@
   display: inline-block;
   margin-top: 0.44em;
   padding: 0.37em 1.11em;
-  /* iOS-blue accent, marketing-hero-only (see --v2-accent) - the real
-     document's badge stays gold, this is the mock's secondary tag. */
-  border: 1px solid color-mix(in srgb, var(--v2-accent) 45%, transparent);
+  border: 1px solid var(--v2-paper-goldline);
   border-radius: 3px;
-  color: var(--v2-accent);
+  color: var(--v2-paper-gold);
   font-weight: 600;
   font-size: 0.96em;
   white-space: nowrap;
@@ -796,7 +789,8 @@
   font-size: var(--v2-fs-micro);
   letter-spacing: 0.22em;
   line-height: 1.9;
-  color: #7a7164;
+  /* was #7a7164 (~4.2:1 on the dark field) - standardized to --v2-muted */
+  color: var(--v2-muted);
 }
 
 /* ---------- feature rows ----------
@@ -858,10 +852,12 @@
   color: var(--v2-muted);
 }
 .v2-theme .v2-band-terms {
-  font-size: var(--v2-fs-meta);
+  /* Asaf 2026-08-04: still too dim/small at --v2-fs-meta + --v2-muted -
+     bumped a size step and to --v2-ink (the page's brightest body tone). */
+  font-size: var(--v2-fs-body);
   letter-spacing: 0.1em;
   line-height: 1.9;
-  color: #7d7467;
+  color: var(--v2-ink);
 }
 
 /* ---------- tax-authority differentiator band ----------
@@ -977,9 +973,11 @@
   background: linear-gradient(90deg, var(--v2-line), transparent);
 }
 .v2-theme .v2-credit span {
-  font-size: var(--v2-fs-micro);
-  letter-spacing: 0.28em;
-  color: #786f63;
+  /* Asaf 2026-08-04: still too dim/small at --v2-fs-micro + --v2-muted -
+     bumped a size step and to --v2-ink (the page's brightest body tone). */
+  font-size: var(--v2-fs-meta);
+  letter-spacing: 0.24em;
+  color: var(--v2-ink);
 }
 
 /* ---------- footer ----------

@@ -25,6 +25,10 @@ export interface SendEmailResult {
   messageId?: string;
   error?: string;
   mocked: boolean;
+  /** Machine-readable failure reason, currently only set for
+   *  "EMAIL_NOT_VERIFIED" (403 from /api/send-email), so callers can show a
+   *  dedicated verification modal instead of a generic error toast. */
+  code?: string;
 }
 
 export async function sendReceiptEmail(args: SendReceiptEmailArgs): Promise<SendEmailResult> {
@@ -56,6 +60,7 @@ export async function sendReceiptEmail(args: SendReceiptEmailArgs): Promise<Send
       messageId: data.messageId,
       error: data.error,
       mocked: data.mocked ?? false,
+      code: data.code,
     };
   } catch {
     return {

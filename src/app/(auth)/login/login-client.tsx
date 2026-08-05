@@ -78,7 +78,7 @@ function LoginForm() {
     setSuccess(null);
 
     if (mode === "signup") {
-      const { error: signUpError } = await supabase.auth.signUp({
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: { emailRedirectTo: `${window.location.origin}/auth/confirm?next=/onboarding` },
@@ -87,11 +87,42 @@ function LoginForm() {
         setError(signUpError.message);
       } else {
         track("sign_up");
-        setSignupEmailSent(true);
-        setResendCooldown(30);
-        setSuccess(
-          `שלחנו אימייל אישור אל ${email}. פתח את ההודעה (אולי בתיקיית הספאם) ולחץ על "אשר את הרישום".`
-        );
+        // Deferred email verification: whether signUp() itself hands back a
+        // session (some GoTrue configs sign the caller in immediately when
+        // unverified sign-ins are allowed) is not guaranteed the same way
+        // across all cases - so try both. If signUp already produced a
+        // session, use it. Otherwise attempt an immediate password sign-in
+        // with the same credentials (this is what actually returns a
+        // session on the configs we've seen). Only if NEITHER produces a
+        // session do we fall back to the original "check your inbox" flow,
+        // which is exactly today's behaviour and stays fully correct if the
+        // Supabase flag is ever off.
+        let session = signUpData.session;
+        if (!session) {
+          const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+          // A real rejection here (e.g. a weak-password policy already
+          // surfaced by signUp, or some other credential issue) must not be
+          // swallowed - but it also shouldn't override a genuine signUpError
+          // since we already know signUp succeeded. Any signInWithPassword
+          // failure here just means "no session yet", so we fall through to
+          // the inbox screen; the original signup itself already succeeded.
+          if (!signInError && signInData.session) {
+            session = signInData.session;
+          }
+        }
+        if (session) {
+          router.push("/onboarding");
+          router.refresh();
+        } else {
+          setSignupEmailSent(true);
+          setResendCooldown(30);
+          setSuccess(
+            `שלחנו אימייל אישור אל ${email}. פתח את ההודעה (אולי בתיקיית הספאם) ולחץ על "אשר את הרישום".`
+          );
+        }
       }
     } else if (mode === "forgot") {
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {

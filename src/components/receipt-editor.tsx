@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
 import { sendReceiptEmail } from "@/lib/email";
+import { EmailVerificationModal } from "@/components/email-verification-modal";
 import { createDocument, getNextDocumentNumber, linkConvertedDocument, markDocumentEmailed, useDocuments } from "@/lib/document-store";
 import { getBusinessId, isPlaceholderBusinessName, isPlaceholderBusinessTaxId } from "@/lib/business-init";
 import { parseEmails, joinEmails, isValidEmail } from "@/lib/emails";
@@ -171,6 +172,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   const [saving, setSaving] = useState<boolean>(false);
   const saveInFlightRef = useRef(false);
   const [toast, setToast] = useState<{ kind: "success" | "error"; text: string } | null>(null);
+  const [emailVerifyModalOpen, setEmailVerifyModalOpen] = useState(false);
 
   const [allocationNumber, setAllocationNumber] = useState<string>("");
   // The document's number, shown while drafting and editable before finalizing.
@@ -1102,6 +1104,11 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
           logoUrl: business.logoUrl,
         });
         if (!result.ok) {
+          if (result.code === "EMAIL_NOT_VERIFIED") {
+            setEmailVerifyModalOpen(true);
+            setToast({ kind: "error", text: "המסמך נשמר, אבל צריך לאמת קודם את כתובת המייל שלך כדי לשלוח אותו." });
+            return;
+          }
           setToast({ kind: "error", text: `המסמך נשמר אבל שליחת המייל נכשלה: ${result.error}` });
           return;
         }
@@ -2291,6 +2298,10 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
         </div>
       </div>
     </div>
+    <EmailVerificationModal
+      open={emailVerifyModalOpen}
+      onClose={() => setEmailVerifyModalOpen(false)}
+    />
     </>
   );
 }

@@ -20,7 +20,9 @@ function ConfirmInner() {
     let fallbackTimer: ReturnType<typeof setTimeout> | null = null;
     let redirectTimer: ReturnType<typeof setTimeout> | null = null;
 
-    const finish = (session: { user: unknown; access_token?: string } | null) => {
+    const finish = async (
+      session: { user: { id?: string } | null; access_token?: string } | null,
+    ) => {
       if (resolved || cancelled) return;
       resolved = true;
       if (fallbackTimer) clearTimeout(fallbackTimer);
@@ -37,8 +39,41 @@ function ConfirmInner() {
             // best-effort; not critical
           });
         }
+        // Deferred email verification means a user can already be signed in,
+        // onboarded, and actively using the app by the time they get around
+        // to clicking this confirmation link (it's no longer the gate that
+        // blocks entry). Sending an already-onboarded user back through
+        // /onboarding is a dead-end detour, so redirect to /dashboard
+        // instead when we can positively confirm onboarding is done.
+        // Signal: a real (non-placeholder) business row for this user - the
+        // same "is configured?" check the rest of the app already uses
+        // (see isPlaceholderBusinessName/isPlaceholderBusinessTaxId in
+        // src/lib/business-init.ts). If we can't determine this (no user id,
+        // query fails), keep the existing next-param-or-/onboarding default
+        // untouched rather than guess.
+        let target = next;
+        const userId = session.user?.id;
+        if (userId) {
+          try {
+            const { data } = await supabase
+              .from("businesses")
+              .select("name, tax_id")
+              .eq("user_id", userId)
+              .order("created_at", { ascending: true })
+              .limit(1)
+              .maybeSingle();
+            const hasName = Boolean(data?.name) && data?.name !== "העסק שלי";
+            const hasTaxId = Boolean(data?.tax_id) && data?.tax_id !== "000000000";
+            if (hasName && hasTaxId) {
+              target = "/dashboard";
+            }
+          } catch {
+            // Onboarding-completion signal is best-effort; fall back to the
+            // existing next-param-or-/onboarding behaviour on any failure.
+          }
+        }
         redirectTimer = setTimeout(() => {
-          if (!cancelled) router.replace(next);
+          if (!cancelled) router.replace(target);
         }, 1200);
       } else {
         setStatus("error");
