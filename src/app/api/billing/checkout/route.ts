@@ -8,6 +8,12 @@ import {
   GROW_CALLBACK_SECRET,
   TOKEN_VALIDATION_AMOUNT,
 } from "@/lib/grow";
+import {
+  isTranzilaConfigured,
+  buildHostedPaymentUrl,
+  getPlanPrice as getTranzilaPlanPrice,
+  TOKEN_VALIDATION_AMOUNT as TRANZILA_TOKEN_VALIDATION_AMOUNT,
+} from "@/lib/tranzila";
 import { TRIAL_DAYS, type PlanTier, type BillingInterval } from "@/lib/plans";
 import { CANONICAL_ORIGIN } from "@/lib/public-url";
 
@@ -17,13 +23,20 @@ const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 /**
  * Which processor backs new checkouts. Defaults to "polar", the provider that
- * is actually live today. The Grow (Israeli direct card processing) branch
- * below ships complete but INERT: it only runs once someone sets
- * PAYMENT_PROVIDER=grow, which happens after the GROW_* credentials exist and
- * the flow has been verified end to end against Grow's live docs. Defaulting to
- * Grow before then would break every real checkout on the first deploy.
+ * is actually live today. Both the Grow and Tranzila branches below ship
+ * complete but INERT: they only run once PAYMENT_PROVIDER is explicitly set,
+ * which happens after real credentials exist and the flow has been verified
+ * end to end. Defaulting to either before then would break every real
+ * checkout on the first deploy. Grow is superseded (Asaf dropped it
+ * 2026-07-24) but left wired for reference; Tranzila is the live candidate
+ * as of 2026-07-31 (see docs/payments/tranzila-integration.md).
  */
-const PAYMENT_PROVIDER = process.env.PAYMENT_PROVIDER === "grow" ? "grow" : "polar";
+const PAYMENT_PROVIDER =
+  process.env.PAYMENT_PROVIDER === "grow"
+    ? "grow"
+    : process.env.PAYMENT_PROVIDER === "tranzila"
+      ? "tranzila"
+      : "polar";
 
 // Keeps the NEXT_PUBLIC_APP_URL override (payment providers validate return
 // URLs against what was registered with them), falling back to the canonical
@@ -93,6 +106,9 @@ export async function POST(req: NextRequest) {
 
     if (PAYMENT_PROVIDER === "polar") {
       return await handlePolarCheckout({ user, tier, interval, origin });
+    }
+    if (PAYMENT_PROVIDER === "tranzila") {
+      return await handleTranzilaCheckout({ user, tier, interval, origin });
     }
     return await handleGrowCheckout({ user, tier, interval, origin });
   } catch (err) {
@@ -227,7 +243,64 @@ async function handleGrowCheckout({
 }
 
 // ─────────────────────────────────────────────────────────────────────────
-// Polar (the live default; Grow only takes over on PAYMENT_PROVIDER=grow)
+// Tranzila (opt-in, only reached when PAYMENT_PROVIDER=tranzila)
+//
+// NOT a tested integration — see docs/payments/tranzila-integration.md.
+// Simpler shape than the Grow branch above: token capture happens entirely
+// on Tranzila's own hosted page (no server-side create-session call from us
+// first), so this handler only builds the redirect URL.
+// ─────────────────────────────────────────────────────────────────────────
+async function handleTranzilaCheckout({
+  user,
+  tier,
+  interval,
+  origin,
+}: {
+  user: User;
+  tier: PlanTier;
+  interval: BillingInterval;
+  origin: string;
+}) {
+  if (!isTranzilaConfigured()) {
+    return NextResponse.json(
+      { ok: false, error: "Tranzila not configured" },
+      { status: 503 },
+    );
+  }
+
+  const hasUsedTrial =
+    ((user.app_metadata || {}) as Record<string, unknown>).plan_trial_used === true ||
+    ((user.user_metadata || {}) as Record<string, unknown>).plan_trial_used === true;
+
+  const isTrial = !hasUsedTrial;
+  const chargeSum = isTrial
+    ? TRANZILA_TOKEN_VALIDATION_AMOUNT
+    : getTranzilaPlanPrice(tier, interval);
+
+  const successUrl = `${origin}/billing?success=1`;
+  const failUrl = `${origin}/billing?canceled=1`;
+
+  const url = buildHostedPaymentUrl({
+    sum: chargeSum,
+    successUrl,
+    failUrl,
+    fullName: (user.user_metadata?.full_name as string | undefined) || user.email || "Customer",
+    email: user.email || "",
+    phone: (user.user_metadata?.phone as string | undefined) || "",
+  });
+
+  // The 30-day trial (TRIAL_DAYS) and the actual plan activation both happen
+  // once the token comes back from the hosted page — NOT built yet (see
+  // docs/payments/tranzila-integration.md item 4). This route's scope ends at
+  // "build the redirect URL."
+  void TRIAL_DAYS;
+
+  return NextResponse.json({ ok: true, url });
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Polar (the live default; Grow/Tranzila only take over on an explicit
+// PAYMENT_PROVIDER)
 // ─────────────────────────────────────────────────────────────────────────
 async function handlePolarCheckout({
   user,
