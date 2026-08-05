@@ -287,6 +287,10 @@ async function handleTranzilaCheckout({
     fullName: (user.user_metadata?.full_name as string | undefined) || user.email || "Customer",
     email: user.email || "",
     phone: (user.user_metadata?.phone as string | undefined) || "",
+    // Uses tranmode=N (SHVA J2 "checks card") instead of a standard debit —
+    // see the tranmode comment in tranzila.ts's buildHostedPaymentUrl(): the
+    // card is verified but not actually charged for a first-time trial.
+    tokenOnly: isTrial,
   });
 
   // The 30-day trial (TRIAL_DAYS) and the actual plan activation both happen
