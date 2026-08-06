@@ -17,6 +17,7 @@ import {
   PiggyBank,
 } from "lucide-react";
 import { useDocuments } from "@/lib/document-store";
+import { isCountableRevenue } from "@/lib/types";
 import { useExpenses } from "@/lib/expense-store";
 import { useClients } from "@/lib/client-store";
 import { formatCurrency } from "@/lib/format";
@@ -129,7 +130,7 @@ export default function DashboardPage() {
     const inRange = documents.filter((d) => d.date >= start);
     const expensesInRange = expenses.filter((e) => e.date >= start);
 
-    const paidDocs = inRange.filter((d) => d.status === "paid");
+    const paidDocs = inRange.filter((d) => d.status === "paid" && isCountableRevenue(d));
     const income = paidDocs.reduce((sum, d) => sum + (d.totalIls ?? d.total), 0);
     const expenseTotal = expensesInRange.reduce((sum, e) => sum + e.amount, 0);
     const profit = income - expenseTotal;
@@ -148,7 +149,7 @@ export default function DashboardPage() {
     if (prev) {
       const prevDocs = documents.filter((d) => d.date >= prev.start && d.date < prev.end);
       const prevExpenses = expenses.filter((e) => e.date >= prev.start && e.date < prev.end);
-      const prevPaid = prevDocs.filter((d) => d.status === "paid");
+      const prevPaid = prevDocs.filter((d) => d.status === "paid" && isCountableRevenue(d));
       prevIncome = prevPaid.reduce((sum, d) => sum + (d.totalIls ?? d.total), 0);
       prevExpense = prevExpenses.reduce((sum, e) => sum + e.amount, 0);
       prevProfit = prevIncome - prevExpense;

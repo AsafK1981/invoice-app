@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { ClipboardList, Printer, Copy, Check } from "lucide-react";
 import { useState } from "react";
 import { formatCurrency } from "@/lib/format";
-import type { Business, InvoiceDocument, Expense } from "@/lib/types";
+import { isCountableRevenue, type Business, type InvoiceDocument, type Expense } from "@/lib/types";
 
 interface Props {
   year: number;
@@ -31,7 +31,7 @@ export function Form1301Helper({ year, business, documents, expenses }: Props) {
   const [copied, setCopied] = useState<string | null>(null);
 
   const fields = useMemo<FieldRow[]>(() => {
-    const paid = documents.filter((d) => d.status === "paid");
+    const paid = documents.filter((d) => d.status === "paid" && isCountableRevenue(d));
     const grossIncome = paid.reduce((s, d) => s + ((d.subtotalIls ?? d.subtotal) || ((d.totalIls ?? d.total) - (d.vatIls ?? (d.vat || 0)))), 0);
     const totalIncomeWithVat = paid.reduce((s, d) => s + (d.totalIls ?? d.total), 0);
     const vatCollected = paid.reduce((s, d) => s + Math.abs((d.vatIls ?? d.vat) || 0), 0);

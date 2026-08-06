@@ -1,7 +1,7 @@
 "use client";
 
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
-import type { InvoiceDocument, Expense } from "@/lib/types";
+import { isCountableRevenue, type InvoiceDocument, type Expense } from "@/lib/types";
 
 interface Props {
   documents: InvoiceDocument[];
@@ -73,7 +73,7 @@ export function DashboardChart({ documents, expenses }: Props) {
 
     return months.map((m) => {
       const income = documents
-        .filter((doc) => doc.status === "paid" && doc.date.startsWith(m.key))
+        .filter((doc) => doc.status === "paid" && isCountableRevenue(doc) && doc.date.startsWith(m.key))
         .reduce((sum, doc) => sum + (doc.totalIls ?? doc.total), 0);
 
       const monthExpenses = expenses

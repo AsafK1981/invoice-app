@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { TrendingUp, TrendingDown, PiggyBank, CalendarDays, Download, FileArchive, BookOpen, Calculator, FileSpreadsheet, SlidersHorizontal } from "lucide-react";
 import { useDocuments } from "@/lib/document-store";
+import { isCountableRevenue } from "@/lib/types";
 import { useExpenses } from "@/lib/expense-store";
 import { useBusiness } from "@/lib/business-store";
 import { formatCurrency } from "@/lib/format";
@@ -93,7 +94,7 @@ export default function ReportsPage() {
     [expenses, period]
   );
 
-  const paidDocs = filteredDocs.filter((d) => d.status === "paid");
+  const paidDocs = filteredDocs.filter((d) => d.status === "paid" && isCountableRevenue(d));
   const totalIncome = paidDocs.reduce((sum, d) => sum + (d.totalIls ?? d.total), 0);
   const totalExpenses = filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
 

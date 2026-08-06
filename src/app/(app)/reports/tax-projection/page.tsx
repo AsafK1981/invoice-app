@@ -12,6 +12,7 @@ import {
   Info,
 } from "lucide-react";
 import { useDocuments } from "@/lib/document-store";
+import { isCountableRevenue } from "@/lib/types";
 import { useExpenses } from "@/lib/expense-store";
 import { useBusiness } from "@/lib/business-store";
 import { formatCurrency } from "@/lib/format";
@@ -44,7 +45,7 @@ export default function TaxProjectionPage() {
 
     const prefix = `${year}-`;
     const ytdIncome = documents
-      .filter((d) => d.status === "paid" && d.date.startsWith(prefix))
+      .filter((d) => d.status === "paid" && isCountableRevenue(d) && d.date.startsWith(prefix))
       .reduce(
         (s, d) => s + (d.type === "credit_note" ? -(d.totalIls ?? d.total) : (d.totalIls ?? d.total)),
         0,

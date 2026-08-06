@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { Wallet, Printer } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
-import type { InvoiceDocument, Expense } from "@/lib/types";
+import { isCountableRevenue, type InvoiceDocument, type Expense } from "@/lib/types";
 
 interface Props {
   documents: InvoiceDocument[];
@@ -37,7 +37,7 @@ export function CapitalDeclarationReport({ documents, expenses }: Props) {
     const result: YearRow[] = [];
     for (let y = fromYear; y <= toYear; y++) {
       const yearDocs = documents.filter(
-        (d) => d.status === "paid" && d.date.startsWith(`${y}-`)
+        (d) => d.status === "paid" && isCountableRevenue(d) && d.date.startsWith(`${y}-`)
       );
       const yearExpenses = expenses.filter((e) => e.date.startsWith(`${y}-`));
       const income = yearDocs.reduce((s, d) => s + (d.totalIls ?? d.total), 0);

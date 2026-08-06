@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Building2, ArrowLeft } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
-import type { InvoiceDocument } from "@/lib/types";
+import { isCountableRevenue, type InvoiceDocument } from "@/lib/types";
 
 interface Props {
   documents: InvoiceDocument[];
@@ -14,7 +14,7 @@ export function TopClients({ documents, limit = 5 }: Props) {
   const byClient = new Map<string, { name: string; total: number; count: number }>();
 
   documents
-    .filter((d) => d.status === "paid")
+    .filter((d) => d.status === "paid" && isCountableRevenue(d))
     .forEach((d) => {
       const key = d.clientId || d.clientName;
       const existing = byClient.get(key);
