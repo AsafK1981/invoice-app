@@ -77,7 +77,22 @@ if (!SUPABASE_URL || !SERVICE_KEY) {
   return;
 }
 
-const { payers, total } = await countRealPayers();
+// Supabase being unreachable on the one minute a week this runs must not
+// surface as an unhandled rejection: that prints a stack trace into the
+// scheduled-task log and looks like a broken script rather than a bad minute.
+// Failing quietly with a non-zero exit code is the proportionate response -
+// the next run is seven days out, and the threshold this watches for takes
+// 4-8 weeks to act on, so one skipped sample changes nothing. It is
+// deliberately NOT a WhatsApp push: alerting on every transient network blip
+// is exactly the noise this fleet is built to avoid.
+let payers, total;
+try {
+  ({ payers, total } = await countRealPayers());
+} catch (e) {
+  console.error(`[subscriber count failed] ${e.message}`);
+  process.exitCode = 1;
+  return;
+}
 const stamp = new Date().toISOString();
 
 if (payers < THRESHOLD) {
