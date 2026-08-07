@@ -117,10 +117,17 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
   const customerTaxId = doc.clientTaxId || client?.taxId || undefined;
   const isQuote = doc.type === "quote";
   const isProforma = doc.type === "proforma";
+  const isTaxInvoice = doc.type === "tax_invoice";
   // Price quote (הצעת מחיר) and proforma (חשבון עסקה) share the same
   // pre-payment lifecycle: both can be converted to a receipt/tax-invoice
-  // once the client pays.
-  const isConvertible = isQuote || isProforma;
+  // once the client pays. A tax invoice (חשבונית מס) is also convertible -
+  // to a plain receipt - so the payment gets its own linked doc instead of
+  // a standalone receipt that would double-count the income.
+  const isConvertible = isQuote || isProforma || isTaxInvoice;
+  // A tax invoice already carries the VAT; its payment doc is always a plain
+  // receipt (a tax_invoice_receipt would invoice the same VAT twice).
+  const convertTargetLabel =
+    isTaxInvoice || !canIssueTaxInvoices(business) ? "קבלה" : "חשבונית מס/קבלה";
   const isReceipt = doc.type === "receipt" || doc.type === "tax_invoice_receipt";
   // Convert button only relevant for sent/paid pre-payment docs that haven't
   // already been converted. Drafts can't be converted (haven't been issued to
@@ -334,8 +341,10 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
     // to plain tax_invoice would leave it status=sent, which is wrong: the
     // client already paid.
     const isAuthorized = canIssueTaxInvoices(business);
-    const targetType = isAuthorized ? "tax-invoice-receipt" : "receipt";
-    const targetTypeLabel = isAuthorized ? "חשבונית מס/קבלה" : "קבלה";
+    // Tax invoice source → always a plain receipt (VAT already invoiced).
+    const targetType =
+      doc.type === "tax_invoice" ? "receipt" : isAuthorized ? "tax-invoice-receipt" : "receipt";
+    const targetTypeLabel = targetType === "receipt" ? "קבלה" : "חשבונית מס/קבלה";
     const sourceLabel = DOCUMENT_TYPE_LABELS[doc.type];
     const ok = await confirm({
       title: `להמיר את ${sourceLabel} #${doc.number} ל${targetTypeLabel}?`,
@@ -417,11 +426,11 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
             <button
               onClick={handleConvertToReceipt}
               className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100"
-              title="המר את ההצעה לקבלה / חשבונית, הצעה תסומן כשולמה"
-              aria-label="המר את ההצעה לקבלה / חשבונית, הצעה תסומן כשולמה"
+              title={`המר את ה${DOCUMENT_TYPE_LABELS[doc.type]} ל${convertTargetLabel}, המסמך יסומן כשולם`}
+              aria-label={`המר את ה${DOCUMENT_TYPE_LABELS[doc.type]} ל${convertTargetLabel}, המסמך יסומן כשולם`}
             >
               <RefreshCw className="w-4 h-4" />
-              <span className="hidden sm:inline">המר ל{canIssueTaxInvoices(business) ? "חשבונית מס/קבלה" : "קבלה"}</span>
+              <span className="hidden sm:inline">המר ל{convertTargetLabel}</span>
             </button>
           )}
           {/* If this quote/proforma was already converted, show the receipt

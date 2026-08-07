@@ -678,11 +678,12 @@ function RowActions({ doc }: { doc: InvoiceDocument }) {
   const isCreditNote = doc.type === "credit_note";
   const canMarkPaid = !isReceipt && !isCreditNote && doc.status !== "draft" && doc.status !== "cancelled";
   const isPaid = doc.status === "paid";
-  // Quote that's been issued (sent or paid) and isn't already linked to a
-  // receipt can be one-click converted. Mirrors handleConvert() on the doc
-  // detail page so the card button behaves identically.
+  // Quote/proforma/tax-invoice that's been issued (sent or paid) and isn't
+  // already linked to a receipt can be one-click converted. Mirrors
+  // handleConvert() on the doc detail page so the card button behaves
+  // identically.
   const canConvertToReceipt =
-    (doc.type === "quote" || doc.type === "proforma") &&
+    (doc.type === "quote" || doc.type === "proforma" || doc.type === "tax_invoice") &&
     doc.status !== "draft" &&
     doc.status !== "cancelled" &&
     !doc.convertedToId;
@@ -725,12 +726,18 @@ function RowActions({ doc }: { doc: InvoiceDocument }) {
         <button
           onClick={(e) => {
             e.stopPropagation();
-            const targetType = canIssueTaxInvoices(business) ? "tax-invoice-receipt" : "receipt";
+            // Tax invoice source → always a plain receipt (VAT already invoiced).
+            const targetType =
+              doc.type === "tax_invoice"
+                ? "receipt"
+                : canIssueTaxInvoices(business)
+                  ? "tax-invoice-receipt"
+                  : "receipt";
             router.push(`/documents/new/${targetType}?from=${doc.id}&convert=1`);
           }}
           className="dc-act"
           data-tone="convert"
-          aria-label="הפק קבלה לחשבון העסקה הזה"
+          aria-label="הפק קבלה למסמך הזה"
         >
           <Tooltip label="הפק קבלה: כסף התקבל" side="top">
             <FilePlus2 className="w-4 h-4" />

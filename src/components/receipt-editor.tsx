@@ -1291,7 +1291,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                 {clientOpenInvoices.slice(0, 3).map((inv) => (
                   <a
                     key={inv.id}
-                    href={`/documents/new/${documentType === "tax_invoice_receipt" ? "tax-invoice-receipt" : "receipt"}?from=${inv.id}&convert=1`}
+                    href={`/documents/new/receipt?from=${inv.id}&convert=1`}
                     className="inline-flex items-center text-xs font-semibold text-orange-700 hover:text-orange-800 underline"
                   >
                     צור מתוך חשבונית #{inv.number} · {formatCurrency(inv.totalIls ?? inv.total)} ←
