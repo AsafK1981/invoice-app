@@ -123,15 +123,23 @@ export default function MarketingLanding() {
                     <i className="ln" />
                   </div>
 
+                  {/* Positioning note: this headline used to sell aesthetics
+                      ("יוקרתית כמו העסק"). Every competitor in this market
+                      already shouts "חינם", and prestige is not what an עצמאי
+                      is anxious about in 2026 — the חשבונית ישראל allocation-
+                      number mandate is. So the headline now leads with the
+                      compliance pain we actually solve, and the look-and-feel
+                      argument moved down into the lede where it still earns
+                      its place. */}
                   <h1 className="v2-h1">
-                    החשבונית שלך,{" "}
+                    חשבונית שעומדת{" "}
                     <br />
-                    <span className="v2-gold">יוקרתית</span> כמו העסק
+                    בדרישות <span className="v2-gold">2026</span>
                   </h1>
 
                   <p className="v2-lede">
-                    בנינו את זה בשביל עצמאים כמוך: חשבונית מקצועית בעברית מלאה,
-                    עומדת בדרישות רשות המסים, בלי בירוקרטיה ובלי כאב ראש.
+                    מספר הקצאה מרשות המסים אוטומטית, בלחיצה אחת - בלי טפסים
+                    ובלי כאב ראש. וגם נראית יוקרתית כמו העסק שלך.
                   </p>
                 </div>
 

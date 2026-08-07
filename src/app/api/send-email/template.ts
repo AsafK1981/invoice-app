@@ -10,6 +10,11 @@
 
 import { DOCUMENT_TYPE_LABELS, type DocumentType } from "@/lib/types";
 import { currencySymbol } from "@/lib/currencies";
+import { CANONICAL_ORIGIN } from "@/lib/public-url";
+
+/** Landing target for the footer credit, tagged so signups arriving through a
+ *  client's invoice email are attributable to the growth loop. */
+const BRAND_URL_EMAIL = `${CANONICAL_ORIGIN}/?utm_source=document&utm_medium=email_footer&utm_campaign=growth_loop`;
 
 // Format a document total in its own currency. Defaults to ILS (₪) so
 // legacy/ILS documents render exactly as before; foreign-currency docs get
@@ -52,8 +57,11 @@ export function buildHtml(args: {
   trackingPixelUrl?: string;
   /** ISO 4217 currency the document total is denominated in. Default "ILS". */
   currency?: string;
+  /** Growth loop: a one-line "נשלח באמצעות" credit in the footer. Defaults to
+   *  true; the caller passes false for a paying subscriber. */
+  showBranding?: boolean;
 }): string {
-  const { businessName, clientName, receiptNumber, total, viewUrl, logoUrl, kind = "initial", daysSinceSent, documentType, trackingPixelUrl, currency } = args;
+  const { businessName, clientName, receiptNumber, total, viewUrl, logoUrl, kind = "initial", daysSinceSent, documentType, trackingPixelUrl, currency, showBranding = true } = args;
   const isReminder = kind === "reminder";
   const { attached, noun } = docWording(documentType);
   const totalFormatted = escapeHtml(formatDocTotal(total, currency));
@@ -117,6 +125,13 @@ export function buildHtml(args: {
       <p style="font-size: 13px; color: #a8a29e;">
         ${isReminder ? `תזכורת אוטומטית מ${escapeHtml(businessName)}` : `מסמך זה נשלח אוטומטית מ${escapeHtml(businessName)}`}
       </p>
+      ${
+        showBranding
+          ? `<p style="font-size: 11px; color: #c4c0ba; margin: 6px 0 0 0;">
+        נשלח באמצעות <a href="${escapeHtml(BRAND_URL_EMAIL)}" style="color: #c4c0ba; text-decoration: underline;">MyFriendlyInvoiceApp</a> · חשבוניות לעצמאים בחינם
+      </p>`
+          : ""
+      }
     </div>
 
     ${
@@ -140,8 +155,10 @@ export function buildText(args: {
   documentType?: DocumentType;
   /** ISO 4217 currency the document total is denominated in. Default "ILS". */
   currency?: string;
+  /** Growth loop: mirrors buildHtml's footer credit in the plain-text part. */
+  showBranding?: boolean;
 }): string {
-  const { businessName, clientName, receiptNumber, total, viewUrl, kind = "initial", daysSinceSent, documentType, currency } = args;
+  const { businessName, clientName, receiptNumber, total, viewUrl, kind = "initial", daysSinceSent, documentType, currency, showBranding = true } = args;
   const isReminder = kind === "reminder";
   const { attached, noun } = docWording(documentType);
   const totalFormatted = formatDocTotal(total, currency);
@@ -158,5 +175,5 @@ ${intro}
 ${viewUrl}
 
 ${isReminder ? "תזכורת אוטומטית" : "מסמך נשלח אוטומטית"} מ${businessName}
-`;
+${showBranding ? `\nנשלח באמצעות MyFriendlyInvoiceApp · חשבוניות לעצמאים בחינם\n${BRAND_URL_EMAIL}\n` : ""}`;
 }

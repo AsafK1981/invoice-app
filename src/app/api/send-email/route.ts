@@ -238,6 +238,17 @@ export async function POST(req: NextRequest) {
         ? `${baseUrl}/api/email/track/${documentId}.gif`
         : undefined;
 
+    // Growth loop: the footer credit ships on free plans and is suppressed for
+    // a genuinely paying subscriber. Trials and beta grants both set
+    // plan_active=true without anyone having paid, so they are excluded
+    // explicitly. Same rule as src/app/api/public-document/[id]/route.ts.
+    const senderMeta = (user.app_metadata || {}) as Record<string, unknown>;
+    const showBranding = !(
+      senderMeta.plan_active === true &&
+      senderMeta.plan_trialing !== true &&
+      senderMeta.plan_beta_grant !== true
+    );
+
     const html = buildHtml({
       businessName,
       clientName,
@@ -250,6 +261,7 @@ export async function POST(req: NextRequest) {
       documentType,
       trackingPixelUrl,
       currency,
+      showBranding,
     });
     const text = buildText({
       businessName,
@@ -261,6 +273,7 @@ export async function POST(req: NextRequest) {
       daysSinceSent: typeof daysSinceSent === "number" ? daysSinceSent : undefined,
       documentType,
       currency,
+      showBranding,
     });
 
     // Pick Gmail credentials: prefer the user's own, fall back to global env vars

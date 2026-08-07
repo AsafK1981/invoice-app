@@ -409,6 +409,17 @@
   color: #6b6353;
   margin-top: 5px;
 }
+/* The credit is a real link (growth loop), but this is a tax document: it must
+   read as the same quiet footnote it always was, never as a blue underlined
+   link sitting under an invoice. Colour is inherited; the underline appears
+   only on hover, and only on screen. */
+.doc-paper .doc-foot-brand a {
+  color: inherit;
+  text-decoration: none;
+}
+.doc-paper .doc-foot-brand a:hover {
+  text-decoration: underline;
+}
 
 /* ---------- narrow screens ----------
    Only the FLUID sheet (the public /view page, which really is as wide as the

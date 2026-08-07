@@ -16,6 +16,9 @@ interface Props {
   // copy is an העתק once the doc has been issued. Only the owner-facing pages
   // pass copy=true; the public customer view defaults to false (מקור).
   copy?: boolean;
+  /** Footer "הופק באמצעות" credit. Defaults to true; suppressed for paying
+   * subscribers. Threaded straight through to DocumentBody. */
+  showBranding?: boolean;
 }
 
 function toBodyClient(client: Client | null, fallbackName: string): DocumentBodyClient | null {
@@ -34,7 +37,13 @@ function toBodyClient(client: Client | null, fallbackName: string): DocumentBody
   return null;
 }
 
-export function ReceiptView({ business, client, document: doc, copy = false }: Props) {
+export function ReceiptView({
+  business,
+  client,
+  document: doc,
+  copy = false,
+  showBranding = true,
+}: Props) {
   const vatRate =
     doc.subtotal !== 0 ? Math.round((doc.vat / doc.subtotal) * 100) : 0;
   const bodyClient = toBodyClient(client, doc.clientName);
@@ -66,6 +75,7 @@ export function ReceiptView({ business, client, document: doc, copy = false }: P
         totalIls={doc.totalIls}
         zeroRated={doc.zeroRated}
         copy={copy}
+        showBranding={showBranding}
       />
     </div>
   );

@@ -89,8 +89,11 @@ export async function GET(
     // dropped: receivers of an invoice don't need them.
     admin
       .from("businesses")
+      // user_id is selected but NEVER returned to the caller — it is used
+      // only, below, to look up whether the owner is a paying subscriber
+      // (which decides the footer credit). It is stripped before the response.
       .select(
-        "id, name, business_type, tax_id, address, phone, email, logo_url, bank_name, bank_branch, bank_account, payment_notes, default_doc_notes",
+        "id, user_id, name, business_type, tax_id, address, phone, email, logo_url, bank_name, bank_branch, bank_account, payment_notes, default_doc_notes",
       )
       .eq("id", doc.business_id)
       .maybeSingle(),
@@ -103,11 +106,49 @@ export async function GET(
       : Promise.resolve({ data: null, error: null }),
   ]);
 
+  // ── Footer credit: on for everyone EXCEPT a genuinely paying subscriber ──
+  // Growth loop (see src/components/document-body.tsx): the small "הופק
+  // באמצעות" credit is how this app reaches the sender's clients. Paying
+  // customers get it removed — standard SaaS behaviour and a real upgrade
+  // incentive. app_metadata is the enforcement source of truth everywhere
+  // else in this codebase, so it is the source here too.
+  //
+  // "Paying" deliberately EXCLUDES trials and beta grants: plan_active is
+  // true for those as well, but they are not paying, so they keep the credit.
+  // Fails OPEN (branding shown) on any lookup error — never silently strip
+  // the growth loop because of a transient auth-admin hiccup.
+  let showBranding = true;
+  const bizRow = (bizRes.data || null) as Record<string, unknown> | null;
+  const ownerId = bizRow?.user_id;
+  if (typeof ownerId === "string" && ownerId) {
+    try {
+      const { data: owner } = await admin.auth.admin.getUserById(ownerId);
+      const meta = (owner?.user?.app_metadata || {}) as Record<string, unknown>;
+      const isPaying =
+        meta.plan_active === true &&
+        meta.plan_trialing !== true &&
+        meta.plan_beta_grant !== true;
+      showBranding = !isPaying;
+    } catch {
+      // keep showBranding = true
+    }
+  }
+
+  // Strip user_id: the recipient of a shared invoice must never see the
+  // sender's Supabase user id (it is a lookup key elsewhere in the system).
+  let businessOut: Record<string, unknown> | null = null;
+  if (bizRow) {
+    const { user_id: _ownerId, ...rest } = bizRow;
+    void _ownerId;
+    businessOut = rest;
+  }
+
   return NextResponse.json({
     ok: true,
     document: doc,
     items: itemsRes.data || [],
-    business: bizRes.data || null,
+    business: businessOut,
     client: cliRes.data || null,
+    showBranding,
   });
 }

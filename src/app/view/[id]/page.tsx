@@ -15,6 +15,10 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
   const [doc, setDoc] = useState<InvoiceDocument | null>(null);
   const [business, setBusiness] = useState<Business | null>(null);
   const [client, setClient] = useState<Client | null>(null);
+  // Whether the document owner is on a free plan (→ show the growth-loop
+  // footer credit + the recipient CTA below). Server-decided; see
+  // src/app/api/public-document/[id]/route.ts.
+  const [showBranding, setShowBranding] = useState(true);
   const [signatureName, setSignatureName] = useState("");
   const [approving, setApproving] = useState(false);
   const [approveError, setApproveError] = useState<string | null>(null);
@@ -104,6 +108,8 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
           setLoading(false);
           return;
         }
+
+        setShowBranding(data.showBranding !== false);
 
         const docRow = data.document;
         const items = (data.items || []) as Array<{
@@ -254,7 +260,13 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
         </button>
       </div>
 
-      <ReceiptView business={business} client={client} document={doc} copy={copy} />
+      <ReceiptView
+        business={business}
+        client={client}
+        document={doc}
+        copy={copy}
+        showBranding={showBranding}
+      />
 
       <PaymentOptionsCard business={business} document={doc} />
 
@@ -321,6 +333,37 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
           </p>
         </div>
       </div>
+
+      {/* ── Growth loop: the warmest surface in the product ──────────────────
+          Whoever is reading this just received a professional invoice and is
+          looking at exactly what the app produces. A large share of them are
+          עצמאים who have the same problem. Screen-only (no-print) so it can
+          never appear on the printed/PDF document, and hidden entirely for
+          paying subscribers. Leads with the 2026 allocation-number mandate —
+          the actual pain — rather than with "free", which every competitor
+          already shouts. */}
+      {showBranding && (
+        <div className="no-print max-w-[210mm] mx-auto mt-4 mb-2">
+          <div className="rounded-2xl border border-orange-200 bg-gradient-to-l from-orange-50 to-amber-50 p-5 text-center">
+            <p className="text-sm font-semibold text-stone-800">
+              גם אתם מוציאים חשבוניות?
+            </p>
+            <p className="mt-1.5 text-xs leading-relaxed text-stone-600">
+              הפיקו חשבוניות וקבלות בעברית בחינם, עם מספרי הקצאה אוטומטיים
+              מרשות המסים — החובה שחלה על כל עוסק מ-2026.
+            </p>
+            <a
+              href="/?utm_source=document&utm_medium=view_cta&utm_campaign=growth_loop"
+              className="mt-3 inline-flex items-center gap-2 rounded-2xl bg-gradient-to-l from-orange-500 to-rose-500 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:shadow-lg hover:shadow-orange-200"
+            >
+              התחילו בחינם ←
+            </a>
+            <p className="mt-2 text-[11px] text-stone-500">
+              ללא כרטיס אשראי
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

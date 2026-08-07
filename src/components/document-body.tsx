@@ -4,7 +4,7 @@ import { formatCurrency, formatDate } from "@/lib/format";
 import { formatMoney } from "@/lib/currencies";
 import { netAfterWithholding } from "@/lib/withholding";
 import { Ltr } from "@/components/ui/ltr";
-import { CANONICAL_HOST } from "@/lib/public-url";
+import { CANONICAL_HOST, CANONICAL_ORIGIN } from "@/lib/public-url";
 import {
   BUSINESS_TYPE_LABELS,
   DOC_SUM_LABEL,
@@ -109,6 +109,15 @@ interface Props {
    * already-issued document.
    */
   copy?: boolean;
+  /**
+   * Whether to print the small "הופק באמצעות …" credit in the footer.
+   * Defaults to `true` — the growth loop that puts the app in front of every
+   * recipient. PAID subscribers get it suppressed (standard SaaS behaviour,
+   * and a genuine upgrade incentive); the caller decides, since only the
+   * server knows the document owner's plan. See
+   * `src/app/api/public-document/[id]/route.ts` for how that flag is derived.
+   */
+  showBranding?: boolean;
 }
 
 export function DocumentBody({
@@ -137,6 +146,7 @@ export function DocumentBody({
   totalIls,
   zeroRated = false,
   copy = false,
+  showBranding = true,
 }: Props) {
   const currency = currencyProp || "ILS";
   const money = (n: number) => (currency === "ILS" ? formatCurrency(n) : formatMoney(n, currency));
@@ -436,10 +446,26 @@ export function DocumentBody({
         <div className="doc-foot-sig">
           מסמך זה הופק אלקטרונית{business.name ? ` · ${business.name}` : ""}
         </div>
-        <div className="doc-foot-brand">
-          הופק באמצעות{" "}
-          <Ltr>MyFriendlyInvoiceApp · {CANONICAL_HOST}</Ltr>
-        </div>
+        {showBranding && (
+          // Growth loop: every document this app produces is seen by the
+          // sender's CLIENT — often an עצמאי who needs invoicing themselves.
+          // The credit is therefore a real <a>, not the inert text it was
+          // before, and keeps the bare domain visible so it still works as a
+          // call to action on PAPER/PDF (where nothing is clickable).
+          // Deliberately restrained: this is a tax document, so it stays a
+          // 10px footnote — the explicit CTA lives on the screen-only /view
+          // page instead, where it can't cheapen the printed document.
+          <div className="doc-foot-brand">
+            הופק באמצעות{" "}
+            <a
+              href={`${CANONICAL_ORIGIN}/?utm_source=document&utm_medium=doc_footer&utm_campaign=growth_loop`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Ltr>MyFriendlyInvoiceApp · {CANONICAL_HOST}</Ltr>
+            </a>
+          </div>
+        )}
       </div>
     </>
   );
