@@ -788,6 +788,27 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
     [isCreditNote, allDocuments],
   );
 
+  // Unconverted tax invoices of the selected client. Creating a standalone
+  // receipt on top of one of these counts the same income twice in the
+  // reports (isCountableRevenue only excludes invoices linked through the
+  // convert flow), so the editor warns and offers the convert link instead.
+  const clientOpenInvoices = useMemo(
+    () =>
+      isPaymentRecording && !fromDocId && !adhocMode && clientId
+        ? allDocuments
+            .filter(
+              (d) =>
+                d.type === "tax_invoice" &&
+                d.clientId === clientId &&
+                d.status !== "draft" &&
+                d.status !== "cancelled" &&
+                !d.convertedToId,
+            )
+            .sort((a, b) => b.number - a.number)
+        : [],
+    [isPaymentRecording, fromDocId, adhocMode, clientId, allDocuments],
+  );
+
   // Will this document need a מספר הקצאה the user does not have yet? Same
   // gate the in-editor banner uses (type + date-aware threshold on the PRE-VAT
   // ₪ amount + a BUSINESS customer), so the save button and the banner can
@@ -1251,6 +1272,36 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
           </div>
         );
       })()}
+      {clientOpenInvoices.length > 0 && (
+        <div className="card-soft p-3 mb-4 bg-amber-50 border-amber-200">
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
+              <span className="text-base">⚠️</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-stone-900 text-sm">
+                {clientOpenInvoices.length === 1
+                  ? "ללקוח הזה יש חשבונית מס שלא הופקה לה קבלה"
+                  : "ללקוח הזה יש חשבוניות מס שלא הופקה להן קבלה"}
+              </p>
+              <p className="text-xs text-stone-700 mt-0.5">
+                אם הקבלה הזו היא עבור אחת מהחשבוניות האלה, צור אותה מתוך החשבונית - אחרת אותה הכנסה תיספר פעמיים בדוחות.
+              </p>
+              <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
+                {clientOpenInvoices.slice(0, 3).map((inv) => (
+                  <a
+                    key={inv.id}
+                    href={`/documents/new/${documentType === "tax_invoice_receipt" ? "tax-invoice-receipt" : "receipt"}?from=${inv.id}&convert=1`}
+                    className="inline-flex items-center text-xs font-semibold text-orange-700 hover:text-orange-800 underline"
+                  >
+                    צור מתוך חשבונית #{inv.number} · {formatCurrency(inv.totalIls ?? inv.total)} ←
+                  </a>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     {(documentType === "tax_invoice" ||
       documentType === "tax_invoice_receipt" ||
       documentType === "credit_note") && (
