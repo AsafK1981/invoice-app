@@ -1,4 +1,10 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MyFriendlyInvoiceApp — חשבוניות וקבלות בלי כאב ראש
+
+Hebrew invoicing SaaS for Israeli freelancers (עוסק פטור): tax invoices, receipts, clients, expenses and reports — simple and friendly.
+
+**Live app:** [https://friendlyinvoice.co.il](https://friendlyinvoice.co.il)
+
+Built with [Next.js](https://nextjs.org) and [Supabase](https://supabase.com).
 
 ## Getting Started
 
