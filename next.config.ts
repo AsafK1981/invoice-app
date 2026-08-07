@@ -6,14 +6,17 @@ import { withSentryConfig } from "@sentry/nextjs";
 // evaluation, hence 'unsafe-eval'; our own code contains zero eval). Now
 // enforcing. Allowed origins reflect what the app actually loads: Vercel
 // analytics/speed-insights, Google Fonts, Supabase (REST + realtime wss),
-// Sentry ingest, and the recharts charting lib.
+// Sentry ingest, the recharts charting lib, and Google Identity Services
+// (the /gsi/ entries below are the exact set Google's GIS CSP guide
+// requires for the sign-in button: script, connect, frame, style).
 const csp = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com",
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com https://accounts.google.com/gsi/client",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com/gsi/style",
   "font-src 'self' https://fonts.gstatic.com data:",
   "img-src 'self' data: blob: https:",
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://va.vercel-scripts.com https://vitals.vercel-insights.com https://*.sentry.io https://*.ingest.sentry.io",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://va.vercel-scripts.com https://vitals.vercel-insights.com https://*.sentry.io https://*.ingest.sentry.io https://accounts.google.com/gsi/",
+  "frame-src https://accounts.google.com/gsi/",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
@@ -61,6 +64,21 @@ const nextConfig: NextConfig = {
     return [
       { source: "/v2", destination: "/", permanent: true },
       { source: "/v2/:path*", destination: "/:path*", permanent: true },
+      // The app now lives on its own domain (friendlyinvoice.co.il), but the
+      // original *.vercel.app deployment still served every page with a 200 —
+      // i.e. the whole site existed twice as far as a crawler is concerned.
+      // The canonical tags already pointed at the real domain, which mitigates
+      // it, but a 308 is the unambiguous signal and consolidates link equity
+      // on the domain we actually want ranked. Scoped by `has: host` so it can
+      // only ever fire for the legacy hostname; the custom domain and local
+      // dev are untouched. Preview deploys (*-hash.vercel.app) don't match the
+      // literal host either, so they keep working normally.
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "mysuperfriendlyinvoiceapp.vercel.app" }],
+        destination: "https://friendlyinvoice.co.il/:path*",
+        permanent: true,
+      },
     ];
   },
   // security.txt is generated (its Canonical/Policy URLs follow
