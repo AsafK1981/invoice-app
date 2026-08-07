@@ -181,7 +181,11 @@ describe("marketing pages: joined heading text", () => {
   });
 
   it("landing H1 reads as one sentence across its <br>", async () => {
-    expect(await h1Of("/")).toBe("החשבונית שלך, יוקרתית כמו העסק");
+    // Repositioned 2026-08-07: led with aesthetics, now leads with the
+    // חשבונית ישראל 2026 compliance mandate (the actual buying trigger).
+    // The point of this assertion is unchanged - the two halves either side
+    // of the <br> must still join into one readable sentence.
+    expect(await h1Of("/")).toBe("חשבונית שעומדת בדרישות 2026");
   });
 
   it("every /vs/<competitor> hero H1 reads '<app> מול <competitor>'", async () => {
