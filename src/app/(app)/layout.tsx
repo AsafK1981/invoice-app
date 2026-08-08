@@ -2,6 +2,7 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { AppProviders } from "@/components/providers";
 import { GlobalSearch } from "@/components/global-search";
 import { InstallPrompt } from "@/components/install-prompt";
+import { AssistantWidget } from "@/components/assistant-widget";
 import { NotificationsBell } from "@/components/notifications-bell";
 import { EmailVerificationBanner } from "@/components/email-verification-banner";
 
@@ -35,6 +36,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
         </main>
         <InstallPrompt />
+        <AssistantWidget />
       </div>
     </AppProviders>
   );
