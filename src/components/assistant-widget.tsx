@@ -157,14 +157,20 @@ export function AssistantWidget() {
     }
   }
 
-  const side = overDocumentPaper ? "lg:right-6" : "lg:left-6";
+  // Both `left` and `right` have to be set in the same breakpoint: the mobile
+  // rules pin the panel to both edges, so overriding only one of them on lg
+  // leaves the other stuck at 0. Pairing `lg:left-6` with a bare `lg:left-auto`
+  // is worse still - two utilities for the same property, resolved by
+  // stylesheet order rather than class order, which silently dropped the panel
+  // into RTL static flow on top of the sidebar.
+  const side = overDocumentPaper ? "lg:right-6 lg:left-auto" : "lg:left-6 lg:right-auto";
 
   if (!open) {
     return (
       <button
         onClick={() => setOpen(true)}
         aria-label="פתח את העוזר החכם"
-        className={`no-print fixed bottom-4 left-4 z-40 lg:bottom-6 lg:left-auto ${side} w-14 h-14 rounded-full bg-gradient-to-br from-orange-400 to-rose-500 text-white shadow-lg shadow-orange-200/60 flex items-center justify-center hover:scale-105 active:scale-95 transition-transform print:hidden`}
+        className={`no-print fixed bottom-4 left-4 right-auto z-40 lg:bottom-6 ${side} w-14 h-14 rounded-full bg-gradient-to-br from-orange-400 to-rose-500 text-white shadow-lg shadow-orange-200/60 flex items-center justify-center hover:scale-105 active:scale-95 transition-transform print:hidden`}
       >
         <Sparkles className="w-6 h-6" />
       </button>
@@ -173,7 +179,7 @@ export function AssistantWidget() {
 
   return (
     <div
-      className={`no-print fixed bottom-0 inset-x-0 z-40 lg:bottom-6 lg:inset-x-auto lg:left-auto ${side} lg:w-[400px] print:hidden`}
+      className={`no-print fixed bottom-0 left-0 right-0 z-40 lg:bottom-6 ${side} lg:w-[400px] print:hidden`}
     >
       <div className="card-soft bg-white flex flex-col h-[70vh] lg:h-[540px] max-h-[calc(100vh-2rem)] overflow-hidden rounded-b-none lg:rounded-2xl shadow-2xl shadow-orange-200/40">
         <div className="flex items-center gap-2 px-4 py-3 border-b border-stone-200 flex-shrink-0">

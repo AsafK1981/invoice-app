@@ -28,12 +28,19 @@ const MAX_HISTORY = 8;
 /** Rows a single search may return - keeps tool results out of the context. */
 const SEARCH_LIMIT = 15;
 
-// Calibrated against Haiku 4.5 on real questions: the first draft of this
-// prompt led with "ask when you're missing information", and the model took it
-// literally - it answered "לא הבנתי את השאלה" to plain requests like "תמצא לי
-// את המסמכים האחרונים" instead of calling a tool. Leading with tool-first
-// routing and narrowing the ask-clause to genuine ambiguity took tool routing
-// from 0/6 to 6/6 on the same question set. Re-run that check before loosening.
+// Calibrated against Haiku 4.5 on real questions. The first draft led with
+// "when you're missing information, ask one focused question", and the model
+// took it literally: on plain requests like "תמצא לי את המסמכים האחרונים" it
+// asked for clarification instead of just searching. Measured on six real
+// questions, that prompt called a tool 2/6 times; leading with tool-first
+// routing, giving a phrasing->tool routing table, telling it to derive date
+// ranges from today, and narrowing the ask-clause to genuine ambiguity took it
+// to 6/6. Re-run that comparison before loosening any of it.
+//
+// Measure it from a Node script, not a shell: Hebrew sent through Git Bash on
+// Windows arrives mangled, and the model then answers "לא הבנתי את השאלה" -
+// which looks exactly like a prompt problem and sent this investigation down
+// the wrong path once already.
 const SYSTEM = `אתה העוזר החכם של "חשבונית ידידותית", אפליקציית חשבוניות לעוסקים פטורים בישראל.
 
 יש לך כלים שניגשים לנתונים האמיתיים של המשתמש המחובר. השתמש בהם - זו הדרך היחידה שלך לדעת משהו.
