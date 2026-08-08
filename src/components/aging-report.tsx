@@ -140,7 +140,7 @@ export function AgingReport({ documents }: Props) {
           <tr>
             <th className="text-right px-6 py-3 font-semibold">לקוח</th>
             {BUCKET_LABELS.map((label, i) => (
-              <th key={i} className={`text-left px-3 py-3 font-semibold ${BUCKET_TONES[i]}`}>
+              <th key={i} className={`hidden sm:table-cell text-left px-3 py-3 font-semibold ${BUCKET_TONES[i]}`}>
                 {label}
               </th>
             ))}
@@ -164,7 +164,7 @@ export function AgingReport({ documents }: Props) {
           <tr className="border-t-2 border-orange-200 bg-orange-50/40 font-bold">
             <td className="px-6 py-3 text-sm text-stone-900">סה״כ</td>
             {totals.buckets.map((v, i) => (
-              <td key={i} className={`px-3 py-3 text-sm text-left font-mono ${BUCKET_TONES[i]}`}>
+              <td key={i} className={`hidden sm:table-cell px-3 py-3 text-sm text-left font-mono ${BUCKET_TONES[i]}`}>
                 {v > 0 ? formatCurrency(v) : "-"}
               </td>
             ))}
@@ -202,7 +202,7 @@ function FragmentRow({
           )}
         </td>
         {row.buckets.map((v, i) => (
-          <td key={i} className={`px-3 py-3 text-sm text-left font-mono ${BUCKET_TONES[i]}`}>
+          <td key={i} className={`hidden sm:table-cell px-3 py-3 text-sm text-left font-mono ${BUCKET_TONES[i]}`}>
             {v > 0 ? formatCurrency(v) : "-"}
           </td>
         ))}
