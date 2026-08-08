@@ -258,7 +258,13 @@ export function AssistantWidget() {
           )}
         </div>
 
-        <div className="border-t border-stone-200 p-3 flex-shrink-0">
+        {/* Extra bottom padding on phones: the sheet sits flush against the
+            screen edge, so on a device with a home indicator the disclaimer
+            line would otherwise land underneath it. */}
+        <div
+          className="border-t border-stone-200 p-3 flex-shrink-0"
+          style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}
+        >
           <div className="flex items-end gap-2">
             <textarea
               ref={inputRef}
