@@ -143,9 +143,9 @@ export default function MarketingLanding() {
                   </p>
                 </div>
 
-                {/* Three hairline-ruled rows. No boxes: the band is built from
-                    type, space and two rules, so it supports the sheet instead
-                    of competing with it for attention. */}
+                {/* Hairline-ruled rows. No boxes: the band is built from type,
+                    space and two rules, so it supports the sheet instead of
+                    competing with it for attention. */}
                 <ul className="v2-feats">
                   <li className="v2-ft">
                     <svg
@@ -189,6 +189,21 @@ export default function MarketingLanding() {
                       <path d="M22 2L11 13M22 2l-7 20-4-9-9-4z" />
                     </svg>
                     <b>שליחה בכל ערוץ</b>
+                  </li>
+                  <li className="v2-ft">
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.6"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z" />
+                      <path d="M18 15l.8 2.2L21 18l-2.2.8L18 21l-.8-2.2L15 18l2.2-.8z" />
+                    </svg>
+                    <b>עוזר AI בעברית שמוצא כל מסמך</b>
                   </li>
                 </ul>
 
