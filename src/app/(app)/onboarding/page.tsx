@@ -43,8 +43,17 @@ export default function OnboardingPage() {
     phone: "",
   });
 
+  // Only the business NAME is required to move on. The tax ID used to be
+  // required here too, and it was the single biggest hole in the funnel: of the
+  // real external signups, the ones who never issued anything left within the
+  // same MINUTE they signed up, on this screen. Most people do not know their
+  // מספר עוסק by heart - it is in a drawer - so "I'll find it and come back"
+  // became never coming back. Nothing is lost by deferring it: receipt-editor
+  // already hard-gates issuing a legal document while the profile is still
+  // placeholder (isPlaceholderBusinessTaxId), and drafts are exempt by design.
+  // So the number is now collected at the moment it actually matters.
   async function saveBusinessAndAdvance() {
-    if (!bizForm.name.trim() || !bizForm.taxId.trim()) return;
+    if (!bizForm.name.trim()) return;
     setSaving(true);
     try {
       await saveBusiness({
@@ -218,7 +227,7 @@ export default function OnboardingPage() {
                   </div>
                   <div>
                     <label className="text-xs font-semibold text-stone-700 mb-1 block">
-                      מספר עוסק / ח.פ *
+                      מספר עוסק / ח.פ
                     </label>
                     <input
                       type="text"
@@ -228,6 +237,9 @@ export default function OnboardingPage() {
                       placeholder="123456789"
                       className="input-warm"
                     />
+                    <p className="text-[11px] text-stone-500 mt-1">
+                      לא זוכר? אפשר להמשיך בלי — נבקש את זה כשתפיק מסמך רשמי.
+                    </p>
                   </div>
                 </div>
 
@@ -279,7 +291,7 @@ export default function OnboardingPage() {
                 </button>
                 <button
                   onClick={saveBusinessAndAdvance}
-                  disabled={!bizForm.name.trim() || !bizForm.taxId.trim() || saving}
+                  disabled={!bizForm.name.trim() || saving}
                   className="btn-glow inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:shadow-md hover:shadow-orange-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
                   {saving ? "שומר..." : "המשך"}
