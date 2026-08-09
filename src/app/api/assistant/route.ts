@@ -6,6 +6,7 @@ import { todayInIsrael } from "@/lib/date";
 import { searchTerms } from "@/lib/ilike-search";
 import { DOCUMENT_TYPE_LABELS, DOCUMENT_STATUS_LABELS } from "@/lib/types";
 import { summarizeIncome } from "@/lib/income-summary";
+import { summarizeExpenses } from "@/lib/expense-summary";
 import type { DocumentType } from "@/lib/types";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -56,6 +57,8 @@ const SYSTEM = `אתה העוזר החכם של "חשבונית ידידותית
 - "מה שלחתי לדני" -> search_documents עם clientName="דני"
 - "כמה הכנסתי החודש" -> get_income_summary עם התאריכים של החודש הנוכחי
 - "כמה הכנסתי השנה" / "ב-2026" -> get_income_summary מ-01/01 עד היום
+- "כמה הוצאתי" / "על מה אני מוציא הכי הרבה" -> get_expense_summary
+- "מה הרווח שלי" -> גם get_income_summary וגם get_expense_summary, והרווח הוא ההפרש
 - "מי הלקוחות שלי" -> list_clients
 - "תוציא קבלה ל..." -> קודם list_clients כדי לזהות את הלקוח, ואז prepare_document_draft
 
@@ -129,6 +132,22 @@ const TOOLS: Anthropic.Tool[] = [
       "'מי הלקוח הכי גדול שלי'. חשב את התאריכים בעצמך; אל תשאל את המשתמש. " +
       "סופר רק מסמכים ששולמו ונחשבים הכנסה (קבלה / חשבונית מס / חשבונית מס-קבלה), " +
       "בניכוי זיכויים, בלי כפילויות של מסמכים שהומרו.",
+    input_schema: {
+      type: "object",
+      properties: {
+        dateFrom: { type: "string", description: "תאריך התחלה, YYYY-MM-DD" },
+        dateTo: { type: "string", description: "תאריך סיום, YYYY-MM-DD" },
+      },
+      required: ["dateFrom", "dateTo"],
+    },
+  },
+  {
+    name: "get_expense_summary",
+    description:
+      "מחשב הוצאות אמיתיות לתקופה: סך ההוצאות, מספרן ופילוח לפי קטגוריה וספק. " +
+      "קרא לזה לכל שאלה על כמה כסף יצא - 'כמה הוצאתי החודש', 'על מה אני מוציא הכי הרבה'. " +
+      "לשאלה על רווח קרא גם לזה וגם ל-get_income_summary, והרווח הוא ההפרש. " +
+      "חשב את התאריכים בעצמך; אל תשאל את המשתמש.",
     input_schema: {
       type: "object",
       properties: {
@@ -329,6 +348,19 @@ async function runTool(
     // notes - a number that disagreed with the dashboard for the same period.
     const summary = summarizeIncome(data || []);
     return { content: asData({ period: { from, to }, ...summary }) };
+  }
+
+  if (name === "get_expense_summary") {
+    const from = String(input.dateFrom || "");
+    const to = String(input.dateTo || "");
+    const { data, error } = await admin
+      .from("expenses")
+      .select("amount, category, supplier")
+      .eq("business_id", businessId)
+      .gte("date", from)
+      .lte("date", to);
+    if (error) return { content: `שגיאה בשליפת ההוצאות: ${error.message}` };
+    return { content: asData({ period: { from, to }, ...summarizeExpenses(data || []) }) };
   }
 
   if (name === "list_clients") {
