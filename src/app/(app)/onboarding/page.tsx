@@ -153,7 +153,11 @@ export default function OnboardingPage() {
               </div>
               <h1 className="text-3xl font-bold text-stone-900">ברוכים הבאים! 👋</h1>
               <p className="text-stone-700 mt-3 max-w-md mx-auto">
-                בוא נכין את החשבון שלך ב-3 שלבים מהירים. זה ייקח פחות מדקה.
+                {/* "עוד שלושה" and not "שלושה": the progress bar directly above
+                    this line reads "שלב 1 מתוך 4" and counts this welcome screen
+                    as the first step, so a bare "3 שלבים" contradicts it in the
+                    first thing a new user reads. */}
+                עוד שלושה צעדים קצרים והחשבון שלך מוכן. זה ייקח פחות מדקה.
               </p>
               <div className="flex flex-col items-center gap-4 mt-8">
                 <button
