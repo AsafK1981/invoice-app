@@ -122,3 +122,42 @@ export function shouldSendMonthlyReminder(input: ReminderScheduleInput): boolean
 
   return isCatchUpFromEarlierDay || hourReached;
 }
+
+/**
+ * Pure "what's the next occurrence" helper for UI previews (e.g. "התזכורת
+ * הבאה: יום שלישי, 1.9.2026 בשעה 09:00"). Not used by the cron itself - that
+ * runs on {@link shouldSendMonthlyReminder}'s catch-up-aware logic - this is
+ * purely informational, so it just finds the earliest candidate date
+ * (this month or next) that is still >= today, or strictly in the future if
+ * today's chosen hour has already passed.
+ */
+export function nextReminderOccurrence(
+  days: number[],
+  hour: number,
+  todayIsrael: string,
+  currentHourIsrael: number,
+): Date | null {
+  const sanitized = sanitizeReminderDays(days);
+  if (sanitized.length === 0) return null;
+
+  const [yearStr, monthStr, dayStr] = todayIsrael.split("-");
+  const year = Number(yearStr);
+  const month = Number(monthStr);
+  const todayDay = Number(dayStr);
+
+  // Candidate dates: this month's chosen days that are still ahead (or today,
+  // if the chosen hour hasn't passed yet), else roll to next month.
+  const candidatesThisMonth = sanitized
+    .map((d) => clampDayToMonth(year, month, d))
+    .filter((d) => d > todayDay || (d === todayDay && currentHourIsrael < hour));
+
+  if (candidatesThisMonth.length > 0) {
+    const day = Math.min(...candidatesThisMonth);
+    return new Date(year, month - 1, day, hour, 0, 0);
+  }
+
+  const nextMonth = month === 12 ? 1 : month + 1;
+  const nextYear = month === 12 ? year + 1 : year;
+  const day = Math.min(...sanitized.map((d) => clampDayToMonth(nextYear, nextMonth, d)));
+  return new Date(nextYear, nextMonth - 1, day, hour, 0, 0);
+}

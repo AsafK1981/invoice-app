@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import {
   Settings as SettingsIcon,
   Building2,
@@ -17,6 +18,8 @@ import {
   MessageSquare,
   ShieldCheck,
   ExternalLink,
+  Bell,
+  ArrowLeft,
 } from "lucide-react";
 import { useBusiness } from "@/lib/business-store";
 import { isPlaceholderBusinessName, isPlaceholderBusinessTaxId } from "@/lib/business-init";
@@ -25,8 +28,6 @@ import { EmailSettingsModal } from "@/components/email-settings-modal";
 import { DocumentNumberingSettings } from "@/components/document-numbering-settings";
 import { AuditLogSection } from "@/components/audit-log-section";
 import { TaxAuthoritySection } from "@/components/tax-authority-section";
-import { DunningSettingsSection } from "@/components/dunning-settings-section";
-import { MonthlyReminderSettingsSection } from "@/components/monthly-reminder-settings-section";
 import { TwoFactorSection } from "@/components/two-factor-section";
 import { WhatsAppSection } from "@/components/whatsapp-section";
 import { ALLOCATION_THRESHOLD_SCHEDULE, formatThreshold } from "@/lib/tax-authority";
@@ -264,9 +265,14 @@ export default function SettingsPage() {
         <TaxAuthoritySection />
       </div>
 
-      <DunningSettingsSection />
-
-      <MonthlyReminderSettingsSection />
+      <Link
+        href="/notifications?tab=settings"
+        className="group flex items-center gap-3 px-5 py-3.5 rounded-2xl bg-orange-50/60 border border-orange-100 text-sm font-semibold text-orange-700 hover:bg-orange-50 transition-colors"
+      >
+        <Bell className="w-4 h-4 flex-shrink-0" />
+        הגדרות התזכורות עברו לעמוד ההתראות
+        <ArrowLeft className="mr-auto w-4 h-4 transition-transform group-hover:-translate-x-1" />
+      </Link>
 
       <TwoFactorSection />
 

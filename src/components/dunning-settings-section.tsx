@@ -1,39 +1,52 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Bell, BellOff, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Bell, BellOff, AlertCircle } from "lucide-react";
 import { useBusiness, saveBusiness } from "@/lib/business-store";
+import { useToast } from "@/components/ui/toast";
+
+interface Draft {
+  enabled: boolean;
+  fromName: string;
+}
 
 export function DunningSettingsSection() {
   const { business, ready, refetch } = useBusiness();
-  const [enabled, setEnabled] = useState(false);
-  const [fromName, setFromName] = useState("");
+  const showToast = useToast();
+
+  const [draft, setDraft] = useState<Draft>({ enabled: false, fromName: "" });
+  const [baseline, setBaseline] = useState<Draft>(draft);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    if (ready) {
-      setEnabled(business.dunningEnabled ?? false);
-      setFromName(business.dunningFromName ?? "");
-    }
+    if (!ready) return;
+    const loaded: Draft = {
+      enabled: business.dunningEnabled ?? false,
+      fromName: business.dunningFromName ?? "",
+    };
+    setDraft(loaded);
+    setBaseline(loaded);
   }, [ready, business.dunningEnabled, business.dunningFromName]);
 
-  async function persist(nextEnabled: boolean, nextFromName: string) {
-    setSaving(true);
+  const dirty = draft.enabled !== baseline.enabled || draft.fromName !== baseline.fromName;
+
+  async function handleSave() {
     setErr(null);
-    setSaved(false);
+    setSaving(true);
     try {
       await saveBusiness({
         ...business,
-        dunningEnabled: nextEnabled,
-        dunningFromName: nextFromName.trim() || undefined,
+        dunningEnabled: draft.enabled,
+        dunningFromName: draft.fromName.trim() || undefined,
       });
       await refetch();
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2500);
+      setBaseline(draft);
+      showToast("הגדרות תזכורות התשלום נשמרו", "success");
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "שגיאה בשמירה");
+      const message = e instanceof Error ? e.message : "שגיאה בשמירה";
+      setErr(message);
+      showToast(message, "error");
     } finally {
       setSaving(false);
     }
@@ -43,7 +56,7 @@ export function DunningSettingsSection() {
     <div className="card-soft p-5">
       <div className="flex items-start gap-3 mb-4">
         <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center flex-shrink-0">
-          {enabled ? (
+          {draft.enabled ? (
             <Bell className="w-4 h-4 text-orange-700" />
           ) : (
             <BellOff className="w-4 h-4 text-stone-500" />
@@ -62,13 +75,8 @@ export function DunningSettingsSection() {
         <label className="flex items-center gap-3 cursor-pointer">
           <input
             type="checkbox"
-            checked={enabled}
-            disabled={saving}
-            onChange={(e) => {
-              const next = e.target.checked;
-              setEnabled(next);
-              persist(next, fromName);
-            }}
+            checked={draft.enabled}
+            onChange={(e) => setDraft((d) => ({ ...d, enabled: e.target.checked }))}
             className="w-5 h-5 rounded text-orange-500 focus:ring-orange-500"
           />
           <span className="text-sm font-medium text-stone-900">
@@ -76,28 +84,18 @@ export function DunningSettingsSection() {
           </span>
         </label>
 
-        {enabled && (
+        {draft.enabled && (
           <div className="pl-8">
             <label className="block text-xs font-semibold text-stone-700 mb-1">
               שם השולח שיופיע במייל
             </label>
-            <div className="flex items-stretch gap-2 flex-wrap">
-              <input
-                type="text"
-                value={fromName}
-                onChange={(e) => setFromName(e.target.value)}
-                placeholder={business.name || "שם העסק"}
-                className="flex-1 min-w-[200px] px-3 py-2 rounded-xl border border-stone-300 bg-white text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200"
-              />
-              <button
-                type="button"
-                onClick={() => persist(enabled, fromName)}
-                disabled={saving}
-                className="px-4 py-2 rounded-xl text-sm font-semibold bg-white border-2 border-orange-200 text-stone-800 hover:bg-orange-50 disabled:opacity-50"
-              >
-                {saving ? "שומר..." : "שמור"}
-              </button>
-            </div>
+            <input
+              type="text"
+              value={draft.fromName}
+              onChange={(e) => setDraft((d) => ({ ...d, fromName: e.target.value }))}
+              placeholder={business.name || "שם העסק"}
+              className="w-full max-w-sm px-3 py-2 rounded-xl border border-stone-300 bg-white text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200"
+            />
             <p className="text-xs text-stone-500 mt-1.5">
               אם תשאיר ריק, יוצג שם העסק ({business.name || "לא הוגדר"}).
             </p>
@@ -105,12 +103,20 @@ export function DunningSettingsSection() {
         )}
       </div>
 
-      {saved && (
-        <div className="mt-4 flex items-center gap-2 text-sm text-emerald-700">
-          <CheckCircle2 className="w-4 h-4" />
-          נשמר
-        </div>
-      )}
+      <div className="mt-5 pt-4 border-t border-stone-100 flex items-center gap-3 flex-wrap">
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={saving || !dirty}
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-gradient-to-l from-orange-500 to-rose-500 hover:shadow-md hover:shadow-orange-200 disabled:from-stone-300 disabled:to-stone-300 disabled:shadow-none disabled:cursor-not-allowed transition-all"
+        >
+          {saving ? "שומר..." : "שמירה"}
+        </button>
+        {dirty && !saving && (
+          <span className="text-xs font-medium text-amber-700">יש שינויים שלא נשמרו</span>
+        )}
+      </div>
+
       {err && (
         <div className="mt-4 flex items-start gap-2 text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-xl p-3">
           <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />

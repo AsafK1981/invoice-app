@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import {
   Bell,
   Mail,
@@ -9,6 +10,7 @@ import {
   Banknote,
   CheckSquare,
   ShieldAlert,
+  Settings2,
 } from "lucide-react";
 import {
   useNotifications,
@@ -22,6 +24,8 @@ import {
 } from "@/lib/notifications";
 import { formatDate } from "@/lib/format";
 import { toIsraelDate } from "@/lib/date";
+import { MonthlyReminderSettingsSection } from "@/components/monthly-reminder-settings-section";
+import { DunningSettingsSection } from "@/components/dunning-settings-section";
 
 const KIND_STYLE: Record<
   NotificationKind,
@@ -43,8 +47,31 @@ function fullTime(iso: string): string {
   return `${date} · ${time}`;
 }
 
+type TabKey = "feed" | "settings";
+
+const TABS: { key: TabKey; label: string; icon: React.ElementType }[] = [
+  { key: "feed", label: "מרכז ההתראות", icon: Bell },
+  { key: "settings", label: "הגדרות תזכורות", icon: Settings2 },
+];
+
 export default function NotificationsPage() {
   const { items, unreadCount, ready } = useNotifications(100);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const tab: TabKey = searchParams.get("tab") === "settings" ? "settings" : "feed";
+
+  function setTab(next: TabKey) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (next === "feed") {
+      params.delete("tab");
+    } else {
+      params.set("tab", next);
+    }
+    const qs = params.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  }
 
   return (
     <div className="space-y-5">
@@ -57,12 +84,14 @@ export default function NotificationsPage() {
             התראות
           </h1>
           <p className="text-sm text-stone-700 mt-2 mr-14">
-            {unreadCount > 0
-              ? `${unreadCount} התראות חדשות`
-              : "הכל נקרא"}
+            {tab === "feed"
+              ? unreadCount > 0
+                ? `${unreadCount} התראות חדשות`
+                : "הכל נקרא"
+              : "מתי ואיך תזכורות נשלחות ללקוחות ואליך"}
           </p>
         </div>
-        {unreadCount > 0 && (
+        {tab === "feed" && unreadCount > 0 && (
           <button
             type="button"
             onClick={() => markAllRead()}
@@ -73,24 +102,72 @@ export default function NotificationsPage() {
         )}
       </div>
 
-      {!ready ? (
-        <div className="card-soft p-10 text-center text-stone-500">טוען...</div>
-      ) : items.length === 0 ? (
-        <div className="card-soft p-10 text-center">
-          <Bell className="w-10 h-10 mx-auto text-stone-400 mb-3" />
-          <p className="text-stone-700 font-medium">אין התראות עדיין</p>
-          <p className="text-sm text-stone-500 mt-1">
-            כשלקוח יפתח חשבונית, תשלום יזוהה, או הצעת מחיר תאושר, תקבל פה.
-          </p>
-        </div>
+      <div
+        className="inline-flex flex-wrap rounded-2xl p-1 bg-orange-50/60 border border-orange-100"
+        role="tablist"
+        aria-label="תצוגת התראות"
+      >
+        {TABS.map((t) => {
+          const Icon = t.icon;
+          const active = t.key === tab;
+          return (
+            <button
+              key={t.key}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              onClick={() => setTab(t.key)}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+                active
+                  ? "bg-white text-orange-700 shadow-sm"
+                  : "text-stone-600 hover:text-orange-700"
+              }`}
+            >
+              <Icon className="w-4 h-4" />
+              {t.label}
+              {t.key === "feed" && unreadCount > 0 && (
+                <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-orange-500 text-white text-[11px] font-bold">
+                  {unreadCount}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {tab === "feed" ? (
+        <FeedTab ready={ready} items={items} />
       ) : (
-        <ul className="card-soft overflow-hidden divide-y divide-stone-100">
-          {items.map((n) => (
-            <NotificationRow key={n.id} notification={n} />
-          ))}
-        </ul>
+        <div className="space-y-5 max-w-3xl">
+          <MonthlyReminderSettingsSection />
+          <DunningSettingsSection />
+        </div>
       )}
     </div>
+  );
+}
+
+function FeedTab({ ready, items }: { ready: boolean; items: Notification[] }) {
+  if (!ready) {
+    return <div className="card-soft p-10 text-center text-stone-500">טוען...</div>;
+  }
+  if (items.length === 0) {
+    return (
+      <div className="card-soft p-10 text-center">
+        <Bell className="w-10 h-10 mx-auto text-stone-400 mb-3" />
+        <p className="text-stone-700 font-medium">אין התראות עדיין</p>
+        <p className="text-sm text-stone-500 mt-1">
+          כשלקוח יפתח חשבונית, תשלום יזוהה, או הצעת מחיר תאושר, תקבל פה.
+        </p>
+      </div>
+    );
+  }
+  return (
+    <ul className="card-soft overflow-hidden divide-y divide-stone-100">
+      {items.map((n) => (
+        <NotificationRow key={n.id} notification={n} />
+      ))}
+    </ul>
   );
 }
 

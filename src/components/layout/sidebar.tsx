@@ -21,6 +21,7 @@ import {
   MessageCircle,
   ShieldAlert,
   Landmark,
+  Bell,
 } from "lucide-react";
 import { useBusiness } from "@/lib/business-store";
 import { signOut } from "@/lib/auth";
@@ -36,6 +37,7 @@ const navItems = [
   { href: "/products", label: "מוצרים ושירותים", icon: Package },
   { href: "/expenses", label: "הוצאות", icon: Wallet },
   { href: "/recurring", label: "חיובים חוזרים", icon: RefreshCw },
+  { href: "/notifications", label: "התראות", icon: Bell },
   { href: "/reports", label: "דו״חות", icon: TrendingUp },
   { href: "/settings", label: "הגדרות", icon: Settings },
 ];
