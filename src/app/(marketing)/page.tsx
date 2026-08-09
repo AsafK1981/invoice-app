@@ -1,6 +1,15 @@
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import Link from "next/link";
-import { Ltr } from "@/components/ui/ltr";
+import {
+  MessageCircle,
+  ScanLine,
+  Gauge,
+  FileBarChart,
+  ArrowLeftRight,
+} from "lucide-react";
+import { Ltr, LtrText } from "@/components/ui/ltr";
+import { COMPETITORS } from "@/lib/comparison-data";
 import HeaderV2 from "./components/HeaderV2";
 import FooterV2 from "./components/FooterV2";
 import RedirectIfAuthed from "./components/RedirectIfAuthed";
@@ -46,6 +55,140 @@ const FAQ_ITEMS: { q: string; a: string }[] = [
   {
     q: "מה זה מספר הקצאה ואיך זה עובד כאן?",
     a: "זה מספר שרשות המסים מנפיקה לחשבוניות מעל סכום מסוים (מ-2026: מעל 5,000 ש\"ח לפני מע\"מ ללקוח עסקי), נדרש כדי שהלקוח יוכל לנכות מע\"מ. אחרי חיבור חד-פעמי מול רשות המסים, המערכת מבקשת את המספר ישירות מולה בלחיצה אחת, בלי טפסים ידניים.",
+  },
+];
+
+/**
+ * "כל מה שיש רק אצלנו" - the competitive-advantage grid. This page is shared
+ * cold into Facebook groups and to friends, so every real differentiator
+ * needs to be in one place rather than assumed known. Cards state OUR
+ * capabilities only (no competitor names - the /vs pages own the
+ * head-to-head, linked from the closing strip below).
+ *
+ * Icons: the three features that already have a hand-drawn glyph elsewhere
+ * on this page (allocation numbers, AI, reminders - the last shared with the
+ * new hero bullet below) reuse that EXACT svg markup rather than a second
+ * icon for the same thing; the rest use lucide-react, same as the founder
+ * note's gold icon tile in ComparisonViewV2.tsx (`.v2-note-panel .ic`).
+ *
+ * Every claim is verified against the live feature set except the WhatsApp
+ * bot channel (`comingSoon`): built and council-reviewed, but not yet
+ * enabled in production pending a Meta portfolio appeal.
+ */
+type Advantage = {
+  key: string;
+  icon: ReactNode;
+  title: string;
+  body: string;
+  comingSoon?: boolean;
+};
+
+const ADVANTAGES: Advantage[] = [
+  {
+    key: "allocation",
+    icon: (
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z" />
+        <path d="M9 12l2 2 4-4" />
+      </svg>
+    ),
+    title: "מספרי הקצאה אוטומטיים",
+    body: "המערכת מקבלת מספר הקצאה מרשות המסים בלחיצה אחת - בלי להיכנס לאתר רשות המסים, בלי העתק-הדבק.",
+  },
+  {
+    key: "ai",
+    icon: (
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z" />
+        <path d="M18 15l.8 2.2L21 18l-2.2.8L18 21l-.8-2.2L15 18l2.2-.8z" />
+      </svg>
+    ),
+    title: "עוזר AI חכם בעברית",
+    body: "שאלו בשפה חופשית: כמה הכנסתי החודש? איפה החשבונית של דנה? העוזר מוצא, עונה ומכין טיוטות - ואתם רק מאשרים.",
+  },
+  {
+    key: "reminders",
+    icon: (
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M12 3a5 5 0 0 0-5 5c0 5.5-2 7-2 7h14s-2-1.5-2-7a5 5 0 0 0-5-5z" />
+        <path d="M10 19a2 2 0 0 0 4 0" />
+      </svg>
+    ),
+    title: "התראות ותזכורות חכמות",
+    body: "תזכורת חודשית להוציא מסמכים בימים ובשעה שאתם בוחרים, ותזכורות תשלום אוטומטיות ללקוחות שמאחרים - במייל ובאפליקציה.",
+  },
+  {
+    key: "whatsapp",
+    icon: <MessageCircle aria-hidden="true" />,
+    title: "וואטסאפ במקום להיכנס לאפליקציה",
+    body: "שולחים הודעה בוואטסאפ - ומקבלים קבלה מוכנה או תיעוד הוצאה מצילום, בלי לפתוח את האפליקציה.",
+    comingSoon: true,
+  },
+  {
+    key: "ocr",
+    icon: <ScanLine aria-hidden="true" />,
+    title: "סריקת הוצאות בצילום",
+    body: "מצלמים קבלה - והמערכת ממלאת לבד ספק, סכום, מע״מ ותאריך. גם צילומי מסך של ביט או העברה בנקאית.",
+  },
+  {
+    key: "ceiling",
+    icon: <Gauge aria-hidden="true" />,
+    title: "מעקב תקרת עוסק פטור בזמן אמת",
+    body: "רואים בכל רגע כמה נשאר עד התקרה השנתית, כולל התחשבות בחשבוניות זיכוי.",
+  },
+  {
+    key: "reports",
+    icon: <FileBarChart aria-hidden="true" />,
+    title: "דו״חות שרואי חשבון אוהבים",
+    body: "דוח מע״מ תקופתי, עזר ל-1301, הצהרת הון, גיול חובות ויומן שנתי - הכל מוכן להורדה.",
+  },
+  {
+    key: "migration",
+    icon: <ArrowLeftRight aria-hidden="true" />,
+    title: "מעבר קל מכל תוכנה",
+    body: "ייבוא היסטוריה מ-Excel ומהתוכנות המוכרות, אשפי מעבר ייעודיים - ולא מאבדים אף מסמך.",
+  },
+  {
+    key: "channels",
+    icon: (
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M22 2L11 13M22 2l-7 20-4-9-9-4z" />
+      </svg>
+    ),
+    title: "שליחה בכל ערוץ",
+    body: "מייל, וואטסאפ או קישור ציבורי מעוצב - הלקוח מקבל מסמך מקצועי בלי להתקין כלום.",
   },
 ];
 
@@ -174,21 +317,7 @@ export default function MarketingLanding() {
                       <path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z" />
                       <path d="M9 12l2 2 4-4" />
                     </svg>
-                    <b>הקצאה אוטומטית מרשות המסים</b>
-                  </li>
-                  <li className="v2-ft">
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.6"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden="true"
-                    >
-                      <path d="M22 2L11 13M22 2l-7 20-4-9-9-4z" />
-                    </svg>
-                    <b>שליחה בכל ערוץ</b>
+                    <b>מספרי הקצאה אוטומטיים מרשות המסים</b>
                   </li>
                   <li className="v2-ft">
                     <svg
@@ -203,7 +332,22 @@ export default function MarketingLanding() {
                       <path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z" />
                       <path d="M18 15l.8 2.2L21 18l-2.2.8L18 21l-.8-2.2L15 18l2.2-.8z" />
                     </svg>
-                    <b>עוזר AI בעברית שמוצא כל מסמך</b>
+                    <b>עוזר AI בעברית</b>
+                  </li>
+                  <li className="v2-ft">
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.6"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M12 3a5 5 0 0 0-5 5c0 5.5-2 7-2 7h14s-2-1.5-2-7a5 5 0 0 0-5-5z" />
+                      <path d="M10 19a2 2 0 0 0 4 0" />
+                    </svg>
+                    <b>התראות ותזכורות חכמות</b>
                   </li>
                 </ul>
 
@@ -354,6 +498,58 @@ export default function MarketingLanding() {
                 רשות המסים, המערכת מבקשת את המספר ישירות ממנה בלחיצה אחת
                 ומציגה אותו על המסמך - בלי טפסים ובלי להעתיק תוצאה מאתר אחר.
               </p>
+            </div>
+          </section>
+
+          {/* "כל מה שיש רק אצלנו" - the competitive-advantage showcase, the
+              reason this page was rebuilt: it is shared cold into Facebook
+              groups and to friends, so it needs to state every real
+              differentiator in one place rather than assume a visitor
+              already knows what to look for. The closing strip hands off to
+              the /vs pages for the head-to-head, built from the same
+              COMPETITORS data the /vs index and VsSiblings use, so a
+              seventh comparison page needs no edit here either. */}
+          <section className="v2-adv">
+            <div className="v2-adv-head">
+              <div className="v2-eyebrow-row">
+                <i className="ln" />
+                <span>היתרונות שתמצאו כאן - ולא אצל האחרים</span>
+                <i className="ln r" />
+              </div>
+              <h2 className="v2-adv-title">
+                כל מה שיש <span className="v2-gold">רק אצלנו</span>
+              </h2>
+            </div>
+
+            <div className="v2-adv-grid">
+              {ADVANTAGES.map((item) => (
+                <article className="v2-adv-card" key={item.key}>
+                  {item.comingSoon && <span className="badge">בקרוב</span>}
+                  <div className="v2-adv-icon" aria-hidden="true">
+                    {item.icon}
+                  </div>
+                  <h3>
+                    <LtrText text={item.title} />
+                  </h3>
+                  <p>
+                    <LtrText text={item.body} />
+                  </p>
+                </article>
+              ))}
+            </div>
+
+            <div className="v2-cmp-cta" style={{ marginTop: "var(--v2-sp-5)" }}>
+              <p>רוצים את ההשוואה המלאה, שורה מול שורה?</p>
+              <div className="row">
+                <Link href="/vs" className="v2-btn-gold">
+                  לכל ההשוואות
+                </Link>
+                {Object.values(COMPETITORS).map((c) => (
+                  <Link key={c.slug} href={`/vs/${c.slug}`} className="ghost">
+                    <LtrText text={c.name} />
+                  </Link>
+                ))}
+              </div>
             </div>
           </section>
 

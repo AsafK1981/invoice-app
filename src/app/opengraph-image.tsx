@@ -55,32 +55,61 @@ export default async function OpengraphImage() {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          background: "linear-gradient(135deg, #fff7ed 0%, #fef3c7 100%)",
+          backgroundColor: "#070504",
+          // Same two-layer radial depth as `.v2-theme` in v2.css (values
+          // copied by hand, not imported - this route renders on the edge
+          // runtime via satori, which cannot read the site's stylesheet).
+          backgroundImage:
+            "radial-gradient(120% 70% at 50% -8%, rgba(190, 158, 78, 0.1), transparent 45%), radial-gradient(100% 120% at 50% 30%, #1a1510 0%, #0d0a07 55%, #070504 100%)",
           padding: 80,
           textAlign: "center",
         }}
       >
+        {/* Brand mark: the same gold tile + shield-check glyph the homepage
+            uses for its allocation-number differentiator (.v2-tax-band-icon),
+            not an emoji - a thumbnail borrows the site's one real icon
+            instead of inventing a decoration of its own. */}
         <div
           style={{
-            width: 140,
-            height: 140,
-            borderRadius: 36,
-            background: "linear-gradient(135deg, #fb923c 0%, #f43f5e 100%)",
+            width: 120,
+            height: 120,
+            borderRadius: 30,
+            background:
+              "linear-gradient(177deg, #d8be77 0%, #be9e4e 38%, #8f6f2a 72%, #cbb061 100%)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             marginBottom: 40,
-            boxShadow: "0 20px 50px rgba(251, 146, 60, 0.4)",
-            fontSize: 84,
+            boxShadow: "0 20px 50px -10px rgba(190, 158, 78, 0.45)",
           }}
         >
-          ✨
+          <svg
+            width={64}
+            height={64}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#191206"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z" />
+            <path d="M9 12l2 2 4-4" />
+          </svg>
         </div>
         <div
           style={{
             fontSize: 76,
             fontWeight: 800,
-            color: "#1c1917",
+            // Gold-gradient clip on the brand name (`.v2-gold` in v2.css uses
+            // the same background-clip:text technique for real browsers;
+            // satori supports it too, verified against this exact bundled
+            // version - it builds a real SVG clip-path from the glyph
+            // outlines rather than silently ignoring the property).
+            backgroundImage: "linear-gradient(90deg, #d8be77 0%, #be9e4e 100%)",
+            backgroundClip: "text",
+            WebkitBackgroundClip: "text",
+            color: "transparent",
             letterSpacing: -2,
             lineHeight: 1.05,
             display: "flex",
@@ -92,7 +121,7 @@ export default async function OpengraphImage() {
           style={{
             fontSize: 44,
             fontWeight: 800,
-            color: "#57534e",
+            color: "#d6d0c2",
             marginTop: 36,
             display: "flex",
           }}

@@ -900,6 +900,70 @@
   color: var(--v2-muted);
 }
 
+/* ---------- competitive-advantages grid ----------
+   The "share this in a Facebook group" section: nine short cards stating OUR
+   capabilities (no competitor names inside a card - the /vs pages own the
+   head-to-head, linked from the closing strip below, which reuses
+   .v2-cmp-cta/.v2-btn-gold/.ghost as-is). Cards are NOT links, unlike
+   .v2-vs-card / .v2-blog-card, so they get the quiet, non-interactive
+   .v2-price-card treatment (no hover-lift) rather than that hover
+   affordance. The icon tile matches .v2-tax-band-icon / .v2-note-panel .ic
+   (same gold tile, same dark-ink glyph); the one unreleased feature
+   (WhatsApp) wears the exact .v2-price-card .badge pill, see that rule. */
+.v2-theme .v2-adv {
+  margin-top: var(--v2-sp-5);
+}
+.v2-theme .v2-adv-head {
+  text-align: center;
+  margin-bottom: var(--v2-sp-4);
+}
+.v2-theme .v2-adv-title {
+  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+  font-weight: 700;
+  font-size: var(--v2-fs-h2);
+  color: var(--v2-ink);
+}
+/* Single column by default, no `grid-template-columns` set (same convention
+   as .v2-vs-list): three-up from the desktop tier 1 breakpoint, see the
+   min-width: 1000px block at the bottom of this file. */
+.v2-theme .v2-adv-grid {
+  display: grid;
+  gap: var(--v2-sp-3);
+}
+.v2-theme .v2-adv-card {
+  position: relative;
+  border-radius: var(--v2-r-lg);
+  padding: var(--v2-pad-card);
+  border: 1px solid var(--v2-line-soft);
+  background: linear-gradient(160deg, #16110a, #0e0a06);
+  box-shadow: var(--v2-sh-rest), var(--v2-sh-inset);
+}
+.v2-theme .v2-adv-icon {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--v2-r-lg);
+  margin-bottom: var(--v2-sp-2);
+  background: var(--v2-gold-grad);
+  color: #191206;
+  box-shadow: 0 12px 26px -14px rgba(190, 158, 78, 0.28);
+}
+.v2-theme .v2-adv-icon svg { width: 22px; height: 22px; }
+.v2-theme .v2-adv-card h3 {
+  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+  font-weight: 700;
+  font-size: var(--v2-fs-h3);
+  color: var(--v2-ink);
+}
+.v2-theme .v2-adv-card p {
+  margin-top: 8px;
+  font-size: var(--v2-fs-body);
+  line-height: 1.65;
+  color: var(--v2-muted);
+}
+
 /* ---------- landing FAQ ----------
    Same hairline-and-type language as the pricing band above it: a title,
    then Q/A rows separated by top rules, no accordion chrome. */
@@ -1678,7 +1742,10 @@
     linear-gradient(160deg, #1a1408, #100b06);
   box-shadow: var(--v2-sh-rest), var(--v2-sh-edge);
 }
-.v2-theme .v2-price-card .badge {
+/* Reused verbatim by .v2-adv-card's "בקרוב" badge (the one unreleased
+   feature in the advantages grid) - same gold pill, no new primitive. */
+.v2-theme .v2-price-card .badge,
+.v2-theme .v2-adv-card .badge {
   position: absolute;
   top: -11px;
   right: 18px;
@@ -2231,7 +2298,8 @@
   .v2-theme .v2-panel,
   .v2-theme .v2-price-card,
   .v2-theme .v2-vs-card,
-  .v2-theme .v2-blog-card { padding: 20px; }
+  .v2-theme .v2-blog-card,
+  .v2-theme .v2-adv-card { padding: 20px; }
   .v2-theme .v2-matrix { padding: 0; }
 
   /* The sheet keeps its own `em` geometry (it is a scale model of a page, not
@@ -2388,6 +2456,13 @@
   .v2-theme .v2-vs-list,
   .v2-theme .v2-blog-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* ---- landing: advantages grid, three-up. Jumps straight from one column
+     to three (unlike .v2-vs-list's one-then-two-then-three ramp) because the
+     brief asks for exactly two states, phone and desktop. */
+  .v2-theme .v2-adv-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   /* ---- /vs/<competitor>: the two remaining wide-container blocks ---- */

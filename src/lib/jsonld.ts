@@ -53,6 +53,11 @@ export function website(): JsonLdNode {
  * The app itself. Price is the standing list entry price (₪15/mo); the launch
  * period is currently free, which is surfaced in on-page copy rather than in
  * structured pricing so the markup does not contradict the pricing table.
+ *
+ * `featureList` mirrors the homepage's "כל מה שיש רק אצלנו" advantage grid
+ * (src/app/(marketing)/page.tsx), MINUS the WhatsApp bot channel: that one
+ * is marked `בקרוב` on-page because it isn't enabled in production yet, and
+ * structured data must only claim what is actually live today.
  */
 export function softwareApplication(): JsonLdNode {
   return {
@@ -66,6 +71,16 @@ export function softwareApplication(): JsonLdNode {
     url: CANONICAL_ORIGIN,
     description:
       "תוכנת חשבוניות בעברית לעוסק פטור/מורשה בישראל: הפקת חשבוניות וקבלות, אינטגרציה ל-API חשבונית ישראל (הקצאת מספרים), במחיר הוגן.",
+    featureList: [
+      "הקצאת מספרים אוטומטית מרשות המסים (חשבונית ישראל)",
+      "עוזר AI בעברית לשאלות על הכנסות ומסמכים",
+      "תזכורות אוטומטיות להוצאת מסמכים ולתשלומי לקוחות שמאחרים",
+      "סריקת קבלות והוצאות בצילום",
+      "מעקב תקרת עוסק פטור בזמן אמת",
+      "דוחות מוכנים לרואה חשבון: מע״מ תקופתי, עזר ל-1301, הצהרת הון",
+      "ייבוא היסטוריה מתוכנות חשבוניות אחרות",
+      "שליחת מסמכים במייל, בוואטסאפ ובקישור ציבורי",
+    ],
     offers: { "@type": "Offer", price: "15", priceCurrency: "ILS" },
     publisher: { "@id": ORG_ID },
   };
