@@ -9,10 +9,15 @@
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";
-import { Sparkles, X, Send, FileText } from "lucide-react";
+import { Sparkles, X, Send, FileText, Paperclip, Table2, MessageCircle } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { saveDraftToServer, DOC_TYPE_ROUTE } from "@/lib/draft-store";
 import { todayInIsrael } from "@/lib/date";
+import {
+  parseAttachmentToCsvText,
+  ATTACHMENT_ACCEPT,
+  type ParsedAttachment,
+} from "@/lib/import-excel-text";
 import type { DocumentType } from "@/lib/types";
 
 interface AssistantDraft {
@@ -27,7 +32,7 @@ interface AssistantDraft {
 interface ChatMessage {
   role: "user" | "assistant";
   content: string;
-  draft?: AssistantDraft | null;
+  drafts?: AssistantDraft[];
 }
 
 const SUGGESTIONS = [
@@ -44,9 +49,12 @@ export function AssistantWidget() {
   const [busy, setBusy] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [error, setError] = useState("");
-  const [openingDraft, setOpeningDraft] = useState(false);
+  const [openingDraft, setOpeningDraft] = useState("");
+  const [attachment, setAttachment] = useState<ParsedAttachment | null>(null);
+  const [parsingFile, setParsingFile] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   // InstallPrompt sits bottom-right, and flips to bottom-left over the single
   // document paper. Mirror it so the two never overlap.
@@ -70,13 +78,39 @@ export function AssistantWidget() {
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
+  async function pickFile(file: File | undefined) {
+    if (!file) return;
+    setError("");
+    setParsingFile(true);
+    try {
+      setAttachment(await parseAttachmentToCsvText(file));
+    } catch (err) {
+      setAttachment(null);
+      setError(err instanceof Error ? err.message : "לא הצלחתי לקרוא את הקובץ.");
+    } finally {
+      setParsingFile(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  }
+
   async function send(text: string) {
     const trimmed = text.trim();
-    if (!trimmed || busy) return;
+    const sentAttachment = attachment;
+    // A file on its own is a complete request ("here's my month"), so an empty
+    // textarea shouldn't block sending it.
+    if ((!trimmed && !sentAttachment) || busy) return;
     setError("");
     setInput("");
+    setAttachment(null);
 
-    const nextMessages: ChatMessage[] = [...messages, { role: "user", content: trimmed }];
+    // The sheet text itself is sent once, out of band. What stays in the
+    // transcript is only this marker, so follow-up turns stay small and the
+    // 4000-char history truncation can never eat half a spreadsheet.
+    const shown = sentAttachment
+      ? `[קובץ הועלה: ${sentAttachment.fileName}]${trimmed ? `\n${trimmed}` : ""}`
+      : trimmed;
+
+    const nextMessages: ChatMessage[] = [...messages, { role: "user", content: shown }];
     setMessages(nextMessages);
     setBusy(true);
 
@@ -86,6 +120,7 @@ export function AssistantWidget() {
       } = await supabase.auth.getSession();
       if (!session?.access_token) {
         setError("פג תוקף ההתחברות. התחבר מחדש.");
+        if (sentAttachment) setAttachment(sentAttachment);
         return;
       }
 
@@ -97,26 +132,41 @@ export function AssistantWidget() {
         },
         body: JSON.stringify({
           messages: nextMessages.map((m) => ({ role: m.role, content: m.content })),
+          ...(sentAttachment
+            ? {
+                attachment: {
+                  fileName: sentAttachment.fileName,
+                  rowsAsCsv: sentAttachment.rowsAsCsv,
+                },
+              }
+            : {}),
         }),
       });
       const json = await res.json().catch(() => ({ ok: false, error: "שגיאה לא ידועה" }));
       if (!res.ok || !json.ok) {
         setError(json.error || `הבקשה נכשלה (${res.status})`);
+        // Hand the file back rather than making them find and re-upload it.
+        if (sentAttachment) setAttachment(sentAttachment);
         return;
       }
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: json.reply as string, draft: json.draft ?? null },
+        {
+          role: "assistant",
+          content: json.reply as string,
+          drafts: Array.isArray(json.drafts) ? (json.drafts as AssistantDraft[]) : [],
+        },
       ]);
     } catch {
       setError("אין חיבור לשרת. בדוק את האינטרנט ונסה שוב.");
+      if (sentAttachment) setAttachment(sentAttachment);
     } finally {
       setBusy(false);
     }
   }
 
-  async function openDraftInEditor(draft: AssistantDraft) {
-    setOpeningDraft(true);
+  async function openDraftInEditor(draft: AssistantDraft, key: string) {
+    setOpeningDraft(key);
     setError("");
     try {
       const id = await saveDraftToServer({
@@ -153,7 +203,7 @@ export function AssistantWidget() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "פתיחת הטיוטה נכשלה.");
     } finally {
-      setOpeningDraft(false);
+      setOpeningDraft("");
     }
   }
 
@@ -166,13 +216,22 @@ export function AssistantWidget() {
   const side = overDocumentPaper ? "lg:right-6 lg:left-auto" : "lg:left-6 lg:right-auto";
 
   if (!open) {
+    // A bare sparkle circle does not say "assistant" to anyone who has not
+    // been told. The launcher is a labelled pill: a chat glyph, which reads as
+    // "talk to something", plus the words. The label stays visible at every
+    // width - hiding it on mobile would put the ambiguity back exactly where
+    // most first-time users are.
     return (
       <button
         onClick={() => setOpen(true)}
         aria-label="פתח את העוזר החכם"
-        className={`no-print fixed bottom-4 left-4 right-auto z-40 lg:bottom-6 ${side} w-14 h-14 rounded-full bg-gradient-to-br from-orange-400 to-rose-500 text-white shadow-lg shadow-orange-200/60 flex items-center justify-center hover:scale-105 active:scale-95 transition-transform print:hidden`}
+        className={`no-print fixed bottom-4 left-4 right-auto z-40 lg:bottom-6 ${side} h-12 pl-4 pr-3 rounded-full bg-gradient-to-br from-orange-400 to-rose-500 text-white shadow-lg shadow-orange-200/60 flex items-center gap-2 hover:scale-105 active:scale-95 transition-transform print:hidden`}
       >
-        <Sparkles className="w-6 h-6" />
+        <span className="relative flex items-center justify-center">
+          <MessageCircle className="w-5 h-5" />
+          <Sparkles className="w-3 h-3 absolute -top-1 -left-1.5" />
+        </span>
+        <span className="text-sm font-semibold whitespace-nowrap">עוזר חכם</span>
       </button>
     );
   }
@@ -205,6 +264,10 @@ export function AssistantWidget() {
               <p className="text-sm text-stone-600">
                 שאל אותי על המסמכים וההכנסות שלך, או בקש להכין טיוטה.
               </p>
+              <p className="text-xs text-stone-500 mt-2">
+                אפשר גם לצרף קובץ אקסל (למשל רשימת ההופעות של החודש) ואכין ממנו טיוטות
+                בסגנון המסמכים הקודמים שלך.
+              </p>
               <div className="flex flex-col gap-2 mt-4">
                 {SUGGESTIONS.map((s) => (
                   <button
@@ -229,16 +292,27 @@ export function AssistantWidget() {
                 }`}
               >
                 {m.content}
-                {m.draft && (
-                  <button
-                    onClick={() => openDraftInEditor(m.draft!)}
-                    disabled={openingDraft}
-                    className="mt-2 w-full inline-flex items-center justify-center gap-2 min-h-[36px] px-3 rounded-xl bg-white border border-orange-200 text-stone-800 text-xs font-semibold hover:shadow-md transition-all disabled:opacity-60"
-                  >
-                    <FileText className="w-4 h-4" />
-                    {openingDraft ? "פותח..." : "פתח את הטיוטה בעורך"}
-                  </button>
-                )}
+                {m.drafts?.map((d, di) => {
+                  const key = `${i}-${di}`;
+                  const many = (m.drafts?.length ?? 0) > 1;
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => openDraftInEditor(d, key)}
+                      disabled={!!openingDraft}
+                      className="mt-2 w-full inline-flex items-center justify-center gap-2 min-h-[36px] px-3 rounded-xl bg-white border border-orange-200 text-stone-800 text-xs font-semibold hover:shadow-md transition-all disabled:opacity-60"
+                    >
+                      <FileText className="w-4 h-4 flex-shrink-0" />
+                      <span className="truncate">
+                        {openingDraft === key
+                          ? "פותח..."
+                          : many
+                            ? `פתח טיוטה: ${d.clientName || "ללא לקוח"}`
+                            : "פתח את הטיוטה בעורך"}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           ))}
@@ -265,7 +339,44 @@ export function AssistantWidget() {
           className="border-t border-stone-200 p-3 flex-shrink-0"
           style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}
         >
+          {attachment && (
+            <div className="flex items-center gap-2 mb-2 rounded-xl border border-orange-200 bg-orange-50 px-3 py-2">
+              <Table2 className="w-4 h-4 text-orange-500 flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold text-stone-800 truncate">
+                  {attachment.fileName}
+                </p>
+                <p className="text-[10px] text-stone-500 leading-tight">
+                  {attachment.rowCount} שורות{attachment.truncated ? " (נחתך)" : ""}
+                </p>
+              </div>
+              <button
+                onClick={() => setAttachment(null)}
+                aria-label="הסר את הקובץ"
+                className="text-stone-400 hover:text-stone-700 p-1 flex-shrink-0"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
           <div className="flex items-end gap-2">
+            <input
+              ref={fileRef}
+              type="file"
+              accept={ATTACHMENT_ACCEPT}
+              className="hidden"
+              onChange={(e) => pickFile(e.target.files?.[0])}
+            />
+            <button
+              onClick={() => fileRef.current?.click()}
+              disabled={busy || parsingFile}
+              aria-label="צרף קובץ אקסל"
+              title="צרף קובץ אקסל או CSV"
+              className="w-10 h-10 flex-shrink-0 rounded-xl border border-stone-200 text-stone-500 hover:text-orange-500 hover:border-orange-200 flex items-center justify-center disabled:opacity-40 transition-colors"
+            >
+              <Paperclip className="w-4 h-4" />
+            </button>
             <textarea
               ref={inputRef}
               value={input}
@@ -277,12 +388,12 @@ export function AssistantWidget() {
                 }
               }}
               rows={1}
-              placeholder="במה אפשר לעזור?"
+              placeholder={parsingFile ? "קורא את הקובץ..." : "במה אפשר לעזור?"}
               className="input-warm flex-1 resize-none max-h-24 text-sm py-2 px-3"
             />
             <button
               onClick={() => send(input)}
-              disabled={busy || !input.trim()}
+              disabled={busy || parsingFile || (!input.trim() && !attachment)}
               aria-label="שלח"
               className="w-10 h-10 flex-shrink-0 rounded-xl bg-gradient-to-br from-orange-400 to-rose-500 text-white flex items-center justify-center disabled:opacity-40 transition-opacity"
             >
