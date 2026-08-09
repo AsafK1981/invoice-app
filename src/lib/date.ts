@@ -20,3 +20,20 @@ export function todayInIsrael(): string {
 export function toIsraelDate(d: Date): string {
   return d.toLocaleDateString("en-CA", { timeZone: "Asia/Jerusalem" });
 }
+
+/**
+ * An existing Date's hour-of-day (0-23) in Asia/Jerusalem, DST-safe (never a
+ * hardcoded UTC+2/+3 offset - `Intl` resolves the correct offset for the
+ * given instant).
+ */
+export function toIsraelHour(d: Date): number {
+  const hourPart = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Jerusalem",
+    hour: "numeric",
+    hour12: false,
+  })
+    .formatToParts(d)
+    .find((p) => p.type === "hour");
+  // Some environments render midnight as "24" with hour12:false; normalize.
+  return hourPart ? Number(hourPart.value) % 24 : d.getUTCHours();
+}

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "./supabase";
 import { getBusinessId } from "./business-init";
+import { sanitizeReminderDays } from "./reminder-schedule";
 import type { Business } from "./types";
 
 const CHANGE_EVENT = "invoice-app:business-changed";
@@ -44,7 +45,13 @@ export function useBusiness() {
             dunningEnabled: data.dunning_enabled ?? false,
             dunningFromName: data.dunning_from_name ?? undefined,
             monthlyReminderEnabled: data.monthly_reminder_enabled ?? false,
-            monthlyReminderDay: (data.monthly_reminder_day as 1 | 15) ?? 1,
+            monthlyReminderDays: Array.isArray(data.monthly_reminder_days)
+              ? data.monthly_reminder_days
+              : [1],
+            monthlyReminderHour: data.monthly_reminder_hour ?? 9,
+            monthlyReminderChannels: Array.isArray(data.monthly_reminder_channels)
+              ? data.monthly_reminder_channels
+              : ["email", "inapp"],
             monthlyReminderLastSent: data.monthly_reminder_last_sent ?? undefined,
             roundTotalDefault: data.round_total_default ?? false,
           }
@@ -82,7 +89,15 @@ export async function saveBusiness(business: Business): Promise<void> {
       dunning_enabled: business.dunningEnabled ?? false,
       dunning_from_name: business.dunningFromName || null,
       monthly_reminder_enabled: business.monthlyReminderEnabled ?? false,
-      monthly_reminder_day: business.monthlyReminderDay ?? 1,
+      monthly_reminder_days:
+        sanitizeReminderDays(business.monthlyReminderDays).length > 0
+          ? sanitizeReminderDays(business.monthlyReminderDays)
+          : [1],
+      monthly_reminder_hour: business.monthlyReminderHour ?? 9,
+      monthly_reminder_channels:
+        business.monthlyReminderChannels && business.monthlyReminderChannels.length > 0
+          ? business.monthlyReminderChannels
+          : ["email", "inapp"],
       round_total_default: business.roundTotalDefault ?? false,
     })
     .eq("id", business.id)

@@ -30,11 +30,15 @@ interface CreateArgs {
 }
 
 /**
- * Fire-and-forget. Looks up the owning user for the business and inserts
- * a notification. Silently swallows errors; producers must not fail
- * their main action just because a notification couldn't be written.
+ * Looks up the owning user for the business and inserts a notification.
+ * Swallows errors internally (producers must not throw/fail their main
+ * action just because a notification couldn't be written) but returns
+ * `true`/`false` so a caller that needs to know delivery actually
+ * succeeded (e.g. inapp being the only channel) can react - existing
+ * callers that don't check the return value keep their prior
+ * fire-and-forget behavior unchanged.
  */
-export async function createNotificationForBusiness(args: CreateArgs): Promise<void> {
+export async function createNotificationForBusiness(args: CreateArgs): Promise<boolean> {
   try {
     const client = admin();
     const { data: biz } = await client
@@ -42,8 +46,8 @@ export async function createNotificationForBusiness(args: CreateArgs): Promise<v
       .select("user_id")
       .eq("id", args.businessId)
       .maybeSingle();
-    if (!biz?.user_id) return;
-    await client.from("notifications").insert({
+    if (!biz?.user_id) return false;
+    const { error } = await client.from("notifications").insert({
       business_id: args.businessId,
       user_id: biz.user_id,
       kind: args.kind,
@@ -52,7 +56,13 @@ export async function createNotificationForBusiness(args: CreateArgs): Promise<v
       href: args.href || null,
       document_id: args.documentId || null,
     });
+    if (error) {
+      console.warn("[notifications] server write failed:", error);
+      return false;
+    }
+    return true;
   } catch (err) {
     console.warn("[notifications] server write failed:", err);
+    return false;
   }
 }

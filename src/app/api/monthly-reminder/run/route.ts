@@ -3,8 +3,9 @@ import nodemailer from "nodemailer";
 import { createClient } from "@supabase/supabase-js";
 import { createNotificationForBusiness } from "@/lib/notifications-server";
 import { CANONICAL_ORIGIN } from "@/lib/public-url";
-import { toIsraelDate } from "@/lib/date";
+import { toIsraelDate, toIsraelHour } from "@/lib/date";
 import { buildMonthlyReminder, type MonthlyReminderDoc, type MonthlyReminderSummary } from "@/lib/monthly-reminder";
+import { sanitizeReminderDays, shouldSendMonthlyReminder } from "@/lib/reminder-schedule";
 import { DOCUMENT_TYPE_LABELS } from "@/lib/types";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -19,9 +20,18 @@ interface BusinessRow {
   id: string;
   name: string;
   monthly_reminder_enabled: boolean;
-  monthly_reminder_day: number;
+  monthly_reminder_days: number[] | null;
+  monthly_reminder_hour: number | null;
+  monthly_reminder_channels: string[] | null;
   monthly_reminder_last_sent: string | null;
   user_id: string;
+}
+
+/** "email"/"inapp" flags out of the raw channels array; unknown values
+ *  (e.g. a future "whatsapp") are ignored - forward-compat, not an error. */
+function resolveChannels(raw: string[] | null): { email: boolean; inapp: boolean } {
+  const arr = Array.isArray(raw) ? raw : [];
+  return { email: arr.includes("email"), inapp: arr.includes("inapp") };
 }
 
 interface DocRow {
@@ -124,12 +134,17 @@ function buildText(businessName: string, summary: MonthlyReminderSummary): strin
   return lines.join("\n");
 }
 
-/** Same calendar-month check the content builder uses, but on the raw DB date string. */
-function isPreviousMonthOrNull(lastSent: string | null, todayIsrael: string): boolean {
-  if (!lastSent) return true;
-  return lastSent.slice(0, 7) !== todayIsrael.slice(0, 7);
-}
-
+// Concurrency model (accepted, not enforced at the DB level): this route is
+// gated by a shared secret only the GH Actions workflow holds, and that
+// workflow's `concurrency: { group: monthly-reminder-daily, cancel-in-progress:
+// false }` serializes runs so two invocations never overlap in practice. That
+// is why there's no atomic per-row claim here. If a second legitimate caller
+// with the secret is ever introduced (a second workflow, a manual trigger
+// that can race the scheduled one, etc.), the upgrade path is an atomic
+// claim on the update, e.g. `UPDATE businesses SET monthly_reminder_last_sent
+// = :today WHERE id = :id AND (monthly_reminder_last_sent IS NULL OR
+// monthly_reminder_last_sent < :scheduledDate) RETURNING id` - only proceed
+// with the send if a row came back.
 export async function POST(req: NextRequest) {
   const provided = req.headers.get("x-cron-secret") || "";
   if (!MONTHLY_REMINDER_CRON_SECRET || provided !== MONTHLY_REMINDER_CRON_SECRET) {
@@ -142,37 +157,30 @@ export async function POST(req: NextRequest) {
 
   const now = new Date();
   const todayIsrael = toIsraelDate(now);
-  const todayOfMonth = Number(todayIsrael.split("-")[2]);
+  const currentHourIsrael = toIsraelHour(now);
 
-  const { data: bizs } = await admin
+  const { data: bizs, error: bizsError } = await admin
     .from("businesses")
-    .select("id, name, monthly_reminder_enabled, monthly_reminder_day, monthly_reminder_last_sent, user_id")
+    .select(
+      "id, name, monthly_reminder_enabled, monthly_reminder_days, monthly_reminder_hour, monthly_reminder_channels, monthly_reminder_last_sent, user_id",
+    )
     .eq("monthly_reminder_enabled", true);
+
+  if (bizsError) {
+    // A schema/transient failure here must not read as "0 businesses opted
+    // in" - that would silently skip every business's reminder for this
+    // tick with a 200 "all good" response. Fail loudly: non-2xx makes the
+    // GH workflow's HTTP-status check fail immediately (it checks status
+    // before it even tries to parse an errors count out of the body).
+    return NextResponse.json(
+      { ok: false, sent: 0, skipped: 0, errors: 1, message: `businesses query failed: ${bizsError.message}` },
+      { status: 500 },
+    );
+  }
 
   if (!bizs || bizs.length === 0) {
     return NextResponse.json({ ok: true, sent: 0, skipped: 0, errors: 0, message: "no businesses opted in" });
   }
-
-  // Same auth-gate reasoning as dunning: this route has no user session, only
-  // the cron secret, so it must not be able to email real clients... except
-  // here the recipient IS the business owner, not a client. Still gate on
-  // email verification for consistency and to avoid emailing an address
-  // nobody confirmed control of.
-  const ownerIds = Array.from(new Set((bizs as BusinessRow[]).map((b) => b.user_id).filter(Boolean)));
-  const ownerConfirmed = new Map<string, boolean>();
-  const ownerEmail = new Map<string, string | null>();
-  await Promise.all(
-    ownerIds.map(async (uid) => {
-      try {
-        const { data, error } = await admin.auth.admin.getUserById(uid);
-        ownerConfirmed.set(uid, !error && Boolean(data?.user?.email_confirmed_at));
-        ownerEmail.set(uid, data?.user?.email ?? null);
-      } catch {
-        ownerConfirmed.set(uid, false);
-        ownerEmail.set(uid, null);
-      }
-    }),
-  );
 
   let sent = 0;
   let skipped = 0;
@@ -186,29 +194,86 @@ export async function POST(req: NextRequest) {
     auth: { user: GMAIL_USER, pass: GMAIL_APP_PASSWORD.replace(/\s+/g, "") },
   });
 
-  // Candidates: today matches the chosen day, OR the chosen day already
-  // passed this month and the business hasn't been sent to yet - the retry
-  // path promised below on send failure. isPreviousMonthOrNull already
-  // guards against resending within the same calendar month.
-  const candidates = (bizs as BusinessRow[]).filter(
-    (b) =>
-      todayOfMonth >= b.monthly_reminder_day &&
-      isPreviousMonthOrNull(b.monthly_reminder_last_sent, todayIsrael),
+  // Candidates: this run's hourly tick is the first (or a later catch-up)
+  // tick at/after the chosen hour on the latest chosen day-of-month that has
+  // already arrived, and last_sent hasn't caught up to that date yet. See
+  // reminder-schedule.ts for the exact rule (including multi-day-per-month,
+  // missed-day, and month-rollover catch-up semantics).
+  const candidates = (bizs as BusinessRow[]).filter((b) =>
+    shouldSendMonthlyReminder({
+      days: sanitizeReminderDays(b.monthly_reminder_days),
+      hour: b.monthly_reminder_hour ?? 9,
+      lastSent: b.monthly_reminder_last_sent,
+      todayIsrael,
+      currentHourIsrael,
+    }),
+  );
+
+  // Owner auth lookups are only needed for candidates that might actually
+  // email (checking every enabled business's owner on every hourly tick was
+  // wasted work for the ~23 ticks/day that have zero or few candidates).
+  const ownerIdsNeedingEmail = Array.from(
+    new Set(
+      candidates
+        .filter((b) => resolveChannels(b.monthly_reminder_channels).email)
+        .map((b) => b.user_id)
+        .filter(Boolean),
+    ),
+  );
+  const ownerConfirmed = new Map<string, boolean>();
+  const ownerEmail = new Map<string, string | null>();
+  await Promise.all(
+    ownerIdsNeedingEmail.map(async (uid) => {
+      try {
+        const { data, error } = await admin.auth.admin.getUserById(uid);
+        ownerConfirmed.set(uid, !error && Boolean(data?.user?.email_confirmed_at));
+        ownerEmail.set(uid, data?.user?.email ?? null);
+      } catch {
+        ownerConfirmed.set(uid, false);
+        ownerEmail.set(uid, null);
+      }
+    }),
   );
 
   for (const biz of candidates) {
-    if (!ownerConfirmed.get(biz.user_id)) {
+    const channels = resolveChannels(biz.monthly_reminder_channels);
+
+    if (!channels.email && !channels.inapp) {
       skipped++;
-      details.push({ business: biz.id, outcome: "skipped: owner email not verified" });
+      details.push({ business: biz.id, outcome: "skipped: no channels" });
+      await admin.from("businesses").update({ monthly_reminder_last_sent: todayIsrael }).eq("id", biz.id);
       continue;
     }
-    const recipientEmail = ownerEmail.get(biz.user_id) ?? null;
-    if (!recipientEmail) {
-      // A confirmed owner always has an auth email; this is a defensive
-      // fallback only. Don't stamp last_sent so a future run retries once
+
+    // Same auth-gate reasoning as dunning: this route has no user session,
+    // only the cron secret, so it must not be able to email real clients...
+    // except here the recipient IS the business owner, not a client. Still
+    // gate on email verification for consistency and to avoid emailing an
+    // address nobody confirmed control of. Crucially, an unverified/missing
+    // owner email does NOT kill a selected inapp channel - it just means
+    // email is unavailable for this send; only when email was the ONLY
+    // selected channel does that become a full skip.
+    let recipientEmail: string | null = null;
+    let emailUnavailableReason: string | null = null;
+    if (channels.email) {
+      if (!ownerConfirmed.get(biz.user_id)) {
+        emailUnavailableReason = "owner email not verified";
+      } else {
+        recipientEmail = ownerEmail.get(biz.user_id) ?? null;
+        if (!recipientEmail) {
+          // A confirmed owner always has an auth email; this is a defensive
+          // fallback only.
+          emailUnavailableReason = "no owner email";
+        }
+      }
+    }
+
+    if (emailUnavailableReason && !channels.inapp) {
+      // Email was the only selected channel and it's unavailable - nothing
+      // left to deliver. Don't stamp last_sent so a future run retries once
       // the account is in a normal state.
       skipped++;
-      details.push({ business: biz.id, outcome: "skipped: no owner email" });
+      details.push({ business: biz.id, outcome: `skipped: ${emailUnavailableReason}` });
       continue;
     }
 
@@ -240,10 +305,10 @@ export async function POST(req: NextRequest) {
       now,
     );
 
-    // Mark the day as evaluated regardless of outcome so we don't re-check
-    // this business daily for the rest of the month, whether we sent or
-    // skipped (empty-month case still updates so the cron doesn't reprocess
-    // it on day+1, day+2, ... until the next chosen day).
+    // Mark the date as evaluated regardless of outcome so this hourly cron
+    // doesn't re-check the business on every later tick, whether we sent or
+    // skipped (empty-month case still updates so it doesn't reprocess this
+    // scheduled date again until the next chosen day arrives).
     try {
       if (!summary) {
         skipped++;
@@ -252,37 +317,78 @@ export async function POST(req: NextRequest) {
         continue;
       }
 
-      const subject = `תזכורת חודשית - ${biz.name}`;
-      const html = buildHtml(biz.name, summary);
-      const text = buildText(biz.name, summary);
+      // Same reminder-style title/body regardless of which channel(s) fire -
+      // when inapp is the only channel, the notification itself IS the
+      // reminder, so it must not read like a mere "we emailed you" receipt.
+      const notificationBody = `${summary.documentsThisMonthCount} מסמכים החודש, ${summary.openItems.length} פתוחים.`;
 
-      await transporter.sendMail({
-        from: `"${biz.name}" <${GMAIL_USER}>`,
-        to: recipientEmail,
-        subject,
-        html,
-        text,
-        headers: {
-          "X-Auto-Response-Suppress": "All",
-          "Auto-Submitted": "auto-generated",
-        },
-      });
+      const emailAttempted = channels.email && Boolean(recipientEmail);
+      if (emailAttempted) {
+        const subject = `תזכורת חודשית - ${biz.name}`;
+        const html = buildHtml(biz.name, summary);
+        const text = buildText(biz.name, summary);
 
-      await createNotificationForBusiness({
-        businessId: biz.id,
-        kind: "monthly_reminder_sent",
-        title: "נשלחה תזכורת חודשית",
-        body: `${summary.documentsThisMonthCount} מסמכים החודש, ${summary.openItems.length} פתוחים.`,
-        href: "/documents",
-      });
+        await transporter.sendMail({
+          from: `"${biz.name}" <${GMAIL_USER}>`,
+          to: recipientEmail as string,
+          subject,
+          html,
+          text,
+          headers: {
+            "X-Auto-Response-Suppress": "All",
+            "Auto-Submitted": "auto-generated",
+          },
+        });
+      }
 
-      await admin.from("businesses").update({ monthly_reminder_last_sent: todayIsrael }).eq("id", biz.id);
-      sent++;
-      details.push({ business: biz.id, outcome: "sent" });
+      let inappSuccess: boolean | null = null;
+      if (channels.inapp) {
+        inappSuccess = await createNotificationForBusiness({
+          businessId: biz.id,
+          kind: "monthly_reminder_sent",
+          title: "תזכורת חודשית",
+          body: notificationBody,
+          href: "/documents",
+        });
+      }
+
+      // inapp is the ONLY channel that actually delivered anything for this
+      // send (email wasn't selected, or was selected but unavailable) - a
+      // failed insert there means nothing went out at all. Don't stamp, so
+      // the next hourly tick retries instead of silently losing the month.
+      if (channels.inapp && inappSuccess === false && !emailAttempted) {
+        errors++;
+        details.push({ business: biz.id, outcome: "error: inapp notification insert failed" });
+        continue;
+      }
+
+      const { error: stampError } = await admin
+        .from("businesses")
+        .update({ monthly_reminder_last_sent: todayIsrael })
+        .eq("id", biz.id);
+
+      let outcome = "sent";
+      if (emailAttempted && channels.inapp && inappSuccess === false) {
+        outcome = "sent: email ok, inapp notification insert failed";
+      } else if (!emailAttempted && channels.inapp && emailUnavailableReason) {
+        outcome = `sent: inapp only, ${emailUnavailableReason}`;
+      }
+      if (stampError) {
+        // The send already happened and can't be undone - but if we don't
+        // notice this, the business double-sends next hour because
+        // last_sent never advanced. Count it as an error so the workflow
+        // alarm fires and a human looks, even though the reminder itself
+        // went out fine.
+        errors++;
+        details.push({ business: biz.id, outcome: `${outcome}, stamp failed after send: ${stampError.message}` });
+      } else {
+        sent++;
+        details.push({ business: biz.id, outcome });
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "unknown error";
       // Deliberately do NOT stamp monthly_reminder_last_sent on a send
-      // failure - the next day's run should retry rather than silently
+      // failure - the next hourly run should retry rather than silently
       // skip the rest of the month because of one transient SMTP error.
       errors++;
       details.push({ business: biz.id, outcome: `error: ${msg}` });

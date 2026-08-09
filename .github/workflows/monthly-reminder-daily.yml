@@ -2,10 +2,12 @@ name: Monthly Reminder Daily Run
 
 on:
   schedule:
-    # Every day at 05:30 UTC. The route itself filters to businesses whose
-    # chosen day (1st or 15th, Asia/Jerusalem) is today, so a daily cron is
-    # just how it notices that day has arrived.
-    - cron: '30 5 * * *'
+    # Hourly at :30. Businesses now choose their own day(s)-of-month, hour,
+    # and channels, so the route itself decides per business whether this
+    # tick is the (first, or a missed-run catch-up) hour on a chosen day -
+    # see src/lib/reminder-schedule.ts. An hourly cron is how it notices
+    # the chosen hour has arrived without hardcoding it here.
+    - cron: '30 * * * *'
   workflow_dispatch:
 
 permissions:
