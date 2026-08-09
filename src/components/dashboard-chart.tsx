@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { isCountableRevenue, type InvoiceDocument, type Expense } from "@/lib/types";
 
 interface Props {
@@ -9,6 +9,99 @@ interface Props {
 }
 
 type MonthDatum = { month: string; הכנסות: number; הוצאות: number };
+
+/* ------------------------------------------------------------------ */
+/* Time-range selection                                                */
+/* ------------------------------------------------------------------ */
+
+type RangeKey = "day" | "week" | "month" | "6m" | "year" | "2y" | "5y";
+
+const RANGES: { key: RangeKey; label: string }[] = [
+  { key: "day", label: "יום" },
+  { key: "week", label: "שבוע" },
+  { key: "month", label: "חודש" },
+  { key: "6m", label: "6 חודשים" },
+  { key: "year", label: "שנה" },
+  { key: "2y", label: "שנתיים" },
+  { key: "5y", label: "5 שנים" },
+];
+
+const RANGE_STORAGE_KEY = "dashboard-chart-range";
+
+const HEBREW_MONTHS = [
+  "ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יוני",
+  "יולי", "אוגוסט", "ספטמבר", "אוקטובר", "נובמבר", "דצמבר",
+];
+
+/** Short month names for the dense (12/24-point) views. */
+const HEBREW_MONTHS_SHORT = [
+  "ינו׳", "פבר׳", "מרץ", "אפר׳", "מאי", "יונ׳",
+  "יול׳", "אוג׳", "ספט׳", "אוק׳", "נוב׳", "דצמ׳",
+];
+
+/**
+ * A bucket is matched by ISO-date string prefix: "2026-08-09" (a day),
+ * "2026-08" (a month), or "2026" (a year). Document/expense dates are
+ * ISO strings, so prefix matching buckets all three granularities.
+ */
+type Bucket = { prefix: string; label: string };
+
+function isoDay(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function isoMonth(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function buildBuckets(range: RangeKey): Bucket[] {
+  const now = new Date();
+  const buckets: Bucket[] = [];
+  const dayBuckets = (count: number) => {
+    for (let i = count - 1; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+      buckets.push({ prefix: isoDay(d), label: `${d.getDate()}.${d.getMonth() + 1}` });
+    }
+  };
+  const monthBuckets = (count: number, short: boolean, withYear: boolean) => {
+    for (let i = count - 1; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const name = short ? HEBREW_MONTHS_SHORT[d.getMonth()] : HEBREW_MONTHS[d.getMonth()];
+      buckets.push({
+        prefix: isoMonth(d),
+        label: withYear ? `${name} ${String(d.getFullYear()).slice(2)}` : name,
+      });
+    }
+  };
+  switch (range) {
+    case "day":
+      // Document dates carry day granularity, so "today" is a single point.
+      buckets.push({ prefix: isoDay(now), label: "היום" });
+      break;
+    case "week":
+      dayBuckets(7);
+      break;
+    case "month":
+      dayBuckets(30);
+      break;
+    case "6m":
+      monthBuckets(6, false, false);
+      break;
+    case "year":
+      monthBuckets(12, true, false);
+      break;
+    case "2y":
+      monthBuckets(24, true, true);
+      break;
+    case "5y":
+      for (let i = 4; i >= 0; i--) {
+        const y = now.getFullYear() - i;
+        buckets.push({ prefix: String(y), label: String(y) });
+      }
+      break;
+  }
+  return buckets;
+}
 
 /**
  * The chart palette, single-sourced. Every place a series is painted
@@ -47,6 +140,8 @@ const SERIES = {
 function kLabel(v: unknown): string {
   const n = typeof v === "number" ? v : Number(v);
   if (!n || Number.isNaN(n)) return "";
+  // Daily buckets are often under ₪1000 — "₪0k" would be nonsense there.
+  if (n < 1000) return `₪${Math.round(n)}`;
   return `₪${Math.round(n / 1000)}k`;
 }
 
@@ -58,37 +153,47 @@ const ils = new Intl.NumberFormat("he-IL", {
 });
 
 export function DashboardChart({ documents, expenses }: Props) {
-  const data = useMemo<MonthDatum[]>(() => {
-    const now = new Date();
-    const months: { key: string; label: string }[] = [];
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-      const hebrewMonths = [
-        "ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יוני",
-        "יולי", "אוגוסט", "ספטמבר", "אוקטובר", "נובמבר", "דצמבר",
-      ];
-      months.push({ key, label: hebrewMonths[d.getMonth()] });
-    }
+  const [range, setRange] = useState<RangeKey>("6m");
 
-    return months.map((m) => {
+  // Restore the saved range after mount (not in the initializer — the page is
+  // server-rendered first, and localStorage there would cause a hydration mismatch).
+  useEffect(() => {
+    const saved = localStorage.getItem(RANGE_STORAGE_KEY);
+    if (saved && RANGES.some((r) => r.key === saved)) setRange(saved as RangeKey);
+  }, []);
+
+  const pickRange = (key: RangeKey) => {
+    setRange(key);
+    try {
+      localStorage.setItem(RANGE_STORAGE_KEY, key);
+    } catch {
+      /* private mode — selection just won't persist */
+    }
+  };
+
+  const data = useMemo<MonthDatum[]>(() => {
+    return buildBuckets(range).map((b) => {
       const income = documents
-        .filter((doc) => doc.status === "paid" && isCountableRevenue(doc) && doc.date.startsWith(m.key))
+        .filter((doc) => doc.status === "paid" && isCountableRevenue(doc) && doc.date.startsWith(b.prefix))
         .reduce((sum, doc) => sum + (doc.totalIls ?? doc.total), 0);
 
-      const monthExpenses = expenses
-        .filter((e) => e.date.startsWith(m.key))
+      const bucketExpenses = expenses
+        .filter((e) => e.date.startsWith(b.prefix))
         .reduce((sum, e) => sum + e.amount, 0);
 
       return {
-        month: m.label,
+        month: b.label,
         הכנסות: income,
-        הוצאות: monthExpenses,
+        הוצאות: bucketExpenses,
       };
     });
-  }, [documents, expenses]);
+  }, [documents, expenses, range]);
 
-  const hasAnyData = data.some((d) => d.הכנסות > 0 || d.הוצאות > 0);
+  // Empty state only when the account has no data at all — a quiet week
+  // should still render (flat at ₪0), not hide the chart.
+  const hasAnyData =
+    expenses.length > 0 ||
+    documents.some((doc) => doc.status === "paid" && isCountableRevenue(doc));
 
   if (!hasAnyData) {
     return (
@@ -102,7 +207,7 @@ export function DashboardChart({ documents, expenses }: Props) {
   }
 
   // Robinhood-style dual monotone-cubic line chart (custom SVG).
-  return <MonthlyLineChart data={data} />;
+  return <MonthlyLineChart data={data} range={range} onRangeChange={pickRange} />;
 }
 
 /* ------------------------------------------------------------------ */
@@ -188,7 +293,15 @@ function monotonePath(
   return { d, xs, ys };
 }
 
-function MonthlyLineChart({ data }: { data: MonthDatum[] }) {
+function MonthlyLineChart({
+  data,
+  range,
+  onRangeChange,
+}: {
+  data: MonthDatum[];
+  range: RangeKey;
+  onRangeChange: (key: RangeKey) => void;
+}) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
   const [hover, setHover] = useState<number | null>(null);
@@ -226,6 +339,13 @@ function MonthlyLineChart({ data }: { data: MonthDatum[] }) {
   const inc = monotonePath(income, xAt, yAt);
   const exp = monotonePath(expenses, xAt, yAt);
 
+  // Dense views (30 daily points, 24 months) can't label every point.
+  // Anchor the visible x-labels to the LAST point so "now" is always labeled.
+  const labelEvery = Math.max(1, Math.ceil(n / 8));
+  const showXLabel = (i: number) => (n - 1 - i) % labelEvery === 0;
+  // Per-point ₪ value labels only when they won't collide with each other.
+  const showValueLabels = n <= 12;
+
   const areaFrom = (p: { d: string; xs: number[] }) =>
     `${p.d} L${p.xs[p.xs.length - 1].toFixed(2)},${baseY.toFixed(2)} L${p.xs[0].toFixed(2)},${baseY.toFixed(2)} Z`;
 
@@ -233,8 +353,8 @@ function MonthlyLineChart({ data }: { data: MonthDatum[] }) {
 
   return (
     <div style={{ width: "100%", height: 360 }} className="flex flex-col gk-line-chart">
-      {/* legend pills (RTL start = right) */}
-      <div className="flex gap-2.5 justify-start mb-1" dir="rtl">
+      {/* header row: legend pills (RTL start = right) + time-range selector (left) */}
+      <div className="flex flex-wrap items-center gap-2.5 mb-1" dir="rtl">
         {Object.entries(SERIES).map(([key, s]) => (
           <span
             key={key}
@@ -252,6 +372,40 @@ function MonthlyLineChart({ data }: { data: MonthDatum[] }) {
             {s.label}
           </span>
         ))}
+        <div
+          className="mr-auto flex flex-wrap justify-center rounded-lg p-0.5"
+          role="tablist"
+          aria-label="טווח זמן"
+          style={{
+            background: "rgba(190,158,78,.10)",
+            border: "1px solid rgba(190,158,78,.32)",
+          }}
+        >
+          {RANGES.map((r) => {
+            const active = r.key === range;
+            return (
+              <button
+                key={r.key}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => onRangeChange(r.key)}
+                className="rounded-md px-2.5 py-1 text-[12.5px] font-medium transition-colors"
+                style={
+                  active
+                    ? {
+                        background: "#8f6f2a",
+                        color: "#fdfaf2",
+                        boxShadow: "0 1px 4px rgba(143,111,42,.35)",
+                      }
+                    : { color: "#5a5245" }
+                }
+              >
+                {r.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <div ref={wrapRef} className="relative flex-1">
@@ -394,19 +548,21 @@ function MonthlyLineChart({ data }: { data: MonthDatum[] }) {
               strokeLinejoin="round"
             />
 
-            {/* month labels */}
-            {months.map((mm, i) => (
-              <text
-                key={`m${i}`}
-                x={xAt(i)}
-                y={h - 8}
-                fill="#6f6757"
-                fontSize={13}
-                textAnchor="middle"
-              >
-                {mm}
-              </text>
-            ))}
+            {/* x-axis labels (sparse in dense views) */}
+            {months.map((mm, i) =>
+              showXLabel(i) ? (
+                <text
+                  key={`m${i}`}
+                  x={xAt(i)}
+                  y={h - 8}
+                  fill="#6f6757"
+                  fontSize={13}
+                  textAnchor="middle"
+                >
+                  {mm}
+                </text>
+              ) : null,
+            )}
 
             {/* expense dots + labels BELOW (copper) */}
             {exp.xs.map((x, i) => {
@@ -419,11 +575,11 @@ function MonthlyLineChart({ data }: { data: MonthDatum[] }) {
               let ly = y + 16;
               if (inc.ys[i] > y) ly = Math.max(ly, y + 16);
               ly = Math.min(ly, axisBand);
-              const label = kLabel(expenses[i]);
               const hot = hover === i;
+              const label = showValueLabels || hot ? kLabel(expenses[i]) : "";
               return (
                 <g key={`e${i}`}>
-                  <circle cx={x} cy={y} r={hot ? 4.4 : 3.6} fill={SERIES.expense.dot} />
+                  <circle cx={x} cy={y} r={hot ? 4.4 : n > 12 ? 2.6 : 3.6} fill={SERIES.expense.dot} />
                   <circle cx={x} cy={y} r={1.5} fill="#ffffff" />
                   {label && (
                     <text
@@ -445,8 +601,8 @@ function MonthlyLineChart({ data }: { data: MonthDatum[] }) {
             {inc.xs.map((x, i) => {
               const y = inc.ys[i];
               const last = i === inc.xs.length - 1;
-              const label = kLabel(income[i]);
               const hot = hover === i;
+              const label = showValueLabels || hot || last ? kLabel(income[i]) : "";
               return (
                 <g key={`i${i}`}>
                   {last ? (
@@ -457,7 +613,7 @@ function MonthlyLineChart({ data }: { data: MonthDatum[] }) {
                     </>
                   ) : (
                     <>
-                      <circle cx={x} cy={y} r={hot ? 4.4 : 3.6} fill={SERIES.income.dot} />
+                      <circle cx={x} cy={y} r={hot ? 4.4 : n > 12 ? 2.6 : 3.6} fill={SERIES.income.dot} />
                       <circle cx={x} cy={y} r={1.5} fill="#ffffff" />
                     </>
                   )}
