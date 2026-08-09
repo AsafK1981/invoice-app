@@ -1,0 +1,73 @@
+name: Monthly Reminder Daily Run
+
+on:
+  schedule:
+    # Every day at 05:30 UTC. The route itself filters to businesses whose
+    # chosen day (1st or 15th, Asia/Jerusalem) is today, so a daily cron is
+    # just how it notices that day has arrived.
+    - cron: '30 5 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: monthly-reminder-daily
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call /api/monthly-reminder/run
+        env:
+          MONTHLY_REMINDER_CRON_SECRET: ${{ secrets.MONTHLY_REMINDER_CRON_SECRET }}
+        run: |
+          if [ -z "$MONTHLY_REMINDER_CRON_SECRET" ]; then
+            echo "::error::MONTHLY_REMINDER_CRON_SECRET not set as a repo secret"
+            exit 1
+          fi
+          RESPONSE=$(curl -sS -X POST \
+            "https://friendlyinvoice.co.il/api/monthly-reminder/run" \
+            -H "x-cron-secret: $MONTHLY_REMINDER_CRON_SECRET" \
+            -H "content-type: application/json" \
+            -d '{}' \
+            -w "\nHTTP %{http_code}")
+          echo "$RESPONSE"
+
+          HTTP_STATUS=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+
+          if ! echo "$HTTP_STATUS" | grep -qE "HTTP 2[0-9][0-9]"; then
+            echo "::error::monthly reminder run failed (bad HTTP status)"
+            exit 1
+          fi
+
+          ERRORS=$(echo "$BODY" | grep -oE '"errors":[0-9]+' | grep -oE '[0-9]+')
+          if [ -z "$ERRORS" ]; then
+            echo "::error::monthly reminder run: could not parse errors count from response body"
+            exit 1
+          fi
+          if [ "$ERRORS" -gt 0 ]; then
+            echo "::error::monthly reminder run completed with $ERRORS error(s)"
+            exit 1
+          fi
+
+          echo "✓ monthly reminder run completed"
+
+      - name: Push WhatsApp on failure
+        if: failure() && env.GAYA_PUSH_TOKEN != ''
+        env:
+          GAYA_PUSH_TOKEN: ${{ secrets.GAYA_PUSH_TOKEN }}
+        run: |
+          curl -sS -X POST https://136.111.197.22.nip.io/push \
+            -H "Authorization: Bearer $GAYA_PUSH_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "$(cat <<EOF
+          {
+            "text": "🚨 Monthly reminder daily cron FAILED.\nRun: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\n\nBusinesses may miss their monthly document reminder today.",
+            "source": "monthly-reminder-daily"
+          }
+          EOF
+          )" \
+            -o /dev/null -w "Push status: %{http_code}\n"

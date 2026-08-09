@@ -56,6 +56,14 @@ export interface Business {
   dunningEnabled?: boolean;
   /** Optional friendly From name on dunning emails (defaults to name). */
   dunningFromName?: string;
+  /** When true, the daily monthly-reminder cron may email this business's
+   *  owner a monthly nudge (open quotes/proformas, quiet retainer clients). */
+  monthlyReminderEnabled?: boolean;
+  /** Day of month the reminder is evaluated on: 1 or 15 (Asia/Jerusalem). */
+  monthlyReminderDay?: 1 | 15;
+  /** `YYYY-MM-DD` of the last time this business's reminder was sent or
+   *  evaluated-and-skipped, so the cron doesn't re-check it daily. */
+  monthlyReminderLastSent?: string;
   /** Default state for the per-document "round total to whole shekel" toggle. */
   roundTotalDefault?: boolean;
 }

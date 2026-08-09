@@ -26,6 +26,7 @@ import { DocumentNumberingSettings } from "@/components/document-numbering-setti
 import { AuditLogSection } from "@/components/audit-log-section";
 import { TaxAuthoritySection } from "@/components/tax-authority-section";
 import { DunningSettingsSection } from "@/components/dunning-settings-section";
+import { MonthlyReminderSettingsSection } from "@/components/monthly-reminder-settings-section";
 import { TwoFactorSection } from "@/components/two-factor-section";
 import { WhatsAppSection } from "@/components/whatsapp-section";
 import { ALLOCATION_THRESHOLD_SCHEDULE, formatThreshold } from "@/lib/tax-authority";
@@ -264,6 +265,8 @@ export default function SettingsPage() {
       </div>
 
       <DunningSettingsSection />
+
+      <MonthlyReminderSettingsSection />
 
       <TwoFactorSection />
 

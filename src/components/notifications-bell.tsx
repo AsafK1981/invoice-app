@@ -56,6 +56,11 @@ const KIND_STYLE: Record<
     iconColor: "text-rose-700",
     bg: "bg-rose-50 border-rose-200",
   },
+  monthly_reminder_sent: {
+    icon: Mail,
+    iconColor: "text-orange-700",
+    bg: "bg-orange-50 border-orange-200",
+  },
 };
 
 function timeAgo(iso: string): string {

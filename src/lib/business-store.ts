@@ -43,6 +43,9 @@ export function useBusiness() {
             defaultDocNotes: data.default_doc_notes ?? undefined,
             dunningEnabled: data.dunning_enabled ?? false,
             dunningFromName: data.dunning_from_name ?? undefined,
+            monthlyReminderEnabled: data.monthly_reminder_enabled ?? false,
+            monthlyReminderDay: (data.monthly_reminder_day as 1 | 15) ?? 1,
+            monthlyReminderLastSent: data.monthly_reminder_last_sent ?? undefined,
             roundTotalDefault: data.round_total_default ?? false,
           }
         : defaultBusiness
@@ -78,6 +81,8 @@ export async function saveBusiness(business: Business): Promise<void> {
       default_doc_notes: business.defaultDocNotes || null,
       dunning_enabled: business.dunningEnabled ?? false,
       dunning_from_name: business.dunningFromName || null,
+      monthly_reminder_enabled: business.monthlyReminderEnabled ?? false,
+      monthly_reminder_day: business.monthlyReminderDay ?? 1,
       round_total_default: business.roundTotalDefault ?? false,
     })
     .eq("id", business.id)

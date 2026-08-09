@@ -33,6 +33,7 @@ const KIND_STYLE: Record<
   quote_approved: { icon: CheckSquare, iconColor: "text-sky-700", bg: "bg-sky-50 border-sky-200" },
   ceiling_approaching: { icon: AlertTriangle, iconColor: "text-orange-700", bg: "bg-orange-50 border-orange-200" },
   tax_token_expiring: { icon: ShieldAlert, iconColor: "text-rose-700", bg: "bg-rose-50 border-rose-200" },
+  monthly_reminder_sent: { icon: Mail, iconColor: "text-orange-700", bg: "bg-orange-50 border-orange-200" },
 };
 
 function fullTime(iso: string): string {
