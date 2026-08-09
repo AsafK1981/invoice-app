@@ -144,6 +144,14 @@ export async function GET(req: NextRequest) {
       subtotal: Number(row.subtotal) || 0,
       vat: Number(row.vat) || 0,
       total: Number(row.total) || 0,
+      // The builder reports every amount in shekels (`totalIls ?? total`), so
+      // these have to be carried through or the fallback silently files a
+      // foreign-currency invoice at its face value - $100 filed as 100 ₪.
+      // Null on ILS documents, which is exactly when the fallback is right.
+      currency: (row.currency as string) || undefined,
+      subtotalIls: row.subtotal_ils == null ? undefined : Number(row.subtotal_ils),
+      vatIls: row.vat_ils == null ? undefined : Number(row.vat_ils),
+      totalIls: row.total_ils == null ? undefined : Number(row.total_ils),
       paymentMethod: (row.payment_method as InvoiceDocument["paymentMethod"]) || undefined,
       notes: (row.notes as string) || undefined,
       allocationNumber: (row.allocation_number as string) || undefined,

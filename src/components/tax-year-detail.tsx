@@ -28,7 +28,12 @@ export function TaxYearDetail({ year, documents, expenses, allDocuments, allExpe
     const paid = documents.filter((d) => d.status === "paid" && isCountableRevenue(d));
     const totalIncome = paid.reduce((s, d) => s + (d.totalIls ?? d.total), 0);
     const totalExpenses = expenses.reduce((s, e) => s + e.amount, 0);
-    const totalVat = paid.reduce((s, d) => s + Math.abs(d.vatIls ?? d.vat), 0);
+    // Net of credit notes, not absolute: a credit note reduces the
+    // transaction and its VAT, and this figure sits next to totalIncome
+    // above, which is already netted the same way (credit notes are stored
+    // ALREADY NEGATIVE on save). Math.abs() here would add a refund's VAT
+    // back in as if it were still collected.
+    const totalVat = paid.reduce((s, d) => s + (d.vatIls ?? d.vat), 0);
 
     // Income by document type
     const incomeByType = new Map<string, { count: number; total: number }>();

@@ -30,14 +30,16 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   const { docs, totalBilled, totalPaid, lastDocDate, openCount } = useMemo(() => {
     if (!client) return { docs: [], totalBilled: 0, totalPaid: 0, lastDocDate: null, openCount: 0 };
     const mine = documents.filter((d) => d.clientId === client.id);
-    // Total billed = all non-cancelled, non-draft documents (credit notes
-    // subtract). This is the "total business done with this client" number.
+    // Total billed = all non-cancelled, non-draft documents. Credit notes are
+    // stored ALREADY NEGATIVE on save (receipt-editor.tsx applies
+    // `sign = -1`), so a plain sum already subtracts them - applying a sign
+    // here again would double-negate a refund into extra billing.
     const billed = mine
       .filter((d) => d.status !== "draft" && d.status !== "cancelled")
-      .reduce((s, d) => s + (d.type === "credit_note" ? -1 : 1) * (d.totalIls ?? d.total), 0);
+      .reduce((s, d) => s + (d.totalIls ?? d.total), 0);
     const paid = mine
       .filter((d) => d.status === "paid")
-      .reduce((s, d) => s + (d.type === "credit_note" ? -1 : 1) * (d.totalIls ?? d.total), 0);
+      .reduce((s, d) => s + (d.totalIls ?? d.total), 0);
     const last = mine.length > 0 ? mine.map((d) => d.date).sort().at(-1) : null;
     const open = mine.filter(
       (d) => d.status === "sent" && (d.type === "quote" || d.type === "proforma" || d.type === "tax_invoice"),

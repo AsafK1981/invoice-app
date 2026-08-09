@@ -34,7 +34,12 @@ export function Form1301Helper({ year, business, documents, expenses }: Props) {
     const paid = documents.filter((d) => d.status === "paid" && isCountableRevenue(d));
     const grossIncome = paid.reduce((s, d) => s + ((d.subtotalIls ?? d.subtotal) || ((d.totalIls ?? d.total) - (d.vatIls ?? (d.vat || 0)))), 0);
     const totalIncomeWithVat = paid.reduce((s, d) => s + (d.totalIls ?? d.total), 0);
-    const vatCollected = paid.reduce((s, d) => s + Math.abs((d.vatIls ?? d.vat) || 0), 0);
+    // Net of credit notes, not absolute: a credit note reduces the
+    // transaction and its VAT, and this figure sits next to grossIncome /
+    // netProfit above, which are already netted the same way (credit notes
+    // are stored ALREADY NEGATIVE on save). Math.abs() here would add a
+    // refund's VAT back in as if it were still collected.
+    const vatCollected = paid.reduce((s, d) => s + ((d.vatIls ?? d.vat) || 0), 0);
     const totalExpenses = expenses.reduce((s, e) => s + e.amount, 0);
     const vatInput = expenses.reduce((s, e) => s + (e.vatAmount || 0), 0);
     const netProfit = grossIncome - (totalExpenses - vatInput);

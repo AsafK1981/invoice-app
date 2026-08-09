@@ -44,12 +44,12 @@ export default function TaxProjectionPage() {
     );
 
     const prefix = `${year}-`;
+    // Credit notes are stored ALREADY NEGATIVE on save (receipt-editor.tsx
+    // applies `sign = -1`), so a plain sum already subtracts them; negating
+    // them again here would turn a refund into extra projected income.
     const ytdIncome = documents
       .filter((d) => d.status === "paid" && isCountableRevenue(d) && d.date.startsWith(prefix))
-      .reduce(
-        (s, d) => s + (d.type === "credit_note" ? -(d.totalIls ?? d.total) : (d.totalIls ?? d.total)),
-        0,
-      );
+      .reduce((s, d) => s + (d.totalIls ?? d.total), 0);
     const ytdExpenses = expenses
       .filter((e) => e.date.startsWith(prefix))
       .reduce((s, e) => s + e.amount, 0);

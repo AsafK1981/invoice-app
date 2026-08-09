@@ -41,10 +41,13 @@ function buildStatsByClient(documents: InvoiceDocument[]): Map<string, ClientSta
   for (const d of documents) {
     if (!d.clientId) continue;
     if (d.status === "draft" || d.status === "cancelled") continue;
-    const sign = d.type === "credit_note" ? -1 : 1;
+    // Credit notes are stored ALREADY NEGATIVE on save (receipt-editor.tsx
+    // applies `sign = -1`), so a plain sum already subtracts them; applying
+    // a sign here again would double-negate. `totalIls` normalizes
+    // foreign-currency documents into shekels.
     const cur = m.get(d.clientId) ?? { docCount: 0, totalBilled: 0, lastDocDate: null };
     cur.docCount += 1;
-    cur.totalBilled += sign * d.total;
+    cur.totalBilled += (d.totalIls ?? d.total);
     if (!cur.lastDocDate || d.date > cur.lastDocDate) cur.lastDocDate = d.date;
     m.set(d.clientId, cur);
   }

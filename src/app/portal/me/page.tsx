@@ -90,12 +90,12 @@ export default function PortalDocumentsPage() {
     docsByBusiness.set(d.business_id, list);
   }
 
+  // Credit notes are stored ALREADY NEGATIVE on save (receipt-editor.tsx
+  // applies `sign = -1`), so a plain sum already subtracts them; negating
+  // them again here would double-negate a refund into extra "paid" total.
   const totalPaid = docs
     .filter((d) => d.status === "paid")
-    .reduce((s, d) => {
-      const val = d.total_ils ?? d.total;
-      return s + (d.type === "credit_note" ? -val : val);
-    }, 0);
+    .reduce((s, d) => s + (d.total_ils ?? d.total), 0);
   const totalOpen = docs
     .filter((d) => d.status === "sent" && (d.type === "quote" || d.type === "proforma" || d.type === "tax_invoice"))
     .reduce((s, d) => s + (d.total_ils ?? d.total), 0);

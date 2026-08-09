@@ -37,13 +37,17 @@ export default function DocumentsPage() {
     let outstanding = 0;
     for (const d of documents) {
       if (d.status === "draft" || d.status === "cancelled") continue;
-      const sign = d.type === "credit_note" ? -1 : 1;
-      if (d.status === "paid") paid += sign * d.total;
+      // Credit notes are stored ALREADY NEGATIVE on save (receipt-editor.tsx
+      // applies `sign = -1`), so a plain sum already subtracts them; applying
+      // a sign here again would double-negate and turn a refund into extra
+      // "paid" total. `totalIls` normalizes foreign-currency documents into
+      // shekels so they don't get summed at their native face value.
+      if (d.status === "paid") paid += (d.totalIls ?? d.total);
       else if (d.status === "sent" && (d.type === "quote" || d.type === "proforma" || d.type === "tax_invoice")) {
         // "outstanding" = sent but unpaid quotes/invoices → money potentially
         // owed to you. Receipts and tax_invoice_receipts are paid by definition
         // and aren't double-counted here.
-        outstanding += d.total;
+        outstanding += (d.totalIls ?? d.total);
       }
     }
     return { paid, outstanding };

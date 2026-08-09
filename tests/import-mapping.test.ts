@@ -361,6 +361,41 @@ describe("mapDocumentRow parity with the real import loops", () => {
     });
   }
 
+  // Every income, VAT and turnover figure in the app sums document amounts
+  // plainly and relies on credit notes being stored negative (the editor
+  // applies sign = -1 on save). A source file writes a refund as a positive
+  // number, and the `total > 0` gate means that is the only shape that reaches
+  // the mapper - so the mapper has to apply the sign, or an imported refund is
+  // added to revenue and to the VAT reported to רשות המסים.
+  it("stores an imported credit note negative, matching how the editor saves one", () => {
+    const mapped = mapDocumentRow(
+      { מספר: "7", סוג: "זיכוי", לקוח: "א", תאריך: "05/06/2025", סכום: "400", 'מע"מ': "61" },
+      headersMap,
+      today,
+    );
+    expect(mapped.ok).toBe(true);
+    if (mapped.ok) {
+      expect(mapped.record.type).toBe("credit_note");
+      expect(mapped.record.total).toBe(-400);
+      expect(mapped.record.vat).toBe(-61);
+      expect(mapped.record.subtotal).toBe(-339);
+    }
+  });
+
+  it("leaves non-credit-note amounts positive", () => {
+    const mapped = mapDocumentRow(
+      { מספר: "8", סוג: "קבלה", לקוח: "א", תאריך: "05/06/2025", סכום: "400", 'מע"מ': "61" },
+      headersMap,
+      today,
+    );
+    expect(mapped.ok).toBe(true);
+    if (mapped.ok) {
+      expect(mapped.record.total).toBe(400);
+      expect(mapped.record.vat).toBe(61);
+      expect(mapped.record.subtotal).toBe(339);
+    }
+  });
+
   it("exposes typeMatched:false for unrecognized types (so callers can count them)", () => {
     const mapped = mapDocumentRow(
       { מספר: "3", סוג: "משהו מוזר", לקוח: "א", תאריך: "05/06/2025", סכום: "100", 'מע"מ': "0" },

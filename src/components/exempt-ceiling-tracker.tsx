@@ -24,15 +24,15 @@ export function ExemptCeilingTracker({ business, documents }: Props) {
     //   • any doc already converted into another (convertedToId set), its
     //     revenue is represented by the target, so counting both double-counts
     //     (the source quote is marked "paid" on conversion).
-    // Credit notes subtract (stored negative). Revenue types add.
+    // Credit notes are stored ALREADY NEGATIVE (receipt-editor.tsx applies
+    // `sign = -1` on save), so a plain sum already subtracts them - applying
+    // a sign here again would double-negate and turn a refund into extra
+    // turnover.
     return documents
       .filter((d) => d.date.startsWith(String(year)))
       .filter((d) => d.status !== "draft" && d.status !== "cancelled")
       .filter((d) => isCountableRevenue(d))
-      .reduce((sum, d) => {
-        const sign = d.type === "credit_note" ? -1 : 1;
-        return sum + sign * (d.totalIls ?? d.total);
-      }, 0);
+      .reduce((sum, d) => sum + (d.totalIls ?? d.total), 0);
   }, [documents, year]);
 
   if (!business || business.businessType !== "exempt") return null;

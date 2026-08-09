@@ -13,8 +13,11 @@ import { resolveDocumentTypeStrict, resolveImportDate, parseAmount } from "@/lib
  * / bulk-import-zone), NOT the analyzer's previously-drifted version:
  *   - number must be all digits (`documents.number` is int) else skip
  *   - client name required
- *   - total must parse AND be > 0 (credit-note negative-total support is
- *     explicitly OUT of scope; do not "fix" the `<= 0` gate here)
+ *   - total must parse AND be > 0. A source file states a refund as a positive
+ *     amount, so a row resolving to `credit_note` is negated on the way out
+ *     (see the `signed` multiplier below) to match how the editor stores it.
+ *     Do not "fix" the `<= 0` gate to accept negative input without also
+ *     reworking that multiplier, or refunds will import at the wrong sign.
  *   - date resolves via resolveImportDate (empty → `today` fallback, present +
  *     invalid → skip)
  *   - type resolves via resolveDocumentTypeStrict; an unrecognized cell NEVER
@@ -198,9 +201,29 @@ export function mapDocumentRow(
   else if (statusRaw === "cancelled" || statusRaw.includes("בוטל")) status = "cancelled";
   else if (type === "quote" || type === "proforma") status = "sent";
 
+  // Credit notes are stored NEGATIVE everywhere in this app: the editor
+  // applies `sign = -1` to subtotal/vat/total on save, and every income, VAT
+  // and turnover figure relies on that by summing plainly. A source file
+  // states a refund as a positive amount ("זיכוי, 400"), and the `total > 0`
+  // guard above means it is the only shape that can even reach here - so the
+  // sign has to be applied at the boundary. Without this, an imported refund
+  // would be ADDED to revenue, to the exempt-ceiling turnover, and to the VAT
+  // reported to רשות המסים.
+  const signed = type === "credit_note" ? -1 : 1;
+
   return {
     ok: true,
-    record: { type, number, date, client_name: clientName, status, subtotal, vat, total, description },
+    record: {
+      type,
+      number,
+      date,
+      client_name: clientName,
+      status,
+      subtotal: signed * subtotal,
+      vat: signed * vat,
+      total: signed * total,
+      description,
+    },
     typeMatched: matched,
     typeRaw,
   };

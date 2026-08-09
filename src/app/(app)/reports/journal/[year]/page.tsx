@@ -44,7 +44,12 @@ export default function YearJournalPage({ params }: { params: Promise<{ year: st
       const m = parseInt(d.date.slice(5, 7), 10) - 1;
       if (m >= 0 && m < 12) {
         incomeByMonth[m] += (d.totalIls ?? d.total);
-        incomeVatByMonth[m] += Math.abs(d.vatIls ?? d.vat);
+        // Net of credit notes, not absolute: a credit note reduces the
+        // transaction and its VAT, and incomeByMonth above is already
+        // netted the same way (credit notes are stored ALREADY NEGATIVE on
+        // save). Math.abs() here would add a refund's VAT back in as if it
+        // were still collected.
+        incomeVatByMonth[m] += (d.vatIls ?? d.vat);
       }
     }
     for (const e of yearExpenses) {
@@ -55,7 +60,10 @@ export default function YearJournalPage({ params }: { params: Promise<{ year: st
     }
 
     const totalIncome = incomeDocs.reduce((s, d) => s + (d.totalIls ?? d.total), 0);
-    const totalIncomeVat = incomeDocs.reduce((s, d) => s + Math.abs(d.vatIls ?? d.vat), 0);
+    // Net of credit notes (see incomeVatByMonth above): also needed so
+    // `totalIncome - totalIncomeVat` (used for the "סכום ללא מע"מ" row
+    // below) stays consistent when a credit note is present in the period.
+    const totalIncomeVat = incomeDocs.reduce((s, d) => s + (d.vatIls ?? d.vat), 0);
     const totalExpenses = yearExpenses.reduce((s, e) => s + e.amount, 0);
 
     return {
@@ -184,7 +192,11 @@ export default function YearJournalPage({ params }: { params: Promise<{ year: st
                     <td className="px-3 py-1.5 border border-stone-200 font-mono">{d.number}</td>
                     <td className="px-3 py-1.5 border border-stone-200">{d.clientName}</td>
                     <td className="px-3 py-1.5 border border-stone-200 text-left font-mono">{formatCurrency(d.subtotalIls ?? d.subtotal)}</td>
-                    <td className="px-3 py-1.5 border border-stone-200 text-left font-mono">{formatCurrency(Math.abs(d.vatIls ?? d.vat))}</td>
+                    {/* Net (no Math.abs): a credit-note row's subtotal column
+                        above already shows negative, so a positive VAT here
+                        would make the row inconsistent with itself and with
+                        the netted totals row below. */}
+                    <td className="px-3 py-1.5 border border-stone-200 text-left font-mono">{formatCurrency(d.vatIls ?? d.vat)}</td>
                     <td className="px-3 py-1.5 border border-stone-200 text-left font-mono font-semibold">{formatCurrency(d.totalIls ?? d.total)}</td>
                   </tr>
                 ))}

@@ -21,9 +21,12 @@ export function exportDocuments(documents: InvoiceDocument[], suffix?: string) {
     "לקוח": d.clientName,
     "נושא": d.subject || "",
     "סטטוס": DOCUMENT_STATUS_LABELS[d.status],
-    "סכום ביניים": d.subtotal,
-    "מע״מ": d.vat,
-    "סה״כ": d.total,
+    // No currency column in this export, so a raw native-currency total
+    // would silently misreport a USD invoice as that many shekels once
+    // mixed into the same column as ILS documents; `totalIls` normalizes it.
+    "סכום ביניים": d.subtotalIls ?? d.subtotal,
+    "מע״מ": d.vatIls ?? d.vat,
+    "סה״כ": d.totalIls ?? d.total,
     "אמצעי תשלום": d.paymentMethod ? PAYMENT_METHOD_LABELS[d.paymentMethod] : "",
     "הערות": d.notes || "",
   }));

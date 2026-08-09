@@ -218,7 +218,11 @@ export function buildUniformStructure(input: UniformInput): UniformOutput {
         accountKey: customerAcct,
         counterAccountKey: "SALES-000",
         details: `${doc.clientName} ${doc.subject ?? ""}`.slice(0, 50),
-        amount: doc.total,
+        // `totalIls` normalizes foreign-currency documents into shekels;
+        // this government export has no per-line currency field, so the raw
+        // native-currency `total` would silently misreport a USD invoice as
+        // if it were that many shekels.
+        amount: doc.totalIls ?? doc.total,
         side: "1",
       }),
     );
@@ -235,11 +239,11 @@ export function buildUniformStructure(input: UniformInput): UniformOutput {
         accountKey: "SALES-000",
         counterAccountKey: customerAcct,
         details: `${doc.clientName} ${doc.subject ?? ""}`.slice(0, 50),
-        amount: doc.subtotal,
+        amount: doc.subtotalIls ?? doc.subtotal,
         side: "2",
       }),
     );
-    if (Math.abs(doc.vat) > 0.001) {
+    if (Math.abs(doc.vatIls ?? doc.vat) > 0.001) {
       b100Lines.push(
         buildB100({
           recordNum: recordNum++,
@@ -253,7 +257,7 @@ export function buildUniformStructure(input: UniformInput): UniformOutput {
           accountKey: "VAT-COL",
           counterAccountKey: customerAcct,
           details: "מע״מ עסקאות",
-          amount: doc.vat,
+          amount: doc.vatIls ?? doc.vat,
           side: "2",
         }),
       );

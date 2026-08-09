@@ -61,7 +61,7 @@ export async function GET(req: NextRequest) {
     sb.from("documents").select("*", { count: "exact", head: true }).gte("created_at", sevenDaysAgo),
     sb.from("clients").select("*", { count: "exact", head: true }),
     sb.from("expenses").select("*", { count: "exact", head: true }),
-    sb.from("documents").select("total, type").eq("status", "paid"),
+    sb.from("documents").select("total, total_ils, type").eq("status", "paid"),
     sb.from("documents")
       .select("created_at, type, number, client_name, total, status")
       .gte("created_at", thirtyDaysAgo)
@@ -96,11 +96,14 @@ export async function GET(req: NextRequest) {
       last_sign_in_at: u.last_sign_in_at,
     }));
 
-  // Total revenue (paid docs, credit notes subtract)
+  // Total revenue (paid docs). Credit notes are stored ALREADY NEGATIVE on
+  // save (receipt-editor.tsx applies `sign = -1`), so a plain sum already
+  // subtracts them - applying a sign here again would double-negate a
+  // refund into extra revenue. `total_ils` normalizes foreign-currency
+  // documents into shekels so they don't get summed at native face value.
   let totalRevenue = 0;
   for (const d of paidDocsResult.data ?? []) {
-    const sign = d.type === "credit_note" ? -1 : 1;
-    totalRevenue += sign * Number(d.total || 0);
+    totalRevenue += Number(d.total_ils ?? d.total ?? 0);
   }
 
   // Documents per day for last 14 days (chart data)

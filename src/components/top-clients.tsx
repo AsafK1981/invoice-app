@@ -16,13 +16,17 @@ export function TopClients({ documents, limit = 5 }: Props) {
   documents
     .filter((d) => d.status === "paid" && isCountableRevenue(d))
     .forEach((d) => {
+      // `totalIls` normalizes foreign-currency documents into shekels so a
+      // USD invoice doesn't get summed at its native face value alongside
+      // ILS ones (this widget has no per-row currency label).
+      const amount = d.totalIls ?? d.total;
       const key = d.clientId || d.clientName;
       const existing = byClient.get(key);
       if (existing) {
-        existing.total += d.total;
+        existing.total += amount;
         existing.count += 1;
       } else {
-        byClient.set(key, { name: d.clientName, total: d.total, count: 1 });
+        byClient.set(key, { name: d.clientName, total: amount, count: 1 });
       }
     });
 

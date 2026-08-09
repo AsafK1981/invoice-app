@@ -39,10 +39,13 @@ export default function ClientStatementPage({
     let totalBilled = 0;
     let totalPaid = 0;
     const rows = mine.map((d) => {
-      const sign = d.type === "credit_note" ? -1 : 1;
-      const signed = sign * d.total;
-      // Use signed amount for billed (credit notes subtract).
-      // "Paid" only counts when status=paid (signed too).
+      // Credit notes are stored ALREADY NEGATIVE on save (receipt-editor.tsx
+      // applies `sign = -1`), so `signed` is just the ILS-normalized amount
+      // as-is - applying a sign again here would double-negate a refund
+      // into extra billing. `totalIls` normalizes foreign-currency
+      // documents into shekels (this statement has no per-row currency
+      // column).
+      const signed = d.totalIls ?? d.total;
       totalBilled += signed;
       if (d.status === "paid") totalPaid += signed;
       return { doc: d, signed };

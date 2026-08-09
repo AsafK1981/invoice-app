@@ -114,16 +114,17 @@ export function VatPeriodReport({ business, documents, expenses }: Props) {
     );
 
     // Output VAT (מע"מ עסקאות) = sum of VAT charged on tax invoices and
-    // tax-invoice-receipts. Credit notes subtract.
+    // tax-invoice-receipts. Credit notes are stored ALREADY NEGATIVE on save
+    // (receipt-editor.tsx applies `sign = -1` to vat/subtotal), so folding
+    // them into the same `+=` as invoices already nets them out; a `-=`
+    // branch here would double-negate and add a refund's VAT back in as if
+    // it were more output VAT.
     let outputVat = 0;
     let taxableSales = 0;
     for (const d of docsInRange) {
-      if (d.type === "tax_invoice" || d.type === "tax_invoice_receipt") {
+      if (d.type === "tax_invoice" || d.type === "tax_invoice_receipt" || d.type === "credit_note") {
         outputVat += (d.vatIls ?? d.vat);
         taxableSales += (d.subtotalIls ?? d.subtotal);
-      } else if (d.type === "credit_note") {
-        outputVat -= (d.vatIls ?? d.vat);
-        taxableSales -= (d.subtotalIls ?? d.subtotal);
       }
     }
 
