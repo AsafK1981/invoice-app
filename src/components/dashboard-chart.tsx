@@ -27,6 +27,7 @@ const RANGES: { key: RangeKey; label: string }[] = [
 ];
 
 const RANGE_STORAGE_KEY = "dashboard-chart-range";
+const SERIES_STORAGE_KEY = "dashboard-chart-series";
 
 const HEBREW_MONTHS = [
   "ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יוני",
@@ -306,6 +307,29 @@ function MonthlyLineChart({
   const [size, setSize] = useState({ w: 0, h: 0 });
   const [hover, setHover] = useState<number | null>(null);
 
+  // Solo mode: click a legend pill to isolate that series (and rescale the
+  // y-axis to it — otherwise expenses are squashed flat under a taller income
+  // line). Click the same pill again to bring both series back.
+  const [solo, setSolo] = useState<"income" | "expense" | null>(null);
+  useEffect(() => {
+    const saved = localStorage.getItem(SERIES_STORAGE_KEY);
+    if (saved === "income" || saved === "expense") setSolo(saved);
+  }, []);
+  const toggleSolo = (key: "income" | "expense") => {
+    setSolo((prev) => {
+      const next = prev === key ? null : key;
+      try {
+        if (next) localStorage.setItem(SERIES_STORAGE_KEY, next);
+        else localStorage.removeItem(SERIES_STORAGE_KEY);
+      } catch {
+        /* private mode */
+      }
+      return next;
+    });
+  };
+  const showIncome = solo !== "expense";
+  const showExpense = solo !== "income";
+
   useLayoutEffect(() => {
     const node = wrapRef.current;
     if (!node) return;
@@ -328,7 +352,11 @@ function MonthlyLineChart({
   const innerW = w - padL - padR;
   const innerH = h - padT - padB;
 
-  const maxVal = Math.max(0, ...income, ...expenses);
+  const maxVal = Math.max(
+    0,
+    ...(showIncome ? income : []),
+    ...(showExpense ? expenses : []),
+  );
   const { yMax, ticks } = niceScale(maxVal);
 
   const n = months.length;
@@ -355,23 +383,33 @@ function MonthlyLineChart({
     <div style={{ width: "100%", height: 360 }} className="flex flex-col gk-line-chart">
       {/* header row: legend pills (RTL start = right) + time-range selector (left) */}
       <div className="flex flex-wrap items-center gap-2.5 mb-1" dir="rtl">
-        {Object.entries(SERIES).map(([key, s]) => (
-          <span
-            key={key}
-            className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[13px] font-medium"
-            style={{
-              background: "rgba(190,158,78,.10)",
-              border: "1px solid rgba(190,158,78,.32)",
-              color: "#5a5245",
-            }}
-          >
-            <span
-              className="inline-block w-2 h-2 rounded-full"
-              style={{ background: s.dot, boxShadow: `0 0 0 2px ${s.glow}` }}
-            />
-            {s.label}
-          </span>
-        ))}
+        {(Object.entries(SERIES) as ["income" | "expense", (typeof SERIES)[keyof typeof SERIES]][]).map(
+          ([key, s]) => {
+            const on = key === "income" ? showIncome : showExpense;
+            return (
+              <button
+                key={key}
+                type="button"
+                aria-pressed={solo === key}
+                title={solo === key ? "הצג את שתי הסדרות" : `הצג רק ${s.label}`}
+                onClick={() => toggleSolo(key)}
+                className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[13px] font-medium transition-opacity cursor-pointer"
+                style={{
+                  background: "rgba(190,158,78,.10)",
+                  border: "1px solid rgba(190,158,78,.32)",
+                  color: "#5a5245",
+                  opacity: on ? 1 : 0.4,
+                }}
+              >
+                <span
+                  className="inline-block w-2 h-2 rounded-full"
+                  style={{ background: s.dot, boxShadow: on ? `0 0 0 2px ${s.glow}` : "none" }}
+                />
+                {s.label}
+              </button>
+            );
+          },
+        )}
         <div
           className="mr-auto flex flex-wrap justify-center rounded-lg p-0.5"
           role="tablist"
@@ -491,7 +529,7 @@ function MonthlyLineChart({
 
             {/* monthly profit-gap connectors: barely-there dashed gold,
                 drawn BEHIND areas/lines. Skip when the two points nearly touch. */}
-            {months.map((_, i) => {
+            {showIncome && showExpense && months.map((_, i) => {
               const incY = inc.ys[i];
               const expY = exp.ys[i];
               const yHi = Math.min(incY, expY);
@@ -514,8 +552,8 @@ function MonthlyLineChart({
             })}
 
             {/* area fills (expense under income); right edge faded via mask */}
-            <path d={areaFrom(exp)} fill="url(#gcExpFill)" mask="url(#gcAreaMask)" />
-            <path d={areaFrom(inc)} fill="url(#gcIncFill)" mask="url(#gcAreaMask)" />
+            {showExpense && <path d={areaFrom(exp)} fill="url(#gcExpFill)" mask="url(#gcAreaMask)" />}
+            {showIncome && <path d={areaFrom(inc)} fill="url(#gcIncFill)" mask="url(#gcAreaMask)" />}
 
             {/* hover guide */}
             {hover !== null && (
@@ -531,22 +569,26 @@ function MonthlyLineChart({
             )}
 
             {/* lines */}
-            <path
-              d={exp.d}
-              fill="none"
-              stroke={SERIES.expense.dot}
-              strokeWidth={2.5}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            <path
-              d={inc.d}
-              fill="none"
-              stroke="url(#gcIncLine)"
-              strokeWidth={2.5}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
+            {showExpense && (
+              <path
+                d={exp.d}
+                fill="none"
+                stroke={SERIES.expense.dot}
+                strokeWidth={2.5}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            )}
+            {showIncome && (
+              <path
+                d={inc.d}
+                fill="none"
+                stroke="url(#gcIncLine)"
+                strokeWidth={2.5}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            )}
 
             {/* x-axis labels (sparse in dense views) */}
             {months.map((mm, i) =>
@@ -565,7 +607,7 @@ function MonthlyLineChart({
             )}
 
             {/* expense dots + labels BELOW (copper) */}
-            {exp.xs.map((x, i) => {
+            {showExpense && exp.xs.map((x, i) => {
               const y = exp.ys[i];
               // Always below the expense point. Clamp above the month-axis band,
               // and if this is a loss month (income point sits lower than the
@@ -598,7 +640,7 @@ function MonthlyLineChart({
             })}
 
             {/* income dots + labels ABOVE (off-white); hero on the last point */}
-            {inc.xs.map((x, i) => {
+            {showIncome && inc.xs.map((x, i) => {
               const y = inc.ys[i];
               const last = i === inc.xs.length - 1;
               const hot = hover === i;
@@ -656,20 +698,24 @@ function MonthlyLineChart({
             </div>
             {/* The panel stays dark on purpose (it floats over the plot); only
                 the colour keys must match the lines they label. */}
-            <div className="flex items-center gap-1.5">
-              <span
-                className="inline-block w-2 h-2 rounded-full"
-                style={{ background: SERIES.income.dot }}
-              />
-              {SERIES.income.label}: {ils.format(income[hover] || 0)}
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span
-                className="inline-block w-2 h-2 rounded-full"
-                style={{ background: SERIES.expense.dot }}
-              />
-              {SERIES.expense.label}: {ils.format(expenses[hover] || 0)}
-            </div>
+            {showIncome && (
+              <div className="flex items-center gap-1.5">
+                <span
+                  className="inline-block w-2 h-2 rounded-full"
+                  style={{ background: SERIES.income.dot }}
+                />
+                {SERIES.income.label}: {ils.format(income[hover] || 0)}
+              </div>
+            )}
+            {showExpense && (
+              <div className="flex items-center gap-1.5">
+                <span
+                  className="inline-block w-2 h-2 rounded-full"
+                  style={{ background: SERIES.expense.dot }}
+                />
+                {SERIES.expense.label}: {ils.format(expenses[hover] || 0)}
+              </div>
+            )}
           </div>
         )}
       </div>
