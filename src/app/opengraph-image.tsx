@@ -55,32 +55,33 @@ export default async function OpengraphImage() {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: "#070504",
-          // Same two-layer radial depth as `.v2-theme` in v2.css (values
-          // copied by hand, not imported - this route renders on the edge
-          // runtime via satori, which cannot read the site's stylesheet).
-          backgroundImage:
-            "radial-gradient(120% 70% at 50% -8%, rgba(190, 158, 78, 0.1), transparent 45%), radial-gradient(100% 120% at 50% 30%, #1a1510 0%, #0d0a07 55%, #070504 100%)",
+          // Warm cream field, matching the "warm friendly" homepage redesign
+          // (2026-08-10) - flat, not a gradient: the approved mockup's page
+          // background is flat cream, same value as `--ml-cream` in
+          // marketing-light.css.
+          backgroundColor: "#faf7f2",
           padding: 80,
           textAlign: "center",
         }}
       >
-        {/* Brand mark: the same gold tile + shield-check glyph the homepage
-            uses for its allocation-number differentiator (.v2-tax-band-icon),
-            not an emoji - a thumbnail borrows the site's one real icon
-            instead of inventing a decoration of its own. */}
+        {/* Brand mark: the same shield-check glyph the homepage used for its
+            allocation-number differentiator, not an emoji - a thumbnail
+            borrows the site's one real icon instead of inventing a
+            decoration of its own. Tile now carries the orange->rose brand
+            gradient (`--ml-grad`) with a white glyph, same treatment as the
+            homepage's flagship advantage card. */}
         <div
           style={{
             width: 120,
             height: 120,
             borderRadius: 30,
-            background:
-              "linear-gradient(177deg, #d8be77 0%, #be9e4e 38%, #8f6f2a 72%, #cbb061 100%)",
+            background: "linear-gradient(135deg, #f97316 0%, #e11d48 100%)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             marginBottom: 40,
-            boxShadow: "0 20px 50px -10px rgba(190, 158, 78, 0.45)",
+            boxShadow:
+              "0 20px 50px -10px rgba(225, 29, 72, 0.35), 0 8px 20px -8px rgba(249, 115, 22, 0.3)",
           }}
         >
           <svg
@@ -88,7 +89,7 @@ export default async function OpengraphImage() {
             height={64}
             viewBox="0 0 24 24"
             fill="none"
-            stroke="#191206"
+            stroke="#ffffff"
             strokeWidth="1.8"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -101,12 +102,12 @@ export default async function OpengraphImage() {
           style={{
             fontSize: 76,
             fontWeight: 800,
-            // Gold-gradient clip on the brand name (`.v2-gold` in v2.css uses
-            // the same background-clip:text technique for real browsers;
-            // satori supports it too, verified against this exact bundled
+            // Orange->rose gradient clip on the brand name (background-clip:
+            // text - the same technique the previous gold version used;
+            // satori supports it, verified against this exact bundled
             // version - it builds a real SVG clip-path from the glyph
             // outlines rather than silently ignoring the property).
-            backgroundImage: "linear-gradient(90deg, #d8be77 0%, #be9e4e 100%)",
+            backgroundImage: "linear-gradient(90deg, #f97316 0%, #e11d48 100%)",
             backgroundClip: "text",
             WebkitBackgroundClip: "text",
             color: "transparent",
@@ -121,7 +122,8 @@ export default async function OpengraphImage() {
           style={{
             fontSize: 44,
             fontWeight: 800,
-            color: "#d6d0c2",
+            // Warm stone, matching `--ml-ink-2` on the redesigned homepage.
+            color: "#57534e",
             marginTop: 36,
             display: "flex",
           }}

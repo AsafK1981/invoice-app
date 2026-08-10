@@ -10,11 +10,12 @@ import {
 } from "lucide-react";
 import { Ltr, LtrText } from "@/components/ui/ltr";
 import { COMPETITORS } from "@/lib/comparison-data";
-import HeaderV2 from "./components/HeaderV2";
-import FooterV2 from "./components/FooterV2";
+import HeaderLight from "./components/HeaderLight";
+import FooterLight from "./components/FooterLight";
 import RedirectIfAuthed from "./components/RedirectIfAuthed";
 import JsonLd from "./components/JsonLd";
 import { graph, organization, website, softwareApplication, faqPage } from "@/lib/jsonld";
+import "./marketing-light.css";
 
 /**
  * Landing-page FAQ. Every answer is a factual claim about THIS app, verified
@@ -33,7 +34,9 @@ import { graph, organization, website, softwareApplication, faqPage } from "@/li
  *     API call to רשות המסים, not a manual copy/paste form).
  * This list is also fed into faqPage() below so the same questions are
  * eligible for a rich FAQ result, kept in sync by construction, no
- * duplicate copy to drift.
+ * duplicate copy to drift. UNCHANGED by the 2026-08-10 "warm friendly"
+ * redesign - only its container's paint job changed, see `.ml-faq` in
+ * marketing-light.css.
  */
 const FAQ_ITEMS: { q: string; a: string }[] = [
   {
@@ -59,33 +62,50 @@ const FAQ_ITEMS: { q: string; a: string }[] = [
 ];
 
 /**
- * "כל מה שיש רק אצלנו" - the competitive-advantage grid. This page is shared
- * cold into Facebook groups and to friends, so every real differentiator
- * needs to be in one place rather than assumed known. Cards state OUR
- * capabilities only (no competitor names - the /vs pages own the
- * head-to-head, linked from the closing strip below).
+ * "כל מה שיש רק אצלנו" - the competitive-advantage grid, now positioned
+ * high on the page (right after the hero) per the approved warm redesign.
+ * Cards state OUR capabilities only (no competitor names - the comparison
+ * strip below hands off to the /vs pages for the head-to-head).
  *
- * Icons: the three features that already have a hand-drawn glyph elsewhere
- * on this page (allocation numbers, AI, reminders - the last shared with the
- * new hero bullet below) reuse that EXACT svg markup rather than a second
- * icon for the same thing; the rest use lucide-react, same as the founder
- * note's gold icon tile in ComparisonViewV2.tsx (`.v2-note-panel .ic`).
+ * `tone` gives every non-flagship card its own soft-tinted icon tile
+ * (Asaf 2026-08-10: the approved mockup shipped with 8 of 9 tiles dull and
+ * near-identical; he asked for every card to get real, distinct color).
+ * Formula: tile background = Tailwind `*-100`, icon stroke = `*-600`, see
+ * `.ml-adv-icon--*` in marketing-light.css. The allocation card keeps no
+ * `tone` - it is the one `flagship` card and gets the full brand-gradient
+ * tile with a white glyph instead, the strongest treatment on the page.
  *
- * Every claim is verified against the live feature set except the WhatsApp
- * bot channel (`comingSoon`): built and council-reviewed, but not yet
- * enabled in production pending a Meta portfolio appeal.
+ * Body copy: kept the previous (verified) copy for every card except
+ * "allocation" and "whatsapp", where the approved mockup's phrasing is
+ * strictly tighter without dropping any verified fact. The rest keep
+ * specifics the mockup's copy did not carry (VAT/date OCR + Bit/bank
+ * screenshots, credit-note-aware ceiling tracking, the named report list,
+ * the migration wizards) rather than trade accuracy for brevity.
  */
+type AdvantageTone =
+  | "violet"
+  | "amber"
+  | "green"
+  | "pink"
+  | "teal"
+  | "indigo"
+  | "sky"
+  | "orange";
+
 type Advantage = {
   key: string;
   icon: ReactNode;
   title: string;
   body: string;
+  tone?: AdvantageTone;
+  flagship?: true;
   comingSoon?: boolean;
 };
 
 const ADVANTAGES: Advantage[] = [
   {
     key: "allocation",
+    flagship: true,
     icon: (
       <svg
         viewBox="0 0 24 24"
@@ -101,10 +121,11 @@ const ADVANTAGES: Advantage[] = [
       </svg>
     ),
     title: "מספרי הקצאה אוטומטיים",
-    body: "המערכת מקבלת מספר הקצאה מרשות המסים בלחיצה אחת - בלי להיכנס לאתר רשות המסים, בלי העתק-הדבק.",
+    body: "המערכת מבקשת מספר הקצאה מרשות המסים ומקבלת אותו תוך שניות, ישירות מתוך המסמך.",
   },
   {
     key: "ai",
+    tone: "violet",
     icon: (
       <svg
         viewBox="0 0 24 24"
@@ -124,6 +145,7 @@ const ADVANTAGES: Advantage[] = [
   },
   {
     key: "reminders",
+    tone: "amber",
     icon: (
       <svg
         viewBox="0 0 24 24"
@@ -143,37 +165,43 @@ const ADVANTAGES: Advantage[] = [
   },
   {
     key: "whatsapp",
-    icon: <MessageCircle aria-hidden="true" />,
-    title: "וואטסאפ במקום להיכנס לאפליקציה",
-    body: "שולחים הודעה בוואטסאפ - ומקבלים קבלה מוכנה או תיעוד הוצאה מצילום, בלי לפתוח את האפליקציה.",
+    tone: "green",
     comingSoon: true,
+    icon: <MessageCircle aria-hidden="true" />,
+    title: "וואטסאפ בלי לפתוח את האפליקציה",
+    body: "מוציאים קבלה ורושמים הוצאה ישירות מתוך הצ'אט, בלי להתחבר בכלל.",
   },
   {
     key: "ocr",
+    tone: "pink",
     icon: <ScanLine aria-hidden="true" />,
     title: "סריקת הוצאות בצילום",
     body: "מצלמים קבלה - והמערכת ממלאת לבד ספק, סכום, מע״מ ותאריך. גם צילומי מסך של ביט או העברה בנקאית.",
   },
   {
     key: "ceiling",
+    tone: "teal",
     icon: <Gauge aria-hidden="true" />,
     title: "מעקב תקרת עוסק פטור בזמן אמת",
     body: "רואים בכל רגע כמה נשאר עד התקרה השנתית, כולל התחשבות בחשבוניות זיכוי.",
   },
   {
     key: "reports",
+    tone: "indigo",
     icon: <FileBarChart aria-hidden="true" />,
     title: "דו״חות שרואי חשבון אוהבים",
     body: "דוח מע״מ תקופתי, עזר ל-1301, הצהרת הון, גיול חובות ויומן שנתי - הכל מוכן להורדה.",
   },
   {
     key: "migration",
+    tone: "sky",
     icon: <ArrowLeftRight aria-hidden="true" />,
     title: "מעבר קל מכל תוכנה",
     body: "ייבוא היסטוריה מ-Excel ומהתוכנות המוכרות, אשפי מעבר ייעודיים - ולא מאבדים אף מסמך.",
   },
   {
     key: "channels",
+    tone: "orange",
     icon: (
       <svg
         viewBox="0 0 24 24"
@@ -192,6 +220,41 @@ const ADVANTAGES: Advantage[] = [
   },
 ];
 
+/** Small checkmark used by the trust row and the sample-document feature
+ *  list - one glyph, reused, matching the approved mockup. */
+function CheckIcon() {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M3 8.3l3.2 3.2L13 4.5" />
+    </svg>
+  );
+}
+
+/** The trailing chevron on "לכל ההשוואות". */
+function ArrowIcon() {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M10 3.5L5 8l5 4.5" />
+    </svg>
+  );
+}
+
 /**
  * Self-canonical only, and DELIBERATELY nothing else.
  *
@@ -207,26 +270,36 @@ export const metadata: Metadata = {
 };
 
 /**
- * `/`, the public marketing landing: the "product showcase" composition
- * approved 2026-07-27.
+ * `/`, the public marketing landing: the "warm friendly" composition
+ * approved 2026-08-10 (replacing the "product showcase on obsidian" design
+ * from 2026-07-27).
  *
- * THE IDEA. The thing we sell is a document, so the document IS the hero: a
- * paper sheet rendered large on the obsidian stage, under one soft pool of
- * warm light, with the pitch orbiting it on the reading edge (RTL, so copy
- * right, sheet left). The copy column is `space-between`, which pins its top
- * group to the sheet's head and its CTA to the sheet's foot, with three
- * hairline-ruled feature rows carrying the span between them. Under the stage
- * a quiet hairline band states the launch pricing without competing.
+ * Ported faithfully from the approved mockup (cream page, warm stone body
+ * copy, orange->rose gradient on primary CTAs, gold-tint accent cards,
+ * soft warm shadows, 14-16px radii). Structure top to bottom: a slim sticky
+ * header, a centered hero with the compliance-pain headline, the 9-card
+ * advantage grid HIGH on the page (right after the hero, each card now
+ * individually colored - see the ADVANTAGES comment), a comparison strip
+ * linking out to the /vs pages, a "how it looks for your client" section
+ * built around the same sample invoice the previous design used (ported
+ * zone-for-zone, only re-skinned), the launch pricing band, the existing
+ * FAQ (unchanged content, restyled), and a light footer.
  *
- * THE SHEET IS A PRESENTATIONAL ECHO, NOT THE REAL COMPONENT. The persuasive
- * premise is "this is what you get", so the markup below mirrors the real
- * printed document zone for zone (`src/components/document-body.tsx`): head
- * with identity block, "לכבוד" + allocation strip, itemised table under a gold
- * micro-label, the breakdown pushed to the inline end, the electronic-issuance
- * footer. It deliberately does NOT import `DocumentBody` or `document-paper.css`
- * - the printed sheet is a tax document and is frozen; a marketing page must
- * never be able to reach into it. The palette is copied by value into the
- * `--v2-paper-*` tokens in v2.css so the two cannot drift silently.
+ * SCOPING. Everything visual here lives in marketing-light.css under
+ * `.ml-theme`, a wrapper rendered INSIDE (marketing)/layout.tsx's shared
+ * `.v2-theme` div. That keeps every dark v2-* page (/vs, /blog, /v2/*)
+ * completely untouched: this stylesheet is imported ONLY here, and no
+ * existing v2-* rule was edited. HeaderLight/FooterLight are homepage-local
+ * twins of HeaderV2/FooterV2 (same links, different paint - see the
+ * comment on HeaderLight for why a shared `variant` prop was not "clean"
+ * here), not shared with any other route either.
+ *
+ * The sample invoice deliberately does NOT import `DocumentBody` or
+ * document-paper.css - the printed sheet is a tax document and is frozen;
+ * a marketing page must never be able to reach into it. It also does not
+ * import v2.css's `--v2-paper-*` tokens: the whole homepage is warm/cream
+ * now, so the sheet uses the SAME `--ml-*` tokens as everything else on
+ * this page rather than a separate dark-context sub-palette.
  *
  * Server-rendered so anonymous visitors and crawlers get the full page
  * immediately; `<RedirectIfAuthed />` then bounces an already-signed-in visitor
@@ -244,139 +317,158 @@ export default function MarketingLanding() {
           faqPage(FAQ_ITEMS),
         )}
       />
-      {/* deco outer frame */}
-      <div className="v2-frame" aria-hidden="true">
-        <i className="tl" />
-        <i className="tr" />
-        <i className="bl" />
-        <i className="br" />
-      </div>
 
-      <HeaderV2 />
+      <div className="ml-theme">
+        <HeaderLight />
 
-      <main id="main-content" className="v2-main">
-        <div className="v2-wrap">
-          <section className="v2-stage">
-            <div className="v2-stage-in">
-              {/* ---- the pitch, on the reading edge ---- */}
-              <div className="v2-stage-copy">
-                <div className="v2-stage-lead">
-                  <div className="v2-eyebrow-row">
-                    <span>לעצמאים בישראל</span>
-                    <i className="ln" />
-                  </div>
+        <main id="main-content">
+          <section className="ml-hero">
+            <div className="ml-wrap ml-hero-in">
+              <span className="ml-eyebrow">
+                התוכנה הכי ידידותית לעוסק פטור בישראל
+              </span>
+              <h1 className="ml-hero-h1">
+                חשבונית שעומדת בדרישות 2026,{" "}
+                <br />
+                <span className="ml-grad-text">בלי כאב ראש</span>
+              </h1>
+              <p className="ml-lede">
+                מספר הקצאה מרשות המסים מתקבל אוטומטית, בלחיצה אחת, ישירות
+                מתוך המסמך. פחות טפסים, יותר זמן לעסק שלכם.
+              </p>
+              <div className="ml-hero-actions">
+                <Link
+                  href="/login?mode=signup"
+                  className="ml-btn ml-btn-primary ml-btn-lg"
+                >
+                  התחילו בחינם
+                </Link>
+                <span className="ml-hero-note">
+                  חינם בתקופת ההשקה, בלי כרטיס אשראי
+                </span>
+              </div>
+              <ul className="ml-trust-row">
+                <li>
+                  <CheckIcon /> הקמה תוך 5 דקות
+                </li>
+                <li>
+                  <CheckIcon /> תמיכה בעברית
+                </li>
+                <li>
+                  <CheckIcon /> אפשר לבטל בכל רגע
+                </li>
+              </ul>
+            </div>
+          </section>
 
-                  {/* Positioning note: this headline used to sell aesthetics
-                      ("יוקרתית כמו העסק"). Every competitor in this market
-                      already shouts "חינם", and prestige is not what an עצמאי
-                      is anxious about in 2026 — the חשבונית ישראל allocation-
-                      number mandate is. So the headline now leads with the
-                      compliance pain we actually solve, and the look-and-feel
-                      argument moved down into the lede where it still earns
-                      its place. */}
-                  <h1 className="v2-h1">
-                    חשבונית שעומדת{" "}
-                    <br />
-                    בדרישות <span className="v2-gold">2026</span>
-                  </h1>
-
-                  <p className="v2-lede">
-                    מספר הקצאה מרשות המסים אוטומטית, בלחיצה אחת - בלי טפסים
-                    ובלי כאב ראש. וגם נראית יוקרתית כמו העסק שלך.
-                  </p>
-                </div>
-
-                {/* Hairline-ruled rows. No boxes: the band is built from type,
-                    space and two rules, so it supports the sheet instead of
-                    competing with it for attention. */}
-                <ul className="v2-feats">
-                  <li className="v2-ft">
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.6"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden="true"
-                    >
-                      <path d="M13 3L4 14h7l-1 7 9-12h-7z" />
-                    </svg>
-                    <b>הפקה בשניות</b>
-                  </li>
-                  <li className="v2-ft">
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.6"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden="true"
-                    >
-                      <path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z" />
-                      <path d="M9 12l2 2 4-4" />
-                    </svg>
-                    <b>מספרי הקצאה אוטומטיים מרשות המסים</b>
-                  </li>
-                  <li className="v2-ft">
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.6"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden="true"
-                    >
-                      <path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z" />
-                      <path d="M18 15l.8 2.2L21 18l-2.2.8L18 21l-.8-2.2L15 18l2.2-.8z" />
-                    </svg>
-                    <b>עוזר AI בעברית</b>
-                  </li>
-                  <li className="v2-ft">
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.6"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden="true"
-                    >
-                      <path d="M12 3a5 5 0 0 0-5 5c0 5.5-2 7-2 7h14s-2-1.5-2-7a5 5 0 0 0-5-5z" />
-                      <path d="M10 19a2 2 0 0 0 4 0" />
-                    </svg>
-                    <b>התראות ותזכורות חכמות</b>
-                  </li>
-                </ul>
-
-                <div className="v2-stage-act">
-                  <Link className="v2-cta" href="/login?mode=signup">
-                    התחילו בחינם
-                  </Link>
-                  <p className="v2-fine">חינם עכשיו · ללא כרטיס אשראי</p>
-                </div>
+          <section className="ml-advantages">
+            <div className="ml-wrap">
+              <div className="ml-adv-head">
+                <span className="ml-adv-tag">
+                  9 יתרונות שמרגישים כמו הקלה
+                </span>
+                <h2>כל מה שעוסק פטור צריך, במקום אחד ידידותי</h2>
+                <p>
+                  לא עוד תוכנה שמרגישה כמו טופס של רשות המסים. הכול כאן,
+                  פשוט וברור.
+                </p>
               </div>
 
-              {/* ---- the product, as the object ---- */}
-              <figure className="v2-sheet-wrap">
-                <article className="v2-sheet">
-                  <div className="v2-sh-card v2-sh-head">
-                    <div className="v2-sh-biz">
-                      <p className="v2-sh-name">סטודיו נועה</p>
-                      <p className="v2-sh-bizline">
+              <div className="ml-adv-grid">
+                {ADVANTAGES.map((item) => (
+                  <article
+                    className={`ml-adv-card${item.flagship ? " is-flagship" : ""}`}
+                    key={item.key}
+                  >
+                    <div
+                      className={`ml-adv-icon${item.tone ? ` ml-adv-icon--${item.tone}` : ""}`}
+                      aria-hidden="true"
+                    >
+                      {item.icon}
+                    </div>
+                    <h3>
+                      <LtrText text={item.title} />
+                      {item.comingSoon && (
+                        <>
+                          {" "}
+                          <span className="ml-badge-soon">בקרוב</span>
+                        </>
+                      )}
+                    </h3>
+                    <p>
+                      <LtrText text={item.body} />
+                    </p>
+                  </article>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          <section className="ml-compare">
+            <div className="ml-wrap">
+              <div className="ml-compare-in">
+                <h3>רוצים השוואה מלאה שורה מול שורה?</h3>
+                <p className="sub">
+                  בדקנו את עצמנו מול כל התוכנות המובילות בישראל. שורה מול
+                  שורה, בלי מסננות.
+                </p>
+                <div className="ml-chips">
+                  {Object.values(COMPETITORS).map((c) => (
+                    <Link
+                      key={c.slug}
+                      href={`/vs/${c.slug}`}
+                      className="ml-chip"
+                    >
+                      <LtrText text={c.name} />
+                    </Link>
+                  ))}
+                </div>
+                <Link href="/vs" className="ml-cmp-link">
+                  לכל ההשוואות <ArrowIcon />
+                </Link>
+              </div>
+            </div>
+          </section>
+
+          <section className="ml-sample">
+            <div className="ml-wrap ml-sample-in">
+              <div className="ml-sample-copy">
+                <span className="ml-eyebrow">המסמך שהלקוח מקבל</span>
+                <h2>כך זה נראה אצל הלקוח</h2>
+                <p>
+                  חשבונית נקייה ומקצועית, עם כל השדות שרשות המסים דורשת,
+                  כולל מספר ההקצאה. מוכנה תוך שניות ונשלחת בלחיצה.
+                </p>
+                <ul className="ml-sample-feats">
+                  <li>
+                    <CheckIcon /> מספר הקצאה מוטמע אוטומטית
+                  </li>
+                  <li>
+                    <CheckIcon /> עיצוב מקצועי בברירת מחדל
+                  </li>
+                  <li>
+                    <CheckIcon /> נשלח כקישור, מייל או PDF
+                  </li>
+                </ul>
+              </div>
+
+              <figure className="ml-sheet-wrap">
+                <article className="ml-sheet">
+                  <div className="ml-sh-card ml-sh-head">
+                    <div className="ml-sh-biz">
+                      <p className="ml-sh-name">סטודיו נועה</p>
+                      <p className="ml-sh-bizline">
                         עוסק מורשה <Ltr>003244266</Ltr> · עיצוב גרפי ומיתוג
                         <br />
                         הרצל 12, תל אביב · <Ltr>054-1234567</Ltr> ·{" "}
                         <Ltr>noa@studio-noa.co.il</Ltr>
                       </p>
                     </div>
-                    <div className="v2-sh-ident">
-                      <div className="v2-sh-orig">מקור</div>
-                      <div className="v2-sh-badge">חשבונית מס</div>
-                      <div className="v2-sh-num">0042</div>
-                      <div className="v2-sh-date">09.07.2026</div>
+                    <div className="ml-sh-ident">
+                      <div className="ml-sh-orig">מקור</div>
+                      <div className="ml-sh-badge">חשבונית מס</div>
+                      <div className="ml-sh-num">0042</div>
+                      <div className="ml-sh-date">09.07.2026</div>
                     </div>
                   </div>
 
@@ -384,23 +476,25 @@ export default function MarketingLanding() {
                       customer first, so RTL puts "לכבוד" at the reading start
                       (right) and the allocation number after it (left), and the
                       customer stays on top when the strip stacks on mobile. */}
-                  <div className="v2-sh-strip">
-                    <div className="v2-sh-card v2-sh-mini">
-                      <div className="v2-sh-glabel">לכבוד</div>
-                      <div className="v2-sh-mini-v">סטודיו אורות בע״מ</div>
-                      <div className="v2-sh-mini-sub">
+                  <div className="ml-sh-strip">
+                    <div className="ml-sh-card ml-sh-mini">
+                      <div className="ml-sh-glabel">לכבוד</div>
+                      <div className="ml-sh-mini-v">סטודיו אורות בע״מ</div>
+                      <div className="ml-sh-mini-sub">
                         ח.פ / ת.ז <Ltr>514738293</Ltr>
                       </div>
                     </div>
-                    <div className="v2-sh-card v2-sh-mini">
-                      <div className="v2-sh-glabel">מספר הקצאה · חשבונית ישראל</div>
-                      <div className="v2-sh-mini-v is-gold">403581926</div>
+                    <div className="ml-sh-card ml-sh-mini is-alloc">
+                      <div className="ml-sh-glabel">
+                        מספר הקצאה · חשבונית ישראל
+                      </div>
+                      <div className="ml-sh-mini-v is-gold">403581926</div>
                     </div>
                   </div>
 
-                  <div className="v2-sh-card v2-sh-items">
-                    <div className="v2-sh-glabel">פירוט</div>
-                    <table className="v2-sh-table">
+                  <div className="ml-sh-card ml-sh-items">
+                    <div className="ml-sh-glabel">פירוט</div>
+                    <table className="ml-sh-table">
                       <thead>
                         <tr>
                           <th className="c-desc">תיאור</th>
@@ -428,21 +522,21 @@ export default function MarketingLanding() {
                     </table>
                   </div>
 
-                  <div className="v2-sh-money">
-                    <div className="v2-sh-card v2-sh-breakdown">
-                      <div className="v2-sh-brow">
+                  <div className="ml-sh-money">
+                    <div className="ml-sh-card ml-sh-breakdown">
+                      <div className="ml-sh-brow">
                         <span>סכום ביניים</span>
                         <span>5,250 ₪</span>
                       </div>
-                      <div className="v2-sh-brow">
+                      <div className="ml-sh-brow">
                         <span>
                           מע״מ <Ltr>18%</Ltr>
                         </span>
                         <span>945 ₪</span>
                       </div>
-                      <div className="v2-sh-brow is-grand">
+                      <div className="ml-sh-brow is-grand">
                         <span>סה״כ לתשלום</span>
-                        <span className="v2-sh-grand">6,195 ₪</span>
+                        <span className="ml-sh-grand">6,195 ₪</span>
                       </div>
                     </div>
                   </div>
@@ -451,143 +545,60 @@ export default function MarketingLanding() {
                       JSX literals around a bare middot: the transform drops the
                       space that leads a multi-line text child, which silently
                       shipped "מספר הקצאה· נדרש". */}
-                  <p className="v2-sh-note">
+                  <p className="ml-sh-note">
                     <b>מספר הקצאה</b>
                     {" · "}
-                    נדרש בחשבונית מס ללקוח עסקי בסכום של 5,000&nbsp;₪ ומעלה לפני
-                    מע״מ. המערכת מבקשת אותו מרשות המסים אוטומטית.
+                    נדרש בחשבונית מס ללקוח עסקי בסכום של 5,000&nbsp;₪ ומעלה
+                    לפני מע״מ. המערכת מבקשת אותו מרשות המסים אוטומטית.
                   </p>
 
-                  <div className="v2-sh-foot">
-                    <div className="v2-sh-sig">מסמך זה הופק אלקטרונית</div>
-                    <div className="v2-sh-brand">
-                      הופק באמצעות{" "}
-                      <Ltr>MyFriendlyInvoiceApp</Ltr>
+                  <div className="ml-sh-foot">
+                    <div className="ml-sh-sig">מסמך זה הופק אלקטרונית</div>
+                    <div className="ml-sh-brand">
+                      הופק באמצעות <Ltr>MyFriendlyInvoiceApp</Ltr>
                     </div>
                   </div>
                 </article>
-                <figcaption className="v2-sheet-cap">
-                  כך נראית החשבונית שהמערכת מפיקה לך
+                <figcaption className="ml-sheet-cap">
+                  חשבונית לדוגמה שנוצרה במערכת. שם הלקוח והפרטים להמחשה בלבד.
                 </figcaption>
               </figure>
             </div>
           </section>
 
-          {/* The one genuinely rare capability (per the /vs comparison pages)
-              was one bullet among three above, equal weight to generic
-              claims. It earns its own quiet card here instead. */}
-          <section className="v2-tax-band">
-            <div className="v2-tax-band-icon" aria-hidden="true">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z" />
-                <path d="M9 12l2 2 4-4" />
-              </svg>
-            </div>
-            <div>
-              <h2>הקצאה אוטומטית מרשות המסים, לא ידני ולא בהעתק-הדבק</h2>
+          <section className="ml-pricing">
+            <div className="ml-wrap">
+              <h2>בתקופת ההשקה, הכול חינם</h2>
               <p>
-                מ-2026 חשבונית מעל 5,000 ש״ח לפני מע״מ ללקוח עסקי חייבת מספר
-                הקצאה, אחרת הלקוח לא יכול לנכות מע״מ. אחרי חיבור חד-פעמי מול
-                רשות המסים, המערכת מבקשת את המספר ישירות ממנה בלחיצה אחת
-                ומציגה אותו על המסמך - בלי טפסים ובלי להעתיק תוצאה מאתר אחר.
+                בלי הגבלת מסמכים, בלי כרטיס אשראי, בלי התחייבות. בהמשך,
+                המסלולים יתחילו מ־₪15 לחודש · <Ltr>Pro</Ltr> ללא הגבלה
+                ב־₪25.
               </p>
-            </div>
-          </section>
-
-          {/* "כל מה שיש רק אצלנו" - the competitive-advantage showcase, the
-              reason this page was rebuilt: it is shared cold into Facebook
-              groups and to friends, so it needs to state every real
-              differentiator in one place rather than assume a visitor
-              already knows what to look for. The closing strip hands off to
-              the /vs pages for the head-to-head, built from the same
-              COMPETITORS data the /vs index and VsSiblings use, so a
-              seventh comparison page needs no edit here either. */}
-          <section className="v2-adv">
-            <div className="v2-adv-head">
-              <div className="v2-eyebrow-row">
-                <i className="ln" />
-                <span>היתרונות שתמצאו כאן - ולא אצל האחרים</span>
-                <i className="ln r" />
-              </div>
-              <h2 className="v2-adv-title">
-                כל מה שיש <span className="v2-gold">רק אצלנו</span>
-              </h2>
-            </div>
-
-            <div className="v2-adv-grid">
-              {ADVANTAGES.map((item) => (
-                <article className="v2-adv-card" key={item.key}>
-                  {item.comingSoon && <span className="badge">בקרוב</span>}
-                  <div className="v2-adv-icon" aria-hidden="true">
-                    {item.icon}
-                  </div>
-                  <h3>
-                    <LtrText text={item.title} />
-                  </h3>
-                  <p>
-                    <LtrText text={item.body} />
-                  </p>
-                </article>
-              ))}
-            </div>
-
-            <div className="v2-cmp-cta" style={{ marginTop: "var(--v2-sp-5)" }}>
-              <p>רוצים את ההשוואה המלאה, שורה מול שורה?</p>
-              <div className="row">
-                <Link href="/vs" className="v2-btn-gold">
-                  לכל ההשוואות
-                </Link>
-                {Object.values(COMPETITORS).map((c) => (
-                  <Link key={c.slug} href={`/vs/${c.slug}`} className="ghost">
-                    <LtrText text={c.name} />
-                  </Link>
-                ))}
+              <Link
+                href="/login?mode=signup"
+                className="ml-btn ml-btn-primary ml-btn-lg"
+              >
+                התחילו בחינם
+              </Link>
+              <div className="fine">
+                ביטול בכל עת · נעדכן מראש לפני כל שינוי מחיר
               </div>
             </div>
           </section>
 
-          {/* Launch pricing, deliberately quiet: two hairlines and type. The
-              sheet is the only object on this page, so the offer states the
-              facts and gets out of the way. */}
-          <section className="v2-band">
-            <div className="v2-band-offer">
-              <p className="v2-band-now">בתקופת ההשקה, הכול חינם</p>
-              <p className="v2-band-later">
-                בהמשך, המסלולים יתחילו מ־₪15 לחודש · <Ltr>Pro</Ltr> ללא הגבלה
-                ב־₪25
-              </p>
-            </div>
-            <p className="v2-band-terms">
-              ביטול בכל עת · נעדכן מראש לפני כל שינוי מחיר
-            </p>
-          </section>
-
-          <section className="v2-faq">
-            <h2 className="v2-faq-title">שאלות נפוצות</h2>
+          <section className="ml-faq">
+            <h2 className="ml-faq-title">שאלות נפוצות</h2>
             {FAQ_ITEMS.map((item) => (
-              <div className="v2-faq-item" key={item.q}>
-                <p className="v2-faq-q">{item.q}</p>
-                <p className="v2-faq-a">{item.a}</p>
+              <div className="ml-faq-item" key={item.q}>
+                <p className="ml-faq-q">{item.q}</p>
+                <p className="ml-faq-a">{item.a}</p>
               </div>
             ))}
           </section>
+        </main>
 
-          <div className="v2-credit">
-            <i className="ln" />
-            <span>נבנה באהבה לעסקים עצמאיים בישראל</span>
-            <i className="ln r" />
-          </div>
-        </div>
-      </main>
-
-      <FooterV2 />
+        <FooterLight />
+      </div>
     </>
   );
 }

@@ -183,9 +183,12 @@ describe("marketing pages: joined heading text", () => {
   it("landing H1 reads as one sentence across its <br>", async () => {
     // Repositioned 2026-08-07: led with aesthetics, now leads with the
     // חשבונית ישראל 2026 compliance mandate (the actual buying trigger).
-    // The point of this assertion is unchanged - the two halves either side
-    // of the <br> must still join into one readable sentence.
-    expect(await h1Of("/")).toBe("חשבונית שעומדת בדרישות 2026");
+    // Redesigned 2026-08-10 ("warm friendly" homepage): the <br> now falls
+    // one clause later, after the "2026," comma, so the gradient-styled
+    // "בלי כאב ראש" lands on its own line. The point of this assertion is
+    // unchanged either way - the two halves either side of the <br> must
+    // still join into one readable sentence, comma and all.
+    expect(await h1Of("/")).toBe("חשבונית שעומדת בדרישות 2026, בלי כאב ראש");
   });
 
   it("every /vs/<competitor> hero H1 reads '<app> מול <competitor>'", async () => {
