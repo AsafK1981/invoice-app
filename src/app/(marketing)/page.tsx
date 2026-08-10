@@ -334,14 +334,26 @@ export default function MarketingLanding() {
               <span className="ml-eyebrow">
                 התוכנה הכי ידידותית לעסקים עצמאיים בישראל
               </span>
+              {/* Headline: Hormozi round (2026-08-10) - Asaf picked the
+                  dream-outcome flip ("issuing an invoice became the easiest
+                  part of your workday") over the compliance-pain framing.
+                  The 2026/allocation specificity moved down into the lede
+                  so the regulatory hook is still above the fold. */}
               <h1 className="ml-hero-h1">
-                חשבונית שעומדת בדרישות 2026,{" "}
+                להוציא חשבונית הפך{" "}
                 <br />
-                <span className="ml-grad-text">בלי כאב ראש</span>
+                {/* Explicit {" "} after the span - same transform trap as
+                    the allocation note below: a space leading a multi-line
+                    text child is silently dropped, which shipped
+                    "קלביום" glued together on the first build. */}
+                <span className="ml-grad-text">לחלק הכי קל</span>
+                {" "}
+                ביום העבודה&nbsp;שלכם
               </h1>
               <p className="ml-lede">
-                מספר הקצאה מרשות המסים מתקבל אוטומטית, בלחיצה אחת, ישירות
-                מתוך המסמך. פחות טפסים, יותר זמן לעסק שלכם.
+                גם עם דרישות 2026: מספר הקצאה מרשות המסים מתקבל אוטומטית,
+                בלחיצה אחת, ישירות מתוך המסמך. פחות טפסים, יותר זמן לעסק
+                שלכם.
               </p>
               <div className="ml-hero-actions">
                 <Link

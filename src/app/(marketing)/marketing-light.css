@@ -240,7 +240,10 @@
 }
 h1.ml-hero-h1 {
   font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
-  font-size: clamp(30px, 6.4vw, 52px);
+  /* 46px cap (was 52px): the Hormozi-round headline (2026-08-10) is a
+     longer sentence than the old compliance line; at 52px its second line
+     overflowed the 740px hero column and orphaned "שלכם" on line 3. */
+  font-size: clamp(29px, 6vw, 46px);
   line-height: 1.16;
   font-weight: 800;
   letter-spacing: -0.01em;
