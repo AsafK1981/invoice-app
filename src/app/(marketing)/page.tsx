@@ -441,147 +441,24 @@ export default function MarketingLanding() {
               full-width sections (sample invoice, then the WhatsApp phone);
               merged side by side 2026-08-10 at Asaf's request - stacked they
               made the page a full screen too long. Shared centered header,
-              then a two-column grid: the invoice sheet (right, reading
-              start) and the phone mock (left), each <figure> carrying its
-              own title, visual, fact list and caption. */}
+              then a two-column grid: the phone mock (right, reading start -
+              Asaf: "מהוואטסאפ שלכם ישירות אל הלקוח", so the story reads
+              WhatsApp first) and the invoice sheet (left), each <figure>
+              carrying its own title, visual, fact list and caption. */}
           <section className="ml-show">
             <div className="ml-wrap">
               <div className="ml-show-head">
                 <span className="ml-eyebrow">כך זה נראה בפועל</span>
-                <h2>אצל הלקוח - ובוואטסאפ שלכם</h2>
+                <h2>מהוואטסאפ שלכם ישירות אל הלקוח</h2>
                 <p>
-                  חשבונית נקייה ומקצועית עם כל השדות שרשות המסים דורשת,
-                  כולל מספר ההקצאה - ובקרוב מפיקים ורושמים הכול גם מתוך
-                  צ&apos;אט הוואטסאפ.
+                  בקרוב: כותבים הודעה אחת בצ&apos;אט - והלקוח מקבל מסמך נקי
+                  ומקצועי, עם כל השדות שרשות המסים דורשת, כולל מספר
+                  ההקצאה.
                 </p>
               </div>
             </div>
 
             <div className="ml-wrap ml-show-grid">
-              <figure className="ml-sheet-wrap">
-                <h3 className="ml-show-col-title">המסמך שהלקוח מקבל</h3>
-                <article className="ml-sheet">
-                  <div className="ml-sh-card ml-sh-head">
-                    <div className="ml-sh-biz">
-                      <p className="ml-sh-name">סטודיו נועה</p>
-                      <p className="ml-sh-bizline">
-                        עוסק מורשה <Ltr>003244266</Ltr> · עיצוב גרפי ומיתוג
-                        <br />
-                        הרצל 12, תל אביב · <Ltr>054-1234567</Ltr> ·{" "}
-                        <Ltr>noa@studio-noa.co.il</Ltr>
-                      </p>
-                    </div>
-                    <div className="ml-sh-ident">
-                      <div className="ml-sh-orig">מקור</div>
-                      <div className="ml-sh-badge">חשבונית מס</div>
-                      <div className="ml-sh-num">0042</div>
-                      <div className="ml-sh-date">09.07.2026</div>
-                    </div>
-                  </div>
-
-                  {/* Same DOM order as the real document's `.doc-strip`: the
-                      customer first, so RTL puts "לכבוד" at the reading start
-                      (right) and the allocation number after it (left), and the
-                      customer stays on top when the strip stacks on mobile. */}
-                  <div className="ml-sh-strip">
-                    <div className="ml-sh-card ml-sh-mini">
-                      <div className="ml-sh-glabel">לכבוד</div>
-                      <div className="ml-sh-mini-v">סטודיו אורות בע״מ</div>
-                      <div className="ml-sh-mini-sub">
-                        ח.פ / ת.ז <Ltr>514738293</Ltr>
-                      </div>
-                    </div>
-                    <div className="ml-sh-card ml-sh-mini is-alloc">
-                      <div className="ml-sh-glabel">
-                        מספר הקצאה · חשבונית ישראל
-                      </div>
-                      <div className="ml-sh-mini-v is-gold">403581926</div>
-                    </div>
-                  </div>
-
-                  <div className="ml-sh-card ml-sh-items">
-                    <div className="ml-sh-glabel">פירוט</div>
-                    <table className="ml-sh-table">
-                      <thead>
-                        <tr>
-                          <th className="c-desc">תיאור</th>
-                          <th className="c-qty">כמות</th>
-                          <th className="c-num">סכום</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <td className="c-desc">עיצוב לוגו ומיתוג</td>
-                          <td className="c-qty">1</td>
-                          <td className="c-total">3,200 ₪</td>
-                        </tr>
-                        <tr>
-                          <td className="c-desc">דף נחיתה</td>
-                          <td className="c-qty">1</td>
-                          <td className="c-total">1,450 ₪</td>
-                        </tr>
-                        <tr>
-                          <td className="c-desc">ייעוץ חזותי</td>
-                          <td className="c-qty">1</td>
-                          <td className="c-total">600 ₪</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-
-                  <div className="ml-sh-money">
-                    <div className="ml-sh-card ml-sh-breakdown">
-                      <div className="ml-sh-brow">
-                        <span>סכום ביניים</span>
-                        <span>5,250 ₪</span>
-                      </div>
-                      <div className="ml-sh-brow">
-                        <span>
-                          מע״מ <Ltr>18%</Ltr>
-                        </span>
-                        <span>945 ₪</span>
-                      </div>
-                      <div className="ml-sh-brow is-grand">
-                        <span>סה״כ לתשלום</span>
-                        <span className="ml-sh-grand">6,195 ₪</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* The separator is an explicit {" · "} expression, not two
-                      JSX literals around a bare middot: the transform drops the
-                      space that leads a multi-line text child, which silently
-                      shipped "מספר הקצאה· נדרש". */}
-                  <p className="ml-sh-note">
-                    <b>מספר הקצאה</b>
-                    {" · "}
-                    נדרש בחשבונית מס ללקוח עסקי בסכום של 5,000&nbsp;₪ ומעלה
-                    לפני מע״מ. המערכת מבקשת אותו מרשות המסים אוטומטית.
-                  </p>
-
-                  <div className="ml-sh-foot">
-                    <div className="ml-sh-sig">מסמך זה הופק אלקטרונית</div>
-                    <div className="ml-sh-brand">
-                      הופק באמצעות <Ltr>MyFriendlyInvoiceApp</Ltr>
-                    </div>
-                  </div>
-                </article>
-                <ul className="ml-sample-feats">
-                  <li>
-                    <CheckIcon /> מספר הקצאה מוטמע אוטומטית
-                  </li>
-                  <li>
-                    <CheckIcon /> עיצוב מקצועי בברירת מחדל
-                  </li>
-                  <li>
-                    <CheckIcon /> נשלח כקישור, מייל או PDF
-                  </li>
-                </ul>
-                <figcaption className="ml-sheet-cap">
-                  חשבונית לדוגמה שנוצרה במערכת. שם הלקוח והפרטים להמחשה בלבד.
-                </figcaption>
-              </figure>
-
               {/* The phone: a faithful HTML/CSS recreation of the
                   bot-conversation mock Asaf supplied as a screenshot -
                   markup rather than an <img> so it stays sharp on every
@@ -752,6 +629,131 @@ export default function MarketingLanding() {
                   הדמיה של ערוץ הוואטסאפ שנמצא בפיתוח. ההודעות להמחשה בלבד.
                 </figcaption>
               </figure>
+
+              <figure className="ml-sheet-wrap">
+                <h3 className="ml-show-col-title">המסמך שהלקוח מקבל</h3>
+                <article className="ml-sheet">
+                  <div className="ml-sh-card ml-sh-head">
+                    <div className="ml-sh-biz">
+                      <p className="ml-sh-name">סטודיו נועה</p>
+                      <p className="ml-sh-bizline">
+                        עוסק מורשה <Ltr>003244266</Ltr> · עיצוב גרפי ומיתוג
+                        <br />
+                        הרצל 12, תל אביב · <Ltr>054-1234567</Ltr> ·{" "}
+                        <Ltr>noa@studio-noa.co.il</Ltr>
+                      </p>
+                    </div>
+                    <div className="ml-sh-ident">
+                      <div className="ml-sh-orig">מקור</div>
+                      <div className="ml-sh-badge">חשבונית מס</div>
+                      <div className="ml-sh-num">0042</div>
+                      <div className="ml-sh-date">09.07.2026</div>
+                    </div>
+                  </div>
+
+                  {/* Same DOM order as the real document's `.doc-strip`: the
+                      customer first, so RTL puts "לכבוד" at the reading start
+                      (right) and the allocation number after it (left), and the
+                      customer stays on top when the strip stacks on mobile. */}
+                  <div className="ml-sh-strip">
+                    <div className="ml-sh-card ml-sh-mini">
+                      <div className="ml-sh-glabel">לכבוד</div>
+                      <div className="ml-sh-mini-v">סטודיו אורות בע״מ</div>
+                      <div className="ml-sh-mini-sub">
+                        ח.פ / ת.ז <Ltr>514738293</Ltr>
+                      </div>
+                    </div>
+                    <div className="ml-sh-card ml-sh-mini is-alloc">
+                      <div className="ml-sh-glabel">
+                        מספר הקצאה · חשבונית ישראל
+                      </div>
+                      <div className="ml-sh-mini-v is-gold">403581926</div>
+                    </div>
+                  </div>
+
+                  <div className="ml-sh-card ml-sh-items">
+                    <div className="ml-sh-glabel">פירוט</div>
+                    <table className="ml-sh-table">
+                      <thead>
+                        <tr>
+                          <th className="c-desc">תיאור</th>
+                          <th className="c-qty">כמות</th>
+                          <th className="c-num">סכום</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td className="c-desc">עיצוב לוגו ומיתוג</td>
+                          <td className="c-qty">1</td>
+                          <td className="c-total">3,200 ₪</td>
+                        </tr>
+                        <tr>
+                          <td className="c-desc">דף נחיתה</td>
+                          <td className="c-qty">1</td>
+                          <td className="c-total">1,450 ₪</td>
+                        </tr>
+                        <tr>
+                          <td className="c-desc">ייעוץ חזותי</td>
+                          <td className="c-qty">1</td>
+                          <td className="c-total">600 ₪</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="ml-sh-money">
+                    <div className="ml-sh-card ml-sh-breakdown">
+                      <div className="ml-sh-brow">
+                        <span>סכום ביניים</span>
+                        <span>5,250 ₪</span>
+                      </div>
+                      <div className="ml-sh-brow">
+                        <span>
+                          מע״מ <Ltr>18%</Ltr>
+                        </span>
+                        <span>945 ₪</span>
+                      </div>
+                      <div className="ml-sh-brow is-grand">
+                        <span>סה״כ לתשלום</span>
+                        <span className="ml-sh-grand">6,195 ₪</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* The separator is an explicit {" · "} expression, not two
+                      JSX literals around a bare middot: the transform drops the
+                      space that leads a multi-line text child, which silently
+                      shipped "מספר הקצאה· נדרש". */}
+                  <p className="ml-sh-note">
+                    <b>מספר הקצאה</b>
+                    {" · "}
+                    נדרש בחשבונית מס ללקוח עסקי בסכום של 5,000&nbsp;₪ ומעלה
+                    לפני מע״מ. המערכת מבקשת אותו מרשות המסים אוטומטית.
+                  </p>
+
+                  <div className="ml-sh-foot">
+                    <div className="ml-sh-sig">מסמך זה הופק אלקטרונית</div>
+                    <div className="ml-sh-brand">
+                      הופק באמצעות <Ltr>MyFriendlyInvoiceApp</Ltr>
+                    </div>
+                  </div>
+                </article>
+                <ul className="ml-sample-feats">
+                  <li>
+                    <CheckIcon /> מספר הקצאה מוטמע אוטומטית
+                  </li>
+                  <li>
+                    <CheckIcon /> עיצוב מקצועי בברירת מחדל
+                  </li>
+                  <li>
+                    <CheckIcon /> נשלח כקישור, מייל או PDF
+                  </li>
+                </ul>
+                <figcaption className="ml-sheet-cap">
+                  חשבונית לדוגמה שנוצרה במערכת. שם הלקוח והפרטים להמחשה בלבד.
+                </figcaption>
+              </figure>
+
             </div>
           </section>
 

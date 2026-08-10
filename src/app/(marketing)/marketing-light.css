@@ -635,7 +635,11 @@ h1.ml-hero-h1 {
 }
 @media (min-width: 980px) {
   .ml-show-grid {
-    grid-template-columns: 1.45fr 1fr;
+    /* Phone first in the DOM = first column = inline-start = RIGHT (the
+       headline reads "from your WhatsApp straight to the client", so the
+       phone leads); it is the narrower visual, the sheet gets the wider
+       left column. */
+    grid-template-columns: 1fr 1.45fr;
     gap: 48px;
   }
 }
