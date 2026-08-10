@@ -75,6 +75,12 @@ const FAQ_ITEMS: { q: string; a: string }[] = [
  * `tone` - it is the one `flagship` card and gets the full brand-gradient
  * tile with a white glyph instead, the strongest treatment on the page.
  *
+ * `tone` also lands on the card itself as `ml-adv-card--{tone}` (below),
+ * reused by that class's `:hover` rule so the whole card - not just its
+ * icon tile - shifts to that hue's `*-50` on hover (2026-08-10 "more
+ * interesting" pass, see the hover block under `.ml-adv-icon--orange` in
+ * marketing-light.css).
+ *
  * Body copy: kept the previous (verified) copy for every card except
  * "allocation" and "whatsapp", where the approved mockup's phrasing is
  * strictly tighter without dropping any verified fact. The rest keep
@@ -325,7 +331,7 @@ export default function MarketingLanding() {
           <section className="ml-hero">
             <div className="ml-wrap ml-hero-in">
               <span className="ml-eyebrow">
-                התוכנה הכי ידידותית לעוסק פטור בישראל
+                התוכנה הכי ידידותית לעסקים עצמאיים בישראל
               </span>
               <h1 className="ml-hero-h1">
                 חשבונית שעומדת בדרישות 2026,{" "}
@@ -367,7 +373,7 @@ export default function MarketingLanding() {
                 <span className="ml-adv-tag">
                   9 יתרונות שמרגישים כמו הקלה
                 </span>
-                <h2>כל מה שעוסק פטור צריך, במקום אחד ידידותי</h2>
+                <h2>כל מה שעסק עצמאי צריך, במקום אחד</h2>
                 <p>
                   לא עוד תוכנה שמרגישה כמו טופס של רשות המסים. הכול כאן,
                   פשוט וברור.
@@ -377,7 +383,7 @@ export default function MarketingLanding() {
               <div className="ml-adv-grid">
                 {ADVANTAGES.map((item) => (
                   <article
-                    className={`ml-adv-card${item.flagship ? " is-flagship" : ""}`}
+                    className={`ml-adv-card${item.flagship ? " is-flagship" : ""}${item.tone ? ` ml-adv-card--${item.tone}` : ""}`}
                     key={item.key}
                   >
                     <div

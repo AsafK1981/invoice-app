@@ -40,6 +40,18 @@
   --ml-peach-line: #f2d2a8;
   --ml-shadow-sm: 0 1px 2px rgba(120, 65, 20, 0.05), 0 6px 18px -12px rgba(120, 65, 20, 0.18);
   --ml-shadow-md: 0 26px 50px -24px rgba(120, 65, 20, 0.28);
+  /* Deeper still, same warm rgba(120,65,20,*) hue and downward light
+     direction as -sm/-md above - the shared "pop" shadow for hovered
+     cards (2026-08-10 "more interesting" pass). */
+  --ml-shadow-lift: 0 30px 56px -20px rgba(120, 65, 20, 0.34), 0 12px 24px -10px rgba(120, 65, 20, 0.2);
+  /* Page-field texture tokens, same pass. The dot reuses --ml-muted (warm
+     stone) at low alpha; the washes reuse the brand orange/rose and the
+     amber icon hue already on this page rather than inventing new one-off
+     colors - see `.ml-theme::before` below. */
+  --ml-dot: rgba(111, 103, 87, 0.16);
+  --ml-wash-peach: rgba(249, 115, 22, 0.09);
+  --ml-wash-amber: rgba(217, 119, 6, 0.07);
+  --ml-wash-rose: rgba(225, 29, 72, 0.06);
 
   position: relative;
   z-index: 1;
@@ -64,6 +76,43 @@
 .ml-theme [role="button"]:focus-visible,
 .ml-theme [tabindex]:focus-visible {
   outline-color: var(--ml-rose);
+}
+
+/* ---------- page-field texture ----------
+   Owner 2026-08-10: "הרקע מאוד משעמם, צריך pattern או משהו". A fine
+   warm-stone dot grid plus three soft, asymmetrically placed color washes
+   on ONE full-height layer behind every section - top-left behind the hero,
+   mid-right behind the advantage grid, bottom-left just past the pricing
+   band (NOT centered on it - `.ml-pricing` paints its own opaque peach
+   fill, so a wash centered inside that span would be fully hidden; this one
+   sits low enough to show on the cream FAQ background right below it).
+   No images: both the grid and the washes are `radial-gradient()` layers.
+
+   `position: absolute; inset: 0` (not `fixed`): the washes are placed by
+   PERCENTAGE against the full scrollable height of `.ml-theme`, so they
+   track their sections as the page scrolls instead of staying pinned to
+   the viewport. `min(Npx, Nvw)` caps each wash's radius on desktop but
+   shrinks it on narrow viewports, so it reads as a soft accent rather than
+   a dominant glow on a 390px screen.
+
+   `z-index: -1` keeps this pseudo-element inside `.ml-theme`'s OWN
+   stacking context (`.ml-theme` is `position: relative` + `z-index: 1`),
+   so it paints above the opaque cream fill but below every normal-flow
+   child automatically - no card, heading or section needs its own z-index
+   for the pattern to stay behind it. */
+.ml-theme::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle, var(--ml-dot) 0.8px, transparent 1.6px),
+    radial-gradient(min(640px, 70vw) circle at 14% 7%, var(--ml-wash-peach), transparent 70%),
+    radial-gradient(min(700px, 78vw) circle at 86% 27%, var(--ml-wash-amber), transparent 70%),
+    radial-gradient(min(660px, 72vw) circle at 12% 81%, var(--ml-wash-rose), transparent 70%);
+  background-repeat: repeat, no-repeat, no-repeat, no-repeat;
+  background-size: 24px 24px, auto, auto, auto;
 }
 
 .ml-wrap {
@@ -95,9 +144,9 @@
   box-shadow: 0 12px 26px -12px rgba(225, 29, 72, 0.4), 0 4px 10px -4px rgba(249, 115, 22, 0.32);
 }
 .ml-btn-primary:hover {
-  transform: translateY(-1px);
+  transform: translateY(-2px) scale(1.015);
   filter: brightness(1.04);
-  box-shadow: 0 16px 32px -12px rgba(225, 29, 72, 0.46), 0 6px 14px -4px rgba(249, 115, 22, 0.34);
+  box-shadow: 0 20px 38px -14px rgba(225, 29, 72, 0.5), 0 8px 18px -6px rgba(249, 115, 22, 0.36);
 }
 .ml-btn-sm {
   padding: 10px 22px;
@@ -300,11 +349,14 @@ h1.ml-hero-h1 {
   }
 }
 .ml-adv-card {
+  position: relative;
   background: var(--ml-card);
   border: 1px solid var(--ml-line);
   border-radius: 16px;
   padding: 24px;
   box-shadow: var(--ml-shadow-sm);
+  transition: transform 180ms ease-out, box-shadow 180ms ease-out,
+    background-color 180ms ease-out, border-color 180ms ease-out;
 }
 .ml-adv-icon {
   width: 46px;
@@ -316,6 +368,7 @@ h1.ml-hero-h1 {
   background: var(--ml-gold-tint);
   color: var(--ml-gold-ink);
   margin-bottom: 16px;
+  transition: transform 180ms ease-out;
 }
 .ml-adv-icon svg {
   width: 22px;
@@ -367,6 +420,67 @@ h1.ml-hero-h1 {
 .ml-adv-icon--orange {
   background: #ffedd5;
   color: #ea580c;
+}
+
+/* Hover "pop" (owner 2026-08-10: "יש יותר מדי שטח מת... צריך שהוא יבלוט,
+   יצא החוצה"): lift + deepen the shadow, scale the icon tile slightly, and
+   shift the card's OWN background from white to its icon hue's *-50 tint
+   (border to *-200) - the exact same tone pairing as the icon tiles above,
+   two steps lighter, so a hovered card and its already-colored icon read as
+   one family instead of a plain white box suddenly gaining an unrelated
+   color. The flagship card (no `tone`, brand-gradient icon) hovers to a
+   warm orange tint, same values as `--orange`.
+   `position: relative` (set on `.ml-adv-card` above) + `z-index: 2` here
+   keeps the lifted card's shadow painting OVER its neighbours instead of
+   being clipped by whichever sibling happens to be later in the grid.
+   `@media (hover: hover)` only: touch devices tap-activate `:hover` too,
+   but can never "un-hover" without tapping elsewhere, so this whole state
+   is scoped to devices with a real pointer. */
+@media (hover: hover) {
+  .ml-adv-card:hover {
+    transform: translateY(-6px) scale(1.02);
+    box-shadow: var(--ml-shadow-lift);
+    z-index: 2;
+  }
+  .ml-adv-card:hover .ml-adv-icon {
+    transform: scale(1.06);
+  }
+  .ml-adv-card.is-flagship:hover {
+    background: #fff7ed;
+    border-color: #fed7aa;
+  }
+  .ml-adv-card--violet:hover {
+    background: #f5f3ff;
+    border-color: #ddd6fe;
+  }
+  .ml-adv-card--amber:hover {
+    background: #fffbeb;
+    border-color: #fde68a;
+  }
+  .ml-adv-card--green:hover {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+  }
+  .ml-adv-card--pink:hover {
+    background: #fdf2f8;
+    border-color: #fbcfe8;
+  }
+  .ml-adv-card--teal:hover {
+    background: #f0fdfa;
+    border-color: #99f6e4;
+  }
+  .ml-adv-card--indigo:hover {
+    background: #eef2ff;
+    border-color: #c7d2fe;
+  }
+  .ml-adv-card--sky:hover {
+    background: #f0f9ff;
+    border-color: #bae6fd;
+  }
+  .ml-adv-card--orange:hover {
+    background: #fff7ed;
+    border-color: #fed7aa;
+  }
 }
 .ml-adv-card h3 {
   font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
@@ -451,11 +565,21 @@ h1.ml-hero-h1 {
   font-weight: 700;
   color: var(--ml-ink);
   box-shadow: var(--ml-shadow-sm);
-  transition: border-color 0.18s ease, color 0.18s ease;
+  transition: border-color 0.18s ease, color 0.18s ease, background-color 180ms ease-out,
+    transform 180ms ease-out, box-shadow 180ms ease-out;
 }
-.ml-chip:hover {
-  border-color: var(--ml-gold-ink);
-  color: var(--ml-gold-ink);
+/* Matching-but-lighter hover than the advantage cards: a smaller lift, the
+   same warm gold-tint fill used elsewhere on this page (the eyebrow badge,
+   the compare panel, the sheet's mini cards). Hover-only, same reasoning
+   as the card pop above. */
+@media (hover: hover) {
+  .ml-chip:hover {
+    border-color: var(--ml-gold-ink);
+    color: var(--ml-gold-ink);
+    background: var(--ml-gold-tint);
+    transform: translateY(-2px);
+    box-shadow: var(--ml-shadow-md);
+  }
 }
 .ml-cmp-link {
   display: inline-flex;
@@ -858,6 +982,7 @@ h1.ml-hero-h1 {
 /* ---------- FAQ ---------- */
 .ml-faq {
   padding-block: 68px;
+  padding-inline: 22px;
   max-width: 740px;
   margin-inline: auto;
 }
@@ -875,16 +1000,42 @@ h1.ml-hero-h1 {
   margin-bottom: 32px;
 }
 .ml-faq-item {
+  position: relative;
   padding-block: 22px;
   border-top: 1px solid var(--ml-line);
 }
 .ml-faq-item:last-child {
   border-bottom: 1px solid var(--ml-line);
 }
+/* Matching-but-lighter hover treatment (2026-08-10 coherence pass): a
+   gold-tint panel bleeds 16px past the question text on each side via an
+   absolutely positioned layer, rather than padding/background on the item
+   itself - so the FAQ column's existing box model is never touched, on any
+   viewport. `z-index: -1` keeps it behind `.ml-faq-q` / `.ml-faq-a`, same
+   trick as `.ml-theme::before`'s page texture. */
+@media (hover: hover) {
+  .ml-faq-item::before {
+    content: "";
+    position: absolute;
+    inset: 0 -16px;
+    z-index: -1;
+    border-radius: 12px;
+    background: var(--ml-gold-tint);
+    opacity: 0;
+    transition: opacity 180ms ease-out;
+  }
+  .ml-faq-item:hover::before {
+    opacity: 1;
+  }
+  .ml-faq-item:hover .ml-faq-q {
+    color: var(--ml-gold-ink);
+  }
+}
 .ml-faq-q {
   font-size: 16px;
   font-weight: 700;
   color: var(--ml-ink);
+  transition: color 180ms ease-out;
 }
 .ml-faq-a {
   margin-top: 8px;
