@@ -572,6 +572,191 @@ export default function MarketingLanding() {
             </div>
           </section>
 
+          {/* WhatsApp-channel showcase (added 2026-08-10, Asaf's request):
+              a faithful HTML/CSS recreation of the bot-conversation mock he
+              supplied as a screenshot - rebuilt as markup rather than an <img>
+              so it stays sharp on every density, inherits RTL for free, and
+              weighs nothing. The conversation demonstrates the channel's two
+              flows (free-text receipt issuing, photo expense capture), and
+              every message body matches the approved mock verbatim. The
+              feature itself is not live yet (Meta approval pending), so the
+              section carries the same "בקרוב" badge as the advantage card
+              above and the caption says it is a preview - no false claims.
+              The phone is `role="img"` + aria-label: to a screen reader the
+              whole simulated chat is one picture, not a wall of fake
+              conversation turns. */}
+          <section className="ml-wa">
+            <div className="ml-wrap ml-wa-in">
+              <div className="ml-wa-copy">
+                <span className="ml-eyebrow">
+                  ערוץ וואטסאפ <span className="ml-badge-soon">בקרוב</span>
+                </span>
+                <h2>קבלה שלמה, בהודעת וואטסאפ אחת</h2>
+                <p>
+                  כותבים לבוט כמו לעוזר אישי: הוא מכין את המסמך, מחכה
+                  לאישור שלכם, ומפיק קבלה מוכנה לשליחה ללקוח. גם הוצאות -
+                  מצלמים קבלה, והכול נקלט לבד.
+                </p>
+                <ul className="ml-sample-feats">
+                  <li>
+                    <CheckIcon /> מפיקים קבלה בהודעה חופשית, בלי להתחבר
+                  </li>
+                  <li>
+                    <CheckIcon /> מצלמים קבלה - ספק, סכום ומע״מ נקלטים לבד
+                  </li>
+                  <li>
+                    <CheckIcon /> שום מסמך לא נוצר בלי אישור מפורש שלכם
+                  </li>
+                </ul>
+              </div>
+
+              <figure className="ml-wa-phone-wrap">
+                <div
+                  className="ml-wa-phone"
+                  role="img"
+                  aria-label="הדמיה של שיחת וואטסאפ עם חשבונית ידידותית: מבקשים קבלה בהודעה חופשית, מאשרים, ומקבלים PDF מוכן; מצלמים קבלה מתחנת דלק וההוצאה נקלטת אוטומטית"
+                >
+                  <div className="ml-wa-head">
+                    <span className="ml-wa-avatar">ח</span>
+                    <span className="ml-wa-title">
+                      <span className="ml-wa-name">
+                        חשבונית ידידותית
+                        <svg
+                          className="ml-wa-verified"
+                          viewBox="0 0 16 16"
+                          aria-hidden="true"
+                        >
+                          <path
+                            d="M8 0.8l1.7 1.5 2.2-.4.8 2.1 2.1.8-.4 2.2L16 8l-1.5 1.7.4 2.2-2.1.8-.8 2.1-2.2-.4L8 15.2l-1.7-1.5-2.2.4-.8-2.1-2.1-.8.4-2.2L0 8l1.5-1.7-.4-2.2 2.1-.8.8-2.1 2.2.4z"
+                            fill="currentColor"
+                          />
+                          <path
+                            d="M5 8.2l2 2 4-4.2"
+                            fill="none"
+                            stroke="#0b141a"
+                            strokeWidth="1.7"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      </span>
+                      <span className="ml-wa-sub">עסק · מקוון</span>
+                    </span>
+                  </div>
+
+                  <div className="ml-wa-chat">
+                    <span className="ml-wa-day">היום</span>
+
+                    <div className="ml-wa-msg is-out">
+                      <p>תוציא קבלה לדני כהן על 1,200 שקל העברה בנקאית</p>
+                      <span className="ml-wa-meta">
+                        10:42 <b className="ml-wa-ticks">✓✓</b>
+                      </span>
+                    </div>
+
+                    <div className="ml-wa-msg is-in">
+                      <p>רגע לפני שאני מפיק, תאשר שהכול נכון:</p>
+                      <dl className="ml-wa-fields">
+                        <div>
+                          <dt>סוג</dt>
+                          <dd>קבלה</dd>
+                        </div>
+                        <div>
+                          <dt>לקוח</dt>
+                          <dd>דני כהן</dd>
+                        </div>
+                        <div>
+                          <dt>סכום</dt>
+                          <dd>₪1,200.00</dd>
+                        </div>
+                        <div>
+                          <dt>תשלום</dt>
+                          <dd>העברה בנקאית</dd>
+                        </div>
+                        <div>
+                          <dt>תאריך</dt>
+                          <dd>08.08.2026</dd>
+                        </div>
+                      </dl>
+                      <span className="ml-wa-meta">10:42</span>
+                      <div className="ml-wa-actions">
+                        <span>✅ אשר והפק</span>
+                        <span>✏️ תקן פרט</span>
+                        <span>❌ בטל</span>
+                      </div>
+                    </div>
+
+                    <div className="ml-wa-msg is-out">
+                      <p>אשר והפק</p>
+                      <span className="ml-wa-meta">
+                        10:43 <b className="ml-wa-ticks">✓✓</b>
+                      </span>
+                    </div>
+
+                    <div className="ml-wa-msg is-in">
+                      <div className="ml-wa-doc">
+                        <span className="ml-wa-doc-icon">PDF</span>
+                        <span className="ml-wa-doc-info">
+                          <b>
+                            <Ltr>kabala-1043.pdf</Ltr>
+                          </b>
+                          <span>
+                            עמוד אחד · <Ltr>84KB</Ltr>
+                          </span>
+                        </span>
+                      </div>
+                      <p>קבלה 1043 הופקה ונשמרה ✅</p>
+                      <span className="ml-wa-meta">10:43</span>
+                      <div className="ml-wa-actions">
+                        <span>👆 שלח את הקבלה לדני</span>
+                      </div>
+                    </div>
+
+                    <div className="ml-wa-msg is-out is-photo">
+                      <span className="ml-wa-photo" aria-hidden="true">
+                        🧾
+                      </span>
+                      <p>קבלה מתחנת דלק</p>
+                      <span className="ml-wa-meta">
+                        14:10 <b className="ml-wa-ticks">✓✓</b>
+                      </span>
+                    </div>
+
+                    <div className="ml-wa-msg is-in">
+                      <p>קראתי את הקבלה:</p>
+                      <dl className="ml-wa-fields">
+                        <div>
+                          <dt>ספק</dt>
+                          <dd>פז</dd>
+                        </div>
+                        <div>
+                          <dt>סכום</dt>
+                          <dd>₪312.40</dd>
+                        </div>
+                        <div>
+                          <dt>מע״מ</dt>
+                          <dd>₪47.65</dd>
+                        </div>
+                        <div>
+                          <dt>קטגוריה</dt>
+                          <dd>דלק ורכב</dd>
+                        </div>
+                      </dl>
+                      <span className="ml-wa-meta">14:10</span>
+                      <div className="ml-wa-actions">
+                        <span>✅ שמור כהוצאה</span>
+                        <span>✏️ תקן פרט</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <figcaption className="ml-sheet-cap">
+                  הדמיה של ערוץ הוואטסאפ שנמצא בפיתוח. ההודעות להמחשה בלבד.
+                </figcaption>
+              </figure>
+            </div>
+          </section>
+
           <section className="ml-pricing">
             <div className="ml-wrap">
               <h2>בתקופת ההשקה, הכול חינם</h2>

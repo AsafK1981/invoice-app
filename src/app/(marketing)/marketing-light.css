@@ -615,17 +615,20 @@ h1.ml-hero-h1 {
     gap: 64px;
   }
 }
-.ml-sample-copy .ml-eyebrow {
+.ml-sample-copy .ml-eyebrow,
+.ml-wa-copy .ml-eyebrow {
   margin-bottom: 18px;
 }
-.ml-sample-copy h2 {
+.ml-sample-copy h2,
+.ml-wa-copy h2 {
   font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
   font-size: clamp(25px, 3.4vw, 33px);
   font-weight: 800;
   line-height: 1.22;
   color: var(--ml-ink);
 }
-.ml-sample-copy p {
+.ml-sample-copy p,
+.ml-wa-copy p {
   margin-top: 14px;
   font-size: 15.5px;
   line-height: 1.68;
@@ -941,6 +944,264 @@ h1.ml-hero-h1 {
   font-size: 12.5px;
   line-height: 1.6;
   color: var(--ml-muted);
+}
+
+/* ---------- whatsapp channel showcase ----------
+   A pure-CSS recreation of the WhatsApp-bot conversation mock (Asaf,
+   2026-08-10) inside a dark phone frame. The dark phone deliberately pops
+   against the cream page the same way the obsidian OG card does - it is
+   the only dark object on the homepage, which is what makes it read as a
+   real phone instead of another tinted card. Colors are WhatsApp's own
+   dark-theme palette (bubble/panel/tick hex values lifted from the app)
+   rather than `--ml-*` tokens: the point of the section is "this is
+   literally WhatsApp", so it must not inherit the page's warm skin. The
+   values live on `.ml-wa-phone` as local custom props to keep them
+   scoped and in one place. */
+.ml-wa {
+  padding-block: 8px 76px;
+}
+@media (min-width: 760px) {
+  .ml-wa {
+    padding-block: 12px 100px;
+  }
+}
+.ml-wa-in {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 40px;
+  align-items: center;
+}
+@media (min-width: 980px) {
+  .ml-wa-in {
+    grid-template-columns: 0.9fr 1fr;
+    gap: 64px;
+  }
+  /* Copy comes first in the DOM (so phones read text before mock), but on
+     desktop the PHONE takes the first = inline-start = RIGHT column,
+     mirroring the sample-invoice section above it (sheet left, copy
+     right) so the two showcases alternate sides. */
+  .ml-wa-phone-wrap {
+    order: -1;
+  }
+}
+.ml-wa-phone {
+  --wa-bg: #0b141a;
+  --wa-panel: #202c33;
+  --wa-out: #005c4b;
+  --wa-ink: #e9edef;
+  --wa-muted: #8696a0;
+  --wa-accent: #00a884;
+  --wa-link: #53bdeb;
+  --wa-inset: rgba(0, 0, 0, 0.22);
+  --wa-hairline: rgba(134, 150, 160, 0.18);
+
+  max-width: 336px;
+  margin-inline: auto;
+  background: var(--wa-bg);
+  border: 9px solid #16202a;
+  border-radius: 34px;
+  overflow: hidden;
+  box-shadow: var(--ml-shadow-md);
+  color: var(--wa-ink);
+  text-align: right;
+}
+.ml-wa-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--wa-panel);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.25);
+}
+.ml-wa-avatar {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--wa-accent);
+  color: #fff;
+  font-weight: 800;
+  font-size: 15px;
+}
+.ml-wa-title {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.ml-wa-name {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.ml-wa-verified {
+  width: 13px;
+  height: 13px;
+  color: var(--wa-accent);
+  flex: none;
+}
+.ml-wa-sub {
+  font-size: 11px;
+  color: var(--wa-muted);
+}
+.ml-wa-chat {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 10px 16px;
+}
+.ml-wa-day {
+  align-self: center;
+  padding: 4px 12px;
+  border-radius: 8px;
+  background: #182229;
+  color: var(--wa-muted);
+  font-size: 10.5px;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+.ml-wa-msg {
+  max-width: 88%;
+  border-radius: 10px;
+  padding: 7px 9px 5px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.25);
+}
+/* RTL chat: incoming (bot) hugs the reading start = right, with the
+   flattened corner on its top-right; outgoing (user) hugs the left,
+   flattened top-left - exactly how WhatsApp lays out a Hebrew chat. */
+.ml-wa-msg.is-in {
+  align-self: flex-start;
+  background: var(--wa-panel);
+  border-start-start-radius: 3px;
+}
+.ml-wa-msg.is-out {
+  align-self: flex-end;
+  background: var(--wa-out);
+  border-start-end-radius: 3px;
+}
+.ml-wa-meta {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 3px;
+  margin-top: 2px;
+  font-size: 9.5px;
+  color: rgba(233, 237, 239, 0.55);
+  font-variant-numeric: tabular-nums;
+}
+.ml-wa-ticks {
+  font-weight: 400;
+  font-style: normal;
+  color: var(--wa-link);
+  letter-spacing: -0.18em;
+  margin-inline-end: 0.18em;
+}
+.ml-wa-fields {
+  margin-top: 7px;
+  padding: 8px 10px;
+  background: var(--wa-inset);
+  border-inline-start: 3px solid #d1a54d;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.ml-wa-fields > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+}
+.ml-wa-fields dt {
+  color: var(--wa-muted);
+  font-size: 11.5px;
+}
+.ml-wa-fields dd {
+  font-weight: 700;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+/* Interactive-message button rows: WhatsApp draws each action as a
+   centered, link-blue row with a hairline above it. Spans, not <button>s -
+   this is a picture of a UI, nothing here is operable on purpose. */
+.ml-wa-actions {
+  margin-top: 7px;
+  margin-inline: -9px;
+  margin-bottom: -5px;
+}
+.ml-wa-actions span {
+  display: block;
+  text-align: center;
+  padding: 8px 10px;
+  border-top: 1px solid var(--wa-hairline);
+  color: var(--wa-link);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.ml-wa-doc {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  background: var(--wa-inset);
+  border-radius: 8px;
+  margin-bottom: 6px;
+}
+.ml-wa-doc-icon {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f04438;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+.ml-wa-doc-info {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.ml-wa-doc-info b {
+  font-size: 12px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.ml-wa-doc-info span {
+  font-size: 10.5px;
+  color: var(--wa-muted);
+}
+.ml-wa-msg.is-photo {
+  padding: 5px 5px 4px;
+}
+.ml-wa-msg.is-photo p {
+  padding-inline: 4px;
+}
+.ml-wa-msg.is-photo .ml-wa-meta {
+  padding-inline: 4px;
+}
+.ml-wa-photo {
+  display: grid;
+  place-items: center;
+  height: 104px;
+  border-radius: 7px;
+  background:
+    radial-gradient(80px 50px at 70% 30%, rgba(255, 255, 255, 0.06), transparent 70%),
+    linear-gradient(140deg, #22303a, #141d24);
+  font-size: 32px;
+  margin-bottom: 5px;
 }
 
 /* ---------- pricing band ---------- */
