@@ -594,46 +594,67 @@ h1.ml-hero-h1 {
   height: 13px;
 }
 
-/* ---------- sample invoice ---------- */
-.ml-sample {
+/* ---------- combined client + WhatsApp showcase ----------
+   One section, two visuals side by side (2026-08-10: the stacked
+   sample-invoice and WhatsApp sections made the page a full screen too
+   long - Asaf asked to shorten). Shared centered header; each column is
+   a <figure> carrying its own title, visual, fact list and caption. */
+.ml-show {
   padding-block: 8px 76px;
 }
 @media (min-width: 760px) {
-  .ml-sample {
+  .ml-show {
     padding-block: 12px 100px;
   }
 }
-.ml-sample-in {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 40px;
-  align-items: center;
+.ml-show-head {
+  text-align: center;
+  max-width: 640px;
+  margin: 0 auto 38px;
 }
-@media (min-width: 980px) {
-  .ml-sample-in {
-    grid-template-columns: 0.82fr 1fr;
-    gap: 64px;
-  }
-}
-.ml-sample-copy .ml-eyebrow,
-.ml-wa-copy .ml-eyebrow {
-  margin-bottom: 18px;
-}
-.ml-sample-copy h2,
-.ml-wa-copy h2 {
+.ml-show-head h2 {
   font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
   font-size: clamp(25px, 3.4vw, 33px);
   font-weight: 800;
   line-height: 1.22;
   color: var(--ml-ink);
 }
-.ml-sample-copy p,
-.ml-wa-copy p {
-  margin-top: 14px;
+.ml-show-head p {
+  margin-top: 12px;
   font-size: 15.5px;
   line-height: 1.68;
   color: var(--ml-ink-2);
-  max-width: 440px;
+}
+.ml-show-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 56px;
+  /* start, not center: the two column titles must sit on one line even
+     though the phone column runs taller than the sheet column. */
+  align-items: start;
+}
+@media (min-width: 980px) {
+  .ml-show-grid {
+    grid-template-columns: 1.45fr 1fr;
+    gap: 48px;
+  }
+}
+.ml-show-col-title {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--ml-ink);
+  margin-bottom: 18px;
+}
+/* The fact lists ride inside each column now - centered under their
+   visual instead of flowing in a side copy column. */
+.ml-show-grid .ml-sample-feats {
+  width: fit-content;
+  margin-inline: auto;
 }
 .ml-sample-feats {
   margin-top: 22px;
@@ -946,7 +967,7 @@ h1.ml-hero-h1 {
   color: var(--ml-muted);
 }
 
-/* ---------- whatsapp channel showcase ----------
+/* ---------- whatsapp phone mock ----------
    A pure-CSS recreation of the WhatsApp-bot conversation mock (Asaf,
    2026-08-10) inside a dark phone frame. The dark phone deliberately pops
    against the cream page the same way the obsidian OG card does - it is
@@ -957,33 +978,6 @@ h1.ml-hero-h1 {
    literally WhatsApp", so it must not inherit the page's warm skin. The
    values live on `.ml-wa-phone` as local custom props to keep them
    scoped and in one place. */
-.ml-wa {
-  padding-block: 8px 76px;
-}
-@media (min-width: 760px) {
-  .ml-wa {
-    padding-block: 12px 100px;
-  }
-}
-.ml-wa-in {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 40px;
-  align-items: center;
-}
-@media (min-width: 980px) {
-  .ml-wa-in {
-    grid-template-columns: 0.9fr 1fr;
-    gap: 64px;
-  }
-  /* Copy comes first in the DOM (so phones read text before mock), but on
-     desktop the PHONE takes the first = inline-start = RIGHT column,
-     mirroring the sample-invoice section above it (sheet left, copy
-     right) so the two showcases alternate sides. */
-  .ml-wa-phone-wrap {
-    order: -1;
-  }
-}
 .ml-wa-phone {
   --wa-bg: #0b141a;
   --wa-panel: #202c33;

@@ -288,7 +288,8 @@ export const metadata: Metadata = {
  * individually colored - see the ADVANTAGES comment), a comparison strip
  * linking out to the /vs pages, a "how it looks for your client" section
  * built around the same sample invoice the previous design used (ported
- * zone-for-zone, only re-skinned), the launch pricing band, the existing
+ * zone-for-zone, only re-skinned) - since 2026-08-10 sharing one section,
+ * side by side, with the WhatsApp phone mock - the launch pricing band, the existing
  * FAQ (unchanged content, restyled), and a light footer.
  *
  * SCOPING. Everything visual here lives in marketing-light.css under
@@ -436,29 +437,29 @@ export default function MarketingLanding() {
             </div>
           </section>
 
-          <section className="ml-sample">
-            <div className="ml-wrap ml-sample-in">
-              <div className="ml-sample-copy">
-                <span className="ml-eyebrow">המסמך שהלקוח מקבל</span>
-                <h2>כך זה נראה אצל הלקוח</h2>
+          {/* Combined "client + WhatsApp" showcase. Originally two stacked
+              full-width sections (sample invoice, then the WhatsApp phone);
+              merged side by side 2026-08-10 at Asaf's request - stacked they
+              made the page a full screen too long. Shared centered header,
+              then a two-column grid: the invoice sheet (right, reading
+              start) and the phone mock (left), each <figure> carrying its
+              own title, visual, fact list and caption. */}
+          <section className="ml-show">
+            <div className="ml-wrap">
+              <div className="ml-show-head">
+                <span className="ml-eyebrow">כך זה נראה בפועל</span>
+                <h2>אצל הלקוח - ובוואטסאפ שלכם</h2>
                 <p>
-                  חשבונית נקייה ומקצועית, עם כל השדות שרשות המסים דורשת,
-                  כולל מספר ההקצאה. מוכנה תוך שניות ונשלחת בלחיצה.
+                  חשבונית נקייה ומקצועית עם כל השדות שרשות המסים דורשת,
+                  כולל מספר ההקצאה - ובקרוב מפיקים ורושמים הכול גם מתוך
+                  צ&apos;אט הוואטסאפ.
                 </p>
-                <ul className="ml-sample-feats">
-                  <li>
-                    <CheckIcon /> מספר הקצאה מוטמע אוטומטית
-                  </li>
-                  <li>
-                    <CheckIcon /> עיצוב מקצועי בברירת מחדל
-                  </li>
-                  <li>
-                    <CheckIcon /> נשלח כקישור, מייל או PDF
-                  </li>
-                </ul>
               </div>
+            </div>
 
+            <div className="ml-wrap ml-show-grid">
               <figure className="ml-sheet-wrap">
+                <h3 className="ml-show-col-title">המסמך שהלקוח מקבל</h3>
                 <article className="ml-sheet">
                   <div className="ml-sh-card ml-sh-head">
                     <div className="ml-sh-biz">
@@ -565,52 +566,38 @@ export default function MarketingLanding() {
                     </div>
                   </div>
                 </article>
+                <ul className="ml-sample-feats">
+                  <li>
+                    <CheckIcon /> מספר הקצאה מוטמע אוטומטית
+                  </li>
+                  <li>
+                    <CheckIcon /> עיצוב מקצועי בברירת מחדל
+                  </li>
+                  <li>
+                    <CheckIcon /> נשלח כקישור, מייל או PDF
+                  </li>
+                </ul>
                 <figcaption className="ml-sheet-cap">
                   חשבונית לדוגמה שנוצרה במערכת. שם הלקוח והפרטים להמחשה בלבד.
                 </figcaption>
               </figure>
-            </div>
-          </section>
 
-          {/* WhatsApp-channel showcase (added 2026-08-10, Asaf's request):
-              a faithful HTML/CSS recreation of the bot-conversation mock he
-              supplied as a screenshot - rebuilt as markup rather than an <img>
-              so it stays sharp on every density, inherits RTL for free, and
-              weighs nothing. The conversation demonstrates the channel's two
-              flows (free-text receipt issuing, photo expense capture), and
-              every message body matches the approved mock verbatim. The
-              feature itself is not live yet (Meta approval pending), so the
-              section carries the same "בקרוב" badge as the advantage card
-              above and the caption says it is a preview - no false claims.
-              The phone is `role="img"` + aria-label: to a screen reader the
-              whole simulated chat is one picture, not a wall of fake
-              conversation turns. */}
-          <section className="ml-wa">
-            <div className="ml-wrap ml-wa-in">
-              <div className="ml-wa-copy">
-                <span className="ml-eyebrow">
-                  ערוץ וואטסאפ <span className="ml-badge-soon">בקרוב</span>
-                </span>
-                <h2>קבלה שלמה, בהודעת וואטסאפ אחת</h2>
-                <p>
-                  כותבים לבוט כמו לעוזר אישי: הוא מכין את המסמך, מחכה
-                  לאישור שלכם, ומפיק קבלה מוכנה לשליחה ללקוח. גם הוצאות -
-                  מצלמים קבלה, והכול נקלט לבד.
-                </p>
-                <ul className="ml-sample-feats">
-                  <li>
-                    <CheckIcon /> מפיקים קבלה בהודעה חופשית, בלי להתחבר
-                  </li>
-                  <li>
-                    <CheckIcon /> מצלמים קבלה - ספק, סכום ומע״מ נקלטים לבד
-                  </li>
-                  <li>
-                    <CheckIcon /> שום מסמך לא נוצר בלי אישור מפורש שלכם
-                  </li>
-                </ul>
-              </div>
-
+              {/* The phone: a faithful HTML/CSS recreation of the
+                  bot-conversation mock Asaf supplied as a screenshot -
+                  markup rather than an <img> so it stays sharp on every
+                  density, inherits RTL for free, and weighs nothing. Shows
+                  the channel's two flows (free-text receipt issuing, photo
+                  expense capture); every message body matches the approved
+                  mock verbatim. The feature is not live yet (Meta approval
+                  pending), so the column title carries the same "בקרוב"
+                  badge as the advantage card above and the caption says it
+                  is a preview - no false claims. `role="img"` + aria-label:
+                  to a screen reader the whole simulated chat is one
+                  picture, not a wall of fake conversation turns. */}
               <figure className="ml-wa-phone-wrap">
+                <h3 className="ml-show-col-title">
+                  ערוץ הוואטסאפ <span className="ml-badge-soon">בקרוב</span>
+                </h3>
                 <div
                   className="ml-wa-phone"
                   role="img"
@@ -750,6 +737,17 @@ export default function MarketingLanding() {
                     </div>
                   </div>
                 </div>
+                <ul className="ml-sample-feats">
+                  <li>
+                    <CheckIcon /> מפיקים קבלה בהודעה חופשית, בלי להתחבר
+                  </li>
+                  <li>
+                    <CheckIcon /> מצלמים קבלה - ספק, סכום ומע״מ נקלטים לבד
+                  </li>
+                  <li>
+                    <CheckIcon /> שום מסמך לא נוצר בלי אישור מפורש שלכם
+                  </li>
+                </ul>
                 <figcaption className="ml-sheet-cap">
                   הדמיה של ערוץ הוואטסאפ שנמצא בפיתוח. ההודעות להמחשה בלבד.
                 </figcaption>
