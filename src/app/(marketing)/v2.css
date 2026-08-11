@@ -126,6 +126,19 @@
      re-derives one column width from it. */
   --v2-price-gap: 18px;
 
+  /* ---- sticky header height ----
+     `.v2-header` is `position: sticky; top: 0`, and so is the comparison
+     table's `thead th`. Both stuck to 0, so scrolling the feature matrix
+     slid its column headers UNDER the site header and the reader lost
+     track of which column was which. Anything else that wants to stick
+     below the header must offset by this, not by a literal.
+
+     Measured on the live page, not guessed: 66px under the 420px block
+     (34px logo mark), 80px from 420px up, then 90/94px once the 1000px
+     and 1400px tiers grow the mark and wordmark. The overrides live with
+     those breakpoints at the bottom of this file. */
+  --v2-header-h: 80px;
+
   /* ---- radius scale ----
      pill (999) · sm 10 (inputs, chips) · md 12 (inline notices, icon tiles)
      · lg 14 (cards + panels) · xl 16 (hero + auth card).
@@ -1837,8 +1850,42 @@
 .v2-theme .v2-price-note strong { color: var(--v2-g1); }
 
 /* ---------- feature matrix ---------- */
-.v2-theme .v2-matrix { overflow: hidden; padding: 0; }
-.v2-theme .v2-matrix-scroll { overflow-x: auto; }
+/* `clip`, NOT `hidden`/`auto` on the Y axis - the same trap already
+   documented on `.v2-theme` above, hit a second time here.
+
+   Both of these boxes used to establish a SCROLLPORT: `overflow: hidden`
+   is programmatically scrollable, and `overflow-x: auto` forces the
+   unspecified `overflow-y` to compute to `auto`. `position: sticky`
+   resolves against the nearest scrollport, so the table's `thead th` was
+   sticking to a box the size of the table itself, which never scrolls -
+   i.e. the sticky column headers had never once worked, on any viewport,
+   in either design. `clip` suppresses overflow without creating a scroll
+   container, so the header now sticks to the viewport as intended, while
+   the horizontal scroll the wide matrix needs is preserved. */
+.v2-theme .v2-matrix { overflow: clip; padding: 0; }
+/* `clip`, NOT `hidden`, and NO overflow at all on the scroll wrapper above
+   the narrowest phones - the same trap already documented on `.v2-theme`,
+   hit twice more here.
+
+   `position: sticky` resolves against the nearest SCROLLPORT. `overflow:
+   hidden` is one (it is programmatically scrollable), and `overflow-x:
+   auto` makes the box one on the x axis, which is enough: the table's
+   `thead th` was then sticking to a box exactly as tall as the table,
+   which never scrolls vertically. Net effect - the sticky column headers
+   had never worked, on any viewport, in either the obsidian or the light
+   design.
+
+   Measured before changing anything: the matrix only overflows
+   horizontally below ~360px (287px of content in a 278px box at 320px;
+   it fits exactly from 375px up). So the wrapper only needs to scroll on
+   the very narrowest phones, and everywhere else it can get out of the
+   way and let the header stick to the viewport. Under 380px the scroll
+   container comes back and sticky is simply absent, which is the right
+   trade for a 9px overflow. */
+.v2-theme .v2-matrix-scroll { overflow: visible; }
+@media (max-width: 379.98px) {
+  .v2-theme .v2-matrix-scroll { overflow-x: auto; overflow-y: clip; }
+}
 .v2-theme table.v2-table {
   width: 100%;
   border-collapse: collapse;
@@ -1846,7 +1893,12 @@
 }
 .v2-theme table.v2-table thead th {
   position: sticky;
-  top: 0;
+  /* Below the sticky site header, not under it - see --v2-header-h. */
+  top: var(--v2-header-h);
+  /* Opaque, and above the rows it must cover: without a z-index the
+     scrolled rows paint over a sticky cell that has no stacking context
+     of its own. 10 keeps it under the site header's 20. */
+  z-index: 10;
   background: #f7f2e7;
   color: #3f382c;
   font-weight: 700;
@@ -2352,6 +2404,7 @@
   /* Sticky header: 80px of a 780px-tall phone viewport is too much to give
      up permanently. Shrinking the mark to 34px drops it to ~68px while the
      nav links keep their 40px tap height. */
+  .v2-theme { --v2-header-h: 66px; }
   .v2-theme .v2-header { padding: 12px 16px; gap: 12px; }
   .v2-theme .v2-header-nav { gap: 12px; }
   .v2-theme .v2-logo-mark { width: 34px; height: 34px; }
@@ -2376,6 +2429,8 @@
    instead of leaving half of it black.
    ------------------------------------------------------------ */
 @media (min-width: 1000px) {
+  .v2-theme { --v2-header-h: 90px; }
+
   /* Room for the full pitch in the nav. Below this the short label wins. */
   .v2-theme .v2-nav-long { display: inline; }
   .v2-theme .v2-nav-short { display: none; }
@@ -2537,6 +2592,8 @@
    no layout change; the compositions set at tier 1 all hold.
    ------------------------------------------------------------ */
 @media (min-width: 1400px) {
+  .v2-theme { --v2-header-h: 94px; }
+
   .v2-theme {
     --v2-shell: 1220px;
     --v2-read: 660px;
