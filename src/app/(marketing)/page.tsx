@@ -62,8 +62,9 @@ const FAQ_ITEMS: { q: string; a: string }[] = [
 ];
 
 /**
- * "כל מה שיש רק אצלנו" - the competitive-advantage grid, now positioned
- * high on the page (right after the hero) per the approved warm redesign.
+ * "כל מה שיש רק אצלנו" - the competitive-advantage grid. Sat right after
+ * the hero in the approved warm redesign; since 2026-08-11 (Asaf) the
+ * WhatsApp+document showcase leads and this grid follows it.
  * Cards state OUR capabilities only (no competitor names - the comparison
  * strip below hands off to the /vs pages for the head-to-head).
  *
@@ -377,75 +378,6 @@ export default function MarketingLanding() {
                   <CheckIcon /> אפשר לבטל בכל רגע
                 </li>
               </ul>
-            </div>
-          </section>
-
-          <section className="ml-advantages">
-            <div className="ml-wrap">
-              <div className="ml-adv-head">
-                <span className="ml-adv-tag">
-                  9 יתרונות שמרגישים כמו הקלה
-                </span>
-                <h2>כל מה שעסק עצמאי צריך, במקום אחד</h2>
-                <p>
-                  לא עוד תוכנה שמרגישה כמו טופס של רשות המסים. הכול כאן,
-                  פשוט וברור.
-                </p>
-              </div>
-
-              <div className="ml-adv-grid">
-                {ADVANTAGES.map((item) => (
-                  <article
-                    className={`ml-adv-card${item.flagship ? " is-flagship" : ""}${item.tone ? ` ml-adv-card--${item.tone}` : ""}`}
-                    key={item.key}
-                  >
-                    <div
-                      className={`ml-adv-icon${item.tone ? ` ml-adv-icon--${item.tone}` : ""}`}
-                      aria-hidden="true"
-                    >
-                      {item.icon}
-                    </div>
-                    <h3>
-                      <LtrText text={item.title} />
-                      {item.comingSoon && (
-                        <>
-                          {" "}
-                          <span className="ml-badge-soon">בקרוב</span>
-                        </>
-                      )}
-                    </h3>
-                    <p>
-                      <LtrText text={item.body} />
-                    </p>
-                  </article>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          <section className="ml-compare">
-            <div className="ml-wrap">
-              <div className="ml-compare-in">
-                <h3>רוצים השוואה מלאה שורה מול שורה?</h3>
-                <p className="sub">
-                  בדקנו את עצמנו מול כל התוכנות המובילות בישראל. שורה מול
-                  שורה, בלי מסננות.
-                </p>
-                <div className="ml-chips">
-                  {Object.values(COMPETITORS).map((c) => (
-                    <Link
-                      key={c.slug}
-                      href={`/vs/${c.slug}`}
-                      className="ml-chip"
-                    >
-                      <LtrText text={c.name} />
-                    </Link>
-                  ))}
-                </div>
-                <Link href="/vs" className="ml-cmp-link">
-                  לכל ההשוואות <ArrowIcon />
-                </Link>
-              </div>
             </div>
           </section>
 
@@ -766,6 +698,75 @@ export default function MarketingLanding() {
                 </figcaption>
               </figure>
 
+            </div>
+          </section>
+
+          <section className="ml-advantages">
+            <div className="ml-wrap">
+              <div className="ml-adv-head">
+                <span className="ml-adv-tag">
+                  9 יתרונות שמרגישים כמו הקלה
+                </span>
+                <h2>כל מה שעסק עצמאי צריך, במקום אחד</h2>
+                <p>
+                  לא עוד תוכנה שמרגישה כמו טופס של רשות המסים. הכול כאן,
+                  פשוט וברור.
+                </p>
+              </div>
+
+              <div className="ml-adv-grid">
+                {ADVANTAGES.map((item) => (
+                  <article
+                    className={`ml-adv-card${item.flagship ? " is-flagship" : ""}${item.tone ? ` ml-adv-card--${item.tone}` : ""}`}
+                    key={item.key}
+                  >
+                    <div
+                      className={`ml-adv-icon${item.tone ? ` ml-adv-icon--${item.tone}` : ""}`}
+                      aria-hidden="true"
+                    >
+                      {item.icon}
+                    </div>
+                    <h3>
+                      <LtrText text={item.title} />
+                      {item.comingSoon && (
+                        <>
+                          {" "}
+                          <span className="ml-badge-soon">בקרוב</span>
+                        </>
+                      )}
+                    </h3>
+                    <p>
+                      <LtrText text={item.body} />
+                    </p>
+                  </article>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          <section className="ml-compare">
+            <div className="ml-wrap">
+              <div className="ml-compare-in">
+                <h3>רוצים השוואה מלאה שורה מול שורה?</h3>
+                <p className="sub">
+                  בדקנו את עצמנו מול כל התוכנות המובילות בישראל. שורה מול
+                  שורה, בלי מסננות.
+                </p>
+                <div className="ml-chips">
+                  {Object.values(COMPETITORS).map((c) => (
+                    <Link
+                      key={c.slug}
+                      href={`/vs/${c.slug}`}
+                      className="ml-chip"
+                    >
+                      <LtrText text={c.name} />
+                    </Link>
+                  ))}
+                </div>
+                <Link href="/vs" className="ml-cmp-link">
+                  לכל ההשוואות <ArrowIcon />
+                </Link>
+              </div>
             </div>
           </section>
 
