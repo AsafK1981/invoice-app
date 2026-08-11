@@ -72,12 +72,27 @@ export const metadata: Metadata = {
   ...(GOOGLE_SITE_VERIFICATION
     ? { verification: { google: GOOGLE_SITE_VERIFICATION } }
     : {}),
+  /**
+   * Title/description/OG refreshed 2026-08-11. The previous copy
+   * ("חשבוניות וקבלות בלי כאב ראש" + "ניהול לקוחות, שליחה במייל, דשבורד
+   * עם גרפים") predated every current differentiator, so the search result
+   * and the WhatsApp/Facebook link preview - the first impression for most
+   * arrivals - described a generic invoicing app and contradicted the
+   * landing page. These now lead with what actually sets the product apart
+   * and are kept in sync with the homepage's advantage grid + the
+   * `featureList` in src/lib/jsonld.ts. Hebrew brand first: `חשבונית
+   * ידידותית` is what the header, footer and Organization node all show;
+   * the Latin name stays an alternateName for the pre-rename search
+   * association (see the LEGACY_APP_NAME comment in jsonld.ts).
+   * The WhatsApp channel is deliberately NOT named here - it is still
+   * `בקרוב` on-page, and metadata must not claim it.
+   */
   title: {
-    default: "MyFriendlyInvoiceApp - חשבוניות וקבלות בלי כאב ראש",
-    template: "%s | MyFriendlyInvoiceApp",
+    default: "חשבונית ידידותית - מספרי הקצאה אוטומטיים מרשות המסים",
+    template: "%s | חשבונית ידידותית",
   },
   description:
-    "אפליקציית חשבוניות לעצמאיים. הפק קבלות, חשבונות עסקה וחשבוניות מס במהירות. שליחה במייל, ניהול לקוחות, דשבורד עם גרפים.",
+    "תוכנת חשבוניות בעברית לעצמאים: מספר הקצאה מרשות המסים מתקבל אוטומטית בלחיצה אחת, עוזר AI בעברית, סריקת הוצאות בצילום ודוחות מוכנים לרואה חשבון. חינם בתקופת ההשקה.",
   keywords: [
     "חשבוניות",
     "קבלות",
@@ -102,17 +117,18 @@ export const metadata: Metadata = {
     type: "website",
     locale: "he_IL",
     url: SITE_URL,
-    siteName: "MyFriendlyInvoiceApp",
-    title: "MyFriendlyInvoiceApp - חשבוניות וקבלות בלי כאב ראש",
+    siteName: "חשבונית ידידותית",
+    title: "חשבונית ידידותית - מספרי הקצאה אוטומטיים מרשות המסים",
     description:
-      "אפליקציית חשבוניות לעצמאיים. ניהול לקוחות, שליחה במייל, דשבורד עם גרפים.",
+      "להוציא חשבונית הפך לחלק הכי קל ביום העבודה. מספר הקצאה מרשות המסים בלחיצה אחת, עוזר AI בעברית, וסריקת הוצאות בצילום.",
     // images intentionally omitted; Next picks up src/app/opengraph-image.tsx
     // automatically and generates a 1200x630 card.
   },
   twitter: {
     card: "summary_large_image",
-    title: "MyFriendlyInvoiceApp - חשבוניות וקבלות בלי כאב ראש",
-    description: "אפליקציית חשבוניות לעצמאיים",
+    title: "חשבונית ידידותית - מספרי הקצאה אוטומטיים מרשות המסים",
+    description:
+      "תוכנת חשבוניות בעברית לעצמאים. מספר הקצאה מרשות המסים בלחיצה אחת.",
     // images: same, file-based generation handles it.
   },
 };

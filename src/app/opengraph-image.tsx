@@ -1,7 +1,8 @@
 import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
-export const alt = "MyFriendlyInvoiceApp - חשבוניות וקבלות בלי כאב ראש";
+export const alt =
+  "חשבונית ידידותית - מספר הקצאה מרשות המסים, בלחיצה אחת";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -40,7 +41,12 @@ function visualRtl(s: string): string {
 }
 
 export default async function OpengraphImage() {
-  const headlineLogical = "חשבוניות וקבלות בלי כאב ראש";
+  // Retagged 2026-08-11 alongside the page metadata: the old
+  // "חשבוניות וקבלות בלי כאב ראש" described a generic invoicing app. The
+  // card now carries the one differentiator, matching the landing page's
+  // lede. The Latin wordmark below stays deliberately (it matches the
+  // domain and the pre-rename search association - see jsonld.ts).
+  const headlineLogical = "מספר הקצאה מרשות המסים, בלחיצה אחת";
   const headline = visualRtl(headlineLogical);
 
   const heeboBold = await loadGoogleFont("Heebo", 800, headlineLogical);

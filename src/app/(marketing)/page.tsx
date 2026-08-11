@@ -56,6 +56,16 @@ const FAQ_ITEMS: { q: string; a: string }[] = [
     a: "כן. המערכת שומרת מספור רציף לכל סוג מסמך, מסמנת נכון מקור מול העתק לפי הוראות ניהול ספרים, ותומכת בבקשת מספר הקצאה מרשות המסים כשנדרש.",
   },
   {
+    // Added 2026-08-11: the page never answered the objection that actually
+    // stops a switcher - "how painful is the move itself". Every claim here
+    // is checked against src/app/(app)/migrate/page.tsx: the vendor list is
+    // that wizard's VENDOR_META keys verbatim, and the three exported
+    // entities are its three step groups (clients / products / document
+    // history). No duration is promised - the wizard does not measure one.
+    q: "אני כבר עובד עם תוכנה אחרת. כמה כואב לעבור?",
+    a: "יש אשף מעבר ייעודי ל-Invoice4U, Morning (חשבונית ירוקה), iCount, ריווחית וחשבשבת - וגם מסלול Excel לכל תוכנה אחרת. מייצאים קובץ מהתוכנה הישנה, מעלים אותו, והמערכת מייבאת את הלקוחות, המוצרים והשירותים והיסטוריית המסמכים. לא צריך להקליד מסמך אחד מחדש, וההיסטוריה נשארת זמינה לדוחות.",
+  },
+  {
     q: "מה זה מספר הקצאה ואיך זה עובד כאן?",
     a: "זה מספר שרשות המסים מנפיקה לחשבוניות מעל סכום מסוים (מ-2026: מעל 5,000 ש\"ח לפני מע\"מ ללקוח עסקי), נדרש כדי שהלקוח יוכל לנכות מע\"מ. אחרי חיבור חד-פעמי מול רשות המסים, המערכת מבקשת את המספר ישירות מולה בלחיצה אחת, בלי טפסים ידניים.",
   },
@@ -382,6 +392,48 @@ export default function MarketingLanding() {
             </div>
           </section>
 
+          {/* Trust strip (2026-08-11). The page had no credibility layer at
+              all - every claim rested on our own say-so. These three are
+              deliberately VERIFIABLE facts about the system, not testimonials:
+              inventing customer quotes for a product with a handful of live
+              users would be fabrication, so real quotes have to come from
+              real users before any appear here.
+
+              Each line was checked against reality before being written:
+                - allocation numbers: real ones have been issued through the
+                  production system against רשות המסים (first: doc #96,
+                  2026-07-06), so this is a statement of fact, not intent.
+                - isolation/encryption: per-business RLS, plus Tax Authority
+                  tokens encrypted at rest via src/lib/crypto.ts. Phrased
+                  narrowly - the encryption covers the tax-authority
+                  connection, NOT every column, and must not imply otherwise.
+                - status page: /status is public and live (verified 200). */}
+          <section className="ml-trust">
+            <div className="ml-wrap ml-trust-in">
+              <div className="ml-trust-card">
+                <span className="ml-trust-k">מחוברים בפועל</span>
+                <p>
+                  המערכת כבר מפיקה מספרי הקצאה אמיתיים מול מערכת חשבונית
+                  ישראל של רשות המסים - לא הצהרת כוונות.
+                </p>
+              </div>
+              <div className="ml-trust-card">
+                <span className="ml-trust-k">הנתונים שלכם, שלכם</span>
+                <p>
+                  הפרדה מלאה ברמת בסיס הנתונים - כל עסק ניגש רק למידע שלו,
+                  והחיבור לרשות המסים נשמר מוצפן.
+                </p>
+              </div>
+              <div className="ml-trust-card">
+                <span className="ml-trust-k">שקיפות על זמינות</span>
+                <p>
+                  <Link href="/status">עמוד סטטוס פומבי</Link> שמראה בכל
+                  רגע אם המערכת פעילה. בלי לנחש.
+                </p>
+              </div>
+            </div>
+          </section>
+
           {/* Combined "client + WhatsApp" showcase. Originally two stacked
               full-width sections (sample invoice, then the WhatsApp phone);
               merged side by side 2026-08-10 at Asaf's request - stacked they
@@ -699,6 +751,138 @@ export default function MarketingLanding() {
                 </figcaption>
               </figure>
 
+            </div>
+          </section>
+
+          {/* The app itself (2026-08-11). Before this, a visitor never saw
+              the screen they would actually work in - the page showed only
+              OUTPUTS (the finished invoice, the WhatsApp chat). This is a
+              recreation of the real /dashboard composition, built the same
+              way as the invoice sheet and the phone above rather than as a
+              screenshot: stays sharp at any density, inherits RTL, weighs
+              nothing, and can never leak a real customer's figures.
+
+              It mirrors src/app/(app)/dashboard/page.tsx zone for zone -
+              greeting + range pills + "מסמך חדש" button, the four stat
+              cards in their real order and real tones (הכנסות emerald /
+              הוצאות rose / רווח amber / ממוצע למסמך violet), then the
+              "הכנסות והוצאות" chart card. Figures are illustrative and the
+              caption says so. If that dashboard is ever restructured, this
+              block should follow it. */}
+          <section className="ml-app">
+            <div className="ml-wrap">
+              <div className="ml-show-head">
+                <span className="ml-eyebrow">המסך שתעבדו בו</span>
+                <h2>וכך זה נראה מבפנים</h2>
+                <p>
+                  לא עוד טבלה אפורה. דשבורד אחד שמראה כמה נכנס, כמה יצא
+                  וכמה נשאר - בלי לחפש ובלי להוריד קובץ.
+                </p>
+              </div>
+
+              <figure className="ml-browser-wrap">
+                <div
+                  className="ml-browser"
+                  role="img"
+                  aria-label="הדמיה של מסך הבית במערכת: ברכה אישית, בורר טווח תאריכים, כרטיסי הכנסות, הוצאות, רווח וממוצע למסמך, וגרף הכנסות מול הוצאות לפי חודש"
+                >
+                  <div className="ml-browser-bar">
+                    <span className="ml-browser-dots" aria-hidden="true">
+                      <i />
+                      <i />
+                      <i />
+                    </span>
+                    <span className="ml-browser-url">
+                      <Ltr>friendlyinvoice.co.il/dashboard</Ltr>
+                    </span>
+                  </div>
+
+                  <div className="ml-app-body">
+                    <div className="ml-app-top">
+                      <div className="ml-app-hello">
+                        <span className="ml-app-h1">שלום, נועה</span>
+                        <span className="ml-app-sub">
+                          סקירה מהירה של הפעילות שלך
+                        </span>
+                      </div>
+                      <div className="ml-app-controls">
+                        <span className="ml-app-pills">
+                          <i className="is-on">החודש</i>
+                          <i>השנה</i>
+                          <i>הכול</i>
+                        </span>
+                        <span className="ml-app-newdoc">+ מסמך חדש</span>
+                      </div>
+                    </div>
+
+                    <div className="ml-app-stats">
+                      <div className="ml-app-stat is-emerald">
+                        <span className="ml-app-stat-l">הכנסות</span>
+                        <span className="ml-app-stat-v">₪24,180</span>
+                        <span className="ml-app-stat-s">
+                          6 מסמכים שולמו <b className="is-up">▲ 18%</b>
+                        </span>
+                      </div>
+                      <div className="ml-app-stat is-rose">
+                        <span className="ml-app-stat-l">הוצאות</span>
+                        <span className="ml-app-stat-v">₪5,940</span>
+                        <span className="ml-app-stat-s">11 פעולות</span>
+                      </div>
+                      <div className="ml-app-stat is-amber">
+                        <span className="ml-app-stat-l">רווח</span>
+                        <span className="ml-app-stat-v">₪18,240</span>
+                        <span className="ml-app-stat-s">75% מההכנסות</span>
+                      </div>
+                      <div className="ml-app-stat is-violet">
+                        <span className="ml-app-stat-l">ממוצע למסמך</span>
+                        <span className="ml-app-stat-v">₪4,030</span>
+                        <span className="ml-app-stat-s">
+                          לפי מסמכים שולמו
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="ml-app-chart">
+                      <span className="ml-app-chart-t">הכנסות והוצאות</span>
+                      {/* Bar pairs are plain divs with inline heights: a
+                          chart library would ship kilobytes of JS to a
+                          marketing page for a picture that never changes. */}
+                      <div className="ml-app-bars" aria-hidden="true">
+                        {[
+                          [46, 18],
+                          [62, 26],
+                          [38, 22],
+                          [78, 30],
+                          [55, 20],
+                          [92, 34],
+                        ].map(([inc, exp], i) => (
+                          <span className="ml-app-barpair" key={i}>
+                            <i
+                              className="is-inc"
+                              style={{ height: `${inc}%` }}
+                            />
+                            <i
+                              className="is-exp"
+                              style={{ height: `${exp}%` }}
+                            />
+                          </span>
+                        ))}
+                      </div>
+                      <div className="ml-app-legend">
+                        <span>
+                          <i className="is-inc" /> הכנסות
+                        </span>
+                        <span>
+                          <i className="is-exp" /> הוצאות
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <figcaption className="ml-sheet-cap">
+                  מסך הבית של המערכת. הנתונים להמחשה בלבד.
+                </figcaption>
+              </figure>
             </div>
           </section>
 

@@ -600,6 +600,55 @@ h1.ml-hero-h1 {
   height: 13px;
 }
 
+/* ---------- trust strip ----------
+   Three verifiable-fact cards between the hero and the showcase. Quiet on
+   purpose: gold-tint panels, small type, no icons competing with the
+   advantage grid's colored tiles further down. */
+.ml-trust {
+  padding-block: 0 44px;
+}
+@media (min-width: 760px) {
+  .ml-trust {
+    padding-block: 0 60px;
+  }
+}
+.ml-trust-in {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+@media (min-width: 720px) {
+  .ml-trust-in {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+}
+.ml-trust-card {
+  background: var(--ml-gold-tint);
+  border: 1px solid var(--ml-gold-tint-line);
+  border-radius: 14px;
+  padding: 16px 18px;
+}
+.ml-trust-k {
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  color: var(--ml-gold-ink);
+  margin-bottom: 6px;
+}
+.ml-trust-card p {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--ml-ink-2);
+}
+.ml-trust-card a {
+  color: var(--ml-gold-ink);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 /* ---------- combined client + WhatsApp showcase ----------
    One section, two visuals side by side (2026-08-10: the stacked
    sample-invoice and WhatsApp sections made the page a full screen too
@@ -1206,6 +1255,297 @@ h1.ml-hero-h1 {
     linear-gradient(140deg, #22303a, #141d24);
   font-size: 32px;
   margin-bottom: 5px;
+}
+
+/* Mobile: cap the conversation and fade it out (2026-08-11).
+   Side by side on desktop the full chat costs nothing, but stacked on a
+   phone the mock ran ~1,400px - three screenfuls of scrolling before the
+   advantage grid. Capping it also reads MORE like a real phone, which
+   shows one screenful with the conversation continuing above, rather than
+   an impossibly tall device. `max-height` + fade, never `transform:
+   scale()` - scaling would blur the text (the exact bug this project has
+   been burned by before). The bubbles below the cut still render, so the
+   accessible chat text and the aria-label description stay complete. */
+@media (max-width: 979.98px) {
+  .ml-wa-phone {
+    position: relative;
+  }
+  .ml-wa-chat {
+    max-height: 480px;
+    overflow: hidden;
+  }
+  .ml-wa-phone::after {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0;
+    height: 120px;
+    pointer-events: none;
+    background: linear-gradient(to top, var(--wa-bg) 12%, rgba(11, 20, 26, 0));
+  }
+}
+
+/* ---------- the app itself (dashboard recreation) ----------
+   A browser-chrome frame around a zone-for-zone recreation of the real
+   /dashboard (2026-08-11). Colors are lifted from the APP's own Tailwind
+   classes, not from the `--ml-*` marketing palette, so the mock matches
+   what a user actually sees after signing up: stat cards reuse the same
+   `*-50` gradient fills and `*-600/700` value ink as the `cards` array in
+   src/app/(app)/dashboard/page.tsx. */
+.ml-app {
+  padding-block: 8px 68px;
+}
+@media (min-width: 760px) {
+  .ml-app {
+    padding-block: 12px 92px;
+  }
+}
+.ml-browser-wrap {
+  max-width: 900px;
+  margin-inline: auto;
+}
+.ml-browser {
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--ml-line);
+  background: #fdfbf7;
+  box-shadow: var(--ml-shadow-md);
+}
+.ml-browser-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: #f4efe6;
+  border-bottom: 1px solid var(--ml-line);
+}
+.ml-browser-dots {
+  display: flex;
+  gap: 6px;
+  flex: none;
+}
+.ml-browser-dots i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ddd2bf;
+}
+.ml-browser-url {
+  flex: 1;
+  text-align: center;
+  font-size: 11.5px;
+  color: var(--ml-muted);
+  background: #fffdf9;
+  border: 1px solid var(--ml-line);
+  border-radius: 999px;
+  padding: 4px 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ml-app-body {
+  padding: 20px 18px 22px;
+}
+@media (min-width: 560px) {
+  .ml-app-body {
+    padding: 26px 26px 28px;
+  }
+}
+.ml-app-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.ml-app-hello {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.ml-app-h1 {
+  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+  font-size: 21px;
+  font-weight: 800;
+  color: var(--ml-ink);
+  line-height: 1.1;
+}
+.ml-app-sub {
+  font-size: 12.5px;
+  color: var(--ml-muted);
+}
+.ml-app-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.ml-app-pills {
+  display: inline-flex;
+  gap: 3px;
+  background: var(--ml-card);
+  border: 1px solid var(--ml-line);
+  border-radius: 12px;
+  padding: 3px;
+}
+.ml-app-pills i {
+  font-style: normal;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--ml-ink-2);
+  padding: 5px 11px;
+  border-radius: 9px;
+}
+.ml-app-pills i.is-on {
+  background: var(--ml-grad);
+  color: #fff;
+}
+.ml-app-newdoc {
+  display: inline-flex;
+  align-items: center;
+  background: var(--ml-grad);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 9px 16px;
+  border-radius: 13px;
+  white-space: nowrap;
+  box-shadow: 0 10px 20px -10px rgba(225, 29, 72, 0.45);
+}
+.ml-app-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+@media (min-width: 720px) {
+  .ml-app-stats {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+}
+.ml-app-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  border-radius: 14px;
+  padding: 13px 14px;
+  min-width: 0;
+}
+.ml-app-stat-l {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ml-ink-2);
+}
+.ml-app-stat-v {
+  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+.ml-app-stat-s {
+  font-size: 10.5px;
+  color: var(--ml-muted);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+.ml-app-stat-s .is-up {
+  color: #059669;
+  font-weight: 700;
+}
+/* Same four tones, same order, as the real dashboard's `cards` array. */
+.ml-app-stat.is-emerald {
+  background: linear-gradient(135deg, #ecfdf5, #f0fdfa);
+}
+.ml-app-stat.is-emerald .ml-app-stat-v {
+  color: #047857;
+}
+.ml-app-stat.is-rose {
+  background: linear-gradient(135deg, #fff1f2, #fdf2f8);
+}
+.ml-app-stat.is-rose .ml-app-stat-v {
+  color: #be123c;
+}
+.ml-app-stat.is-amber {
+  background: linear-gradient(135deg, #fff7ed, #fffbeb);
+}
+.ml-app-stat.is-amber .ml-app-stat-v {
+  color: #b45309;
+}
+.ml-app-stat.is-violet {
+  background: linear-gradient(135deg, #f5f3ff, #faf5ff);
+}
+.ml-app-stat.is-violet .ml-app-stat-v {
+  color: #6d28d9;
+}
+.ml-app-chart {
+  background: var(--ml-card);
+  border: 1px solid var(--ml-line);
+  border-radius: 14px;
+  padding: 14px 16px 12px;
+}
+.ml-app-chart-t {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ml-ink);
+  margin-bottom: 12px;
+}
+.ml-app-bars {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px;
+  height: 108px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--ml-line-soft);
+}
+.ml-app-barpair {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 4px;
+  height: 100%;
+}
+.ml-app-barpair i {
+  width: 44%;
+  max-width: 22px;
+  border-radius: 5px 5px 0 0;
+}
+.ml-app-barpair i.is-inc {
+  background: linear-gradient(180deg, #34d399, #059669);
+}
+.ml-app-barpair i.is-exp {
+  background: linear-gradient(180deg, #fda4af, #e11d48);
+}
+.ml-app-legend {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  margin-top: 10px;
+}
+.ml-app-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--ml-muted);
+}
+.ml-app-legend i {
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+}
+.ml-app-legend i.is-inc {
+  background: #059669;
+}
+.ml-app-legend i.is-exp {
+  background: #e11d48;
 }
 
 /* ---------- pricing band ---------- */
