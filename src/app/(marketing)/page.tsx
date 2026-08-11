@@ -66,7 +66,8 @@ const FAQ_ITEMS: { q: string; a: string }[] = [
  * the hero in the approved warm redesign; since 2026-08-11 (Asaf) the
  * WhatsApp+document showcase leads and this grid follows it.
  * Cards state OUR capabilities only (no competitor names - the comparison
- * strip below hands off to the /vs pages for the head-to-head).
+ * strip, now the page's last section, hands off to the /vs pages for the
+ * head-to-head).
  *
  * `tone` gives every non-flagship card its own soft-tinted icon tile
  * (Asaf 2026-08-10: the approved mockup shipped with 8 of 9 tiles dull and
@@ -744,32 +745,6 @@ export default function MarketingLanding() {
             </div>
           </section>
 
-          <section className="ml-compare">
-            <div className="ml-wrap">
-              <div className="ml-compare-in">
-                <h3>רוצים השוואה מלאה שורה מול שורה?</h3>
-                <p className="sub">
-                  בדקנו את עצמנו מול כל התוכנות המובילות בישראל. שורה מול
-                  שורה, בלי מסננות.
-                </p>
-                <div className="ml-chips">
-                  {Object.values(COMPETITORS).map((c) => (
-                    <Link
-                      key={c.slug}
-                      href={`/vs/${c.slug}`}
-                      className="ml-chip"
-                    >
-                      <LtrText text={c.name} />
-                    </Link>
-                  ))}
-                </div>
-                <Link href="/vs" className="ml-cmp-link">
-                  לכל ההשוואות <ArrowIcon />
-                </Link>
-              </div>
-            </div>
-          </section>
-
           <section className="ml-pricing">
             <div className="ml-wrap">
               <h2>בתקופת ההשקה, הכול חינם</h2>
@@ -820,6 +795,32 @@ export default function MarketingLanding() {
               </div>
             ))}
           </section>
+          <section className="ml-compare">
+            <div className="ml-wrap">
+              <div className="ml-compare-in">
+                <h3>רוצים השוואה מלאה שורה מול שורה?</h3>
+                <p className="sub">
+                  בדקנו את עצמנו מול כל התוכנות המובילות בישראל. שורה מול
+                  שורה, בלי מסננות.
+                </p>
+                <div className="ml-chips">
+                  {Object.values(COMPETITORS).map((c) => (
+                    <Link
+                      key={c.slug}
+                      href={`/vs/${c.slug}`}
+                      className="ml-chip"
+                    >
+                      <LtrText text={c.name} />
+                    </Link>
+                  ))}
+                </div>
+                <Link href="/vs" className="ml-cmp-link">
+                  לכל ההשוואות <ArrowIcon />
+                </Link>
+              </div>
+            </div>
+          </section>
+
         </main>
 
         <FooterLight />

@@ -514,7 +514,10 @@ h1.ml-hero-h1 {
   white-space: nowrap;
 }
 
-/* ---------- comparison strip ---------- */
+/* ---------- comparison strip ----------
+   Moved to the page's LAST section 2026-08-11 (Asaf). Zero top padding on
+   purpose: the FAQ column above already ends with its own 68/92px bottom
+   padding, so adding more here would double the gap. */
 .ml-compare {
   padding-block: 0 68px;
 }
