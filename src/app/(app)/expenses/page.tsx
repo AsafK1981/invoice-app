@@ -231,7 +231,7 @@ export default function ExpensesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-stone-900 flex items-center gap-3">
-            <span className="w-11 h-11 rounded-2xl bg-gradient-to-br from-rose-400 to-pink-500 flex items-center justify-center shadow-sm">
+            <span className="w-11 h-11 rounded-2xl fgrad fgrad-pink flex items-center justify-center shadow-sm">
               <Wallet className="w-5 h-5 text-white" />
             </span>
             הוצאות
@@ -308,6 +308,7 @@ export default function ExpensesPage() {
       {expenses.length === 0 ? (
         <EmptyState
           icon={Wallet}
+          tone="pink"
           title="אין הוצאות מתועדות"
           description="תיעוד הוצאות מאפשר לך לחשב רווח נטו, להפיק דיווחים תקופתיים, ולהיות מוכן ליום של הצהרת הון. הוסף הוצאה ראשונה: שתי דקות עבודה, חודשים של שקט."
           primaryAction={{

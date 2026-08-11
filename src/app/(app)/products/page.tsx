@@ -60,7 +60,7 @@ export default function ProductsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-stone-900 flex items-center gap-3">
-            <span className="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-sm">
+            <span className="w-11 h-11 rounded-2xl fgrad fgrad-violet flex items-center justify-center shadow-sm">
               <Package className="w-5 h-5 text-white" />
             </span>
             מוצרים ושירותים
@@ -114,6 +114,7 @@ export default function ProductsPage() {
       {products.length === 0 ? (
         <EmptyState
           icon={Package}
+          tone="violet"
           title="הקטלוג ריק"
           description="הוסף את המוצרים והשירותים שאתה מוכר: שם, מחיר, יחידה. בעורך מסמכים תוכל לבחור פריט בקליק ולחסוך הקלדה חוזרת."
           primaryAction={{

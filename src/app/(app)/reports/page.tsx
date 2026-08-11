@@ -177,7 +177,7 @@ export default function ReportsPage() {
       <div className="flex items-start justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-3xl font-bold text-stone-900 flex items-center gap-3">
-            <span className="w-11 h-11 rounded-2xl bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center shadow-sm">
+            <span className="w-11 h-11 rounded-2xl fgrad fgrad-emerald flex items-center justify-center shadow-sm">
               <TrendingUp className="w-5 h-5 text-white" />
             </span>
             דו״חות

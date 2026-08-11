@@ -29,17 +29,27 @@ import { isAdminEmail } from "@/lib/admin";
 import { supabase } from "@/lib/supabase";
 import { AccountSettingsModal } from "@/components/account-settings-modal";
 import { CANONICAL_ORIGIN } from "@/lib/public-url";
+import type { FeatureTone } from "@/lib/feature-tones";
 
-const navItems = [
-  { href: "/dashboard", label: "דשבורד", icon: LayoutDashboard },
-  { href: "/documents", label: "מסמכים", icon: FileText },
-  { href: "/clients", label: "לקוחות", icon: Users },
-  { href: "/products", label: "מוצרים ושירותים", icon: Package },
-  { href: "/expenses", label: "הוצאות", icon: Wallet },
-  { href: "/recurring", label: "חיובים חוזרים", icon: RefreshCw },
-  { href: "/notifications", label: "התראות", icon: Bell },
-  { href: "/reports", label: "דו״חות", icon: TrendingUp },
-  { href: "/settings", label: "הגדרות", icon: Settings },
+type NavItem = {
+  href: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  /** Feature tone for the rest-state icon tile; omit to keep the neutral
+   * stone tile + gold hover (חשבונית ישראל keeps the gold treatment). */
+  tone?: FeatureTone;
+};
+
+const navItems: NavItem[] = [
+  { href: "/dashboard", label: "דשבורד", icon: LayoutDashboard, tone: "amber" },
+  { href: "/documents", label: "מסמכים", icon: FileText, tone: "indigo" },
+  { href: "/clients", label: "לקוחות", icon: Users, tone: "teal" },
+  { href: "/products", label: "מוצרים ושירותים", icon: Package, tone: "violet" },
+  { href: "/expenses", label: "הוצאות", icon: Wallet, tone: "pink" },
+  { href: "/recurring", label: "חיובים חוזרים", icon: RefreshCw, tone: "sky" },
+  { href: "/notifications", label: "התראות", icon: Bell, tone: "orange" },
+  { href: "/reports", label: "דו״חות", icon: TrendingUp, tone: "emerald" },
+  { href: "/settings", label: "הגדרות", icon: Settings, tone: "slate" },
 ];
 
 export function Sidebar() {
@@ -106,14 +116,15 @@ export function Sidebar() {
           // connecting isn't buried inside the settings page.
           ...(business?.businessType === "authorized" ||
           business?.businessType === "company"
-            ? [{ href: "/settings#tax-authority", label: "חשבונית ישראל", icon: Landmark }]
+            ? ([{ href: "/settings#tax-authority", label: "חשבונית ישראל", icon: Landmark }] as NavItem[])
             : []),
           ...(isAdmin
-            ? [{ href: "/admin", label: "ניהול מערכת", icon: ShieldAlert }]
+            ? ([{ href: "/admin", label: "ניהול מערכת", icon: ShieldAlert, tone: "rose" }] as NavItem[])
             : []),
         ].map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
           const Icon = item.icon;
+          const tone = item.tone;
           return (
             <Link
               key={item.href}
@@ -129,12 +140,14 @@ export function Sidebar() {
                 className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200 ${
                   isActive
                     ? "bg-gradient-to-br from-orange-400 to-rose-400 shadow-sm"
+                    : tone
+                    ? `ftile ftile-${tone}`
                     : "bg-stone-100 dark:bg-stone-800 group-hover:bg-gradient-to-br group-hover:from-orange-300 group-hover:to-rose-300 dark:group-hover:from-orange-800/70 dark:group-hover:to-rose-800/60"
                 }`}
               >
                 <Icon
                   className={`w-4 h-4 transition-colors duration-200 ${
-                    isActive ? "text-white" : "text-stone-500 group-hover:text-white"
+                    isActive ? "text-white" : tone ? "" : "text-stone-500 group-hover:text-white"
                   }`}
                 />
               </div>

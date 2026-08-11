@@ -109,7 +109,7 @@ export default function ClientsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-stone-900 flex items-center gap-3">
-            <span className="w-11 h-11 rounded-2xl bg-gradient-to-br from-rose-400 to-pink-500 flex items-center justify-center shadow-sm">
+            <span className="w-11 h-11 rounded-2xl fgrad fgrad-teal flex items-center justify-center shadow-sm">
               <Users className="w-5 h-5 text-white" />
             </span>
             לקוחות
@@ -173,6 +173,7 @@ export default function ClientsPage() {
       {clients.length === 0 ? (
         <EmptyState
           icon={Users}
+          tone="teal"
           title="עדיין אין לקוחות"
           description="הלקוחות שלך הם בסיס הכל: כל מסמך שאתה מפיק שייך ללקוח. הוסף את הראשון, וכל מסמך שלו יקושר אוטומטית."
           primaryAction={{

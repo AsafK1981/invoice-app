@@ -458,11 +458,63 @@ html .from-orange-100.to-amber-50 {
 }
 /* rest-state nav icon tile */
 html aside a .bg-stone-100 { background-color: var(--icotile) !important; }
-html aside a:hover > div:first-child { background: var(--gold-grad) !important; }
-html aside a:hover > div:first-child svg { color: var(--gold-ink) !important; }
+html aside a:hover > div:first-child:not(.ftile) { background: var(--gold-grad) !important; }
+html aside a:hover > div:first-child:not(.ftile) svg { color: var(--gold-ink) !important; }
 html aside a:hover,
 html aside a:hover span { color: var(--gold-text) !important; }
 /* logo fallback tile keeps the brand gradient (handled by the tile block) */
+
+/* ---------- feature-tone icon tiles (Option 1, approved 2026-08-11) ----------
+   Homepage formula ported into the app: tile bg = light tint, glyph = dark
+   shade of the same hue. Gold remains: brand, active nav, buttons, page-head
+   tiles. Defined as own classes (not Tailwind utilities) so none of the
+   orange/amber→gold interception above applies.
+   These per-class custom properties ARE the token block for feature tones
+   (an exception to the "one token block" rule above, kept next to their only
+   consumers). The tint/ink pairs mirror `.ml-adv-icon--*` in
+   marketing-light.css (approved 2026-08-10) on purpose - the app and the
+   homepage should read as one system; a contrast fix to a shared hue must
+   land in both files. Glyphs are non-text graphics, so the bar is WCAG
+   1.4.11's 3:1; every *-600-on-*-100 pair here clears it (the marketing
+   review measured the shared pairs). The feature→tone mapping itself is
+   documented in src/lib/feature-tones.ts. */
+html .ftile {
+  background: var(--ft-bg) !important;
+  border: 1px solid var(--ft-line) !important;
+}
+html .ftile svg { color: var(--ft-ink) !important; }
+html .ftile-amber   { --ft-bg:#fef3c7; --ft-line:#fde68a80; --ft-ink:#d97706; }
+html .ftile-indigo  { --ft-bg:#e0e7ff; --ft-line:#c7d2fe80; --ft-ink:#4f46e5; }
+html .ftile-teal    { --ft-bg:#ccfbf1; --ft-line:#99f6e480; --ft-ink:#0d9488; }
+html .ftile-violet  { --ft-bg:#ede9fe; --ft-line:#ddd6fe80; --ft-ink:#7c3aed; }
+html .ftile-pink    { --ft-bg:#fce7f3; --ft-line:#fbcfe880; --ft-ink:#db2777; }
+html .ftile-sky     { --ft-bg:#e0f2fe; --ft-line:#bae6fd80; --ft-ink:#0284c7; }
+html .ftile-orange  { --ft-bg:#ffedd5; --ft-line:#fed7aa80; --ft-ink:#ea580c; }
+html .ftile-emerald { --ft-bg:#d1fae5; --ft-line:#a7f3d080; --ft-ink:#059669; }
+html .ftile-slate   { --ft-bg:#e2e8f0; --ft-line:#cbd5e180; --ft-ink:#475569; }
+html .ftile-rose    { --ft-bg:#ffe4e6; --ft-line:#fecdd380; --ft-ink:#e11d48; }
+/* nav rest-state hover: toned tiles deepen slightly instead of turning gold
+   (the gold hover above is scoped :not(.ftile), so it no longer fires here) */
+html aside a:hover .ftile { filter: saturate(1.15) brightness(0.97); }
+/* page-head tiles: the full-gradient partner of .ftile (same 2026-08-11
+   decision). Before the tones, half the page heads were already coloured
+   legacy-coral gradients (clients rose, recurring violet, reports teal)
+   while the rest were forced gold by the interception whitelist above -
+   an inconsistent mix. Page heads now carry the SAME feature tone as
+   their sidebar/tile mapping, as a filled 400→600 gradient with a white
+   glyph (the strongest treatment, mirroring the homepage flagship tile).
+   Gold page heads remain only where gold IS the feature: the dashboard
+   greeting, חשבונית ישראל, migrate, and admin. */
+html .fgrad { color: #fff !important; }
+html .fgrad svg { color: #fff !important; }
+html .fgrad-indigo  { background: linear-gradient(135deg, #818cf8, #4f46e5) !important; }
+html .fgrad-teal    { background: linear-gradient(135deg, #2dd4bf, #0d9488) !important; }
+html .fgrad-violet  { background: linear-gradient(135deg, #a78bfa, #7c3aed) !important; }
+html .fgrad-pink    { background: linear-gradient(135deg, #f472b6, #db2777) !important; }
+html .fgrad-sky     { background: linear-gradient(135deg, #38bdf8, #0284c7) !important; }
+html .fgrad-orange  { background: linear-gradient(135deg, #fb923c, #ea580c) !important; }
+html .fgrad-emerald { background: linear-gradient(135deg, #34d399, #059669) !important; }
+html .fgrad-slate   { background: linear-gradient(135deg, #94a3b8, #475569) !important; }
 
 /* ---------- KPI markers (dashboard) ---------- */
 html .gk-label {
@@ -478,14 +530,12 @@ html .gk-value {
   font-size: 2rem;
   font-weight: 900;
 }
-/* The four KPI tiles read as one branded set: pale gold tile, gold glyph,
-   the same pairing as `.gk-label` above. The component carries no colour of
-   its own beyond a neutral `bg-stone-100`, so no override war here. */
-html .gk-icon {
-  background: var(--goldtint) !important;
-  border: 1px solid var(--goldtintline) !important;
-}
-html .gk-icon svg { color: var(--gold-text) !important; }
+/* The "one branded gold set" decision that used to live here (goldtint bg +
+   gold glyph on every KPI tile) is superseded 2026-08-11: the four KPI tiles
+   each carry their own `.ftile-*` tone (Option 1, approved from mockup), and
+   the tile's colour comes from the `.ftile` rules above. `.gk-icon` keeps no
+   colour of its own - it stays on the element only for its SIZING rules (the
+   min-width:1024px scale-up further down). */
 
 /* ---------- tables ---------- */
 html table thead { background: transparent !important; }

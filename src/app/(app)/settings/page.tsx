@@ -48,12 +48,12 @@ export default function SettingsPage() {
   const addressEmpty = !business.address?.trim();
 
   const fields = [
-    { icon: Building2, label: "שם העסק", value: business.name, placeholder: namePlaceholder },
-    { icon: FileText, label: "סוג עוסק", value: BUSINESS_TYPE_LABELS[business.businessType], placeholder: false },
-    { icon: CreditCard, label: "מספר עוסק / ח.פ", value: business.taxId, placeholder: taxIdPlaceholder },
-    { icon: MapPin, label: "כתובת", value: business.address, placeholder: addressEmpty },
-    { icon: Phone, label: "טלפון", value: business.phone, placeholder: !business.phone },
-    { icon: Mail, label: "אימייל", value: business.email, placeholder: !business.email },
+    { icon: Building2, label: "שם העסק", value: business.name, placeholder: namePlaceholder, tone: "indigo" },
+    { icon: FileText, label: "סוג עוסק", value: BUSINESS_TYPE_LABELS[business.businessType], placeholder: false, tone: "violet" },
+    { icon: CreditCard, label: "מספר עוסק / ח.פ", value: business.taxId, placeholder: taxIdPlaceholder, tone: "emerald" },
+    { icon: MapPin, label: "כתובת", value: business.address, placeholder: addressEmpty, tone: "orange" },
+    { icon: Phone, label: "טלפון", value: business.phone, placeholder: !business.phone, tone: "teal" },
+    { icon: Mail, label: "אימייל", value: business.email, placeholder: !business.email, tone: "sky" },
   ];
 
   const bankParts = [
@@ -66,11 +66,13 @@ export default function SettingsPage() {
       icon: Landmark,
       label: "העברה בנקאית",
       value: bankParts.length > 0 ? bankParts.join(" · ") : "-",
+      tone: "violet",
     },
     {
       icon: MessageSquare,
       label: "הערות תשלום",
       value: business.paymentNotes || "-",
+      tone: "sky",
     },
   ];
 
@@ -78,7 +80,7 @@ export default function SettingsPage() {
     <div className="space-y-6 max-w-3xl">
       <div>
         <h1 className="text-3xl font-bold text-stone-900 flex items-center gap-3">
-          <span className="w-11 h-11 rounded-2xl bg-gradient-to-br from-stone-400 to-stone-600 flex items-center justify-center shadow-sm">
+          <span className="w-11 h-11 rounded-2xl fgrad fgrad-slate flex items-center justify-center shadow-sm">
             <SettingsIcon className="w-5 h-5 text-white" />
           </span>
           הגדרות
@@ -108,8 +110,8 @@ export default function SettingsPage() {
                 key={f.label}
                 className="flex items-center gap-3 py-2.5 border-b border-orange-50 last:border-0"
               >
-                <div className="w-9 h-9 rounded-xl bg-orange-50 flex items-center justify-center flex-shrink-0">
-                  <Icon className="w-4 h-4 text-orange-500" />
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ftile ftile-${f.tone}`}>
+                  <Icon className="w-4 h-4" />
                 </div>
                 <span className="text-sm font-medium text-stone-700 w-40">{f.label}</span>
                 {f.placeholder ? (
@@ -167,8 +169,8 @@ export default function SettingsPage() {
                 key={f.label}
                 className="flex items-center gap-3 py-2.5 border-b border-orange-50 last:border-0"
               >
-                <div className="w-9 h-9 rounded-xl bg-orange-50 flex items-center justify-center flex-shrink-0">
-                  <Icon className="w-4 h-4 text-orange-500" />
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ftile ftile-${f.tone}`}>
+                  <Icon className="w-4 h-4" />
                 </div>
                 <span className="text-sm font-medium text-stone-700 w-40">{f.label}</span>
                 <span className={`text-sm flex-1 ${isEmpty ? "text-stone-400 italic" : "font-semibold text-stone-900"}`}>

@@ -206,6 +206,7 @@ export default function DashboardPage() {
       delta: stats.hasPrev ? stats.incomeDelta : null,
       /** Higher = better: for income, "up" is good (green) */
       higherIsBetter: true,
+      tone: "emerald",
     },
     {
       label: "הוצאות",
@@ -217,6 +218,7 @@ export default function DashboardPage() {
       delta: stats.hasPrev ? stats.expenseDelta : null,
       /** Lower = better: for expenses, "down" is good (green) */
       higherIsBetter: false,
+      tone: "rose",
     },
     {
       label: "רווח",
@@ -227,6 +229,7 @@ export default function DashboardPage() {
       href: "/reports",
       delta: stats.hasPrev ? stats.profitDelta : null,
       higherIsBetter: true,
+      tone: "amber",
     },
     {
       label: "ממוצע למסמך",
@@ -237,6 +240,7 @@ export default function DashboardPage() {
       href: `/documents?status=paid${monthQs}`,
       delta: stats.hasPrev ? stats.avgDelta : null,
       higherIsBetter: true,
+      tone: "violet",
     },
   ];
 
@@ -254,24 +258,27 @@ export default function DashboardPage() {
       color: "text-amber-600",
       bg: "bg-amber-50 border-amber-200",
       href: "/documents?type=quote&status=sent",
+      tone: "amber",
     },
     {
       label: "סה״כ לקוחות",
       value: String(clients.length),
       sub: clients.length === 1 ? "לקוח" : "לקוחות",
       icon: Users,
-      color: "text-rose-600",
-      bg: "bg-rose-50 border-rose-200",
+      color: "text-teal-600",
+      bg: "bg-teal-50 border-teal-200",
       href: "/clients",
+      tone: "teal",
     },
     {
       label: "סה״כ מסמכים",
       value: String(stats.inRange.length),
       sub: RANGE_LABELS[range],
       icon: Wallet,
-      color: "text-blue-600",
-      bg: "bg-blue-50 border-blue-200",
+      color: "text-indigo-600",
+      bg: "bg-indigo-50 border-indigo-200",
       href: `/documents${monthQs ? `?${monthQs.slice(1)}` : ""}`,
+      tone: "indigo",
     },
   ];
 
@@ -372,9 +379,10 @@ export default function DashboardPage() {
                     )}
                   </div>
                 </div>
-                {/* Neutral tile; the skin paints it gold (see `.gk-icon`). */}
-                <div className="gk-icon w-11 h-11 rounded-2xl bg-stone-100 flex items-center justify-center flex-shrink-0">
-                  <Icon className="w-5 h-5 text-stone-600" />
+                {/* Feature-toned tile (Option 1); `gk-icon` stays for the
+                    desktop scale-up SIZING rule only (see app-skin.css). */}
+                <div className={`gk-icon ftile ftile-${s.tone} w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0`}>
+                  <Icon className="w-5 h-5" />
                 </div>
               </div>
             </Link>
@@ -392,7 +400,9 @@ export default function DashboardPage() {
               className={`rounded-2xl border p-4 hover:shadow-md hover:-translate-y-0.5 transition-all block group cursor-pointer ${s.bg}`}
             >
               <div className="flex items-center gap-3">
-                <Icon className={`w-5 h-5 ${s.color} flex-shrink-0`} />
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ftile ftile-${s.tone}`}>
+                  <Icon className="w-5 h-5" />
+                </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-xs text-stone-600">{s.label}</p>
                   <div className="flex items-baseline gap-2">

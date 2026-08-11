@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { Upload, Sparkles } from "lucide-react";
 import { Ltr } from "@/components/ui/ltr";
+import type { FeatureTone } from "@/lib/feature-tones";
 
 interface Props {
   /** Lucide icon component */
@@ -30,6 +31,10 @@ interface Props {
   showMigrateHint?: boolean;
   /** Optional extra hint below the buttons */
   hint?: ReactNode;
+  /** Optional feature tone (see `.ftile-*` in app-skin.css). When given, the
+   * hero icon tile switches from the default gold gradient to that tone's
+   * light-tint/dark-glyph pairing. Omit to keep today's gold rendering. */
+  tone?: FeatureTone;
 }
 
 /**
@@ -47,13 +52,20 @@ export function EmptyState({
   secondaryAction,
   showMigrateHint = true,
   hint,
+  tone,
 }: Props) {
   const PrimaryIcon = primaryAction.icon || Sparkles;
   const SecondaryIcon = secondaryAction?.icon || Upload;
   return (
     <div className="card-soft p-8 sm:p-12 text-center max-w-3xl mx-auto bg-gradient-to-br from-orange-50/70 via-amber-50/40 to-rose-50/70 border-orange-100">
-      <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center shadow-xl shadow-orange-200/60 mx-auto mb-5">
-        <Icon className="w-9 h-9 text-white" />
+      <div
+        className={`w-20 h-20 rounded-3xl flex items-center justify-center shadow-xl mx-auto mb-5 ${
+          tone
+            ? `ftile ftile-${tone}`
+            : "bg-gradient-to-br from-orange-400 to-rose-500 shadow-orange-200/60"
+        }`}
+      >
+        <Icon className={`w-9 h-9 ${tone ? "" : "text-white"}`} />
       </div>
       <h2 className="text-2xl font-bold text-stone-900">{title}</h2>
       <p className="text-sm text-stone-700 mt-2 leading-relaxed max-w-md mx-auto">
