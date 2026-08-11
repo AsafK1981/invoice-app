@@ -1,0 +1,26 @@
+# gitleaks config for invoice-app.
+# Extends the built-in ruleset (covers AWS/GCP keys, Stripe sk_live, GitHub
+# tokens, Supabase/JWT-shaped secrets, private keys, generic API keys, etc.)
+# and adds allowlists for the placeholders and fixtures that are safe by design.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Files and patterns that are safe / expected"
+paths = [
+  # Env templates hold placeholders, never real values.
+  '''\.env\.example$''',
+  '''\.env\.sample$''',
+  '''\.env\.template$''',
+  # Lockfiles contain integrity hashes that look high-entropy but aren't secrets.
+  '''package-lock\.json$''',
+  # This config and the git-hook that runs it reference secret-shaped words.
+  '''\.gitleaks\.toml$''',
+  '''\.githooks/''',
+]
+regexes = [
+  # Common placeholder tokens used across docs/fixtures.
+  '''(?i)(your[_-]?|example[_-]?|placeholder|changeme|dummy|test[_-]?key|xxxx+)''',
+  # Supabase publishable anon key is designed to be public (ships to the browser).
+  '''NEXT_PUBLIC_SUPABASE_ANON_KEY''',
+]

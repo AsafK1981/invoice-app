@@ -5,7 +5,7 @@ set -e
 
 cd "$(git rev-parse --show-toplevel)"
 
-echo "[pre-push] 1/6 typecheck..."
+echo "[pre-push] 1/8 typecheck..."
 if ! npx tsc --noEmit > /tmp/prepush-tsc.log 2>&1; then
   echo "✗ typecheck failed:"
   cat /tmp/prepush-tsc.log
@@ -15,7 +15,7 @@ if ! npx tsc --noEmit > /tmp/prepush-tsc.log 2>&1; then
 fi
 echo "✓ types clean"
 
-echo "[pre-push] 2/6 react-hooks lint..."
+echo "[pre-push] 2/8 react-hooks lint..."
 if ! npx eslint src/ > /tmp/prepush-eslint.log 2>&1; then
   echo "✗ react-hooks lint failed (this catches React error #310 — hooks after early returns):"
   cat /tmp/prepush-eslint.log
@@ -23,7 +23,7 @@ if ! npx eslint src/ > /tmp/prepush-eslint.log 2>&1; then
 fi
 echo "✓ hooks ordered"
 
-echo "[pre-push] 3/6 unit tests..."
+echo "[pre-push] 3/8 unit tests..."
 if ! npx vitest run > /tmp/prepush-tests.log 2>&1; then
   echo "✗ tests failed:"
   cat /tmp/prepush-tests.log
@@ -31,12 +31,12 @@ if ! npx vitest run > /tmp/prepush-tests.log 2>&1; then
 fi
 echo "✓ tests pass"
 
-echo "[pre-push] 4/6 anon-read security check..."
+echo "[pre-push] 4/8 anon-read security check..."
 if ! node scripts/check-anon-read.mjs; then
   exit 1
 fi
 
-echo "[pre-push] 5/6 raw origin literal grep..."
+echo "[pre-push] 5/8 raw origin literal grep..."
 # Every user-facing origin must come from CANONICAL_ORIGIN (src/lib/public-url.ts)
 # so that buying a domain is a one-value change instead of a 30-file sweep.
 # This bans raw origins in shipped code rather than pinning one specific domain
@@ -74,7 +74,7 @@ if grep -rEn "${SELF_HOST}|http://localhost:3000" \
 fi
 echo "✓ no raw self-origin literals (host: ${SELF_HOST})"
 
-echo "[pre-push] 6/6 plan/polar fields in user_metadata (write side)..."
+echo "[pre-push] 6/8 plan/polar fields in user_metadata (write side)..."
 # user_metadata is user-writable from the browser console. Writing
 # plan_* / polar_* / stripe_* fields to user_metadata = user can grant
 # themselves Pro for free. They must go into app_metadata (admin-only).
@@ -87,5 +87,35 @@ if grep -rEn "user_metadata:[^}]*(plan_|polar_subscription_id|polar_customer_id|
   exit 1
 fi
 echo "✓ plan fields go to app_metadata only"
+
+echo "[pre-push] 7/8 SECURITY DEFINER rpc exposure..."
+# Catches the CSO-2026-08-11 bug class: a SECURITY DEFINER function whose
+# default PUBLIC execute grant makes it anon/authenticated-callable via
+# PostgREST, bypassing the API routes. Skips gracefully without DB creds.
+if ! node scripts/check-secdef-grants.mjs; then
+  exit 1
+fi
+
+echo "[pre-push] 8/8 secret scan (gitleaks)..."
+GITLEAKS_BIN="$(command -v gitleaks || true)"
+if [ -z "$GITLEAKS_BIN" ]; then
+  # winget portable install (PATH may not be refreshed in this shell yet).
+  _WG="$LOCALAPPDATA/Microsoft/WinGet/Packages/Gitleaks.Gitleaks_Microsoft.Winget.Source_8wekyb3d8bbwe/gitleaks.exe"
+  [ -x "$_WG" ] && GITLEAKS_BIN="$_WG"
+fi
+if [ -z "$GITLEAKS_BIN" ]; then
+  echo "⚠ gitleaks not installed — skipping secret scan."
+  echo "  Install: winget install --id Gitleaks.Gitleaks -e"
+else
+  if ! "$GITLEAKS_BIN" detect --no-banner --redact -c .gitleaks.toml > /tmp/prepush-gitleaks.log 2>&1; then
+    echo "✗ gitleaks found a potential secret:"
+    cat /tmp/prepush-gitleaks.log
+    echo ""
+    echo "If it's a false positive, add an allowlist entry in .gitleaks.toml."
+    echo "To bypass (don't): git push --no-verify"
+    exit 1
+  fi
+  echo "✓ no secrets detected"
+fi
 
 echo "[pre-push] all checks passed"
