@@ -1231,6 +1231,61 @@ h1.ml-hero-h1 {
   line-height: 1.6;
   color: var(--ml-ink-2);
 }
+/* Launch-pricing band internals (2026-08-11 restructure): a check-marked
+   "בלי" row styled like the hero trust row, then the two future plans as
+   white chips on the peach band. */
+.ml-price-frees {
+  margin-top: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px 26px;
+}
+.ml-price-frees li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ml-ink-2);
+}
+.ml-price-frees svg {
+  width: 15px;
+  height: 15px;
+  color: var(--ml-gold-ink);
+  flex: none;
+}
+.ml-pricing .ml-price-later {
+  margin-top: 28px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ml-muted);
+}
+.ml-price-plans {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+.ml-price-plan {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--ml-card);
+  border: 1px solid var(--ml-peach-line);
+  border-radius: 999px;
+  padding: 9px 18px;
+  font-size: 14px;
+  color: var(--ml-ink-2);
+  box-shadow: var(--ml-shadow-sm);
+  white-space: nowrap;
+}
+.ml-price-plan b {
+  color: var(--ml-ink);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
 .ml-pricing .ml-btn {
   margin-top: 26px;
 }

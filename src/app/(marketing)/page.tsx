@@ -772,11 +772,32 @@ export default function MarketingLanding() {
           <section className="ml-pricing">
             <div className="ml-wrap">
               <h2>בתקופת ההשקה, הכול חינם</h2>
-              <p>
-                בלי הגבלת מסמכים, בלי כרטיס אשראי, בלי התחייבות. בהמשך,
-                המסלולים יתחילו מ־₪15 לחודש · <Ltr>Pro</Ltr> ללא הגבלה
-                ב־₪25.
-              </p>
+              {/* Restructured 2026-08-11 (Asaf): the old single paragraph
+                  wrapped "Pro" onto its own line and read as one dense run.
+                  Now the three "בלי" promises sit on one check-marked line
+                  (echoing the hero trust row) and the two future plans get
+                  their own labeled chips. Prices/names verified against
+                  src/lib/plans.ts (בסיסי ₪15/mo, Pro ₪25/mo unlimited). */}
+              <ul className="ml-price-frees">
+                <li>
+                  <CheckIcon /> בלי הגבלת מסמכים
+                </li>
+                <li>
+                  <CheckIcon /> בלי כרטיס אשראי
+                </li>
+                <li>
+                  <CheckIcon /> בלי התחייבות
+                </li>
+              </ul>
+              <p className="ml-price-later">בהמשך, אלה יהיו המסלולים:</p>
+              <div className="ml-price-plans">
+                <span className="ml-price-plan">
+                  מסלול בסיסי · <b>₪15 לחודש</b>
+                </span>
+                <span className="ml-price-plan">
+                  <Ltr>Pro</Ltr> ללא הגבלה · <b>₪25 לחודש</b>
+                </span>
+              </div>
               <Link
                 href="/login?mode=signup"
                 className="ml-btn ml-btn-primary ml-btn-lg"
