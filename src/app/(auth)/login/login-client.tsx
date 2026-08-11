@@ -2,7 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useId, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Sparkles, Mail, LogIn, UserPlus, Eye, EyeOff, ArrowRight } from "lucide-react";
+import { Sparkles, Mail, LogIn, UserPlus, Eye, EyeOff, ArrowRight, Check } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { track } from "@vercel/analytics";
 
@@ -286,9 +286,41 @@ function LoginForm() {
           <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center mx-auto shadow-xl shadow-orange-200/50 btn-glow">
             <Sparkles className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-xl font-bold text-stone-900 mt-4">MyFriendlyInvoiceApp</h1>
+          {/* Hebrew brand, 2026-08-11. This page is the last step of the
+              marketing funnel, and it used to greet arrivals with the Latin
+              "MyFriendlyInvoiceApp" while every surface they had just read -
+              header, footer, hero, page title - says "חשבונית ידידותית".
+              Same name here or the click feels like it landed somewhere
+              else. (The gold accent is NOT a bug: app-skin.css re-tints the
+              coral family to gold app-wide, an approved decision, and this
+              page is the app's front door.) */}
+          <h1 className="text-xl font-bold text-stone-900 mt-4">חשבונית ידידותית</h1>
           <p className="text-sm text-stone-600 mt-1">{titles[mode]}</p>
         </div>
+
+        {/* The launch-period promise, restated at the point of hesitation.
+            The landing page makes it three times ("חינם בתקופת ההשקה, בלי
+            כרטיס אשראי") and the form used to drop it entirely, which is
+            exactly where a visitor decides whether to type an email.
+            Signup only - it would be noise for someone logging back in or
+            resetting a password. Wording matches the homepage hero and the
+            pricing band verbatim so the two cannot drift apart. */}
+        {mode === "signup" && (
+          <ul className="mb-5 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs font-semibold text-stone-600 animate-fade-in-up">
+            <li className="flex items-center gap-1.5">
+              <Check className="w-3.5 h-3.5 text-emerald-600" aria-hidden="true" />
+              חינם בתקופת ההשקה
+            </li>
+            <li className="flex items-center gap-1.5">
+              <Check className="w-3.5 h-3.5 text-emerald-600" aria-hidden="true" />
+              בלי כרטיס אשראי
+            </li>
+            <li className="flex items-center gap-1.5">
+              <Check className="w-3.5 h-3.5 text-emerald-600" aria-hidden="true" />
+              אפשר לבטל בכל רגע
+            </li>
+          </ul>
+        )}
 
         <div className="card-soft p-8 animate-fade-in-up stagger-2">
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -444,6 +476,19 @@ function LoginForm() {
             )}
           </div>
         </div>
+
+        {/* Way back to the marketing site. Without it this page is a dead
+            end for anyone who arrived to look rather than to sign up - the
+            only exits were "submit" or the browser's back button. */}
+        <p className="mt-6 text-center">
+          <a
+            href="/"
+            className="inline-flex items-center gap-1 text-xs font-semibold text-stone-500 hover:text-stone-800 transition-colors"
+          >
+            <ArrowRight className="w-3 h-3" aria-hidden="true" />
+            חזרה לעמוד הבית
+          </a>
+        </p>
       </div>
     </div>
   );

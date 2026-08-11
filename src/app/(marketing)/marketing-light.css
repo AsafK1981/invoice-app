@@ -698,6 +698,23 @@ h1.ml-hero-h1 {
     gap: 48px;
   }
 }
+/* "what already works today" note under the showcase lede - a gold-tint
+   panel so it reads as a factual aside, not as more marketing copy. */
+.ml-show-head .ml-show-today {
+  margin-top: 14px;
+  padding: 11px 16px;
+  background: var(--ml-gold-tint);
+  border: 1px solid var(--ml-gold-tint-line);
+  border-radius: 12px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--ml-ink-2);
+  text-align: start;
+}
+.ml-show-head .ml-show-today b {
+  color: var(--ml-gold-ink);
+  font-weight: 800;
+}
 .ml-show-col-title {
   display: flex;
   justify-content: center;
@@ -1283,6 +1300,39 @@ h1.ml-hero-h1 {
     pointer-events: none;
     background: linear-gradient(to top, var(--wa-bg) 12%, rgba(11, 20, 26, 0));
   }
+}
+
+/* ---------- mid-page CTA strip ----------
+   Deliberately quiet: one line of copy, the small button, one reassurance
+   note, on the page field with a hairline above and below rather than its
+   own filled band. The pricing section further down stays the loud CTA. */
+.ml-midcta {
+  padding-block: 0 56px;
+}
+@media (min-width: 760px) {
+  .ml-midcta {
+    padding-block: 0 76px;
+  }
+}
+.ml-midcta-in {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px 18px;
+  text-align: center;
+  border-block: 1px solid var(--ml-line);
+  padding-block: 22px;
+}
+.ml-midcta-t {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ml-ink);
+}
+.ml-midcta-note {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ml-muted);
 }
 
 /* ---------- the app itself (dashboard recreation) ----------

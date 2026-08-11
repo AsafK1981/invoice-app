@@ -9,20 +9,41 @@
 
 .v2-theme {
   /* gold design tokens: muted antique gold (matches approved app palette) */
-  --v2-g1: #d8be77;
-  --v2-g2: #be9e4e;
-  --v2-g3: #8f6f2a;
-  --v2-gold-grad: linear-gradient(177deg, #d8be77 0%, #be9e4e 38%, #8f6f2a 72%, #cbb061 100%);
-  --v2-line: rgba(214, 178, 108, 0.32);
-  --v2-line-soft: rgba(214, 178, 108, 0.14);
-  --v2-ink: #d6d0c2;
-  /* Brightened 2026-08-04 (was #a79f90, ~7.7:1 on --v2-obsidian): Asaf found
-     the muted/secondary text across the page - the sheet caption, FAQ
-     answers, pricing fine print, footer credit line - too hard to read
-     against the near-black field. Now ~10.5:1. */
-  --v2-muted: #c2b9a8;
-  --v2-card: #151109;
-  --v2-obsidian: #070504;
+  /* ============================================================
+     LIGHTENED 2026-08-11. These tokens used to describe an obsidian page
+     with light-gold ink. The homepage was redesigned warm-light on
+     2026-08-10, which left /vs, /blog, /status and the legal pages as a
+     visually different site - and the homepage's closing section links
+     straight into /vs, so the seam was the last thing a visitor saw.
+
+     Only the SURFACE tokens flipped; the structural ones below (widths,
+     type scale, spacing, radii) are untouched, and every `--v2-*` name is
+     kept so no rule in this 2,500-line file had to be renamed. Values are
+     taken from marketing-light.css's `--ml-*` palette by value, so the two
+     stylesheets cannot drift into two different "light" designs.
+
+     The gold family stays gold, but INVERTED in lightness: on obsidian the
+     accents had to be pale (#d8be77) to be readable; on cream they have to
+     be deep (#806426) for the same reason. `--v2-g1` is therefore now the
+     DARKEST of the three, not the lightest - it is used for accent text,
+     while g2/g3 fill the CTA gradient where white text sits on top.
+     ============================================================ */
+  --v2-g1: #806426;
+  --v2-g2: #96762f;
+  --v2-g3: #6d551f;
+  --v2-gold-grad: linear-gradient(177deg, #a2802f 0%, #8a6c26 38%, #6d551f 72%, #96762f 100%);
+  --v2-line: #ece3d3;
+  --v2-line-soft: #f2ebdd;
+  --v2-ink: #241e16;
+  /* Secondary text. Was #c2b9a8, brightened 2026-08-04 for readability on
+     the near-black field; the same requirement on cream points the other
+     way, so this now matches `--ml-muted` (~5.3:1 on #faf7f2). */
+  --v2-muted: #6f6757;
+  --v2-card: #ffffff;
+  /* Name kept deliberately: ~90 rules reference `--v2-obsidian` as "the
+     page field". It is the cream field now - renaming it would have
+     touched every one of them for no behavioural gain. */
+  --v2-obsidian: #faf7f2;
 
   /* ---- containers ----
      THREE widths, not one. They used to be a single 680px `--v2-shell` shared
@@ -119,16 +140,20 @@
      rest = a panel sitting on the page, hover = the same panel lifted,
      float = the hero/auth card that reads as detached. `edge` and `inset`
      are the gold hairline + top highlight that ride along with them. */
-  --v2-sh-rest: 0 22px 50px -28px rgba(0, 0, 0, 0.8);
-  --v2-sh-hover: 0 26px 60px -28px rgba(0, 0, 0, 0.85);
-  --v2-sh-float: 0 30px 70px -28px rgba(0, 0, 0, 0.85);
+  /* Warm, shallow shadows for the light field (2026-08-11). The old
+     rgba(0,0,0,0.8+) values were tuned to separate a near-black card from
+     a near-black page; on cream they read as dirt. Same warm hue and
+     downward light direction as `--ml-shadow-*`. */
+  --v2-sh-rest: 0 1px 2px rgba(120, 65, 20, 0.05), 0 6px 18px -12px rgba(120, 65, 20, 0.18);
+  --v2-sh-hover: 0 26px 50px -24px rgba(120, 65, 20, 0.28);
+  --v2-sh-float: 0 30px 56px -20px rgba(120, 65, 20, 0.34), 0 12px 24px -10px rgba(120, 65, 20, 0.2);
   /* A fourth tier, and only the landing hero sheet uses it. The other three
      lift a DARK panel off a dark field, where a soft shadow is enough. The
      hero sheet is white paper on obsidian: at `float` it reads as pasted on,
      because a real sheet that bright would cast further and darker. */
-  --v2-sh-sheet: 0 42px 80px -34px rgba(0, 0, 0, 0.95);
-  --v2-sh-edge: 0 0 0 1px rgba(190, 158, 78, 0.08);
-  --v2-sh-inset: inset 0 1px 0 rgba(255, 236, 180, 0.05);
+  --v2-sh-sheet: 0 34px 64px -26px rgba(120, 65, 20, 0.3);
+  --v2-sh-edge: 0 0 0 1px rgba(128, 100, 38, 0.1);
+  --v2-sh-inset: inset 0 1px 0 rgba(255, 255, 255, 0.6);
   /* gold glow: the button equivalent of rest/hover */
   --v2-glow-rest: 0 12px 28px -12px rgba(190, 158, 78, 0.25),
     inset 0 1px 0 rgba(255, 255, 255, 0.28);
@@ -158,12 +183,13 @@
   position: relative;
   min-height: 100vh;
   color: var(--v2-ink);
-  /* Cover the inherited warm body gradient completely with the obsidian
-     radial field from design-F. Opaque bottom stop (#070504) guarantees
-     no coral shows through, in light OR dark mode. */
-  background:
-    radial-gradient(120% 70% at 50% -8%, rgba(190, 158, 78, 0.05), transparent 45%),
-    radial-gradient(100% 120% at 50% 30%, #1a1510 0%, #0d0a07 55%, #070504 100%);
+  /* Opaque cream field (2026-08-11), covering the inherited warm body
+     gradient completely so nothing shows through in light OR dark mode -
+     same job the obsidian radial used to do, same trick the homepage's
+     `.ml-theme` uses one level down. Flat, matching the homepage: the
+     radial vignette that gave the obsidian design its depth only reads on
+     a dark field. */
+  background: var(--v2-obsidian);
   font-family: "Assistant", var(--font-assistant), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   /* `clip`, NOT `hidden`. `overflow-x: hidden` forces overflow-y to compute to
@@ -238,7 +264,7 @@
   justify-content: space-between;
   gap: 16px;
   padding: 16px clamp(16px, 5vw, 40px);
-  background: rgba(9, 7, 4, 0.72);
+  background: rgba(250, 247, 242, 0.9);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--v2-line-soft);
@@ -258,7 +284,7 @@
   font-size: var(--v2-fs-body);
   font-weight: 600;
   letter-spacing: 0.02em;
-  color: #cbc2b3;
+  color: #3f382c;
   transition: color 0.2s ease;
 }
 .v2-theme .v2-navlink:hover { color: var(--v2-g1); }
@@ -271,7 +297,7 @@
   font-family: "Assistant", var(--font-assistant), system-ui, sans-serif;
   font-weight: 700;
   font-size: var(--v2-fs-body);
-  color: #191206;
+  color: #ffffff;
   min-height: 40px;
   padding: 9px 22px;
   border-radius: var(--v2-r-pill);
@@ -386,7 +412,7 @@
 .v2-theme .v2-eyebrow-row span {
   font-size: var(--v2-fs-meta);
   letter-spacing: 0.26em;
-  color: #c9b885;
+  color: #806426;
 }
 
 /* Nav label swap, see HeaderV2.tsx. Long form from the desktop tier up. */
@@ -823,7 +849,7 @@
 .v2-theme .v2-ft b {
   font-size: var(--v2-fs-body);
   font-weight: 600;
-  color: #dcd3c4;
+  color: #241e16;
 }
 
 /* ---------- launch-offer band ----------
@@ -884,7 +910,7 @@
   align-items: center;
   justify-content: center;
   background: var(--v2-gold-grad);
-  color: #191206;
+  color: #ffffff;
 }
 .v2-theme .v2-tax-band-icon svg { width: 22px; height: 22px; }
 .v2-theme .v2-tax-band h2 {
@@ -935,7 +961,7 @@
   border-radius: var(--v2-r-lg);
   padding: var(--v2-pad-card);
   border: 1px solid var(--v2-line-soft);
-  background: linear-gradient(160deg, #16110a, #0e0a06);
+  background: linear-gradient(160deg, #ffffff, #fdfaf3);
   box-shadow: var(--v2-sh-rest), var(--v2-sh-inset);
 }
 .v2-theme .v2-adv-icon {
@@ -947,7 +973,7 @@
   border-radius: var(--v2-r-lg);
   margin-bottom: var(--v2-sp-2);
   background: var(--v2-gold-grad);
-  color: #191206;
+  color: #ffffff;
   box-shadow: 0 12px 26px -14px rgba(190, 158, 78, 0.28);
 }
 .v2-theme .v2-adv-icon svg { width: 22px; height: 22px; }
@@ -1002,7 +1028,7 @@
   margin-top: var(--v2-sp-4);
   font-weight: 700;
   font-size: var(--v2-fs-lede);
-  color: #191206;
+  color: #ffffff;
   padding: 15px 42px;
   border-radius: var(--v2-r-pill);
   background: var(--v2-gold-grad);
@@ -1093,7 +1119,7 @@
    button's own colour and type size, hover included. */
 .v2-theme .v2-footer-links a.v2-footer-cta,
 .v2-theme .v2-footer-links a.v2-footer-cta:hover {
-  color: #191206;
+  color: #ffffff;
   font-size: var(--v2-fs-body);
 }
 
@@ -1128,7 +1154,7 @@
   font-size: var(--v2-fs-meta);
   font-weight: 600;
   letter-spacing: 0.02em;
-  color: #c9b885;
+  color: #806426;
   margin-bottom: var(--v2-sp-1);
   transition: color 0.2s ease;
 }
@@ -1165,7 +1191,7 @@
   margin-top: 12px;
   max-width: var(--v2-measure);
   font-size: var(--v2-fs-lede);
-  color: #cbc2b3;
+  color: #3f382c;
   line-height: 1.65;
 }
 
@@ -1200,7 +1226,7 @@
 .v2-theme .v2-prose p {
   font-size: var(--v2-fs-lede);
   line-height: 1.75;
-  color: #c4bbad;
+  color: #3f382c;
 }
 .v2-theme .v2-prose a {
   color: var(--v2-g1);
@@ -1228,11 +1254,11 @@
   align-items: center;
   justify-content: center;
   border: 1px solid var(--v2-line);
-  background: linear-gradient(160deg, #191308, #0f0b06);
+  background: linear-gradient(160deg, #ffffff, #fdfaf3);
 }
 .v2-theme .v2-status-badge svg { width: 24px; height: 24px; }
 .v2-theme .v2-status-badge.is-ok { color: var(--v2-g2); }
-.v2-theme .v2-status-badge.is-down { color: #e6a15a; }
+.v2-theme .v2-status-badge.is-down { color: #b45309; }
 .v2-theme .v2-status-badge.is-loading { color: var(--v2-muted); }
 .v2-theme .v2-status-badge .spin { animation: v2-spin 1s linear infinite; }
 .v2-theme .v2-status-badge .pulse { animation: v2-pulse 1.4s ease-in-out infinite; }
@@ -1272,7 +1298,7 @@
   border: 1px solid var(--v2-line-soft);
   border-radius: var(--v2-r-md);
   padding: 16px;
-  background: linear-gradient(160deg, #17110a, #0e0a06);
+  background: linear-gradient(160deg, #ffffff, #fdfaf3);
 }
 .v2-theme .v2-status-row.is-ok { border-color: rgba(214, 178, 108, 0.28); }
 .v2-theme .v2-status-row.is-down { border-color: rgba(230, 161, 90, 0.42); }
@@ -1282,11 +1308,11 @@
   gap: 10px;
   font-weight: 600;
   font-size: var(--v2-fs-body);
-  color: #e2dccd;
+  color: #241e16;
 }
 .v2-theme .v2-status-row .name svg { width: 18px; height: 18px; }
 .v2-theme .v2-status-row.is-ok .name svg { color: var(--v2-g2); }
-.v2-theme .v2-status-row.is-down .name svg { color: #e6a15a; }
+.v2-theme .v2-status-row.is-down .name svg { color: #b45309; }
 .v2-theme .v2-status-row .val {
   font-size: var(--v2-fs-meta);
   font-variant-numeric: tabular-nums;
@@ -1295,7 +1321,7 @@
   color: var(--v2-g2);
   font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
 }
-.v2-theme .v2-status-row.is-down .val { color: #e6a15a; }
+.v2-theme .v2-status-row.is-down .val { color: #b45309; }
 
 .v2-theme .v2-status-meta {
   display: flex;
@@ -1312,7 +1338,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: #c9b885;
+  color: #806426;
   transition: color 0.2s ease;
 }
 .v2-theme .v2-status-refresh:hover { color: var(--v2-g1); }
@@ -1379,7 +1405,7 @@
 /* card: reuses the golden invoice-card treatment */
 .v2-theme .v2-auth-card {
   position: relative;
-  background: linear-gradient(160deg, #191308, #0f0b06);
+  background: linear-gradient(160deg, #ffffff, #fdfaf3);
   border: 1px solid var(--v2-line);
   border-radius: var(--v2-r-xl);
   padding: 32px 24px 24px;
@@ -1417,7 +1443,7 @@
   font-size: var(--v2-fs-meta);
   font-weight: 600;
   letter-spacing: 0.04em;
-  color: #cbc2b3;
+  color: #3f382c;
 }
 .v2-theme .v2-input-wrap {
   position: relative;
@@ -1427,7 +1453,7 @@
   font-family: "Assistant", var(--font-assistant), system-ui, sans-serif;
   font-size: var(--v2-fs-body);
   color: var(--v2-ink);
-  background: rgba(9, 7, 4, 0.6);
+  background: rgba(250, 247, 242, 0.85);
   border: 1px solid var(--v2-line);
   border-radius: var(--v2-r-sm);
   padding: 12px 40px 12px 14px;
@@ -1448,7 +1474,7 @@
   transform: translateY(-50%);
   width: 16px;
   height: 16px;
-  color: #8a8072;
+  color: #6f6757;
   pointer-events: none;
 }
 .v2-theme .v2-input-toggle {
@@ -1457,7 +1483,7 @@
   top: 50%;
   transform: translateY(-50%);
   display: inline-flex;
-  color: #8a8072;
+  color: #6f6757;
   background: none;
   border: none;
   cursor: pointer;
@@ -1486,7 +1512,7 @@
   font-family: "Assistant", var(--font-assistant), system-ui, sans-serif;
   font-weight: 700;
   font-size: var(--v2-fs-lede);
-  color: #191206;
+  color: #ffffff;
   padding: 13px 22px;
   border: none;
   border-radius: var(--v2-r-pill);
@@ -1553,7 +1579,9 @@
 }
 .v2-theme .v2-auth-or span {
   position: relative;
-  background: #130e07;
+  /* Knocks a gap in the rule behind it, so it has to match the card fill
+     it sits on - white since the 2026-08-11 light conversion. */
+  background: var(--v2-card);
   padding: 0 12px;
   font-size: var(--v2-fs-meta);
   color: var(--v2-muted);
@@ -1572,7 +1600,7 @@
   border: 1px solid var(--v2-line);
   border-radius: var(--v2-r-pill);
   cursor: pointer;
-  background: rgba(9, 7, 4, 0.5);
+  background: rgba(250, 247, 242, 0.8);
   transition: border-color 0.2s ease, background 0.2s ease;
 }
 .v2-theme .v2-google-btn:hover {
@@ -1679,7 +1707,7 @@
   max-width: var(--v2-measure);
   font-size: var(--v2-fs-lede);
   line-height: 1.7;
-  color: #cbc2b3;
+  color: #3f382c;
 }
 .v2-theme .v2-cmp-hero .src {
   margin-top: 12px;
@@ -1711,7 +1739,7 @@
 /* ---------- dark panel (reused across comparison sections) ---------- */
 .v2-theme .v2-panel {
   position: relative;
-  background: linear-gradient(160deg, #16110a, #0e0a06);
+  background: linear-gradient(160deg, #ffffff, #fdfaf3);
   border: 1px solid var(--v2-line);
   border-radius: var(--v2-r-lg);
   padding: var(--v2-pad-card);
@@ -1732,14 +1760,14 @@
   border-radius: var(--v2-r-lg);
   padding: var(--v2-pad-card);
   border: 1px solid var(--v2-line-soft);
-  background: linear-gradient(160deg, #16110a, #0e0a06);
+  background: linear-gradient(160deg, #ffffff, #fdfaf3);
 }
 /* highlighted winner: gold border + faint gold wash */
 .v2-theme .v2-price-card.win {
   border: 1px solid var(--v2-line);
   background:
     radial-gradient(120% 80% at 50% -10%, rgba(190, 158, 78, 0.06), transparent 55%),
-    linear-gradient(160deg, #1a1408, #100b06);
+    linear-gradient(160deg, #ffffff, #fdfaf3);
   box-shadow: var(--v2-sh-rest), var(--v2-sh-edge);
 }
 /* Reused verbatim by .v2-adv-card's "בקרוב" badge (the one unreleased
@@ -1755,7 +1783,7 @@
   font-size: var(--v2-fs-micro);
   font-weight: 700;
   letter-spacing: 0.14em;
-  color: #191206;
+  color: #ffffff;
   padding: 4px 12px;
   border-radius: var(--v2-r-pill);
   background: var(--v2-gold-grad);
@@ -1781,7 +1809,7 @@
 .v2-theme .v2-price-card li .plan { color: var(--v2-muted); }
 .v2-theme .v2-price-card li .val {
   font-weight: 700;
-  color: #e2dccd;
+  color: #241e16;
   font-variant-numeric: tabular-nums;
   text-align: left;
 }
@@ -1800,7 +1828,7 @@
   max-width: calc(var(--v2-measure) + 34px);
   font-size: var(--v2-fs-body);
   line-height: 1.7;
-  color: #cbc2b3;
+  color: #3f382c;
   border: 1px solid var(--v2-line-soft);
   border-radius: var(--v2-r-md);
   padding: var(--v2-sp-2);
@@ -1819,8 +1847,8 @@
 .v2-theme table.v2-table thead th {
   position: sticky;
   top: 0;
-  background: #120d07;
-  color: #cbc2b3;
+  background: #f7f2e7;
+  color: #3f382c;
   font-weight: 700;
   padding: 14px 18px;
   border-bottom: 1px solid var(--v2-line);
@@ -1845,7 +1873,7 @@
   font-size: var(--v2-fs-body);
   letter-spacing: 0.02em;
   color: var(--v2-g2);
-  background: #100b06;
+  background: #faf5ea;
   border-bottom: 1px solid var(--v2-line-soft);
 }
 .v2-theme table.v2-table tbody td {
@@ -1858,7 +1886,7 @@
   background: rgba(190, 158, 78, 0.03);
 }
 .v2-theme table.v2-table tr.row:hover { background: rgba(190, 158, 78, 0.06); }
-.v2-theme table.v2-table td.feat { color: #e2dccd; }
+.v2-theme table.v2-table td.feat { color: #241e16; }
 .v2-theme table.v2-table td.feat .note {
   margin-top: 3px;
   font-size: var(--v2-fs-meta);
@@ -1917,7 +1945,7 @@
   gap: 9px;
   font-size: var(--v2-fs-body);
   line-height: 1.5;
-  color: #dcd3c4;
+  color: #241e16;
 }
 .v2-theme .v2-str li svg { width: 17px; height: 17px; margin-top: 3px; flex: none; }
 .v2-theme .v2-str.them li svg { color: var(--v2-muted); }
@@ -1941,7 +1969,7 @@
   align-items: center;
   justify-content: center;
   background: var(--v2-gold-grad);
-  color: #191206;
+  color: #ffffff;
   box-shadow: 0 12px 26px -14px rgba(190, 158, 78, 0.28);
 }
 .v2-theme .v2-note-panel .ic svg { width: 24px; height: 24px; }
@@ -1956,7 +1984,7 @@
   max-width: var(--v2-measure);
   font-size: var(--v2-fs-body);
   line-height: 1.7;
-  color: #cbc2b3;
+  color: #3f382c;
 }
 
 /* ---------- comparison CTA ---------- */
@@ -1988,7 +2016,7 @@
   gap: 7px;
   font-size: var(--v2-fs-body);
   font-weight: 600;
-  color: #c9b885;
+  color: #806426;
   padding: 13px 8px;
   transition: color 0.2s ease;
 }
@@ -2026,7 +2054,7 @@
   border-radius: var(--v2-r-lg);
   padding: var(--v2-pad-card);
   border: 1px solid var(--v2-line-soft);
-  background: linear-gradient(160deg, #16110a, #0e0a06);
+  background: linear-gradient(160deg, #ffffff, #fdfaf3);
   box-shadow: var(--v2-sh-rest);
   transition: transform 0.16s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
@@ -2045,7 +2073,7 @@
   margin-top: var(--v2-sp-2);
   font-size: var(--v2-fs-body);
   line-height: 1.65;
-  color: #cbc2b3;
+  color: #3f382c;
 }
 /* `margin-top: auto` pins the link to the bottom of the card, so in the
    two-up grid the six cards' "read the full comparison" links line up across
@@ -2115,7 +2143,7 @@
   padding: var(--v2-pad-card);
   border-radius: var(--v2-r-lg);
   border: 1px solid var(--v2-line);
-  background: linear-gradient(160deg, #17110a, #100c07);
+  background: linear-gradient(160deg, #ffffff, #fdfaf3);
   box-shadow: var(--v2-sh-rest);
   transition: transform 0.16s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
@@ -2140,7 +2168,7 @@
 .v2-theme .v2-blog-card p {
   font-size: var(--v2-fs-body);
   line-height: 1.65;
-  color: #c4bbad;
+  color: #3f382c;
 }
 /* `margin-top: auto`: see the note on .v2-vs-card .more. */
 .v2-theme .v2-blog-card .more {
@@ -2213,7 +2241,7 @@
 .v2-theme .v2-prose ol {
   margin: 0 0 var(--v2-sp-2);
   padding-inline-start: 22px;
-  color: #c4bbad;
+  color: #3f382c;
   font-size: var(--v2-fs-lede);
   line-height: 1.75;
 }
@@ -2224,7 +2252,7 @@
   margin: 16px 0;
   padding: 4px 16px;
   border-inline-start: 2px solid var(--v2-g2);
-  color: #cbc2b3;
+  color: #3f382c;
   font-style: italic;
 }
 .v2-theme .v2-prose hr {
@@ -2243,14 +2271,14 @@
   border: 1px solid var(--v2-line);
   padding: 9px 12px;
   text-align: right;
-  color: #c4bbad;
+  color: #3f382c;
 }
 .v2-theme .v2-prose th {
   color: var(--v2-g1);
   font-weight: 700;
   background: rgba(214, 178, 108, 0.05);
 }
-.v2-theme .v2-prose em { color: #cbc2b3; }
+.v2-theme .v2-prose em { color: #3f382c; }
 
 /* ============================================================
    RESPONSIVE OVERRIDES: the ONLY place `@media` may appear.

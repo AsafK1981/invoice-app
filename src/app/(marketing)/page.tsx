@@ -452,6 +452,19 @@ export default function MarketingLanding() {
                   ומקצועי, עם כל השדות שרשות המסים דורשת, כולל מספר
                   ההקצאה.
                 </p>
+                {/* Honesty line, 2026-08-11. The WhatsApp mock leads the
+                    page, so the first thing a visitor absorbs is a channel
+                    that is not enabled yet (Meta approval pending). Without
+                    this sentence the page reads as if the chat bot is what
+                    you get on signup, and the "בקרוב" badge on the column
+                    title alone is easy to miss. States plainly what works
+                    today - all of it verified live - so nobody signs up for
+                    something they cannot use this afternoon. */}
+                <p className="ml-show-today">
+                  <b>מה שכבר עובד היום:</b> המסמך שמשמאל, מספר ההקצאה
+                  שבתוכו, ושליחה ללקוח במייל או בקישור - הכול פעיל עכשיו
+                  במערכת. ערוץ הוואטסאפ מצטרף בהמשך.
+                </p>
               </div>
             </div>
 
@@ -769,6 +782,30 @@ export default function MarketingLanding() {
               "הכנסות והוצאות" chart card. Figures are illustrative and the
               caption says so. If that dashboard is ever restructured, this
               block should follow it. */}
+          {/* Mid-page CTA (2026-08-11). Measured on the live page, the
+              signup buttons sat at y=15 (header), y=424 (hero) and then
+              nothing until y=4,353 - the whole middle two thirds, where a
+              visitor is actually being convinced, offered no way to act.
+              Sits right at the midpoint of that gap - after the
+              WhatsApp/document showcase has made the case, before the
+              dashboard view and the advantage grid. A slim inline strip,
+              not a second pricing band: the real CTA further down should
+              stay the loud one. */}
+          <section className="ml-midcta">
+            <div className="ml-wrap ml-midcta-in">
+              <p className="ml-midcta-t">משוכנעים? ההרשמה לוקחת פחות מדקה.</p>
+              <Link
+                href="/login?mode=signup"
+                className="ml-btn ml-btn-primary ml-btn-sm"
+              >
+                התחילו בחינם
+              </Link>
+              <span className="ml-midcta-note">
+                בלי כרטיס אשראי · אפשר לבטל בכל רגע
+              </span>
+            </div>
+          </section>
+
           <section className="ml-app">
             <div className="ml-wrap">
               <div className="ml-show-head">
