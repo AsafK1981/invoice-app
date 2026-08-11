@@ -11,8 +11,27 @@ if (!TOKEN || !REF) {
   process.exit(1);
 }
 
-const APP_NAME = "MyFriendlyInvoiceApp";
+/**
+ * Hebrew brand since 2026-08-11. These emails are the first thing a new
+ * signup sees after leaving the site, and every surface they just read -
+ * header, footer, page title, the auth page - says "חשבונית ידידותית".
+ * The Latin name stays in the domain, the Tax Authority softwareName and
+ * the JSON-LD alternateName on purpose (see jsonld.ts); it does not
+ * belong in user-facing mail.
+ */
+const APP_NAME = "חשבונית ידידותית";
 const APP_URL = "https://friendlyinvoice.co.il";
+
+/**
+ * Deliverability note, stated inside the mail because it cannot yet be
+ * fixed at the DNS level: auth mail is still relayed through Gmail SMTP
+ * from a personal address, and friendlyinvoice.co.il has no SPF/DKIM/
+ * DMARC, so a share of these land in spam or promotions. Until the domain
+ * is verified with a real sending provider, the mail at least tells the
+ * reader where it came from and what to do if it was filed wrongly.
+ */
+const SPAM_HINT =
+  "לא מוצאים את המייל? בדקו בתיקיית הספאם או הקידומים, וסמנו \"זה לא ספאם\" כדי שההודעות הבאות יגיעו לתיבה הראשית.";
 
 const confirmationHtml = `
 <div dir="rtl" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Heebo, Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 24px; color: #1c1917; background: #fff7ed; border-radius: 16px;">
@@ -31,6 +50,9 @@ const confirmationHtml = `
   </div>
   <p style="color:#78716c;font-size:13px;line-height:1.5;margin:0 0 8px;">
     אם לא נרשמת, אפשר להתעלם מההודעה - לא ייעשה שימוש בכתובת המייל שלך.
+  </p>
+  <p style="color:#78716c;font-size:13px;line-height:1.5;margin:0 0 8px;">
+    ${SPAM_HINT}
   </p>
   <p style="color:#78716c;font-size:13px;line-height:1.5;margin:0;">
     אפליקציית ${APP_NAME} - <a href="${APP_URL}" style="color:#ea580c;text-decoration:none;">${APP_URL.replace("https://", "")}</a>
