@@ -88,6 +88,12 @@ ORDER BY p.proname;`;
     return skip(`network error (${e.message})`);
   }
 
+  // The query endpoint returns an array of rows on success; anything else
+  // (an error object, null) means we can't assess — skip rather than throw.
+  if (!Array.isArray(rows)) {
+    return skip(`unexpected response shape (${JSON.stringify(rows).slice(0, 120)})`);
+  }
+
   const offenders = [];
   for (const row of rows) {
     if (row.anon) {
