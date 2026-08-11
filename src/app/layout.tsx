@@ -67,10 +67,26 @@ const SITE_URL = CANONICAL_ORIGIN;
 // behaviour rather than an empty meta.
 const GOOGLE_SITE_VERIFICATION = process.env.GOOGLE_SITE_VERIFICATION?.trim();
 
+// Meta (Facebook) domain-ownership token, emitted as
+// <meta name="facebook-domain-verification">. Required for Meta Business
+// verification, which in turn gates taking the WhatsApp channel out of
+// development mode. Same env-var reasoning as the Google token above; the
+// value is not secret (it ships in the public HTML) but keeping it out of
+// git means re-verifying a domain never needs a code change.
+const FACEBOOK_DOMAIN_VERIFICATION =
+  process.env.FACEBOOK_DOMAIN_VERIFICATION?.trim();
+
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   ...(GOOGLE_SITE_VERIFICATION
     ? { verification: { google: GOOGLE_SITE_VERIFICATION } }
+    : {}),
+  ...(FACEBOOK_DOMAIN_VERIFICATION
+    ? {
+        other: {
+          "facebook-domain-verification": FACEBOOK_DOMAIN_VERIFICATION,
+        },
+      }
     : {}),
   /**
    * Title/description/OG refreshed 2026-08-11. The previous copy
