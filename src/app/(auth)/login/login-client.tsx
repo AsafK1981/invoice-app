@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useId, useRef, useState } from "react";
+import { Suspense, useEffect, useId, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Sparkles, Mail, LogIn, UserPlus, Eye, EyeOff, ArrowRight, Check } from "lucide-react";
 import { supabase } from "@/lib/supabase";
@@ -13,21 +13,26 @@ type Mode = "login" | "signup" | "forgot";
 // end to end on 2026-08-04 and abandoned: Google renders "continue to
 // <project-ref>.supabase.co" because the redirect URI lives on Supabase's
 // domain, and only the paid custom-domain add-on changes that. The GIS flow
-// sidesteps the redirect entirely - the ID token is issued directly on OUR
-// origin, so the popup says friendlyinvoice.co.il, and the token is then
-// exchanged with Supabase. Free on every Supabase plan.
+// keeps the ID token on OUR origin, so the consent screen says
+// friendlyinvoice.co.il. Free on every Supabase plan.
+//
+// ux_mode is "redirect", not "popup" (2026-08-12): the popup flow silently
+// died on mobile - users picked their Google account and the credential
+// never made it back to the opener tab (Safari ITP / in-app browsers), so
+// the exchange never even reached Supabase. In redirect mode Google
+// full-page-navigates and POSTs the credential to /api/auth/google-redirect
+// on our origin - no popup, no cross-tab handoff, works everywhere. That
+// login_uri must stay registered under "Authorized redirect URIs" on the
+// GCP OAuth client (project "for my website").
 const GOOGLE_CLIENT_ID =
   "299738514450-l904155luql8fn7focq4hrlf921u3uvt.apps.googleusercontent.com";
-
-interface GoogleCredentialResponse {
-  credential: string;
-}
 
 interface GoogleAccountsId {
   initialize(config: {
     client_id: string;
-    callback: (response: GoogleCredentialResponse) => void;
     nonce?: string;
+    ux_mode?: "popup" | "redirect";
+    login_uri?: string;
     use_fedcm_for_prompt?: boolean;
   }): void;
   renderButton(
@@ -48,6 +53,12 @@ declare global {
   interface Window {
     google?: { accounts?: { id?: GoogleAccountsId } };
   }
+}
+
+/** Friendly Hebrew message for ?error= codes set by /api/auth/google-redirect. */
+function googleErrorMessage(code: string | null): string | null {
+  if (!code || !code.startsWith("google")) return null;
+  return "ההתחברות עם Google לא הושלמה. נסה שוב.";
 }
 
 /** SHA-256 hex digest - GIS receives the hashed nonce, Supabase the raw one. */
@@ -72,44 +83,22 @@ function LoginForm() {
   );
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // A failed redirect-mode Google sign-in lands back here with ?error=google_*.
+  const [error, setError] = useState<string | null>(
+    googleErrorMessage(searchParams.get("error"))
+  );
   const [success, setSuccess] = useState<string | null>(null);
   // Resend-confirmation state for the post-signup screen.
   const [signupEmailSent, setSignupEmailSent] = useState(false);
   const [resending, setResending] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
   const googleButtonRef = useRef<HTMLDivElement | null>(null);
-  // The raw nonce paired with the hashed one GIS was initialized with; the
-  // credential callback needs it to complete signInWithIdToken.
-  const googleNonceRef = useRef<string | null>(null);
   const [googleReady, setGoogleReady] = useState(false);
-
-  const handleGoogleCredential = useCallback(
-    async (response: GoogleCredentialResponse) => {
-      setError(null);
-      const { error: idTokenError } = await supabase.auth.signInWithIdToken({
-        provider: "google",
-        token: response.credential,
-        nonce: googleNonceRef.current ?? undefined,
-      });
-      if (idTokenError) {
-        setError(idTokenError.message);
-        return;
-      }
-      track("sign_in_google");
-      // A Google user may be brand new (no business yet) - route them to
-      // onboarding like the email signup flow; returning users go straight in.
-      const { data: biz } = await supabase.from("businesses").select("id").limit(1);
-      router.push(biz && biz.length > 0 ? "/dashboard" : "/onboarding");
-      router.refresh();
-    },
-    [router],
-  );
 
   // Load the GIS script once and render the official Google button. The
   // pre-built button is required: only GIS-rendered UI can issue the ID token
   // credential on our own origin (which is what keeps supabase.co out of the
-  // consent popup).
+  // consent screen).
   useEffect(() => {
     if (mode === "forgot") return;
     let cancelled = false;
@@ -118,11 +107,17 @@ function LoginForm() {
       const gsi = window.google?.accounts?.id;
       const parent = googleButtonRef.current;
       if (cancelled || !gsi || !parent) return;
+      // GIS gets the SHA-256 of the nonce; the raw value rides a short-lived
+      // cookie so /api/auth/google-redirect can hand it to Supabase, which
+      // hashes it and compares against the ID token's nonce claim.
+      // SameSite=None because Google's page POSTs to us cross-site - a Lax
+      // cookie would simply not be sent on that request.
       const nonce = crypto.randomUUID();
-      googleNonceRef.current = nonce;
+      document.cookie = `g_oidc_nonce=${nonce}; path=/; max-age=600; secure; samesite=none`;
       gsi.initialize({
         client_id: GOOGLE_CLIENT_ID,
-        callback: handleGoogleCredential,
+        ux_mode: "redirect",
+        login_uri: `${window.location.origin}/api/auth/google-redirect`,
         nonce: await sha256Hex(nonce),
       });
       parent.innerHTML = "";
@@ -158,7 +153,7 @@ function LoginForm() {
     return () => {
       cancelled = true;
     };
-  }, [mode, handleGoogleCredential]);
+  }, [mode]);
 
   useEffect(() => {
     if (resendCooldown <= 0) return;

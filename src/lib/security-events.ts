@@ -27,6 +27,7 @@ export type SecurityEventKind =
   | "tax_authority_unauthorized"      // bearer-token check failed on our route
   | "tax_authority_token_decrypt_failed" // encryption key wrong / DB tampered
   | "uniform_structure_export_burst"  // someone hammering the export route
+  | "google_login_csrf"        // g_csrf_token mismatch on the GIS redirect callback
   | "admin_action"             // admin-API hit (should be very rare)
   | "rls_anomaly"              // RLS check ran but returned unexpected shape
   | "unauthorized_api_access";        // any Bearer token check that failed
