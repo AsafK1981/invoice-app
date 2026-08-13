@@ -9,6 +9,7 @@ import {
   normalizeCustomerVatNumber,
   type AllocationRequest,
 } from "@/lib/tax-authority";
+import { isValidIsraeliIdNumber } from "@/lib/israeli-id";
 import { decryptColumn, encryptColumn } from "@/lib/crypto";
 import { emitSecurityEvent } from "@/lib/security-events";
 import { clientIp } from "@/lib/rate-limit";
@@ -123,6 +124,18 @@ export async function POST(req: NextRequest) {
       { status: 400 },
     );
   }
+  // Beyond "present and not all-zeros": also verify the check digit, so a
+  // typo'd business number fails here with a pointer to Settings instead of
+  // round-tripping to the Tax Authority for an opaque code 432-style rejection.
+  if (!isValidIsraeliIdNumber(vatNumber)) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "מספר העוסק של העסק בהגדרות אינו תקין (ספרת ביקורת שגויה). עדכן אותו בהגדרות לפני בקשת מספר הקצאה.",
+      },
+      { status: 400 },
+    );
+  }
 
   // Resolve the buyer's business/VAT number: the document's stored
   // client_tax_id (captured in the editor), falling back to the linked
@@ -170,6 +183,21 @@ export async function POST(req: NextRequest) {
   ) {
     return NextResponse.json(
       { ok: false, error: "מסמך מסוג זה / סכום זה לא דורש מספר הקצאה" },
+      { status: 400 },
+    );
+  }
+
+  // Reject an invalid customer business number BEFORE the round trip: the
+  // Tax Authority would reject it too (code 432, "Customer vat number is
+  // incorrect"), but only after we've already refreshed/rotated an access
+  // token for nothing. customerVatNumber is already known non-empty and not
+  // all-zeros here (the B2C carve-out above returns earlier for those).
+  if (!isValidIsraeliIdNumber(customerVatNumber)) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: `מספר העוסק של הלקוח (${customerVatNumber}) אינו תקין. תקנו אותו בכרטיס הלקוח או במסמך ונסו שוב.`,
+      },
       { status: 400 },
     );
   }

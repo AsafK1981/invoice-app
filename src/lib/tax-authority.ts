@@ -390,6 +390,20 @@ export async function requestAllocation(
     return undefined;
   };
 
+  // The offending field name for a per-invoice field-validation rejection
+  // (message.errors[0].param, e.g. "customer_vat_number"). Only ever the
+  // field name itself, never the surrounding JSON; used to build a
+  // field-named fallback message when we don't recognise the code.
+  const extractParam = (): string | undefined => {
+    if (!obj) return undefined;
+    const errs = asObj(obj.message)?.errors;
+    if (Array.isArray(errs) && errs.length) {
+      const first = asObj(errs[0]);
+      if (typeof first?.param === "string") return first.param;
+    }
+    return undefined;
+  };
+
   // The raw English/technical `message` string, dug out of whichever shape the
   // response uses. Kept only as a fallback / for logs; never shown verbatim.
   const extractRawMessage = (): string | undefined => {
@@ -415,12 +429,14 @@ export async function requestAllocation(
   if (!r.ok || !approved || !confirmation || confirmation === "0") {
     const resultCode = extractCode() ?? String(r.status);
     const rawMessage = extractRawMessage();
+    const param = extractParam();
     // Full upstream body (may carry gov.il internal detail) stays in server
     // logs only; never surfaced to the client as a raw JSON blob.
     console.error(
       "[tax-authority] allocation rejected",
       "http=", r.status,
       "code=", resultCode,
+      "param=", param,
       "raw=", JSON.stringify(raw),
     );
     return {
@@ -428,8 +444,9 @@ export async function requestAllocation(
       confirmationNumber: confirmation || undefined,
       resultCode,
       // A clean, human Hebrew reason, mapped from the ITA code where known,
-      // otherwise a generic line. The technical English string is dropped.
-      resultMessage: hebrewForItaCode(resultCode, rawMessage),
+      // otherwise a generic line naming the offending field. The technical
+      // English string is dropped.
+      resultMessage: hebrewForItaCode(resultCode, rawMessage, param),
       raw,
     };
   }
@@ -445,14 +462,53 @@ export async function requestAllocation(
 }
 
 /**
+ * Hebrew label for each field name (the `param` value) the ITA v2 Approval
+ * body can send/reject, used to build a field-named fallback message when the
+ * error code itself isn't one we recognise. Limited to the fields we
+ * actually send in requestAllocation()'s request body; an unknown param
+ * falls back to the raw field name (still just a field name, never a full
+ * upstream body).
+ */
+const ITA_PARAM_LABELS: Record<string, string> = {
+  customer_vat_number: "מספר עוסק של הלקוח",
+  vat_number: "מספר העוסק של העסק",
+  user_id: "מזהה המשתמש (ת.ז מבצע ההקצאה)",
+  invoice_date: "תאריך החשבונית",
+  invoice_issuance_date: "תאריך הוצאת החשבונית",
+  amount_before_discount: "הסכום לפני הנחה",
+  discount: "סכום ההנחה",
+  payment_amount: "סכום התשלום",
+  vat_amount: "סכום המע״מ",
+  payment_amount_including_vat: "הסכום כולל מע״מ",
+  invoice_reference_number: "מספר החשבונית",
+  accounting_software_number: "מספר בית התוכנה",
+  invoice_type: "סוג המסמך",
+  invoice_id: "מזהה החשבונית",
+};
+
+/**
  * Map an Israel-Tax-Authority error code to a concise, user-facing Hebrew
  * reason. The gateway/business messages come back in technical English (or a
  * JSON blob), which reads terribly inside our RTL Hebrew card, so we translate
  * the codes we know and fall back to a generic Hebrew line for the rest. The
  * raw English is never shown to the user (it stays in server logs).
+ *
+ * @param code         the ITA numeric error code, as a string.
+ * @param _rawMessage  the upstream English message, kept for logs only; never
+ *                      surfaced (accepted for callers/tests that pass it).
+ * @param param        the offending field name from message.errors[0].param,
+ *                      when the upstream response carried one. Used only to
+ *                      build the fallback for codes we don't have a specific
+ *                      Hebrew sentence for.
  */
-export function hebrewForItaCode(code: string | undefined, _rawMessage?: string): string {
+export function hebrewForItaCode(
+  code: string | undefined,
+  _rawMessage?: string,
+  param?: string,
+): string {
   switch (code) {
+    case "432":
+      return "מספר העוסק של הלקוח אינו תקין. בדקו את ח.פ / ע.מ בכרטיס הלקוח ונסו שוב.";
     case "446":
       return "חסר שדה מזהה משתמש (ת.ז מבצע ההקצאה) בבקשה";
     case "460":
@@ -464,7 +520,17 @@ export function hebrewForItaCode(code: string | undefined, _rawMessage?: string)
     case "401":
     case "403":
       return "החיבור לרשות המסים אינו מורשה, חבר מחדש בהגדרות";
-    default:
+    default: {
+      // Unknown code, but the upstream response named the offending field:
+      // point at it by name instead of a content-free generic line. The
+      // caller (request-allocation route) already prefixes this with
+      // "רשות המסים דחתה את הבקשה (קוד X):", so this half doesn't repeat
+      // that opener or the code again.
+      if (param) {
+        const label = ITA_PARAM_LABELS[param] ?? param;
+        return `השדה שגרם לדחייה: ${label}.`;
+      }
       return "הבקשה נדחתה על ידי רשות המסים";
+    }
   }
 }

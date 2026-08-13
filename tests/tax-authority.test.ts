@@ -137,6 +137,33 @@ describe("hebrewForItaCode: maps ITA error codes to clean Hebrew (no raw JSON)",
     expect(hebrewForItaCode(undefined)).toBe("הבקשה נדחתה על ידי רשות המסים");
     expect(hebrewForItaCode("99999")).toBe("הבקשה נדחתה על ידי רשות המסים");
   });
+
+  it("maps 432 (invalid customer vat number) to an actionable Hebrew reason", () => {
+    const msg = hebrewForItaCode("432");
+    expect(msg).toContain("מספר העוסק של הלקוח");
+    expect(msg).toContain("אינו תקין");
+    // Actionable: tells the user where to fix it.
+    expect(msg).toContain("כרטיס הלקוח");
+    expect(msg).not.toMatch(/[{}"]/);
+  });
+
+  it("unknown code + known param produces a field-named fallback message", () => {
+    const msg = hebrewForItaCode("999", "some raw upstream text", "customer_vat_number");
+    expect(msg).toContain("מספר עוסק של הלקוח");
+    // Never leaks the raw upstream message or JSON punctuation.
+    expect(msg).not.toContain("some raw upstream text");
+    expect(msg).not.toMatch(/[{}"]/);
+  });
+
+  it("unknown code + unknown param names the raw param without leaking a body", () => {
+    const msg = hebrewForItaCode("999", undefined, "some_future_field");
+    expect(msg).toContain("some_future_field");
+    expect(msg).not.toMatch(/[{}"]/);
+  });
+
+  it("unknown code + no param falls back to the generic line, no leakage", () => {
+    expect(hebrewForItaCode("999")).toBe("הבקשה נדחתה על ידי רשות המסים");
+  });
 });
 
 describe("requiresAllocationNumber: ₪ equivalent governs the threshold", () => {
