@@ -183,6 +183,18 @@ input:not(.input-warm):focus-visible,
   animation: slideInRight 0.4s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
+/* Arrival highlight for the allocation-number block on /documents/[id]: a
+   gold ring that snaps in instantly (no fade-in, so it's visible the moment
+   the smooth-scroll lands) and fades OUT over ~2.4s. Uses the app's existing
+   gold-ring token (--goldline), not a new colour. */
+@keyframes goldArrivalRing {
+  0% { box-shadow: 0 0 0 4px var(--goldline, #c9ab63); }
+  100% { box-shadow: 0 0 0 4px transparent; }
+}
+.allocation-arrival-ring {
+  animation: goldArrivalRing 2.4s ease-out forwards;
+}
+
 .stagger-1 { animation-delay: 0.05s; }
 .stagger-2 { animation-delay: 0.1s; }
 .stagger-3 { animation-delay: 0.15s; }

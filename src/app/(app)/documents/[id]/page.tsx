@@ -2,7 +2,7 @@
 
 import { use, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowRight,
   Printer,
@@ -35,7 +35,7 @@ import { sendReceiptEmail } from "@/lib/email";
 import { EmailVerificationModal } from "@/components/email-verification-modal";
 import { ReceiptView } from "@/components/receipt-view";
 import { canIssueTaxInvoices } from "@/lib/vat";
-import { requiresAllocationNumber } from "@/lib/tax-authority";
+import { requiresAllocationNumber, shouldFocusAllocationOnArrival } from "@/lib/tax-authority";
 import { formatCurrency } from "@/lib/format";
 import { DOCUMENT_TYPE_LABELS } from "@/lib/types";
 
@@ -88,6 +88,27 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
     };
   }, [moreOpen]);
   const confirm = useConfirm();
+  const searchParams = useSearchParams();
+  // Buyer's business/VAT number: the doc's own snapshot, else the linked
+  // client's. Absent ⇒ private customer (B2C), for whom no allocation number
+  // is ever required. Computed here (ahead of the ready/doc guards below) so
+  // the arrival effect right after it - a hook, so it must run unconditionally
+  // on every render - can read it.
+  const client = clients.find((c) => c.id === doc?.clientId) ?? null;
+  const customerTaxId = doc?.clientTaxId || client?.taxId || undefined;
+  // Target for the "scroll to + focus + gold ring" landing after a save that
+  // still needs an allocation number (see focusAllocationSection below).
+  const allocationSectionRef = useRef<HTMLDivElement | null>(null);
+  const [allocationRingActive, setAllocationRingActive] = useState(false);
+  useEffect(() => {
+    if (!ready || !doc) return;
+    const param = searchParams.get("needsAllocation");
+    if (!shouldFocusAllocationOnArrival(doc, customerTaxId, param)) return;
+    focusAllocationSection();
+    // Strip the query param so a refresh or back-navigation doesn't re-fire
+    // the scroll/ring on a doc that may have gotten its number since.
+    router.replace(`/documents/${id}`);
+  }, [ready, doc, customerTaxId, id]);
 
   if (!ready) {
     return <div className="text-center py-16 text-stone-500">טוען...</div>;
@@ -110,11 +131,6 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
     );
   }
 
-  const client = clients.find((c) => c.id === doc.clientId) ?? null;
-  // Buyer's business/VAT number: the doc's own snapshot, else the linked
-  // client's. Absent ⇒ private customer (B2C), for whom no allocation number
-  // is ever required.
-  const customerTaxId = doc.clientTaxId || client?.taxId || undefined;
   const isQuote = doc.type === "quote";
   const isProforma = doc.type === "proforma";
   const isTaxInvoice = doc.type === "tax_invoice";
@@ -171,6 +187,16 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
   // Used to disable any "send to client" button; sending without it would
   // be a regulatory violation.
   const allocationGate = requiresAllocationNumber(doc, customerTaxId) && !doc.allocationNumber;
+
+  // "שלח במייל" is the action that actually delivers the document, so it
+  // wears the app's one filled-button treatment (`.pgbtn-primary`) while the
+  // document hasn't been sent yet - that's the button a freelancer needs to
+  // find at a glance. Once it HAS been sent, the pull of a filled button on an
+  // already-handled document is pointless (screams for attention nothing else
+  // needs), so it drops back to the quiet tier and "הורד PDF" - a lower-stakes,
+  // repeatable action - takes the quiet tier permanently instead of the filled
+  // one it used to wear.
+  const emailIsPrimary = !doc.emailedAt;
 
   async function handlePrint() {
     // Render-then-set (18ב): window.print() blocks until the print dialog is
@@ -232,16 +258,28 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
     }
   }
 
+  // Scrolls to + focuses the allocation-number block and rings it gold for
+  // ~2.4s (CSS animation, see .allocation-arrival-ring in globals.css).
+  // Shared by the arrival effect above (after a save that needs a number)
+  // and the two "you can't send yet" gates below, so the user always lands
+  // ON the block that blocks them instead of being told to go find it.
+  function focusAllocationSection() {
+    const el = allocationSectionRef.current;
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+    el.focus({ preventScroll: true });
+    setAllocationRingActive(true);
+    window.setTimeout(() => setAllocationRingActive(false), 2400);
+  }
+
   async function handleResend(asReminder = false) {
     if (!doc) return;
     // Tax Authority gate: don't let the user send a tax invoice that
     // legally requires a מספר הקצאה without one. The law forbids
     // delivering the doc to the buyer until the allocation is in.
     if (requiresAllocationNumber(doc, customerTaxId) && !doc.allocationNumber) {
-      setToast({
-        kind: "error",
-        text: 'יש להוסיף מספר הקצאה לפני שליחה. גלול מטה לבלוק "נדרש מספר הקצאה".',
-      });
+      setToast({ kind: "error", text: "יש להוסיף מספר הקצאה לפני שליחה." });
+      focusAllocationSection();
       return;
     }
     const to = client?.email;
@@ -300,10 +338,8 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
   function handleWhatsApp() {
     if (!doc) return;
     if (requiresAllocationNumber(doc, customerTaxId) && !doc.allocationNumber) {
-      setToast({
-        kind: "error",
-        text: 'יש להוסיף מספר הקצאה לפני שליחה. גלול מטה לבלוק "נדרש מספר הקצאה".',
-      });
+      setToast({ kind: "error", text: "יש להוסיף מספר הקצאה לפני שליחה." });
+      focusAllocationSection();
       return;
     }
     const docLabel = DOCUMENT_TYPE_LABELS[doc.type];
@@ -522,7 +558,11 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
           <button
             onClick={() => handleResend(false)}
             disabled={sending || !client?.email || allocationGate}
-            className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-white border border-orange-200 text-stone-800 hover:bg-orange-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className={`inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed ${
+              emailIsPrimary
+                ? "pgbtn-primary"
+                : "bg-white border border-orange-200 text-stone-800 hover:bg-orange-50"
+            }`}
             title={
               allocationGate
                 ? "חסר מספר הקצאה: אסור לשלוח חשבונית מס מבלעדיו"
@@ -573,7 +613,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
           <button
             onClick={handleDownloadPdf}
             disabled={downloadingPdf}
-            className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-orange-500 border border-orange-600 text-white hover:bg-orange-600 disabled:opacity-60 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-white border border-orange-200 text-stone-800 hover:bg-orange-50 disabled:opacity-50 disabled:cursor-not-allowed"
             title="הורד את המסמך כקובץ PDF"
             aria-label="הורד את המסמך כקובץ PDF"
           >
@@ -594,8 +634,8 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
               row above; on phones we collapse the secondary actions
               (Duplicate / Copy link / WhatsApp / Reminder / Print /
               Delete) into a "⋯" popover so the row stays a single line
-              with just the three primary actions: Convert/MarkPaid,
-              Mail, Download PDF. */}
+              with just the three actions that stay inline at every width:
+              Convert/MarkPaid, Mail, Download PDF. */}
           <div className="relative sm:hidden" ref={moreRef}>
             <button
               onClick={() => setMoreOpen((v) => !v)}
@@ -700,8 +740,21 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
       {/* The allocation-number step comes FIRST when a number is still needed:
           it is what the user must do next, and burying it under the delivery /
           payment cards is how people ended up sending nothing. It self-hides
-          for every document that doesn't need a number. */}
-      <AllocationNumberSection doc={doc} customerTaxId={customerTaxId} />
+          for every document that doesn't need a number.
+
+          Wrapped as a focus + scroll target: right after a save that needs a
+          number (?needsAllocation=1) and whenever a blocked send button is
+          clicked, the page scrolls here, focuses it, and rings it gold for a
+          couple of seconds instead of just telling the user to go find it. */}
+      <div
+        ref={allocationSectionRef}
+        tabIndex={-1}
+        className={`scroll-mt-20 rounded-2xl outline-none ${
+          allocationRingActive ? "allocation-arrival-ring" : ""
+        }`}
+      >
+        <AllocationNumberSection doc={doc} customerTaxId={customerTaxId} />
+      </div>
 
       {doc.type === "quote" && doc.approvedAt && (
         <div className="no-print card-soft p-4 flex items-start gap-3 max-w-[210mm] mx-auto bg-emerald-50 border-emerald-200">

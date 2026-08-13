@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Landmark, ShieldCheck, Loader2, Info } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import {
@@ -10,7 +10,6 @@ import {
   formatThreshold,
   normalizeCustomerVatNumber,
 } from "@/lib/tax-authority";
-import { AllocationSteps } from "@/components/allocation-steps";
 import type { DocumentType, InvoiceDocument } from "@/lib/types";
 
 interface Props {
@@ -23,17 +22,27 @@ interface Props {
   /** Buyer's business/VAT number. Absent/empty ⇒ private customer (B2C),
    *  which never needs an allocation number. */
   customerTaxId?: string;
-  /** Manually-entered allocation number (controlled by the editor). */
-  allocationNumber?: string;
-  onAllocationNumberChange?: (value: string) => void;
+  /** Shared status from useTaxAuthorityStatus(), fetched ONCE by the editor
+   *  and passed down here (and to the end-of-form next-step card), so the
+   *  two can never double-fetch or disagree for a beat. */
+  businessType: string | null;
+  connected: boolean;
+  loaded: boolean;
 }
 
 /**
- * Prominent, in-editor call-to-action shown WHILE writing a tax invoice that
- * will need a חשבונית ישראל allocation number. Surfaces the connect / status
- * right where the user is, instead of buried in settings; the allocation flow
- * was hard to find. Self-hides for עוסק פטור and for documents under the
- * threshold (where no allocation number is required).
+ * The ONE-TIME PREREQUISITE, kept at the top of the editor: connecting to
+ * חשבונית ישראל is an OAuth redirect off the page, so it must happen before
+ * (or independent of) filling the rest of the form. Everything else about the
+ * allocation-number flow - the 3-step walkthrough and the manual number field
+ * - moved to <AllocationNextStepCard>, right where the form ends, because
+ * that's the moment the user actually needs it.
+ *
+ * Three states:
+ *   - Not connected + doc needs a number → the gold CTA card (connect button).
+ *   - Connected + doc needs a number → ONE slim status line, no card: the
+ *     prerequisite is already satisfied, so there's nothing to act on here.
+ *   - Doc does not need a number → a quiet reassurance note (unchanged).
  *
  * PALETTE. Gold, like the rest of the app - NOT a חשבונית ישראל blue. The card
  * and the medallion use the coral utilities app-skin.css re-tints to the gold
@@ -47,38 +56,11 @@ export function AllocationConnectBanner({
   subtotalIls,
   date,
   customerTaxId,
-  allocationNumber = "",
-  onAllocationNumberChange,
+  businessType,
+  connected,
+  loaded,
 }: Props) {
-  const [businessType, setBusinessType] = useState<string | null>(null);
-  const [connected, setConnected] = useState(false);
-  const [loaded, setLoaded] = useState(false);
   const [connecting, setConnecting] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) return;
-        const res = await fetch("/api/tax-authority/status", {
-          headers: { Authorization: `Bearer ${session.access_token}` },
-        });
-        const d = await res.json();
-        if (!cancelled && d.ok) {
-          setBusinessType(d.businessType);
-          setConnected(Boolean(d.connected));
-        }
-      } catch {
-        /* status is best-effort; the banner simply stays hidden on failure */
-      } finally {
-        if (!cancelled) setLoaded(true);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   // Allocation numbers apply only to VAT-charging businesses (עוסק מורשה / חברה).
   if (!loaded || businessType === "exempt" || businessType === null) return null;
@@ -151,66 +133,25 @@ export function AllocationConnectBanner({
     setConnecting(false);
   }
 
-  // The "מספר הקצאה" slot, always rendered when this document needs a number,
-  // so the user has a fixed place for it and a reminder that it's still missing.
-  // The number is NOT fetched on save; the user asks for it with one click on
-  // the document page right after saving, or types one they already received.
-  const hasNumber = allocationNumber.trim().length > 0;
-  const allocField = (
-    <div className="mt-3 pt-3 border-t border-stone-200/70">
-      <label className="text-xs font-semibold text-stone-700 mb-1 block">
-        מספר הקצאה (לא חובה למלא עכשיו)
-      </label>
-      <input
-        type="text"
-        inputMode="numeric"
-        dir="ltr"
-        value={allocationNumber}
-        onChange={(e) => onAllocationNumberChange?.(e.target.value.replace(/[^\d]/g, ""))}
-        placeholder="טרם התקבל"
-        className="input-warm text-left"
-      />
-      <p className="text-xs text-stone-600 mt-1 leading-relaxed">
-        {hasNumber
-          ? "המספר שהקלדת יודפס על המסמך."
-          : connected
-            ? "אפשר להשאיר ריק ולבקש את המספר מיד אחרי השמירה. אם כבר קיבלת מספר מרשות המסים, הקלד אותו כאן."
-            : "אם כבר קיבלת מספר מרשות המסים, הקלד אותו כאן. אחרת חבר את העסק, ותוכל לבקש אותו מיד אחרי השמירה."}
-      </p>
-    </div>
-  );
-
   const thresholdLine = (
     <p className="text-xs text-stone-600 mt-1 leading-relaxed">
       {allocationThresholdSentence(date ? new Date(date) : new Date())}
     </p>
   );
 
+  // Prerequisite already satisfied: no card, just a slim one-line status so
+  // the eye moves straight to the form instead of stopping on a CTA that has
+  // nothing left to ask. The actual next step (asking for the number) is
+  // <AllocationNextStepCard>, at the end of the form.
   if (connected) {
     return (
-      <div className="rounded-2xl border border-orange-200 bg-gradient-to-l from-orange-50/80 to-amber-50/50 px-4 py-3.5">
-        <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center flex-shrink-0 shadow-sm">
-            <Landmark className="w-5 h-5" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-stone-900">
-              למסמך הזה צריך מספר הקצאה מרשות המסים
-            </p>
-            {thresholdLine}
-            <p className="text-xs text-stone-700 mt-1.5 leading-relaxed">
-              <span className="inline-flex items-center gap-1 font-semibold text-emerald-800">
-                <ShieldCheck className="w-3.5 h-3.5" />
-                העסק שלך מחובר לחשבונית ישראל.
-              </span>{" "}
-              המספר לא מגיע מעצמו: קודם שומרים את המסמך, ואז מבקשים אותו בלחיצה אחת. רק אחרי
-              שהמספר מתקבל מותר לשלוח את המסמך ללקוח.
-            </p>
-          </div>
-        </div>
-        <AllocationSteps current={1} className="mt-3" />
-        {allocField}
-      </div>
+      <p className="text-xs text-stone-700 flex items-center gap-1.5">
+        <ShieldCheck className="w-3.5 h-3.5 text-emerald-700 flex-shrink-0" />
+        <span>
+          <span className="font-semibold text-emerald-800">מחובר לחשבונית ישראל.</span> מספר
+          ההקצאה יתבקש בלחיצה אחת אחרי השמירה.
+        </span>
+      </p>
     );
   }
 
@@ -244,8 +185,6 @@ export function AllocationConnectBanner({
           </button>
         </div>
       </div>
-      <AllocationSteps current={1} className="mt-3" />
-      {allocField}
     </div>
   );
 }

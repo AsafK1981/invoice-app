@@ -39,6 +39,26 @@ const COMMON_CATEGORIES = [
   "אחר",
 ];
 
+// Remembers the last category the user actually saved, so a brand-new
+// expense defaults to what this user tends to log instead of always
+// resetting to "תוכנה" (the first item in COMMON_CATEGORIES). Only read for
+// NEW expenses (see the `open` effect below) - editing an existing expense
+// always keeps that expense's own category, and an OCR-detected category on
+// a scanned prefill always wins over this memory.
+const LAST_CATEGORY_KEY = "invoice-app:last-expense-category";
+
+function getLastUsedCategory(): string {
+  if (typeof window === "undefined") return COMMON_CATEGORIES[0];
+  const stored = window.localStorage.getItem(LAST_CATEGORY_KEY);
+  return stored && COMMON_CATEGORIES.includes(stored) ? stored : COMMON_CATEGORIES[0];
+}
+
+function rememberCategory(category: string) {
+  if (typeof window === "undefined") return;
+  if (!COMMON_CATEGORIES.includes(category)) return;
+  window.localStorage.setItem(LAST_CATEGORY_KEY, category);
+}
+
 export function ExpenseFormModal({ open, onClose, expense, prefill }: Props) {
   const today = todayInIsrael();
   const { business } = useBusiness();
@@ -48,7 +68,7 @@ export function ExpenseFormModal({ open, onClose, expense, prefill }: Props) {
 
   const [form, setForm] = useState({
     date: today,
-    category: COMMON_CATEGORIES[0],
+    category: getLastUsedCategory(),
     supplier: "",
     amount: "",
     vatAmount: "",
@@ -88,7 +108,7 @@ export function ExpenseFormModal({ open, onClose, expense, prefill }: Props) {
     } else {
       setForm({
         date: today,
-        category: COMMON_CATEGORIES[0],
+        category: getLastUsedCategory(),
         supplier: "",
         amount: "",
         vatAmount: "",
@@ -119,6 +139,7 @@ export function ExpenseFormModal({ open, onClose, expense, prefill }: Props) {
     };
     setSaving(true);
     await expenseStore.save(record);
+    rememberCategory(record.category);
     setSaving(false);
     setJustSaved(true);
     setTimeout(onClose, 900);

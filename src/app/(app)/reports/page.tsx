@@ -174,98 +174,25 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between flex-wrap gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-stone-900 flex items-center gap-3">
-            <span className="w-11 h-11 rounded-2xl fgrad fgrad-emerald flex items-center justify-center shadow-sm">
-              <TrendingUp className="w-5 h-5 text-white" />
-            </span>
-            דו״חות
-          </h1>
-          <p className="text-sm text-stone-700 mt-2 mr-14">סיכום פיננסי לפי תקופה</p>
-        </div>
-        {/* Seven quiet chores, none of them THE page CTA, so none wears
-            `.pgbtn-primary` (see "PAGE ACTION ROW" in app-skin.css). They used
-            to each carry a different border colour (orange/purple/fuchsia/
-            emerald/teal/sky/rose) and two different heights, which read as
-            seven unrelated widgets rather than one row of report exports.
-            The period selector used to live here too, but it drives the
-            three summary cards below, not these exports - it now sits with
-            them inside .rp-period-group instead. */}
-        <div className="pgactions">
-          <button
-            onClick={() => exportDocuments(filteredDocs, exportSuffix)}
-            disabled={filteredDocs.length === 0}
-            className="pgbtn pgbtn-quiet"
-          >
-            <Download aria-hidden="true" />
-            ייצוא מסמכים ({filteredDocs.length})
-          </button>
-          <button
-            onClick={() => exportExpenses(filteredExpenses, exportSuffix)}
-            disabled={filteredExpenses.length === 0}
-            className="pgbtn pgbtn-quiet"
-          >
-            <Download aria-hidden="true" />
-            ייצוא הוצאות ({filteredExpenses.length})
-          </button>
-          <button
-            onClick={() => downloadUniformStructure(false)}
-            title="ייצוא קבצי מבנה אחיד (OPENFORMAT 1.31) מהנתונים האמיתיים, לאודיט"
-            className="pgbtn pgbtn-quiet"
-          >
-            <FileArchive aria-hidden="true" />
-            מבנה אחיד {selectedYear ? `(${selectedYear})` : "(שנה נוכחית)"}
-          </button>
-          <button
-            onClick={() => downloadUniformStructure(true)}
-            title="ייצוא קבצי מבנה אחיד דוגמה (2500+ רשומות סינתטיות), לסימולטור רשות המסים לצורך רישום במרשם תוכנות"
-            className="pgbtn pgbtn-quiet"
-          >
-            <FileArchive aria-hidden="true" />
-            מבנה אחיד: דוגמה ({selectedYear || "שנה"})
-          </button>
-          {selectedYear && (
-            <Link
-              href={`/reports/journal/${selectedYear}`}
-              title="יומן הוצאות והכנסות שנתי, מסמך מעוצב להדפסה / שמירה כ-PDF"
-              className="pgbtn pgbtn-quiet"
-            >
-              <BookOpen aria-hidden="true" />
-              יומן שנתי ({selectedYear})
-            </Link>
-          )}
-          <Link
-            href="/reports/tax-projection"
-            title="צפי מס + ביטוח לאומי לסוף השנה, דע מראש כמה לשמור בצד"
-            className="pgbtn pgbtn-quiet"
-          >
-            <Calculator aria-hidden="true" />
-            צפי מס שנתי
-          </Link>
-          <Link
-            href="/reports/invoices-period"
-            title="דוח חשבוניות תקופתי (חודש / חודשיים / 3 / חצי שנה): ת.ז/ח.פ, מספר, תאריך, סכום לפני ואחרי מע״מ, מספר הקצאה"
-            className="pgbtn pgbtn-quiet"
-          >
-            <FileSpreadsheet aria-hidden="true" />
-            דוח חשבוניות תקופתי
-          </Link>
-          <Link
-            href="/reports/custom"
-            title="דוח מותאם: שלב מסננים חופשי (תאריך, הקצאה, לקוח, סוג מסמך, סטטוס) והפק כל חתך"
-            className="pgbtn pgbtn-quiet"
-          >
-            <SlidersHorizontal aria-hidden="true" />
-            דוח מותאם
-          </Link>
-        </div>
+      <div>
+        <h1 className="text-3xl font-bold text-stone-900 flex items-center gap-3">
+          <span className="w-11 h-11 rounded-2xl fgrad fgrad-emerald flex items-center justify-center shadow-sm">
+            <TrendingUp className="w-5 h-5 text-white" />
+          </span>
+          דו״חות
+        </h1>
+        <p className="text-sm text-stone-700 mt-2 mr-14">סיכום פיננסי לפי תקופה</p>
       </div>
 
-      {/* The period selector drives these three cards, so instead of a
-          separate control that merely shares a border color with them, they
-          all sit inside one gold-tinted panel - proximity + enclosure reads
-          as "these are linked" before you even process the labels. */}
+      {/* The period control precedes everything it scopes: the three summary
+          cards right below it AND the export row further down (every export
+          there reads filteredDocs/filteredExpenses/selectedYear, all derived
+          from `period`). It used to render after the export row, which meant
+          a correct export was scroll down, set period, scroll back up. The
+          period selector drives the three cards, so instead of a separate
+          control that merely shares a border color with them, they all sit
+          inside one gold-tinted panel - proximity + enclosure reads as
+          "these are linked" before you even process the labels. */}
       <div className="rp-period-group">
         <div className="rp-period-row">
           <span className="rp-period-label">מסונן לפי תקופה — {currentPeriodLabel}</span>
@@ -301,6 +228,81 @@ export default function ReportsPage() {
             );
           })}
         </div>
+      </div>
+
+      {/* Seven quiet chores, none of them THE page CTA, so none wears
+          `.pgbtn-primary` (see "PAGE ACTION ROW" in app-skin.css). They used
+          to each carry a different border colour (orange/purple/fuchsia/
+          emerald/teal/sky/rose) and two different heights, which read as
+          seven unrelated widgets rather than one row of report exports. Every
+          one of them is scoped by the period selector above. */}
+      <div className="pgactions">
+        <button
+          onClick={() => exportDocuments(filteredDocs, exportSuffix)}
+          disabled={filteredDocs.length === 0}
+          className="pgbtn pgbtn-quiet"
+        >
+          <Download aria-hidden="true" />
+          ייצוא מסמכים ({filteredDocs.length})
+        </button>
+        <button
+          onClick={() => exportExpenses(filteredExpenses, exportSuffix)}
+          disabled={filteredExpenses.length === 0}
+          className="pgbtn pgbtn-quiet"
+        >
+          <Download aria-hidden="true" />
+          ייצוא הוצאות ({filteredExpenses.length})
+        </button>
+        <button
+          onClick={() => downloadUniformStructure(false)}
+          title="ייצוא קבצי מבנה אחיד (OPENFORMAT 1.31) מהנתונים האמיתיים, לאודיט"
+          className="pgbtn pgbtn-quiet"
+        >
+          <FileArchive aria-hidden="true" />
+          מבנה אחיד {selectedYear ? `(${selectedYear})` : "(שנה נוכחית)"}
+        </button>
+        <button
+          onClick={() => downloadUniformStructure(true)}
+          title="ייצוא קבצי מבנה אחיד דוגמה (2500+ רשומות סינתטיות), לסימולטור רשות המסים לצורך רישום במרשם תוכנות"
+          className="pgbtn pgbtn-quiet"
+        >
+          <FileArchive aria-hidden="true" />
+          מבנה אחיד: דוגמה ({selectedYear || "שנה"})
+        </button>
+        {selectedYear && (
+          <Link
+            href={`/reports/journal/${selectedYear}`}
+            title="יומן הוצאות והכנסות שנתי, מסמך מעוצב להדפסה / שמירה כ-PDF"
+            className="pgbtn pgbtn-quiet"
+          >
+            <BookOpen aria-hidden="true" />
+            יומן שנתי ({selectedYear})
+          </Link>
+        )}
+        <Link
+          href="/reports/tax-projection"
+          title="צפי מס + ביטוח לאומי לסוף השנה, דע מראש כמה לשמור בצד"
+          className="pgbtn pgbtn-quiet"
+        >
+          <Calculator aria-hidden="true" />
+          צפי מס שנתי
+        </Link>
+        <Link
+          href="/reports/invoices-period"
+          title="דוח חשבוניות תקופתי (חודש / חודשיים / 3 / חצי שנה): ת.ז/ח.פ, מספר, תאריך, סכום לפני ואחרי מע״מ, מספר הקצאה"
+          className="pgbtn pgbtn-quiet"
+        >
+          <FileSpreadsheet aria-hidden="true" />
+          דוח חשבוניות תקופתי
+        </Link>
+        <Link
+          href="/reports/custom"
+          title="דוח מותאם: שלב מסננים חופשי (תאריך, הקצאה, לקוח, סוג מסמך, סטטוס) והפק כל חתך"
+          className="pgbtn pgbtn-quiet"
+        >
+          <SlidersHorizontal aria-hidden="true" />
+          דוח מותאם
+        </Link>
       </div>
 
       <AgingReport documents={documents} />

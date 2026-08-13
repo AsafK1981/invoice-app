@@ -219,6 +219,34 @@ export function requiresAllocationNumber(
   return amountIls >= allocationRequiredThreshold(docDate);
 }
 
+/**
+ * Should the document page scroll to and focus the allocation-number block
+ * on THIS page load? True only right after a save that will need a number:
+ * the editor's handleSave appended `?needsAllocation=1` to the redirect, the
+ * document still legally requires a number, and one hasn't been entered yet.
+ * False for a stale/refreshed/back-navigated URL after the number was
+ * already obtained, or for any doc that never needed one in the first place.
+ *
+ * Kept pure (no React, no DOM) so the arrival decision is unit-testable
+ * without mounting the page.
+ *
+ * @param doc            the loaded document.
+ * @param customerTaxId  resolved buyer business/VAT number (doc's own or the
+ *        linked client's), same value the page already computes.
+ * @param param          the raw `needsAllocation` query-string value, or
+ *        null/undefined when absent.
+ */
+export function shouldFocusAllocationOnArrival(
+  doc: InvoiceDocument,
+  customerTaxId: string | null | undefined,
+  param: string | null | undefined,
+): boolean {
+  if (param !== "1") return false;
+  if (!requiresAllocationNumber(doc, customerTaxId)) return false;
+  if (doc.allocationNumber) return false;
+  return true;
+}
+
 /* ------------------------------------------------------------------ */
 /* OAuth flow                                                          */
 /* ------------------------------------------------------------------ */

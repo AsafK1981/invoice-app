@@ -22,7 +22,6 @@ import {
   X,
   Plus,
   CreditCard,
-  ChevronDown,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
 import { sendReceiptEmail } from "@/lib/email";
@@ -37,6 +36,9 @@ import { CURRENCIES, formatMoney } from "@/lib/currencies";
 import { ilsEquivalents } from "@/lib/exchange-rate";
 import { todayInIsrael } from "@/lib/date";
 import { AllocationConnectBanner } from "@/components/allocation-connect-banner";
+import { AllocationNextStepCard } from "@/components/allocation-next-step-card";
+import { Expander } from "@/components/expander";
+import { useTaxAuthorityStatus } from "@/lib/use-tax-authority-status";
 import { getClientDefaults } from "@/lib/client-defaults";
 import {
   type Business,
@@ -175,6 +177,10 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   const [emailVerifyModalOpen, setEmailVerifyModalOpen] = useState(false);
 
   const [allocationNumber, setAllocationNumber] = useState<string>("");
+  // Fetched ONCE here and handed to both the top-of-form connect banner and
+  // the end-of-form next-step card, so they read the exact same connect
+  // state and can never disagree for a beat (see use-tax-authority-status.ts).
+  const taxAuthorityStatus = useTaxAuthorityStatus();
   // The document's number, shown while drafting and editable before finalizing.
   // Defaults to the next number for this type; the real number is reserved on save.
   const [docNumber, setDocNumber] = useState<string>("");
@@ -816,17 +822,23 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   const allocCustomerTaxId =
     (adhocMode ? adhocTaxId.trim() : selectedClient?.taxId) || undefined;
   const allocSubtotalIls = currency === "ILS" ? subtotal : round2(subtotal * rate);
-  const willNeedAllocation =
-    !allocationNumber.trim() &&
-    requiresAllocationNumber(
-      {
-        type: documentType,
-        date,
-        subtotal: allocSubtotalIls,
-        subtotalIls: allocSubtotalIls,
-      } as Pick<InvoiceDocument, "type" | "date" | "subtotal" | "subtotalIls"> as InvoiceDocument,
-      allocCustomerTaxId,
-    );
+  // Does the DOCUMENT ITSELF need an allocation number (type + date-aware
+  // threshold + a BUSINESS customer), independent of whether one has already
+  // been typed into the manual-entry disclosure. Used to decide whether the
+  // end-of-form next-step card renders at all: gating that on willNeedAllocation
+  // below (which subtracts a typed-in number) would make the card - including
+  // its OWN input - vanish out from under the user's cursor the instant they
+  // type the first digit into it.
+  const docNeedsAllocationNumber = requiresAllocationNumber(
+    {
+      type: documentType,
+      date,
+      subtotal: allocSubtotalIls,
+      subtotalIls: allocSubtotalIls,
+    } as Pick<InvoiceDocument, "type" | "date" | "subtotal" | "subtotalIls"> as InvoiceDocument,
+    allocCustomerTaxId,
+  );
+  const willNeedAllocation = !allocationNumber.trim() && docNeedsAllocationNumber;
   // The document may not go out to the customer before its allocation number
   // exists (same rule the document page enforces on its send buttons). So the
   // "email it on save" option is held back rather than silently emailing a tax
@@ -1160,8 +1172,13 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
       }
 
       // Give the user a beat longer to read the reconcile warning before we
-      // navigate away.
-      setTimeout(() => router.push(`/documents/${doc.id}`), linkFailed ? 3500 : 1000);
+      // navigate away. When this doc still needs its allocation number, carry
+      // that across the navigation so the document page can scroll straight
+      // to the next-step card instead of leaving the user to find it.
+      const nextUrl = willNeedAllocation
+        ? `/documents/${doc.id}?needsAllocation=1`
+        : `/documents/${doc.id}`;
+      setTimeout(() => router.push(nextUrl), linkFailed ? 3500 : 1000);
     } catch (err) {
       const message = err instanceof Error ? err.message : "שגיאה לא ידועה";
       setToast({ kind: "error", text: `שמירת המסמך נכשלה: ${message}` });
@@ -1311,8 +1328,9 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
           subtotalIls={currency === "ILS" ? subtotal : round2(subtotal * rate)}
           date={date}
           customerTaxId={(adhocMode ? adhocTaxId.trim() : selectedClient?.taxId) || undefined}
-          allocationNumber={allocationNumber}
-          onAllocationNumberChange={setAllocationNumber}
+          businessType={taxAuthorityStatus.businessType}
+          connected={taxAuthorityStatus.connected}
+          loaded={taxAuthorityStatus.loaded}
         />
       </div>
     )}
@@ -2167,6 +2185,22 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
           )}
         </EditorCard>
 
+        {/* The next step, right where the work ends: fills in for the old
+            top-of-form banner's walkthrough + manual field, moved down to
+            the exact moment the user asked for ("ברגע שסיימת את המסמך").
+            Gated on docNeedsAllocationNumber (not willNeedAllocation) so
+            typing into its own manual-entry disclosure can't make it - and
+            the input the user is mid-typing into - vanish; and on `loaded`
+            so it doesn't pop in a beat after the connect banner above it
+            has already decided whether to render. */}
+        {docNeedsAllocationNumber && taxAuthorityStatus.loaded && (
+          <AllocationNextStepCard
+            allocationNumber={allocationNumber}
+            onAllocationNumberChange={setAllocationNumber}
+            connected={taxAuthorityStatus.connected}
+          />
+        )}
+
         {/* Breathing room so the fixed mobile action bar never sits on top of
             the last field. Desktop keeps its action in the sticky aside. */}
         <div className="lg:hidden h-24" aria-hidden />
@@ -2382,38 +2416,6 @@ function EditorCard({
         )}
       </div>
       <div className="p-5">{children}</div>
-    </div>
-  );
-}
-
-/** A quiet disclosure for advanced/rarely-used controls. */
-function Expander({
-  label,
-  open,
-  onToggle,
-  children,
-}: {
-  label: string;
-  open: boolean;
-  onToggle: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="mt-3">
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-expanded={open}
-        className="inline-flex items-center gap-1.5 min-h-[44px] text-[13px] font-semibold text-stone-700 hover:text-orange-700"
-      >
-        <ChevronDown
-          className={`w-4 h-4 transition-transform ${open ? "rotate-180" : ""}`}
-        />
-        {label}
-      </button>
-      {open && (
-        <div className="mt-3 pt-3 border-t border-dashed border-orange-200">{children}</div>
-      )}
     </div>
   );
 }

@@ -126,7 +126,8 @@ export default function SettingsPage() {
       </div>
 
       <div
-        className={`card-soft p-6 ${
+        id="payment-details"
+        className={`card-soft p-6 scroll-mt-6 ${
           bankParts.length === 0 && !business.paymentNotes ? "border-rose-300 bg-rose-50/30" : ""
         }`}
       >

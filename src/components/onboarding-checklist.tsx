@@ -46,7 +46,7 @@ export function OnboardingChecklist({ business, clients, products, documents }: 
       label: "פרטי תשלום",
       desc: "בנק / סניף / חשבון או Bit, כדי שלקוחות יידעו איך לשלם",
       cta: "הוסף פרטי בנק",
-      href: "/settings",
+      href: "/settings#payment-details",
     },
     {
       id: "client",

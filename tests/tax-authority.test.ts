@@ -4,6 +4,7 @@ import {
   allocationRequiredThreshold,
   requiresAllocationNumber,
   hebrewForItaCode,
+  shouldFocusAllocationOnArrival,
 } from "@/lib/tax-authority";
 import type { InvoiceDocument } from "@/lib/types";
 
@@ -22,6 +23,7 @@ function doc(partial: {
   date: string;
   total: number;
   clientTaxId?: string;
+  allocationNumber?: string;
 }): InvoiceDocument {
   return { ...partial, subtotal: partial.total } as unknown as InvoiceDocument;
 }
@@ -163,6 +165,36 @@ describe("hebrewForItaCode: maps ITA error codes to clean Hebrew (no raw JSON)",
 
   it("unknown code + no param falls back to the generic line, no leakage", () => {
     expect(hebrewForItaCode("999")).toBe("הבקשה נדחתה על ידי רשות המסים");
+  });
+});
+
+describe("shouldFocusAllocationOnArrival", () => {
+  const NEEDS_NUMBER = doc({ type: "tax_invoice", date: "2026-06-10", total: 7_000 });
+
+  it("no param → false", () => {
+    expect(shouldFocusAllocationOnArrival(NEEDS_NUMBER, BUSINESS_CUSTOMER, null)).toBe(false);
+    expect(shouldFocusAllocationOnArrival(NEEDS_NUMBER, BUSINESS_CUSTOMER, undefined)).toBe(false);
+  });
+
+  it("requires allocation + no number → true", () => {
+    expect(shouldFocusAllocationOnArrival(NEEDS_NUMBER, BUSINESS_CUSTOMER, "1")).toBe(true);
+  });
+
+  it("already has a number → false", () => {
+    const withNumber = doc({
+      type: "tax_invoice",
+      date: "2026-06-10",
+      total: 7_000,
+      allocationNumber: "123456789",
+    });
+    expect(shouldFocusAllocationOnArrival(withNumber, BUSINESS_CUSTOMER, "1")).toBe(false);
+  });
+
+  it("doc does not require one → false", () => {
+    const underThreshold = doc({ type: "tax_invoice", date: "2026-06-10", total: 100 });
+    expect(shouldFocusAllocationOnArrival(underThreshold, BUSINESS_CUSTOMER, "1")).toBe(false);
+    // Private customer, over threshold: also never required.
+    expect(shouldFocusAllocationOnArrival(NEEDS_NUMBER, undefined, "1")).toBe(false);
   });
 });
 
