@@ -12,7 +12,6 @@
 // rather than shown dead (see useSpeechRecognition's `supported` flag).
 
 import { useEffect, useRef, useState } from "react";
-import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";
 import { Sparkles, X, Send, FileText, Paperclip, Table2, MessageCircle, Mic } from "lucide-react";
 import { supabase } from "@/lib/supabase";
@@ -48,7 +47,6 @@ const SUGGESTIONS = [
 ];
 
 export function AssistantWidget() {
-  const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
@@ -65,11 +63,6 @@ export function AssistantWidget() {
   // What was already typed when dictation started, so speech APPENDS to it
   // instead of overwriting it.
   const dictationBaseRef = useRef("");
-
-  // InstallPrompt sits bottom-right, and flips to bottom-left over the single
-  // document paper. Mirror it so the two never overlap.
-  const overDocumentPaper =
-    /^\/documents\/[^/]+$/.test(pathname || "") && !/^\/documents\/new/.test(pathname || "");
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -241,13 +234,12 @@ export function AssistantWidget() {
     }
   }
 
-  // Both `left` and `right` have to be set in the same breakpoint: the mobile
-  // rules pin the panel to both edges, so overriding only one of them on lg
-  // leaves the other stuck at 0. Pairing `lg:left-6` with a bare `lg:left-auto`
-  // is worse still - two utilities for the same property, resolved by
-  // stylesheet order rather than class order, which silently dropped the panel
-  // into RTL static flow on top of the sidebar.
-  const side = overDocumentPaper ? "lg:right-6 lg:left-auto" : "lg:left-6 lg:right-auto";
+  // Always bottom-left, on every route (Asaf, 2026-08-14: the launcher must
+  // never change corners). InstallPrompt keeps bottom-right so they can't
+  // overlap. Both `left` and `right` have to be set in the same breakpoint:
+  // the mobile rules pin the panel to both edges, so overriding only one of
+  // them on lg leaves the other stuck at 0.
+  const side = "lg:left-6 lg:right-auto";
 
   if (!open) {
     // A bare sparkle circle does not say "assistant" to anyone who has not
