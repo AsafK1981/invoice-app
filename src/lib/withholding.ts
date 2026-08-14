@@ -15,6 +15,25 @@ import { round2 } from "@/lib/vat";
  */
 
 /**
+ * The default rate percentage shown when the withholding panel is opened
+ * fresh, before the user has typed anything. 35% is the standard rate for a
+ * supplier with no אישור ניכוי מס במקור on file.
+ */
+export const DEFAULT_WITHHOLDING_RATE_PERCENT = "35";
+
+/**
+ * The rate string to show right after the withholding panel is expanded.
+ *
+ * Only fills in the default when the rate field is genuinely empty. Any
+ * existing value - from a resumed draft, a duplicated/converted document, or
+ * a value the user already typed - is returned unchanged, so opening the
+ * panel never silently overwrites a rate that came from somewhere else.
+ */
+export function withholdingRateOnPanelOpen(currentRateInput: string): string {
+  return currentRateInput.trim() === "" ? DEFAULT_WITHHOLDING_RATE_PERCENT : currentRateInput;
+}
+
+/**
  * The suggested withholding amount for a document total and a rate in percent,
  * rounded to the NEAREST WHOLE SHEKEL (0.5 rounds up).
  *

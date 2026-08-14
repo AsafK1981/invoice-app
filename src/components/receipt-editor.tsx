@@ -30,7 +30,11 @@ import { createDocument, getNextDocumentNumber, linkConvertedDocument, markDocum
 import { getBusinessId, isPlaceholderBusinessName, isPlaceholderBusinessTaxId } from "@/lib/business-init";
 import { parseEmails, joinEmails, isValidEmail } from "@/lib/emails";
 import { getVatRate, computeAmounts, round2, canIssueTaxInvoices, type VatMode } from "@/lib/vat";
-import { suggestedWithholding, netAfterWithholding } from "@/lib/withholding";
+import {
+  suggestedWithholding,
+  netAfterWithholding,
+  withholdingRateOnPanelOpen,
+} from "@/lib/withholding";
 import { requiresAllocationNumber } from "@/lib/tax-authority";
 import { CURRENCIES, formatMoney } from "@/lib/currencies";
 import { ilsEquivalents } from "@/lib/exchange-rate";
@@ -2196,7 +2200,16 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                 {!showWithholding ? (
                   <button
                     type="button"
-                    onClick={() => setShowWithholding(true)}
+                    onClick={() => {
+                      setShowWithholding(true);
+                      // Prefill the standard 35% rate so the amount + "שולם
+                      // בפועל" calculation is already there for the user to
+                      // approve, instead of a greyed-out placeholder that
+                      // computes nothing. Only when the field is genuinely
+                      // empty - a resumed draft / duplicate / hand-typed rate
+                      // is never touched (see withholdingRateOnPanelOpen).
+                      setWithholdingRateInput((prev) => withholdingRateOnPanelOpen(prev));
+                    }}
                     className="inline-flex items-center gap-1.5 min-h-[40px] rounded-xl border border-dashed border-orange-300 text-orange-700 hover:bg-orange-50 px-3.5 py-2 text-xs font-semibold"
                   >
                     <Plus className="w-4 h-4" />
@@ -2222,46 +2235,77 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                     <div className="grid grid-cols-2 gap-2">
                       <div>
                         <label className="text-xs font-semibold text-stone-700 mb-1 block">
-                          שיעור (%)
+                          שיעור
                         </label>
-                        <input
-                          type="number"
-                          min={0}
-                          max={50}
-                          step="0.01"
-                          value={withholdingRateInput}
-                          onChange={(e) => {
-                            setWithholdingRateInput(e.target.value);
-                            setWithholdingTouched(false);
-                          }}
-                          className="input-warm tabular-nums"
-                          dir="ltr"
-                          placeholder="35"
-                        />
+                        <div className="relative">
+                          <input
+                            type="number"
+                            min={0}
+                            max={50}
+                            step="0.01"
+                            value={withholdingRateInput}
+                            onChange={(e) => {
+                              setWithholdingRateInput(e.target.value);
+                              setWithholdingTouched(false);
+                            }}
+                            className="input-warm tabular-nums"
+                            style={{ paddingRight: "3rem" }}
+                            dir="ltr"
+                            placeholder="35"
+                            aria-label="שיעור ניכוי מס במקור, אחוזים"
+                          />
+                          <span
+                            className="pointer-events-none absolute inset-y-0 flex items-center text-xs font-medium text-stone-400"
+                            style={{ right: "1.75rem" }}
+                            aria-hidden="true"
+                          >
+                            %
+                          </span>
+                        </div>
                       </div>
                       <div>
                         <label className="text-xs font-semibold text-stone-700 mb-1 block">
                           סכום הניכוי
                         </label>
-                        <input
-                          type="number"
-                          min={0}
-                          step="0.01"
-                          value={withholdingAmountInput}
-                          onChange={(e) => {
-                            setWithholdingAmountInput(e.target.value);
-                            setWithholdingTouched(true);
-                          }}
-                          className="input-warm tabular-nums"
-                          dir="ltr"
-                        />
+                        <div className="relative">
+                          <input
+                            type="number"
+                            min={0}
+                            step="0.01"
+                            value={withholdingAmountInput}
+                            onChange={(e) => {
+                              setWithholdingAmountInput(e.target.value);
+                              setWithholdingTouched(true);
+                            }}
+                            className="input-warm tabular-nums"
+                            style={{ paddingRight: "3rem" }}
+                            dir="ltr"
+                            aria-label="סכום הניכוי, שקלים"
+                          />
+                          <span
+                            className="pointer-events-none absolute inset-y-0 flex items-center text-xs font-medium text-stone-400"
+                            style={{ right: "1.75rem" }}
+                            aria-hidden="true"
+                          >
+                            ₪
+                          </span>
+                        </div>
+                        {withholdingEntered && (
+                          <p className="text-[11px] text-stone-500 mt-1 leading-relaxed">
+                            {total <= 0
+                              ? "הזינו סכום למסמך והחישוב יופיע כאן."
+                              : withholdingTouched
+                                ? "סכום שהוזן ידנית."
+                                : "מחושב אוטומטית לפי השיעור. אפשר לשנות."}
+                          </p>
+                        )}
                       </div>
                     </div>
                     <p className="text-xs text-stone-600">
                       מחושב על הסכום כולל מע״מ ומעוגל לשקל השלם הקרוב. אפשר לשנות את הסכום ידנית.
                       סכום המסמך אינו משתנה, זהו פיצול של התשלום.
                     </p>
-                    {withholdingEntered && withholdingValid && withholdingAmount > 0 && (
+                    {total > 0 && withholdingEntered && withholdingValid && withholdingAmount > 0 && (
                       <p className="text-sm font-semibold text-stone-800">
                         שולם בפועל: {formatCurrency(netAfterWithholding(total, withholdingAmount))}
                       </p>

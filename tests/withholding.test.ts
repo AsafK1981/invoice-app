@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { suggestedWithholding, netAfterWithholding } from "@/lib/withholding";
+import {
+  suggestedWithholding,
+  netAfterWithholding,
+  withholdingRateOnPanelOpen,
+  DEFAULT_WITHHOLDING_RATE_PERCENT,
+} from "@/lib/withholding";
 import { round2 } from "@/lib/vat";
 
 describe("suggestedWithholding: rounds to the nearest whole shekel", () => {
@@ -93,5 +98,22 @@ describe("netAfterWithholding: the reconciliation invariant", () => {
   it("treats a missing withholding amount as zero", () => {
     expect(netAfterWithholding(500, 0)).toBe(500);
     expect(netAfterWithholding(500, NaN)).toBe(500);
+  });
+});
+
+describe("withholdingRateOnPanelOpen: the panel's fresh-open default", () => {
+  it("fills in the standard 35% when the field is genuinely empty", () => {
+    expect(withholdingRateOnPanelOpen("")).toBe("35");
+    expect(withholdingRateOnPanelOpen("")).toBe(DEFAULT_WITHHOLDING_RATE_PERCENT);
+  });
+
+  it("treats whitespace-only input as empty too", () => {
+    expect(withholdingRateOnPanelOpen("   ")).toBe("35");
+  });
+
+  it("never overwrites an existing rate - resumed draft, duplicate, or hand-typed", () => {
+    expect(withholdingRateOnPanelOpen("20")).toBe("20");
+    expect(withholdingRateOnPanelOpen("17.5")).toBe("17.5");
+    expect(withholdingRateOnPanelOpen("0")).toBe("0");
   });
 });
