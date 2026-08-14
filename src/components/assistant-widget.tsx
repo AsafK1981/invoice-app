@@ -17,11 +17,7 @@ import { Sparkles, X, Send, FileText, Paperclip, Table2, MessageCircle, Mic } fr
 import { supabase } from "@/lib/supabase";
 import { saveDraftToServer, DOC_TYPE_ROUTE } from "@/lib/draft-store";
 import { todayInIsrael } from "@/lib/date";
-import {
-  parseAttachmentToCsvText,
-  ATTACHMENT_ACCEPT,
-  type ParsedAttachment,
-} from "@/lib/import-excel-text";
+import type { ParsedAttachment } from "@/lib/import-excel-text";
 import { useSpeechRecognition, appendFinalResult } from "@/lib/use-speech-recognition";
 import type { DocumentType } from "@/lib/types";
 
@@ -45,6 +41,14 @@ const SUGGESTIONS = [
   "תמצא לי את המסמכים האחרונים",
   "מי הלקוח שהכי הכניס לי השנה?",
 ];
+
+// Kept as a local literal (rather than a static import from
+// import-excel-text.ts) so this widget - which renders on every
+// authenticated page via the app layout - doesn't pull the xlsx/papaparse
+// bundle (365KB) into its chunk just for an <input accept> string. The
+// heavy parsing module itself is loaded on demand in pickFile() below.
+// Must stay in sync with ATTACHMENT_ACCEPT in import-excel-text.ts.
+const ATTACHMENT_ACCEPT = ".xlsx,.xls,.csv";
 
 export function AssistantWidget() {
   const router = useRouter();
@@ -109,6 +113,7 @@ export function AssistantWidget() {
     setError("");
     setParsingFile(true);
     try {
+      const { parseAttachmentToCsvText } = await import("@/lib/import-excel-text");
       setAttachment(await parseAttachmentToCsvText(file));
     } catch (err) {
       setAttachment(null);
