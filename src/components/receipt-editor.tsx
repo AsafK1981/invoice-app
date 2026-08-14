@@ -40,6 +40,8 @@ import { AllocationNextStepCard } from "@/components/allocation-next-step-card";
 import { Expander } from "@/components/expander";
 import { useTaxAuthorityStatus } from "@/lib/use-tax-authority-status";
 import { getClientDefaults } from "@/lib/client-defaults";
+import { findMatchingClient, filterClientsByQuery } from "@/lib/client-picker";
+import { clientStore } from "@/lib/client-store";
 import {
   type Business,
   type Client,
@@ -129,6 +131,20 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   const [adhocName, setAdhocName] = useState<string>("");
   const [adhocTaxId, setAdhocTaxId] = useState<string>("");
   const [adhocEmail, setAdhocEmail] = useState<string>("");
+  // "לקוח חדש" (adhoc) mode: whether the typed customer should also be
+  // saved as a real client for next time. Defaults ON - calling the mode
+  // "new client" implies it gets saved, per Asaf's framing.
+  const [saveAsClient, setSaveAsClient] = useState<boolean>(true);
+
+  // "לקוח קיים" (catalog) picker: search box + scrollable list, visible the
+  // moment the mode is selected instead of hidden behind a native <select>
+  // click. Starts expanded unless a client is already chosen (prefill /
+  // convert / draft-resume), per the "no empty search on a pre-set client"
+  // requirement.
+  const [clientPickerExpanded, setClientPickerExpanded] = useState<boolean>(() => !clientId);
+  const [clientSearchQuery, setClientSearchQuery] = useState<string>("");
+  const [clientHighlightIndex, setClientHighlightIndex] = useState<number>(-1);
+  const clientSearchInputRef = useRef<HTMLInputElement>(null);
 
   const [date, setDate] = useState<string>(today);
   const [subject, setSubject] = useState<string>("");
@@ -226,6 +242,72 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
       setPaymentMethod(clientDefaults.paymentMethod);
     }
   }, [clientId, clientDefaults.paymentMethod]);
+
+  // Collapse the "לקוח קיים" picker to its compact selected-row state
+  // whenever a clientId appears - whether from a user picking a row, or
+  // asynchronously from a prefill/convert/draft-resume effect running after
+  // mount. Only depends on clientId so it never fights the "שנה" button,
+  // which reopens the list without touching clientId.
+  useEffect(() => {
+    if (clientId) setClientPickerExpanded(false);
+  }, [clientId]);
+
+  // Re-collapse to the selected row whenever the user switches INTO "לקוח
+  // קיים" mode and a client is already chosen (e.g. toggling away to "לקוח
+  // חדש" and back). Only depends on adhocMode so it doesn't fight "שנה".
+  useEffect(() => {
+    if (!adhocMode && clientId) setClientPickerExpanded(false);
+  }, [adhocMode]);
+
+  // Auto-focus the search box whenever it becomes visible in "לקוח קיים"
+  // mode - on first switching into the mode, and after reopening via "שנה".
+  useEffect(() => {
+    if (!adhocMode && clientPickerExpanded) {
+      clientSearchInputRef.current?.focus();
+    }
+  }, [adhocMode, clientPickerExpanded]);
+
+  // Reset keyboard highlight whenever the search query changes so it never
+  // points at a row that scrolled out of the filtered results.
+  useEffect(() => {
+    setClientHighlightIndex(-1);
+  }, [clientSearchQuery]);
+
+  const filteredClients = useMemo(
+    () => filterClientsByQuery(clients, clientSearchQuery),
+    [clients, clientSearchQuery]
+  );
+
+  function selectClient(id: string) {
+    setClientId(id);
+    setClientPickerExpanded(false);
+    setClientSearchQuery("");
+    setClientHighlightIndex(-1);
+  }
+
+  function handleClientSearchKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "ArrowDown") {
+      if (filteredClients.length === 0) return;
+      e.preventDefault();
+      setClientHighlightIndex((i) => Math.min(i + 1, filteredClients.length - 1));
+    } else if (e.key === "ArrowUp") {
+      if (filteredClients.length === 0) return;
+      e.preventDefault();
+      setClientHighlightIndex((i) => Math.max(i - 1, 0));
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      const picked =
+        clientHighlightIndex >= 0
+          ? filteredClients[clientHighlightIndex]
+          : filteredClients.length === 1
+            ? filteredClients[0]
+            : undefined;
+      if (picked) selectClient(picked.id);
+    } else if (e.key === "Escape") {
+      setClientHighlightIndex(-1);
+      (e.target as HTMLInputElement).blur();
+    }
+  }
 
   const [draftRecovered, setDraftRecovered] = useState<{ savedAt: number } | null>(null);
   const [draftDismissed, setDraftDismissed] = useState<boolean>(false);
@@ -1010,6 +1092,38 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
       const clientName = buildClientName();
       const paymentDetails = buildPaymentDetails();
 
+      // "לקוח חדש" + "שמור אותו ברשימת הלקוחות שלי": link this document to a
+      // real client instead of a one-off name. Reuses an existing client
+      // (same normalized tax id, or same trimmed/case-insensitive name when
+      // no tax id) rather than creating a duplicate. Saving the client is a
+      // convenience, never a blocker - on any failure we fall back to
+      // exactly today's adhoc behavior (empty clientId, typed details only).
+      let effectiveClientId = adhocMode ? "" : selectedClient?.id || "";
+      if (adhocMode && saveAsClient) {
+        const name = adhocName.trim();
+        if (name) {
+          try {
+            const taxId = adhocTaxId.trim() || undefined;
+            const existing = findMatchingClient(clients, { name, taxId });
+            if (existing) {
+              effectiveClientId = existing.id;
+            } else {
+              const newClient: Client = {
+                id: crypto.randomUUID(),
+                name,
+                taxId,
+                email: adhocEmail.trim() || undefined,
+                createdAt: today,
+              };
+              await clientStore.save(newClient);
+              effectiveClientId = newClient.id;
+            }
+          } catch (err) {
+            console.warn("[client-picker] failed to save the new client; document still saves with the typed details", err);
+          }
+        }
+      }
+
       const persistItems = items.map((i) => {
         const netUnitPrice = round2(i.unitPrice * netUnitPriceFactor);
         return {
@@ -1049,7 +1163,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
         type: documentType,
         number: parseInt(docNumber, 10) || undefined,
         date,
-        clientId: adhocMode ? "" : selectedClient?.id || "",
+        clientId: effectiveClientId,
         clientName,
         clientTaxId: (adhocMode ? adhocTaxId.trim() : selectedClient?.taxId) || undefined,
         allocationNumber: allocationNumber.trim() || undefined,
@@ -1378,7 +1492,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                   : "text-stone-600 hover:text-stone-800"
               }`}
             >
-              מהקטלוג
+              לקוח קיים
             </button>
             <button
               type="button"
@@ -1390,7 +1504,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
               }`}
             >
               <UserPlus className="w-3 h-3" />
-              לקוח מזדמן
+              לקוח חדש
             </button>
           </div>
           {adhocMode ? (
@@ -1417,26 +1531,46 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                 dir="ltr"
                 className="input-warm md:col-span-2"
               />
+              <label className="flex items-center gap-2 md:col-span-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={saveAsClient}
+                  onChange={(e) => setSaveAsClient(e.target.checked)}
+                  className="w-4 h-4 accent-orange-500"
+                />
+                <span className="text-stone-700">שמור אותו ברשימת הלקוחות שלי</span>
+              </label>
               <p className="text-xs text-stone-600 md:col-span-2">
-                הלקוח לא יישמר במאגר - שמו יופיע על המסמך הזה בלבד.
+                {saveAsClient
+                  ? "הלקוח יישמר ברשימת הלקוחות ותוכל לבחור בו בפעם הבאה."
+                  : "הלקוח לא יישמר - שמו יופיע על המסמך הזה בלבד."}
               </p>
             </div>
-          ) : (
+          ) : clientId && !clientPickerExpanded && selectedClient ? (
             <>
-              <select
-                value={clientId}
-                onChange={(e) => setClientId(e.target.value)}
-                className="input-warm"
-                aria-label="בחר לקוח"
-              >
-                <option value="">בחר לקוח...</option>
-                {clients.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-              {clientId && clientDefaults.documentCount > 0 && (
+              <div className="flex items-center justify-between gap-3 rounded-xl border border-orange-100 bg-orange-50/60 px-3 py-2.5 min-h-[44px]">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-stone-900 truncate">
+                    {selectedClient.name}
+                  </p>
+                  {(selectedClient.taxId || selectedClient.email) && (
+                    <p className="text-xs text-stone-500 truncate">
+                      {[selectedClient.taxId, selectedClient.email].filter(Boolean).join(" · ")}
+                    </p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setClientPickerExpanded(true);
+                    setClientSearchQuery("");
+                  }}
+                  className="shrink-0 inline-flex items-center justify-center min-h-[36px] px-3 text-xs font-semibold text-orange-700 hover:text-orange-800 hover:bg-orange-100 rounded-lg"
+                >
+                  שנה
+                </button>
+              </div>
+              {clientDefaults.documentCount > 0 && (
                 <p className="text-xs text-stone-600 mt-2">
                   היסטוריה: {clientDefaults.documentCount}{" "}
                   {clientDefaults.documentCount === 1 ? "מסמך" : "מסמכים"}
@@ -1447,6 +1581,65 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                     <> · אמצעי תשלום אחרון: {PAYMENT_METHOD_LABELS[clientDefaults.paymentMethod]}</>
                   )}
                 </p>
+              )}
+            </>
+          ) : (
+            <>
+              <input
+                ref={clientSearchInputRef}
+                type="text"
+                value={clientSearchQuery}
+                onChange={(e) => setClientSearchQuery(e.target.value)}
+                onKeyDown={handleClientSearchKeyDown}
+                placeholder="חיפוש לקוח לפי שם..."
+                className="input-warm"
+                aria-label="חיפוש לקוח"
+              />
+              {clients.length === 0 ? (
+                <p className="text-xs text-stone-600 mt-2">
+                  עדיין אין לקוחות שמורים{" "}
+                  <button
+                    type="button"
+                    onClick={() => setAdhocMode(true)}
+                    className="font-semibold text-orange-600 hover:text-orange-700 hover:underline"
+                  >
+                    עבור ל&quot;לקוח חדש&quot;
+                  </button>
+                </p>
+              ) : filteredClients.length === 0 ? (
+                <p className="text-xs text-stone-600 mt-2">
+                  לא נמצא לקוח בשם הזה{" "}
+                  <button
+                    type="button"
+                    onClick={() => setAdhocMode(true)}
+                    className="font-semibold text-orange-600 hover:text-orange-700 hover:underline"
+                  >
+                    עבור ל&quot;לקוח חדש&quot;
+                  </button>
+                </p>
+              ) : (
+                <div className="max-h-56 overflow-y-auto rounded-xl border border-orange-100 divide-y divide-orange-50 mt-2">
+                  {filteredClients.map((c, i) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => selectClient(c.id)}
+                      onMouseEnter={() => setClientHighlightIndex(i)}
+                      className={`w-full text-right flex flex-col justify-center min-h-[44px] px-3 py-1.5 transition-colors first:rounded-t-xl last:rounded-b-xl ${
+                        i === clientHighlightIndex ? "bg-orange-100" : "hover:bg-orange-50"
+                      }`}
+                    >
+                      <span className="text-sm font-semibold text-stone-900 truncate">
+                        {c.name}
+                      </span>
+                      {(c.taxId || c.email) && (
+                        <span className="text-xs text-stone-500 truncate">
+                          {[c.taxId, c.email].filter(Boolean).join(" · ")}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
               )}
             </>
           )}
