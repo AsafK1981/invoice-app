@@ -17,6 +17,7 @@ export default function FooterV2() {
           <LogoV2 variant="mark" srText="חשבונית ידידותית, לדף הבית" />
         </Link>
         <nav className="v2-footer-links">
+          <Link href="/#pricing">מחירים</Link>
           <Link href="/terms">תנאי שימוש</Link>
           <Link href="/privacy">פרטיות</Link>
           <Link href="/accessibility">נגישות</Link>

@@ -966,7 +966,7 @@ export default function MarketingLanding() {
             </div>
           </section>
 
-          <section className="ml-pricing">
+          <section className="ml-pricing" id="pricing">
             <div className="ml-wrap">
               <h2>בתקופת ההשקה, הכול חינם</h2>
               {/* Restructured 2026-08-11 (Asaf): the old single paragraph

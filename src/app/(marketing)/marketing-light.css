@@ -209,6 +209,44 @@
     display: flex;
   }
 }
+.ml-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+/* Compact mobile-only login link: same type treatment as .ml-navlink,
+   shown only below 760px next to the CTA (the desktop copy inside .ml-nav
+   covers it above that). Without this, a returning mobile visitor had no
+   way back into the app short of scrolling to the footer. */
+.ml-header-login-mobile {
+  font-size: 13.5px;
+  white-space: nowrap;
+}
+@media (min-width: 760px) {
+  .ml-header-login-mobile {
+    display: none;
+  }
+}
+/* Small phones (iPhone SE/320px class): logo + login link + CTA no longer
+   fit at the desktop metrics above without overflowing the viewport.
+   Tighten gaps and shrink the CTA/login text a notch, scoped to the header
+   only so the same .ml-btn-sm used later on the page (line ~799) keeps its
+   normal size. */
+@media (max-width: 479.98px) {
+  .ml-header-in {
+    gap: 10px;
+  }
+  .ml-header-actions {
+    gap: 8px;
+  }
+  .ml-header-login-mobile {
+    font-size: 12.5px;
+  }
+  .ml-header-in .ml-btn-sm {
+    padding: 9px 16px;
+    font-size: 13px;
+  }
+}
 
 /* ---------- hero ---------- */
 .ml-hero {
@@ -1605,6 +1643,9 @@ h1.ml-hero-h1 {
   border-bottom: 1px solid var(--ml-peach-line);
   padding-block: 56px;
   text-align: center;
+  /* #pricing is a nav/footer anchor target; the sticky header (~71px
+     tall) would otherwise cover the section heading on jump. */
+  scroll-margin-top: 96px;
 }
 @media (min-width: 760px) {
   .ml-pricing {
