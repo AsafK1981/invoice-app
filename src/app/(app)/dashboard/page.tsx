@@ -33,7 +33,7 @@ import { RecurringDueAlert } from "@/components/recurring-due-alert";
 import { BetaBanner } from "@/components/beta-banner";
 
 const ExpenseCategoriesChart = dynamic(
-  () => import("@/components/expense-categories-chart").then((mod) => mod.ExpenseCategoriesChart),
+  () => import("@/components/charts-recharts").then((mod) => mod.ExpenseCategoriesChart),
   {
     ssr: false,
     loading: () => (

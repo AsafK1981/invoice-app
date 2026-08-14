@@ -1,11 +1,37 @@
 "use client";
 
+/**
+ * Both recharts-backed components live in this one module on purpose.
+ * ExpenseCategoriesChart (dashboard) and AdminDailyChart (admin) each used
+ * to have their own `next/dynamic(() => import(...))` pointing at separate
+ * files, which produced two near-identical ~321KB chunks (recharts +
+ * d3-shape/d3-scale don't tree-shake cleanly, so each dynamic entry pulled
+ * in the whole library on its own). Both call sites now dynamic-import
+ * *this* module instead, so Turbopack builds recharts into a single shared
+ * chunk that's fetched once and cached for whichever chart loads first.
+ */
+
 import { useMemo } from "react";
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+} from "recharts";
 import { formatCurrency } from "@/lib/format";
 import type { Expense } from "@/lib/types";
 
-interface Props {
+/* ------------------------------------------------------------------ */
+/* ExpenseCategoriesChart (dashboard)                                  */
+/* ------------------------------------------------------------------ */
+
+interface ExpenseCategoriesChartProps {
   expenses: Expense[];
 }
 
@@ -20,7 +46,7 @@ const COLORS = [
   "#64748b", // slate
 ];
 
-export function ExpenseCategoriesChart({ expenses }: Props) {
+export function ExpenseCategoriesChart({ expenses }: ExpenseCategoriesChartProps) {
   const data = useMemo(() => {
     const byCategory = new Map<string, number>();
     expenses.forEach((e) => {
@@ -95,5 +121,27 @@ export function ExpenseCategoriesChart({ expenses }: Props) {
         })}
       </div>
     </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* AdminDailyChart (admin)                                             */
+/* ------------------------------------------------------------------ */
+
+interface AdminDailyChartProps {
+  data: Array<{ date: string; count: number }>;
+}
+
+export function AdminDailyChart({ data }: AdminDailyChartProps) {
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <LineChart data={data}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#fed7aa" opacity={0.4} />
+        <XAxis dataKey="date" tick={{ fontSize: 10 }} reversed />
+        <YAxis allowDecimals={false} tick={{ fontSize: 10 }} />
+        <Tooltip />
+        <Line type="monotone" dataKey="count" stroke="#f97316" strokeWidth={2} dot={{ r: 3 }} />
+      </LineChart>
+    </ResponsiveContainer>
   );
 }

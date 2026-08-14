@@ -23,7 +23,7 @@ import { formatCurrency, formatDate } from "@/lib/format";
 import { DOCUMENT_TYPE_LABELS, type DocumentType } from "@/lib/types";
 
 const AdminDailyChart = dynamic(
-  () => import("@/components/admin-daily-chart").then((mod) => mod.AdminDailyChart),
+  () => import("@/components/charts-recharts").then((mod) => mod.AdminDailyChart),
   {
     ssr: false,
     loading: () => <div className="w-full h-full rounded-xl bg-stone-100 animate-pulse" />,
