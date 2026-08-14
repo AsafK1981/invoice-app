@@ -7,19 +7,30 @@ export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 /**
- * Loads a Google Font as binary data so satori (the engine behind
- * ImageResponse) can shape Hebrew correctly. Without this, Hebrew
- * renders as reversed unshaped glyphs because satori has no system
- * font fallback and the default doesn't include Hebrew support.
+ * Heebo Bold (weight 800), local, so satori (the engine behind
+ * ImageResponse) can shape Hebrew correctly without a request-time
+ * network fetch. Previously this called Google's CSS2 API + fetched the
+ * binary at request time (`loadGoogleFont`); that made every OG-card
+ * render depend on fonts.googleapis.com/fonts.gstatic.com being up and
+ * returning the expected CSS shape - the same class of build-time
+ * dependency that broke two production deploys on 2026-08-14 for the
+ * page fonts (see the comment in src/app/layout.tsx), just at request
+ * time instead of build time.
+ *
+ * This is a SEPARATE file from `./fonts/heebo/Heebo-Variable-*.woff2`
+ * (used by the page layouts via next/font/local): satori does not
+ * accept woff2 - it needs a raw TTF/OTF/WOFF1 - so the page fonts
+ * (woff2, variable, for the browser) and this OG font (static TTF, for
+ * satori) are necessarily different files even though both are Heebo.
+ * Sourced from Google's own Heebo build (fonts.gstatic.com's hebrew+latin
+ * static instance at wght=800), which is a static TTF instance rather
+ * than the variable font satori can't select a weight from - and is
+ * covered by the same OFL.txt already committed alongside it.
  */
-async function loadGoogleFont(family: string, weight: number, text: string) {
-  const url = `https://fonts.googleapis.com/css2?family=${family}:wght@${weight}&text=${encodeURIComponent(text)}`;
-  const css = await (await fetch(url)).text();
-  const match = css.match(/src: url\((.+?)\) format\('(?:opentype|truetype|woff2?)'\)/);
-  if (!match) throw new Error(`couldn't parse font URL from CSS for ${family} ${weight}`);
-  const fontRes = await fetch(match[1]);
-  if (!fontRes.ok) throw new Error(`failed to load font ${family} ${weight}`);
-  return await fontRes.arrayBuffer();
+async function loadHeeboBold() {
+  return fetch(new URL("./fonts/heebo/Heebo-Bold.ttf", import.meta.url)).then((res) =>
+    res.arrayBuffer(),
+  );
 }
 
 /**
@@ -49,7 +60,7 @@ export default async function OpengraphImage() {
   const headlineLogical = "מספר הקצאה מרשות המסים, בלחיצה אחת";
   const headline = visualRtl(headlineLogical);
 
-  const heeboBold = await loadGoogleFont("Heebo", 800, headlineLogical);
+  const heeboBold = await loadHeeboBold();
 
   return new ImageResponse(
     (

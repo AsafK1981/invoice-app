@@ -5,15 +5,19 @@ import { withSentryConfig } from "@sentry/nextjs";
 // browser via Report-Only mode first (only violation was recharts/d3 string
 // evaluation, hence 'unsafe-eval'; our own code contains zero eval). Now
 // enforcing. Allowed origins reflect what the app actually loads: Vercel
-// analytics/speed-insights, Google Fonts, Supabase (REST + realtime wss),
-// Sentry ingest, the recharts charting lib, and Google Identity Services
-// (the /gsi/ entries below are the exact set Google's GIS CSP guide
-// requires for the sign-in button: script, connect, frame, style).
+// analytics/speed-insights, Supabase (REST + realtime wss), Sentry ingest,
+// the recharts charting lib, and Google Identity Services (the /gsi/
+// entries below are the exact set Google's GIS CSP guide requires for the
+// sign-in button: script, connect, frame, style). Google Fonts is NOT
+// listed: every font (page fonts + the opengraph-image.tsx OG card font)
+// is self-hosted as of 2026-08-14 - see the comments in src/app/layout.tsx
+// and src/app/opengraph-image.tsx. Don't re-add fonts.googleapis.com /
+// fonts.gstatic.com here without also reintroducing a runtime font fetch.
 const csp = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com https://accounts.google.com/gsi/client",
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com/gsi/style",
-  "font-src 'self' https://fonts.gstatic.com data:",
+  "style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style",
+  "font-src 'self' data:",
   "img-src 'self' data: blob: https:",
   "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://va.vercel-scripts.com https://vitals.vercel-insights.com https://*.sentry.io https://*.ingest.sentry.io https://accounts.google.com/gsi/",
   "frame-src https://accounts.google.com/gsi/",
