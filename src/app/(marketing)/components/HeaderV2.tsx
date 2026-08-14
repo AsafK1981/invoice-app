@@ -26,8 +26,11 @@ export default function HeaderV2() {
         <Link href="/blog" className="v2-navlink">
           מגזין
         </Link>
-        <Link href="/login" className="v2-btn-gold">
+        <Link href="/login" className="v2-navlink v2-header-login">
           התחברות
+        </Link>
+        <Link href="/login?mode=signup" className="v2-btn-gold">
+          התחילו בחינם
         </Link>
       </nav>
     </header>

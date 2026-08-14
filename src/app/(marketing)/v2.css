@@ -2418,6 +2418,20 @@
   .v2-theme .v2-btn-gold { padding: 9px 14px; }
 }
 
+/* Since the header CTA became "התחילו בחינם" (longer than the old
+   "התחברות" pill label it replaced), the plain-text login link no longer
+   fits alongside it and the comparison/מגזין links up to ~475px-wide
+   phones (measured empirically) - it stays reachable via the footer
+   instead, matching how HeaderLight only shows its CTA + core links below
+   760px. Kept as its own query (rather than folded into the 420px one
+   above) so it doesn't also reflow the logo/type-scale rules that query
+   owns, which were tuned for a narrower cutoff. */
+@media (max-width: 500px) {
+  .v2-theme .v2-header-login { display: none; }
+  .v2-theme .v2-header-nav { gap: 8px; }
+  .v2-theme .v2-header-nav .v2-btn-gold { padding: 9px 8px; }
+}
+
 /* ------------------------------------------------------------
    DESKTOP TIER 1 (>=1000px): the layout change.
 
