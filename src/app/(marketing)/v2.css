@@ -204,6 +204,18 @@
   --v2-cta-rose: #e11d48;
   --v2-cta-grad: linear-gradient(135deg, var(--v2-cta-orange), var(--v2-cta-rose));
 
+  /* ---- soft gold-tint pair (body-bridging pass, 2026-08-14) ----
+     Copied BY VALUE from marketing-light.css's `--ml-gold-tint` /
+     `--ml-gold-tint-line`, same duplication convention as the CTA gradient
+     above. Replaces the metallic `--v2-gold-grad` on small body surfaces
+     (badges, icon tiles) that don't carry a primary CTA - see the comments
+     on `.v2-gold`, `.v2-note-panel .ic` and the price-card `.badge` below.
+     `--v2-gold-grad` itself is left defined (still read by the unused
+     /v2/login auth styles further down) but nothing rendered reads it after
+     this pass. */
+  --v2-gold-tint: #faf5e9;
+  --v2-gold-tint-line: #ecdfbe;
+
   position: relative;
   min-height: 100vh;
   color: var(--v2-ink);
@@ -248,13 +260,18 @@
   text-decoration: none;
 }
 
-/* Gold metallic text (background-clip). */
+/* Gold-ink highlight (body-bridging pass, 2026-08-14). Used to be a
+   shimmering metallic gradient-clip effect - the loudest accent on every
+   page it appeared on. The homepage's equivalent (`.ml-grad-text`) reserves
+   that kind of treatment for ONE phrase in the hero and nowhere else; every
+   other accent on marketing-light.css is a flat, restrained gold-ink color
+   (`--ml-gold-ink`). This now matches: a solid color, same token
+   (`--v2-g1` == `--ml-gold-ink` by value), no gradient, no glow. Callers
+   that used to lean on this for a full-page H1 (`.v2-doc-title`) had that
+   className removed instead of inheriting a quieter gold - see terms/
+   privacy/accessibility/blog page.tsx files. */
 .v2-theme .v2-gold {
-  background: var(--v2-gold-grad);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  filter: drop-shadow(0 2px 10px rgba(190, 158, 78, 0.11));
+  color: var(--v2-g1);
 }
 
 /* ---------- deco outer frame ---------- */
@@ -1039,7 +1056,7 @@
   border-radius: var(--v2-r-lg);
   padding: var(--v2-pad-card);
   border: 1px solid var(--v2-line-soft);
-  background: linear-gradient(160deg, #ffffff, #fdfaf3);
+  background: var(--v2-card);
   box-shadow: var(--v2-sh-rest), var(--v2-sh-inset);
 }
 .v2-theme .v2-adv-icon {
@@ -1100,7 +1117,11 @@
   color: var(--v2-muted);
 }
 
-/* ---------- primary CTA ---------- */
+/* ---------- primary CTA ----------
+   Body-bridging pass, 2026-08-14: repainted from the metallic gold gradient
+   to the same orange-to-rose CTA gradient as the header/footer pill
+   (`.v2-btn-gold`) and the homepage's `.ml-btn-primary` - one primary-action
+   color across the whole site, not a second gold one just for page bodies. */
 .v2-theme .v2-cta {
   display: inline-block;
   margin-top: var(--v2-sp-4);
@@ -1109,13 +1130,14 @@
   color: #ffffff;
   padding: 15px 42px;
   border-radius: var(--v2-r-pill);
-  background: var(--v2-gold-grad);
-  box-shadow: var(--v2-glow-rest);
-  transition: transform 0.15s ease, box-shadow 0.2s ease;
+  background: var(--v2-cta-grad);
+  box-shadow: 0 12px 26px -12px rgba(225, 29, 72, 0.4), 0 4px 10px -4px rgba(249, 115, 22, 0.32);
+  transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s ease;
 }
 .v2-theme .v2-cta:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--v2-glow-hover);
+  transform: translateY(-2px) scale(1.015);
+  filter: brightness(1.04);
+  box-shadow: 0 20px 38px -14px rgba(225, 29, 72, 0.5), 0 8px 18px -6px rgba(249, 115, 22, 0.36);
 }
 .v2-theme .v2-fine {
   margin-top: 12px;
@@ -1280,11 +1302,18 @@
 .v2-theme .v2-prose section + section {
   margin-top: var(--v2-sp-4);
 }
+/* Plain ink, not gold (body-bridging pass, 2026-08-14): the homepage never
+   colors a real content heading with its accent (`.ml-adv-head h2`,
+   `.ml-faq-title`, `.ml-pricing h2` are all `--ml-ink`) - gold there stays
+   on small labels and links. This heading shares its rule with the legal
+   pages' numbered section titles ("1. השירות" etc) and every blog article's
+   `##` headings, so one edit re-aligns both. The small gold hairline below
+   stays: it is a tag-sized accent, not the heading's own color. */
 .v2-theme .v2-prose h2 {
   font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
   font-weight: 700;
   font-size: var(--v2-fs-h3);
-  color: var(--v2-g1);
+  color: var(--v2-ink);
   margin-bottom: 9px;
   display: flex;
   align-items: baseline;
@@ -1332,7 +1361,7 @@
   align-items: center;
   justify-content: center;
   border: 1px solid var(--v2-line);
-  background: linear-gradient(160deg, #ffffff, #fdfaf3);
+  background: var(--v2-card);
 }
 .v2-theme .v2-status-badge svg { width: 24px; height: 24px; }
 .v2-theme .v2-status-badge.is-ok { color: var(--v2-g2); }
@@ -1353,13 +1382,19 @@
   color: var(--v2-muted);
 }
 
+/* Contrast fix, 2026-08-14: this was tuned for the pre-2026-08-11 obsidian
+   field (#e7c9a6 is a pale tan, unreadable on the current cream page - the
+   near-invisible-text trap this project has been burned by before). Reuses
+   the same down/amber value already live two rules up (`.v2-status-badge
+   .is-down`, `.v2-status-row.is-down`), so all three "something's wrong"
+   states on this page now agree on one color instead of two. */
 .v2-theme .v2-status-error {
-  border: 1px solid rgba(230, 161, 90, 0.4);
-  background: rgba(230, 161, 90, 0.06);
+  border: 1px solid rgba(180, 83, 9, 0.35);
+  background: rgba(180, 83, 9, 0.08);
   border-radius: var(--v2-r-md);
   padding: 16px;
   font-size: var(--v2-fs-body);
-  color: #e7c9a6;
+  color: #b45309;
   margin-bottom: 24px;
 }
 
@@ -1376,7 +1411,7 @@
   border: 1px solid var(--v2-line-soft);
   border-radius: var(--v2-r-md);
   padding: 16px;
-  background: linear-gradient(160deg, #ffffff, #fdfaf3);
+  background: var(--v2-card);
 }
 .v2-theme .v2-status-row.is-ok { border-color: rgba(214, 178, 108, 0.28); }
 .v2-theme .v2-status-row.is-down { border-color: rgba(230, 161, 90, 0.42); }
@@ -1483,7 +1518,7 @@
 /* card: reuses the golden invoice-card treatment */
 .v2-theme .v2-auth-card {
   position: relative;
-  background: linear-gradient(160deg, #ffffff, #fdfaf3);
+  background: var(--v2-card);
   border: 1px solid var(--v2-line);
   border-radius: var(--v2-r-xl);
   padding: 32px 24px 24px;
@@ -1817,7 +1852,7 @@
 /* ---------- dark panel (reused across comparison sections) ---------- */
 .v2-theme .v2-panel {
   position: relative;
-  background: linear-gradient(160deg, #ffffff, #fdfaf3);
+  background: var(--v2-card);
   border: 1px solid var(--v2-line);
   border-radius: var(--v2-r-lg);
   padding: var(--v2-pad-card);
@@ -1838,18 +1873,22 @@
   border-radius: var(--v2-r-lg);
   padding: var(--v2-pad-card);
   border: 1px solid var(--v2-line-soft);
-  background: linear-gradient(160deg, #ffffff, #fdfaf3);
+  background: var(--v2-card);
 }
 /* highlighted winner: gold border + faint gold wash */
 .v2-theme .v2-price-card.win {
   border: 1px solid var(--v2-line);
   background:
     radial-gradient(120% 80% at 50% -10%, rgba(190, 158, 78, 0.06), transparent 55%),
-    linear-gradient(160deg, #ffffff, #fdfaf3);
+    var(--v2-card);
   box-shadow: var(--v2-sh-rest), var(--v2-sh-edge);
 }
 /* Reused verbatim by .v2-adv-card's "בקרוב" badge (the one unreleased
    feature in the advantages grid) - same gold pill, no new primitive. */
+/* Flat gold-tint pill (body-bridging pass, 2026-08-14), same primitive as
+   the homepage's `.ml-badge-soon` - a small status pill reads as restrained
+   information, not a second CTA, so it drops the white-on-gradient
+   treatment entirely rather than swapping it for the orange CTA gradient. */
 .v2-theme .v2-price-card .badge,
 .v2-theme .v2-adv-card .badge {
   position: absolute;
@@ -1861,11 +1900,11 @@
   font-size: var(--v2-fs-micro);
   font-weight: 700;
   letter-spacing: 0.14em;
-  color: #ffffff;
+  color: var(--v2-g1);
   padding: 4px 12px;
   border-radius: var(--v2-r-pill);
-  background: var(--v2-gold-grad);
-  box-shadow: 0 8px 18px -10px rgba(190, 158, 78, 0.3);
+  background: var(--v2-gold-tint);
+  border: 1px solid var(--v2-gold-tint-line);
 }
 .v2-theme .v2-price-card .badge svg { width: 12px; height: 12px; }
 /* One token, matching .v2-str h3 and .v2-note-panel h3; the three panel
@@ -2077,6 +2116,10 @@
    paragraphs, not one flowed column, so nothing forces the eye back to the
    top the way CSS multi-column text would. */
 .v2-theme .v2-note-panel { display: flex; gap: var(--v2-sp-2); align-items: flex-start; }
+/* Flat gold-tint tile (body-bridging pass, 2026-08-14), replacing the
+   metallic gradient + drop shadow - same treatment as a homepage advantage
+   icon tile (`.ml-adv-icon` in marketing-light.css), not the flagship
+   gradient one: this is a single quote-note icon, not a primary CTA. */
 .v2-theme .v2-note-panel .ic {
   width: 46px;
   height: 46px;
@@ -2085,9 +2128,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--v2-gold-grad);
-  color: #ffffff;
-  box-shadow: 0 12px 26px -14px rgba(190, 158, 78, 0.28);
+  background: var(--v2-gold-tint);
+  color: var(--v2-g1);
 }
 .v2-theme .v2-note-panel .ic svg { width: 24px; height: 24px; }
 .v2-theme .v2-note-panel > div:last-child { flex: 1; min-width: 0; }
@@ -2171,7 +2213,7 @@
   border-radius: var(--v2-r-lg);
   padding: var(--v2-pad-card);
   border: 1px solid var(--v2-line-soft);
-  background: linear-gradient(160deg, #ffffff, #fdfaf3);
+  background: var(--v2-card);
   box-shadow: var(--v2-sh-rest);
   transition: transform 0.16s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
@@ -2260,7 +2302,7 @@
   padding: var(--v2-pad-card);
   border-radius: var(--v2-r-lg);
   border: 1px solid var(--v2-line);
-  background: linear-gradient(160deg, #ffffff, #fdfaf3);
+  background: var(--v2-card);
   box-shadow: var(--v2-sh-rest);
   transition: transform 0.16s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
@@ -2274,12 +2316,16 @@
   letter-spacing: 0.14em;
   color: var(--v2-muted);
 }
+/* Plain ink (body-bridging pass, 2026-08-14) - matches the homepage's card
+   title treatment (`.ml-adv-card h3` is `--ml-ink`); `.v2-vs-card h2` right
+   above already inherited ink with no color rule of its own, so this only
+   brings the blog card into line with its sibling. */
 .v2-theme .v2-blog-card h2 {
   font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
   font-weight: 700;
   font-size: var(--v2-fs-h2);
   line-height: 1.2;
-  color: var(--v2-g1);
+  color: var(--v2-ink);
   margin: 8px 0 var(--v2-sp-2);
 }
 .v2-theme .v2-blog-card p {
@@ -2346,11 +2392,13 @@
   margin-bottom: 20px;
 }
 .v2-theme .v2-prose h2 { margin-top: var(--v2-sp-5); }
+/* Plain ink (body-bridging pass, 2026-08-14) - see .v2-prose h2 above;
+   hierarchy comes from size/weight, matching the homepage's approach. */
 .v2-theme .v2-prose h3 {
   font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
   font-weight: 700;
   font-size: var(--v2-fs-lede);
-  color: var(--v2-g1);
+  color: var(--v2-ink);
   margin: var(--v2-sp-3) 0 var(--v2-sp-1);
 }
 .v2-theme .v2-prose p { margin-bottom: var(--v2-sp-2); }

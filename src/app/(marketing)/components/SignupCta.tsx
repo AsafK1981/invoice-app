@@ -13,7 +13,7 @@ import { Ltr } from "@/components/ui/ltr";
 export default function SignupCta() {
   return (
     <section className="v2-cmp-cta">
-      <h2 className="v2-gold">רוצה לנסות? זה חינם עכשיו</h2>
+      <h2>רוצה לנסות? זה חינם עכשיו</h2>
       <p>
         בתקופת ההשקה הכול פתוח: כל הפיצ׳רים של <Ltr>Pro</Ltr>, בלי כרטיס אשראי.
         כשנתחיל לגבות נעדכן מראש, בלי הפתעות.
