@@ -177,6 +177,9 @@
 .ml-logo {
   display: inline-flex;
   align-items: center;
+  /* inline-flex drops the whitespace-only text node between the two words
+     of the lockup, so the word gap has to be a real flex gap. */
+  gap: 0.28em;
   min-height: 40px;
   font-size: 19px;
   font-weight: 800;

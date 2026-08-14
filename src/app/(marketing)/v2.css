@@ -366,6 +366,10 @@
 .v2-theme .v2-wordmark {
   display: inline-flex;
   align-items: center;
+  /* inline-flex drops the whitespace-only text node between the two words
+     of the lockup, so the word gap has to be a real flex gap (matches
+     .ml-logo in marketing-light.css). */
+  gap: 0.28em;
   min-height: 40px;
   font-size: 19px;
   font-weight: 800;
@@ -2485,15 +2489,18 @@
 }
 
 /* Chrome-bridging pass, 2026-08-14: the inline-text wordmark measures wider
-   than the boxed icon lockup it replaced, and below ~370px (measured
-   empirically: wordmark 108.8 + nav 217.5 + header padding/gap 44 = 370.3)
-   the header no longer fits "חשבונית ידידותית" + השוואה + מגזין + מחירים +
-   the CTA on one row - the CTA label was clipping off the left edge.
+   than the boxed icon lockup it replaced, and below ~375px (measured
+   empirically: wordmark 108.8 + word gap ~4.5 + nav 217.5 + header
+   padding/gap 44 = 374.8) the header no longer fits "חשבונית ידידותית" +
+   השוואה + מגזין + מחירים + the CTA on one row - the CTA label was
+   clipping off the left edge.
    מחירים was the recently-added link and stays visible at every width by
    request; the two others (`.v2-nav-secondary` on the /vs and /blog links
    in HeaderV2.tsx) step out of the way below this one breakpoint instead,
-   the same trade the 500px query below already makes for the login link. */
-@media (max-width: 374.98px) {
+   the same trade the 500px query below already makes for the login link.
+   379.98 (not 374.98): the fit needs 374.8px, which leaves a 0.2px margin
+   at a 375px viewport - too tight to trust across font rendering. */
+@media (max-width: 379.98px) {
   .v2-theme .v2-nav-secondary { display: none; }
 }
 
