@@ -48,7 +48,7 @@ export default function AccessibilityPage() {
               <i className="ln" />
               <span>מסמך משפטי</span>
             </div>
-            <h1 className="v2-doc-title v2-gold">הצהרת נגישות</h1>
+            <h1 className="v2-doc-title">הצהרת נגישות</h1>
             <p className="v2-doc-updated">עודכן לאחרונה: 4 באוגוסט 2026</p>
           </div>
 

@@ -132,7 +132,7 @@ export default async function BlogPostPage({
               <i className="ln" />
               <span>מגזין</span>
             </div>
-            <h1 className="v2-doc-title v2-gold">{post.title}</h1>
+            <h1 className="v2-doc-title">{post.title}</h1>
             <p className="v2-doc-updated">
               {new Date(post.date).toLocaleDateString("he-IL", {
                 year: "numeric",

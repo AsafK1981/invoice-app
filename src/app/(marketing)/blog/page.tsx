@@ -73,7 +73,7 @@ export default function BlogIndexPage() {
               <i className="ln" />
               <span>מגזין</span>
             </div>
-            <h1 className="v2-doc-title v2-gold">מדריכים לעצמאים</h1>
+            <h1 className="v2-doc-title">מדריכים לעצמאים</h1>
             <p className="v2-doc-lead">
               כל מה שעוסק פטור ומורשה צריך לדעת על חשבוניות, מספר הקצאה ורפורמת
               חשבונית ישראל, בשפה פשוטה, בלי ז׳רגון ובלי טפסים מפחידים.

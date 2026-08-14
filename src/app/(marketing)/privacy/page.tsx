@@ -40,7 +40,7 @@ export default function V2PrivacyPage() {
               <i className="ln" />
               <span>מסמך משפטי</span>
             </div>
-            <h1 className="v2-doc-title v2-gold">מדיניות פרטיות</h1>
+            <h1 className="v2-doc-title">מדיניות פרטיות</h1>
             <p className="v2-doc-updated">עודכן לאחרונה: אפריל 2026</p>
           </div>
 
