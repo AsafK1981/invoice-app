@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Heebo, Frank_Ruhl_Libre, Assistant } from "next/font/google";
+import localFont from "next/font/local";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { SwRegister } from "@/components/sw-register";
@@ -17,29 +17,48 @@ import "./app-skin.css";
 // server-side PDF. See the header comment in document-paper.css.
 import "./document-paper.css";
 
-// SELF-HOSTED FONTS (was: two Google-Fonts <link> tags in <head>).
-// The PDF route drives headless Chrome on a serverless box to /view and prints
-// it; a third-party CDN fetch there is a real availability risk (a slow or
-// blocked fonts.gstatic.com would silently print the document in a fallback
-// face). next/font downloads the files at BUILD time and serves them from our
-// own origin, so the PDF can't lose its typography. Exposed as CSS variables
-// because globals.css / app-skin.css / document-paper.css reference the
-// families by name.
-const heebo = Heebo({
-  weight: ["300", "400", "500", "600", "700", "800", "900"],
-  subsets: ["hebrew", "latin"],
+// SELF-HOSTED FONTS, as local files under ./fonts (was: next/font/google,
+// which downloads the files from fonts.gstatic.com at BUILD time on every
+// build). That download is a real availability risk we hit directly: two
+// production deploys failed at build time on 2026-08-14 with a 404 from
+// fonts.gstatic.com for an unrelated font file, breaking a deploy that had
+// nothing to do with fonts. Self-hosting removes the network from the build
+// path entirely - the files are committed, so a CDN hiccup can no longer
+// fail a build. Same reasoning applies at request time for the PDF route,
+// which drives headless Chrome on a serverless box to /view and prints it;
+// a third-party CDN fetch there was also a font-loss risk on a slow or
+// blocked fonts.gstatic.com. The weight ranges below cover the same weights
+// the old next/font/google config listed (these are variable fonts, so one
+// file serves the whole range). Exposed as the same CSS variable names as
+// before because globals.css / app-skin.css / document-paper.css reference
+// the families by name - do not rename these variables without updating
+// those stylesheets too. Do not move these back to next/font/google.
+const heebo = localFont({
+  src: [
+    { path: "./fonts/heebo/Heebo-Variable-Hebrew.woff2" },
+    { path: "./fonts/heebo/Heebo-Variable-Latin.woff2" },
+  ],
+  weight: "300 900",
   variable: "--font-heebo",
   display: "swap",
 });
-const frankRuhl = Frank_Ruhl_Libre({
-  weight: ["400", "500", "700", "900"],
-  subsets: ["hebrew", "latin"],
+const frankRuhl = localFont({
+  src: [
+    {
+      path: "./fonts/frank-ruhl-libre/FrankRuhlLibre-Variable-Hebrew.woff2",
+    },
+    { path: "./fonts/frank-ruhl-libre/FrankRuhlLibre-Variable-Latin.woff2" },
+  ],
+  weight: "400 900",
   variable: "--font-frank",
   display: "swap",
 });
-const assistant = Assistant({
-  weight: ["300", "400", "600", "700", "800"],
-  subsets: ["hebrew", "latin"],
+const assistant = localFont({
+  src: [
+    { path: "./fonts/assistant/Assistant-Variable-Hebrew.woff2" },
+    { path: "./fonts/assistant/Assistant-Variable-Latin.woff2" },
+  ],
+  weight: "300 800",
   variable: "--font-assistant",
   display: "swap",
 });

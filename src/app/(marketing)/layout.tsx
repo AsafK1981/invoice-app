@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Heebo, Assistant } from "next/font/google";
+import localFont from "next/font/local";
 import "./v2.css";
 // After v2.css on purpose: keeps the internal-linking rules later in source
 // order so they win specificity ties, same convention as app-skin.css.
@@ -18,16 +18,30 @@ import "./internal-links.css";
 // Frank Ruhl Libre). As of 2026-08-04 that exception is gone too - Asaf
 // wanted the mock itself modernized - so those rules now read Heebo like
 // everything else here. The real document is untouched.
-const heebo = Heebo({
-  weight: ["400", "500", "700", "800", "900"],
-  subsets: ["hebrew", "latin"],
+//
+// SELF-HOSTED as local files under ../fonts (was: next/font/google). See the
+// longer explanation in src/app/layout.tsx: next/font/google fetches from
+// fonts.gstatic.com at BUILD time, and a CDN 404 there broke two production
+// deploys on 2026-08-14 for code that had nothing to do with fonts. This
+// layout loads the same files the root layout does (Heebo, Assistant), which
+// is fine - it is one cached browser asset either way. Do not move these
+// back to next/font/google.
+const heebo = localFont({
+  src: [
+    { path: "../fonts/heebo/Heebo-Variable-Hebrew.woff2" },
+    { path: "../fonts/heebo/Heebo-Variable-Latin.woff2" },
+  ],
+  weight: "400 900",
   variable: "--font-heebo",
   display: "swap",
 });
 
-const assistant = Assistant({
-  weight: ["300", "400", "600", "700"],
-  subsets: ["hebrew", "latin"],
+const assistant = localFont({
+  src: [
+    { path: "../fonts/assistant/Assistant-Variable-Hebrew.woff2" },
+    { path: "../fonts/assistant/Assistant-Variable-Latin.woff2" },
+  ],
+  weight: "300 700",
   variable: "--font-assistant",
   display: "swap",
 });
