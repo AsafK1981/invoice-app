@@ -5,6 +5,14 @@ export const alt =
   "חשבונית ידידותית - מספר הקצאה מרשות המסים, בלחיצה אחת";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
+// This card's content is fully static (no per-request data), but without a
+// route segment config it was still regenerating on every single request
+// (1.5-4.4s per hit, Cache-Control: max-age=0). `revalidate` applies the
+// same ISR route-segment config here as any other route segment/handler -
+// verified against this app's actual served response after deploy (see the
+// curl -I check in the deploy notes), not just assumed from prior Next
+// versions.
+export const revalidate = 86400;
 
 /**
  * Heebo Bold (weight 800), local, so satori (the engine behind
