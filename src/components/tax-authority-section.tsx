@@ -92,7 +92,7 @@ export function TaxAuthoritySection() {
     // After OAuth callback, gov.il redirects to /settings?tax_authority=connected or =error
     const flag = search.get("tax_authority");
     if (flag === "connected") {
-      setToast({ kind: "success", text: "התחברת בהצלחה לרשות המיסים." });
+      setToast({ kind: "success", text: "התחברת בהצלחה לרשות המסים." });
     } else if (flag === "error") {
       const reason = search.get("reason") || "שגיאה";
       setToast({ kind: "error", text: `החיבור נכשל: ${reason}` });
@@ -141,7 +141,7 @@ export function TaxAuthoritySection() {
 
   async function handleDisconnect() {
     const ok = await confirm({
-      title: "לנתק את החיבור לרשות המיסים?",
+      title: "לנתק את החיבור לרשות המסים?",
       message: "תוכל לחבר מחדש בכל עת.",
       tone: "danger",
       confirmLabel: "נתק",
@@ -301,7 +301,7 @@ export function TaxAuthoritySection() {
               className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-out bg-gradient-to-r from-transparent via-white/30 to-transparent"
             />
             <ShieldCheck className="relative w-4 h-4" />
-            <span className="relative">{acting ? "מעביר..." : "חבר לרשות המיסים"}</span>
+            <span className="relative">{acting ? "מעביר..." : "חבר לרשות המסים"}</span>
             {!acting && <span className="relative text-xs font-normal opacity-70">· פעם אחת</span>}
           </button>
           <p className="text-center text-[11px] text-stone-400">
