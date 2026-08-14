@@ -368,7 +368,8 @@ export async function linkConvertedDocument(sourceQuoteId: string, targetReceipt
  * Sets (or clears) the מספר הקצאה on a document. Pass null/empty to clear.
  * Sets allocation_set_at to now() when a number is provided so the UI can
  * show a timestamp. The user typically gets this number by submitting the
- * doc to https://www.gov.il/he/pages/invoices-israel and pasting back the response.
+ * doc to https://www.gov.il/he/service/request-assignment-number-for-tax-invoice
+ * and pasting back the response.
  */
 export async function setAllocationNumber(id: string, allocationNumber: string | null) {
   const trimmed = allocationNumber?.trim() || null;

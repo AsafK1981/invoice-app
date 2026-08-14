@@ -224,7 +224,7 @@ export default function SettingsPage() {
             </div>
           </div>
           <a
-            href="https://www.gov.il/he/pages/invoices-israel"
+            href="https://www.gov.il/he/service/request-assignment-number-for-tax-invoice"
             target="_blank"
             rel="noopener noreferrer"
             className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-orange-700 hover:text-orange-900 underline"

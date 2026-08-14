@@ -17,7 +17,11 @@ interface Props {
   customerTaxId?: string;
 }
 
-const GOV_PORTAL_URL = "https://www.gov.il/he/pages/invoices-israel";
+// The Tax Authority's manual allocation-number request service ("בקשה למספר
+// הקצאה לחשבונית מס"). The old /he/pages/invoices-israel URL now renders an
+// empty gov.il shell (soft-404) — verified 2026-08-14.
+const GOV_PORTAL_URL =
+  "https://www.gov.il/he/service/request-assignment-number-for-tax-invoice";
 
 /**
  * Surfaces מספר הקצאה (Tax Authority allocation number) status on the doc
