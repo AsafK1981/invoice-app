@@ -1331,7 +1331,7 @@
   font-variant-numeric: tabular-nums;
 }
 .v2-theme .v2-status-row.is-ok .val {
-  color: var(--v2-g2);
+  color: var(--v2-g1);
   font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
 }
 .v2-theme .v2-status-row.is-down .val { color: #b45309; }

@@ -516,6 +516,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
             onClick={handleDuplicate}
             className="hidden sm:inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-white border border-orange-200 text-stone-800 hover:bg-orange-50"
             title="צור עותק חדש"
+            aria-label="שכפל מסמך"
           >
             <Copy className="w-4 h-4" />
             <span className="hidden sm:inline">שכפל</span>
@@ -529,6 +530,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
               onClick={handleDelete}
               className="hidden sm:inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-white border border-rose-200 text-rose-700 hover:bg-rose-50"
               title="מחק מסמך"
+              aria-label="מחק מסמך"
             >
               <Trash2 className="w-4 h-4" />
               <span className="hidden sm:inline">מחק מסמך</span>

@@ -218,7 +218,7 @@ export function MonthlyReminderSettingsSection() {
                       if (e.target.value) addDay(Number(e.target.value));
                     }}
                     onBlur={() => setAddOpen(false)}
-                    className="px-3 py-1.5 rounded-full text-sm font-semibold border-2 border-orange-200 bg-white text-stone-700 focus:border-orange-400 focus:outline-none"
+                    className="px-3 py-1.5 rounded-full text-sm font-semibold border-2 border-orange-200 bg-white text-stone-700 focus:border-orange-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-200"
                   >
                     <option value="" disabled>
                       בחר יום
@@ -243,7 +243,7 @@ export function MonthlyReminderSettingsSection() {
               <select
                 value={draft.hour}
                 onChange={(e) => setDraft((d) => ({ ...d, hour: Number(e.target.value) }))}
-                className="px-3 py-2 rounded-xl text-sm font-semibold border-2 border-stone-200 bg-white text-stone-700 focus:border-orange-300 focus:outline-none"
+                className="px-3 py-2 rounded-xl text-sm font-semibold border-2 border-stone-200 bg-white text-stone-700 focus:border-orange-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-200"
               >
                 {HOUR_OPTIONS.map((h) => (
                   <option key={h} value={h}>

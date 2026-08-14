@@ -5,11 +5,11 @@ import Link from "next/link";
  * See HeaderLight for why this is a homepage-local twin of FooterV2
  * rather than a variant prop on it.
  *
- * Content per the approved scope: מגזין / השוואות / תנאי שימוש / פרטיות,
+ * Content per the approved scope: מגזין / השוואות / תנאי שימוש / פרטיות / נגישות,
  * plus the site's existing credit line (the same one the dark homepage
  * shows above FooterV2 today) in place of a plain copyright string.
- * נגישות and התחברות (present in FooterV2) are intentionally not repeated
- * here - both are already reachable from the header/hero on this page.
+ * התחברות (present in FooterV2) is intentionally not repeated here - it is
+ * already reachable from the header/hero on this page.
  */
 export default function FooterLight() {
   return (
@@ -23,6 +23,7 @@ export default function FooterLight() {
           <Link href="/vs">השוואות</Link>
           <Link href="/terms">תנאי שימוש</Link>
           <Link href="/privacy">פרטיות</Link>
+          <Link href="/accessibility">נגישות</Link>
         </nav>
         <span className="ml-footer-copy">נבנה באהבה לעסקים עצמאיים בישראל</span>
       </div>
