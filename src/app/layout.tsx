@@ -42,6 +42,20 @@ const heebo = localFont({
   variable: "--font-heebo",
   display: "swap",
 });
+// preload: false (2026-08-14 perf fix) - Frank Ruhl is only ever used by
+// document-paper.css's `.doc-serif` rule (the printable document sheet:
+// /documents/[id], /view/[id], and the document editors' live preview),
+// but declaring the font here on <html> (needed so /view/[id], which lives
+// outside the (app) route group, still gets the CSS variable) had Next
+// preload the 63KB file with a <link rel="preload"> on every single page,
+// marketing included. `preload: false` keeps the variable/class global
+// (nothing to restructure, no risk of it going missing on one route) while
+// making the actual font fetch lazy: the browser only downloads it once a
+// matching font-family rule is actually painted, i.e. only on document-sheet
+// routes. Considered moving the localFont() call into a layout scoped to
+// just those routes instead, but /view/[id] and the (app) document routes
+// don't share a layout, so that would mean two separate localFont() calls
+// for one font; preload:false gets the same result with none of that risk.
 const frankRuhl = localFont({
   src: [
     {
@@ -52,6 +66,7 @@ const frankRuhl = localFont({
   weight: "400 900",
   variable: "--font-frank",
   display: "swap",
+  preload: false,
 });
 const assistant = localFont({
   src: [
