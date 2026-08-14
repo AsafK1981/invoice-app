@@ -21,7 +21,7 @@ export default function FooterLight() {
         <nav className="ml-footer-links">
           <Link href="/blog">מגזין</Link>
           <Link href="/vs">השוואות</Link>
-          <Link href="/#pricing">מחירים</Link>
+          <Link href="/pricing">מחירים</Link>
           <Link href="/terms">תנאי שימוש</Link>
           <Link href="/privacy">פרטיות</Link>
           <Link href="/accessibility">נגישות</Link>

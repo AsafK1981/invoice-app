@@ -34,7 +34,7 @@ export default function HeaderV2() {
         <Link href="/blog" className="v2-navlink v2-nav-secondary">
           מגזין
         </Link>
-        <Link href="/#pricing" className="v2-navlink">
+        <Link href="/pricing" className="v2-navlink">
           מחירים
         </Link>
         <Link href="/login" className="v2-navlink v2-header-login">

@@ -35,7 +35,7 @@ export default function HeaderLight() {
           <Link href="/vs" className="ml-navlink">
             השוואות
           </Link>
-          <Link href="/#pricing" className="ml-navlink">
+          <Link href="/pricing" className="ml-navlink">
             מחירים
           </Link>
           <Link href="/login" className="ml-navlink">

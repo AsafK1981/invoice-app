@@ -17,7 +17,7 @@ export default function FooterV2() {
           חשבונית ידידותית
         </Link>
         <nav className="v2-footer-links">
-          <Link href="/#pricing">מחירים</Link>
+          <Link href="/pricing">מחירים</Link>
           <Link href="/terms">תנאי שימוש</Link>
           <Link href="/privacy">פרטיות</Link>
           <Link href="/accessibility">נגישות</Link>
