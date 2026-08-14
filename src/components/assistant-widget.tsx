@@ -5,11 +5,16 @@
 // document: a draft is handed back to the user, who opens it in the editor and
 // approves it there (numbering, allocation and immutability all live in that
 // flow and must stay under the user's control).
+//
+// Voice dictation (the mic button in the composer) uses the browser-native
+// Web Speech API - free, no API key, no server round-trip. Supported in
+// Chrome and Safari; Firefox has no support, so the button is hidden there
+// rather than shown dead (see useSpeechRecognition's `supported` flag).
 
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";
-import { Sparkles, X, Send, FileText, Paperclip, Table2, MessageCircle } from "lucide-react";
+import { Sparkles, X, Send, FileText, Paperclip, Table2, MessageCircle, Mic } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { saveDraftToServer, DOC_TYPE_ROUTE } from "@/lib/draft-store";
 import { todayInIsrael } from "@/lib/date";
@@ -18,6 +23,7 @@ import {
   ATTACHMENT_ACCEPT,
   type ParsedAttachment,
 } from "@/lib/import-excel-text";
+import { useSpeechRecognition, appendFinalResult } from "@/lib/use-speech-recognition";
 import type { DocumentType } from "@/lib/types";
 
 interface AssistantDraft {
@@ -55,6 +61,10 @@ export function AssistantWidget() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const speech = useSpeechRecognition();
+  // What was already typed when dictation started, so speech APPENDS to it
+  // instead of overwriting it.
+  const dictationBaseRef = useRef("");
 
   // InstallPrompt sits bottom-right, and flips to bottom-left over the single
   // document paper. Mirror it so the two never overlap.
@@ -78,6 +88,29 @@ export function AssistantWidget() {
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
+  // While dictating, show what was already typed plus the committed
+  // transcript plus the live interim tail, so words appear as he speaks.
+  useEffect(() => {
+    if (!speech.listening) return;
+    const withTranscript = appendFinalResult(dictationBaseRef.current, speech.transcript);
+    setInput(appendFinalResult(withTranscript, speech.interim));
+  }, [speech.listening, speech.transcript, speech.interim]);
+
+  useEffect(() => {
+    if (speech.error) setError(speech.error);
+  }, [speech.error]);
+
+  function toggleDictation() {
+    if (speech.listening) {
+      speech.stop();
+      return;
+    }
+    if (busy || parsingFile) return;
+    setError("");
+    dictationBaseRef.current = input;
+    speech.start();
+  }
+
   async function pickFile(file: File | undefined) {
     if (!file) return;
     setError("");
@@ -99,6 +132,7 @@ export function AssistantWidget() {
     // A file on its own is a complete request ("here's my month"), so an empty
     // textarea shouldn't block sending it.
     if ((!trimmed && !sentAttachment) || busy) return;
+    if (speech.listening) speech.stop();
     setError("");
     setInput("");
     setAttachment(null);
@@ -388,9 +422,32 @@ export function AssistantWidget() {
                 }
               }}
               rows={1}
-              placeholder={parsingFile ? "קורא את הקובץ..." : "במה אפשר לעזור?"}
+              placeholder={
+                parsingFile
+                  ? "קורא את הקובץ..."
+                  : speech.listening
+                    ? "מדבר... "
+                    : "במה אפשר לעזור?"
+              }
               className="input-warm flex-1 resize-none max-h-24 text-sm py-2 px-3"
             />
+            {speech.supported && (
+              <button
+                type="button"
+                onClick={toggleDictation}
+                disabled={busy || parsingFile}
+                aria-label={speech.listening ? "עצור הקלדה קולית" : "הקלדה קולית"}
+                aria-pressed={speech.listening}
+                title={speech.listening ? "עצור הקלדה קולית" : "הקלדה קולית"}
+                className={`w-11 h-11 flex-shrink-0 rounded-xl border flex items-center justify-center disabled:opacity-40 transition-colors ${
+                  speech.listening
+                    ? "bg-rose-500 border-rose-500 text-white animate-pulse"
+                    : "border-stone-200 text-stone-500 hover:text-orange-500 hover:border-orange-200"
+                }`}
+              >
+                <Mic className="w-4 h-4" />
+              </button>
+            )}
             <button
               onClick={() => send(input)}
               disabled={busy || parsingFile || (!input.trim() && !attachment)}
