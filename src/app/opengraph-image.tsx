@@ -6,13 +6,27 @@ export const alt =
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 // This card's content is fully static (no per-request data), but without a
-// route segment config it was still regenerating on every single request
-// (1.5-4.4s per hit, Cache-Control: max-age=0). `revalidate` applies the
-// same ISR route-segment config here as any other route segment/handler -
-// verified against this app's actual served response after deploy (see the
-// curl -I check in the deploy notes), not just assumed from prior Next
-// versions.
-export const revalidate = 86400;
+// cache header it was regenerating on every single request (1.5-4.4s per
+// hit, Cache-Control: public, max-age=0, must-revalidate).
+//
+// The route-segment `export const revalidate = 86400` was tried first
+// (the usual App Router mechanism, and what most Next docs show), but it
+// measurably did NOT change anything here: two live curl -I checks after
+// deploy still showed max-age=0 and X-Vercel-Cache: MISS on every request.
+// `dynamic: "force-static"` was tried too, but Next warns it's
+// incompatible with `runtime: "edge"` at build time, and removing edge
+// runtime breaks the build outright - Node's fetch() has no file: support,
+// and the local-TTF `fetch(new URL(...))` below (chosen specifically to
+// avoid a request-time fonts.gstatic.com dependency, see loadHeeboBold)
+// needs edge's fetch implementation.
+//
+// What actually works on this Next/Vercel combo: set Cache-Control
+// directly on the ImageResponse (it's a real Response, options.headers
+// passes straight through), which does not depend on the route-segment
+// cache config at all. Verified against the deployed response.
+const CACHE_HEADERS = {
+  "Cache-Control": "public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800",
+};
 
 /**
  * Heebo Bold (weight 800), local, so satori (the engine behind
@@ -160,6 +174,7 @@ export default async function OpengraphImage() {
     {
       ...size,
       fonts: [{ name: "Heebo", data: heeboBold, style: "normal", weight: 800 }],
+      headers: CACHE_HEADERS,
     },
   );
 }
