@@ -77,14 +77,22 @@ export function AllocationSteps({ current, className = "" }: Props) {
               {done ? <Check className="h-3.5 w-3.5" strokeWidth={3} /> : n}
             </span>
             <span className="min-w-0">
+              {/* The three titles are not the same length, so side by side one
+                  of them fits on a single line while the others wrap - which
+                  used to start each card's body text at a different height
+                  (measured 56 / 54 / 34px from the card top) and read as
+                  ragged. Reserving two lines' worth of height in the
+                  multi-column layout lands every body on the same baseline.
+                  Stacked on mobile each title fits on one line anyway, so the
+                  reservation is scoped to sm and up to avoid dead space. */}
               <span
-                className={`block text-[13px] font-bold leading-snug ${
+                className={`block text-[13px] font-bold leading-snug sm:min-h-9 ${
                   active ? "text-stone-900" : "text-stone-600"
                 }`}
               >
                 {step.title}
                 {active && (
-                  <span className="ms-2 inline-block whitespace-nowrap rounded-full bg-amber-100 px-2 py-0.5 align-middle text-[10px] font-bold text-amber-800">
+                  <span className="ms-2 inline-block whitespace-nowrap rounded-full bg-amber-100 px-2 py-0.5 align-middle text-[10px] font-bold leading-none text-amber-800">
                     אתה כאן
                   </span>
                 )}
