@@ -193,6 +193,17 @@
   --v2-paper-goldline: #c9ab63;
   --v2-paper-goldfaint: #e7dcbf;
 
+  /* ---- CTA gradient (chrome-bridging pass, 2026-08-14) ----
+     Copied BY VALUE from marketing-light.css's `--ml-orange` / `--ml-rose`
+     / `--ml-grad`, same duplication pattern as the paper palette above: the
+     header/footer CTA on /vs, /blog, /terms etc. now matches the homepage's
+     orange-to-rose pill exactly, without importing a stylesheet that is
+     scoped to the homepage only. Page BODIES keep the gold family
+     untouched - only `.v2-btn-gold` (the header/footer CTA) reads this. */
+  --v2-cta-orange: #f97316;
+  --v2-cta-rose: #e11d48;
+  --v2-cta-grad: linear-gradient(135deg, var(--v2-cta-orange), var(--v2-cta-rose));
+
   position: relative;
   min-height: 100vh;
   color: var(--v2-ink);
@@ -302,7 +313,14 @@
 }
 .v2-theme .v2-navlink:hover { color: var(--v2-g1); }
 
-/* gold pill button (used in header + inline CTAs) */
+/* Header/footer CTA pill. Named "-gold" from the original dark design;
+   kept as-is (only this ONE class, confirmed unused anywhere but
+   Header/FooterV2) rather than renamed, to avoid touching the 420/500/1000px
+   responsive overrides below that key off this class name. Chrome-bridging
+   pass, 2026-08-14: repainted from the metallic gold-on-obsidian gradient to
+   the homepage's orange-to-rose CTA (`--v2-cta-grad`), same shadow recipe as
+   `.ml-btn-primary` in marketing-light.css, so the "התחילו בחינם" button
+   reads identically whether you're on the homepage or on /vs, /blog etc. */
 .v2-theme .v2-btn-gold {
   display: inline-flex;
   align-items: center;
@@ -314,18 +332,61 @@
   min-height: 40px;
   padding: 9px 22px;
   border-radius: var(--v2-r-pill);
-  background: var(--v2-gold-grad);
-  box-shadow: var(--v2-glow-rest);
+  background: var(--v2-cta-grad);
+  box-shadow: 0 12px 26px -12px rgba(225, 29, 72, 0.4), 0 4px 10px -4px rgba(249, 115, 22, 0.32);
   /* nowrap: at 320px the footer row previously squeezed this pill until its
      own label broke onto two lines, turning the rounded pill into an oval
      lozenge. The label must always read as one word; the row around it
      wraps instead (see .v2-footer-links in the 520px query). */
   white-space: nowrap;
-  transition: transform 0.15s ease, box-shadow 0.2s ease;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s ease;
 }
 .v2-theme .v2-btn-gold:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--v2-glow-hover);
+  transform: translateY(-2px) scale(1.015);
+  filter: brightness(1.04);
+  box-shadow: 0 20px 38px -14px rgba(225, 29, 72, 0.5), 0 8px 18px -6px rgba(249, 115, 22, 0.36);
+}
+
+/* ---------- header/footer wordmark (chrome-bridging pass, 2026-08-14) ----------
+   HeaderV2/FooterV2 used to render <LogoV2>: a boxed gold document icon plus
+   a stacked two-line wordmark, the pre-2026-08-10 dark-design lockup. The
+   homepage moved to a plain inline text lockup that day (`.ml-logo` /
+   `.ml-logo-soft` in marketing-light.css) and nothing outside the homepage
+   followed, so the header/footer chrome still looked like the OLD site the
+   instant you left it. This repeats that exact shape here instead of
+   importing marketing-light.css (which is homepage-scoped on purpose): the
+   values line up by design, not by coincidence - `--v2-ink` already equals
+   `--ml-ink` and `--v2-g1` already equals `--ml-gold-ink` (see the token
+   block up top), so no new colour was invented.
+
+   `.v2-logo` / `.v2-logo-mark` / `.v2-logo-word` / `.v2-logo-sub` (LogoV2's
+   own classes, right above) are left untouched per scope - Header/FooterV2
+   simply stop rendering <LogoV2> and use these instead. Page BODIES never
+   used LogoV2 or these classes, so nothing there is affected. */
+.v2-theme .v2-wordmark {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  color: var(--v2-ink);
+}
+.v2-theme .v2-wordmark-soft {
+  color: var(--v2-g1);
+  font-weight: 800;
+}
+/* Footer lockup: plain single-color text, matching `.ml-footer-logo`'s
+   14.5px hard-coded size exactly (not a `--v2-fs-*` token, which steps at
+   the desktop breakpoints - the homepage's footer wordmark never does). */
+.v2-theme .v2-footer-wordmark {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  font-size: 14.5px;
+  font-weight: 800;
+  color: var(--v2-ink);
 }
 
 /* ---------- logo ---------- */
@@ -2410,12 +2471,30 @@
   .v2-theme .v2-logo-mark { width: 34px; height: 34px; }
   .v2-theme .v2-logo-word { font-size: 20px; }
   .v2-theme .v2-logo-sub { font-size: 9px; letter-spacing: 0.2em; }
+  /* Same shrink, for the wordmark lockup that actually renders now
+     (chrome-bridging pass, 2026-08-14) - the rules above are dead weight
+     kept only because LogoV2's classes are untouched by scope, not because
+     anything still renders them here. */
+  .v2-theme .v2-wordmark { font-size: 16px; }
   /* The body tier is 15.5px now (was a flat 14px), and at 320px the extra
      1.5px on three header items pushed the nav 13px past the left edge.
      The header is the one place the ladder has to give. */
   .v2-theme .v2-navlink,
   .v2-theme .v2-btn-gold { font-size: var(--v2-fs-meta); }
   .v2-theme .v2-btn-gold { padding: 9px 14px; }
+}
+
+/* Chrome-bridging pass, 2026-08-14: the inline-text wordmark measures wider
+   than the boxed icon lockup it replaced, and below ~370px (measured
+   empirically: wordmark 108.8 + nav 217.5 + header padding/gap 44 = 370.3)
+   the header no longer fits "חשבונית ידידותית" + השוואה + מגזין + מחירים +
+   the CTA on one row - the CTA label was clipping off the left edge.
+   מחירים was the recently-added link and stays visible at every width by
+   request; the two others (`.v2-nav-secondary` on the /vs and /blog links
+   in HeaderV2.tsx) step out of the way below this one breakpoint instead,
+   the same trade the 500px query below already makes for the login link. */
+@media (max-width: 374.98px) {
+  .v2-theme .v2-nav-secondary { display: none; }
 }
 
 /* Since the header CTA became "התחילו בחינם" (longer than the old
