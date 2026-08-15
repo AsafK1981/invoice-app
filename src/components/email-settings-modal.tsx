@@ -124,10 +124,12 @@ export function EmailSettingsModal({ open, onClose }: Props) {
         <FormField label="כתובת Gmail" hint="הכתובת שממנה ישלחו המסמכים">
           <input
             type="email"
+            name="email"
             dir="ltr"
             value={gmailUser}
             onChange={(e) => setGmailUser(e.target.value)}
             placeholder="you@gmail.com"
+            autoComplete="email"
             className="input-warm"
           />
         </FormField>
@@ -147,10 +149,12 @@ export function EmailSettingsModal({ open, onClose }: Props) {
             </button>
             <input
               type={showPassword ? "text" : "password"}
+              name="gmail-app-password"
               dir="ltr"
               value={gmailAppPassword}
               onChange={(e) => setGmailAppPassword(e.target.value)}
               placeholder="xxxx xxxx xxxx xxxx"
+              autoComplete="off"
               className="input-warm pr-10"
             />
           </div>

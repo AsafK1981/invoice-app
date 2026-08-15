@@ -135,9 +135,11 @@ export function AccountSettingsModal({ open, onClose }: Props) {
           <FormField label="כתובת אימייל">
             <input
               type="email"
+              name="email"
               dir="ltr"
               value={userEmail}
               disabled
+              autoComplete="email"
               className="input-warm bg-stone-50 cursor-not-allowed"
             />
           </FormField>
@@ -161,11 +163,13 @@ export function AccountSettingsModal({ open, onClose }: Props) {
                 </button>
                 <input
                   type={showPassword ? "text" : "password"}
+                  name="new-password"
                   dir="ltr"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   minLength={6}
+                  autoComplete="new-password"
                   className="input-warm pl-3 pr-10"
                 />
               </div>
@@ -173,11 +177,13 @@ export function AccountSettingsModal({ open, onClose }: Props) {
             <FormField label="אישור סיסמה">
               <input
                 type={showPassword ? "text" : "password"}
+                name="new-password"
                 dir="ltr"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="••••••••"
                 minLength={6}
+                autoComplete="new-password"
                 className="input-warm"
               />
             </FormField>
@@ -254,6 +260,7 @@ export function AccountSettingsModal({ open, onClose }: Props) {
                         value={deleteText}
                         onChange={(e) => setDeleteText(e.target.value)}
                         placeholder="מחק"
+                        autoComplete="off"
                         className="input-warm"
                       />
                     </FormField>
