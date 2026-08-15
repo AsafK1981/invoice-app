@@ -255,7 +255,7 @@ export function DocumentDesignSection() {
         total={round2(SAMPLE_SUBTOTAL + vat)}
       />
       <p className="text-xs text-stone-500 mt-2 text-center">
-        תצוגה מקדימה עם נתוני דוגמה — לא מסמך אמיתי
+        תצוגה מקדימה עם נתוני דוגמה, לא מסמך אמיתי
       </p>
     </div>
   );
@@ -278,7 +278,7 @@ export function DocumentDesignSection() {
       </div>
 
       <p className="text-sm text-stone-700 mb-4">
-        בחר תבנית עיצוב המותאמת לתחום העיסוק שלך. משפיע על כל המסמכים החדשים — לא משנה
+        בחר תבנית עיצוב המותאמת לתחום העיסוק שלך. משפיע על כל המסמכים החדשים בלבד, לא על
         מסמכים שכבר הופקו. אם לא בוחרים כלום, המסמכים ממשיכים להיראות בדיוק כמו היום.
       </p>
 

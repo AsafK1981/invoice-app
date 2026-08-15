@@ -333,7 +333,7 @@ export default function OnboardingPage() {
                       className="input-warm"
                     />
                     <p className="text-[11px] text-stone-500 mt-1">
-                      לא זוכר? אפשר להמשיך בלי — נבקש את זה כשתפיק מסמך רשמי.
+                      לא זוכר? אפשר להמשיך בלי, נבקש את זה כשתפיק מסמך רשמי.
                     </p>
                   </div>
                 </div>
@@ -408,7 +408,7 @@ export default function OnboardingPage() {
                 <div>
                   <h2 className="text-xl font-bold text-stone-900">התאמנו לך עיצוב מסמכים</h2>
                   <p className="text-sm text-stone-700">
-                    בהתאם לתחום שציינת — אפשר לשנות בכל שלב מההגדרות
+                    בהתאם לתחום שציינת, אפשר לשנות בכל שלב מההגדרות
                   </p>
                 </div>
               </div>
