@@ -325,12 +325,14 @@ function LoginForm() {
                 <Mail className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-stone-400" />
                 <input
                   id={emailId}
+                  name="email"
                   type="email"
                   dir="ltr"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
                   required
+                  autoComplete="email"
                   className="input-warm pr-10"
                 />
               </div>
@@ -361,6 +363,7 @@ function LoginForm() {
                   </button>
                   <input
                     id={passwordId}
+                    name={mode === "signup" ? "new-password" : "current-password"}
                     type={showPassword ? "text" : "password"}
                     dir="ltr"
                     value={password}
@@ -368,6 +371,7 @@ function LoginForm() {
                     placeholder="••••••••"
                     required
                     minLength={6}
+                    autoComplete={mode === "signup" ? "new-password" : "current-password"}
                     className="input-warm pl-3 pr-10"
                   />
                 </div>
