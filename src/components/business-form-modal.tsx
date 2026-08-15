@@ -208,10 +208,12 @@ export function BusinessFormModal({ open, onClose, business }: Props) {
         <FormField label="שם העסק" required>
           <input
             type="text"
+            name="organization"
             value={form.name}
             onChange={(e) => update("name", e.target.value)}
             placeholder="שם העסק כפי שיופיע על מסמכים"
             className="input-warm"
+            autoComplete="organization"
             autoFocus
           />
         </FormField>
@@ -233,10 +235,12 @@ export function BusinessFormModal({ open, onClose, business }: Props) {
           <FormField label="מספר עוסק / ח.פ" required>
             <input
               type="text"
+              name="tax-id"
               dir="ltr"
               value={form.taxId}
               onChange={(e) => update("taxId", e.target.value)}
               placeholder="123456789"
+              autoComplete="on"
               className="input-warm"
             />
           </FormField>
@@ -245,9 +249,11 @@ export function BusinessFormModal({ open, onClose, business }: Props) {
         <FormField label="כתובת" required>
           <input
             type="text"
+            name="street-address"
             value={form.address}
             onChange={(e) => update("address", e.target.value)}
             placeholder="רחוב, מספר, עיר"
+            autoComplete="street-address"
             className="input-warm"
           />
         </FormField>
@@ -256,10 +262,12 @@ export function BusinessFormModal({ open, onClose, business }: Props) {
           <FormField label="טלפון">
             <input
               type="tel"
+              name="tel"
               dir="ltr"
               value={form.phone || ""}
               onChange={(e) => update("phone", e.target.value)}
               placeholder="050-1234567"
+              autoComplete="tel"
               className="input-warm"
             />
           </FormField>
@@ -267,10 +275,12 @@ export function BusinessFormModal({ open, onClose, business }: Props) {
           <FormField label="אימייל">
             <input
               type="email"
+              name="email"
               dir="ltr"
               value={form.email || ""}
               onChange={(e) => update("email", e.target.value)}
               placeholder="contact@business.com"
+              autoComplete="email"
               className="input-warm"
             />
           </FormField>

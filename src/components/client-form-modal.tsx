@@ -124,9 +124,11 @@ export function ClientFormModal({ open, onClose, client }: Props) {
         <FormField label="שם הלקוח" required>
           <input
             type="text"
+            name="name"
             value={form.name}
             onChange={(e) => update("name", e.target.value)}
             placeholder="חברת אלפא בע״מ"
+            autoComplete="name"
             className="input-warm"
             autoFocus
           />
@@ -136,10 +138,12 @@ export function ClientFormModal({ open, onClose, client }: Props) {
           <FormField label="ח.פ / ת.ז">
             <input
               type="text"
+              name="tax-id"
               dir="ltr"
               value={form.taxId}
               onChange={(e) => update("taxId", e.target.value)}
               placeholder="514123456"
+              autoComplete="on"
               className="input-warm"
             />
           </FormField>
@@ -147,10 +151,12 @@ export function ClientFormModal({ open, onClose, client }: Props) {
           <FormField label="טלפון">
             <input
               type="tel"
+              name="tel"
               dir="ltr"
               value={form.phone}
               onChange={(e) => update("phone", e.target.value)}
               placeholder="050-1234567"
+              autoComplete="tel"
               className="input-warm"
             />
           </FormField>
@@ -170,11 +176,13 @@ export function ClientFormModal({ open, onClose, client }: Props) {
                     <Mail className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-stone-400" />
                     <input
                       type="email"
+                      name="email"
                       dir="ltr"
                       value={email}
                       onChange={(e) => updateEmail(idx, e.target.value)}
                       placeholder={idx === 0 ? "primary@company.com" : "additional@company.com"}
                       aria-label={idx === 0 ? "אימייל ראשי" : `אימייל נוסף ${idx}`}
+                      autoComplete="email"
                       className={`input-warm pr-10 ${invalid ? "border-rose-400" : ""}`}
                     />
                   </div>
@@ -210,9 +218,11 @@ export function ClientFormModal({ open, onClose, client }: Props) {
         <FormField label="כתובת">
           <input
             type="text"
+            name="street-address"
             value={form.address}
             onChange={(e) => update("address", e.target.value)}
             placeholder="דיזנגוף 100, תל אביב"
+            autoComplete="street-address"
             className="input-warm"
           />
         </FormField>
