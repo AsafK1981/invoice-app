@@ -8,6 +8,7 @@ import { DOCUMENT_TYPE_LABELS, type DocumentType } from "@/lib/types";
 import { requiresAllocationNumber, normalizeCustomerVatNumber } from "@/lib/tax-authority";
 import { CANONICAL_ORIGIN } from "@/lib/public-url";
 import { canIssueTaxInvoicesByType } from "@/lib/vat";
+import { normalizeDocumentDesign, ACCENT_HEX } from "@/lib/document-themes";
 import { buildHtml, buildText } from "./template";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -146,7 +147,7 @@ export async function POST(req: NextRequest) {
     }
     const { data: bizRow } = await admin
       .from("businesses")
-      .select("id, user_id, name, logo_url, business_type")
+      .select("id, user_id, name, logo_url, business_type, document_design")
       .eq("id", docRow.business_id)
       .maybeSingle();
     if (!bizRow || bizRow.user_id !== user.id) {
@@ -200,6 +201,14 @@ export async function POST(req: NextRequest) {
     // Authentic content, straight from the owned document.
     const businessName = bizRow.name as string;
     const logoUrl = (bizRow.logo_url as string) || undefined;
+    // Email accent: the SAME validated path as the document itself
+    // (normalizeDocumentDesign -> the closed ACCENT_HEX map), never the raw
+    // document_design JSONB value. null (no design chosen) -> undefined,
+    // which keeps buildHtml's original orange/rose look unchanged.
+    const emailDesign = normalizeDocumentDesign(bizRow.document_design);
+    const emailAccent = emailDesign
+      ? { grad: ACCENT_HEX[emailDesign.accent].grad, solid: ACCENT_HEX[emailDesign.accent].accent }
+      : undefined;
     const receiptNumber = docRow.number as string | number;
     const total = docRow.total as number;
     const clientName = (docRow.client_name as string) || "";
@@ -262,6 +271,7 @@ export async function POST(req: NextRequest) {
       trackingPixelUrl,
       currency,
       showBranding,
+      accent: emailAccent,
     });
     const text = buildText({
       businessName,

@@ -41,6 +41,13 @@ function docWording(type?: DocumentType): { attached: string; noun: string } {
   return { attached: `${type === "proforma" ? "מצורף" : "מצורפת"} ${label}`, noun: label };
 }
 
+// The email's default look — the same orange→rose gradient the app's
+// marketing chrome has always used. Kept as named constants (not inlined at
+// each call site) so the "no document design chosen" fallback is visibly
+// the exact pre-feature value, never a value that drifted.
+const DEFAULT_ACCENT_GRAD = "linear-gradient(135deg, #f97316, #e11d48)";
+const DEFAULT_ACCENT_SOLID = "#ea580c";
+
 export function buildHtml(args: {
   businessName: string;
   clientName: string;
@@ -60,11 +67,22 @@ export function buildHtml(args: {
   /** Growth loop: a one-line "נשלח באמצעות" credit in the footer. Defaults to
    *  true; the caller passes false for a paying subscriber. */
   showBranding?: boolean;
+  /**
+   * The business's chosen document-design accent, already resolved to CSS
+   * values by the caller via `ACCENT_HEX[normalizeDocumentDesign(...).accent]`
+   * — never a raw string read off the DB. `grad` themes the header band,
+   * `solid` themes the CTA button and inline link colors. Omit (or pass
+   * undefined) to keep the original orange/rose look — the behaviour for
+   * every business that hasn't chosen a document design.
+   */
+  accent?: { grad: string; solid: string };
 }): string {
-  const { businessName, clientName, receiptNumber, total, viewUrl, logoUrl, kind = "initial", daysSinceSent, documentType, trackingPixelUrl, currency, showBranding = true } = args;
+  const { businessName, clientName, receiptNumber, total, viewUrl, logoUrl, kind = "initial", daysSinceSent, documentType, trackingPixelUrl, currency, showBranding = true, accent } = args;
   const isReminder = kind === "reminder";
   const { attached, noun } = docWording(documentType);
   const totalFormatted = escapeHtml(formatDocTotal(total, currency));
+  const accentGrad = accent?.grad || DEFAULT_ACCENT_GRAD;
+  const accentSolid = accent?.solid || DEFAULT_ACCENT_SOLID;
   const introLine = isReminder
     ? `מקווה שאתם בסדר. רק תזכורת קלה לגבי ${escapeHtml(noun)} מספר <strong>#${escapeHtml(String(receiptNumber))}</strong> על סך <strong>${totalFormatted}</strong>${
         daysSinceSent ? ` ששלחנו לפני ${daysSinceSent} ימים` : ""
@@ -89,7 +107,7 @@ export function buildHtml(args: {
 </head>
 <body style="margin:0; padding:0; background:#f5f5f4; font-family: Arial, sans-serif;">
   <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-    <div style="background: linear-gradient(135deg, #f97316, #e11d48); padding: 24px; border-radius: 16px; color: white; text-align: center; margin-bottom: 24px;">
+    <div style="background: ${accentGrad}; padding: 24px; border-radius: 16px; color: white; text-align: center; margin-bottom: 24px;">
       ${logoUrl ? `<img src="${escapeHtml(logoUrl)}" alt="${escapeHtml(businessName)}" style="max-height: 60px; max-width: 200px; margin-bottom: 12px; background: white; padding: 8px; border-radius: 8px;" />` : ""}
       <h1 style="margin: 0; font-size: 24px;">${escapeHtml(businessName)}</h1>
     </div>
@@ -107,7 +125,7 @@ export function buildHtml(args: {
     </div>
 
     <div style="text-align: center; margin-bottom: 24px;">
-      <a href="${escapeHtml(viewUrl)}" style="display: inline-block; background: linear-gradient(135deg, #f97316, #e11d48); color: white; text-decoration: none; padding: 14px 32px; border-radius: 12px; font-size: 16px; font-weight: bold;">
+      <a href="${escapeHtml(viewUrl)}" style="display: inline-block; background: ${accentGrad}; color: white; text-decoration: none; padding: 14px 32px; border-radius: 12px; font-size: 16px; font-weight: bold;">
         צפה במסמך ←
       </a>
     </div>
@@ -117,7 +135,7 @@ export function buildHtml(args: {
         אם הכפתור לא נפתח, העתק את הקישור:
       </p>
       <p style="font-size: 12px; color: #78716c; margin: 0; word-break: break-all;">
-        <a href="${escapeHtml(viewUrl)}" style="color: #ea580c;">${escapeHtml(viewUrl)}</a>
+        <a href="${escapeHtml(viewUrl)}" style="color: ${accentSolid};">${escapeHtml(viewUrl)}</a>
       </p>
     </div>
 

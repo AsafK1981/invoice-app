@@ -106,6 +106,45 @@ describe("buildHtml structure", () => {
   });
 });
 
+describe("buildHtml accent theming (Phase 2: document-design consistency)", () => {
+  it("no accent -> keeps the original orange/rose gradient (null-fallback parity)", () => {
+    const html = buildHtml(BASE_ARGS);
+    expect(html).toContain("linear-gradient(135deg, #f97316, #e11d48)");
+    expect(html).toContain("#ea580c");
+  });
+
+  it("with an accent -> the header band and button use the accent gradient, not the default", () => {
+    const themed = buildHtml({
+      ...BASE_ARGS,
+      accent: { grad: "linear-gradient(177deg, #a9c0a2 0%, #7c9885 42%, #5e7a5b 78%, #9db597 100%)", solid: "#62795f" },
+    });
+    expect(themed).toContain("linear-gradient(177deg, #a9c0a2 0%, #7c9885 42%, #5e7a5b 78%, #9db597 100%)");
+    expect(themed).not.toContain("linear-gradient(135deg, #f97316, #e11d48)");
+    expect(themed).toContain("#62795f");
+    expect(themed).not.toContain("#ea580c");
+  });
+
+  it("themed output still passes the same structural invariants (doctype, charset, body)", () => {
+    const themed = buildHtml({
+      ...BASE_ARGS,
+      accent: { grad: "#1b2a4a", solid: "#1b2a4a" },
+    });
+    expect(themed.trim().toLowerCase()).toMatch(/^<!doctype html/);
+    expect(themed).toMatch(/<html\b[^>]*\blang="he"/i);
+    expect(themed).toMatch(/<meta\b[^>]*charset="UTF-8"/i);
+    expect(themed).toMatch(/<body[^>]*>[\s\S]*<\/body>/i);
+  });
+
+  it("the logo still renders when an accent is set", () => {
+    const themed = buildHtml({
+      ...BASE_ARGS,
+      logoUrl: "https://example.com/logo.png",
+      accent: { grad: "#1b2a4a", solid: "#1b2a4a" },
+    });
+    expect(themed).toContain('src="https://example.com/logo.png"');
+  });
+});
+
 describe("buildText plain-text alternative", () => {
   const text = buildText(BASE_ARGS);
 
