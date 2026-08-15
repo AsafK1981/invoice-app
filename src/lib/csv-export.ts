@@ -1,6 +1,8 @@
 import Papa from "papaparse";
 import type { InvoiceDocument, Expense, Client } from "./types";
 import { DOCUMENT_TYPE_LABELS, DOCUMENT_STATUS_LABELS, PAYMENT_METHOD_LABELS } from "./types";
+import { formatDate } from "./format";
+import type { OpenReceivablesResult } from "./capital-declaration";
 
 function download(filename: string, content: string) {
   const bom = "﻿";
@@ -49,6 +51,70 @@ export function exportExpenses(expenses: Expense[], suffix?: string) {
   const date = new Date().toISOString().slice(0, 10);
   const tag = suffix ? `-${suffix}` : "";
   download(`expenses${tag}-${date}.csv`, csv);
+}
+
+/**
+ * Draft export for the הצהרת הון (capital declaration) helper: the business
+ * slice ONLY (declared income per year + open receivables), plus an explicit
+ * checklist of everything the app does not know. Every row shares the same
+ * three columns on purpose so a single Papa.unparse call keeps a consistent
+ * header no matter which section a row came from.
+ *
+ * This is a DRAFT for an accountant, not a filled form - the header row and
+ * the checklist rows say so in plain text, because a CSV loses whatever
+ * on-screen disclaimer surrounded it.
+ */
+export function exportCapitalDeclarationDraft(params: {
+  asOfDate: string;
+  yearRows: { year: number; income: number; expenses: number; profit: number }[];
+  receivables: OpenReceivablesResult;
+  notCoveredCategories: string[];
+}) {
+  const { asOfDate, yearRows, receivables, notCoveredCategories } = params;
+  type Row = { "מקטע": string; "תיאור": string; "ערך": string | number };
+  const rows: Row[] = [];
+
+  rows.push({
+    "מקטע": "כותרת",
+    "תיאור": "טיוטת הכנה להצהרת הון (טופס 1219) - חלק עסקי בלבד, לא הצהרה מלאה",
+    "ערך": `נכון לתאריך ${formatDate(asOfDate)}`,
+  });
+  rows.push({
+    "מקטע": "כותרת",
+    "תיאור": "המערכת אינה מכירה נכסים אישיים (בנק, נדל״ן, ניירות ערך, רכבים, הלוואות)",
+    "ערך": "יש להשלים בנפרד ולאמת מול רואה חשבון",
+  });
+
+  for (const r of yearRows) {
+    rows.push({ "מקטע": "הכנסות עסקיות מוצהרות", "תיאור": `הכנסות ${r.year}`, "ערך": r.income });
+    rows.push({ "מקטע": "הכנסות עסקיות מוצהרות", "תיאור": `הוצאות ${r.year}`, "ערך": r.expenses });
+    rows.push({ "מקטע": "הכנסות עסקיות מוצהרות", "תיאור": `רווח נקי ${r.year}`, "ערך": r.profit });
+  }
+
+  rows.push({
+    "מקטע": "חייבים פתוחים (נכס בהצהרת הון)",
+    "תיאור": `סה״כ חייבים פתוחים נכון ל-${formatDate(asOfDate)} (${receivables.count} מסמכים)`,
+    "ערך": receivables.total,
+  });
+  for (const d of receivables.docs) {
+    rows.push({
+      "מקטע": "חייבים פתוחים (נכס בהצהרת הון)",
+      "תיאור": `${DOCUMENT_TYPE_LABELS[d.type]} #${d.number} · ${d.clientName} · ${formatDate(d.date)}`,
+      "ערך": d.totalIls ?? d.total,
+    });
+  }
+
+  for (const cat of notCoveredCategories) {
+    rows.push({
+      "מקטע": "עדיין לא מכוסה - למלא בנפרד",
+      "תיאור": cat,
+      "ערך": "לא ידוע למערכת",
+    });
+  }
+
+  const csv = Papa.unparse(rows);
+  const date = new Date().toISOString().slice(0, 10);
+  download(`הצהרת-הון-טיוטה-עסקית-${date}.csv`, csv);
 }
 
 export function exportClients(clients: Client[]) {
