@@ -211,9 +211,11 @@ export function ExpenseFormModal({ open, onClose, expense, prefill }: Props) {
         <FormField label="ספק / שם העסק" required>
           <input
             type="text"
+            name="organization"
             value={form.supplier}
             onChange={(e) => update("supplier", e.target.value)}
             placeholder="למשל: Vercel, KSP, Google"
+            autoComplete="organization"
             className="input-warm"
             autoFocus
           />
