@@ -26,6 +26,7 @@ import { isPlaceholderBusinessName, isPlaceholderBusinessTaxId } from "@/lib/bus
 import { BusinessFormModal } from "@/components/business-form-modal";
 import { EmailSettingsModal } from "@/components/email-settings-modal";
 import { DocumentNumberingSettings } from "@/components/document-numbering-settings";
+import { DocumentDesignSection } from "@/components/document-design-section";
 import { AuditLogSection } from "@/components/audit-log-section";
 import { TaxAuthoritySection } from "@/components/tax-authority-section";
 import { TwoFactorSection } from "@/components/two-factor-section";
@@ -242,6 +243,8 @@ export default function SettingsPage() {
         </div>
         <DocumentNumberingSettings />
       </div>
+
+      <DocumentDesignSection />
 
       <div className="card-soft p-6">
         <div className="flex items-center justify-between pb-4 border-b border-orange-100 mb-4">
