@@ -187,6 +187,11 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
             bankBranch: biz.bank_branch || undefined,
             bankAccount: biz.bank_account || undefined,
             paymentNotes: biz.payment_notes || undefined,
+            // Already normalized server-side by /api/public-document (see
+            // that route's businessOut construction) — this is what flows
+            // through ReceiptView -> the .doc-paper wrapper's inline style,
+            // which is what the PDF route's headless Chrome then prints.
+            documentDesign: biz.document_design ?? null,
           });
         }
 

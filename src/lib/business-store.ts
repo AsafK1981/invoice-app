@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "./supabase";
 import { getBusinessId } from "./business-init";
 import { sanitizeReminderDays } from "./reminder-schedule";
+import { normalizeDocumentDesign } from "./document-themes";
 import type { Business } from "./types";
 
 const CHANGE_EVENT = "invoice-app:business-changed";
@@ -54,6 +55,7 @@ export function useBusiness() {
               : ["email", "inapp"],
             monthlyReminderLastSent: data.monthly_reminder_last_sent ?? undefined,
             roundTotalDefault: data.round_total_default ?? false,
+            documentDesign: data.document_design ?? null,
           }
         : defaultBusiness
     );
@@ -99,6 +101,14 @@ export async function saveBusiness(business: Business): Promise<void> {
           ? business.monthlyReminderChannels
           : ["email", "inapp"],
       round_total_default: business.roundTotalDefault ?? false,
+      // Defense in depth: this is the client's own write path, but the raw
+      // in-memory value could in principle be anything (a bug elsewhere, a
+      // stale object). Never write anything to the DB that hasn't been
+      // through the same normalizeDocumentDesign() validation that every
+      // READ path also applies. `null` (no design chosen) round-trips as
+      // `null`, not as `{template:"general",...}` — see the doc comment on
+      // normalizeDocumentDesign for why that distinction matters.
+      document_design: normalizeDocumentDesign(business.documentDesign),
     })
     .eq("id", business.id)
     .select();

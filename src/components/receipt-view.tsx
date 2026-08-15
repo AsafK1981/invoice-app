@@ -6,6 +6,7 @@ import {
   type InvoiceDocument,
 } from "@/lib/types";
 import { DocumentBody, type DocumentBodyClient } from "./document-body";
+import { designToCssVars, normalizeDocumentDesign } from "@/lib/document-themes";
 
 interface Props {
   business: Business;
@@ -48,8 +49,22 @@ export function ReceiptView({
     doc.subtotal !== 0 ? Math.round((doc.vat / doc.subtotal) * 100) : 0;
   const bodyClient = toBodyClient(client, doc.clientName);
 
+  // Security boundary: business.documentDesign is untrusted (read straight
+  // off the DB / the public API's echo of it). normalizeDocumentDesign()
+  // coerces it to a closed-set DocumentDesign or null; designToCssVars()
+  // only ever emits values it looked up from document-themes.ts's own
+  // maps. null design -> {} -> the .doc-paper defaults in
+  // document-paper.css apply, i.e. the unchanged gold look.
+  const design = normalizeDocumentDesign(business.documentDesign);
+  const themeVars = designToCssVars(design);
+
   return (
-    <div className="receipt-view doc-paper is-fluid mx-auto max-w-[210mm] shadow-lg print:shadow-none">
+    <div
+      className="receipt-view doc-paper is-fluid mx-auto max-w-[210mm] shadow-lg print:shadow-none"
+      style={themeVars}
+      data-doc-template={design?.template ?? "general"}
+      data-logo-pos={design?.logoPosition ?? "right"}
+    >
       <DocumentBody
         business={business}
         client={bodyClient}

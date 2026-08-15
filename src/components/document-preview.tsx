@@ -12,6 +12,7 @@ import {
   type PaymentMethod,
 } from "@/lib/types";
 import { DocumentBody, type DocumentBodyClient } from "./document-body";
+import { designToCssVars, normalizeDocumentDesign } from "@/lib/document-themes";
 
 export type PreviewClient = DocumentBodyClient;
 
@@ -75,6 +76,20 @@ export function DocumentPreview(props: Props) {
     };
   }, [zoomed]);
 
+  // Same security boundary as receipt-view.tsx: business.documentDesign is
+  // untrusted, normalizeDocumentDesign() + designToCssVars() are the only
+  // functions allowed to turn it into CSS. Live: as the Settings design
+  // panel edits an in-progress design, it passes a `business` object with
+  // `documentDesign` set to that in-progress (still-unsaved) object, so
+  // this preview updates instantly without any new prop on this component.
+  const design = normalizeDocumentDesign(props.business.documentDesign);
+  const themeVars = designToCssVars(design);
+  const themeAttrs = {
+    style: themeVars,
+    "data-doc-template": design?.template ?? "general",
+    "data-logo-pos": design?.logoPosition ?? "right",
+  } as const;
+
   const body = (
     <DocumentBody
       business={props.business}
@@ -121,7 +136,7 @@ export function DocumentPreview(props: Props) {
               } as CSSProperties
             }
           >
-            <div className="receipt-view doc-paper shadow-md" dir="rtl">
+            <div className="receipt-view doc-paper shadow-md" dir="rtl" {...themeAttrs}>
               {body}
             </div>
           </div>
@@ -160,8 +175,10 @@ export function DocumentPreview(props: Props) {
             <div className="relative z-10 flex-1 overflow-auto py-6 px-4">
               <div
                 className="receipt-view doc-paper shadow-2xl mx-auto"
-                style={{ width: PAGE_WIDTH_PX, maxWidth: "100%" }}
+                style={{ width: PAGE_WIDTH_PX, maxWidth: "100%", ...themeVars }}
                 dir="rtl"
+                data-doc-template={design?.template ?? "general"}
+                data-logo-pos={design?.logoPosition ?? "right"}
                 onClick={(e) => e.stopPropagation()}
               >
                 {body}

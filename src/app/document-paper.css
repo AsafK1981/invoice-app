@@ -21,7 +21,12 @@
    ===================================================================== */
 
 .doc-paper {
-  /* palette: warm near-black ink, thin antique-gold accents */
+  /* palette: warm near-black ink, thin antique-gold accents (the DEFAULT —
+     these are also the exact fallback values a business with no chosen
+     document_design renders, and what an explicit "general" template
+     resolves to; see src/lib/document-themes.ts). A themed business gets
+     every one of these vars overridden via an inline style on this element
+     (designToCssVars()) — nothing here needs to change for that to work. */
   --d-ink: #211c15;
   --d-ink2: #514a3d;
   --d-soft: #6f6857;
@@ -32,11 +37,24 @@
   --d-cardline: #e8e1d0;
   --d-canvas: #efece4;
   --d-grad: linear-gradient(177deg, #d8be77 0%, #be9e4e 42%, #8f6f2a 78%, #cbb061 100%);
+  /* Shape/weight knobs added for profession templates (corner + border
+     enums in document-themes.ts). Defaults below are the pre-feature
+     hard-coded values, so a null design renders byte-for-byte the same. */
+  --d-radius: 16px;
+  --d-badge-r: 3px;
+  --d-borderw: 1px;
+  --d-borderw-hdr: 1.5px;
+  --d-borderw-grand: 2px;
+  --d-card-shadow: 0 1px 2px rgba(40, 30, 10, 0.03);
+  --d-font: var(--font-heebo), "Heebo", system-ui, sans-serif;
+  --d-font-serif: var(--font-frank), "Frank Ruhl Libre", Georgia, serif;
+  --d-topbar-h: 4px;
+  --d-topbar-bg: var(--d-grad);
 
   position: relative;
   background: var(--d-canvas) !important;
   color: var(--d-ink) !important;
-  font-family: var(--font-heebo), "Heebo", system-ui, sans-serif !important;
+  font-family: var(--d-font) !important;
   /* 68px ≈ 18mm, matches the approved mockup's side margin at 96dpi, and
      lines the on-screen 794px (=210mm) sheet up with the printed one. */
   padding: 74px 68px 44px !important;
@@ -46,19 +64,30 @@
   -webkit-font-smoothing: antialiased;
 }
 
-/* hairline of gold along the top edge of the sheet */
+/* top edge of the sheet: a 4px gold gradient by default, or a 1px solid
+   accent-line hairline for templates that set `hairlineTop` (photographer) */
 .doc-paper::before {
   content: "";
   position: absolute;
   top: 0;
   right: 0;
   left: 0;
-  height: 4px;
-  background: var(--d-grad);
+  height: var(--d-topbar-h);
+  background: var(--d-topbar-bg);
 }
 
 .doc-serif {
-  font-family: var(--font-frank), "Frank Ruhl Libre", Georgia, serif;
+  font-family: var(--d-font-serif);
+}
+/* Money always stays in the body font, even on templates whose --d-font-serif
+   is a display/serif face reserved for the business name (e.g. photographer's
+   Miriam Libre) — Miriam Libre's ₪ glyph renders as a visibly split ש/ח,
+   unacceptable on the grand total. Same specificity as .doc-serif above
+   (one class each), so source order — this rule comes after — decides the
+   tie for elements that carry both classes. */
+.doc-paper .doc-grand-val,
+.doc-paper .doc-paid-amount {
+  font-family: var(--d-font);
 }
 .doc-tab {
   font-variant-numeric: tabular-nums;
@@ -73,9 +102,9 @@
 /* ---------- the soft card each zone sits in ---------- */
 .doc-paper .doc-card {
   background: var(--d-card);
-  border: 1px solid var(--d-cardline);
-  border-radius: 16px;
-  box-shadow: 0 1px 2px rgba(40, 30, 10, 0.03);
+  border: var(--d-borderw) solid var(--d-cardline);
+  border-radius: var(--d-radius);
+  box-shadow: var(--d-card-shadow);
   break-inside: avoid;
 }
 
@@ -145,7 +174,7 @@
   display: inline-block;
   margin-top: 6px;
   padding: 5px 15px;
-  border-radius: 3px;
+  border-radius: var(--d-badge-r);
   border: 1px solid var(--d-gold-line);
   color: var(--d-gold);
   font-weight: 600;
@@ -167,6 +196,55 @@
   font-size: 12.5px;
   color: var(--d-ink2);
   margin-top: 5px;
+}
+
+/* ---------- logo position (right = default/unchanged, left, center) -----
+   `data-logo-pos` is set by the render layer from the SAME validated
+   DocumentDesign.logoPosition enum ('right'|'center'|'left') that drives
+   everything else — never a raw string. "right" needs no rule: it's the
+   current DOM order (business block first ⇒ right side in RTL). */
+.doc-paper[data-logo-pos="left"] .doc-biz {
+  order: 2;
+}
+.doc-paper[data-logo-pos="left"] .doc-ident {
+  order: 1;
+  text-align: right;
+}
+.doc-paper[data-logo-pos="center"] .doc-head {
+  flex-direction: column;
+  align-items: center;
+}
+.doc-paper[data-logo-pos="center"] .doc-biz {
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.doc-paper[data-logo-pos="center"] .doc-bizline {
+  text-align: center;
+}
+.doc-paper[data-logo-pos="center"] .doc-ident {
+  text-align: center;
+  margin-top: 12px;
+}
+
+/* ---------- template-specific structural flourishes ----------
+   Everything else in this feature is driven purely by CSS custom
+   properties (colors/radii/border-widths/fonts), which is what keeps the
+   security model simple (one closed-set-driven var map covers all 16
+   templates). These two rules are the deliberate, narrow exceptions,
+   scoped to `data-doc-template` (itself only ever set to a validated
+   TemplateId, never a raw string): the designer template's bold display
+   name (font-weight, not a font-family change) and the tradesperson
+   template's heavier quantity column, both called out in the approved
+   template gallery mockup. */
+.doc-paper[data-doc-template="designer"] .doc-name {
+  font-weight: 800;
+  font-size: 28px;
+  letter-spacing: -0.02em;
+}
+.doc-paper[data-doc-template="tradesperson"] .doc-table td.c-qty {
+  font-weight: 700;
+  color: var(--d-ink);
 }
 
 /* ---------- meta strip: client · allocation · subject ---------- */
@@ -232,7 +310,7 @@
   color: var(--d-soft) !important;
   text-transform: uppercase;
   padding: 11px 2px;
-  border-bottom: 1.5px solid var(--d-gold-line) !important;
+  border-bottom: var(--d-borderw-hdr) solid var(--d-gold-line) !important;
   background: transparent !important;
 }
 .doc-paper .doc-table th.c-desc {
@@ -309,7 +387,7 @@
   white-space: nowrap;
 }
 .doc-paper .doc-brow.is-grand {
-  border-top: 2px solid var(--d-ink);
+  border-top: var(--d-borderw-grand) solid var(--d-ink);
   margin-top: 6px;
   padding-top: 12px;
 }
@@ -339,8 +417,8 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  border: 1px solid var(--d-gold-line);
-  border-radius: 16px;
+  border: var(--d-borderw) solid var(--d-gold-line);
+  border-radius: var(--d-radius);
   background: linear-gradient(160deg, #fdfaf1, #faf4e6);
   break-inside: avoid;
 }

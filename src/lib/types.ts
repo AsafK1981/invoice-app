@@ -72,6 +72,18 @@ export interface Business {
   monthlyReminderLastSent?: string;
   /** Default state for the per-document "round total to whole shekel" toggle. */
   roundTotalDefault?: boolean;
+  /**
+   * Profession-tailored document design (template/accent/font/logo
+   * position), chosen in Settings. `unknown` on purpose: this is the RAW
+   * value read off the `document_design` JSONB column (or echoed by the
+   * public API) — untrusted by construction. NEVER read a field off it
+   * directly; always pass it through `normalizeDocumentDesign()` from
+   * `@/lib/document-themes` first, which is the only place allowed to turn
+   * it into something safe to render. `undefined`/`null` (every existing
+   * business today) means "no theme chosen" and renders the original gold
+   * design unchanged.
+   */
+  documentDesign?: unknown;
 }
 
 export interface Client {

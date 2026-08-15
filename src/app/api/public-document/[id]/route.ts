@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { clientIp } from "@/lib/rate-limit";
+import { normalizeDocumentDesign } from "@/lib/document-themes";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -92,8 +93,11 @@ export async function GET(
       // user_id is selected but NEVER returned to the caller — it is used
       // only, below, to look up whether the owner is a paying subscriber
       // (which decides the footer credit). It is stripped before the response.
+      // document_design is returned but ALWAYS normalized first (below) —
+      // this route is the one place a malformed/hostile value in that
+      // column could otherwise reach a completely unauthenticated caller.
       .select(
-        "id, user_id, name, business_type, tax_id, address, phone, email, logo_url, bank_name, bank_branch, bank_account, payment_notes, default_doc_notes",
+        "id, user_id, name, business_type, tax_id, address, phone, email, logo_url, bank_name, bank_branch, bank_account, payment_notes, default_doc_notes, document_design",
       )
       .eq("id", doc.business_id)
       .maybeSingle(),
@@ -136,11 +140,15 @@ export async function GET(
 
   // Strip user_id: the recipient of a shared invoice must never see the
   // sender's Supabase user id (it is a lookup key elsewhere in the system).
+  // document_design is re-serialized through normalizeDocumentDesign() —
+  // the ONLY thing an unauthenticated caller ever receives for this field
+  // is a value already coerced to the closed enum sets in
+  // src/lib/document-themes.ts, never the raw DB value.
   let businessOut: Record<string, unknown> | null = null;
   if (bizRow) {
-    const { user_id: _ownerId, ...rest } = bizRow;
+    const { user_id: _ownerId, document_design, ...rest } = bizRow;
     void _ownerId;
-    businessOut = rest;
+    businessOut = { ...rest, document_design: normalizeDocumentDesign(document_design) };
   }
 
   return NextResponse.json({
