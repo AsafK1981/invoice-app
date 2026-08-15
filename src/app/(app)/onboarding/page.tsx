@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Sparkles,
@@ -30,7 +30,7 @@ type Step = "welcome" | "business" | "design" | "client" | "done";
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const { business } = useBusiness();
+  const { business, ready } = useBusiness();
   const [step, setStep] = useState<Step>("welcome");
   const [saving, setSaving] = useState(false);
 
@@ -54,6 +54,24 @@ export default function OnboardingPage() {
     email: "",
     phone: "",
   });
+
+  // First-time-setup prefill: if the business record has no email yet (i.e.
+  // this is a brand-new business, not one being re-edited), offer the
+  // authenticated user's own account email as a starting point. Never
+  // overwrites a value the user already typed (checked again inside the
+  // functional update, since the auth call resolves asynchronously) or an
+  // email already saved on the business.
+  useEffect(() => {
+    if (!ready || business.email) return;
+    let cancelled = false;
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (cancelled || !user?.email) return;
+      setBizForm((f) => (f.email ? f : { ...f, email: user.email! }));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [ready, business.email]);
 
   // The exact object saved to the DB by saveBusinessAndAdvance. The `design`
   // step's "use this design" action needs to merge document_design onto the
@@ -274,9 +292,11 @@ export default function OnboardingPage() {
                   </label>
                   <input
                     type="text"
+                    name="organization"
                     value={bizForm.name}
                     onChange={(e) => setBizForm({ ...bizForm, name: e.target.value })}
                     placeholder="העסק שלי בע״מ"
+                    autoComplete="organization"
                     className="input-warm"
                     autoFocus
                   />
@@ -288,9 +308,11 @@ export default function OnboardingPage() {
                   </label>
                   <input
                     type="text"
+                    name="organization-title"
                     value={bizForm.profession}
                     onChange={(e) => setBizForm({ ...bizForm, profession: e.target.value })}
                     placeholder="לדוגמה: מטפל/ת, מעצב/ת גרפי/ת, חשמלאי, רואה חשבון..."
+                    autoComplete="organization-title"
                     className="input-warm"
                   />
                   <p className="text-[11px] text-stone-500 mt-1">
@@ -326,10 +348,12 @@ export default function OnboardingPage() {
                     </label>
                     <input
                       type="text"
+                      name="tax-id"
                       dir="ltr"
                       value={bizForm.taxId}
                       onChange={(e) => setBizForm({ ...bizForm, taxId: e.target.value })}
                       placeholder="123456789"
+                      autoComplete="on"
                       className="input-warm"
                     />
                     <p className="text-[11px] text-stone-500 mt-1">
@@ -342,9 +366,11 @@ export default function OnboardingPage() {
                   <label className="text-xs font-semibold text-stone-700 mb-1 block">כתובת</label>
                   <input
                     type="text"
+                    name="street-address"
                     value={bizForm.address}
                     onChange={(e) => setBizForm({ ...bizForm, address: e.target.value })}
                     placeholder="רחוב, מספר, עיר"
+                    autoComplete="street-address"
                     className="input-warm"
                   />
                 </div>
@@ -354,10 +380,12 @@ export default function OnboardingPage() {
                     <label className="text-xs font-semibold text-stone-700 mb-1 block">טלפון</label>
                     <input
                       type="tel"
+                      name="tel"
                       dir="ltr"
                       value={bizForm.phone}
                       onChange={(e) => setBizForm({ ...bizForm, phone: e.target.value })}
                       placeholder="050-1234567"
+                      autoComplete="tel"
                       className="input-warm"
                     />
                   </div>
@@ -367,10 +395,12 @@ export default function OnboardingPage() {
                     </label>
                     <input
                       type="email"
+                      name="email"
                       dir="ltr"
                       value={bizForm.email}
                       onChange={(e) => setBizForm({ ...bizForm, email: e.target.value })}
                       placeholder="contact@business.com"
+                      autoComplete="email"
                       className="input-warm"
                     />
                   </div>
@@ -474,9 +504,11 @@ export default function OnboardingPage() {
                   <label className="text-xs font-semibold text-stone-700 mb-1 block">שם הלקוח</label>
                   <input
                     type="text"
+                    name="name"
                     value={clientForm.name}
                     onChange={(e) => setClientForm({ ...clientForm, name: e.target.value })}
                     placeholder="חברת אלפא בע״מ"
+                    autoComplete="name"
                     className="input-warm"
                     autoFocus
                   />
@@ -489,10 +521,12 @@ export default function OnboardingPage() {
                     </label>
                     <input
                       type="text"
+                      name="tax-id"
                       dir="ltr"
                       value={clientForm.taxId}
                       onChange={(e) => setClientForm({ ...clientForm, taxId: e.target.value })}
                       placeholder="514123456"
+                      autoComplete="on"
                       className="input-warm"
                     />
                   </div>
@@ -500,10 +534,12 @@ export default function OnboardingPage() {
                     <label className="text-xs font-semibold text-stone-700 mb-1 block">טלפון</label>
                     <input
                       type="tel"
+                      name="tel"
                       dir="ltr"
                       value={clientForm.phone}
                       onChange={(e) => setClientForm({ ...clientForm, phone: e.target.value })}
                       placeholder="050-1234567"
+                      autoComplete="tel"
                       className="input-warm"
                     />
                   </div>
@@ -513,10 +549,12 @@ export default function OnboardingPage() {
                   <label className="text-xs font-semibold text-stone-700 mb-1 block">אימייל</label>
                   <input
                     type="email"
+                    name="email"
                     dir="ltr"
                     value={clientForm.email}
                     onChange={(e) => setClientForm({ ...clientForm, email: e.target.value })}
                     placeholder="contact@company.com"
+                    autoComplete="email"
                     className="input-warm"
                   />
                 </div>
