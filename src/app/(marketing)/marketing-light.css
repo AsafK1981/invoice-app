@@ -642,9 +642,10 @@ h1.ml-hero-h1 {
 }
 
 /* ---------- trust strip ----------
-   Three verifiable-fact cards between the hero and the showcase. Quiet on
-   purpose: gold-tint panels, small type, no icons competing with the
-   advantage grid's colored tiles further down. */
+   Four selling-point cards between the hero and the showcase (2026-08-15:
+   WhatsApp / free month / migration / security). Quiet on purpose:
+   gold-tint panels, small type, no icons competing with the advantage
+   grid's colored tiles further down. 1 col -> 2x2 -> 4 across. */
 .ml-trust {
   padding-block: 0 44px;
 }
@@ -660,9 +661,20 @@ h1.ml-hero-h1 {
 }
 @media (min-width: 720px) {
   .ml-trust-in {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: 16px;
   }
+}
+@media (min-width: 1080px) {
+  .ml-trust-in {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+/* The "בקרוב" badge sits ON a gold-tint card here, and the badge's own
+   background is that same tint - without a white fill it disappears. */
+.ml-trust-card .ml-badge-soon {
+  background: #fff;
+  vertical-align: middle;
 }
 .ml-trust-card {
   background: var(--ml-gold-tint);

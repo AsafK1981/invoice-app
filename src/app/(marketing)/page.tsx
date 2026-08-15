@@ -363,9 +363,8 @@ export default function MarketingLanding() {
                 ביום העבודה&nbsp;שלכם
               </h1>
               <p className="ml-lede">
-                גם עם דרישות 2026: מספר הקצאה מרשות המסים מתקבל אוטומטית,
-                בלחיצה אחת, ישירות מתוך המסמך. פחות טפסים, יותר זמן לעסק
-                שלכם.
+                עומדים בכל הדרישות החדשות של רשות המסים, בלי להתאמץ: מספר
+                ההקצאה מתקבל אוטומטית, בלחיצה אחת, ישירות מתוך המסמך.
               </p>
               <div className="ml-hero-actions">
                 <Link
@@ -392,43 +391,59 @@ export default function MarketingLanding() {
             </div>
           </section>
 
-          {/* Trust strip (2026-08-11). The page had no credibility layer at
-              all - every claim rested on our own say-so. These three are
-              deliberately VERIFIABLE facts about the system, not testimonials:
-              inventing customer quotes for a product with a handful of live
-              users would be fabrication, so real quotes have to come from
-              real users before any appear here.
-
-              Each line was checked against reality before being written:
-                - allocation numbers: real ones have been issued through the
-                  production system against רשות המסים (first: doc #96,
-                  2026-07-06), so this is a statement of fact, not intent.
-                - isolation/encryption: per-business RLS, plus Tax Authority
-                  tokens encrypted at rest via src/lib/crypto.ts. Phrased
-                  narrowly - the encryption covers the tax-authority
-                  connection, NOT every column, and must not imply otherwise.
-                - status page: /status is public and live (verified 200). */}
+          {/* Selling-points strip (2026-08-15, Asaf). Replaced the earlier
+              "verifiable facts" trust cards (real allocation numbers /
+              data isolation / status page) - Asaf: honest but boring, a
+              visitor doesn't care. These four are the things he DOES want
+              a visitor to absorb right under the hero. Still no invented
+              social proof, and every claim stays checked against reality:
+                - WhatsApp: E2E-proven in production but Meta approval is
+                  pending, so it MUST carry the same "בקרוב" badge as the
+                  advantage card and the phone mock. Do not drop the badge
+                  until the channel is live for real users.
+                - free month: matches the official sitewide offer (launch
+                  period fully free, first paid month free later) - keep in
+                  sync with the pricing page FAQ if it changes.
+                - migration: the import wizards (Invoice4U, Morning, iCount,
+                  Excel) are shipped, self-serve features.
+                - security: per-business RLS isolation + the Tax Authority
+                  connection encrypted at rest (src/lib/crypto.ts). Phrased
+                  to not claim column-level encryption of everything.
+              The /status link that lived here moved out; the footer still
+              links it. */}
           <section className="ml-trust">
             <div className="ml-wrap ml-trust-in">
               <div className="ml-trust-card">
-                <span className="ml-trust-k">מחוברים בפועל</span>
+                <span className="ml-trust-k">
+                  חשבונית מהוואטסאפ{" "}
+                  <span className="ml-badge-soon">בקרוב</span>
+                </span>
                 <p>
-                  המערכת כבר קיבלה מספרי הקצאה אמיתיים מרשות המסים - זה פעיל
-                  היום, לא הבטחה לעתיד.
+                  כותבים הודעה אחת בצ&apos;אט - והחשבונית מוכנה ואצל
+                  הלקוח. בלי להיכנס לאפליקציה בכלל.
                 </p>
               </div>
               <div className="ml-trust-card">
-                <span className="ml-trust-k">הנתונים שלכם, שלכם</span>
+                <span className="ml-trust-k">חודש ראשון חינם</span>
                 <p>
-                  הפרדה מלאה ברמת בסיס הנתונים - כל עסק ניגש רק למידע שלו,
-                  והחיבור לרשות המסים נשמר מוצפן.
+                  בתקופת ההשקה הכול חינם, בלי כרטיס אשראי - וגם כשהתשלום
+                  ייכנס, החודש הראשון במתנה. מבטלים בכל רגע, בלי התחייבות.
                 </p>
               </div>
               <div className="ml-trust-card">
-                <span className="ml-trust-k">שקיפות על זמינות</span>
+                <span className="ml-trust-k">מעבר קל מהתוכנה הנוכחית</span>
                 <p>
-                  <Link href="/status">עמוד סטטוס פומבי</Link> שמראה בכל
-                  רגע אם המערכת פעילה. בלי לנחש.
+                  אשף מעבר מ-Invoice4U, חשבונית ירוקה, iCount ועוד -
+                  הלקוחות, המוצרים וההיסטוריה עוברים אוטומטית, בלי להקליד
+                  כלום מחדש.
+                </p>
+              </div>
+              <div className="ml-trust-card">
+                <span className="ml-trust-k">אבטחת מידע מלאה</span>
+                <p>
+                  כל המידע נשמר בענן מאובטח, עם הפרדה מלאה בין עסקים
+                  והצפנה על החיבור לרשות המסים - המסמכים שלכם שמורים
+                  וזמינים מכל מקום.
                 </p>
               </div>
             </div>
