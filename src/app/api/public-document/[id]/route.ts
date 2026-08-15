@@ -78,9 +78,13 @@ export async function GET(
   const doc = docRes.data as Record<string, unknown>;
 
   const [itemsRes, bizRes, cliRes] = await Promise.all([
+    // Explicit allowlist, same discipline as the businesses select below:
+    // never select("*") on a publicly-visible resource, so a future
+    // document_items column can't silently leak via every shared URL.
+    // These are exactly the fields the public /view page consumes.
     admin
       .from("document_items")
-      .select("*")
+      .select("id, product_id, description, quantity, unit_price, total")
       .eq("document_id", id)
       .order("sort_order"),
     // Explicit allowlist: never select("*") on a publicly-visible
@@ -97,7 +101,7 @@ export async function GET(
       // this route is the one place a malformed/hostile value in that
       // column could otherwise reach a completely unauthenticated caller.
       .select(
-        "id, user_id, name, business_type, tax_id, address, phone, email, logo_url, bank_name, bank_branch, bank_account, payment_notes, default_doc_notes, document_design",
+        "id, user_id, name, business_type, tax_id, address, phone, email, logo_url, bank_name, bank_branch, bank_account, payment_notes, document_design",
       )
       .eq("id", doc.business_id)
       .maybeSingle(),

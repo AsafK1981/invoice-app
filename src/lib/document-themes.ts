@@ -315,6 +315,11 @@ export const DOCUMENT_TEMPLATES: DocumentTemplate[] = [
     label: "כללי / ברירת מחדל",
     accent: "gold",
     font: "heebo",
+    // Business name / doc number stay Frank Ruhl Libre, matching the legacy
+    // (null-design) look exactly. Without this, an explicit {template:general}
+    // (what the "reset to original" button persists) would silently fall the
+    // .doc-serif elements back to Heebo — a visible font change vs. null.
+    nameFont: "frank",
     corner: "normal",
     border: "normal",
     palette: GENERAL_PALETTE,

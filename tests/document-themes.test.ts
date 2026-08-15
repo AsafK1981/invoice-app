@@ -180,14 +180,21 @@ describe("designToCssVars: only ever emits known-safe values", () => {
     expect(vars["--d-font-serif"]).toBe(FONT_OPTIONS.assistant.family);
   });
 
-  it("general template with a null design and an explicit {template:general} design render the same colors", () => {
+  it("an explicit {template:general} design resolves to the exact document-paper.css defaults (null-fallback parity)", () => {
     const explicit = designToCssVars(normalizeDocumentDesign({ template: "general" }));
     // These are exactly the hardcoded defaults in document-paper.css's
-    // `.doc-paper` base rule — the whole point of the null fallback.
+    // `.doc-paper` base rule — the whole point of the null fallback. Every var
+    // an explicit "general" emits must match, or the "reset to original design"
+    // button (which persists {template:general}, not null) would silently
+    // change the look. --d-font-serif in particular regressed to Heebo once.
     expect(explicit["--d-ink"]).toBe("#211c15");
     expect(explicit["--d-gold"]).toBe("#8a6d26");
+    expect(explicit["--d-gold-line"]).toBe("#c9ab63");
+    expect(explicit["--d-gold-faint"]).toBe("#e7dcbf");
     expect(explicit["--d-radius"]).toBe("16px");
     expect(explicit["--d-borderw-grand"]).toBe("2px");
+    expect(explicit["--d-font"]).toBe(FONT_OPTIONS.heebo.family);
+    expect(explicit["--d-font-serif"]).toBe(FONT_OPTIONS.frank.family);
   });
 });
 
