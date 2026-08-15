@@ -7,6 +7,8 @@ import {
   Gauge,
   FileBarChart,
   ArrowLeftRight,
+  Gift,
+  ShieldCheck,
 } from "lucide-react";
 import { Ltr, LtrText } from "@/components/ui/ltr";
 import { COMPETITORS } from "@/lib/comparison-data";
@@ -394,13 +396,20 @@ export default function MarketingLanding() {
           {/* Selling-points strip (2026-08-15, Asaf). Replaced the earlier
               "verifiable facts" trust cards (real allocation numbers /
               data isolation / status page) - Asaf: honest but boring, a
-              visitor doesn't care. These four are the things he DOES want
-              a visitor to absorb right under the hero. Still no invented
-              social proof, and every claim stays checked against reality:
-                - WhatsApp: E2E-proven in production but Meta approval is
-                  pending, so it MUST carry the same "בקרוב" badge as the
-                  advantage card and the phone mock. Do not drop the badge
-                  until the channel is live for real users.
+              visitor doesn't care. Same day, round 2: "הרבה יותר בולט וכיף
+              להסתכל... יותר דינאמי, יותר צבעוני" - so these are full
+              tone-tinted cards (the advantage grid's exact *-50/*-100/*-600
+              Tailwind pairing formula, one hue per card) with icon tiles,
+              a staggered entrance and the same hover pop as the grid below.
+              Color-on-cards here is the explicit icon-tile exception to
+              color restraint (DESIGN-TASTE 2026-08-10), promoted to the
+              whole card so the strip outshines the white advantage cards.
+              Claims stay checked against reality:
+                - WhatsApp: the "בקרוב" badge came OFF this card on Asaf's
+                  instruction (Meta approval closing imminently). The
+                  showcase + advantage card below keep theirs until the
+                  channel is truly live for users - strip those the moment
+                  he confirms.
                 - free month: matches the official sitewide offer (launch
                   period fully free, first paid month free later) - keep in
                   sync with the pricing page FAQ if it changes.
@@ -413,24 +422,30 @@ export default function MarketingLanding() {
               links it. */}
           <section className="ml-trust">
             <div className="ml-wrap ml-trust-in">
-              <div className="ml-trust-card">
-                <span className="ml-trust-k">
-                  חשבונית מהוואטסאפ{" "}
-                  <span className="ml-badge-soon">בקרוב</span>
+              <div className="ml-trust-card ml-trust-card--green">
+                <span className="ml-trust-icon">
+                  <MessageCircle aria-hidden="true" />
                 </span>
+                <span className="ml-trust-k">חשבונית מהוואטסאפ</span>
                 <p>
                   כותבים הודעה אחת בצ&apos;אט - והחשבונית מוכנה ואצל
                   הלקוח. בלי להיכנס לאפליקציה בכלל.
                 </p>
               </div>
-              <div className="ml-trust-card">
+              <div className="ml-trust-card ml-trust-card--amber">
+                <span className="ml-trust-icon">
+                  <Gift aria-hidden="true" />
+                </span>
                 <span className="ml-trust-k">חודש ראשון חינם</span>
                 <p>
                   בתקופת ההשקה הכול חינם, בלי כרטיס אשראי - וגם כשהתשלום
                   ייכנס, החודש הראשון במתנה. מבטלים בכל רגע, בלי התחייבות.
                 </p>
               </div>
-              <div className="ml-trust-card">
+              <div className="ml-trust-card ml-trust-card--sky">
+                <span className="ml-trust-icon">
+                  <ArrowLeftRight aria-hidden="true" />
+                </span>
                 <span className="ml-trust-k">מעבר קל מהתוכנה הנוכחית</span>
                 <p>
                   אשף מעבר מ-Invoice4U, חשבונית ירוקה, iCount ועוד -
@@ -438,7 +453,10 @@ export default function MarketingLanding() {
                   כלום מחדש.
                 </p>
               </div>
-              <div className="ml-trust-card">
+              <div className="ml-trust-card ml-trust-card--violet">
+                <span className="ml-trust-icon">
+                  <ShieldCheck aria-hidden="true" />
+                </span>
                 <span className="ml-trust-k">אבטחת מידע מלאה</span>
                 <p>
                   כל המידע נשמר בענן מאובטח, עם הפרדה מלאה בין עסקים

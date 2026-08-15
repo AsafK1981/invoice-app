@@ -641,11 +641,17 @@ h1.ml-hero-h1 {
   height: 13px;
 }
 
-/* ---------- trust strip ----------
+/* ---------- selling-points strip ----------
    Four selling-point cards between the hero and the showcase (2026-08-15:
-   WhatsApp / free month / migration / security). Quiet on purpose:
-   gold-tint panels, small type, no icons competing with the advantage
-   grid's colored tiles further down. 1 col -> 2x2 -> 4 across. */
+   WhatsApp / free month / migration / security). Round 2 same day, Asaf:
+   "הרבה יותר בולט וכיף להסתכל... יותר דינאמי, יותר צבעוני" - so unlike the
+   white advantage cards below, each card here wears its hue on the WHOLE
+   surface: bg *-50, border *-200, icon tile *-100 with a *-600 glyph -
+   the same proven Tailwind pairing formula as the advantage tiles, two
+   steps lighter on the field so the saturated tile still leads. Hover
+   deepens the same hue one step (bg *-100, border *-300) + the grid's
+   lift, and the strip enters with a staggered fade-up so it feels alive
+   without any JS. 1 col -> 2x2 -> 4 across. */
 .ml-trust {
   padding-block: 0 44px;
 }
@@ -657,7 +663,7 @@ h1.ml-hero-h1 {
 .ml-trust-in {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 12px;
+  gap: 14px;
 }
 @media (min-width: 720px) {
   .ml-trust-in {
@@ -670,36 +676,122 @@ h1.ml-hero-h1 {
     grid-template-columns: repeat(4, 1fr);
   }
 }
-/* The "בקרוב" badge sits ON a gold-tint card here, and the badge's own
-   background is that same tint - without a white fill it disappears. */
-.ml-trust-card .ml-badge-soon {
-  background: #fff;
-  vertical-align: middle;
-}
 .ml-trust-card {
-  background: var(--ml-gold-tint);
-  border: 1px solid var(--ml-gold-tint-line);
-  border-radius: 14px;
-  padding: 16px 18px;
+  position: relative;
+  background: var(--trust-bg);
+  border: 1px solid var(--trust-line);
+  border-radius: 16px;
+  padding: 20px;
+  transition: transform 180ms ease-out, box-shadow 180ms ease-out,
+    background-color 180ms ease-out, border-color 180ms ease-out;
+}
+/* One custom-property set per hue keeps the four states (field, border,
+   tile, glyph, hover field, hover border) in a single line per card
+   instead of 6 rules x 4 hues. */
+.ml-trust-card--green {
+  --trust-bg: #f0fdf4;
+  --trust-line: #bbf7d0;
+  --trust-tile: #dcfce7;
+  --trust-glyph: #16a34a;
+  --trust-bg-hov: #dcfce7;
+  --trust-line-hov: #86efac;
+}
+.ml-trust-card--amber {
+  --trust-bg: #fffbeb;
+  --trust-line: #fde68a;
+  --trust-tile: #fef3c7;
+  --trust-glyph: #d97706;
+  --trust-bg-hov: #fef3c7;
+  --trust-line-hov: #fcd34d;
+}
+.ml-trust-card--sky {
+  --trust-bg: #f0f9ff;
+  --trust-line: #bae6fd;
+  --trust-tile: #e0f2fe;
+  --trust-glyph: #0284c7;
+  --trust-bg-hov: #e0f2fe;
+  --trust-line-hov: #7dd3fc;
+}
+.ml-trust-card--violet {
+  --trust-bg: #f5f3ff;
+  --trust-line: #ddd6fe;
+  --trust-tile: #ede9fe;
+  --trust-glyph: #7c3aed;
+  --trust-bg-hov: #ede9fe;
+  --trust-line-hov: #c4b5fd;
+}
+.ml-trust-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--trust-tile);
+  color: var(--trust-glyph);
+  margin-bottom: 14px;
+  transition: transform 180ms ease-out;
+}
+.ml-trust-icon svg {
+  width: 22px;
+  height: 22px;
 }
 .ml-trust-k {
   display: block;
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.03em;
-  color: var(--ml-gold-ink);
-  margin-bottom: 6px;
+  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--ml-ink);
+  margin-bottom: 7px;
 }
 .ml-trust-card p {
   font-size: 13.5px;
-  line-height: 1.6;
+  line-height: 1.62;
   color: var(--ml-ink-2);
 }
-.ml-trust-card a {
-  color: var(--ml-gold-ink);
-  font-weight: 700;
-  text-decoration: underline;
-  text-underline-offset: 2px;
+@media (hover: hover) {
+  .ml-trust-card:hover {
+    transform: translateY(-6px) scale(1.02);
+    box-shadow: var(--ml-shadow-lift);
+    background: var(--trust-bg-hov);
+    border-color: var(--trust-line-hov);
+    z-index: 2;
+  }
+  .ml-trust-card:hover .ml-trust-icon {
+    transform: scale(1.06);
+  }
+}
+/* Staggered entrance - the strip sits right under the hero, so a simple
+   on-load animation reads as "the page welcoming you" without scroll
+   observers. Fill-mode backwards keeps each card invisible until its
+   delay; reduced-motion users get the cards instantly. */
+@keyframes ml-trust-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .ml-trust-card {
+    animation: ml-trust-rise 480ms ease-out backwards;
+  }
+  .ml-trust-card:nth-child(1) {
+    animation-delay: 80ms;
+  }
+  .ml-trust-card:nth-child(2) {
+    animation-delay: 180ms;
+  }
+  .ml-trust-card:nth-child(3) {
+    animation-delay: 280ms;
+  }
+  .ml-trust-card:nth-child(4) {
+    animation-delay: 380ms;
+  }
 }
 
 /* ---------- combined client + WhatsApp showcase ----------
