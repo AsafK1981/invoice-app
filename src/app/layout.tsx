@@ -77,6 +77,34 @@ const assistant = localFont({
   variable: "--font-assistant",
   display: "swap",
 });
+// Added for the profession-tailored document design feature (2026-08).
+// Same self-hosted next/font/local pattern as the three fonts above — see
+// the block comment there for why (no Google Fonts CDN call at request
+// time, ever, including from the PDF route's headless Chrome). Both are
+// only ever referenced by document-paper.css's --d-font/--d-font-serif
+// vars when a business has actually chosen a template that uses them, so
+// preload:false keeps them out of every page's initial payload the same
+// way Frank Ruhl already is.
+const rubik = localFont({
+  src: [
+    { path: "./fonts/rubik/Rubik-Variable-Hebrew.woff2" },
+    { path: "./fonts/rubik/Rubik-Variable-Latin.woff2" },
+  ],
+  weight: "300 900",
+  variable: "--font-rubik",
+  display: "swap",
+  preload: false,
+});
+const miriamLibre = localFont({
+  src: [
+    { path: "./fonts/miriam-libre/MiriamLibre-Variable-Hebrew.woff2" },
+    { path: "./fonts/miriam-libre/MiriamLibre-Variable-Latin.woff2" },
+  ],
+  weight: "400 700",
+  variable: "--font-miriam",
+  display: "swap",
+  preload: false,
+});
 
 // NOTE (2026-07-20): there used to be a synchronous inline <head> script here
 // that read localStorage and set html[data-skin] before first paint, so the
@@ -197,7 +225,7 @@ export default function RootLayout({
     <html
       lang="he"
       dir="rtl"
-      className={`h-full antialiased ${heebo.variable} ${frankRuhl.variable} ${assistant.variable}`}
+      className={`h-full antialiased ${heebo.variable} ${frankRuhl.variable} ${assistant.variable} ${rubik.variable} ${miriamLibre.variable}`}
     >
       <body className="min-h-full flex flex-col font-sans text-stone-800">
         {children}

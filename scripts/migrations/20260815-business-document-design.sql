@@ -1,0 +1,12 @@
+-- Profession-tailored document design (foundation).
+-- Nullable JSONB, no default: every existing business reads NULL, which
+-- normalizeDocumentDesign() (src/lib/document-themes.ts) treats as "no
+-- theme chosen" and renders the original gold design unchanged. Only ever
+-- written by the app after passing through normalizeDocumentDesign() first
+-- (belt-and-braces alongside the read-time validation everywhere it's
+-- consumed: receipt-view, document-preview, the public-document API route).
+-- Covered by the existing `businesses` RLS (owner-only via the authed
+-- client; the public /api/public-document route reads via the
+-- SUPABASE_SERVICE_ROLE_KEY, bypassing RLS by design, same as every other
+-- business column it already selects) -- no new RLS policy needed.
+ALTER TABLE businesses ADD COLUMN IF NOT EXISTS document_design jsonb;
