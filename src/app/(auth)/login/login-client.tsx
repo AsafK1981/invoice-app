@@ -475,13 +475,23 @@ function LoginForm() {
         {/* Way back to the marketing site. Without it this page is a dead
             end for anyone who arrived to look rather than to sign up - the
             only exits were "submit" or the browser's back button. */}
-        <p className="mt-6 text-center">
+        <p className="mt-6 text-center flex items-center justify-center gap-3">
           <a
             href="/"
             className="inline-flex items-center gap-1 text-xs font-semibold text-stone-500 hover:text-stone-800 transition-colors"
           >
             <ArrowRight className="w-3 h-3" aria-hidden="true" />
             חזרה לעמוד הבית
+          </a>
+          <span className="text-stone-300" aria-hidden="true">·</span>
+          <a
+            href="/accessibility"
+            target="_blank"
+            rel="noopener"
+            aria-label="הצהרת נגישות (נפתח בכרטיסייה חדשה)"
+            className="text-xs font-semibold text-stone-500 hover:text-stone-800 transition-colors"
+          >
+            נגישות
           </a>
         </p>
       </div>

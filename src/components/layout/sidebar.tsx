@@ -215,6 +215,19 @@ export function Sidebar() {
           <LogOut className="w-4 h-4" />
           התנתק
         </button>
+        {/* Compliance link, not a nav item - kept quiet on purpose (no icon
+            tile, no hover background). Same component renders both the
+            desktop sidebar and the mobile drawer, so this reaches both. */}
+        <Link
+          href="/accessibility"
+          target="_blank"
+          rel="noopener"
+          aria-label="הצהרת נגישות (נפתח בכרטיסייה חדשה)"
+          onClick={() => setMobileOpen(false)}
+          className="flex items-center w-full px-3 min-h-[40px] text-xs text-stone-400 hover:text-stone-600 transition-colors"
+        >
+          נגישות
+        </Link>
       </div>
     </>
   );

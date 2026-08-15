@@ -283,6 +283,20 @@ export default function SettingsPage() {
 
       <DangerZoneSection />
 
+      {/* Compliance link - muted, not a settings card, matches the sidebar's
+          quiet treatment of the same link. */}
+      <p className="text-center">
+        <Link
+          href="/accessibility"
+          target="_blank"
+          rel="noopener"
+          aria-label="הצהרת נגישות (נפתח בכרטיסייה חדשה)"
+          className="text-xs text-stone-400 hover:text-stone-600 transition-colors"
+        >
+          נגישות
+        </Link>
+      </p>
+
       <BusinessFormModal
         open={editOpen}
         onClose={() => setEditOpen(false)}
