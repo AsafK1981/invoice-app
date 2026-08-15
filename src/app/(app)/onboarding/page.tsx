@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Sparkles,
@@ -10,6 +10,7 @@ import {
   ArrowLeft,
   ArrowRight,
   SkipForward,
+  Palette,
 } from "lucide-react";
 import { track } from "@vercel/analytics";
 import { useBusiness, saveBusiness } from "@/lib/business-store";
@@ -17,9 +18,15 @@ import { clientStore } from "@/lib/client-store";
 import { supabase } from "@/lib/supabase";
 import { BusinessTypeHint } from "@/components/business-type-hint";
 import { todayInIsrael } from "@/lib/date";
+import {
+  suggestTemplateForBusinessType,
+  getTemplate,
+  ACCENT_HEX,
+  type TemplateId,
+} from "@/lib/document-themes";
 import type { Business, Client } from "@/lib/types";
 
-type Step = "welcome" | "business" | "client" | "done";
+type Step = "welcome" | "business" | "design" | "client" | "done";
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -34,6 +41,11 @@ export default function OnboardingPage() {
     address: business.address,
     phone: business.phone || "",
     email: business.email || "",
+    // Free-text profession hint, used ONLY client-side to suggest a document
+    // design template (see suggestTemplateForBusinessType). Deliberately not
+    // persisted as its own DB column: it drives a one-tap suggestion, not a
+    // stored business attribute, so no schema change is needed for it.
+    profession: "",
   });
 
   const [clientForm, setClientForm] = useState({
@@ -42,6 +54,28 @@ export default function OnboardingPage() {
     email: "",
     phone: "",
   });
+
+  // The exact object saved to the DB by saveBusinessAndAdvance. The `design`
+  // step's "use this design" action needs to merge document_design onto the
+  // business record — but the `business` value from useBusiness() only
+  // refreshes asynchronously after a save (it refetches on a window event),
+  // so reading it back immediately after saveBusinessAndAdvance could still
+  // see the pre-save snapshot and silently revert the fields the user just
+  // typed. This ref-like snapshot is always the freshest known-good state.
+  const [savedBusiness, setSavedBusiness] = useState<Business | null>(null);
+
+  // Whether the optional "design" step is inserted into the flow. Decided
+  // once, when advancing past the business step (not recomputed on every
+  // keystroke), so the progress bar's step count doesn't jitter while the
+  // user is still typing their profession.
+  const [includeDesignStep, setIncludeDesignStep] = useState(false);
+
+  const suggestedTemplateId: TemplateId = useMemo(
+    () => suggestTemplateForBusinessType(bizForm.profession),
+    [bizForm.profession],
+  );
+  const suggestedTemplate = getTemplate(suggestedTemplateId);
+  const suggestedAccent = ACCENT_HEX[suggestedTemplate.accent];
 
   // Only the business NAME is required to move on. The tax ID used to be
   // required here too, and it was the single biggest hole in the funnel: of the
@@ -56,7 +90,7 @@ export default function OnboardingPage() {
     if (!bizForm.name.trim()) return;
     setSaving(true);
     try {
-      await saveBusiness({
+      const merged: Business = {
         ...business,
         name: bizForm.name.trim(),
         businessType: bizForm.businessType as Business["businessType"],
@@ -64,11 +98,46 @@ export default function OnboardingPage() {
         address: bizForm.address.trim(),
         phone: bizForm.phone.trim() || undefined,
         email: bizForm.email.trim() || undefined,
+      };
+      await saveBusiness(merged);
+      setSavedBusiness(merged);
+
+      // Only offer the design suggestion when it's a confident match (not
+      // 'general' — never nudge a user who gave no usable signal) AND the
+      // business hasn't already picked a design (respects "existing users
+      // keep gold unless they choose"; here that means don't second-guess a
+      // choice already on the record).
+      const showDesign = suggestedTemplateId !== "general" && !business.documentDesign;
+      setIncludeDesignStep(showDesign);
+      setStep(showDesign ? "design" : "client");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function applyDesignSuggestion() {
+    setSaving(true);
+    try {
+      const base = savedBusiness ?? business;
+      await saveBusiness({
+        ...base,
+        documentDesign: {
+          template: suggestedTemplate.id,
+          accent: suggestedTemplate.accent,
+          font: suggestedTemplate.font,
+          logoPosition: "right",
+        },
       });
+      track("onboarding_design_suggestion_accepted", { template: suggestedTemplate.id });
       setStep("client");
     } finally {
       setSaving(false);
     }
+  }
+
+  function skipDesignSuggestion() {
+    track("onboarding_design_suggestion_skipped", { template: suggestedTemplate.id });
+    setStep("client");
   }
 
   async function saveClientAndAdvance() {
@@ -99,8 +168,13 @@ export default function OnboardingPage() {
     router.push(target === "new-doc" ? "/documents/new" : "/dashboard");
   }
 
-  const stepIndex = ["welcome", "business", "client", "done"].indexOf(step);
-  const stepLabels = ["ברוכים הבאים", "פרטי העסק", "לקוח ראשון", "סיום"];
+  const stepOrder: Step[] = includeDesignStep
+    ? ["welcome", "business", "design", "client", "done"]
+    : ["welcome", "business", "client", "done"];
+  const stepLabels = includeDesignStep
+    ? ["ברוכים הבאים", "פרטי העסק", "עיצוב מסמכים", "לקוח ראשון", "סיום"]
+    : ["ברוכים הבאים", "פרטי העסק", "לקוח ראשון", "סיום"];
+  const stepIndex = stepOrder.indexOf(step);
   const totalSteps = stepLabels.length;
   const currentStepNumber = stepIndex + 1;
   const progressPercent = ((stepIndex + 1) / totalSteps) * 100;
@@ -208,6 +282,23 @@ export default function OnboardingPage() {
                   />
                 </div>
 
+                <div>
+                  <label className="text-xs font-semibold text-stone-700 mb-1 block">
+                    תחום העיסוק (אופציונלי)
+                  </label>
+                  <input
+                    type="text"
+                    value={bizForm.profession}
+                    onChange={(e) => setBizForm({ ...bizForm, profession: e.target.value })}
+                    placeholder="לדוגמה: מטפל/ת, מעצב/ת גרפי/ת, חשמלאי, רואה חשבון..."
+                    className="input-warm"
+                  />
+                  <p className="text-[11px] text-stone-500 mt-1">
+                    עוזר לנו להציע עיצוב מסמכים שמתאים לתחום שלך. אפשר לדלג ולבחור עיצוב בכל שלב
+                    מההגדרות.
+                  </p>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="text-xs font-semibold text-stone-700 mb-1 block">
@@ -305,6 +396,67 @@ export default function OnboardingPage() {
             </div>
           )}
 
+          {step === "design" && (
+            <div>
+              <div className="flex items-center gap-3 mb-6">
+                <div
+                  className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-md flex-shrink-0"
+                  style={{ background: suggestedAccent.grad }}
+                >
+                  <Palette className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-stone-900">התאמנו לך עיצוב מסמכים</h2>
+                  <p className="text-sm text-stone-700">
+                    בהתאם לתחום שציינת — אפשר לשנות בכל שלב מההגדרות
+                  </p>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border-2 border-stone-200 bg-white overflow-hidden shadow-sm">
+                <div className="h-3" style={{ background: suggestedAccent.grad }} aria-hidden="true" />
+                <div className="p-5 flex items-center gap-3">
+                  <span
+                    className="w-6 h-6 rounded-full flex-shrink-0 shadow-sm"
+                    style={{ background: suggestedAccent.accent }}
+                    aria-hidden="true"
+                  />
+                  <div>
+                    <p className="font-semibold text-stone-900">{suggestedTemplate.label}</p>
+                    <p className="text-xs text-stone-600 mt-0.5">
+                      תבנית עם צבעים, פונט ועיצוב שמתאימים לתחום שלך. משפיע רק על מסמכים חדשים.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between mt-8">
+                <button
+                  onClick={() => setStep("business")}
+                  className="text-sm text-stone-600 hover:text-stone-900 px-4 py-2"
+                >
+                  חזרה
+                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={skipDesignSuggestion}
+                    className="inline-flex items-center gap-1 text-sm text-stone-600 hover:text-stone-900 px-3 py-2.5"
+                  >
+                    בחירת עיצוב אחר
+                  </button>
+                  <button
+                    onClick={applyDesignSuggestion}
+                    disabled={saving}
+                    className="btn-glow inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:shadow-md hover:shadow-orange-200 disabled:opacity-50 transition-all"
+                  >
+                    {saving ? "שומר..." : "השתמשו בעיצוב הזה"}
+                    <ArrowLeft className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {step === "client" && (
             <div>
               <div className="flex items-center gap-3 mb-6">
@@ -372,7 +524,7 @@ export default function OnboardingPage() {
 
               <div className="flex items-center justify-between mt-8">
                 <button
-                  onClick={() => setStep("business")}
+                  onClick={() => setStep(includeDesignStep ? "design" : "business")}
                   className="text-sm text-stone-600 hover:text-stone-900 px-4 py-2"
                 >
                   חזרה
