@@ -55,9 +55,11 @@ export function website(): JsonLdNode {
  * structured pricing so the markup does not contradict the pricing table.
  *
  * `featureList` mirrors the homepage's "כל מה שיש רק אצלנו" advantage grid
- * (src/app/(marketing)/page.tsx), MINUS the WhatsApp bot channel: that one
- * is marked `בקרוב` on-page because it isn't enabled in production yet, and
- * structured data must only claim what is actually live today.
+ * (src/app/(marketing)/page.tsx), INCLUDING the WhatsApp bot channel since
+ * 2026-08-15, when it went live (Meta approval closed) and every on-page
+ * `בקרוב` marker came off. Structured data must only claim what is
+ * actually live today - if a future feature ships behind a badge again,
+ * exclude it here until the badge drops.
  */
 export function softwareApplication(): JsonLdNode {
   return {
@@ -75,6 +77,7 @@ export function softwareApplication(): JsonLdNode {
       "הקצאת מספרים אוטומטית מרשות המסים (חשבונית ישראל)",
       "עוזר AI בעברית לשאלות על הכנסות ומסמכים",
       "תזכורות אוטומטיות להוצאת מסמכים ולתשלומי לקוחות שמאחרים",
+      "הוצאת קבלות ורישום הוצאות ישירות מתוך וואטסאפ",
       "סריקת קבלות והוצאות בצילום",
       "מעקב תקרת עוסק פטור בזמן אמת",
       "דוחות מוכנים לרואה חשבון: מע״מ תקופתי, עזר ל-1301, הצהרת הון",

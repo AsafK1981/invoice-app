@@ -11,6 +11,7 @@ import {
   FileBarChart,
   ArrowLeftRight,
   MessageCircle,
+  Send,
 } from "lucide-react";
 import { Ltr, LtrText } from "@/components/ui/ltr";
 import { pageMetadata } from "@/lib/page-metadata";
@@ -66,23 +67,24 @@ const PRICING_FAQ_ITEMS: { q: string; a: string }[] = [
 
 /**
  * "מה כלול" - a short feature checklist, titles copied VERBATIM from the
- * homepage's ADVANTAGES array (src/app/(marketing)/page.tsx). Deliberately
- * excludes the "whatsapp" card: it is marked `בקרוב` there because the
- * WhatsApp bot channel isn't live in production yet, same reasoning
- * softwareApplication() in src/lib/jsonld.ts already applies to its own
- * featureList - structured data and on-page claims must only state what is
- * actually live today. Icons are a fresh (restrained, single-tone) choice
- * for this page, not a copy of the homepage's per-card tinted icons.
+ * homepage's ADVANTAGES array (src/app/(marketing)/page.tsx). The
+ * "whatsapp" card joined 2026-08-15 when the channel went live and its
+ * `בקרוב` badge came off everywhere (before that it was deliberately
+ * excluded - same live-features-only reasoning softwareApplication() in
+ * src/lib/jsonld.ts applies to its own featureList). Icons are a fresh
+ * (restrained, single-tone) choice for this page, not a copy of the
+ * homepage's per-card tinted icons.
  */
 const FEATURES: { key: string; icon: React.ReactNode; title: string }[] = [
   { key: "allocation", icon: <ShieldCheck aria-hidden="true" />, title: "מספרי הקצאה אוטומטיים" },
   { key: "ai", icon: <Sparkles aria-hidden="true" />, title: "עוזר AI חכם בעברית" },
   { key: "reminders", icon: <Bell aria-hidden="true" />, title: "התראות ותזכורות חכמות" },
+  { key: "whatsapp", icon: <MessageCircle aria-hidden="true" />, title: "וואטסאפ בלי לפתוח את האפליקציה" },
   { key: "ocr", icon: <ScanLine aria-hidden="true" />, title: "סריקת הוצאות בצילום" },
   { key: "ceiling", icon: <Gauge aria-hidden="true" />, title: "מעקב תקרת עוסק פטור בזמן אמת" },
   { key: "reports", icon: <FileBarChart aria-hidden="true" />, title: "דו״חות שרואי חשבון אוהבים" },
   { key: "migration", icon: <ArrowLeftRight aria-hidden="true" />, title: "מעבר קל מכל תוכנה" },
-  { key: "channels", icon: <MessageCircle aria-hidden="true" />, title: "שליחה בכל ערוץ" },
+  { key: "channels", icon: <Send aria-hidden="true" />, title: "שליחה בכל ערוץ" },
 ];
 
 /**

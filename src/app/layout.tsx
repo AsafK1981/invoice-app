@@ -162,15 +162,16 @@ export const metadata: Metadata = {
    * ידידותית` is what the header, footer and Organization node all show;
    * the Latin name stays an alternateName for the pre-rename search
    * association (see the LEGACY_APP_NAME comment in jsonld.ts).
-   * The WhatsApp channel is deliberately NOT named here - it is still
-   * `בקרוב` on-page, and metadata must not claim it.
+   * The WhatsApp channel IS named here since 2026-08-15: it went live
+   * (Meta approval closed) and every on-page `בקרוב` marker came off, so
+   * metadata may now claim it.
    */
   title: {
     default: "חשבונית ידידותית - מספרי הקצאה אוטומטיים מרשות המסים",
     template: "%s | חשבונית ידידותית",
   },
   description:
-    "תוכנת חשבוניות בעברית לעצמאים: מספר הקצאה מרשות המסים מתקבל אוטומטית בלחיצה אחת, עוזר AI בעברית, סריקת הוצאות בצילום ודוחות מוכנים לרואה חשבון. חינם בתקופת ההשקה.",
+    "תוכנת חשבוניות בעברית לעצמאים: מספר הקצאה מרשות המסים מתקבל אוטומטית בלחיצה אחת, הוצאת קבלות ישירות מהוואטסאפ, עוזר AI בעברית, סריקת הוצאות בצילום ודוחות מוכנים לרואה חשבון. חינם בתקופת ההשקה.",
   keywords: [
     "חשבוניות",
     "קבלות",
@@ -198,7 +199,7 @@ export const metadata: Metadata = {
     siteName: "חשבונית ידידותית",
     title: "חשבונית ידידותית - מספרי הקצאה אוטומטיים מרשות המסים",
     description:
-      "להוציא חשבונית הפך לחלק הכי קל ביום העבודה. מספר הקצאה מרשות המסים בלחיצה אחת, עוזר AI בעברית, וסריקת הוצאות בצילום.",
+      "להוציא חשבונית הפך לחלק הכי קל ביום העבודה. מספר הקצאה מרשות המסים בלחיצה אחת, קבלות ישירות מהוואטסאפ, עוזר AI בעברית וסריקת הוצאות בצילום.",
     // images intentionally omitted; Next picks up src/app/opengraph-image.tsx
     // automatically and generates a 1200x630 card.
   },

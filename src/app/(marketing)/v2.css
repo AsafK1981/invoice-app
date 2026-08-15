@@ -1883,12 +1883,14 @@
     var(--v2-card);
   box-shadow: var(--v2-sh-rest), var(--v2-sh-edge);
 }
-/* Reused verbatim by .v2-adv-card's "בקרוב" badge (the one unreleased
-   feature in the advantages grid) - same gold pill, no new primitive. */
-/* Flat gold-tint pill (body-bridging pass, 2026-08-14), same primitive as
-   the homepage's `.ml-badge-soon` - a small status pill reads as restrained
-   information, not a second CTA, so it drops the white-on-gradient
-   treatment entirely rather than swapping it for the orange CTA gradient. */
+/* Flat gold-tint status pill (body-bridging pass, 2026-08-14) - reads as
+   restrained information, not a second CTA, so it drops the
+   white-on-gradient treatment entirely rather than swapping it for the
+   orange CTA gradient. Used by the price cards' "ללא הגבלה" pill and the
+   comparison pages' "הכי משתלם" badge. (Its former twin, the homepage's
+   `.ml-badge-soon` בקרוב pill, was deleted 2026-08-15 when the WhatsApp
+   channel went live - resurrect a pill like this one if a future feature
+   ships behind a badge again.) */
 .v2-theme .v2-price-card .badge,
 .v2-theme .v2-adv-card .badge {
   position: absolute;

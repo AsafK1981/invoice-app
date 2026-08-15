@@ -119,7 +119,6 @@ type Advantage = {
   body: string;
   tone?: AdvantageTone;
   flagship?: true;
-  comingSoon?: boolean;
 };
 
 const ADVANTAGES: Advantage[] = [
@@ -186,7 +185,6 @@ const ADVANTAGES: Advantage[] = [
   {
     key: "whatsapp",
     tone: "green",
-    comingSoon: true,
     icon: <MessageCircle aria-hidden="true" />,
     title: "וואטסאפ בלי לפתוח את האפליקציה",
     body: "מוציאים קבלה ורושמים הוצאה ישירות מתוך הצ'אט, בלי להתחבר בכלל.",
@@ -405,11 +403,9 @@ export default function MarketingLanding() {
               color restraint (DESIGN-TASTE 2026-08-10), promoted to the
               whole card so the strip outshines the white advantage cards.
               Claims stay checked against reality:
-                - WhatsApp: the "בקרוב" badge came OFF this card on Asaf's
-                  instruction (Meta approval closing imminently). The
-                  showcase + advantage card below keep theirs until the
-                  channel is truly live for users - strip those the moment
-                  he confirms.
+                - WhatsApp: the channel went live 2026-08-15 (Meta
+                  approval closed); every בקרוב marker on the page came
+                  off the same day on Asaf's instruction.
                 - free month: matches the official sitewide offer (launch
                   period fully free, first paid month free later) - keep in
                   sync with the pricing page FAQ if it changes.
@@ -481,23 +477,16 @@ export default function MarketingLanding() {
                 <span className="ml-eyebrow">כך זה נראה בפועל</span>
                 <h2>מהוואטסאפ שלכם ישירות אל הלקוח</h2>
                 <p>
-                  בקרוב: כותבים הודעה אחת בצ&apos;אט - והלקוח מקבל מסמך נקי
+                  כותבים הודעה אחת בצ&apos;אט - והלקוח מקבל מסמך נקי
                   ומקצועי, עם כל השדות שרשות המסים דורשת, כולל מספר
                   ההקצאה.
                 </p>
-                {/* Honesty line, 2026-08-11. The WhatsApp mock leads the
-                    page, so the first thing a visitor absorbs is a channel
-                    that is not enabled yet (Meta approval pending). Without
-                    this sentence the page reads as if the chat bot is what
-                    you get on signup, and the "בקרוב" badge on the column
-                    title alone is easy to miss. States plainly what works
-                    today - all of it verified live - so nobody signs up for
-                    something they cannot use this afternoon. */}
-                <p className="ml-show-today">
-                  <b>מה שכבר עובד היום:</b> המסמך שמשמאל, מספר ההקצאה
-                  שבתוכו, ושליחה ללקוח במייל או בקישור - הכול פעיל עכשיו
-                  במערכת. ערוץ הוואטסאפ מצטרף בהמשך.
-                </p>
+                {/* The "מה שכבר עובד היום" honesty aside that lived here
+                    (2026-08-11 to 2026-08-15) is gone: it existed only to
+                    keep the page from overselling the WhatsApp channel
+                    while Meta approval was pending. The channel is live
+                    now, so the aside (and its .ml-show-today CSS) was
+                    removed rather than left as an empty reassurance. */}
               </div>
             </div>
 
@@ -508,16 +497,14 @@ export default function MarketingLanding() {
                   density, inherits RTL for free, and weighs nothing. Shows
                   the channel's two flows (free-text receipt issuing, photo
                   expense capture); every message body matches the approved
-                  mock verbatim. The feature is not live yet (Meta approval
-                  pending), so the column title carries the same "בקרוב"
-                  badge as the advantage card above and the caption says it
-                  is a preview - no false claims. `role="img"` + aria-label:
+                  mock verbatim. The channel is LIVE (Meta approval closed
+                  2026-08-15, all בקרוב badges removed) - but the chat
+                  itself is still an illustration, not a real screenshot,
+                  so the caption keeps saying so. `role="img"` + aria-label:
                   to a screen reader the whole simulated chat is one
                   picture, not a wall of fake conversation turns. */}
               <figure className="ml-wa-phone-wrap">
-                <h3 className="ml-show-col-title">
-                  ערוץ הוואטסאפ <span className="ml-badge-soon">בקרוב</span>
-                </h3>
+                <h3 className="ml-show-col-title">ערוץ הוואטסאפ</h3>
                 <div
                   className="ml-wa-phone"
                   role="img"
@@ -669,7 +656,7 @@ export default function MarketingLanding() {
                   </li>
                 </ul>
                 <figcaption className="ml-sheet-cap">
-                  הדמיה של ערוץ הוואטסאפ שנמצא בפיתוח. ההודעות להמחשה בלבד.
+                  הדמיה של שיחה בערוץ הוואטסאפ. ההודעות להמחשה בלבד.
                 </figcaption>
               </figure>
 
@@ -983,12 +970,6 @@ export default function MarketingLanding() {
                     </div>
                     <h3>
                       <LtrText text={item.title} />
-                      {item.comingSoon && (
-                        <>
-                          {" "}
-                          <span className="ml-badge-soon">בקרוב</span>
-                        </>
-                      )}
                     </h3>
                     <p>
                       <LtrText text={item.body} />
