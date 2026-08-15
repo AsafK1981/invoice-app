@@ -355,7 +355,7 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
             </p>
             <p className="mt-1.5 text-xs leading-relaxed text-stone-600">
               הפיקו חשבוניות וקבלות בעברית בחינם, עם מספרי הקצאה אוטומטיים
-              מרשות המסים — החובה שחלה על כל עוסק מ-2026.
+              מרשות המסים, החובה שחלה על כל עוסק מ-2026.
             </p>
             <a
               href="/?utm_source=document&utm_medium=view_cta&utm_campaign=growth_loop"

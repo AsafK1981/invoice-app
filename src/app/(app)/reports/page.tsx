@@ -195,7 +195,7 @@ export default function ReportsPage() {
           "these are linked" before you even process the labels. */}
       <div className="rp-period-group">
         <div className="rp-period-row">
-          <span className="rp-period-label">מסונן לפי תקופה — {currentPeriodLabel}</span>
+          <span className="rp-period-label">מסונן לפי תקופה - {currentPeriodLabel}</span>
           <select
             value={period}
             onChange={(e) => setPeriod(e.target.value)}
