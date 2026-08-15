@@ -573,6 +573,125 @@ export function getTemplate(id: TemplateId): DocumentTemplate {
   return TEMPLATE_MAP[id] ?? TEMPLATE_MAP.general;
 }
 
+// ── Onboarding auto-suggest ──────────────────────────────────────────────
+// Maps a free-text description of what the business does (what a new user
+// types into an optional "תחום עיסוק" onboarding field — NOT the
+// Business["businessType"] tax-status enum, which is unrelated:
+// exempt/authorized/company say nothing about profession) to the closest
+// matching profession template. Pure keyword/substring matching, no ML, no
+// network call — deterministic and instant.
+//
+// Groups are checked in priority order, most specific/least ambiguous
+// first, so a phrase that could plausibly match two groups (e.g. "מעצב/ת
+// פנים" containing both "מעצב" and being about interior design) resolves to
+// the more specific one (architect) before the broader one (designer) gets
+// a chance. This is a best-effort heuristic for a one-tap suggestion, not a
+// security boundary — an unmatched or ambiguous input always falls back to
+// 'general' (the existing gold default) rather than guessing a colored
+// template the user didn't ask for.
+const TEMPLATE_SUGGESTION_RULES: { template: TemplateId; keywords: string[] }[] = [
+  {
+    template: "lawyer",
+    keywords: ["עורך דין", "עורכת דין", "עו\"ד", "עו’ד", "עוה\"ד", "משפט"],
+  },
+  {
+    template: "accountant",
+    keywords: ["רואה חשבון", "רואת חשבון", "הנהלת חשבונות", "יועץ מס", "יועצת מס"],
+  },
+  {
+    template: "architect",
+    keywords: ["אדריכל", "עיצוב פנים", "מעצב פנים", "מעצבת פנים"],
+  },
+  {
+    template: "developer",
+    keywords: ["תוכנה", "מתכנת", "מתכנתת", "הייטק", "פיתוח"],
+  },
+  {
+    template: "altmed",
+    keywords: ["רפואה משלימה", "רפלקסולוג", "רפלקסולוגית", "נטורופת", "נטורופתית"],
+  },
+  {
+    template: "dietitian",
+    keywords: ["תזונה", "תזונאי", "תזונאית", "דיאט"],
+  },
+  {
+    template: "fitness",
+    keywords: ["כושר", "פילאטיס", "יוגה"],
+  },
+  {
+    template: "tradesperson",
+    keywords: [
+      "חשמל",
+      "אינסטלציה",
+      "שיפוץ",
+      "שיפוצים",
+      "שיפוצניק",
+      "קבלן",
+      "קבלנית",
+      "בעל מקצוע",
+      "בעלת מקצוע",
+    ],
+  },
+  {
+    template: "photographer",
+    keywords: ["צילום", "צלם", "צלמת"],
+  },
+  {
+    template: "marketing",
+    keywords: ["שיווק", "סושיאל"],
+  },
+  {
+    template: "coach",
+    keywords: ["אימון עסקי", "ייעוץ עסקי", "מאמן עסקי", "מאמנת עסקית"],
+  },
+  {
+    template: "tutor",
+    keywords: ["מורה", "הוראה", "שיעורים", "שיעור פרטי", "חונך", "חונכת"],
+  },
+  {
+    template: "beauty",
+    keywords: [
+      "קוסמטיקה",
+      "קוסמטיקאי",
+      "קוסמטיקאית",
+      "יופי",
+      "מספרה",
+      "עיצוב שיער",
+      "מעצב שיער",
+      "מעצבת שיער",
+      "ספר/ית",
+    ],
+  },
+  {
+    template: "designer",
+    keywords: ["עיצוב גרפי", "מעצב גרפי", "מעצבת גרפית", "מעצב", "מעצבת"],
+  },
+  {
+    template: "therapist",
+    keywords: ["פסיכולוג", "פסיכולוגית", "פסיכותרפיה", "מטפל", "מטפלת", "טיפול"],
+  },
+];
+
+/**
+ * Suggests the profession template that best matches a free-text business
+ * description, for the onboarding "we picked a design for you" nudge.
+ * Never returns anything the user can't already see in the template
+ * gallery, and never fabricates a match — an empty string or no keyword hit
+ * returns 'general' (the current gold default, always safe to suggest since
+ * it changes nothing).
+ */
+export function suggestTemplateForBusinessType(businessType: string): TemplateId {
+  const text = (businessType || "").trim();
+  if (!text) return "general";
+
+  for (const rule of TEMPLATE_SUGGESTION_RULES) {
+    if (rule.keywords.some((kw) => text.includes(kw))) {
+      return rule.template;
+    }
+  }
+  return "general";
+}
+
 // ── The validated shape ──────────────────────────────────────────────────
 
 export interface DocumentDesign {

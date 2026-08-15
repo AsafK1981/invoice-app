@@ -2,11 +2,13 @@ import { describe, it, expect } from "vitest";
 import {
   normalizeDocumentDesign,
   designToCssVars,
+  suggestTemplateForBusinessType,
   DOCUMENT_TEMPLATES,
   ACCENT_HEX,
   FONT_OPTIONS,
   getTemplate,
   type DocumentDesign,
+  type TemplateId,
 } from "@/lib/document-themes";
 
 const HEX_RE = /^#[0-9a-f]{6}$/i;
@@ -195,6 +197,78 @@ describe("designToCssVars: only ever emits known-safe values", () => {
     expect(explicit["--d-borderw-grand"]).toBe("2px");
     expect(explicit["--d-font"]).toBe(FONT_OPTIONS.heebo.family);
     expect(explicit["--d-font-serif"]).toBe(FONT_OPTIONS.frank.family);
+  });
+});
+
+describe("suggestTemplateForBusinessType: onboarding auto-suggest", () => {
+  const CASES: [string, TemplateId][] = [
+    ["פסיכולוג קליני", "therapist"],
+    ["מטפלת זוגית ומשפחתית", "therapist"],
+    ["טיפול רגשי לילדים", "therapist"],
+    ["מאמן כושר אישי", "fitness"],
+    ["מדריכת פילאטיס", "fitness"],
+    ["מורה ליוגה", "fitness"],
+    ["קוסמטיקאית", "beauty"],
+    ["מעצבת שיער", "beauty"],
+    ["בעלת מספרה", "beauty"],
+    ["רפואה משלימה - שיאצו", "altmed"],
+    ["רפלקסולוגית", "altmed"],
+    ["נטורופת", "altmed"],
+    ["מעצב גרפי פרילנסר", "designer"],
+    ["מעצבת לוגואים ומיתוג", "designer"],
+    ["צלם חתונות", "photographer"],
+    ["צלמת אירועים", "photographer"],
+    ["ייעוץ שיווק דיגיטלי", "marketing"],
+    ["מנהלת סושיאל מדיה", "marketing"],
+    ["מאמן עסקי", "coach"],
+    ["ייעוץ עסקי לחברות סטארטאפ", "coach"],
+    ["מורה פרטית למתמטיקה", "tutor"],
+    ["חונך לבגרויות", "tutor"],
+    ["דיאטנית קלינית", "dietitian"],
+    ["ייעוץ תזונה", "dietitian"],
+    ["חשמלאי מוסמך", "tradesperson"],
+    ["איש אינסטלציה", "tradesperson"],
+    ["קבלן שיפוצים", "tradesperson"],
+    ["בעל מקצוע - נגרות", "tradesperson"],
+    ["עורך דין נדל\"ן", "lawyer"],
+    ["עו\"ד גירושין", "lawyer"],
+    ["ייעוץ משפטי לעסקים", "lawyer"],
+    ["רואה חשבון", "accountant"],
+    ["הנהלת חשבונות לעסקים קטנים", "accountant"],
+    ["יועץ מס", "accountant"],
+    ["אדריכלית", "architect"],
+    ["עיצוב פנים למשרדים", "architect"],
+    ["מעצבת פנים", "architect"],
+    ["מתכנת Full Stack", "developer"],
+    ["פיתוח תוכנה", "developer"],
+    ["איש הייטק", "developer"],
+  ];
+
+  it.each(CASES)("%s -> %s", (input, expected) => {
+    expect(suggestTemplateForBusinessType(input)).toBe(expected);
+  });
+
+  it("empty/whitespace input -> general (never guess-forces a colored template)", () => {
+    expect(suggestTemplateForBusinessType("")).toBe("general");
+    expect(suggestTemplateForBusinessType("   ")).toBe("general");
+  });
+
+  it("no keyword match -> general", () => {
+    expect(suggestTemplateForBusinessType("חנות ממתקים")).toBe("general");
+    expect(suggestTemplateForBusinessType("אני לא יודע מה לכתוב כאן")).toBe("general");
+  });
+
+  it("architect wins over designer for interior-design phrasing", () => {
+    // "מעצב/ת פנים" contains "מעצב", which is also a designer keyword — the
+    // more specific architect rule must be checked first.
+    expect(suggestTemplateForBusinessType("מעצב פנים")).toBe("architect");
+  });
+
+  it("every returned template id is a real, currently-defined template", () => {
+    const ids = new Set(DOCUMENT_TEMPLATES.map((t) => t.id));
+    for (const [input] of CASES) {
+      expect(ids.has(suggestTemplateForBusinessType(input))).toBe(true);
+    }
   });
 });
 
