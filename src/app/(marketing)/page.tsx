@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import Link from "next/link";
 import {
-  MessageCircle,
   ScanLine,
   Gauge,
   FileBarChart,
@@ -16,6 +15,8 @@ import HeaderLight from "./components/HeaderLight";
 import FooterLight from "./components/FooterLight";
 import RedirectIfAuthed from "./components/RedirectIfAuthed";
 import JsonLd from "./components/JsonLd";
+import WhatsappIcon from "./components/WhatsappIcon";
+import RevealOnView from "./components/RevealOnView";
 import { graph, organization, website, softwareApplication, faqPage } from "@/lib/jsonld";
 import "./marketing-light.css";
 
@@ -185,7 +186,7 @@ const ADVANTAGES: Advantage[] = [
   {
     key: "whatsapp",
     tone: "green",
-    icon: <MessageCircle aria-hidden="true" />,
+    icon: <WhatsappIcon aria-hidden="true" />,
     title: "וואטסאפ בלי לפתוח את האפליקציה",
     body: "מוציאים קבלה ורושמים הוצאה ישירות מתוך הצ'אט, בלי להתחבר בכלל.",
   },
@@ -420,7 +421,7 @@ export default function MarketingLanding() {
             <div className="ml-wrap ml-trust-in">
               <div className="ml-trust-card ml-trust-card--green">
                 <span className="ml-trust-icon">
-                  <MessageCircle aria-hidden="true" />
+                  <WhatsappIcon aria-hidden="true" />
                 </span>
                 <span className="ml-trust-k">חשבונית מהוואטסאפ</span>
                 <p>
@@ -956,11 +957,12 @@ export default function MarketingLanding() {
                 </p>
               </div>
 
-              <div className="ml-adv-grid">
-                {ADVANTAGES.map((item) => (
+              <RevealOnView className="ml-adv-grid">
+                {ADVANTAGES.map((item, index) => (
                   <article
                     className={`ml-adv-card${item.flagship ? " is-flagship" : ""}${item.tone ? ` ml-adv-card--${item.tone}` : ""}`}
                     key={item.key}
+                    style={{ "--i": index } as CSSProperties}
                   >
                     <div
                       className={`ml-adv-icon${item.tone ? ` ml-adv-icon--${item.tone}` : ""}`}
@@ -976,7 +978,7 @@ export default function MarketingLanding() {
                     </p>
                   </article>
                 ))}
-              </div>
+              </RevealOnView>
             </div>
           </section>
 

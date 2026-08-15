@@ -526,6 +526,41 @@ h1.ml-hero-h1 {
     border-color: #fed7aa;
   }
 }
+
+/* Scroll-into-view cascade (owner 2026-08-15: "יקפצו אל הדף" - the cards
+   should pop in one after another as the grid scrolls into view, restrained
+   and premium, not bouncy/gaudy). `RevealOnView.tsx` is the client island:
+   it adds `.js-reveal` to `.ml-adv-grid` on mount and `.is-in` once an
+   IntersectionObserver reports ~15% visible, then disconnects (one-shot,
+   never re-triggers). Progressive enhancement is load-bearing here:
+     - No JS at all -> `.js-reveal` never appears -> this whole block never
+       matches -> cards render at their plain, fully-visible base styles.
+     - `prefers-reduced-motion: reduce` -> this block is entirely skipped
+       (wrapped below) -> cards are visible immediately, no transform.
+     - JS present but the observer never fires (e.g. grid never scrolled to)
+       -> cards stay at opacity 0 only while off-screen, which is moot: the
+       user never sees that state because it's never in the viewport, and
+       once it does enter the viewport the observer fires by construction.
+   `--i` (set per-card as an inline style in page.tsx, one per ADVANTAGES
+   index) drives the stagger: each card's transition-delay is its index *
+   110ms, so the grid reads as a single cascading wave rather than a
+   simultaneous flash. `js-reveal` is removed again by the component a
+   little after the slowest card should have finished, so the transform/
+   opacity transition doesn't linger and fight the card's normal 180ms
+   hover transition afterwards. */
+@media (prefers-reduced-motion: no-preference) {
+  .ml-adv-grid.js-reveal .ml-adv-card {
+    opacity: 0;
+    transform: translateY(18px) scale(0.96);
+    transition: opacity 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+    transition-delay: calc(var(--i, 0) * 110ms);
+  }
+  .ml-adv-grid.js-reveal.is-in .ml-adv-card {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
 .ml-adv-card h3 {
   font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
   font-size: 16.5px;
