@@ -877,6 +877,63 @@ h1.ml-hero-h1 {
   color: var(--ml-ink);
   margin-bottom: 18px;
 }
+
+/* "בקרוב" pill + the honesty aside under the showcase header.
+   Both were deleted on 2026-08-15 when the WhatsApp channel was wrongly
+   declared live; restored 2026-08-16. Keep them: production still runs on
+   Meta's test number, so any surface that shows the chat bot has to say so. */
+.ml-badge-soon {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--ml-amber-50, #fffbeb);
+  border: 1px solid var(--ml-amber-200, #fde68a);
+  color: var(--ml-amber-900, #78350f);
+  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.6;
+  letter-spacing: 0.01em;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+/* Sits in the advantage-card <h3> too, where the title wraps - a little
+   breathing room so it never crowds the last word. */
+h3 > .ml-badge-soon {
+  margin-inline-start: 6px;
+}
+
+/* Trust-strip title is display:block, so make it a wrapping flex row instead:
+   the pill then sits on the title's baseline row and drops to its own line
+   only when the card is genuinely too narrow, rather than mid-phrase. */
+.ml-trust-k {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.ml-show-today {
+  max-width: 62ch;
+  margin: 14px auto 0;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: var(--ml-cream-100, #fdf6ec);
+  border: 1px solid var(--ml-cream-300, #f3e3cc);
+  color: var(--ml-ink-soft, #5b5048);
+  font-size: 14.5px;
+  line-height: 1.75;
+  text-align: center;
+}
+
+.ml-show-today b {
+  color: var(--ml-ink, #2b2622);
+  font-weight: 700;
+}
+
 /* The fact lists ride inside each column now - centered under their
    visual instead of flowing in a side copy column. */
 .ml-show-grid .ml-sample-feats {

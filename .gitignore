@@ -78,3 +78,6 @@ tmp_audit_local.json
 
 # QA / design screenshots (local only)
 design-shots/
+
+.vercel
+.env*

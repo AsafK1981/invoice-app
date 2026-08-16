@@ -140,6 +140,13 @@ export function WhatsAppSection() {
         <h2 className="font-semibold text-stone-900 flex items-center gap-2">
           <MessageCircle className="w-4 h-4 text-orange-500" />
           חיבור וואטסאפ
+          {/* Beta pill, 2026-08-16. Production is wired to Meta's TEST number,
+              which only delivers to numbers whitelisted in the Meta console -
+              at most 5. For everyone else this card's flow silently goes
+              nowhere, so it must not read as a generally available feature. */}
+          <span className="text-[11px] font-bold bg-amber-50 text-amber-900 border border-amber-200 px-2 py-0.5 rounded-full">
+            בקרוב
+          </span>
         </h2>
         {status.connected ? (
           <span className="inline-flex items-center gap-1.5 text-xs font-semibold bg-amber-50 text-amber-900 border border-amber-200 px-2.5 py-1 rounded-full">
@@ -157,6 +164,10 @@ export function WhatsAppSection() {
         <>
           <p className="text-sm text-stone-700 leading-relaxed">
             אפשר להפיק מסמכים ולרשום הוצאות ישירות בצ׳אט, בלי לפתוח את האפליקציה.
+          </p>
+          <p className="text-xs text-amber-900 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mt-3 leading-relaxed">
+            הערוץ נמצא בבטא סגורה ופתוח כרגע למספר משתמשים מצומצם בלבד. אם ההודעות
+            שלכם בצ׳אט לא נענות - זו הסיבה, ולא תקלה אצלכם.
           </p>
           <div className="mt-4">
             <div className="h-1.5 rounded-full bg-stone-100 overflow-hidden">

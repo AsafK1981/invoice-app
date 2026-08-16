@@ -120,6 +120,14 @@ type Advantage = {
   body: string;
   tone?: AdvantageTone;
   flagship?: true;
+  /**
+   * Renders a "בקרוב" pill next to the title. Restored 2026-08-16 after the
+   * WhatsApp channel was wrongly marked live on 08-15: the code is deployed and
+   * the env vars are set, but production still runs on Meta's TEST number, which
+   * reaches at most 5 whitelisted phones and never a real customer. Anything a
+   * visitor cannot use the day they sign up carries this flag.
+   */
+  soon?: true;
 };
 
 const ADVANTAGES: Advantage[] = [
@@ -189,6 +197,7 @@ const ADVANTAGES: Advantage[] = [
     icon: <WhatsappIcon aria-hidden="true" />,
     title: "וואטסאפ בלי לפתוח את האפליקציה",
     body: "מוציאים קבלה ורושמים הוצאה ישירות מתוך הצ'אט, בלי להתחבר בכלל.",
+    soon: true,
   },
   {
     key: "ocr",
@@ -404,9 +413,12 @@ export default function MarketingLanding() {
               color restraint (DESIGN-TASTE 2026-08-10), promoted to the
               whole card so the strip outshines the white advantage cards.
               Claims stay checked against reality:
-                - WhatsApp: the channel went live 2026-08-15 (Meta
-                  approval closed); every בקרוב marker on the page came
-                  off the same day on Asaf's instruction.
+                - WhatsApp: leads the strip, carrying a "בקרוב" pill. The
+                  08-15 edit that declared the channel live and stripped
+                  every בקרוב marker was based on a false premise - the
+                  channel still runs on Meta's test number - so the pills
+                  went back on 08-16. The claim itself is future-tense and
+                  is the one deliberate not-yet-shipped item here.
                 - free month: matches the official sitewide offer (launch
                   period fully free, first paid month free later) - keep in
                   sync with the pricing page FAQ if it changes.
@@ -419,11 +431,24 @@ export default function MarketingLanding() {
               links it. */}
           <section className="ml-trust">
             <div className="ml-wrap ml-trust-in">
+              {/* WhatsApp stays FIRST here by Asaf's explicit call (2026-08-16):
+                  it is the product's strongest differentiator against Morning /
+                  SUMIT / iCount, and he is committed to shipping it. I had
+                  swapped it out for the allocation-number fact on the reasoning
+                  that a trust strip should carry only shipped claims; he
+                  overruled that, and the decision is his. The honest compromise
+                  is the "בקרוב" pill - the promise stays in the lead position,
+                  but nobody can read it as available today. Copy is future-tense
+                  for the same reason. Remove the pill only when the channel runs
+                  on a real number - see docs/whatsapp/runbook-go-live.md. */}
               <div className="ml-trust-card ml-trust-card--green">
                 <span className="ml-trust-icon">
                   <WhatsappIcon aria-hidden="true" />
                 </span>
-                <span className="ml-trust-k">חשבונית מהוואטסאפ</span>
+                <span className="ml-trust-k">
+                  חשבונית מהוואטסאפ
+                  <span className="ml-badge-soon">בקרוב</span>
+                </span>
                 <p>
                   כותבים הודעה אחת בצ&apos;אט - והחשבונית מוכנה ואצל
                   הלקוח. בלי להיכנס לאפליקציה בכלל.
@@ -478,16 +503,25 @@ export default function MarketingLanding() {
                 <span className="ml-eyebrow">כך זה נראה בפועל</span>
                 <h2>מהוואטסאפ שלכם ישירות אל הלקוח</h2>
                 <p>
-                  כותבים הודעה אחת בצ&apos;אט - והלקוח מקבל מסמך נקי
+                  בקרוב: כותבים הודעה אחת בצ&apos;אט - והלקוח מקבל מסמך נקי
                   ומקצועי, עם כל השדות שרשות המסים דורשת, כולל מספר
                   ההקצאה.
                 </p>
-                {/* The "מה שכבר עובד היום" honesty aside that lived here
-                    (2026-08-11 to 2026-08-15) is gone: it existed only to
-                    keep the page from overselling the WhatsApp channel
-                    while Meta approval was pending. The channel is live
-                    now, so the aside (and its .ml-show-today CSS) was
-                    removed rather than left as an empty reassurance. */}
+                {/* Honesty aside, restored 2026-08-16. It was removed on 08-15
+                    on the belief that Meta approval had closed and the channel
+                    was live. That was wrong: production is still wired to Meta's
+                    TEST number (+1 555-675-0776), which reaches 5 whitelisted
+                    phones and no real customer. A dedicated number was bought
+                    and turned out to be already registered to a third party's
+                    WABA, and the purchase was refunded - see
+                    docs/whatsapp/runbook-go-live.md. The mock leads this
+                    section, so without this line the page reads as if the chat
+                    bot is what you get on signup. */}
+                <p className="ml-show-today">
+                  <b>מה שכבר עובד היום:</b> המסמך שמשמאל, מספר ההקצאה
+                  שבתוכו, ושליחה ללקוח במייל או בקישור - הכול פעיל עכשיו
+                  במערכת. ערוץ הוואטסאפ מצטרף בהמשך.
+                </p>
               </div>
             </div>
 
@@ -498,14 +532,16 @@ export default function MarketingLanding() {
                   density, inherits RTL for free, and weighs nothing. Shows
                   the channel's two flows (free-text receipt issuing, photo
                   expense capture); every message body matches the approved
-                  mock verbatim. The channel is LIVE (Meta approval closed
-                  2026-08-15, all בקרוב badges removed) - but the chat
-                  itself is still an illustration, not a real screenshot,
-                  so the caption keeps saying so. `role="img"` + aria-label:
-                  to a screen reader the whole simulated chat is one
-                  picture, not a wall of fake conversation turns. */}
+                  mock verbatim. The channel is NOT live (test number only -
+                  corrected 2026-08-16), so the column title carries the same
+                  "בקרוב" badge as the advantage card above and the caption
+                  says it is a preview. `role="img"` + aria-label: to a screen
+                  reader the whole simulated chat is one picture, not a wall
+                  of fake conversation turns. */}
               <figure className="ml-wa-phone-wrap">
-                <h3 className="ml-show-col-title">ערוץ הוואטסאפ</h3>
+                <h3 className="ml-show-col-title">
+                  ערוץ הוואטסאפ <span className="ml-badge-soon">בקרוב</span>
+                </h3>
                 <div
                   className="ml-wa-phone"
                   role="img"
@@ -972,6 +1008,9 @@ export default function MarketingLanding() {
                     </div>
                     <h3>
                       <LtrText text={item.title} />
+                      {item.soon ? (
+                        <span className="ml-badge-soon">בקרוב</span>
+                      ) : null}
                     </h3>
                     <p>
                       <LtrText text={item.body} />
