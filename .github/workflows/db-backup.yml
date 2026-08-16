@@ -56,7 +56,9 @@ jobs:
           sudo apt-get install -y -qq postgresql-common >/dev/null
           sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y >/dev/null
           sudo apt-get install -y -qq postgresql-client-17 >/dev/null
-          pg_dump --version
+          # The runner ships pg 16 first in PATH; put 17's binaries ahead of it
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
+          /usr/lib/postgresql/17/bin/pg_dump --version
 
       - name: npm ci
         run: npm ci --ignore-scripts --no-audit --no-fund
