@@ -32,6 +32,8 @@ This is a live SaaS with real users (Israeli עוסק פטור freelancers). Tre
 - All `/api/*` routes that touch sensitive data require auth (Bearer token) and validate with `auth.getUser()`. Public routes (e.g. `/api/public-document/[id]`) must validate input shape (UUID regex) before hitting the DB.
 - `next.config.ts` headers stay set: HSTS, X-Frame-Options DENY, X-Content-Type-Options nosniff, Referrer-Policy strict-origin-when-cross-origin, Permissions-Policy.
 - Never commit security reports, exploit details, or anything matching `*Security_Report*.pdf` or `AEGIS_*.pdf` (already in .gitignore).
+- **Issued documents are DB-locked, items included.** `documents` (trigger `enforce_document_immutability`) and, since 2026-08-16, `document_items` (`enforce_document_item_immutability`) reject edits/deletes once `status <> 'draft'`. Never write code that updates or deletes `document_items` directly for a non-draft doc; delete the PARENT and let ON DELETE CASCADE do it (that path is allowed). Account wipes null `emailed_at` first (see `/api/delete-account`, `/api/danger/delete-all`).
+- **Backups exist and are off-platform.** Supabase org is on the free plan (no platform backups). `.github/workflows/db-backup.yml` runs nightly, restore-verifies, and publishes to the private repo `AsafK1981/invoice-app-backups`. Restore: `docs/restore-runbook.md`. `scripts/health-check.mjs` alerts if the last verified backup is > 36h old. Never delete that repo or the `BACKUP_*`/`SUPABASE_DB_URL` Actions secrets.
 - A weekly remote agent runs every Monday 16:00 UTC re-running the AEGIS exploit + route health + header checks. If it opens a `🚨 SECURITY REGRESSION` issue, drop everything and investigate.
 
 ## Admin access (no need to send the user to dashboards)
