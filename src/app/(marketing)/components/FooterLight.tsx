@@ -24,6 +24,7 @@ export default function FooterLight() {
           <Link href="/pricing">מחירים</Link>
           <Link href="/terms">תנאי שימוש</Link>
           <Link href="/privacy">פרטיות</Link>
+          <Link href="/security">אבטחת מידע</Link>
           <Link href="/accessibility">נגישות</Link>
         </nav>
         <span className="ml-footer-copy">נבנה באהבה לעסקים עצמאיים בישראל</span>
