@@ -64,10 +64,16 @@ export default function OnboardingPage() {
   useEffect(() => {
     if (!ready || business.email) return;
     let cancelled = false;
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (cancelled || !user?.email) return;
-      setBizForm((f) => (f.email ? f : { ...f, email: user.email! }));
-    });
+    supabase.auth
+      .getUser()
+      .then(({ data: { user } }) => {
+        if (cancelled || !user?.email) return;
+        setBizForm((f) => (f.email ? f : { ...f, email: user.email! }));
+      })
+      // Best-effort prefill: on a dropped connection this rejects, and without
+      // a catch it surfaced as an unhandled rejection (see the note in
+      // `finish`). Failing to prefill one field is not worth an error.
+      .catch(() => {});
     return () => {
       cancelled = true;
     };
@@ -181,7 +187,21 @@ export default function OnboardingPage() {
   }
 
   async function finish(target: "dashboard" | "new-doc" = "new-doc") {
-    await supabase.auth.updateUser({ data: { onboarded: true } });
+    // The onboarded flag is a convenience, not a gate, so a failed write must
+    // never trap the user on this screen. It used to: `finish` is called bare
+    // from three onClick handlers, so when this await rejected the rejection
+    // escaped unhandled and the button simply did nothing - no navigation, no
+    // message - at the very end of onboarding. Seen in production on iOS
+    // 2026-08-15 (Sentry: "TypeError: Load failed", mechanism
+    // onunhandledrejection, transaction /onboarding), which is what a dropped
+    // mobile connection looks like in WebKit.
+    // Worst case now: the flag is not set and the user sees onboarding once
+    // more. That is strictly better than a dead button.
+    try {
+      await supabase.auth.updateUser({ data: { onboarded: true } });
+    } catch {
+      // deliberately swallowed - the navigation below matters more
+    }
     track("onboarding_complete");
     router.push(target === "new-doc" ? "/documents/new" : "/dashboard");
   }

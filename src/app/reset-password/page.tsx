@@ -19,14 +19,23 @@ export default function ResetPasswordPage() {
   const [sessionReady, setSessionReady] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSessionReady(true);
-      if (!session) {
-        setError(
-          "קישור האיפוס פג תוקף או אינו תקין. בקש קישור חדש מעמוד ההתחברות."
-        );
-      }
-    });
+    supabase.auth
+      .getSession()
+      .then(({ data: { session } }) => {
+        setSessionReady(true);
+        if (!session) {
+          setError(
+            "קישור האיפוס פג תוקף או אינו תקין. בקש קישור חדש מעמוד ההתחברות."
+          );
+        }
+      })
+      // Must still set sessionReady or the page renders nothing at all. The
+      // message differs from the invalid-link case on purpose: this one is a
+      // network failure and retrying the same link will work.
+      .catch(() => {
+        setSessionReady(true);
+        setError("לא הצלחנו לאמת את הקישור. בדוק את החיבור לאינטרנט ונסה שוב.");
+      });
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {

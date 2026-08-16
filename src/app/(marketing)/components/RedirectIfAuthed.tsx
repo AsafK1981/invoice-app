@@ -16,11 +16,18 @@ export default function RedirectIfAuthed() {
 
   useEffect(() => {
     let active = true;
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (active && user) {
-        router.replace("/dashboard");
-      }
-    });
+    supabase.auth
+      .getUser()
+      .then(({ data: { user } }) => {
+        if (active && user) {
+          router.replace("/dashboard");
+        }
+      })
+      // A failed auth read here just means we do not redirect, which is the
+      // correct fallback (the anonymous landing page is already rendered).
+      // Without the catch it became an unhandled rejection on any flaky
+      // connection - the class of error that filled Sentry from /onboarding.
+      .catch(() => {});
     return () => {
       active = false;
     };

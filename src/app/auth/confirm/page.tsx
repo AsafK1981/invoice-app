@@ -89,15 +89,26 @@ function ConfirmInner() {
       }
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!cancelled) finish(session);
-    });
+    supabase.auth
+      .getSession()
+      .then(({ data: { session } }) => {
+        if (!cancelled) finish(session);
+      })
+      // Safe to swallow: the onAuthStateChange listener above and the
+      // fallback timer below both still resolve this screen. Left unguarded
+      // it only added an unhandled rejection on a flaky connection.
+      .catch(() => {});
 
     fallbackTimer = setTimeout(() => {
       if (resolved || cancelled) return;
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        if (!cancelled) finish(session);
-      });
+      supabase.auth
+        .getSession()
+        .then(({ data: { session } }) => {
+          if (!cancelled) finish(session);
+        })
+        // Last resort already; if it rejects there is nothing further to try
+        // and `finish(null)` would only send the user to the error state.
+        .catch(() => {});
     }, 1500);
 
     return () => {

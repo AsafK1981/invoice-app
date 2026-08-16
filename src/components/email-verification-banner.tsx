@@ -27,12 +27,17 @@ export function EmailVerificationBanner() {
   useEffect(() => {
     setDismissed(typeof window !== "undefined" && window.sessionStorage.getItem(DISMISS_KEY) === "1");
     let cancelled = false;
-    supabase.auth.getUser().then(({ data }) => {
-      if (cancelled) return;
-      const user = data.user;
-      setNeedsVerification(Boolean(user && user.email_confirmed_at == null));
-      setEmail(user?.email ?? null);
-    });
+    supabase.auth
+      .getUser()
+      .then(({ data }) => {
+        if (cancelled) return;
+        const user = data.user;
+        setNeedsVerification(Boolean(user && user.email_confirmed_at == null));
+        setEmail(user?.email ?? null);
+      })
+      // Stay hidden rather than nag on bad information: we cannot tell an
+      // unverified user from an unreachable network here.
+      .catch(() => {});
     return () => {
       cancelled = true;
     };

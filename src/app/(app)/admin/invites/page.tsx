@@ -65,12 +65,21 @@ export default function AdminInvitesPage() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      const ok = isAdminEmail(user?.email);
-      setAllowed(ok);
-      setChecked(true);
-      if (!ok) setLoading(false);
-    });
+    supabase.auth
+      .getUser()
+      .then(({ data: { user } }) => {
+        const ok = isAdminEmail(user?.email);
+        setAllowed(ok);
+        setChecked(true);
+        if (!ok) setLoading(false);
+      })
+      // See the same guard on the admin index: an unguarded rejection here
+      // left the gate spinning forever. Deny and stop.
+      .catch(() => {
+        setAllowed(false);
+        setChecked(true);
+        setLoading(false);
+      });
   }, []);
 
   const load = useCallback(async () => {

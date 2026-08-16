@@ -39,9 +39,13 @@ export function EmailVerificationModal({ open, onClose, email: emailProp }: Prop
       return;
     }
     let cancelled = false;
-    supabase.auth.getUser().then(({ data }) => {
-      if (!cancelled) setResolvedEmail(data.user?.email ?? null);
-    });
+    supabase.auth
+      .getUser()
+      .then(({ data }) => {
+        if (!cancelled) setResolvedEmail(data.user?.email ?? null);
+      })
+      // null is exactly what the success path stores when there is no email.
+      .catch(() => {});
     return () => {
       cancelled = true;
     };

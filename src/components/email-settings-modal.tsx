@@ -21,10 +21,15 @@ export function EmailSettingsModal({ open, onClose }: Props) {
 
   useEffect(() => {
     if (!open) return;
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setGmailUser(user?.user_metadata?.gmail_user || "");
-      setGmailAppPassword(user?.user_metadata?.gmail_app_password || "");
-    });
+    supabase.auth
+      .getUser()
+      .then(({ data: { user } }) => {
+        setGmailUser(user?.user_metadata?.gmail_user || "");
+        setGmailAppPassword(user?.user_metadata?.gmail_app_password || "");
+      })
+      // Empty fields are the same fallback the success path uses when the
+      // user has no Gmail connected. Nothing is overwritten by failing.
+      .catch(() => {});
     setToast(null);
   }, [open]);
 

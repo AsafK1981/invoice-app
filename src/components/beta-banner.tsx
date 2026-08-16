@@ -25,10 +25,15 @@ export function BetaBanner() {
   const [dismissed, setDismissed] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      const s = getPlanStatus(user);
-      setStatus(s);
-    });
+    supabase.auth
+      .getUser()
+      .then(({ data: { user } }) => {
+        const s = getPlanStatus(user);
+        setStatus(s);
+      })
+      // Banner stays hidden if we cannot read the plan - better than an
+      // unhandled rejection over a decorative strip.
+      .catch(() => {});
     // Per-day dismissal: re-shows once a day even after the user closes it.
     try {
       const stored = window.sessionStorage.getItem(DISMISS_KEY);

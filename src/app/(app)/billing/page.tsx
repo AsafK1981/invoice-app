@@ -65,7 +65,13 @@ export default function BillingPage() {
       if (searchParams.get("success") === "1") {
         track("subscription_started", { tier: status.tier });
       }
-    });
+    })
+      // A rejection here used to escape unhandled AND leave `loading` true,
+      // so a dropped connection showed a billing page that span forever.
+      // Stop loading so the page renders its default (free) state instead.
+      .catch(() => {
+        setLoading(false);
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

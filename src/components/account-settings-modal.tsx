@@ -25,9 +25,14 @@ export function AccountSettingsModal({ open, onClose }: Props) {
 
   useEffect(() => {
     if (!open) return;
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setUserEmail(user?.email || "");
-    });
+    supabase.auth
+      .getUser()
+      .then(({ data: { user } }) => {
+        setUserEmail(user?.email || "");
+      })
+      // Display-only field; an empty string is the same fallback the success
+      // path already uses when there is no email.
+      .catch(() => setUserEmail(""));
     setPassword("");
     setConfirmPassword("");
     setToast(null);

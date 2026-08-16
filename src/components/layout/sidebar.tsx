@@ -61,9 +61,14 @@ export function Sidebar() {
   // route enforces the same check server-side.
   const [isAdmin, setIsAdmin] = useState(false);
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setIsAdmin(isAdminEmail(user?.email));
-    });
+    supabase.auth
+      .getUser()
+      .then(({ data: { user } }) => {
+        setIsAdmin(isAdminEmail(user?.email));
+      })
+      // Hide the admin link if we cannot confirm - denying is the safe
+      // default, and the routes behind it check permission on their own.
+      .catch(() => setIsAdmin(false));
   }, []);
   const [accountOpen, setAccountOpen] = useState(false);
 

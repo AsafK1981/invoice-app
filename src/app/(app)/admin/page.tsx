@@ -94,12 +94,23 @@ export default function AdminPage() {
   // useful. The API enforces this too; this is purely UX so admins don't see
   // the loading state on a page they shouldn't be looking at.
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      const ok = isAdminEmail(user?.email);
-      setAllowed(ok);
-      setChecked(true);
-      if (!ok) setLoading(false);
-    });
+    supabase.auth
+      .getUser()
+      .then(({ data: { user } }) => {
+        const ok = isAdminEmail(user?.email);
+        setAllowed(ok);
+        setChecked(true);
+        if (!ok) setLoading(false);
+      })
+      // Without this the promise could reject on a flaky connection and
+      // `setChecked` would never run, leaving the gate spinning forever with
+      // no way out. Deny and stop: a "not allowed" screen is at least a state
+      // the user can act on, and denying is the safe default for an admin gate.
+      .catch(() => {
+        setAllowed(false);
+        setChecked(true);
+        setLoading(false);
+      });
   }, []);
 
   async function load() {

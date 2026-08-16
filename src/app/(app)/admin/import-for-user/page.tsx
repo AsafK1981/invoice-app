@@ -84,11 +84,19 @@ export default function AdminImportForUserPage() {
   const fileInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      const ok = isAdminEmail(user?.email);
-      setAllowed(ok);
-      setChecked(true);
-    });
+    supabase.auth
+      .getUser()
+      .then(({ data: { user } }) => {
+        const ok = isAdminEmail(user?.email);
+        setAllowed(ok);
+        setChecked(true);
+      })
+      // See the same guard on the admin index: an unguarded rejection here
+      // left the gate spinning forever. Deny and stop.
+      .catch(() => {
+        setAllowed(false);
+        setChecked(true);
+      });
   }, []);
 
   const loadUsers = useCallback(async () => {

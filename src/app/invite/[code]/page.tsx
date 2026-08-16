@@ -71,7 +71,16 @@ export default function InviteLandingPage() {
         return;
       }
       redeem(session.access_token);
-    });
+    })
+      // Without this the page sat on its initial state forever when the
+      // session read failed - an invite link that silently does nothing.
+      // Surface it as an error the user can retry instead.
+      .catch(() => {
+        setState({
+          kind: "error",
+          text: "לא הצלחנו לאמת את ההתחברות. בדוק את החיבור לאינטרנט ורענן את העמוד.",
+        });
+      });
   }, [redeem, search]);
 
   async function handleSignIn() {
