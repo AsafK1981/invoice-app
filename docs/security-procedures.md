@@ -191,6 +191,43 @@ above.
 
 ---
 
+## 11. Backups and data durability
+
+**State before 2026-08-16:** the Supabase organisation is on the Free
+plan, which has no automatic backups (Management API on 2026-08-16:
+`pitr_enabled: false`, `backups: []`). No copy of production data
+existed outside Supabase. Closed the same day.
+
+**Now:**
+
+- `.github/workflows/db-backup.yml` runs nightly at 23:00 UTC:
+  `pg_dump` of schemas `public` + `auth` + `storage` and a download of
+  every Storage object, packed and encrypted (AES-256-CBC, PBKDF2,
+  `BACKUP_PASSPHRASE`). TLS to the database is `verify-full` against the
+  pinned Supabase root CA (`scripts/supabase-root-2021-ca.crt`).
+- **Every run restore-tests itself**: the archive is decrypted and
+  restored into a scratch Postgres 17 in CI and row counts are compared
+  with the manifest. A run whose restore does not match fails.
+- Copies: private repo `AsafK1981/invoice-app-backups` (35 daily +
+  monthly forever, single-commit snapshot branch) and a 90-day GitHub
+  Actions artifact. Two independent locations, both outside Supabase.
+- Alerting: a failed run pushes a WhatsApp via Gaya immediately;
+  `scripts/health-check.mjs` (twice weekly) alerts if the last verified
+  backup is older than 36h, so a job that silently stops firing is
+  caught within days.
+- Restore procedure and quarterly drill: `docs/restore-runbook.md`.
+- Passphrase custody: Actions secret + `.env.local` + Asaf's password
+  manager. Rotating it = re-encrypting nothing (old archives keep the
+  old passphrase); record the rotation date here.
+- RPO = 24h. RTO for "new Supabase project from the newest archive" is
+  about one hour by the runbook. Supabase Pro (daily platform backups,
+  no project pausing) was considered and deferred until paying
+  subscribers exist.
+
+Last restore drill: 2026-08-16 (CI verify + local decrypt on Asaf's PC).
+
+---
+
 ## Annual review checklist
 
 Walking through this checklist on the date in the header:
@@ -207,5 +244,6 @@ Walking through this checklist on the date in the header:
       rotate.
 - [ ] Review customer count — if ≥10, schedule a PT.
 - [ ] Verify no legal proceedings (§22).
+- [ ] Backups: status.json < 36h, quarterly restore drill done (§11).
 - [ ] Bump "Last reviewed" / "Next scheduled review" dates.
 - [ ] Commit the updated document.

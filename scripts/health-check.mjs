@@ -266,6 +266,33 @@ async function checkGoogleButton() {
   }
 }
 
+// Nightly off-platform backup (.github/workflows/db-backup.yml) writes
+// status.json to the PRIVATE repo AsafK1981/invoice-app-backups. A backup job
+// that quietly stops firing is indistinguishable from one that works unless
+// something checks the age of the last success. gh CLI is authenticated
+// locally, so this needs no extra token.
+function checkBackupFreshness() {
+  let raw;
+  try {
+    raw = execSync(
+      "gh api repos/AsafK1981/invoice-app-backups/contents/status.json -H \"Accept: application/vnd.github.raw\"",
+      { cwd: ROOT, stdio: ["ignore", "pipe", "ignore"] },
+    ).toString();
+  } catch (e) {
+    warn.push("backup status unreadable (gh api failed), is the nightly backup still running?");
+    return;
+  }
+  try {
+    const st = JSON.parse(raw);
+    const ageH = (Date.now() - Date.parse(st.lastSuccessAt)) / 36e5;
+    if (!st.verified) fail.push(`last backup ${st.name} was NOT restore-verified`);
+    else if (ageH > 36) fail.push(`last verified backup is ${Math.round(ageH)}h old (${st.name}); nightly job stopped?`);
+    else ok.push(`nightly backup fresh (${Math.round(ageH)}h, ${st.rows} rows, ${st.daily} daily / ${st.monthly} monthly)`);
+  } catch (e) {
+    warn.push(`backup status.json unparsable: ${e.message}`);
+  }
+}
+
 async function main() {
   await checkRoutes();
   await checkHeaders();
@@ -276,6 +303,7 @@ async function main() {
   await checkGoogleButton();
   checkGit();
   checkDeps();
+  checkBackupFreshness();
 
   const status = fail.length ? "🔴" : warn.length ? "🟡" : "🟢";
   const lines = [
@@ -287,6 +315,7 @@ async function main() {
   const text = lines.join("\n");
 
   console.log(text);
+  if (process.argv.includes("--verbose")) console.log("✓ " + ok.join("\n✓ "));
 
   // Push to Gaya. --no-push suppresses entirely (testing); --silent skips
   // only an all-green report (zero-noise mode).
