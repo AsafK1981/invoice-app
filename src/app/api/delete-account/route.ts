@@ -61,11 +61,15 @@ export async function POST(req: NextRequest) {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    // Find all businesses owned by the user
-    const { data: businesses } = await admin
+    // Find all businesses owned by the user. A failed lookup must abort:
+    // an empty list here would skip the whole DB wipe and still delete the
+    // auth user below, leaving orphaned business data (GPT council seat,
+    // 2026-08-16).
+    const { data: businesses, error: bizErr } = await admin
       .from("businesses")
       .select("id, logo_url")
       .eq("user_id", user.id);
+    if (bizErr) throw new Error(`list businesses: ${bizErr.message}`);
 
     const businessIds = (businesses || []).map((b) => b.id);
 
@@ -99,21 +103,41 @@ export async function POST(req: NextRequest) {
         await admin.storage.from("document-attachments").remove(attachmentPaths).catch(() => {});
       }
 
-      // DB cleanup. Order matters because of FKs:
-      //   document_items → documents → ...
-      //   document_attachments → documents
-      //   audit_log → businesses (no FK but logically owned)
+      // DB cleanup.
+      //
+      // Two DB triggers stand in the way of a naive wipe and both are
+      // handled here on purpose (this is a full account deletion behind
+      // auth + rate limit, the one place the guards must yield):
+      //   * enforce_document_immutability blocks DELETE of any document
+      //     with emailed_at set. emailed_at is NOT an immutable field, so
+      //     we null it first (same approach as /api/danger/delete-all).
+      //     Before 2026-08-16 this route skipped that step, so for any
+      //     account that had ever emailed an invoice the documents delete
+      //     failed silently (supabase-js does not throw), the auth user was
+      //     removed anyway, and the business data was left orphaned.
+      //   * enforce_document_item_immutability blocks direct edits/deletes
+      //     of items under an issued document, but lets the ON DELETE
+      //     CASCADE from the parent through. So: delete the PARENT rows and
+      //     let the cascade remove document_items / document_attachments /
+      //     dunning_log atomically.
+      // Every step is checked; a failure aborts BEFORE the auth user is
+      // deleted, so the account stays intact and retryable.
+      const must = (label: string, res: { error: { message: string } | null }) => {
+        if (res.error) throw new Error(`${label}: ${res.error.message}`);
+      };
       if (docIds.length > 0) {
-        await admin.from("document_items").delete().in("document_id", docIds);
-        await admin.from("document_attachments").delete().in("document_id", docIds);
+        must(
+          "clear delivery markers",
+          await admin.from("documents").update({ emailed_at: null }).in("business_id", businessIds).not("emailed_at", "is", null),
+        );
       }
-      await admin.from("documents").delete().in("business_id", businessIds);
-      await admin.from("expenses").delete().in("business_id", businessIds);
-      await admin.from("clients").delete().in("business_id", businessIds);
-      await admin.from("products").delete().in("business_id", businessIds);
-      await admin.from("document_counters").delete().in("business_id", businessIds);
-      await admin.from("audit_log").delete().in("business_id", businessIds);
-      await admin.from("businesses").delete().eq("user_id", user.id);
+      must("delete documents", await admin.from("documents").delete().in("business_id", businessIds));
+      must("delete expenses", await admin.from("expenses").delete().in("business_id", businessIds));
+      must("delete clients", await admin.from("clients").delete().in("business_id", businessIds));
+      must("delete products", await admin.from("products").delete().in("business_id", businessIds));
+      must("delete document_counters", await admin.from("document_counters").delete().in("business_id", businessIds));
+      must("delete audit_log", await admin.from("audit_log").delete().in("business_id", businessIds));
+      must("delete businesses", await admin.from("businesses").delete().eq("user_id", user.id));
     }
 
     // Finally delete the auth user

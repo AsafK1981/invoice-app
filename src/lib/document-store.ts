@@ -275,8 +275,18 @@ export async function deleteDocument(id: string) {
     );
   }
 
-  await supabase.from("document_items").delete().eq("document_id", id);
-  await supabase.from("documents").delete().eq("id", id);
+  // Delete the parent only. document_items has ON DELETE CASCADE, and since
+  // 2026-08-16 a DB trigger (enforce_document_item_immutability) rejects a
+  // direct delete of items under a non-draft document; the cascade path is
+  // the one it lets through. Deleting items first would fail for an
+  // issued-but-unsent document, which this function is allowed to remove.
+  // .select() returns the affected rows so a silent 0-row delete (RLS hiding
+  // the row, or the DB immutability trigger having been reached through a
+  // path we did not anticipate) surfaces as an error instead of a phantom
+  // success that still fires the change event.
+  const { data: deleted, error } = await supabase.from("documents").delete().eq("id", id).select("id");
+  if (error) throw new Error(error.message);
+  if (!deleted || deleted.length === 0) throw new Error("המסמך לא נמחק (לא נמצא או אין הרשאה)");
 
   if (snap) {
     logAudit({

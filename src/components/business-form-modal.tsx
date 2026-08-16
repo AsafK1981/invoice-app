@@ -23,6 +23,7 @@ export function BusinessFormModal({ open, onClose, business }: Props) {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
+  const replacedLogoPaths = useRef<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -85,6 +86,17 @@ export function BusinessFormModal({ open, onClose, business }: Props) {
       .from("business-logos")
       .getPublicUrl(fileName);
 
+    // Remember the file being replaced; it is removed only after a
+    // successful save (see handleSubmit). Deleting it here would break the
+    // saved business's logo if the user then cancels the modal.
+    const previous = form.logoUrl;
+    const marker = "/storage/v1/object/public/business-logos/";
+    const prevIdx = previous ? previous.indexOf(marker) : -1;
+    if (previous && prevIdx !== -1) {
+      const prevPath = decodeURIComponent(previous.slice(prevIdx + marker.length));
+      if (prevPath && prevPath !== fileName) replacedLogoPaths.current.add(prevPath);
+    }
+
     update("logoUrl", urlData.publicUrl);
     setUploading(false);
   }
@@ -114,6 +126,15 @@ export function BusinessFormModal({ open, onClose, business }: Props) {
       });
       setSaving(false);
       setJustSaved(true);
+      // Best-effort cleanup of logos replaced during this edit: the bucket
+      // is public-read, so an old file would otherwise stay downloadable
+      // forever. The storage policy only lets us remove our own objects, and
+      // a failure here must not surface - the save already succeeded.
+      const stale = Array.from(replacedLogoPaths.current);
+      replacedLogoPaths.current.clear();
+      if (stale.length > 0) {
+        void supabase.storage.from("business-logos").remove(stale).catch(() => {});
+      }
       setTimeout(onClose, 900);
       return;
     } catch (err) {

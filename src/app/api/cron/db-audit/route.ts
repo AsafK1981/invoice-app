@@ -72,9 +72,19 @@ export async function GET(req: Request) {
     }
   }
 
-  // RLS posture is verified by the pre-push hook + the weekly remote audit
-  // (which both run the AEGIS anon-key exploit against the live URL). No
-  // additional check needed inside this DB-side audit.
+  // 4. RLS on every public table. The pre-push hook + weekly remote audit
+  // exercise the anon key against the KNOWN tables; this catches a NEW table
+  // that shipped without RLS (service_role-only RPC, see
+  // scripts/migrations/20260816-assert-rls-all-public-tables.sql).
+  const { data: openTables, error: rlsErr } = await admin.rpc("tables_without_rls");
+  if (rlsErr) {
+    issues.push({ kind: "rls_check_failed", detail: rlsErr.message });
+  } else if (openTables && openTables.length > 0) {
+    issues.push({
+      kind: "tables_without_rls",
+      detail: `public tables with RLS disabled: ${openTables.map((t: { table_name: string }) => t.table_name).join(", ")}`,
+    });
+  }
 
   const summary = {
     timestamp: new Date().toISOString(),
