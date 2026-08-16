@@ -5,6 +5,7 @@ import { InstallPrompt } from "@/components/install-prompt";
 import { AssistantWidget } from "@/components/assistant-widget";
 import { NotificationsBell } from "@/components/notifications-bell";
 import { EmailVerificationBanner } from "@/components/email-verification-banner";
+import { TwoFactorNudge } from "@/components/two-factor-nudge";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -28,6 +29,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               layout that it would otherwise overlap. */}
           <div className="max-w-7xl mx-auto p-4 pt-16 lg:p-8 print:p-0 print:max-w-none">
             <EmailVerificationBanner />
+            <TwoFactorNudge />
             <div className="no-print flex items-center justify-end gap-2 mb-4 print:hidden">
               <NotificationsBell />
               <GlobalSearch />

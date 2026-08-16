@@ -773,6 +773,18 @@ h1.ml-hero-h1 {
   line-height: 1.62;
   color: var(--ml-ink-2);
 }
+/* Inline "read more" link inside a trust card (the security card points at
+   /security). Gold ink + underline so it reads as a link, not body text. */
+.ml-trust-card p a {
+  color: var(--ml-gold-ink);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--ml-gold-tint-line);
+}
+.ml-trust-card p a:hover {
+  text-decoration-color: currentColor;
+}
 @media (hover: hover) {
   .ml-trust-card:hover {
     transform: translateY(-6px) scale(1.02);

@@ -20,6 +20,7 @@ export default function FooterV2() {
           <Link href="/pricing">מחירים</Link>
           <Link href="/terms">תנאי שימוש</Link>
           <Link href="/privacy">פרטיות</Link>
+          <Link href="/security">אבטחת מידע</Link>
           <Link href="/accessibility">נגישות</Link>
           <Link href="/login">התחברות</Link>
           <Link href="/login?mode=signup" className="v2-btn-gold v2-footer-cta">
