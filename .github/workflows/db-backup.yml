@@ -1,0 +1,172 @@
+name: Nightly DB + Storage Backup
+
+# Off-platform backup of the production Supabase project (free plan = no
+# Supabase backups). Every run:
+#   1. pg_dump + download all Storage objects -> encrypted archive
+#   2. restores the dump into a throwaway Postgres and compares row counts
+#      (a backup that was never restored is a hope, not a backup)
+#   3. pushes the archive to the PRIVATE repo AsafK1981/invoice-app-backups
+#      (35 daily + monthly forever, single-commit snapshot branch so the repo
+#      stays small) and keeps a second copy as a 90-day Actions artifact
+#   4. on ANY failure, or if the run silently stops firing, Asaf gets a
+#      WhatsApp via Gaya (scripts/health-check.mjs watches status.json age)
+# Restore procedure: docs/restore-runbook.md
+
+on:
+  schedule:
+    - cron: '0 23 * * *'   # 23:00 UTC = 02:00 Israel (summer) / 01:00 (winter)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: db-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      verify-postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: verify
+          POSTGRES_DB: verify
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      GAYA_PUSH_TOKEN: ${{ secrets.GAYA_PUSH_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install postgresql-client 17 (matches production Postgres 17)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-common >/dev/null
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y >/dev/null
+          sudo apt-get install -y -qq postgresql-client-17 >/dev/null
+          pg_dump --version
+
+      - name: npm ci
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Backup (pg_dump + storage -> encrypted archive)
+        id: backup
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          BACKUP_OUT_DIR: ${{ runner.temp }}/backup-out
+          GIT_SHA: ${{ github.sha }}
+        run: node scripts/backup-db.mjs
+
+      - name: Verify (decrypt -> pg_restore into scratch Postgres -> compare counts)
+        env:
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+          VERIFY_DB_URL: postgresql://postgres:verify@localhost:5432/verify
+          ARCHIVE: ${{ steps.backup.outputs.archive }}
+          NAME: ${{ steps.backup.outputs.name }}
+        run: |
+          set -euo pipefail
+          V="${{ runner.temp }}/verify"
+          mkdir -p "$V"
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -pass env:BACKUP_PASSPHRASE -in "$ARCHIVE" -out "$V/b.tar.gz"
+          tar -xzf "$V/b.tar.gz" -C "$V"
+          test -f "$V/$NAME/db.dump"
+          node scripts/backup-db.mjs --verify "$V/$NAME"
+          rm -rf "$V"
+
+      - name: Keep a second copy as a 90-day artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.backup.outputs.name }}
+          path: |
+            ${{ steps.backup.outputs.archive }}
+            ${{ runner.temp }}/backup-out/${{ steps.backup.outputs.name }}.manifest.json
+          retention-days: 90
+          if-no-files-found: error
+
+      - name: Publish to private backups repo
+        env:
+          BACKUP_DEPLOY_KEY: ${{ secrets.BACKUP_DEPLOY_KEY }}
+          ARCHIVE: ${{ steps.backup.outputs.archive }}
+          NAME: ${{ steps.backup.outputs.name }}
+          BYTES: ${{ steps.backup.outputs.bytes }}
+          ROWS: ${{ steps.backup.outputs.rows }}
+          STORAGE_FILES: ${{ steps.backup.outputs.storage_files }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          printf '%s\n' "$BACKUP_DEPLOY_KEY" > ~/.ssh/backup_key
+          chmod 600 ~/.ssh/backup_key
+          ssh-keyscan -t ed25519 github.com >> ~/.ssh/known_hosts 2>/dev/null
+          export GIT_SSH_COMMAND="ssh -i ~/.ssh/backup_key -o IdentitiesOnly=yes"
+
+          R="${{ runner.temp }}/backups-repo"
+          git clone --depth 1 git@github.com:AsafK1981/invoice-app-backups.git "$R" 2>/dev/null \
+            || { mkdir -p "$R"; git -C "$R" init -q; git -C "$R" remote add origin git@github.com:AsafK1981/invoice-app-backups.git; }
+          cd "$R"
+          git config user.name "invoice-app backup bot"
+          git config user.email "backup@friendlyinvoice.co.il"
+          mkdir -p daily monthly
+
+          cp "$ARCHIVE" "daily/$NAME.tar.gz.enc"
+          cp "${{ runner.temp }}/backup-out/$NAME.manifest.json" "daily/$NAME.manifest.json"
+          # First run of each month also becomes a permanent monthly copy
+          if [ "$(date -u +%d)" = "01" ] || [ -z "$(ls monthly/*-$(date -u +%Y-%m)-*.tar.gz.enc 2>/dev/null)" ]; then
+            cp "$ARCHIVE" "monthly/$NAME.tar.gz.enc"
+            cp "${{ runner.temp }}/backup-out/$NAME.manifest.json" "monthly/$NAME.manifest.json"
+          fi
+          # Keep the newest 35 daily archives (+ their manifests)
+          ls -1 daily/*.tar.gz.enc | sort | head -n -35 | while read -r f; do rm -f "$f" "${f%.tar.gz.enc}.manifest.json"; done
+
+          cat > status.json <<EOF
+          {"lastSuccessAt":"$(date -u +%Y-%m-%dT%H:%M:%SZ)","name":"$NAME","bytes":$BYTES,"rows":$ROWS,"storageFiles":$STORAGE_FILES,"verified":true,"daily":$(ls -1 daily/*.tar.gz.enc | wc -l),"monthly":$(ls -1 monthly/*.tar.gz.enc | wc -l),"runUrl":"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"}
+          EOF
+          cat > README.md <<'EOF'
+          # invoice-app backups (PRIVATE)
+
+          Encrypted nightly backups of https://friendlyinvoice.co.il (Supabase DB + Storage).
+          Produced by `.github/workflows/db-backup.yml` in AsafK1981/invoice-app.
+          Restore: see `docs/restore-runbook.md` in the app repo. Every archive was
+          restore-verified against a scratch Postgres before landing here.
+
+          - `daily/`   newest 35 nightly archives + manifests
+          - `monthly/` first archive of every month, kept forever
+          - `status.json` last success (watched by scripts/health-check.mjs)
+
+          Archives are AES-256-CBC (openssl enc -pbkdf2). Without the passphrase they are noise.
+          EOF
+
+          # Single-commit snapshot branch: history never accumulates old blobs
+          git checkout -q --orphan snapshot
+          git add -A
+          git commit -q -m "backup $NAME"
+          git push -q --force origin snapshot:main
+          echo "published $NAME -> invoice-app-backups"
+
+      - name: Alert Asaf via Gaya on failure
+        if: failure()
+        run: |
+          node -e '
+            const text = `✗ גיבוי לילי של חשבונית ידידותית נכשל.\nריצה: ${process.env.RUN_URL}\nבלי גיבוי תקין אין עותק של המסד מחוץ ל-Supabase (תוכנית Free, ללא גיבויים). לבדוק היום.`;
+            fetch("https://136.111.197.22.nip.io/push", {
+              method: "POST",
+              headers: { Authorization: "Bearer " + process.env.GAYA_PUSH_TOKEN, "Content-Type": "application/json" },
+              body: JSON.stringify({ text, source: "invoice-app-backup" }),
+            }).then(r => console.log("gaya push", r.status)).catch(e => console.error(e));
+          '
+        env:
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}

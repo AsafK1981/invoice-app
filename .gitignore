@@ -81,3 +81,7 @@ design-shots/
 
 .vercel
 .env*
+
+# backup script output (local runs)
+backup-out/
+*.tar.gz.enc
