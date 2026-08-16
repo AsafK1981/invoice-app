@@ -226,6 +226,26 @@ existed outside Supabase. Closed the same day.
 
 Last restore drill: 2026-08-16 (CI verify + local decrypt on Asaf's PC).
 
+## 12. Infrastructure account hygiene (lock-out prevention)
+
+Everything runs on Asaf's personal accounts; nobody else can lock him
+out, so the real risk is losing an account or a platform action. Checked
+2026-08-16 (read-only, via each provider's API where it exposes the fact):
+
+| Account | Owner | MFA | Second owner | Status 2026-08-16 |
+| --- | --- | --- | --- | --- |
+| Supabase org `Asaf Kotler` | asafkotlar@gmail.com (sole Owner) | **off** (API: `mfa_enabled: false`) | none | ACTION: enable MFA at supabase.com/dashboard/account/security; add a second owner email |
+| Vercel team `asafk1981s-projects` | asafkotlar@gmail.com | not visible via API | none | ACTION: confirm MFA at vercel.com/account/security |
+| GitHub `AsafK1981` (code + backups repo) | asafkotlar@gmail.com | not visible with current token scope | none | ACTION: confirm 2FA at github.com/settings/security; recovery codes in password manager |
+| Google (Gmail owner of all the above + GCP OAuth client) | asafkotlar@gmail.com | assumed on | n/a | ACTION: confirm 2-Step Verification + recovery phone/email |
+| Domain `friendlyinvoice.co.il` | Israeli registrar (not Vercel) | ? | n/a | ACTION: confirm auto-renew + registrar MFA |
+| Meta Business (WhatsApp), Polar | asafkotlar@gmail.com | ? | none | ACTION: confirm 2FA |
+
+Passphrase / recovery-code custody: `BACKUP_PASSPHRASE`, Supabase DB
+password, and every provider's recovery codes belong in a password
+manager, not only on this PC. Break-glass: a second email address of
+Asaf's own added as owner on Supabase org + Vercel team + GitHub repos.
+
 ---
 
 ## Annual review checklist
