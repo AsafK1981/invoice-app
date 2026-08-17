@@ -106,7 +106,7 @@ export default function ClientsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div>
         <div>
           <h1 className="text-3xl font-bold text-stone-900 flex items-center gap-3">
             <span className="w-11 h-11 rounded-2xl fgrad fgrad-teal flex items-center justify-center shadow-sm">
@@ -120,6 +120,15 @@ export default function ClientsPage() {
               : `${clients.length} לקוחות בספר`}
           </p>
         </div>
+      </div>
+
+      {/* Primary alone at the inline-start (right, under the title), file
+          chores pushed to the inline-end. See "PAGE ACTION BAR" in app-skin.css. */}
+      <div className="pgbar">
+        <button onClick={openNew} className="pgbtn pgbtn-primary pgbtn-hero">
+          <UserPlus aria-hidden="true" />
+          לקוח חדש
+        </button>
         <div className="flex gap-2 flex-wrap">
           <button
             onClick={() => exportClients(clients)}
@@ -137,13 +146,6 @@ export default function ClientsPage() {
           >
             <Upload className="w-4 h-4" />
             ייבוא
-          </button>
-          <button
-            onClick={openNew}
-            className="inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-5 py-3 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200 transition-all"
-          >
-            <UserPlus className="w-4 h-4" />
-            לקוח חדש
           </button>
         </div>
       </div>

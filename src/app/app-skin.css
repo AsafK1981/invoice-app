@@ -727,6 +727,48 @@ html .pgbtn-primary:hover:not(:disabled) {
     inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
+/* =====================================================================
+   PAGE ACTION BAR (`.pgbar` / `.pgbtn-hero`) - 2026-08-17.
+
+   The row that sits BELOW a page title on the five list pages (dashboard,
+   documents, clients, expenses, products). Until now the "new X" primary sat
+   inside the header block, at the far inline-END (visually the LEFT edge, this
+   being RTL) among the file chores. The user asked for the opposite: the one
+   call to action alone at the inline-START (visually the RIGHT, under the
+   title, where the eye lands first), bigger than anything else on the row,
+   with the quiet controls (imports / exports / the dashboard's date-range
+   picker) pushed to the opposite edge.
+
+   `.pgbar` is that row: primary first in DOM = inline-start; the second child
+   gets an auto inline-start margin so it hugs the inline-end. On a phone the
+   hero goes full-width (a thumb target) and the quiet group wraps under it.
+
+   `.pgbtn-hero` is SIZE ONLY (one step up from `.pgbtn`), so the button keeps
+   `.pgbtn-primary`'s paint byte-identical to every other filled control in
+   the app. Gold is spent on exactly this one button per page - the dashboard's
+   range picker gave up its gold active state the same day for that reason.
+   ===================================================================== */
+html .pgbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--dc-sp-3);
+}
+html .pgbar > * + * {
+  margin-inline-start: auto;
+}
+html .pgbtn-hero {
+  min-height: 3.25rem;
+  padding-inline: 1.5rem;
+  border-radius: 1.1rem;
+  font-size: 1rem;
+  font-weight: 700;
+}
+html .pgbtn-hero svg {
+  width: 1.3rem;
+  height: 1.3rem;
+}
+
 @media (max-width: 1279.98px) {
   html .pgbtn {
     padding-inline: var(--dc-sp-3);
@@ -734,6 +776,13 @@ html .pgbtn-primary:hover:not(:disabled) {
 }
 
 @media (max-width: 639.98px) {
+  html .pgbar > .pgbtn-hero {
+    width: 100%;
+  }
+  html .pgbar > * + * {
+    margin-inline-start: 0;
+    width: 100%;
+  }
   html .pgactions {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
