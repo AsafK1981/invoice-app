@@ -2434,6 +2434,15 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
             allocationNumber={allocationNumber}
             onAllocationNumberChange={setAllocationNumber}
             connected={taxAuthorityStatus.connected}
+            onSave={handleSave}
+            saveLabel={saveLabel}
+            saveDisabled={!canSave || saving || rateLoading || businessProfileIncomplete}
+            saveBusy={saving || rateLoading}
+            blockReason={
+              businessProfileIncomplete
+                ? "יש להשלים את שם העסק ומספר העוסק/ח.פ בהגדרות"
+                : blockReason
+            }
           />
         )}
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Landmark } from "lucide-react";
+import { AlertCircle, ArrowLeft, Landmark, Save } from "lucide-react";
 import { AllocationSteps } from "@/components/allocation-steps";
 import { Expander } from "@/components/expander";
 
@@ -12,6 +12,18 @@ interface Props {
   /** Same shared status the top banner reads (useTaxAuthorityStatus()), so
    *  the manual-entry helper text never disagrees with it. */
   connected: boolean;
+  /** The editor's ONE primary save action (the same handler the aside and
+   *  the mobile bar call), rendered here as well so the "next step" card
+   *  contains the button it talks about instead of pointing at one that
+   *  lives in another column. */
+  onSave: () => void;
+  saveLabel: string;
+  saveDisabled: boolean;
+  /** True while the save is in flight / the exchange rate is loading, so the
+   *  icon is dropped the same way the other two save buttons do it. */
+  saveBusy: boolean;
+  /** Why the button is disabled, in one sentence (null when it is enabled). */
+  blockReason: string | null;
 }
 
 /**
@@ -20,6 +32,15 @@ interface Props {
  * "צריך שברגע שסיימת את המסמך יהיה כתוב: לחץ כאן כדי לקבל מספר הקצאה" - the
  * next action belongs where the work ends, not back up at a banner above the
  * whole form.
+ *
+ * 2026-08-17: the card used to SAY "press the save button below" while the
+ * button actually sat in the left-hand aside (desktop) - the user had to
+ * leave the card, look sideways, and find it. Asaf: "צריך שבאותו מסגרת מתחת
+ * ל-1-2-3 יהיה את הכפתור הזה הגדול". So the same primary save action is now
+ * rendered INSIDE the card, directly under the 3 steps: what the card
+ * describes and what the user presses are the same thing in the same box.
+ * The aside / mobile-bar buttons stay (they hold the total + toast); this is
+ * a third affordance for the same handler, not a different flow.
  *
  * Visual language copied from the gold "השלב הבא" card in
  * allocation-number-section.tsx (the document-page equivalent of this same
@@ -36,6 +57,11 @@ export function AllocationNextStepCard({
   allocationNumber,
   onAllocationNumberChange,
   connected,
+  onSave,
+  saveLabel,
+  saveDisabled,
+  saveBusy,
+  blockReason,
 }: Props) {
   const [manualOpen, setManualOpen] = useState(false);
   const hasNumber = allocationNumber.trim().length > 0;
@@ -52,13 +78,41 @@ export function AllocationNextStepCard({
             אחרי השמירה מבקשים מספר הקצאה
           </p>
           <p className="text-xs text-stone-700 mt-1.5 leading-relaxed">
-            לוחצים על כפתור השמירה למטה, ובעמוד המסמך מבקשים את מספר ההקצאה מרשות המסים בלחיצה
-            אחת. עד שהמספר מתקבל אי אפשר לשלוח את המסמך ללקוח.
+            סיימת למלא? לוחצים על הכפתור הגדול שכאן למטה. המסמך נשמר, ובעמוד המסמך מבקשים את
+            מספר ההקצאה מרשות המסים בלחיצה אחת. עד שהמספר מתקבל אי אפשר לשלוח את המסמך ללקוח.
           </p>
         </div>
       </div>
 
       <AllocationSteps current={1} className="mt-3.5" />
+
+      {/* The button the card talks about, in the card. Same handler, same
+          gating and same label as the aside / mobile-bar buttons, so the
+          three never disagree about whether saving is possible right now. */}
+      <div className="mt-3.5">
+        <button
+          type="button"
+          onClick={onSave}
+          disabled={saveDisabled}
+          className="w-full inline-flex items-center justify-center gap-2 min-h-[52px] px-4 bg-gradient-to-l from-orange-500 to-rose-500 text-white rounded-2xl text-[15px] font-bold text-center leading-tight shadow-md shadow-orange-200/70 hover:shadow-lg hover:shadow-orange-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:from-stone-300 disabled:to-stone-300 disabled:cursor-not-allowed disabled:shadow-none transition-all"
+        >
+          {!saveBusy && <Save className="w-4 h-4 flex-shrink-0" />}
+          <span>{saveLabel}</span>
+          {!saveBusy && <ArrowLeft className="w-4 h-4 flex-shrink-0" aria-hidden />}
+        </button>
+        {blockReason ? (
+          <p className="mt-2 flex items-start justify-center gap-1.5 text-[11px] leading-snug text-amber-800">
+            <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+            <span>{blockReason}</span>
+          </p>
+        ) : (
+          <p className="mt-2 text-center text-[11px] leading-snug text-stone-600">
+            {hasNumber
+              ? "המספר שהקלדת יודפס על המסמך."
+              : "אחרי השמירה תגיע לעמוד המסמך, ושם תבקש את מספר ההקצאה בלחיצה אחת."}
+          </p>
+        )}
+      </div>
 
       <Expander
         label="כבר קיבלתי מספר הקצאה, אקליד אותו בעצמי"
