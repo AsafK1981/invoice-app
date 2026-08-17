@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeAll } from "vitest";
 import { createElement, type ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { COMPETITORS } from "@/lib/comparison-data";
@@ -172,6 +172,15 @@ async function h1Of(route: string): Promise<string> {
   if (!h) throw new Error(`${route}: no <h1> rendered`);
   return h.text;
 }
+
+// Importing + server-rendering ~10 marketing pages is the expensive part,
+// and it lands on whichever test happens to touch a route first. Under a
+// loaded machine that first test blew the 5s default and failed the pre-push
+// hook (2026-08-17). Warm the cache once, with a budget that matches the
+// work, so the individual assertions stay fast and deterministic.
+beforeAll(async () => {
+  for (const route of ROUTES) await pageHtml(route);
+}, 120_000);
 
 describe("marketing pages: joined heading text", () => {
   it("/vs H1 reads as one sentence across its <br>", async () => {
