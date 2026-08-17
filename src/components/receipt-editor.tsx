@@ -44,6 +44,7 @@ import { AllocationNextStepCard } from "@/components/allocation-next-step-card";
 import { Expander } from "@/components/expander";
 import { useTaxAuthorityStatus } from "@/lib/use-tax-authority-status";
 import { getClientDefaults } from "@/lib/client-defaults";
+import { getRecurringPrefill } from "@/lib/recurring-prefill";
 import { documentsForClient, findMatchingClient, filterClientsByQuery } from "@/lib/client-picker";
 import { clientStore } from "@/lib/client-store";
 import {
@@ -241,6 +242,16 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   // Auto-fill payment method from the client's most recent doc, but only if
   // (a) user hasn't manually changed it this session, and (b) we're not editing
   // a copy of an existing doc (which has its own payment method already).
+  // The clients list arrives asynchronously (useClients), so on a hard load
+  // of a ?clientId= deep link it is still empty when the state above is
+  // initialised. Apply the deep link once the list is in - unless a client
+  // was already chosen (draft recovery, convert, or the user).
+  useEffect(() => {
+    const qsClient = searchParams.get("clientId");
+    if (!qsClient || clientId || fromDocId || resumeDraftId) return;
+    if (clients.some((c) => c.id === qsClient)) setClientId(qsClient);
+  }, [clients]);
+
   useEffect(() => {
     if (paymentMethodTouched || fromDocId || !clientId) return;
     if (clientDefaults.paymentMethod && clientDefaults.paymentMethod !== paymentMethod) {
@@ -357,6 +368,85 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
     }
     setDraftHydrated(true);
   }, []);
+
+  // Smart prefill: a client who gets the same document every month ("שכר
+  // דירה", "הופעות - חשבונית עבור חודש יולי") should not have to type it
+  // again. Detect the recurring subject + items in the client's history and
+  // propose them, with month/year tokens rolled forward to this doc's date.
+  const recurringPrefill = useMemo(() => {
+    if (!clientId) return null;
+    // Imported / older documents may carry no client_id but name the same
+    // customer - count those too, so a client with a year of imported rent
+    // receipts gets the proposal from day one.
+    const clientName = clients.find((c) => c.id === clientId)?.name.trim().toLowerCase();
+    const clientDocs = allDocuments.filter(
+      (d) =>
+        d.clientId === clientId ||
+        (!d.clientId && !!clientName && d.clientName?.trim().toLowerCase() === clientName)
+    );
+    return getRecurringPrefill(clientDocs, documentType, date);
+  }, [clientId, clients, allDocuments, documentType, date]);
+  // What we last wrote into the form, so we only ever overwrite OUR OWN
+  // proposal (or an untouched form) - never something the user typed.
+  const [prefillApplied, setPrefillApplied] = useState<{
+    subject: string;
+    itemsKey: string;
+    sourceNumber: number;
+    sourceDate: string;
+    sourceType: DocumentType;
+    occurrences: number;
+  } | null>(null);
+  // Client the user said "נקה" for this session - stay quiet for them.
+  const [prefillDismissedFor, setPrefillDismissedFor] = useState<string>("");
+  const itemsKey = (list: Pick<EditorItem, "description" | "quantity" | "unitPrice">[]) =>
+    JSON.stringify(list.map((i) => [i.description, i.quantity, i.unitPrice]));
+  const emptyItems = () => [{ id: crypto.randomUUID(), description: "", quantity: 1, unitPrice: 0 }];
+  const prefillIsLive =
+    !!prefillApplied && subject === prefillApplied.subject && itemsKey(items) === prefillApplied.itemsKey;
+
+  useEffect(() => {
+    // Copy/convert/resume-draft bring their own content; wait for the
+    // localStorage draft check so a recovered draft is never clobbered.
+    if (!draftHydrated || fromDocId || resumeDraftId || isCreditNote) return;
+    const formUntouched =
+      !subject.trim() && items.every((i) => !i.description.trim() && !i.unitPrice);
+    const stillOurs =
+      !!prefillApplied && subject === prefillApplied.subject && itemsKey(items) === prefillApplied.itemsKey;
+    if (!clientId || !recurringPrefill || prefillDismissedFor === clientId) {
+      // Client changed to one with no pattern (or none): take our proposal
+      // back out, but leave anything the user typed alone.
+      if (stillOurs) {
+        setSubject("");
+        setItems(emptyItems());
+        setPrefillApplied(null);
+      }
+      return;
+    }
+    if (!formUntouched && !stillOurs) return;
+    const nextItems: EditorItem[] =
+      recurringPrefill.items.length > 0
+        ? recurringPrefill.items.map((i) => ({ id: crypto.randomUUID(), ...i }))
+        : emptyItems();
+    const nextKey = itemsKey(nextItems);
+    if (subject === recurringPrefill.subject && itemsKey(items) === nextKey) return;
+    setSubject(recurringPrefill.subject);
+    setItems(nextItems);
+    setPrefillApplied({
+      subject: recurringPrefill.subject,
+      itemsKey: nextKey,
+      sourceNumber: recurringPrefill.source.number,
+      sourceDate: recurringPrefill.source.date,
+      sourceType: recurringPrefill.source.type,
+      occurrences: recurringPrefill.occurrences,
+    });
+  }, [draftHydrated, clientId, recurringPrefill, prefillDismissedFor]);
+
+  function clearRecurringPrefill() {
+    setSubject("");
+    setItems(emptyItems());
+    setPrefillApplied(null);
+    setPrefillDismissedFor(clientId);
+  }
 
   // Auto-save: write the current form state to localStorage whenever any
   // saveable field changes. Only after hydration so we don't blow away the
@@ -534,6 +624,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
     setWithholdingTouched(false);
     setPayDetails({});
     setDraftRecovered(null);
+    setPrefillApplied(null);
     setDraftDismissed(true);
   }
 
@@ -1842,6 +1933,33 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
 
         {/* ── פריטים ── */}
         <EditorCard title="פריטים" icon={Package}>
+          {prefillIsLive && prefillApplied && (
+            <div
+              className="mb-4 flex items-center justify-between gap-3 p-3 rounded-xl bg-amber-50 border border-amber-200 flex-wrap"
+              role="status"
+            >
+              <div className="flex items-start gap-2 min-w-0">
+                <Sparkles className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                <div className="text-sm text-stone-800 min-w-0">
+                  <span className="font-semibold">הנושא והפריטים מולאו אוטומטית</span>
+                  <span className="text-stone-600">
+                    {" "}
+                    לפי {prefillApplied.occurrences} המסמכים האחרונים ללקוח (האחרון:{" "}
+                    {DOCUMENT_TYPE_LABELS[prefillApplied.sourceType]}{" "}
+                    <bdi dir="ltr">#{prefillApplied.sourceNumber}</bdi> מ-
+                    <bdi dir="ltr">{formatDateHe(prefillApplied.sourceDate)}</bdi>). אפשר לערוך הכל.
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={clearRecurringPrefill}
+                className="inline-flex items-center justify-center min-h-[36px] px-3 text-sm font-medium text-amber-800 bg-amber-100 hover:bg-amber-200 rounded-xl flex-shrink-0"
+              >
+                נקה והתחל ריק
+              </button>
+            </div>
+          )}
           {effectiveVatRate > 0 && (
             <div className="mb-4 flex items-center justify-between gap-3 p-3 rounded-xl bg-orange-50/60 border border-orange-100 flex-wrap">
               <div className="flex items-center gap-2">
