@@ -19,6 +19,10 @@ type PrefillFromScan = {
   /** Set by the scan flow: the uploaded receipt's storage path. The form
    *  carries it through to the save call without exposing it in the UI. */
   receiptPath?: string;
+  /** Set by the scan flow: Hebrew names of fields the scanner could not
+   *  read. Those arrive blank on purpose (never guessed) and the subtitle
+   *  tells the user to fill them in. */
+  unreadFields?: string[];
 };
 
 interface Props {
@@ -97,8 +101,11 @@ export function ExpenseFormModal({ open, onClose, expense, prefill }: Props) {
         prefill.category && COMMON_CATEGORIES.includes(prefill.category)
           ? prefill.category
           : "אחר";
+      // A missing scan date stays EMPTY - not today. The scanner only omits
+      // it when it could not read one, and a silently-defaulted date is
+      // exactly the "confidently wrong" data Asaf asked us never to save.
       setForm({
-        date: prefill.date || today,
+        date: prefill.date || "",
         category: cat,
         supplier: prefill.supplier || "",
         amount: prefill.amount != null ? String(prefill.amount) : "",
@@ -145,7 +152,9 @@ export function ExpenseFormModal({ open, onClose, expense, prefill }: Props) {
     setTimeout(onClose, 900);
   }
 
-  const canSubmit = form.supplier.trim().length > 0 && parseFloat(form.amount) > 0;
+  const canSubmit =
+    form.supplier.trim().length > 0 && parseFloat(form.amount) > 0 && /^\d{4}-\d{2}-\d{2}$/.test(form.date);
+  const unread = prefill?.unreadFields ?? [];
 
   return (
     <Modal
@@ -156,7 +165,9 @@ export function ExpenseFormModal({ open, onClose, expense, prefill }: Props) {
         expense
           ? "עדכן את פרטי ההוצאה"
           : prefill
-            ? "מילאתי לפי המסמך, בדוק ושמור"
+            ? unread.length > 0
+              ? `לא הצלחתי לקרוא בביטחון: ${unread.join(", ")} - השלם ידנית ובדוק את השאר`
+              : "מילאתי לפי המסמך, בדוק ושמור"
             : "תיעוד הוצאה עסקית"
       }
       icon={Wallet}

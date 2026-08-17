@@ -36,7 +36,54 @@ type ScanPrefill = {
   vatAmount?: number;
   description?: string;
   receiptPath?: string;
+  /** Hebrew field names the scanner could NOT read - shown to the user so
+   *  they know what to fill in by hand instead of trusting a blank. */
+  unreadFields?: string[];
 };
+
+/**
+ * Longest edge we send to the scanner. This is the model's own maximum
+ * useful input resolution - anything larger is downscaled server-side by
+ * the API anyway, so sending a 12MP phone photo only costs upload time and
+ * risks the request-size cap. Downscaling to exactly this edge keeps every
+ * pixel the model would have seen.
+ */
+const SCAN_MAX_EDGE = 2576;
+
+/**
+ * Photos: decode, downscale to SCAN_MAX_EDGE, re-encode as JPEG. PDFs and
+ * anything the browser can't decode (HEIC on non-Safari) pass through as-is
+ * and the server reports the format problem clearly.
+ */
+async function prepareScanFile(file: File): Promise<string> {
+  if (!file.type.startsWith("image/")) return fileToBase64(file);
+  let bitmap: ImageBitmap;
+  try {
+    bitmap = await createImageBitmap(file, { imageOrientation: "from-image" } as ImageBitmapOptions);
+  } catch {
+    // Browser can't decode this image type - let the server explain.
+    return fileToBase64(file);
+  }
+  try {
+    const { width, height } = bitmap;
+    const scale = Math.min(1, SCAN_MAX_EDGE / Math.max(width, height));
+    if (scale === 1 && file.type === "image/jpeg" && file.size < 4_000_000) {
+      return fileToBase64(file);
+    }
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(width * scale));
+    canvas.height = Math.max(1, Math.round(height * scale));
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return fileToBase64(file);
+    // White backing so transparent PNG receipts don't become black.
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL("image/jpeg", 0.92);
+  } finally {
+    bitmap.close();
+  }
+}
 
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -161,7 +208,7 @@ export default function ExpensesPage() {
     setScanning(true);
     setScanError(null);
     try {
-      const base64 = await fileToBase64(file);
+      const base64 = await prepareScanFile(file);
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         setScanError("ההתחברות שלך פגה. רענן את הדף ונסה שוב.");
@@ -184,22 +231,24 @@ export default function ExpensesPage() {
       // model thinks in). The expense form's field is `supplier`. Map at
       // the boundary so the rest of the code can stay in form-vocabulary.
       const d = json.data as {
-        vendor?: string;
-        amount?: number;
+        vendor?: string | null;
+        amount?: number | null;
         vatAmount?: number | null;
-        date?: string;
-        category?: string;
-        description?: string;
+        date?: string | null;
+        category?: string | null;
+        description?: string | null;
+        unreadFields?: string[];
         receiptPath?: string | null;
       };
       setEditing(null);
       setPrefill({
-        supplier: d.vendor,
-        amount: d.amount,
+        supplier: d.vendor ?? undefined,
+        amount: d.amount ?? undefined,
         vatAmount: d.vatAmount ?? undefined,
-        date: d.date,
-        category: d.category,
-        description: d.description,
+        date: d.date ?? undefined,
+        category: d.category ?? undefined,
+        description: d.description ?? undefined,
+        unreadFields: d.unreadFields ?? [],
         receiptPath: d.receiptPath || undefined,
       });
       setModalOpen(true);

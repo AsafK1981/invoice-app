@@ -20,6 +20,7 @@ import { publicDocumentUrl, absoluteUrl } from "@/lib/public-url";
 import { parseIntent, type CreateDocumentIntent } from "./intent";
 import { sendText, sendButtons, sendDocument, fetchMedia } from "./client";
 import { transcribeAudio, transcriptionConfigured } from "./transcribe";
+import { scanExpenseEvidence, normalizeMediaType } from "@/lib/expense-scan";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -701,6 +702,9 @@ interface ExpensePayload {
   date: string;
   category: string;
   description: string;
+  /** True when the scanner could not read a date and we fell back to the
+   *  send date - surfaced in the confirmation card, never silent. */
+  dateAssumed?: boolean;
 }
 
 async function handleReceiptPhoto(
@@ -721,11 +725,60 @@ async function handleReceiptPhoto(
     return;
   }
 
-  const parsed = await scanReceipt(media.base64, media.mimeType);
-  if (!parsed) {
-    await sendText(phone, "לא הצלחתי לקרוא את הקבלה. אפשר לצלם שוב בתאורה טובה, או להזין ידנית באפליקציה.");
+  const today = todayInIsrael();
+  let outcome;
+  try {
+    outcome = await scanExpenseEvidence({
+      apiKey: anthropicKey,
+      data: media.base64,
+      mediaType: normalizeMediaType(media.mimeType),
+      today,
+    });
+  } catch (err) {
+    console.error("[whatsapp] receipt scan failed:", err instanceof Error ? err.message : err);
+    await sendText(phone, "הזיהוי נכשל כרגע. נסה שוב בעוד רגע, או הזן ידנית באפליקציה.");
     return;
   }
+
+  if (!outcome.ok) {
+    await sendText(
+      phone,
+      outcome.reason === "not_expense"
+        ? "זה לא נראה כמו קבלה או אסמכתה לתשלום. אם זו כן הוצאה - אפשר להזין ידנית באפליקציה."
+        : "לא הצלחתי לקרוא את הקבלה בביטחון. אפשר לצלם שוב בתאורה טובה (כל הקבלה בפריים, בלי צל), או להזין ידנית באפליקציה.",
+    );
+    return;
+  }
+
+  const f = outcome.fields;
+
+  // The bot cannot let the user edit fields, and it must NEVER save a
+  // guessed vendor or amount. If either is unreadable, report what WAS read
+  // and hand off to the app instead of offering a save button.
+  if (!f.vendor || f.amount == null) {
+    const readLines = ["קראתי את הקבלה, אבל לא בביטחון מלא:"];
+    readLines.push(`ספק: ${f.vendor ?? "לא זוהה"}`);
+    readLines.push(`סכום: ${f.amount != null ? `${fmt(f.amount)} ₪` : "לא זוהה"}`);
+    readLines.push(`תאריך: ${f.date ? formatDateHe(f.date) : "לא זוהה"}`);
+    readLines.push("");
+    readLines.push(`כדי לא לשמור נתון שגוי, השלם את החסר באפליקציה: ${absoluteUrl("/expenses")}`);
+    readLines.push("או שלח צילום חד יותר של הקבלה.");
+    await sendText(phone, readLines.join("\n"));
+    return;
+  }
+
+  const parsed: ExpensePayload = {
+    vendor: f.vendor,
+    amount: f.amount,
+    vatAmount: f.vatAmount,
+    // Date is the one field the bot must supply to save a row. When the
+    // scanner could not read one we use the day the photo was sent - and
+    // SAY so on the card, so the user can cancel and enter it in the app.
+    date: f.date ?? today,
+    dateAssumed: !f.date,
+    category: f.category,
+    description: f.description ?? "",
+  };
 
   const pendingId = randomUUID();
   const { error } = await db.from("whatsapp_pending_actions").insert({
@@ -750,87 +803,17 @@ async function handleReceiptPhoto(
   ];
   if (parsed.vatAmount) lines.push(`מע״מ: ${fmt(parsed.vatAmount)} ₪`);
   lines.push(`קטגוריה: ${parsed.category}`);
-  lines.push(`תאריך: ${formatDateHe(parsed.date)}`);
+  lines.push(
+    parsed.dateAssumed
+      ? `תאריך: לא זוהה בקבלה - יישמר כ-${formatDateHe(parsed.date)} (היום). לתאריך אחר, בטל והזן באפליקציה.`
+      : `תאריך: ${formatDateHe(parsed.date)}`,
+  );
+  if (f.legibility === "partial") lines.push("", "חלק מהטקסט היה קשה לקריאה - בדוק שהפרטים נכונים לפני השמירה.");
 
   await sendButtons(phone, lines.join("\n"), [
     { id: `confirm:${pendingId}`, title: "שמור כהוצאה" },
     { id: `cancel:${pendingId}`, title: "בטל" },
   ]);
-}
-
-/**
- * Reuses the SAME extraction contract as /api/expenses/scan.
- *
- * That route can't be called directly from here: it authenticates with a
- * Bearer user JWT, and the bot has no session. Rather than weaken that route's
- * auth to accommodate a second caller, this reimplements the one call it makes.
- * TODO: if a third caller appears, lift the prompt + parse into a shared lib
- * and have both routes use it.
- */
-async function scanReceipt(base64: string, mimeType: string): Promise<ExpensePayload | null> {
-  const { default: Anthropic } = await import("@anthropic-ai/sdk");
-  const today = todayInIsrael();
-  try {
-    const anthropic = new Anthropic({ apiKey: anthropicKey });
-    const isPdf = mimeType === "application/pdf";
-    const msg = await anthropic.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 600,
-      system: `Extract an Israeli business expense and return STRICT JSON only:
-{"vendor":string,"amount":number,"vatAmount":number|null,"date":"YYYY-MM-DD","category":string,"description":string}
-category must be one of: "תוכנה" | "ציוד" | "שיווק" | "משרד" | "שירותים מקצועיים" | "נסיעות" | "אחר".
-amount is the TOTAL paid in NIS including VAT. vatAmount only if a VAT line is explicitly printed.
-If unreadable return {"error":"cannot_parse"}. No markdown fences.`,
-      messages: [
-        {
-          role: "user",
-          content: [
-            isPdf
-              ? { type: "document", source: { type: "base64", media_type: "application/pdf", data: base64 } }
-              : {
-                  type: "image",
-                  source: {
-                    type: "base64",
-                    media_type: (["image/jpeg", "image/png", "image/webp", "image/gif"].includes(mimeType)
-                      ? mimeType
-                      : "image/jpeg") as "image/jpeg" | "image/png" | "image/webp" | "image/gif",
-                    data: base64,
-                  },
-                },
-            { type: "text", text: `Today is ${today}. Return JSON only.` },
-          ],
-        },
-      ],
-    });
-
-    const raw = msg.content
-      .map((b) => (b.type === "text" ? b.text : ""))
-      .join("")
-      .trim()
-      .replace(/^```json\s*/i, "")
-      .replace(/```\s*$/i, "");
-
-    const p = JSON.parse(raw) as Record<string, unknown>;
-    if (p.error) return null;
-
-    const amount = Number(p.amount);
-    if (!p.vendor || !Number.isFinite(amount) || amount <= 0) return null;
-
-    let date = typeof p.date === "string" ? p.date : today;
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) date = today;
-
-    return {
-      vendor: String(p.vendor).slice(0, 120),
-      amount: round2(amount),
-      vatAmount: typeof p.vatAmount === "number" ? round2(p.vatAmount) : null,
-      date,
-      category: String(p.category || "אחר"),
-      description: String(p.description || "").slice(0, 200),
-    };
-  } catch (err) {
-    console.error("[whatsapp] receipt scan failed:", err instanceof Error ? err.message : err);
-    return null;
-  }
 }
 
 async function saveExpense(
