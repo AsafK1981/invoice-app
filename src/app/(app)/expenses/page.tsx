@@ -230,6 +230,8 @@ export default function ExpensesPage() {
       // The OCR API returns the supplier name as `vendor` (the term the
       // model thinks in). The expense form's field is `supplier`. Map at
       // the boundary so the rest of the code can stay in form-vocabulary.
+      // Every field can be null: the scanner leaves anything it could not
+      // read with certainty blank rather than guessing (Asaf, 2026-08-17).
       const d = json.data as {
         vendor?: string | null;
         amount?: number | null;
@@ -522,6 +524,7 @@ export default function ExpensesPage() {
         }}
         expense={editing}
         prefill={prefill}
+        history={expenses}
       />
 
       <CsvImportModal
