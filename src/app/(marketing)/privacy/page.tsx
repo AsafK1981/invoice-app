@@ -18,8 +18,11 @@ export const metadata = pageMetadata({
  * tested against חוק הגנת הפרטיות incl. Amendment 13 and the 2017
  * Data Security Regulations). The Anthropic no-training claim was
  * verified against Anthropic's live commercial terms - keep the
- * "commercial terms" qualifier if editing. Do not edit clause
- * substance without re-running the gate.
+ * "commercial terms" qualifier if editing. Groq (voice-note
+ * transcription) added 2026-08-17 and gated the same way: the
+ * no-training statement cites the Groq Services Agreement §4.2 with
+ * its conditionality, verdict LEGAL after rewording. Do not edit
+ * clause substance without re-running the gate.
  */
 export default function V2PrivacyPage() {
   return (
@@ -91,8 +94,9 @@ export default function V2PrivacyPage() {
                 מקבל רק את המידע הדרוש לתפקידו: Supabase (מסד נתונים ואימות,
                 שרתים באיחוד האירופי/בריטניה), Vercel (אירוח), Google (התחברות
                 OAuth), Resend ו-Gmail (שליחת אימיילים), Anthropic (עיבוד סריקות
-                הוצאות והודעות העוזר החכם), Meta (ערוץ הוואטסאפ, אם בחרת להשתמש
-                בו), ו-Polar (סליקת תשלומים - פרטי האשראי נמסרים ישירות לספק
+                הוצאות והודעות העוזר החכם), Groq (תמלול הודעות קוליות שנשלחות
+                לבוט הוואטסאפ, אם בחרת להשתמש בו), Meta (ערוץ הוואטסאפ, אם בחרת
+                להשתמש בו), ו-Polar (סליקת תשלומים - פרטי האשראי נמסרים ישירות לספק
                 הסליקה ולא נשמרים אצלנו). חלק מהספקים מעבדים מידע בשרתים מחוץ
                 לישראל, בעיקר באיחוד האירופי ובארה"ב, בכפוף להסכמי עיבוד מידע.
               </p>
@@ -103,7 +107,12 @@ export default function V2PrivacyPage() {
               <p>
                 תמונות קבלות שאתה סורק והודעות שאתה שולח לעוזר החכם נשלחות
                 לעיבוד אצל Anthropic. על פי תנאי השירות המסחריים של Anthropic,
-                מידע שנשלח דרך ה-API אינו משמש לאימון מודלים.
+                מידע שנשלח דרך ה-API אינו משמש לאימון מודלים. הודעות קוליות
+                שנשלחות לבוט הוואטסאפ מתומללות לטקסט אצל Groq. על פי הסכם
+                השירות בינינו לבין Groq (Groq Services Agreement, סעיף 4.2),
+                Groq אינה רשאית להשתמש בקלט או בפלט, לרבות תמלולי הודעות
+                קוליות, לאימון או כוונון מודלים, אלא אם ניתנה לכך הרשאה
+                מפורשת מאיתנו; לא נתנו הרשאה כזו.
               </p>
             </section>
 
