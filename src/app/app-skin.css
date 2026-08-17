@@ -798,6 +798,13 @@ html .pgbtn-hero svg {
   html .pgbtn {
     white-space: normal;
   }
+  /* Since the primary left this group (2026-08-17, see PAGE ACTION BAR) the
+     grid holds THREE chores, and a 2-column grid of three leaves the last one
+     an orphan in half a row. The last one is always the portalled export
+     (inside the `display: contents` slot), so it takes the whole second row. */
+  html .pgactions > .contents > .pgbtn {
+    grid-column: 1 / -1;
+  }
 }
 
 /* =====================================================================
