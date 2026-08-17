@@ -284,7 +284,7 @@ export default function DashboardPage() {
 
   return (
     <div className="gk-dashboard space-y-8">
-      <div className="flex items-start justify-between flex-wrap gap-4 animate-fade-in-up">
+      <div className="animate-fade-in-up">
         <div>
           <h1 className="text-3xl font-bold text-stone-900 flex items-center gap-2">
             שלום
@@ -292,29 +292,31 @@ export default function DashboardPage() {
           </h1>
           <p className="text-sm text-stone-700 mt-1">סקירה מהירה של הפעילות שלך</p>
         </div>
-        <div className="flex gap-2 flex-wrap">
-          <div className="card-soft p-1 flex items-center gap-1">
-            {(Object.keys(RANGE_LABELS) as DateRange[]).map((r) => (
-              <button
-                key={r}
-                onClick={() => setRange(r)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
-                  range === r
-                    ? "bg-gradient-to-l from-orange-500 to-rose-500 text-white shadow-sm"
-                    : "text-stone-700 hover:bg-orange-50"
-                }`}
-              >
-                {RANGE_LABELS[r]}
-              </button>
-            ))}
-          </div>
-          <Link
-            href="/documents/new"
-            className="btn-glow inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-5 py-3 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200/60 hover:-translate-y-0.5 transition-all duration-200"
-          >
-            <Plus className="w-4 h-4" />
-            מסמך חדש
-          </Link>
+      </div>
+
+      {/* Primary action alone at the inline-start (right), under the title;
+          the range picker hugs the opposite edge. See "PAGE ACTION BAR" in
+          app-skin.css. The picker's active state is deliberately NOT gold:
+          gold is reserved for the one call to action on the page. */}
+      <div className="pgbar animate-fade-in-up">
+        <Link href="/documents/new" className="pgbtn pgbtn-primary pgbtn-hero">
+          <Plus aria-hidden="true" />
+          מסמך חדש
+        </Link>
+        <div className="card-soft p-1 flex items-center gap-1">
+          {(Object.keys(RANGE_LABELS) as DateRange[]).map((r) => (
+            <button
+              key={r}
+              onClick={() => setRange(r)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                range === r
+                  ? "bg-stone-800 text-white shadow-sm"
+                  : "text-stone-700 hover:bg-stone-100"
+              }`}
+            >
+              {RANGE_LABELS[r]}
+            </button>
+          ))}
         </div>
       </div>
 

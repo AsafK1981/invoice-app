@@ -89,12 +89,20 @@ export default function DocumentsPage() {
             )}
           </div>
         </div>
-        {/* Three quiet file chores and one call to action. All four wear the
-            one `.pgbtn` treatment (see "PAGE ACTION ROW" in app-skin.css):
-            one height, one radius, one gap, one icon size, and colour spent
-            only on the primary. The bank button used to be the odd one out in
-            stock-Tailwind emerald, which this skin does not re-tint, so it
-            rendered mint-green between two gold-outlined siblings. */}
+      </div>
+
+      {/* One call to action alone at the inline-start (right, under the
+          title) and three quiet file chores pushed to the inline-end. All wear
+          the one `.pgbtn` treatment (see "PAGE ACTION ROW" / "PAGE ACTION BAR"
+          in app-skin.css): one radius, one gap, one icon size, and colour spent
+          only on the primary. The bank button used to be the odd one out in
+          stock-Tailwind emerald, which this skin does not re-tint, so it
+          rendered mint-green between two gold-outlined siblings. */}
+      <div className="pgbar">
+        <Link href="/documents/new" className="pgbtn pgbtn-primary pgbtn-hero">
+          <Plus aria-hidden="true" />
+          מסמך חדש
+        </Link>
         <div className="pgactions">
           <button
             onClick={() => setBankImportOpen(true)}
@@ -118,10 +126,6 @@ export default function DocumentsPage() {
               is a direct child of this row (a flex item, or a grid item on a
               phone) and the slot costs nothing while the drafts tab is open. */}
           <div ref={setExportSlot} className="contents" />
-          <Link href="/documents/new" className="pgbtn pgbtn-primary">
-            <Plus aria-hidden="true" />
-            מסמך חדש
-          </Link>
         </div>
       </div>
 
