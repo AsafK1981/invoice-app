@@ -51,6 +51,15 @@ import { COMPETITORS } from "@/lib/comparison-data";
  * context, no test renderer.
  */
 
+// The first `it` to touch a route pays that route's whole module import (the
+// landing page pulls in the entire marketing component tree) plus the render.
+// On an idle machine that is well under a second; on a loaded one (a parallel
+// `next build`, a second agent's vitest, an `npm install`) it has been measured
+// past vitest's 5s default and failed the pre-push hook on timeouts alone,
+// with nothing actually wrong. The assertions are what matter here, not the
+// wall clock, so give this file the headroom. Failures still fail.
+vi.setConfig({ testTimeout: 60_000 });
+
 // Minimal stub so client components that call useRouter() (RedirectIfAuthed on
 // the landing page) can render. Nothing under test depends on router behaviour.
 vi.mock("next/navigation", () => ({
