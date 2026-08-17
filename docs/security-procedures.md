@@ -234,12 +234,19 @@ out, so the real risk is losing an account or a platform action. Checked
 
 | Account | Owner | MFA | Second owner | Status 2026-08-16 |
 | --- | --- | --- | --- | --- |
-| Supabase org `Asaf Kotler` | asafkotlar@gmail.com (sole Owner) | **ON since 2026-08-16** (TOTP in Google Authenticator, cloud-synced to the Google account; API `mfa_enabled: true`) | none | ACTION left: add a second owner email |
-| Vercel team `asafk1981s-projects` | asafkotlar@gmail.com | **ON since 2026-08-16** (TOTP; recovery codes saved in `~/.claude/secrets/vercel-recovery-codes.txt`) | none | ACTION left: second owner |
-| GitHub `AsafK1981` (code + backups repo) | asafkotlar@gmail.com | **ON since 2026-08-16** (TOTP + GitHub Mobile on iPhone; recovery codes in `~/.claude/secrets/github-recovery-codes.txt`; account password set the same day, saved in `~/.claude/secrets/github-password.txt` and Chrome's Google Password Manager) | none | ACTION left: move the three files in `~/.claude/secrets/` into a password manager |
-| Google (Gmail owner of all the above + GCP OAuth client) | asafkotlar@gmail.com | assumed on | n/a | ACTION: confirm 2-Step Verification + recovery phone/email |
-| Domain `friendlyinvoice.co.il` | Israeli registrar (not Vercel) | ? | n/a | ACTION: confirm auto-renew + registrar MFA |
-| Meta Business (WhatsApp), Polar | asafkotlar@gmail.com | ? | none | ACTION: confirm 2FA |
+| Supabase org `Asaf Kotler` | asafkotlar@gmail.com (Owner) + **newcaliconstruction@gmail.com (second Owner since 2026-08-17, email+password login, break-glass only)** | Primary: **ON** (TOTP, Google Authenticator synced to Google account; API `mfa_enabled: true`). Second owner: no MFA (strong password in the recovery doc) | yes | done |
+| Vercel team `asafk1981s-projects` | asafkotlar@gmail.com | **ON since 2026-08-16** (TOTP; recovery codes in the recovery doc) | not possible on Hobby (team members need Pro) | done |
+| GitHub `AsafK1981` (code + backups repo) | asafkotlar@gmail.com, **backup email newcaliconstruction@gmail.com (verified 2026-08-17)** | **ON since 2026-08-16** (TOTP + GitHub Mobile on iPhone; recovery codes in the recovery doc); account password set 2026-08-16, saved in Google Password Manager | backup email | done |
+| Google (Gmail owner of all the above + GCP OAuth client) | asafkotlar@gmail.com | not re-verified (needs Windows Hello on Asaf's PC; Google's own security page shows "recommendations pending") | n/a | ACTION (Asaf, 2 min): myaccount.google.com/security -> review recommendations |
+| Domain `friendlyinvoice.co.il` | DomainTheNet, user `asafkotlar` (login = password + SMS code) | registrar login is SMS-gated | n/a | expires **2027-08-05**, status locked, no auto-renew at this registrar; Google Calendar reminder set for 2027-07-05 (email 7 days before + popup) |
+| Meta Business (WhatsApp), Polar | asafkotlar@gmail.com | not verified (Meta page needs a re-auth Asaf must do; Polar has no MFA of its own, login via GitHub/Google) | none | low priority |
+
+**Recovery-code custody (2026-08-17):** all recovery codes, the second-owner
+Supabase password and a copy of `BACKUP_PASSPHRASE` live in ONE private Google
+Doc in Asaf's Drive: "קודי שחזור - חשבונית ידידותית (סודי)" (owner-only,
+protected by the Google account). GitHub's codes are also in the Google
+Password Manager note of the github.com entry. No plaintext copies remain on
+the PC.
 
 Passphrase / recovery-code custody: `BACKUP_PASSPHRASE`, Supabase DB
 password, and every provider's recovery codes belong in a password
