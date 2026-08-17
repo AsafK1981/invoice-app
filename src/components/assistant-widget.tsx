@@ -1,10 +1,13 @@
 "use client";
 
 // The in-app AI assistant. Finds documents, answers questions about the
-// business's own numbers, and prepares document drafts. It never creates a
-// document: a draft is handed back to the user, who opens it in the editor and
-// approves it there (numbering, allocation and immutability all live in that
-// flow and must stay under the user's control).
+// business's own numbers, and acts: records expenses, adds and updates clients
+// and products, marks documents paid (see lib/assistant-actions). Two things it
+// does NOT do by itself: it never issues a document - a draft is handed back to
+// the user, who opens it in the editor and approves it there (numbering,
+// allocation and immutability all live in that flow) - and it never deletes.
+// A delete arrives as a `pendingDelete` and runs only when the user clicks the
+// red button below the reply, through the same store the screen uses.
 //
 // Voice dictation (the mic button in the composer) uses the browser-native
 // Web Speech API - free, no API key, no server round-trip. Supported in
@@ -14,9 +17,12 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Sparkles, X, Send, FileText, Paperclip, Table2, MessageCircle, Mic, ChevronLeft } from "lucide-react";
+import { Sparkles, X, Send, FileText, Paperclip, Table2, MessageCircle, Mic, ChevronLeft, Check, Trash2 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { supabase } from "@/lib/supabase";
+import { expenseStore } from "@/lib/expense-store";
+import { clientStore } from "@/lib/client-store";
+import { productStore } from "@/lib/product-store";
 import { saveDraftToServer, DOC_TYPE_ROUTE } from "@/lib/draft-store";
 import { todayInIsrael } from "@/lib/date";
 import type { ParsedAttachment } from "@/lib/import-excel-text";
@@ -46,11 +52,64 @@ interface AssistantDocCard {
   currency: string;
 }
 
+/** A write the server already performed this turn (see lib/assistant-actions). */
+interface AssistantAction {
+  kind: "created" | "updated";
+  entity: "expense" | "client" | "product" | "document";
+  id: string;
+  label: string;
+  href: string;
+}
+
+/** A delete the server is asking the user to confirm with a click. */
+interface PendingDelete {
+  entity: "expense" | "client" | "product";
+  id: string;
+  label: string;
+}
+
 interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   drafts?: AssistantDraft[];
   documents?: AssistantDocCard[];
+  actions?: AssistantAction[];
+  pendingDeletes?: PendingDelete[];
+}
+
+// The stores' own change events (each store listens for its own). Firing them
+// after a server-side write makes whatever screen is open behind the widget
+// refetch, so a new expense shows up in the table without a reload.
+const CHANGE_EVENT_FOR: Record<AssistantAction["entity"], string> = {
+  expense: "invoice-app:expenses-changed",
+  client: "invoice-app:clients-changed",
+  product: "invoice-app:products-changed",
+  document: "invoice-app:documents-changed",
+};
+
+const ENTITY_LABEL: Record<PendingDelete["entity"], string> = {
+  expense: "ההוצאה",
+  client: "הלקוח",
+  product: "המוצר",
+};
+
+function ActionChips({ actions, onOpen }: { actions: AssistantAction[]; onOpen: () => void }) {
+  return (
+    <div className="mt-2 flex flex-col gap-1.5">
+      {actions.map((a, i) => (
+        <Link
+          key={`${a.id}-${i}`}
+          href={a.href}
+          onClick={onOpen}
+          className="flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-2 text-[13px] text-emerald-800 hover:border-emerald-400 transition-colors"
+        >
+          <Check className="w-4 h-4 flex-shrink-0 text-emerald-600" />
+          <span className="truncate">{a.label}</span>
+          <ChevronLeft className="w-3.5 h-3.5 flex-shrink-0 mr-auto text-emerald-500" />
+        </Link>
+      ))}
+    </div>
+  );
 }
 
 // Same tones the documents table uses for its status pill.
@@ -107,7 +166,7 @@ function DocCards({ docs, onOpen }: { docs: AssistantDocCard[]; onOpen: () => vo
 
 const SUGGESTIONS = [
   "כמה הכנסתי החודש?",
-  "תמצא לי את המסמכים האחרונים",
+  "תוסיף הוצאה: 120 ₪ בסופר-פארם",
   "מי הלקוח שהכי הכניס לי השנה?",
 ];
 
@@ -125,6 +184,8 @@ export function AssistantWidget() {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  /** Per pending-delete key: "working" while the store call runs, "done" after. */
+  const [deleteState, setDeleteState] = useState<Record<string, "working" | "done">>({});
   const [error, setError] = useState("");
   const [openingDraft, setOpeningDraft] = useState("");
   const [attachment, setAttachment] = useState<ParsedAttachment | null>(null);
@@ -144,6 +205,15 @@ export function AssistantWidget() {
   useEffect(() => {
     if (open) inputRef.current?.focus();
   }, [open]);
+
+  // Grow the composer with what's typed (up to the CSS max-height, then it
+  // scrolls) so a long request is readable in full instead of one 4-word line.
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }, [input, open]);
 
   useEffect(() => {
     if (!open) return;
@@ -257,13 +327,41 @@ export function AssistantWidget() {
           content: json.reply as string,
           drafts: Array.isArray(json.drafts) ? (json.drafts as AssistantDraft[]) : [],
           documents: Array.isArray(json.documents) ? (json.documents as AssistantDocCard[]) : [],
+          actions: Array.isArray(json.actions) ? (json.actions as AssistantAction[]) : [],
+          pendingDeletes: Array.isArray(json.pendingDeletes) ? (json.pendingDeletes as PendingDelete[]) : [],
         },
       ]);
+      if (Array.isArray(json.actions)) {
+        const touched = new Set(
+          (json.actions as AssistantAction[]).map((a) => CHANGE_EVENT_FOR[a.entity]).filter(Boolean),
+        );
+        for (const ev of touched) window.dispatchEvent(new Event(ev));
+      }
     } catch {
       setError("אין חיבור לשרת. בדוק את האינטרנט ונסה שוב.");
       if (sentAttachment) setAttachment(sentAttachment);
     } finally {
       setBusy(false);
+    }
+  }
+
+  // The only path that deletes anything: the user's click, through the same
+  // store the screen uses (RLS-scoped, audited, fires the change event).
+  async function confirmDelete(p: PendingDelete, key: string) {
+    setDeleteState((s) => ({ ...s, [key]: "working" }));
+    setError("");
+    try {
+      if (p.entity === "expense") await expenseStore.remove(p.id);
+      else if (p.entity === "client") await clientStore.remove(p.id);
+      else await productStore.remove(p.id);
+      setDeleteState((s) => ({ ...s, [key]: "done" }));
+    } catch {
+      setDeleteState((s) => {
+        const next = { ...s };
+        delete next[key];
+        return next;
+      });
+      setError("המחיקה נכשלה. נסה שוב.");
     }
   }
 
@@ -339,7 +437,7 @@ export function AssistantWidget() {
 
   return (
     <div
-      className={`no-print fixed bottom-0 left-0 right-0 z-40 lg:bottom-6 ${side} lg:w-[400px] print:hidden`}
+      className={`no-print fixed bottom-0 left-0 right-0 z-40 lg:bottom-6 ${side} lg:w-[440px] print:hidden`}
     >
       <div className="card-soft bg-white flex flex-col h-[70vh] lg:h-[540px] max-h-[calc(100vh-2rem)] overflow-hidden rounded-b-none lg:rounded-2xl shadow-2xl shadow-orange-200/40">
         <div className="flex items-center gap-2 px-4 py-3 border-b border-stone-200 flex-shrink-0">
@@ -348,7 +446,7 @@ export function AssistantWidget() {
           </div>
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-stone-900 text-sm leading-tight">העוזר החכם</p>
-            <p className="text-[11px] text-stone-500 leading-tight">מוצא מסמכים ומכין טיוטות</p>
+            <p className="text-[11px] text-stone-500 leading-tight">מוצא, רושם, מעדכן ומכין טיוטות</p>
           </div>
           <button
             onClick={() => setOpen(false)}
@@ -396,6 +494,43 @@ export function AssistantWidget() {
                 {m.documents && m.documents.length > 0 && (
                   <DocCards docs={m.documents} onOpen={() => setOpen(false)} />
                 )}
+                {m.actions && m.actions.length > 0 && (
+                  <ActionChips actions={m.actions} onOpen={() => setOpen(false)} />
+                )}
+                {m.pendingDeletes?.map((p, pi) => {
+                  const key = `del-${i}-${pi}`;
+                  const state = deleteState[key];
+                  return (
+                    <div
+                      key={key}
+                      className={`mt-2 rounded-xl border px-3 py-2 text-[13px] ${
+                        state === "done"
+                          ? "bg-stone-50 border-stone-200 text-stone-500"
+                          : "bg-rose-50 border-rose-200 text-rose-800"
+                      }`}
+                    >
+                      {state === "done" ? (
+                        <span className="flex items-center gap-2">
+                          <Check className="w-4 h-4 text-stone-400" />
+                          נמחק: {p.label}
+                        </span>
+                      ) : (
+                        <>
+                          <div>למחוק את {ENTITY_LABEL[p.entity]}? {p.label}</div>
+                          <button
+                            type="button"
+                            onClick={() => confirmDelete(p, key)}
+                            disabled={state === "working"}
+                            className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 disabled:opacity-60 text-white px-3 py-1.5 text-xs font-semibold transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            {state === "working" ? "מוחק..." : "כן, מחק"}
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
                 {m.drafts?.map((d, di) => {
                   const key = `${i}-${di}`;
                   const many = (m.drafts?.length ?? 0) > 1;
@@ -464,7 +599,27 @@ export function AssistantWidget() {
             </div>
           )}
 
-          <div className="flex items-end gap-2">
+          <textarea
+            ref={inputRef}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                send(input);
+              }
+            }}
+            rows={2}
+            placeholder={
+              parsingFile
+                ? "קורא את הקובץ..."
+                : speech.listening
+                  ? "מדבר... "
+                  : "במה אפשר לעזור?"
+            }
+            className="input-warm block w-full resize-none min-h-[3.25rem] max-h-44 overflow-y-auto text-sm leading-relaxed py-2.5 px-3.5"
+          />
+          <div className="flex items-center gap-2 mt-2">
             <input
               ref={fileRef}
               type="file"
@@ -481,26 +636,6 @@ export function AssistantWidget() {
             >
               <Paperclip className="w-4 h-4" />
             </button>
-            <textarea
-              ref={inputRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  send(input);
-                }
-              }}
-              rows={1}
-              placeholder={
-                parsingFile
-                  ? "קורא את הקובץ..."
-                  : speech.listening
-                    ? "מדבר... "
-                    : "במה אפשר לעזור?"
-              }
-              className="input-warm flex-1 resize-none max-h-24 text-sm py-2 px-3"
-            />
             {speech.supported && (
               <button
                 type="button"
@@ -509,7 +644,7 @@ export function AssistantWidget() {
                 aria-label={speech.listening ? "עצור הקלדה קולית" : "הקלדה קולית"}
                 aria-pressed={speech.listening}
                 title={speech.listening ? "עצור הקלדה קולית" : "הקלדה קולית"}
-                className={`w-11 h-11 flex-shrink-0 rounded-xl border flex items-center justify-center disabled:opacity-40 transition-colors ${
+                className={`w-10 h-10 flex-shrink-0 rounded-xl border flex items-center justify-center disabled:opacity-40 transition-colors ${
                   speech.listening
                     ? "bg-rose-500 border-rose-500 text-white animate-pulse"
                     : "border-stone-200 text-stone-500 hover:text-orange-500 hover:border-orange-200"
@@ -518,17 +653,21 @@ export function AssistantWidget() {
                 <Mic className="w-4 h-4" />
               </button>
             )}
+            <span className="flex-1 text-[10px] text-stone-400 text-center hidden sm:block">
+              Enter לשליחה · Shift+Enter לשורה חדשה
+            </span>
             <button
               onClick={() => send(input)}
               disabled={busy || parsingFile || (!input.trim() && !attachment)}
               aria-label="שלח"
-              className="w-10 h-10 flex-shrink-0 rounded-xl bg-gradient-to-br from-orange-400 to-rose-500 text-white flex items-center justify-center disabled:opacity-40 transition-opacity"
+              className="ms-auto h-10 px-4 flex-shrink-0 rounded-xl bg-gradient-to-br from-orange-400 to-rose-500 text-white flex items-center justify-center gap-1.5 text-sm font-semibold disabled:opacity-40 transition-opacity"
             >
+              <span>שלח</span>
               <Send className="w-4 h-4" />
             </button>
           </div>
           <p className="text-[10px] text-stone-400 mt-2 text-center">
-            העוזר יכול לטעות. הוא מכין טיוטות בלבד - אתה מאשר.
+            העוזר יכול לטעות. מסמכים הוא רק מכין כטיוטה, ומחיקה תמיד עוברת דרכך.
           </p>
         </div>
       </div>

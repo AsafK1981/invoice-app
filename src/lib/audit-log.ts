@@ -9,8 +9,14 @@ export type AuditAction =
   | "document.status_changed"
   | "document.number_changed"
   | "document.deleted"
+  | "client.created"
+  | "client.updated"
   | "client.deleted"
+  | "product.created"
+  | "product.updated"
   | "product.deleted"
+  | "expense.created"
+  | "expense.updated"
   | "expense.deleted"
   | "data.cleared"
   | "recurring.deleted"
@@ -108,8 +114,14 @@ const ACTION_LABELS: Record<AuditAction, string> = {
   "document.status_changed": "סטטוס מסמך עודכן",
   "document.number_changed": "מספר מסמך שונה",
   "document.deleted": "מסמך נמחק",
+  "client.created": "לקוח נוסף",
+  "client.updated": "לקוח עודכן",
   "client.deleted": "לקוח נמחק",
+  "product.created": "מוצר נוסף",
+  "product.updated": "מוצר עודכן",
   "product.deleted": "מוצר נמחק",
+  "expense.created": "הוצאה נוספה",
+  "expense.updated": "הוצאה עודכנה",
   "expense.deleted": "הוצאה נמחקה",
   "data.cleared": "כל הנתונים נמחקו",
   "recurring.deleted": "תבנית חוזרת נמחקה",
