@@ -30,6 +30,9 @@ Third-party processors currently used:
 - **Resend / Gmail SMTP** (outbound email).
 - **Sentry** (error monitoring).
 - **Polar.sh** (payments).
+- **Anthropic** (receipt OCR, in-app assistant, WhatsApp intent parsing) - API data not used for training per commercial terms.
+- **Meta** (WhatsApp Business channel).
+- **Groq** (Whisper transcription of WhatsApp voice notes, added 2026-08-17; free tier; audio is sent for transcription only, not stored by us).
 
 All of the above are bound by their own DPAs; Asaf is responsible for
 ensuring his use of them complies with this appendix (§3).

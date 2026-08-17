@@ -18,6 +18,7 @@ import { VAT_RATES, round2 } from "@/lib/vat";
 import { publicDocumentUrl, absoluteUrl } from "@/lib/public-url";
 import { parseIntent, type CreateDocumentIntent } from "./intent";
 import { sendText, sendButtons, sendDocument, fetchMedia } from "./client";
+import { transcribeAudio, transcriptionConfigured } from "./transcribe";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -53,6 +54,8 @@ export interface InboundMessage {
   text?: { body: string };
   image?: { id: string };
   document?: { id: string };
+  /** Voice notes arrive as type "audio" with voice: true; mime is audio/ogg (opus). */
+  audio?: { id: string; mime_type?: string; voice?: boolean };
   interactive?: { button_reply?: { id: string; title: string } };
 }
 
@@ -142,7 +145,51 @@ export async function handleMessage(msg: InboundMessage): Promise<void> {
     return;
   }
 
-  await sendText(from, "אני יודע לקרוא הודעות טקסט ותמונות של קבלות. שלח ״עזרה״ כדי לראות מה אפשר.");
+  if (msg.type === "audio" && msg.audio?.id) {
+    await handleVoice(db, from, identity, msg);
+    return;
+  }
+
+  await sendText(from, "אני יודע לקרוא הודעות טקסט, הודעות קוליות ותמונות של קבלות. שלח ״עזרה״ כדי לראות מה אפשר.");
+}
+
+// ── voice -> text -> the normal text pipeline ───────────────────────────────
+
+/**
+ * A voice note is just a text message the user did not type. Transcribe it and
+ * hand the words to handleText, so every safeguard on the text path (intent
+ * validation, VAT from the DB, confirm-before-issue) applies unchanged. The
+ * transcript is echoed back first so the user can see what the bot heard
+ * before it acts on it - a mis-heard amount must be visible, not silent.
+ */
+async function handleVoice(
+  db: SupabaseClient,
+  phone: string,
+  identity: Identity,
+  msg: InboundMessage,
+): Promise<void> {
+  if (!transcriptionConfigured()) {
+    await sendText(phone, "הודעות קוליות עדיין לא זמינות כאן. כתוב לי את הבקשה בטקסט.");
+    return;
+  }
+  const media = await fetchMedia(msg.audio!.id);
+  if (!media) {
+    await sendText(phone, "לא הצלחתי להוריד את ההקלטה. נסה לשלוח שוב, או כתוב לי בטקסט.");
+    return;
+  }
+  const result = await transcribeAudio(media.base64, msg.audio?.mime_type || media.mimeType);
+  if (!result.ok) {
+    const why =
+      result.reason === "too_large"
+        ? "ההקלטה ארוכה מדי. נסה הקלטה קצרה יותר, או כתוב לי בטקסט."
+        : result.reason === "empty"
+          ? "לא שמעתי מילים בהקלטה. נסה שוב, או כתוב לי בטקסט."
+          : "לא הצלחתי לתמלל את ההקלטה כרגע. נסה שוב, או כתוב לי בטקסט.";
+    await sendText(phone, why);
+    return;
+  }
+  await sendText(phone, `🎤 שמעתי: ״${result.text}״`);
+  await handleText(db, phone, identity, result.text);
 }
 
 // ── identity ────────────────────────────────────────────────────────────────
@@ -349,6 +396,9 @@ async function sendHelp(phone: string): Promise<void> {
       "",
       "📷 *לרשום הוצאה*",
       "פשוט תצלם קבלה ותשלח לי אותה.",
+      "",
+      "🎤 *או פשוט להקליט*",
+      "שלח הודעה קולית במקום להקליד - אני מתמלל ומטפל כרגיל.",
       "",
       "תמיד אראה לך את הפרטים ואחכה לאישור שלך לפני שאני מפיק משהו.",
     ].join("\n"),
