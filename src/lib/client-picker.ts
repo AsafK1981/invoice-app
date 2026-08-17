@@ -1,4 +1,4 @@
-import type { Client } from "./types";
+import type { Client, InvoiceDocument } from "./types";
 
 /**
  * Normalizes a tax id for comparison purposes: strips everything but
@@ -11,10 +11,76 @@ export function normalizeTaxId(taxId: string | undefined | null): string {
 
 /**
  * Normalizes a client name for comparison purposes: trims surrounding
- * whitespace and case-folds. Returns "" for missing/blank input.
+ * whitespace, collapses internal runs of whitespace to one space and
+ * case-folds. Returns "" for missing/blank input. The whitespace collapse
+ * matters in practice: a saved client "גינדין אנה  מוסך זהב" (double space)
+ * and a typed "גינדין אנה מוסך זהב" are the same customer.
  */
 export function normalizeName(name: string | undefined | null): string {
-  return (name || "").trim().toLowerCase();
+  return (name || "").replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+/**
+ * Does this document belong to this client? True when the document carries the
+ * client's id, OR when it carries no client id at all (typed free-text before
+ * the "new client saves the client" default existed, WhatsApp/assistant docs
+ * that were not matched, imports) and its stored name / tax id identifies the
+ * same customer. A document linked to a DIFFERENT client id is never claimed,
+ * even on a name match - the explicit link wins.
+ *
+ * Every screen that counts, sums or lists "this client's documents" must go
+ * through here (or documentsForClient / resolveDocumentClientId), so a client
+ * never shows "1 document" while the documents list shows two.
+ */
+export function documentBelongsToClient(
+  doc: Pick<InvoiceDocument, "clientId" | "clientName" | "clientTaxId">,
+  client: Pick<Client, "id" | "name" | "taxId">,
+): boolean {
+  if (doc.clientId) return doc.clientId === client.id;
+  const docTaxId = normalizeTaxId(doc.clientTaxId);
+  const clientTaxId = normalizeTaxId(client.taxId);
+  if (docTaxId && clientTaxId) return docTaxId === clientTaxId;
+  const name = normalizeName(doc.clientName);
+  return !!name && name === normalizeName(client.name);
+}
+
+/**
+ * All documents that belong to `client`: linked by id, plus unlinked documents
+ * that resolve to this client and to NO other client in `allClients` (see
+ * resolveDocumentClientId). Passing the full client list is what keeps two
+ * same-named clients from both claiming the same unlinked document.
+ */
+export function documentsForClient<T extends Pick<InvoiceDocument, "clientId" | "clientName" | "clientTaxId">>(
+  documents: T[],
+  client: Pick<Client, "id" | "name" | "taxId">,
+  allClients: Pick<Client, "id" | "name" | "taxId">[],
+): T[] {
+  return documents.filter((d) =>
+    d.clientId ? d.clientId === client.id : resolveDocumentClientId(d, allClients) === client.id,
+  );
+}
+
+/**
+ * The client id a document should be attributed to: its own client id when
+ * linked, otherwise the id of the single client its name / tax id identifies
+ * (undefined when no client, or more than one, matches - an ambiguous
+ * unlinked document is attributed to nobody rather than to the wrong person).
+ */
+export function resolveDocumentClientId(
+  doc: Pick<InvoiceDocument, "clientId" | "clientName" | "clientTaxId">,
+  clients: Pick<Client, "id" | "name" | "taxId">[],
+): string | undefined {
+  if (doc.clientId) return doc.clientId;
+  const matches = clients.filter((c) => documentBelongsToClient(doc, c));
+  if (matches.length <= 1) return matches[0]?.id;
+  // A tax-id match outranks a name match: a document carrying tax id X
+  // belongs to the client registered with X, not to a taxless namesake.
+  const docTaxId = normalizeTaxId(doc.clientTaxId);
+  if (docTaxId) {
+    const byTax = matches.filter((c) => normalizeTaxId(c.taxId) === docTaxId);
+    if (byTax.length === 1) return byTax[0].id;
+  }
+  return undefined;
 }
 
 /**

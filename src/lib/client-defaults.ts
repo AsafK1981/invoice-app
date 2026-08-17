@@ -1,4 +1,5 @@
-import type { InvoiceDocument, PaymentMethod } from "./types";
+import { documentsForClient } from "./client-picker";
+import type { Client, InvoiceDocument, PaymentMethod } from "./types";
 
 export interface ClientDefaults {
   paymentMethod?: PaymentMethod;
@@ -13,13 +14,17 @@ export interface ClientDefaults {
  * a count + average so the UI can show "this client usually pays X" hints.
  */
 export function getClientDefaults(
-  clientId: string,
-  documents: InvoiceDocument[]
+  client: Pick<Client, "id" | "name" | "taxId"> | null | undefined,
+  documents: InvoiceDocument[],
+  allClients: Pick<Client, "id" | "name" | "taxId">[]
 ): ClientDefaults {
-  if (!clientId) return { documentCount: 0 };
+  if (!client) return { documentCount: 0 };
 
-  const clientDocs = documents
-    .filter((d) => d.clientId === clientId && d.status !== "cancelled")
+  // documentsForClient also claims unlinked documents (client_id null) that
+  // name this customer (and only this customer), so the "היסטוריה: N מסמכים"
+  // hint agrees with the documents list.
+  const clientDocs = documentsForClient(documents, client, allClients)
+    .filter((d) => d.status !== "cancelled")
     .sort((a, b) => b.date.localeCompare(a.date));
 
   if (clientDocs.length === 0) return { documentCount: 0 };

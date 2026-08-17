@@ -16,6 +16,7 @@ import {
   BookOpen,
 } from "lucide-react";
 import { useClients } from "@/lib/client-store";
+import { documentsForClient } from "@/lib/client-picker";
 import { useDocuments } from "@/lib/document-store";
 import { DocumentsTable } from "@/components/documents-table";
 import { formatCurrency, formatDate } from "@/lib/format";
@@ -29,7 +30,9 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
 
   const { docs, totalBilled, totalPaid, lastDocDate, openCount } = useMemo(() => {
     if (!client) return { docs: [], totalBilled: 0, totalPaid: 0, lastDocDate: null, openCount: 0 };
-    const mine = documents.filter((d) => d.clientId === client.id);
+    // Includes unlinked documents (client_id null) that name this customer,
+    // so the page never shows fewer documents than the documents list does.
+    const mine = documentsForClient(documents, client, clients);
     // Total billed = all non-cancelled, non-draft documents. Credit notes are
     // stored ALREADY NEGATIVE on save (receipt-editor.tsx applies
     // `sign = -1`), so a plain sum already subtracts them - applying a sign
@@ -45,7 +48,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
       (d) => d.status === "sent" && (d.type === "quote" || d.type === "proforma" || d.type === "tax_invoice"),
     ).length;
     return { docs: mine, totalBilled: billed, totalPaid: paid, lastDocDate: last ?? null, openCount: open };
-  }, [client, documents]);
+  }, [client, documents, clients]);
 
   if (!clientsReady || !docsReady) {
     return <div className="text-center py-16 text-stone-500">טוען...</div>;

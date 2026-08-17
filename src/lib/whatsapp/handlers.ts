@@ -15,6 +15,7 @@ import { randomUUID } from "node:crypto";
 import { todayInIsrael } from "@/lib/date";
 import { checkRate } from "@/lib/rate-limit";
 import { VAT_RATES, round2 } from "@/lib/vat";
+import { normalizeName } from "@/lib/client-picker";
 import { publicDocumentUrl, absoluteUrl } from "@/lib/public-url";
 import { parseIntent, type CreateDocumentIntent } from "./intent";
 import { sendText, sendButtons, sendDocument, fetchMedia } from "./client";
@@ -436,20 +437,24 @@ async function proposeDocument(
   // same way the app's editor does, so no special-casing is needed here.
   const money = computeMoney(intent.amount, intent.amountIncludesVat, rate);
 
-  // Match an existing client by exact name so the document links to the real
-  // record (and so we can reuse their phone for the forward link). No fuzzy
-  // matching: attaching a document to the WRONG client is worse than attaching
-  // it to none, and the free-text client_name still reads correctly either way.
-  // Error deliberately unchecked: this lookup is an enrichment, not a gate. If it
-  // fails we fall through to clientId/clientPhone null, and the document is still
-  // correct — it just carries the free-text name and offers the contact-picker
-  // share link instead of a direct one.
-  const { data: client } = await db
+  // Match an existing client by name so the document links to the real record
+  // (and so we can reuse their phone for the forward link). Exact after
+  // whitespace/case normalization, and only when exactly ONE client matches -
+  // no fuzzy matching: attaching a document to the WRONG client is worse than
+  // attaching it to none, and the free-text client_name still reads correctly
+  // either way. Error deliberately unchecked: this lookup is an enrichment, not
+  // a gate. If it fails we fall through to clientId/clientPhone null, and the
+  // document is still correct - it just carries the free-text name and offers
+  // the contact-picker share link instead of a direct one.
+  const { data: clientRows } = await db
     .from("clients")
     .select("id, name, phone")
-    .eq("business_id", identity.business_id)
-    .eq("name", intent.clientName)
-    .maybeSingle();
+    .eq("business_id", identity.business_id);
+  const wantedName = normalizeName(intent.clientName);
+  const clientMatches = (clientRows ?? []).filter(
+    (c) => normalizeName(c.name as string) === wantedName,
+  );
+  const client = clientMatches.length === 1 ? clientMatches[0] : null;
 
   const pendingId = randomUUID();
   const payload = {

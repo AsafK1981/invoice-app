@@ -5,6 +5,8 @@ import Link from "next/link";
 import { AlertTriangle, ChevronDown, ChevronUp, FileText } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { DOCUMENT_TYPE_LABELS, type InvoiceDocument } from "@/lib/types";
+import { useClients } from "@/lib/client-store";
+import { normalizeName, resolveDocumentClientId } from "@/lib/client-picker";
 
 interface Props {
   documents: InvoiceDocument[];
@@ -48,6 +50,7 @@ const BUCKET_TONES = [
 
 export function AgingReport({ documents }: Props) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const { items: clients } = useClients();
 
   const rows = useMemo<AgingRow[]>(() => {
     const open = documents.filter(
@@ -60,11 +63,15 @@ export function AgingReport({ documents }: Props) {
     for (const d of open) {
       const days = daysOverdue(d);
       const b = bucketIndex(days);
-      const key = d.clientId || `__no_client__:${d.clientName}`;
+      // Same attribution rule as the client pages: an unlinked document
+      // (client_id null) is grouped under the one saved client it names,
+      // otherwise under its normalized free-text name.
+      const resolvedId = resolveDocumentClientId(d, clients);
+      const key = resolvedId || `__no_client__:${normalizeName(d.clientName)}`;
       let row = byClient.get(key);
       if (!row) {
         row = {
-          clientId: d.clientId,
+          clientId: resolvedId || d.clientId,
           clientName: d.clientName,
           buckets: [0, 0, 0, 0],
           total: 0,
@@ -78,7 +85,7 @@ export function AgingReport({ documents }: Props) {
     }
 
     return Array.from(byClient.values()).sort((a, b) => b.total - a.total);
-  }, [documents]);
+  }, [documents, clients]);
 
   const totals = useMemo(() => {
     const t: [number, number, number, number] = [0, 0, 0, 0];

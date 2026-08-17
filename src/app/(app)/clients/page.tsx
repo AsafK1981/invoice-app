@@ -18,6 +18,7 @@ import {
   X,
 } from "lucide-react";
 import { useClients, useClientsPage, clientStore } from "@/lib/client-store";
+import { resolveDocumentClientId } from "@/lib/client-picker";
 import { useDocuments } from "@/lib/document-store";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { parseEmails } from "@/lib/emails";
@@ -36,20 +37,24 @@ interface ClientStats {
   lastDocDate: string | null;
 }
 
-function buildStatsByClient(documents: InvoiceDocument[]): Map<string, ClientStats> {
+function buildStatsByClient(documents: InvoiceDocument[], clients: Client[]): Map<string, ClientStats> {
   const m = new Map<string, ClientStats>();
   for (const d of documents) {
-    if (!d.clientId) continue;
     if (d.status === "draft" || d.status === "cancelled") continue;
+    // Unlinked documents (client_id null) are attributed to the one client
+    // their name / tax id identifies, so the per-client count here agrees
+    // with the client page and the documents list.
+    const clientId = resolveDocumentClientId(d, clients);
+    if (!clientId) continue;
     // Credit notes are stored ALREADY NEGATIVE on save (receipt-editor.tsx
     // applies `sign = -1`), so a plain sum already subtracts them; applying
     // a sign here again would double-negate. `totalIls` normalizes
     // foreign-currency documents into shekels.
-    const cur = m.get(d.clientId) ?? { docCount: 0, totalBilled: 0, lastDocDate: null };
+    const cur = m.get(clientId) ?? { docCount: 0, totalBilled: 0, lastDocDate: null };
     cur.docCount += 1;
     cur.totalBilled += (d.totalIls ?? d.total);
     if (!cur.lastDocDate || d.date > cur.lastDocDate) cur.lastDocDate = d.date;
-    m.set(d.clientId, cur);
+    m.set(clientId, cur);
   }
   return m;
 }
@@ -74,7 +79,7 @@ export default function ClientsPage() {
   const [page, setPage] = useState(0);
   const confirm = useConfirm();
 
-  const statsByClient = useMemo(() => buildStatsByClient(documents), [documents]);
+  const statsByClient = useMemo(() => buildStatsByClient(documents, clients), [documents, clients]);
 
   const { items: filtered, total: filteredTotal, pageSize } = useClientsPage({ page, search });
   const pageCount = Math.max(1, Math.ceil(filteredTotal / pageSize));

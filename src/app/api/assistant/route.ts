@@ -4,6 +4,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { checkRate, clientIp } from "@/lib/rate-limit";
 import { todayInIsrael } from "@/lib/date";
 import { searchTerms } from "@/lib/ilike-search";
+import { documentsForClient, normalizeName } from "@/lib/client-picker";
 import { DOCUMENT_TYPE_LABELS, DOCUMENT_STATUS_LABELS } from "@/lib/types";
 import { summarizeIncome } from "@/lib/income-summary";
 import { summarizeExpenses } from "@/lib/expense-summary";
@@ -525,15 +526,40 @@ async function runTool(
     const clientId = String(input.clientId ?? "");
     if (!/^[0-9a-f-]{36}$/i.test(clientId)) return { content: "מזהה לקוח לא תקין." };
 
-    const { data: docs, error } = await admin
+    // The client's documents: those linked by id, plus unlinked ones
+    // (client_id null - typed free-text before the editor auto-saved clients)
+    // whose stored name / tax id is this customer. Same rule as every screen
+    // in the app (documentBelongsToClient), so the assistant sees the same
+    // history the user does.
+    const { data: clientRows } = await admin
+      .from("clients")
+      .select("id, name, tax_id")
+      .eq("business_id", businessId);
+    const allClients = (clientRows ?? []).map((c) => ({
+      id: c.id as string,
+      name: c.name as string,
+      taxId: (c.tax_id as string | null) ?? undefined,
+    }));
+    const clientRow = allClients.find((c) => c.id === clientId);
+    if (!clientRow) return { content: "הלקוח לא נמצא." };
+    const { data: candidateDocs, error } = await admin
       .from("documents")
-      .select("id, type, date, subject, notes, payment_method, total, client_name")
+      .select("id, type, date, subject, notes, payment_method, total, client_id, client_name, client_tax_id")
       .eq("business_id", businessId)
-      .eq("client_id", clientId)
-      .order("date", { ascending: false })
-      .limit(3);
+      .or(`client_id.eq.${clientId},client_id.is.null`)
+      .order("date", { ascending: false });
     if (error) return { content: `שגיאה בשליפת המסמכים: ${error.message}` };
-    if (!docs?.length) return { content: "אין ללקוח הזה מסמכים קודמים ללמוד מהם." };
+    const docs = documentsForClient(
+      (candidateDocs ?? []).map((d) => ({
+        ...d,
+        clientId: (d.client_id as string | null) ?? "",
+        clientName: (d.client_name as string) ?? "",
+        clientTaxId: (d.client_tax_id as string | null) ?? undefined,
+      })),
+      clientRow,
+      allClients,
+    ).slice(0, 3);
+    if (!docs.length) return { content: "אין ללקוח הזה מסמכים קודמים ללמוד מהם." };
 
     const { data: items } = await admin
       .from("document_items")
@@ -607,6 +633,22 @@ async function runTool(
       if (client) {
         clientId = client.id as string;
         clientName = client.name as string;
+      }
+    }
+    // Name only (no id): link to the ONE saved client with that name, if any,
+    // so the draft lands on the client's record instead of as an unlinked
+    // free-text document. Ambiguous / no match stays free-text; the editor's
+    // "לקוח חדש" path saves and links it on issue.
+    if (!clientId && clientName) {
+      const { data: byName } = await admin
+        .from("clients")
+        .select("id, name")
+        .eq("business_id", businessId);
+      const wanted = normalizeName(clientName);
+      const matches = (byName ?? []).filter((c) => normalizeName(c.name as string) === wanted);
+      if (matches.length === 1) {
+        clientId = matches[0].id as string;
+        clientName = matches[0].name as string;
       }
     }
     if (!clientId && !clientName) return { content: "חסר לקוח לטיוטה. שאל את המשתמש למי המסמך." };

@@ -6,6 +6,7 @@ import { History, ChevronDown, ChevronUp, FilePlus2, ExternalLink } from "lucide
 import { useAuditLog, formatAuditAction, type AuditEntry } from "@/lib/audit-log";
 import { useDocuments } from "@/lib/document-store";
 import { useClients } from "@/lib/client-store";
+import { normalizeName } from "@/lib/client-picker";
 import { formatDate } from "@/lib/format";
 
 function relativeTime(iso: string): string {
@@ -51,7 +52,12 @@ function resolveClient(
   const clientName = doc?.clientName || payloadClientName || labelName || undefined;
   let clientId = doc?.clientId || payloadClientId || undefined;
   if (!clientId && clientName) {
-    clientId = clients.find((c) => c.name.trim() === clientName)?.id;
+    // Only an unambiguous name match: two saved clients with the same name
+    // means we don't know which one, and offering the wrong one is worse
+    // than offering none.
+    const wanted = normalizeName(clientName);
+    const matches = clients.filter((c) => normalizeName(c.name) === wanted);
+    if (matches.length === 1) clientId = matches[0].id;
   }
   // A client that was deleted since would 404 in the editor's prefill check;
   // only offer the link when the id still resolves.

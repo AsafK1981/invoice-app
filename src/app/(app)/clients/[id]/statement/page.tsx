@@ -4,6 +4,7 @@ import { use, useMemo } from "react";
 import Link from "next/link";
 import { Printer, ArrowRight } from "lucide-react";
 import { useClients } from "@/lib/client-store";
+import { documentsForClient } from "@/lib/client-picker";
 import { useDocuments } from "@/lib/document-store";
 import { useBusiness } from "@/lib/business-store";
 import { formatCurrency, formatDate } from "@/lib/format";
@@ -31,8 +32,9 @@ export default function ClientStatementPage({
         balance: 0,
       };
     }
-    const mine = documents
-      .filter((d) => d.clientId === client.id)
+    // documentsForClient also claims unlinked documents (client_id null)
+    // that name this customer - the statement must not miss a receipt.
+    const mine = documentsForClient(documents, client, clients)
       .filter((d) => d.status !== "draft" && d.status !== "cancelled")
       .sort((a, b) => a.date.localeCompare(b.date));
 
@@ -57,7 +59,7 @@ export default function ClientStatementPage({
       totalPaid,
       balance: totalBilled - totalPaid,
     };
-  }, [client, documents]);
+  }, [client, documents, clients]);
 
   if (!clientsReady || !docsReady || !bizReady) {
     return <div className="text-center py-16 text-stone-500">טוען...</div>;

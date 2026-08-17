@@ -44,7 +44,7 @@ import { AllocationNextStepCard } from "@/components/allocation-next-step-card";
 import { Expander } from "@/components/expander";
 import { useTaxAuthorityStatus } from "@/lib/use-tax-authority-status";
 import { getClientDefaults } from "@/lib/client-defaults";
-import { findMatchingClient, filterClientsByQuery } from "@/lib/client-picker";
+import { documentsForClient, findMatchingClient, filterClientsByQuery } from "@/lib/client-picker";
 import { clientStore } from "@/lib/client-store";
 import {
   type Business,
@@ -232,9 +232,10 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   const [creditRefDate, setCreditRefDate] = useState<string>("");
 
   const { documents: allDocuments } = useDocuments();
+  const selectedClient = clients.find((c) => c.id === clientId);
   const clientDefaults = useMemo(
-    () => getClientDefaults(clientId, allDocuments),
-    [clientId, allDocuments]
+    () => getClientDefaults(selectedClient, allDocuments, clients),
+    [selectedClient, allDocuments, clients]
   );
 
   // Auto-fill payment method from the client's most recent doc, but only if
@@ -545,7 +546,6 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
     return `לפני ${diffHr} ${diffHr === 1 ? "שעה" : "שעות"}`;
   }
 
-  const selectedClient = clients.find((c) => c.id === clientId);
   const previewClient: PreviewClient | null = (() => {
     if (adhocMode) {
       const name = adhocName.trim();
@@ -886,19 +886,18 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   // convert flow), so the editor warns and offers the convert link instead.
   const clientOpenInvoices = useMemo(
     () =>
-      isPaymentRecording && !fromDocId && !adhocMode && clientId
-        ? allDocuments
+      isPaymentRecording && !fromDocId && !adhocMode && selectedClient
+        ? documentsForClient(allDocuments, selectedClient, clients)
             .filter(
               (d) =>
                 d.type === "tax_invoice" &&
-                d.clientId === clientId &&
                 d.status !== "draft" &&
                 d.status !== "cancelled" &&
                 !d.convertedToId,
             )
             .sort((a, b) => b.number - a.number)
         : [],
-    [isPaymentRecording, fromDocId, adhocMode, clientId, allDocuments],
+    [isPaymentRecording, fromDocId, adhocMode, selectedClient, allDocuments, clients],
   );
 
   // Will this document need a מספר הקצאה the user does not have yet? Same
