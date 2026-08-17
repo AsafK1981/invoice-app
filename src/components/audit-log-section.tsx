@@ -1,8 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { History, ChevronDown, ChevronUp } from "lucide-react";
+import Link from "next/link";
+import { History, ChevronDown, ChevronUp, FilePlus2, ExternalLink } from "lucide-react";
 import { useAuditLog, formatAuditAction, type AuditEntry } from "@/lib/audit-log";
+import { useDocuments } from "@/lib/document-store";
+import { useClients } from "@/lib/client-store";
 import { formatDate } from "@/lib/format";
 
 function relativeTime(iso: string): string {
@@ -26,8 +29,40 @@ function formatPayload(entry: AuditEntry): string | null {
   return null;
 }
 
+/**
+ * Resolves "who was this document for?" for a history row so we can offer
+ * "מסמך חדש לאותו לקוח" (Asaf, 2026-08-17: from the history, be able to send
+ * a new document to the same person again). Sources, in order:
+ *   1. the live document (targetId) - has clientId + clientName
+ *   2. payload.clientId / payload.clientName - written by newer audit rows,
+ *      survives the document being deleted
+ *   3. the "· <name>" suffix of the label, matched against the clients list
+ */
+function resolveClient(
+  entry: AuditEntry,
+  documents: { id: string; clientId: string; clientName: string }[],
+  clients: { id: string; name: string }[],
+): { clientId?: string; clientName?: string; docExists: boolean } {
+  if (entry.targetType !== "document") return { docExists: false };
+  const doc = entry.targetId ? documents.find((d) => d.id === entry.targetId) : undefined;
+  const payloadClientId = typeof entry.payload?.clientId === "string" ? (entry.payload.clientId as string) : undefined;
+  const payloadClientName = typeof entry.payload?.clientName === "string" ? (entry.payload.clientName as string) : undefined;
+  const labelName = entry.targetLabel?.includes(" · ") ? entry.targetLabel.split(" · ").slice(1).join(" · ").trim() : undefined;
+  const clientName = doc?.clientName || payloadClientName || labelName || undefined;
+  let clientId = doc?.clientId || payloadClientId || undefined;
+  if (!clientId && clientName) {
+    clientId = clients.find((c) => c.name.trim() === clientName)?.id;
+  }
+  // A client that was deleted since would 404 in the editor's prefill check;
+  // only offer the link when the id still resolves.
+  if (clientId && !clients.some((c) => c.id === clientId)) clientId = undefined;
+  return { clientId, clientName, docExists: Boolean(doc) };
+}
+
 export function AuditLogSection() {
   const { entries, ready } = useAuditLog(50);
+  const { documents } = useDocuments();
+  const { items: clients } = useClients();
   const [expanded, setExpanded] = useState(false);
 
   if (ready && entries.length === 0) {
@@ -60,6 +95,7 @@ export function AuditLogSection() {
       <ul className="divide-y divide-orange-50">
         {visible.map((entry) => {
           const payloadText = formatPayload(entry);
+          const who = resolveClient(entry, documents, clients);
           return (
             <li key={entry.id} className="py-3 flex items-start justify-between gap-3">
               <div className="min-w-0">
@@ -71,6 +107,29 @@ export function AuditLogSection() {
                 )}
                 {payloadText && (
                   <p className="text-xs text-stone-600 mt-0.5">{payloadText}</p>
+                )}
+                {(who.clientId || who.docExists) && (
+                  <div className="mt-1.5 flex items-center gap-3 flex-wrap">
+                    {who.clientId && (
+                      <Link
+                        href={`/documents/new?clientId=${who.clientId}`}
+                        className="inline-flex items-center gap-1 text-xs font-medium text-orange-700 hover:text-orange-800 min-h-[32px]"
+                        title={who.clientName ? `מסמך חדש ל${who.clientName}` : "מסמך חדש לאותו לקוח"}
+                      >
+                        <FilePlus2 className="w-3.5 h-3.5" aria-hidden="true" />
+                        מסמך חדש ל{who.clientName || "לקוח"}
+                      </Link>
+                    )}
+                    {who.docExists && entry.targetId && (
+                      <Link
+                        href={`/documents/${entry.targetId}`}
+                        className="inline-flex items-center gap-1 text-xs font-medium text-stone-600 hover:text-stone-900 min-h-[32px]"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
+                        פתח מסמך
+                      </Link>
+                    )}
+                  </div>
                 )}
               </div>
               <span className="text-xs text-stone-500 flex-shrink-0">

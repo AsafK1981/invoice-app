@@ -219,7 +219,7 @@ export async function createDocument(
     targetType: "document",
     targetId: result.id,
     targetLabel: `${DOCUMENT_TYPE_LABELS[doc.type]} #${result.number} · ${doc.clientName}`,
-    payload: { type: doc.type, number: result.number, total: doc.total },
+    payload: { type: doc.type, number: result.number, total: doc.total, clientId: doc.clientId || null, clientName: doc.clientName },
   });
 
   window.dispatchEvent(new Event(CHANGE_EVENT));
@@ -260,7 +260,7 @@ export async function deleteDocument(id: string) {
   // Snapshot the doc for audit context BEFORE deleting
   const { data: snap } = await supabase
     .from("documents")
-    .select("type, number, client_name, status, emailed_at")
+    .select("type, number, client_name, client_id, status, emailed_at")
     .eq("id", id)
     .maybeSingle();
 
@@ -294,6 +294,9 @@ export async function deleteDocument(id: string) {
       targetType: "document",
       targetId: id,
       targetLabel: `${DOCUMENT_TYPE_LABELS[snap.type as DocumentType]} #${snap.number} · ${snap.client_name}`,
+      // The row is gone after this; keep enough to offer "new document to the
+      // same client" from the history later.
+      payload: { clientId: snap.client_id ?? null, clientName: snap.client_name },
     });
   }
 
@@ -304,7 +307,7 @@ export async function updateDocumentStatus(id: string, status: InvoiceDocument["
   // Snapshot for context: what was the previous status?
   const { data: snap } = await supabase
     .from("documents")
-    .select("type, number, client_name, status")
+    .select("type, number, client_name, client_id, status")
     .eq("id", id)
     .maybeSingle();
 
@@ -331,7 +334,7 @@ export async function updateDocumentStatus(id: string, status: InvoiceDocument["
       targetType: "document",
       targetId: id,
       targetLabel: `${DOCUMENT_TYPE_LABELS[snap.type as DocumentType]} #${snap.number} · ${snap.client_name}`,
-      payload: { from: DOCUMENT_STATUS_LABELS[snap.status as InvoiceDocument["status"]], to: DOCUMENT_STATUS_LABELS[status] },
+      payload: { from: DOCUMENT_STATUS_LABELS[snap.status as InvoiceDocument["status"]], to: DOCUMENT_STATUS_LABELS[status], clientId: snap.client_id ?? null, clientName: snap.client_name },
     });
   }
   window.dispatchEvent(new Event(CHANGE_EVENT));
