@@ -13,7 +13,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Sparkles, X, Send, FileText, Paperclip, Table2, MessageCircle, Mic } from "lucide-react";
+import Link from "next/link";
+import { Sparkles, X, Send, FileText, Paperclip, Table2, MessageCircle, Mic, ChevronLeft } from "lucide-react";
+import { formatCurrency, formatDate } from "@/lib/format";
 import { supabase } from "@/lib/supabase";
 import { saveDraftToServer, DOC_TYPE_ROUTE } from "@/lib/draft-store";
 import { todayInIsrael } from "@/lib/date";
@@ -30,10 +32,77 @@ interface AssistantDraft {
   items: { description: string; quantity: number; unitPrice: number }[];
 }
 
+/** A document the server surfaced this turn (see DocCard in the API route). */
+interface AssistantDocCard {
+  id: string;
+  type: string;
+  number: number | null;
+  date: string;
+  client: string;
+  subject?: string;
+  status: string;
+  statusKey: string;
+  total: number;
+  currency: string;
+}
+
 interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   drafts?: AssistantDraft[];
+  documents?: AssistantDocCard[];
+}
+
+// Same tones the documents table uses for its status pill.
+const STATUS_TONE: Record<string, string> = {
+  paid: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  sent: "bg-amber-50 text-amber-700 border-amber-200",
+  draft: "bg-stone-100 text-stone-600 border-stone-200",
+  cancelled: "bg-rose-50 text-rose-700 border-rose-200",
+};
+
+function DocCards({ docs, onOpen }: { docs: AssistantDocCard[]; onOpen: () => void }) {
+  return (
+    <div className="mt-2 flex flex-col gap-2">
+      {docs.map((d) => (
+        <Link
+          key={d.id}
+          href={`/documents/${d.id}`}
+          onClick={onOpen}
+          className="block rounded-xl bg-white border border-stone-200 px-3 py-2 hover:border-orange-300 hover:shadow-md transition-all"
+        >
+          <div className="flex items-baseline justify-between gap-3">
+            <span className="text-[13px] font-semibold text-stone-900 truncate">
+              {d.type}
+              {d.number != null && <span className="text-stone-500 font-normal"> {d.number}</span>}
+            </span>
+            <span className="text-[13px] font-semibold text-stone-900 tabular-nums whitespace-nowrap">
+              {d.currency === "ILS" || !d.currency
+                ? formatCurrency(d.total)
+                : `${d.total.toLocaleString("he-IL")} ${d.currency}`}
+            </span>
+          </div>
+          <div className="mt-0.5 flex items-center justify-between gap-3 text-xs text-stone-600">
+            <span className="truncate">{d.client}</span>
+            <span className="tabular-nums whitespace-nowrap">{formatDate(d.date)}</span>
+          </div>
+          <div className="mt-1.5 flex items-center justify-between gap-2">
+            <span
+              className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium leading-none ${
+                STATUS_TONE[d.statusKey] ?? STATUS_TONE.draft
+              }`}
+            >
+              {d.status}
+            </span>
+            <span className="inline-flex items-center gap-0.5 text-[11px] text-orange-600 font-medium">
+              פתח
+              <ChevronLeft className="w-3 h-3" />
+            </span>
+          </div>
+        </Link>
+      ))}
+    </div>
+  );
 }
 
 const SUGGESTIONS = [
@@ -187,6 +256,7 @@ export function AssistantWidget() {
           role: "assistant",
           content: json.reply as string,
           drafts: Array.isArray(json.drafts) ? (json.drafts as AssistantDraft[]) : [],
+          documents: Array.isArray(json.documents) ? (json.documents as AssistantDocCard[]) : [],
         },
       ]);
     } catch {
@@ -323,6 +393,9 @@ export function AssistantWidget() {
                 }`}
               >
                 {m.content}
+                {m.documents && m.documents.length > 0 && (
+                  <DocCards docs={m.documents} onOpen={() => setOpen(false)} />
+                )}
                 {m.drafts?.map((d, di) => {
                   const key = `${i}-${di}`;
                   const many = (m.drafts?.length ?? 0) > 1;

@@ -101,8 +101,21 @@ const SYSTEM = `אתה העוזר החכם של "חשבונית ידידותית
 
 פורמט: טקסט רגיל בלבד. חלון הצ'אט לא מרנדר Markdown, אז כוכביות יופיעו
 למשתמש כתווים גולמיים. בלי **הדגשה**, בלי ## כותרות, בלי טבלאות.
-לרשימה השתמש בקו מפריד בתחילת שורה, למשל:
-- חשבונית מס 1, 03/08/2026, לקוח בדיקות בע"מ, 1,170 ₪, נשלח
+
+מסמכים שנמצאו: כל מסמך ש-search_documents או get_document החזירו מוצג למשתמש
+אוטומטית ככרטיס לחיץ מתחת לתשובה שלך (סוג ומספר, לקוח, תאריך, סכום, סטטוס,
+עם קישור לפתיחה). לכן אל תשכפל את הפרטים האלה בטקסט - זה יוצר גוש לא קריא.
+כתוב שורה אחת או שתיים בלבד: כמה מסמכים נמצאו ולאיזו תקופה, ואם רלוונטי סכום
+כולל או תובנה קצרה. למשל: "מצאתי 5 מסמכים מהחודש האחרון, סה"כ 4,680 ₪. כולם
+שולמו חוץ מהצעת המחיר לדני."
+חריג: כשהמשתמש שואל על התוכן של מסמך (מה היו השורות, מה הסכום לפני מע"מ) -
+ענה לעניין בטקסט.
+
+כשאתה בכל זאת כותב רשימה בטקסט (למשל סיכום טיוטות), פריט אחד לשורה, שורה ריקה
+בין פריטים, ובלי יותר מ-4 שדות בשורה. למשל:
+- דני כהן, יולי 2026, 3 שורות, 2,340 ₪
+
+- סטודיו אור, יולי 2026, שורה אחת, 800 ₪
 
 יצירת מסמכים: אתה לא יוצר מסמכים. prepare_document_draft מכין טיוטה שהמשתמש
 פותח בעורך, בודק ומאשר בעצמו. תמיד הבהר שזו טיוטה שממתינה לאישורו.
@@ -274,7 +287,30 @@ const TOOLS: Anthropic.Tool[] = [
   },
 ];
 
-type ToolResult = { content: string; draft?: unknown };
+type ToolResult = { content: string; draft?: unknown; documents?: DocCard[] };
+
+/**
+ * A document the widget renders as a clickable card under the reply. The
+ * model gets the same rows as data (in `content`); the card carries the id so
+ * the user can open the document instead of reading a run-on line of text.
+ */
+type DocCard = {
+  id: string;
+  type: string;
+  number: number | null;
+  date: string;
+  client: string;
+  subject?: string;
+  /** Hebrew label, what the model reads. */
+  status: string;
+  /** Raw enum, what the widget colours by. */
+  statusKey: string;
+  total: number;
+  currency: string;
+};
+
+/** Cards a single reply may carry. */
+const MAX_CARDS = 10;
 
 function money(n: unknown): number {
   const v = Number(n);
@@ -356,11 +392,26 @@ async function runTool(
       client: d.client_name,
       subject: d.subject || undefined,
       status: DOCUMENT_STATUS_LABELS[d.status as keyof typeof DOCUMENT_STATUS_LABELS] ?? d.status,
+      statusKey: String(d.status),
       total: money(d.total),
       currency: d.currency || "ILS",
       converted: !!d.converted_to_id,
     }));
-    return { content: asData({ count: rows.length, documents: rows }) };
+    return {
+      content: asData({ count: rows.length, documents: rows }),
+      documents: rows.map((r) => ({
+        id: r.id,
+        type: r.type,
+        number: r.number,
+        date: r.date,
+        client: r.client,
+        subject: r.subject,
+        status: r.status,
+        statusKey: r.statusKey,
+        total: r.total,
+        currency: r.currency,
+      })),
+    };
   }
 
   if (name === "get_document") {
@@ -378,15 +429,28 @@ async function runTool(
       .select("description, quantity, unit_price, total")
       .eq("document_id", id)
       .order("sort_order", { ascending: true });
+    const card: DocCard = {
+      id: doc.id,
+      type: DOCUMENT_TYPE_LABELS[doc.type as DocumentType] ?? doc.type,
+      number: doc.number,
+      date: doc.date,
+      client: doc.client_name,
+      subject: doc.subject || undefined,
+      status: DOCUMENT_STATUS_LABELS[doc.status as keyof typeof DOCUMENT_STATUS_LABELS] ?? doc.status,
+      statusKey: String(doc.status),
+      total: money(doc.total),
+      currency: doc.currency || "ILS",
+    };
     return {
+      documents: [card],
       content: asData({
         id: doc.id,
-        type: DOCUMENT_TYPE_LABELS[doc.type as DocumentType] ?? doc.type,
+        type: card.type,
         number: doc.number,
         date: doc.date,
         client: doc.client_name,
         subject: doc.subject,
-        status: DOCUMENT_STATUS_LABELS[doc.status as keyof typeof DOCUMENT_STATUS_LABELS] ?? doc.status,
+        status: card.status,
         subtotal: money(doc.subtotal),
         vat: money(doc.vat),
         total: money(doc.total),
@@ -701,6 +765,10 @@ export async function POST(req: NextRequest) {
     const messages: Anthropic.MessageParam[] = [...history];
     const today = todayInIsrael();
     const drafts: unknown[] = [];
+    // Documents surfaced by search_documents / get_document this turn, deduped
+    // in first-seen order. Sent back as cards so the user gets one tap to open
+    // a document rather than a wall of comma-separated text.
+    const cards = new Map<string, DocCard>();
     let answer = "";
     const rounds = hasAttachment ? MAX_ROUNDS_WITH_ATTACHMENT : MAX_ROUNDS;
 
@@ -745,6 +813,10 @@ export async function POST(req: NextRequest) {
             drafts.length,
           );
           if (out.draft && drafts.length < MAX_DRAFTS) drafts.push(out.draft);
+          for (const c of out.documents ?? []) {
+            if (cards.size >= MAX_CARDS && !cards.has(c.id)) break;
+            cards.set(c.id, c);
+          }
           results.push({ type: "tool_result", tool_use_id: call.id, content: out.content });
         } catch (toolErr) {
           console.error(
@@ -766,6 +838,9 @@ export async function POST(req: NextRequest) {
       ok: true,
       reply: answer || "לא הצלחתי להשלים את הבקשה. נסח אותה קצת אחרת.",
       drafts,
+      // In the spreadsheet flow the searches are duplicate checks, not what the
+      // user asked to see - there the drafts are the deliverable.
+      documents: drafts.length ? [] : [...cards.values()],
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "unknown";
