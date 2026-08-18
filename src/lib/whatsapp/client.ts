@@ -121,6 +121,40 @@ export async function sendDocument(
   await send({ to, type: "document", document: { link, filename, caption } });
 }
 
+/**
+ * Interactive LIST message: a single button that opens a picker of up to 10
+ * rows. Used where 3 reply buttons are not enough (payment method). The
+ * chosen row comes back as `interactive.list_reply.{id,title}` and is routed
+ * exactly like a button tap.
+ */
+export async function sendList(
+  to: string,
+  body: string,
+  buttonText: string,
+  rows: { id: string; title: string; description?: string }[],
+): Promise<void> {
+  await send({
+    to,
+    type: "interactive",
+    interactive: {
+      type: "list",
+      body: { text: body },
+      action: {
+        button: buttonText.slice(0, 20),
+        sections: [
+          {
+            rows: rows.slice(0, 10).map((r) => ({
+              id: r.id.slice(0, 200),
+              title: r.title.slice(0, 24),
+              ...(r.description ? { description: r.description.slice(0, 72) } : {}),
+            })),
+          },
+        ],
+      },
+    },
+  });
+}
+
 /** Downloads inbound media (a photographed receipt) as base64. */
 export async function fetchMedia(
   mediaId: string,

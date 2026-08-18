@@ -17,8 +17,14 @@ import { checkRate } from "@/lib/rate-limit";
 import { VAT_RATES, round2 } from "@/lib/vat";
 import { normalizeName } from "@/lib/client-picker";
 import { publicDocumentUrl, absoluteUrl } from "@/lib/public-url";
-import { parseIntent, type CreateDocumentIntent } from "./intent";
-import { sendText, sendButtons, sendDocument, fetchMedia } from "./client";
+import {
+  parseIntent,
+  parseAmendment,
+  normalizePaymentMethod,
+  type CreateDocumentIntent,
+  type BotDocType,
+} from "./intent";
+import { sendText, sendButtons, sendList, sendDocument, fetchMedia } from "./client";
 import { transcribeAudio, transcriptionConfigured } from "./transcribe";
 import { scanExpenseEvidence, normalizeMediaType } from "@/lib/expense-scan";
 import { parseExpenseEdit, EDIT_INSTRUCTIONS } from "./expense-edit";
@@ -59,7 +65,11 @@ export interface InboundMessage {
   document?: { id: string };
   /** Voice notes arrive as type "audio" with voice: true; mime is audio/ogg (opus). */
   audio?: { id: string; mime_type?: string; voice?: boolean };
-  interactive?: { button_reply?: { id: string; title: string } };
+  interactive?: {
+    button_reply?: { id: string; title: string };
+    /** Reply to a sendList() picker; routed exactly like a button. */
+    list_reply?: { id: string; title: string; description?: string };
+  };
 }
 
 interface Identity {
@@ -133,8 +143,9 @@ export async function handleMessage(msg: InboundMessage): Promise<void> {
     .update({ last_message_at: new Date().toISOString() })
     .eq("phone", from);
 
-  if (msg.type === "interactive" && msg.interactive?.button_reply) {
-    await handleButton(db, from, identity, msg.interactive.button_reply.id);
+  const tapped = msg.interactive?.button_reply?.id || msg.interactive?.list_reply?.id;
+  if (msg.type === "interactive" && tapped) {
+    await handleButton(db, from, identity, tapped);
     return;
   }
 
@@ -353,6 +364,40 @@ async function handleText(
     return;
   }
 
+  // An open draft turns the next text into an ANSWER (to the pending question)
+  // or an AMENDMENT (after "לשנות", or when the user types instead of tapping),
+  // not into a brand-new request. "בטל" always drops the draft. A message that
+  // clearly IS a brand-new request (imperative + full name + amount) starts
+  // over instead, so someone who changed their mind mid-flow is not trapped.
+  const open = await loadOpenDraft(db, phone, identity);
+  if (open) {
+    if (CANCEL_RE.test(trimmed)) {
+      await consumeDraft(db, open.id);
+      await sendText(phone, "בוטל. לא הופק כלום.");
+      return;
+    }
+    if (open.payload.stage === "collecting" && open.payload.pendingQuestion) {
+      const fresh = await maybeFreshRequest(trimmed);
+      if (fresh) {
+        await consumeDraft(db, open.id);
+        await proposeDocument(db, phone, identity, fresh);
+        return;
+      }
+      await applyAnswer(db, phone, identity, open, trimmed);
+      return;
+    }
+    // stage "amending" or "confirm": free-text correction - unless it clearly
+    // is a brand-new request, in which case start over.
+    const fresh = await maybeFreshRequest(trimmed);
+    if (fresh) {
+      await consumeDraft(db, open.id);
+      await proposeDocument(db, phone, identity, fresh);
+      return;
+    }
+    await applyAmendment(db, phone, identity, open, trimmed);
+    return;
+  }
+
   const { intent, failed } = await parseIntent(trimmed, anthropicKey);
 
   if (failed) {
@@ -408,73 +453,192 @@ async function sendHelp(phone: string): Promise<void> {
       "🎤 *או פשוט להקליט*",
       "שלח הודעה קולית במקום להקליד - אני מתמלל ומטפל כרגיל.",
       "",
+      "אם חסר משהו (עבור מה, מע״מ, איך שולם) אשאל אותך שאלה קצרה. בסיכום יש ״אשר והפק״, ״לשנות״ ו״בטל״ - ואפשר גם פשוט לכתוב מה לתקן.",
+      "",
       "תמיד אראה לך את הפרטים ואחכה לאישור שלך לפני שאני מפיק משהו.",
     ].join("\n"),
   );
 }
 
 /**
- * Computes the money, writes the draft, and asks for confirmation.
+ * The draft state machine.
  *
- * VAT is decided HERE from the business type in the database, never from the
- * message: an עוסק פטור may not charge VAT at all (create_document_for_bot
- * rejects it outright), and letting a sentence influence that would be a way to
- * talk the system into an illegal document.
+ *   text/voice ──parseIntent──▶ draft row (stage "collecting")
+ *        │  missing description? ─▶ ask (free text)
+ *        │  VAT business, VAT mode unknown? ─▶ ask (2 buttons)
+ *        │  receipt, no payment method? ─▶ ask (list picker)
+ *        ▼
+ *   stage "confirm": summary + [אשר והפק] [לשנות] [בטל]
+ *        │  "לשנות" or free text ─▶ stage "amending" ─▶ parseAmendment ─▶ back to the checks
+ *        ▼
+ *   confirm tap ─▶ create_document_for_bot (unchanged path)
+ *
+ * The draft lives in ONE whatsapp_pending_actions row (kind "document") whose
+ * payload is rewritten as the conversation advances; the row id is stable so
+ * the confirm/cancel button ids stay valid and the consumed_at guard against
+ * double-issue keeps working. VAT is decided HERE from the business type in
+ * the database, never from the message: an עוסק פטור may not charge VAT at all
+ * (create_document_for_bot rejects it outright), and letting a sentence
+ * influence that would be a way to talk the system into an illegal document.
  */
+
+type Stage = "collecting" | "amending" | "confirm";
+type Question = "description" | "vat" | "payment" | "payment_other";
+
+interface DraftPayload extends Money {
+  stage: Stage;
+  pendingQuestion: Question | null;
+  docType: BotDocType;
+  clientId: string | null;
+  clientName: string;
+  clientPhone: string | null;
+  clientKnown: boolean;
+  description: string;
+  descriptionGiven: boolean;
+  paymentMethod: string | null;
+  date: string;
+  amount: number;
+  amountIncludesVat: boolean | null;
+  vatRate: number;
+}
+
+interface OpenDraft {
+  id: string;
+  payload: DraftPayload;
+}
+
+const CANCEL_RE = /^(בטל|ביטול|בטלי|לבטל|cancel|stop)\.?$/i;
+const FRESH_REQUEST_RE = /^(תוציא|תפיק|תכין|הוצא|הפק|תעשה|צור|תיצור|קבלה|הצעת מחיר|חשבונית)\b/;
+
+const PAYMENT_ROWS = ["מזומן", "העברה בנקאית", "אשראי", "ביט", "צ׳ק", "פייפאל"];
+
+/** Newest live document draft for this phone, or null. Errors read as "no draft" (the text then starts a fresh request, which is the safe default). */
+async function loadOpenDraft(
+  db: SupabaseClient,
+  phone: string,
+  identity: Identity,
+): Promise<OpenDraft | null> {
+  const { data, error } = await db
+    .from("whatsapp_pending_actions")
+    .select("id, payload")
+    .eq("phone", phone)
+    .eq("user_id", identity.user_id)
+    .eq("kind", "document")
+    .is("consumed_at", null)
+    .gt("expires_at", new Date().toISOString())
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error || !data) return null;
+  const p = data.payload as Partial<DraftPayload>;
+  // Rows written before the state machine existed have no stage: treat them as
+  // a finished summary awaiting a tap (the only thing they ever were).
+  if (!p.stage) return { id: data.id as string, payload: { ...(p as DraftPayload), stage: "confirm", pendingQuestion: null } };
+  return { id: data.id as string, payload: p as DraftPayload };
+}
+
+async function consumeDraft(db: SupabaseClient, id: string): Promise<void> {
+  const { error } = await db
+    .from("whatsapp_pending_actions")
+    .update({ consumed_at: new Date().toISOString() })
+    .eq("id", id)
+    .is("consumed_at", null);
+  if (error) console.error("[whatsapp] consume draft failed:", error.message);
+}
+
+async function saveDraft(db: SupabaseClient, id: string, payload: DraftPayload, phone?: string): Promise<boolean> {
+  const { error } = await db
+    .from("whatsapp_pending_actions")
+    .update({ payload, expires_at: new Date(Date.now() + PENDING_TTL_MS).toISOString() })
+    .eq("id", id)
+    .is("consumed_at", null);
+  if (error) {
+    console.error("[whatsapp] save draft failed:", error.message);
+    if (phone) await sendText(phone, "משהו השתבש בשמירת הטיוטה. נסה שוב.");
+  }
+  return !error;
+}
+
+/**
+ * "Did the user just start over?" Only when the message reads like a command
+ * AND parses into a complete request; a plain answer ("ייעוץ עסקי") never does.
+ */
+async function maybeFreshRequest(text: string): Promise<CreateDocumentIntent | null> {
+  if (!FRESH_REQUEST_RE.test(text)) return null;
+  const { intent, failed } = await parseIntent(text, anthropicKey);
+  if (failed || intent.intent !== "create_document") return null;
+  return intent;
+}
+
+async function loadVatRate(db: SupabaseClient, businessId: string): Promise<number | null> {
+  const { data: business, error } = await db
+    .from("businesses")
+    .select("business_type")
+    .eq("id", businessId)
+    .maybeSingle();
+  if (error || !business) {
+    console.error("[whatsapp] business lookup failed:", error?.message);
+    return null;
+  }
+  return VAT_RATES[(business.business_type as keyof typeof VAT_RATES) ?? "exempt"] ?? 0;
+}
+
+/**
+ * Match an existing client by name so the document links to the real record
+ * (and so we can reuse their phone for the forward link). Exact after
+ * whitespace/case normalization, and only when exactly ONE client matches -
+ * no fuzzy matching: attaching a document to the WRONG client is worse than
+ * attaching it to none. Error deliberately unchecked: this is an enrichment,
+ * not a gate.
+ */
+async function matchClient(
+  db: SupabaseClient,
+  businessId: string,
+  clientName: string,
+): Promise<{ id: string; phone: string | null } | null> {
+  const { data: clientRows } = await db
+    .from("clients")
+    .select("id, name, phone")
+    .eq("business_id", businessId);
+  const wantedName = normalizeName(clientName);
+  const matches = (clientRows ?? []).filter((c) => normalizeName(c.name as string) === wantedName);
+  return matches.length === 1 ? { id: matches[0].id as string, phone: (matches[0].phone as string) ?? null } : null;
+}
+
+/** First step: a fresh intent becomes a draft row, then the questions run. */
 async function proposeDocument(
   db: SupabaseClient,
   phone: string,
   identity: Identity,
   intent: CreateDocumentIntent,
 ): Promise<void> {
-  const { data: business, error: bizErr } = await db
-    .from("businesses")
-    .select("business_type")
-    .eq("id", identity.business_id)
-    .maybeSingle();
-  if (bizErr || !business) {
-    console.error("[whatsapp] business lookup failed:", bizErr?.message);
+  const rate = await loadVatRate(db, identity.business_id);
+  if (rate === null) {
     await sendText(phone, "לא הצלחתי לטעון את פרטי העסק. נסה שוב.");
     return;
   }
+  const client = await matchClient(db, identity.business_id, intent.clientName);
+  const money = computeMoney(intent.amount, intent.amountIncludesVat === true, rate);
 
-  const rate =
-    VAT_RATES[(business.business_type as keyof typeof VAT_RATES) ?? "exempt"] ?? 0;
-  // A quote is a price proposal, not a tax document; it still shows VAT the
-  // same way the app's editor does, so no special-casing is needed here.
-  const money = computeMoney(intent.amount, intent.amountIncludesVat, rate);
-
-  // Match an existing client by name so the document links to the real record
-  // (and so we can reuse their phone for the forward link). Exact after
-  // whitespace/case normalization, and only when exactly ONE client matches -
-  // no fuzzy matching: attaching a document to the WRONG client is worse than
-  // attaching it to none, and the free-text client_name still reads correctly
-  // either way. Error deliberately unchecked: this lookup is an enrichment, not
-  // a gate. If it fails we fall through to clientId/clientPhone null, and the
-  // document is still correct - it just carries the free-text name and offers
-  // the contact-picker share link instead of a direct one.
-  const { data: clientRows } = await db
-    .from("clients")
-    .select("id, name, phone")
-    .eq("business_id", identity.business_id);
-  const wantedName = normalizeName(intent.clientName);
-  const clientMatches = (clientRows ?? []).filter(
-    (c) => normalizeName(c.name as string) === wantedName,
-  );
-  const client = clientMatches.length === 1 ? clientMatches[0] : null;
-
-  const pendingId = randomUUID();
-  const payload = {
+  const payload: DraftPayload = {
+    stage: "collecting",
+    pendingQuestion: null,
     docType: intent.docType,
     clientId: client?.id ?? null,
     clientName: intent.clientName,
     clientPhone: client?.phone ?? null,
-    description: intent.description,
+    clientKnown: Boolean(client),
+    description: intent.description ?? "",
+    descriptionGiven: Boolean(intent.description),
     paymentMethod: intent.paymentMethod,
     date: intent.date,
+    amount: intent.amount,
+    amountIncludesVat: intent.amountIncludesVat,
+    vatRate: rate,
     ...money,
   };
 
+  const pendingId = randomUUID();
   const { error: pendErr } = await db.from("whatsapp_pending_actions").insert({
     id: pendingId,
     phone,
@@ -489,24 +653,187 @@ async function proposeDocument(
     return;
   }
 
+  await advanceDraft(db, phone, { id: pendingId, payload });
+}
+
+/** Which question is still open, in the order they are asked. */
+function nextQuestion(p: DraftPayload): Question | null {
+  if (!p.descriptionGiven) return "description";
+  if (p.vatRate > 0 && p.amountIncludesVat === null) return "vat";
+  if (p.docType === "receipt" && !p.paymentMethod) return "payment";
+  return null;
+}
+
+/** Recomputes money from the raw fields (after any answer/amendment). */
+function withMoney(p: DraftPayload): DraftPayload {
+  const money = computeMoney(p.amount, p.amountIncludesVat === true, p.vatRate);
+  return { ...p, ...money };
+}
+
+/**
+ * Asks the next missing question, or presents the summary with 3 buttons.
+ * Every branch persists the new stage BEFORE sending, so a reply that arrives
+ * fast (or a retry) sees the right state.
+ */
+async function advanceDraft(db: SupabaseClient, phone: string, draft: OpenDraft): Promise<void> {
+  const p = withMoney(draft.payload);
+  const q = nextQuestion(p);
+  const label = DOC_TYPE_HE[p.docType] || "מסמך";
+
+  if (q === "description") {
+    if (!(await saveDraft(db, draft.id, { ...p, stage: "collecting", pendingQuestion: "description" }, phone))) return;
+    const forWhat = p.docType === "quote" ? "הצעת המחיר" : `ה${label}`;
+    await sendText(phone, `עבור מה ${forWhat}? (למשל: ייעוץ עסקי, צילום אירוע, שיעור פרטי)`);
+    return;
+  }
+  if (q === "vat") {
+    if (!(await saveDraft(db, draft.id, { ...p, stage: "collecting", pendingQuestion: "vat" }, phone))) return;
+    await sendButtons(phone, `הסכום ${fmt(p.amount)} ₪ - כולל מע״מ או לפני מע״מ?`, [
+      { id: `vat_incl:${draft.id}`, title: "כולל מע״מ" },
+      { id: `vat_excl:${draft.id}`, title: "לפני מע״מ" },
+    ]);
+    return;
+  }
+  if (q === "payment") {
+    if (!(await saveDraft(db, draft.id, { ...p, stage: "collecting", pendingQuestion: "payment" }, phone))) return;
+    await sendList(
+      phone,
+      "איך שולם?",
+      "בחר אמצעי תשלום",
+      [...PAYMENT_ROWS.map((m, i) => ({ id: `pay:${draft.id}:${i}`, title: m })), { id: `pay:${draft.id}:other`, title: "אחר" }],
+    );
+    return;
+  }
+
+  if (!(await saveDraft(db, draft.id, { ...p, stage: "confirm", pendingQuestion: null }, phone))) return;
   const lines = [
     "רגע לפני שאני מפיק, תאשר שהכל נכון:",
     "",
-    `*${DOC_TYPE_HE[intent.docType]}*`,
-    `לקוח: ${intent.clientName}`,
+    `*${label}*`,
+    `לקוח: ${p.clientName}${p.clientKnown ? "" : " (לקוח חדש)"}`,
+    `עבור: ${p.description}`,
   ];
-  if (money.vat > 0) {
-    lines.push(`לפני מע״מ: ${fmt(money.subtotal)} ₪`);
-    lines.push(`מע״מ: ${fmt(money.vat)} ₪`);
+  if (p.vat > 0) {
+    lines.push(`לפני מע״מ: ${fmt(p.subtotal)} ₪`);
+    lines.push(`מע״מ: ${fmt(p.vat)} ₪`);
   }
-  lines.push(`סכום: ${fmt(money.total)} ₪`);
-  if (intent.paymentMethod) lines.push(`תשלום: ${intent.paymentMethod}`);
-  lines.push(`תאריך: ${formatDateHe(intent.date)}`);
+  lines.push(`סכום: ${fmt(p.total)} ₪`);
+  if (p.paymentMethod) lines.push(`תשלום: ${p.paymentMethod}`);
+  lines.push(`תאריך: ${formatDateHe(p.date)}`);
+  lines.push("", "לא מדויק? לחץ ״לשנות״ או פשוט כתוב מה לתקן.");
 
   await sendButtons(phone, lines.join("\n"), [
-    { id: `confirm:${pendingId}`, title: "אשר והפק" },
-    { id: `cancel:${pendingId}`, title: "בטל" },
+    { id: `confirm:${draft.id}`, title: "אשר והפק" },
+    { id: `edit:${draft.id}`, title: "לשנות" },
+    { id: `cancel:${draft.id}`, title: "בטל" },
   ]);
+}
+
+/** Free-text answer to the pending question. */
+async function applyAnswer(
+  db: SupabaseClient,
+  phone: string,
+  identity: Identity,
+  draft: OpenDraft,
+  text: string,
+): Promise<void> {
+  const p = draft.payload;
+  switch (p.pendingQuestion) {
+    case "description": {
+      const d = text.trim().slice(0, 200);
+      if (d.length < 2) {
+        await sendText(phone, "כתוב במילה או שתיים עבור מה זה (למשל: ייעוץ).");
+        return;
+      }
+      await advanceDraft(db, phone, { id: draft.id, payload: { ...p, description: d, descriptionGiven: true } });
+      return;
+    }
+    case "vat": {
+      // The user typed instead of tapping: accept the words too.
+      // Exclusions FIRST: "לא כולל מע״מ" contains "כולל".
+      if (/לפני|פלוס|בתוספת|לא כולל|בלי|ללא/.test(text)) {
+        await advanceDraft(db, phone, { id: draft.id, payload: { ...p, amountIncludesVat: false } });
+        return;
+      }
+      if (/כולל/.test(text)) {
+        await advanceDraft(db, phone, { id: draft.id, payload: { ...p, amountIncludesVat: true } });
+        return;
+      }
+      await sendButtons(phone, `לא הבנתי. הסכום ${fmt(p.amount)} ₪ - כולל מע״מ או לפני מע״מ?`, [
+        { id: `vat_incl:${draft.id}`, title: "כולל מע״מ" },
+        { id: `vat_excl:${draft.id}`, title: "לפני מע״מ" },
+      ]);
+      return;
+    }
+    case "payment":
+    case "payment_other": {
+      const method = normalizePaymentMethod(text);
+      if (!method) {
+        await sendText(phone, "איך שולם? כתוב במילים (למשל: ביט, מזומן, העברה).");
+        return;
+      }
+      await advanceDraft(db, phone, { id: draft.id, payload: { ...p, paymentMethod: method } });
+      return;
+    }
+    default:
+      await applyAmendment(db, phone, identity, draft, text);
+  }
+}
+
+/** Free-text correction of a draft (after "לשנות", or typed at the summary). */
+async function applyAmendment(
+  db: SupabaseClient,
+  phone: string,
+  identity: Identity,
+  draft: OpenDraft,
+  text: string,
+): Promise<void> {
+  const p = draft.payload;
+  const { patch, unknown, failed } = await parseAmendment(
+    text,
+    {
+      docType: p.docType,
+      clientName: p.clientName,
+      amount: p.amount,
+      amountIncludesVat: p.amountIncludesVat,
+      paymentMethod: p.paymentMethod,
+      description: p.description || null,
+      date: p.date,
+    },
+    anthropicKey,
+  );
+  if (failed) {
+    await sendText(phone, "לא הצלחתי לעבד את התיקון. נסה שוב בעוד רגע.");
+    return;
+  }
+  if (unknown || Object.keys(patch).length === 0) {
+    await saveDraft(db, draft.id, { ...p, stage: "amending", pendingQuestion: null });
+    await sendText(phone, `${unknown ? unknown + "\n\n" : ""}לא הבנתי מה לשנות. כתוב למשל: הסכום 1500, כולל מע״מ, זה עבור ייעוץ, תשלום בביט, או הלקוח דני לוי.`);
+    return;
+  }
+
+  let next: DraftPayload = { ...p };
+  if (patch.docType) next.docType = patch.docType;
+  if (patch.clientName) {
+    const client = await matchClient(db, identity.business_id, patch.clientName);
+    next.clientName = patch.clientName;
+    next.clientId = client?.id ?? null;
+    next.clientPhone = client?.phone ?? null;
+    next.clientKnown = Boolean(client);
+  }
+  if (patch.amount !== undefined) next.amount = patch.amount;
+  if (patch.amountIncludesVat !== undefined) next.amountIncludesVat = patch.amountIncludesVat;
+  if (patch.paymentMethod !== undefined) next.paymentMethod = patch.paymentMethod;
+  if (patch.description) {
+    next.description = patch.description;
+    next.descriptionGiven = true;
+  }
+  if (patch.date) next.date = patch.date;
+  next = withMoney(next);
+
+  // Re-run the missing checks: an amendment can open a question (a receipt
+  // whose payment method was cleared) or close one.
+  await advanceDraft(db, phone, { id: draft.id, payload: { ...next, stage: "collecting", pendingQuestion: null } });
 }
 
 export interface Money {
@@ -568,10 +895,49 @@ async function handleButton(
   identity: Identity,
   buttonId: string,
 ): Promise<void> {
-  const [action, pendingId] = buttonId.split(":");
+  const [action, pendingId, extra] = buttonId.split(":");
   if (!pendingId) return;
 
   const nowIso = new Date().toISOString();
+
+  // Mid-flow taps (VAT choice, payment picker, "לשנות") advance the draft
+  // WITHOUT consuming it - consumption is reserved for confirm/cancel so the
+  // double-issue guard below keeps its meaning.
+  if (action === "edit" || action === "vat_incl" || action === "vat_excl" || action === "pay") {
+    const open = await loadOpenDraft(db, phone, identity);
+    const isThisDraft = Boolean(open && open.id === pendingId);
+    if (!isThisDraft && action !== "edit") {
+      await sendText(phone, "הבקשה כבר טופלה או שפג תוקפה. אפשר לשלוח אותה מחדש.");
+      return;
+    }
+    // "edit" is shared with the expense card (kind "expense"): when the id is
+    // not an open DOCUMENT draft, fall through to the expense edit path below.
+    if (isThisDraft) {
+    const p = open!.payload;
+    if (action === "edit") {
+      if (!(await saveDraft(db, open!.id, { ...p, stage: "amending", pendingQuestion: null }))) return;
+      await sendText(
+        phone,
+        "מה לשנות? כתוב בחופשיות, למשל:\nהסכום 1500 / כולל מע״מ / זה עבור ייעוץ / תשלום בביט / הלקוח דני לוי / תאריך אתמול",
+      );
+      return;
+    }
+    if (action === "vat_incl" || action === "vat_excl") {
+      await advanceDraft(db, phone, { id: open!.id, payload: { ...p, amountIncludesVat: action === "vat_incl" } });
+      return;
+    }
+    // action === "pay"
+    if (extra === "other") {
+      if (!(await saveDraft(db, open!.id, { ...p, stage: "collecting", pendingQuestion: "payment_other" }))) return;
+      await sendText(phone, "איך שולם? כתוב במילים (למשל: הוראת קבע, המחאה בנקאית).");
+      return;
+    }
+    const method = PAYMENT_ROWS[Number(extra)];
+    if (!method) return;
+    await advanceDraft(db, phone, { id: open!.id, payload: { ...p, paymentMethod: method } });
+    return;
+    }
+  }
 
   if (action === "edit") {
     await enterExpenseEdit(db, phone, identity, pendingId, nowIso);
@@ -607,6 +973,23 @@ async function handleButton(
   if (action !== "confirm") return;
 
   if (pending.kind === "document") {
+    // An OLD summary's "אשר והפק" button stays tappable in the chat after the
+    // user amended the draft and a new question opened. Never issue a draft
+    // that is not at the confirm stage: hand the row back and re-ask instead.
+    const draft = pending.payload as DraftPayload;
+    if (draft.stage && draft.stage !== "confirm") {
+      const { error: revertErr } = await db
+        .from("whatsapp_pending_actions")
+        .update({ consumed_at: null })
+        .eq("id", pendingId);
+      if (revertErr) {
+        console.error("[whatsapp] draft revert failed:", revertErr.message);
+        await sendText(phone, "הבקשה כבר טופלה או שפג תוקפה. אפשר לשלוח אותה מחדש.");
+        return;
+      }
+      await advanceDraft(db, phone, { id: pendingId, payload: draft });
+      return;
+    }
     await issueDocument(db, phone, identity, pending.payload as DocumentPayload);
     return;
   }

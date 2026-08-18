@@ -130,20 +130,37 @@ describe("validateIntent", () => {
     expect(r.date).toBe("2026-07-15");
   });
 
-  it("treats amountIncludesVat as true ONLY when it is literally true", () => {
+  it("amountIncludesVat is true/false ONLY for literal booleans; anything else is 'not stated' (null)", () => {
     // Getting this wrong changes the customer's total by 18%. A truthy-ish
-    // value ("true", 1) must not be enough.
-    for (const v of ["true", 1, "yes", {}]) {
+    // value ("true", 1) must not count - and since 2026-08-18 "not stated"
+    // is a real third state that makes the bot ASK a VAT business.
+    for (const v of ["true", 1, "yes", {}, undefined]) {
       const r = validateIntent(ok({ amountIncludesVat: v }), TODAY);
       if (r.intent !== "create_document") throw new Error("expected create_document");
-      expect(r.amountIncludesVat, `value ${String(v)} should not count as true`).toBe(false);
+      expect(r.amountIncludesVat, `value ${String(v)} should be null`).toBe(null);
     }
+    const t = validateIntent(ok({ amountIncludesVat: true }), TODAY);
+    const f = validateIntent(ok({ amountIncludesVat: false }), TODAY);
+    if (t.intent !== "create_document" || f.intent !== "create_document") throw new Error("expected create_document");
+    expect(t.amountIncludesVat).toBe(true);
+    expect(f.amountIncludesVat).toBe(false);
   });
 
   it("clamps an over-long description rather than rejecting the whole request", () => {
     const r = validateIntent(ok({ description: "א".repeat(5000) }), TODAY);
     if (r.intent !== "create_document") throw new Error("expected create_document");
-    expect(r.description.length).toBeLessThanOrEqual(200);
+    expect(r.description!.length).toBeLessThanOrEqual(200);
+  });
+
+  it("a missing or generic description becomes null so the bot asks 'עבור מה?'", () => {
+    for (const v of [undefined, "", "   ", "תשלום", "שירות"]) {
+      const r = validateIntent(ok({ description: v }), TODAY);
+      if (r.intent !== "create_document") throw new Error("expected create_document");
+      expect(r.description, `description ${String(v)} should be null`).toBe(null);
+    }
+    const r = validateIntent(ok({ description: "ייעוץ עסקי" }), TODAY);
+    if (r.intent !== "create_document") throw new Error("expected create_document");
+    expect(r.description).toBe("ייעוץ עסקי");
   });
 
   it("rounds the amount to two decimals", () => {
