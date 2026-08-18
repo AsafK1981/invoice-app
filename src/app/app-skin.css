@@ -2165,6 +2165,29 @@ html .dc-empty {
      tier's 0.5rem inline padding let it touch the widest label's first
      letter. Text starts past the dot now; the end padding stays on the diet. */
   html .dc-chip { padding-inline-start: 0.85rem; }
+  /* The spread applies here too (2026-08-18, second look): Asaf's Chrome runs
+     the app at 125% page zoom, so his 1920px monitor is a ~1290px viewport
+     and THIS is the tier he actually reads the list in - and the hole around
+     נושא was just as wide here. Same recipe, tighter numbers: the subject
+     track is capped at 15rem and may shrink to nothing when the nine columns
+     do not fit (as the 1fr track always could), the surplus goes to the gaps.
+     `[data-alloc]` is restated because the <1400 alloc-hiding rule above
+     names the tracks explicitly and would otherwise win on specificity. */
+  html .dc-table,
+  html .dc-table[data-alloc] {
+    grid-template-columns:
+      auto /* סוג */
+      auto /* לקוח */
+      minmax(0, 15rem) /* נושא */
+      auto /* תאריך */
+      auto /* מספר */
+      auto /* מייל */
+      auto /* סטטוס */
+      auto /* סכום */
+      auto; /* actions */
+    justify-content: space-between;
+  }
+  html .dc-subj { max-width: none; }
 }
 @media (min-width: 1400px) {
   html {
