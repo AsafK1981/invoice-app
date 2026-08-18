@@ -5,6 +5,7 @@ import {
   suggestTemplateForBusinessType,
   DOCUMENT_TEMPLATES,
   ACCENT_HEX,
+  ACCENT_GROUPS,
   FONT_OPTIONS,
   LAYOUT_OPTIONS,
   getTemplate,
@@ -317,6 +318,26 @@ describe("ACCENT_HEX / DOCUMENT_TEMPLATES data integrity", () => {
     expect(normalizeDocumentDesign({ template: "lawyer", layout: 7 })?.layout).toBe("ledger");
     expect(normalizeDocumentDesign({ template: "lawyer", layout: "stage" })?.layout).toBe("stage");
     expect(normalizeDocumentDesign({ template: "entertainer" })?.layout).toBe("stage");
+  });
+
+  it("display-only (handwriting) fonts switch only the name/number; the body stays on the template font", () => {
+    const d = normalizeDocumentDesign({ template: "general", font: "amatic" })!;
+    const vars = designToCssVars(d);
+    expect(vars["--d-font"]).toBe(FONT_OPTIONS.heebo.family);
+    expect(vars["--d-font-serif"]).toBe(FONT_OPTIONS.amatic.family);
+    expect(vars["--d-name-scale"]).toBe("1.35");
+    // a normal font override still applies uniformly
+    const plain = designToCssVars(normalizeDocumentDesign({ template: "general", font: "plex" })!);
+    expect(plain["--d-font"]).toBe(FONT_OPTIONS.plex.family);
+    expect(plain["--d-font-serif"]).toBe(FONT_OPTIONS.plex.family);
+    expect(plain["--d-name-scale"]).toBe("1");
+  });
+
+  it("every accent appears in exactly one swatch group, and every template accent is offered", () => {
+    const seen = new Map<string, number>();
+    for (const g of ACCENT_GROUPS) for (const k of g.keys) seen.set(k, (seen.get(k) ?? 0) + 1);
+    for (const k of Object.keys(ACCENT_HEX)) expect(seen.get(k), k).toBe(1);
+    for (const tpl of DOCUMENT_TEMPLATES) expect(seen.has(tpl.accent), tpl.id).toBe(true);
   });
 
   it("entertainer keywords route musicians / singers / actors to the stage template", () => {

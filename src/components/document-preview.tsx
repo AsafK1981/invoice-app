@@ -63,16 +63,33 @@ export function DocumentPreview(props: Props) {
     return () => ro.disconnect();
   }, []);
 
+  // Zoomed state closes on: X, Escape, a click/tap ANYWHERE outside the
+  // sheet (the whole overlay, not just the blurred backdrop strip beside
+  // the sheet), and the browser/phone Back button. Back works by pushing a
+  // history entry when the zoom opens; popstate closes it and, if the user
+  // closed it another way, we pop our own entry so Back afterwards still
+  // does what it did before the zoom.
   useEffect(() => {
     if (!zoomed) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setZoomed(false);
     };
+    let closedByPop = false;
+    const onPop = () => {
+      closedByPop = true;
+      setZoomed(false);
+    };
+    window.history.pushState({ docPreviewZoom: true }, "");
+    window.addEventListener("popstate", onPop);
     document.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
     return () => {
       document.removeEventListener("keydown", onKey);
+      window.removeEventListener("popstate", onPop);
       document.body.style.overflow = "";
+      if (!closedByPop && window.history.state?.docPreviewZoom) {
+        window.history.back();
+      }
     };
   }, [zoomed]);
 
@@ -173,9 +190,12 @@ export function DocumentPreview(props: Props) {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="relative z-10 flex-1 overflow-auto py-6 px-4">
+            <div
+              className="relative z-10 flex-1 overflow-auto py-6 px-4 cursor-zoom-out"
+              onClick={() => setZoomed(false)}
+            >
               <div
-                className="receipt-view doc-paper shadow-2xl mx-auto"
+                className="receipt-view doc-paper shadow-2xl mx-auto cursor-default"
                 style={{ width: PAGE_WIDTH_PX, maxWidth: "100%", ...themeVars }}
                 dir="rtl"
                 data-doc-template={design?.template ?? "general"}

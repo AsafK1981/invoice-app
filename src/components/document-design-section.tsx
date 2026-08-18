@@ -7,7 +7,8 @@ import { getVatRate, calculateVat, round2 } from "@/lib/vat";
 import {
   DOCUMENT_TEMPLATES,
   ACCENT_HEX,
-  ACCENT_SWATCHES,
+  ACCENT_GROUPS,
+  FONT_KEYS,
   FONT_OPTIONS,
   LAYOUT_KEYS,
   LAYOUT_OPTIONS,
@@ -78,12 +79,6 @@ export function DocumentDesignSection() {
   }, [ready, business.documentDesign]);
 
   const currentTemplate = getTemplate(draft.template);
-  // Swatch row = curated set ∪ the current template's own accent, so the
-  // user can always get back to the template default even when it isn't
-  // one of the curated seven.
-  const swatchKeys = Array.from(
-    new Set<AccentKey>([...(Object.keys(ACCENT_SWATCHES) as AccentKey[]), currentTemplate.accent]),
-  );
 
   function chooseTemplate(id: DocumentDesign["template"]) {
     const tpl = getTemplate(id);
@@ -208,56 +203,77 @@ export function DocumentDesignSection() {
       {/* ── Accent override ── */}
       <div>
         <h3 className="text-sm font-semibold text-stone-900 mb-3">צבע דגש</h3>
-        <div className="flex flex-wrap gap-2.5">
-          {swatchKeys.map((key) => {
-            const hex = ACCENT_HEX[key].accent;
-            const selected = draft.accent === key;
-            return (
-              <button
-                key={key}
-                type="button"
-                onClick={() => chooseAccent(key)}
-                aria-pressed={selected}
-                aria-label={key}
-                title={key}
-                className={`w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center transition-all ${
-                  selected ? "ring-2 ring-offset-2 ring-orange-400" : "hover:scale-105"
-                }`}
-                style={{ background: hex }}
-              >
-                {selected && <Check className="w-4 h-4 text-white drop-shadow" />}
-              </button>
-            );
-          })}
+        <div className="space-y-3">
+          {ACCENT_GROUPS.map((group) => (
+            <div key={group.label}>
+              <div className="text-[11px] font-semibold text-stone-500 mb-1.5">{group.label}</div>
+              <div className="flex flex-wrap gap-2">
+                {group.keys.map((key) => {
+                  const hex = ACCENT_HEX[key].accent;
+                  const selected = draft.accent === key;
+                  const isTemplateDefault = key === currentTemplate.accent;
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => chooseAccent(key)}
+                      aria-pressed={selected}
+                      aria-label={key}
+                      title={isTemplateDefault ? `${key} (ברירת המחדל של התבנית)` : key}
+                      className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center transition-all ${
+                        selected
+                          ? "ring-2 ring-offset-2 ring-orange-400"
+                          : isTemplateDefault
+                            ? "ring-1 ring-offset-1 ring-stone-300 hover:scale-105"
+                            : "hover:scale-105"
+                      }`}
+                      style={{ background: hex }}
+                    >
+                      {selected && <Check className="w-4 h-4 text-white drop-shadow" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
       {/* ── Font ── */}
       <div>
         <h3 className="text-sm font-semibold text-stone-900 mb-3">גופן</h3>
-        <div className="flex flex-wrap gap-2">
-          {(Object.entries(FONT_OPTIONS) as [FontKey, (typeof FONT_OPTIONS)[FontKey]][]).map(
-            ([key, opt]) => {
-              const selected = draft.font === key;
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => chooseFont(key)}
-                  aria-pressed={selected}
-                  style={{ fontFamily: opt.family }}
-                  className={`px-4 py-2 rounded-xl text-sm border-2 transition-colors ${
-                    selected
-                      ? "border-orange-400 bg-orange-50/70 text-stone-900"
-                      : "border-stone-200 bg-white text-stone-700 hover:border-orange-200"
-                  }`}
+        <div className="grid grid-cols-2 gap-2">
+          {FONT_KEYS.map((key) => {
+            const opt = FONT_OPTIONS[key];
+            const selected = draft.font === key;
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => chooseFont(key)}
+                aria-pressed={selected}
+                className={`flex flex-col items-start gap-0.5 px-3 py-2 rounded-xl border-2 text-start transition-colors ${
+                  selected
+                    ? "border-orange-400 bg-orange-50/70"
+                    : "border-stone-200 bg-white hover:border-orange-200"
+                }`}
+              >
+                <span
+                  className="text-base leading-tight text-stone-900 whitespace-nowrap"
+                  style={{ fontFamily: opt.family, fontSize: opt.nameScale ? `${opt.nameScale}em` : undefined }}
                 >
-                  {opt.label}
-                </button>
-              );
-            },
-          )}
+                  אסף קוטלר · 0118
+                </span>
+                <span className="text-[11px] text-stone-500 leading-tight">
+                  {opt.label} · {opt.hint}
+                </span>
+              </button>
+            );
+          })}
         </div>
+        <p className="text-[11px] text-stone-500 mt-2">
+          גופני כתב היד חלים על שם העסק ומספר המסמך בלבד; גוף המסמך נשאר בגופן קריא.
+        </p>
       </div>
 
       {/* ── Logo position ── */}

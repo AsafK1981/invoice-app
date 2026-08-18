@@ -51,6 +51,9 @@
   --d-font-serif: var(--font-frank), "Frank Ruhl Libre", Georgia, serif;
   --d-topbar-h: 4px;
   --d-topbar-bg: var(--d-grad);
+  /* optical scale for the name/number face (Amatic SC needs ~1.35 to sit
+     at the same visual size as the sans faces); themes emit it. */
+  --d-name-scale: 1;
 
   position: relative;
   background: var(--d-canvas) !important;
@@ -149,7 +152,7 @@
   flex-shrink: 0;
 }
 .doc-paper .doc-name {
-  font-size: 25px;
+  font-size: calc(25px * var(--d-name-scale));
   font-weight: 700;
   letter-spacing: -0.01em;
   line-height: 1.12;
@@ -188,7 +191,7 @@
   color: #94402f;
 }
 .doc-paper .doc-num {
-  font-size: 30px;
+  font-size: calc(30px * var(--d-name-scale));
   font-weight: 700;
   margin-top: 8px;
   line-height: 1;
@@ -240,7 +243,7 @@
    gallery mockup. */
 .doc-paper[data-doc-template="designer"] .doc-name {
   font-weight: 800;
-  font-size: 28px;
+  font-size: calc(28px * var(--d-name-scale));
   letter-spacing: -0.02em;
 }
 .doc-paper[data-doc-template="tradesperson"] .doc-table td.c-qty {
@@ -613,7 +616,7 @@
   border-bottom: 1px solid var(--d-ink);
 }
 .doc-paper[data-doc-layout="editorial"] .doc-name {
-  font-size: 34px;
+  font-size: calc(34px * var(--d-name-scale));
   font-weight: 500;
   letter-spacing: 0;
   line-height: 1.1;
@@ -630,7 +633,7 @@
   margin-top: 8px;
 }
 .doc-paper[data-doc-layout="editorial"] .doc-num {
-  font-size: 32px;
+  font-size: calc(32px * var(--d-name-scale));
   font-weight: 500;
 }
 .doc-paper[data-doc-layout="editorial"] .doc-glabel {
@@ -711,7 +714,7 @@
   margin-bottom: 18px;
 }
 .doc-paper[data-doc-layout="ledger"] .doc-name {
-  font-size: 24px;
+  font-size: calc(24px * var(--d-name-scale));
 }
 .doc-paper[data-doc-layout="ledger"] .doc-badge {
   border-radius: 0;
@@ -811,7 +814,7 @@
 }
 .doc-paper[data-doc-layout="stage"] .doc-name {
   color: var(--d-gold);
-  font-size: 32px;
+  font-size: calc(32px * var(--d-name-scale));
   font-weight: 800;
   letter-spacing: -0.02em;
 }
@@ -982,10 +985,10 @@
     flex: 0 0 auto;
   }
   .doc-paper.is-fluid .doc-name {
-    font-size: 22px;
+    font-size: calc(22px * var(--d-name-scale));
   }
   .doc-paper.is-fluid .doc-num {
-    font-size: 26px;
+    font-size: calc(26px * var(--d-name-scale));
   }
   .doc-paper.is-fluid .doc-paid-amount {
     font-size: 30px;

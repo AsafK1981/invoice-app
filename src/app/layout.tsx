@@ -105,6 +105,65 @@ const miriamLibre = localFont({
   display: "swap",
   preload: false,
 });
+// 2026-08-18: five more document-font choices (Asaf asked for handwriting,
+// a minimalist face and a hi-tech face). Same self-hosted, preload:false
+// pattern; only referenced through document-paper.css vars.
+const playpen = localFont({
+  src: [
+    { path: "./fonts/playpen-sans-hebrew/PlaypenSansHebrew-Variable-Hebrew.woff2" },
+    { path: "./fonts/playpen-sans-hebrew/PlaypenSansHebrew-Variable-Latin.woff2" },
+  ],
+  weight: "100 800",
+  variable: "--font-playpen",
+  display: "swap",
+  preload: false,
+});
+const amatic = localFont({
+  src: [
+    { path: "./fonts/amatic-sc/AmaticSC-Regular-Hebrew.woff2", weight: "400" },
+    { path: "./fonts/amatic-sc/AmaticSC-Regular-Latin.woff2", weight: "400" },
+    { path: "./fonts/amatic-sc/AmaticSC-Bold-Hebrew.woff2", weight: "700" },
+    { path: "./fonts/amatic-sc/AmaticSC-Bold-Latin.woff2", weight: "700" },
+  ],
+  variable: "--font-amatic",
+  display: "swap",
+  preload: false,
+});
+const alef = localFont({
+  src: [
+    { path: "./fonts/alef/Alef-Regular-Hebrew.woff2", weight: "400" },
+    { path: "./fonts/alef/Alef-Regular-Latin.woff2", weight: "400" },
+    { path: "./fonts/alef/Alef-Bold-Hebrew.woff2", weight: "700" },
+    { path: "./fonts/alef/Alef-Bold-Latin.woff2", weight: "700" },
+  ],
+  variable: "--font-alef",
+  display: "swap",
+  preload: false,
+});
+const plexHebrew = localFont({
+  src: [
+    { path: "./fonts/ibm-plex-sans-hebrew/IBMPlexSansHebrew-400-Hebrew.woff2", weight: "400" },
+    { path: "./fonts/ibm-plex-sans-hebrew/IBMPlexSansHebrew-400-Latin.woff2", weight: "400" },
+    { path: "./fonts/ibm-plex-sans-hebrew/IBMPlexSansHebrew-500-Hebrew.woff2", weight: "500" },
+    { path: "./fonts/ibm-plex-sans-hebrew/IBMPlexSansHebrew-500-Latin.woff2", weight: "500" },
+    { path: "./fonts/ibm-plex-sans-hebrew/IBMPlexSansHebrew-600-Hebrew.woff2", weight: "600" },
+    { path: "./fonts/ibm-plex-sans-hebrew/IBMPlexSansHebrew-600-Latin.woff2", weight: "600" },
+    { path: "./fonts/ibm-plex-sans-hebrew/IBMPlexSansHebrew-700-Hebrew.woff2", weight: "700" },
+    { path: "./fonts/ibm-plex-sans-hebrew/IBMPlexSansHebrew-700-Latin.woff2", weight: "700" },
+  ],
+  variable: "--font-plex",
+  display: "swap",
+  preload: false,
+});
+const varelaRound = localFont({
+  src: [
+    { path: "./fonts/varela-round/VarelaRound-Regular-Hebrew.woff2", weight: "400" },
+    { path: "./fonts/varela-round/VarelaRound-Regular-Latin.woff2", weight: "400" },
+  ],
+  variable: "--font-varela",
+  display: "swap",
+  preload: false,
+});
 
 // NOTE (2026-07-20): there used to be a synchronous inline <head> script here
 // that read localStorage and set html[data-skin] before first paint, so the
@@ -226,7 +285,7 @@ export default function RootLayout({
     <html
       lang="he"
       dir="rtl"
-      className={`h-full antialiased ${heebo.variable} ${frankRuhl.variable} ${assistant.variable} ${rubik.variable} ${miriamLibre.variable}`}
+      className={`h-full antialiased ${heebo.variable} ${frankRuhl.variable} ${assistant.variable} ${rubik.variable} ${miriamLibre.variable} ${playpen.variable} ${amatic.variable} ${alef.variable} ${plexHebrew.variable} ${varelaRound.variable}`}
     >
       <body className="min-h-full flex flex-col font-sans text-stone-800">
         {children}

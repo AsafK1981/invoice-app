@@ -43,7 +43,7 @@ export const dynamic = "force-dynamic";
 export default async function DesignGalleryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ t?: string; layout?: string; fluid?: string }>;
+  searchParams: Promise<{ t?: string; layout?: string; fluid?: string; font?: string; accent?: string }>;
 }) {
   if (process.env.NODE_ENV === "production") notFound();
   const sp = await searchParams;
@@ -71,9 +71,13 @@ export default async function DesignGalleryPage({
       }}
     >
       {templates.map((tpl) => {
+        // font/accent are passed raw on purpose: normalizeDocumentDesign is
+        // the boundary and falls back to the template default for junk.
         const design = normalizeDocumentDesign({
           template: tpl.id,
           layout: forcedLayout,
+          font: sp.font,
+          accent: sp.accent,
         });
         const vars = designToCssVars(design);
         return (
@@ -87,7 +91,7 @@ export default async function DesignGalleryPage({
                 margin: "0 0 8px",
               }}
             >
-              {tpl.label} · {tpl.id} · {design?.layout}
+              {tpl.label} · {tpl.id} · {design?.layout} · {design?.font} · {design?.accent}
             </div>
             <div
               className={`receipt-view doc-paper${fluid ? " is-fluid" : ""}`}

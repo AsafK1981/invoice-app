@@ -71,7 +71,20 @@ export type AccentKey =
   | "mint"
   | "graphite"
   | "teal"
-  | "fuchsia";
+  | "fuchsia"
+  | "sand"
+  | "apricot"
+  | "dustyRose"
+  | "lilac"
+  | "lavender"
+  | "sky"
+  | "steel"
+  | "seafoam"
+  | "moss"
+  | "olive"
+  | "cocoa"
+  | "berry"
+  | "plum";
 
 interface AccentFamily {
   /** hex, e.g. "#8a6d26" — text/badge/glabel/totals color */
@@ -198,21 +211,69 @@ export const ACCENT_HEX: Record<AccentKey, AccentFamily> = {
   graphite: deriveAccentFamily("#2b2b2b"),
   teal: deriveAccentFamily("#0ea5a5"),
   fuchsia: deriveAccentFamily("#d6336c"),
+  // 2026-08-18: softer, gentler accents (Asaf: the swatches were "very dark
+  // and ugly"). Still dark enough to carry 10.5px label text on white.
+  sand: deriveAccentFamily("#957a3d"),
+  apricot: deriveAccentFamily("#b86a2c"),
+  dustyRose: deriveAccentFamily("#b0656f"),
+  lilac: deriveAccentFamily("#8f5f9e"),
+  lavender: deriveAccentFamily("#7b6bb5"),
+  sky: deriveAccentFamily("#4a80a8"),
+  steel: deriveAccentFamily("#5f7387"),
+  seafoam: deriveAccentFamily("#3a857a"),
+  moss: deriveAccentFamily("#5f7d5a"),
+  olive: deriveAccentFamily("#6f7c37"),
+  cocoa: deriveAccentFamily("#8a5a44"),
+  berry: deriveAccentFamily("#a04a6b"),
+  plum: deriveAccentFamily("#7f4f76"),
 };
 
-/** ~6-7 curated accent options offered as override dots in Settings, drawn
- *  from the palette above. The UI unions this with the current template's
- *  own accent (so the swatch row can always get back to the template
- *  default even when it isn't one of these seven). */
-export const ACCENT_SWATCHES: Partial<Record<AccentKey, string>> = {
-  gold: ACCENT_HEX.gold.accent,
-  navy: ACCENT_HEX.navy.accent,
-  slate: ACCENT_HEX.slate.accent,
-  sage: ACCENT_HEX.sage.accent,
-  terracotta: ACCENT_HEX.terracotta.accent,
-  violet: ACCENT_HEX.violet.accent,
-  charcoal: ACCENT_HEX.charcoal.accent,
-};
+/** Every accent, grouped for the Settings swatch rows: the gentle set
+ *  first (what most people want), the deep/saturated set second. Every
+ *  template's own accent appears in one of the two groups, so the swatch
+ *  rows can always get back to the template default. */
+export const ACCENT_GROUPS: { label: string; keys: AccentKey[] }[] = [
+  {
+    label: "עדינים",
+    keys: [
+      "sand",
+      "apricot",
+      "terracotta",
+      "dustyRose",
+      "rose",
+      "lilac",
+      "lavender",
+      "sky",
+      "steel",
+      "seafoam",
+      "mint",
+      "moss",
+      "olive",
+      "cocoa",
+    ],
+  },
+  {
+    label: "עמוקים",
+    keys: [
+      "gold",
+      "coachGold",
+      "amberDeep",
+      "amber",
+      "coral",
+      "fuchsia",
+      "berry",
+      "plum",
+      "violet",
+      "blue",
+      "teal",
+      "sage",
+      "slate",
+      "navy",
+      "graphite",
+      "charcoal",
+    ],
+  },
+];
 
 // ── Font keys ────────────────────────────────────────────────────────────
 // Exactly the curated Hebrew-capable shortlist. heebo/frank/assistant are
@@ -220,24 +281,97 @@ export const ACCENT_SWATCHES: Partial<Record<AccentKey, string>> = {
 // feature under src/app/fonts/{rubik,miriam-libre}/, same self-hosted
 // next/font/local pattern — no Google Fonts CDN call at request time.
 
-export type FontKey = "heebo" | "rubik" | "assistant" | "frank" | "miriam";
+export type FontKey =
+  | "heebo"
+  | "rubik"
+  | "assistant"
+  | "frank"
+  | "miriam"
+  | "alef"
+  | "plex"
+  | "varela"
+  | "playpen"
+  | "amatic";
 
-export const FONT_OPTIONS: Record<FontKey, { family: string; label: string }> = {
-  heebo: { family: 'var(--font-heebo), "Heebo", system-ui, sans-serif', label: "Heebo" },
-  rubik: { family: 'var(--font-rubik), "Rubik", system-ui, sans-serif', label: "Rubik" },
+export interface FontOption {
+  family: string;
+  label: string;
+  /** Short Hebrew hint shown under the label in Settings. */
+  hint: string;
+  /**
+   * Handwriting / hand-lettered faces are DISPLAY-ONLY: choosing one sets
+   * the business name + document number in that face while the body of
+   * the document (line items, amounts, legal text) stays in the template's
+   * own readable font. An invoice fully set in a handwriting face is not a
+   * document a bookkeeper wants to read.
+   */
+  displayOnly?: boolean;
+  /**
+   * Optical scale for the business name / doc number when THIS face is
+   * the name font. Amatic SC has a tiny x-height and looks a size smaller
+   * than everything else at the same px value; 1 = no adjustment.
+   */
+  nameScale?: number;
+}
+
+export const FONT_OPTIONS: Record<FontKey, FontOption> = {
+  heebo: {
+    family: 'var(--font-heebo), "Heebo", system-ui, sans-serif',
+    label: "Heebo",
+    hint: "ברירת המחדל, נקי וקריא",
+  },
+  rubik: {
+    family: 'var(--font-rubik), "Rubik", system-ui, sans-serif',
+    label: "Rubik",
+    hint: "מעוגל וידידותי",
+  },
   assistant: {
     family: 'var(--font-assistant), "Assistant", system-ui, sans-serif',
     label: "Assistant",
+    hint: "צר ומודרני",
+  },
+  alef: {
+    family: 'var(--font-alef), "Alef", system-ui, sans-serif',
+    label: "Alef",
+    hint: "מינימליסטי",
+  },
+  varela: {
+    family: 'var(--font-varela), "Varela Round", system-ui, sans-serif',
+    label: "Varela Round",
+    hint: "רך ועגול",
+  },
+  plex: {
+    family: 'var(--font-plex), "IBM Plex Sans Hebrew", system-ui, sans-serif',
+    label: "IBM Plex",
+    hint: "הייטקי, טכני",
   },
   frank: {
     family: 'var(--font-frank), "Frank Ruhl Libre", Georgia, serif',
     label: "Frank Ruhl Libre",
+    hint: "סריף קלאסי",
   },
   miriam: {
     family: 'var(--font-miriam), "Miriam Libre", Georgia, serif',
     label: "Miriam Libre",
+    hint: "סריף עדין",
+  },
+  playpen: {
+    family: 'var(--font-playpen), "Playpen Sans Hebrew", cursive',
+    label: "Playpen",
+    hint: "כתב יד (שם ומספר בלבד)",
+    displayOnly: true,
+    nameScale: 1.05,
+  },
+  amatic: {
+    family: 'var(--font-amatic), "Amatic SC", cursive',
+    label: "Amatic",
+    hint: "כתב יד דק (שם ומספר בלבד)",
+    displayOnly: true,
+    nameScale: 1.35,
   },
 };
+
+export const FONT_KEYS = Object.keys(FONT_OPTIONS) as FontKey[];
 
 // ── Logo position ────────────────────────────────────────────────────────
 
@@ -871,12 +1005,16 @@ export function designToCssVars(design: DocumentDesign | null): Record<string, s
   const accentFamily = ACCENT_HEX[design.accent] ?? ACCENT_HEX[tpl.accent];
   const corner = CORNER_VALUES[tpl.corner];
   const border = BORDER_VALUES[tpl.border];
-  const bodyFont = FONT_OPTIONS[design.font] ?? FONT_OPTIONS[tpl.font];
+  const chosen = FONT_OPTIONS[design.font] ?? FONT_OPTIONS[tpl.font];
+  // Display-only faces (handwriting) never become the body font: the body
+  // stays in the template's own default and only the name/number switch.
+  const bodyFont = chosen.displayOnly ? FONT_OPTIONS[tpl.font] : chosen;
 
   // The name/number font only follows the template's special `nameFont`
   // when the user is still on the template's own default font. A deliberate
   // font override (picking something other than the template default)
-  // applies uniformly, body and name alike — predictable, no hidden split.
+  // applies uniformly, body and name alike - predictable, no hidden split -
+  // except for display-only faces, whose whole point is the split.
   const usingTemplateDefaultFont = design.font === tpl.font;
   const nameFontKey = usingTemplateDefaultFont && tpl.nameFont ? tpl.nameFont : design.font;
   const nameFont = FONT_OPTIONS[nameFontKey] ?? bodyFont;
@@ -901,6 +1039,7 @@ export function designToCssVars(design: DocumentDesign | null): Record<string, s
     "--d-card-shadow": border.shadow,
     "--d-font": bodyFont.family,
     "--d-font-serif": nameFont.family,
+    "--d-name-scale": String(nameFont.nameScale ?? 1),
     "--d-topbar-h": tpl.hairlineTop ? "1px" : "4px",
     "--d-topbar-bg": tpl.hairlineTop ? accentFamily.line : accentFamily.grad,
   };
