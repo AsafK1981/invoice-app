@@ -185,11 +185,42 @@ describe("clients", () => {
     expect(db.tables.clients).toHaveLength(1);
   });
 
-  it("updates fields and clears one passed as empty string", async () => {
-    db.tables.clients.push({ id: ID_A, business_id: BIZ, name: "דני", email: "old@x.co" });
-    await run("update_client", { id: ID_A, email: "", phone: "050" });
-    expect(db.tables.clients[0].email).toBeNull();
-    expect(db.tables.clients[0].phone).toBe("050");
+  it("applies non-contact fields immediately and clears one passed as empty string", async () => {
+    db.tables.clients.push({ id: ID_A, business_id: BIZ, name: "דני", email: "old@x.co", notes: "x" });
+    const r = await run("update_client", { id: ID_A, address: "תל אביב", notes: "" });
+    expect(r?.action?.kind).toBe("updated");
+    expect(db.tables.clients[0].address).toBe("תל אביב");
+    expect(db.tables.clients[0].notes).toBeNull();
+  });
+
+  it("email / phone changes are NOT applied - they come back as a pendingUpdate with old and new", async () => {
+    // Asaf 2026-08-18: contact fields decide where the next invoice goes, so a
+    // sentence (or injected text) must not move them without a click.
+    db.tables.clients.push({ id: ID_A, business_id: BIZ, name: "דני", email: "old@x.co", phone: null });
+    const r = await run("update_client", { id: ID_A, email: "new@x.co", phone: "050", address: "חיפה" });
+    expect(r?.action).toBeUndefined();
+    expect(JSON.parse(r!.content).pending).toBe(true);
+    expect(r?.pendingUpdate).toEqual({
+      entity: "client",
+      id: ID_A,
+      label: "דני",
+      changes: [
+        { field: "מייל", from: "old@x.co", to: "new@x.co" },
+        { field: "טלפון", from: "(ריק)", to: "050" },
+      ],
+      patch: { email: "new@x.co", phone: "050", address: "חיפה" },
+    });
+    // Nothing touched the row - not even the address sent in the same request.
+    expect(db.tables.clients[0].email).toBe("old@x.co");
+    expect(db.tables.clients[0].address).toBeUndefined();
+    expect(db.writes).toHaveLength(0);
+  });
+
+  it("re-sending the same email is not a change and applies immediately", async () => {
+    db.tables.clients.push({ id: ID_A, business_id: BIZ, name: "דני", email: "same@x.co" });
+    const r = await run("update_client", { id: ID_A, email: "same@x.co", name: "דני כהן" });
+    expect(r?.action?.kind).toBe("updated");
+    expect(db.tables.clients[0].name).toBe("דני כהן");
   });
 
   it("delete is pending only", async () => {

@@ -17,12 +17,13 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Sparkles, X, Send, FileText, Paperclip, Table2, MessageCircle, Mic, ChevronLeft, Check, Trash2 } from "lucide-react";
+import { Sparkles, X, Send, FileText, Paperclip, Table2, MessageCircle, Mic, ChevronLeft, Check, Trash2, Pencil } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { supabase } from "@/lib/supabase";
 import { expenseStore } from "@/lib/expense-store";
 import { clientStore } from "@/lib/client-store";
 import { productStore } from "@/lib/product-store";
+import { logAudit } from "@/lib/audit-log";
 import { saveDraftToServer, DOC_TYPE_ROUTE } from "@/lib/draft-store";
 import { todayInIsrael } from "@/lib/date";
 import type { ParsedAttachment } from "@/lib/import-excel-text";
@@ -68,6 +69,15 @@ interface PendingDelete {
   label: string;
 }
 
+/** A client contact-field change waiting for the user's click (see lib/assistant-actions). */
+interface PendingUpdate {
+  entity: "client";
+  id: string;
+  label: string;
+  changes: { field: string; from: string; to: string }[];
+  patch: Record<string, string | null>;
+}
+
 interface ChatMessage {
   role: "user" | "assistant";
   content: string;
@@ -75,6 +85,7 @@ interface ChatMessage {
   documents?: AssistantDocCard[];
   actions?: AssistantAction[];
   pendingDeletes?: PendingDelete[];
+  pendingUpdates?: PendingUpdate[];
 }
 
 // The stores' own change events (each store listens for its own). Firing them
@@ -186,6 +197,8 @@ export function AssistantWidget() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   /** Per pending-delete key: "working" while the store call runs, "done" after. */
   const [deleteState, setDeleteState] = useState<Record<string, "working" | "done">>({});
+  /** Same, for confirm-gated client updates. */
+  const [updateState, setUpdateState] = useState<Record<string, "working" | "done">>({});
   const [error, setError] = useState("");
   const [openingDraft, setOpeningDraft] = useState("");
   const [attachment, setAttachment] = useState<ParsedAttachment | null>(null);
@@ -329,6 +342,7 @@ export function AssistantWidget() {
           documents: Array.isArray(json.documents) ? (json.documents as AssistantDocCard[]) : [],
           actions: Array.isArray(json.actions) ? (json.actions as AssistantAction[]) : [],
           pendingDeletes: Array.isArray(json.pendingDeletes) ? (json.pendingDeletes as PendingDelete[]) : [],
+          pendingUpdates: Array.isArray(json.pendingUpdates) ? (json.pendingUpdates as PendingUpdate[]) : [],
         },
       ]);
       if (Array.isArray(json.actions)) {
@@ -347,6 +361,34 @@ export function AssistantWidget() {
 
   // The only path that deletes anything: the user's click, through the same
   // store the screen uses (RLS-scoped, audited, fires the change event).
+  // Contact-field changes (email / phone) the server declined to apply on its
+  // own. Applied here through the user's own session (RLS-scoped), audited,
+  // and announced to the clients screen - only on the click.
+  async function confirmUpdate(p: PendingUpdate, key: string) {
+    setUpdateState((s) => ({ ...s, [key]: "working" }));
+    setError("");
+    try {
+      const { data, error } = await supabase.from("clients").update(p.patch).eq("id", p.id).select("id");
+      if (error || !data?.length) throw new Error(error?.message || "no rows");
+      logAudit({
+        action: "client.updated",
+        targetType: "client",
+        targetId: p.id,
+        targetLabel: p.label,
+        payload: { changed: Object.keys(p.patch), via: "assistant", confirmed: true },
+      });
+      window.dispatchEvent(new Event(CHANGE_EVENT_FOR.client));
+      setUpdateState((s) => ({ ...s, [key]: "done" }));
+    } catch {
+      setUpdateState((s) => {
+        const next = { ...s };
+        delete next[key];
+        return next;
+      });
+      setError("העדכון נכשל. נסה שוב.");
+    }
+  }
+
   async function confirmDelete(p: PendingDelete, key: string) {
     setDeleteState((s) => ({ ...s, [key]: "working" }));
     setError("");
@@ -497,6 +539,50 @@ export function AssistantWidget() {
                 {m.actions && m.actions.length > 0 && (
                   <ActionChips actions={m.actions} onOpen={() => setOpen(false)} />
                 )}
+                {m.pendingUpdates?.map((p, pi) => {
+                  const key = `upd-${i}-${pi}`;
+                  const state = updateState[key];
+                  return (
+                    <div
+                      key={key}
+                      className={`mt-2 rounded-xl border px-3 py-2 text-[13px] ${
+                        state === "done"
+                          ? "bg-stone-50 border-stone-200 text-stone-500"
+                          : "bg-amber-50 border-amber-200 text-amber-900"
+                      }`}
+                    >
+                      {state === "done" ? (
+                        <span className="flex items-center gap-2">
+                          <Check className="w-4 h-4 text-stone-400" />
+                          עודכן: {p.label}
+                        </span>
+                      ) : (
+                        <>
+                          <div className="font-medium">לעדכן את הלקוח {p.label}?</div>
+                          <ul className="mt-1 space-y-0.5">
+                            {p.changes.map((c) => (
+                              <li key={c.field} className="flex flex-wrap items-baseline gap-x-1.5">
+                                <span className="text-amber-700">{c.field}:</span>
+                                <span className="line-through text-stone-500" dir="auto">{c.from}</span>
+                                <span aria-hidden>←</span>
+                                <span className="font-semibold" dir="auto">{c.to}</span>
+                              </li>
+                            ))}
+                          </ul>
+                          <button
+                            type="button"
+                            onClick={() => confirmUpdate(p, key)}
+                            disabled={state === "working"}
+                            className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white px-3 py-1.5 text-xs font-semibold transition-colors"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                            {state === "working" ? "מעדכן..." : "כן, עדכן"}
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
                 {m.pendingDeletes?.map((p, pi) => {
                   const key = `del-${i}-${pi}`;
                   const state = deleteState[key];
@@ -667,7 +753,7 @@ export function AssistantWidget() {
             </button>
           </div>
           <p className="text-[10px] text-stone-400 mt-2 text-center">
-            העוזר יכול לטעות. מסמכים הוא רק מכין כטיוטה, ומחיקה תמיד עוברת דרכך.
+            העוזר יכול לטעות. מסמכים הוא רק מכין כטיוטה; מחיקה ושינוי פרטי קשר של לקוח תמיד עוברים דרכך.
           </p>
         </div>
       </div>

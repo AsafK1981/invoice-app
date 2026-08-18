@@ -14,6 +14,7 @@ import {
   runActionTool,
   type AssistantAction,
   type PendingDelete,
+  type PendingUpdate,
 } from "@/lib/assistant-actions";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -142,6 +143,8 @@ const SYSTEM = `אתה העוזר החכם של "חשבונית ידידותית
 למשתמש כפתור אישור. רק אחרי שהכלי החזיר pending: true אמור לו בקצרה שהכפתור למחיקה
 מוכן ושהוא צריך ללחוץ. אם לא קראת לכלי, או שהכלי החזיר "לא נמצא" או שגיאה - אין כפתור,
 ואסור להגיד שיש. אל תקרא למחיקה כשיש כמה התאמות אפשריות - שאל קודם איזו.
+אותו דבר לשינוי מייל או טלפון של לקוח: update_client מחזיר pending: true והמשתמש
+מקבל כפתור אישור עם הערך הישן והחדש. אמור לו בקצרה שהשינוי מחכה ללחיצה שלו.
 
 מסמכים: אתה לא מפיק מסמכים ישירות (הפקה מקצה מספר חוקי ולעיתים מספר הקצאה מרשות
 המסים). prepare_document_draft מכין טיוטה שהמשתמש פותח בעורך, בודק ומאשר בלחיצה.
@@ -320,6 +323,7 @@ type ToolResult = {
   documents?: DocCard[];
   action?: AssistantAction;
   pendingDelete?: PendingDelete;
+  pendingUpdate?: PendingUpdate;
 };
 
 /**
@@ -852,6 +856,7 @@ export async function POST(req: NextRequest) {
     // user to confirm - both rendered by the widget under the reply.
     const actions: AssistantAction[] = [];
     const pendingDeletes: PendingDelete[] = [];
+    const pendingUpdates: PendingUpdate[] = [];
     let answer = "";
     const rounds = hasAttachment ? MAX_ROUNDS_WITH_ATTACHMENT : MAX_ROUNDS;
 
@@ -898,6 +903,7 @@ export async function POST(req: NextRequest) {
           if (out.draft && drafts.length < MAX_DRAFTS) drafts.push(out.draft);
           if (out.action) actions.push(out.action);
           if (out.pendingDelete) pendingDeletes.push(out.pendingDelete);
+          if (out.pendingUpdate) pendingUpdates.push(out.pendingUpdate);
           for (const c of out.documents ?? []) {
             if (cards.size >= MAX_CARDS && !cards.has(c.id)) break;
             cards.set(c.id, c);
@@ -928,6 +934,7 @@ export async function POST(req: NextRequest) {
       documents: drafts.length ? [] : [...cards.values()],
       actions,
       pendingDeletes,
+      pendingUpdates,
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "unknown";

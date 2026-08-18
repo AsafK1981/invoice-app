@@ -50,11 +50,32 @@ export type PendingDelete = {
   label: string;
 };
 
+/**
+ * An update the user still has to click. Used for a client's contact fields
+ * (email / phone): those decide where the next invoice goes, so a single
+ * sentence - or text injected through a document - must not be able to move
+ * them silently. Asaf asked for this gate on 2026-08-18.
+ */
+export type PendingUpdate = {
+  entity: "client";
+  id: string;
+  /** Who is being changed, e.g. the client's name. */
+  label: string;
+  /** Human-readable per-field lines the widget shows before the button. */
+  changes: { field: string; from: string; to: string }[];
+  /** Column patch the widget applies (RLS-scoped, on click). */
+  patch: Record<string, string | null>;
+};
+
 export type ActionToolResult = {
   content: string;
   action?: AssistantAction;
   pendingDelete?: PendingDelete;
+  pendingUpdate?: PendingUpdate;
 };
+
+/** Client columns whose change goes through a confirm button, not straight to the DB. */
+const CLIENT_GATED_COLUMNS: Record<string, string> = { email: "מייל", phone: "טלפון" };
 
 /** Categories the app suggests. The column itself is free text. */
 const COMMON_EXPENSE_CATEGORIES = ["תוכנה", "ציוד", "שיווק", "משרד", "שירותים מקצועיים", "נסיעות", "אחר"];
@@ -170,7 +191,8 @@ export const ACTION_TOOLS: Anthropic.Tool[] = [
     name: "update_client",
     description:
       "מעדכן פרטי לקוח קיים (שם, ח.פ, מייל, טלפון, כתובת, הערות). שלח רק את השדות שמשתנים. " +
-      "את המזהה קח מ-list_clients.",
+      "את המזהה קח מ-list_clients. שינוי מייל או טלפון לא מתבצע מיד: המשתמש מקבל כפתור אישור " +
+      "עם הערך הישן והחדש וצריך ללחוץ עליו (כמו מחיקה).",
     input_schema: {
       type: "object",
       properties: { id: { type: "string", description: "מזהה הלקוח (UUID)" }, ...clientProps },
@@ -487,13 +509,13 @@ export async function runActionTool(
     if (!UUID_RE.test(id)) return { content: "מזהה לקוח לא תקין. קרא קודם ל-list_clients." };
     const { data: existing } = await admin
       .from("clients")
-      .select("id, name")
+      .select("id, name, email, phone")
       .eq("business_id", businessId)
       .eq("id", id)
       .maybeSingle();
     if (!existing) return { content: "הלקוח לא נמצא." };
 
-    const patch: Record<string, unknown> = {};
+    const patch: Record<string, string | null> = {};
     const nm = str(input.name, 200);
     if (nm) patch.name = nm;
     for (const [key, col, max] of [
@@ -506,6 +528,29 @@ export async function runActionTool(
       if (input[key] !== undefined) patch[col] = str(input[key], max) ?? null;
     }
     if (!Object.keys(patch).length) return { content: "לא צוין שום שדה לעדכון." };
+
+    // Contact fields are gated: nothing in this request is applied here - the
+    // whole patch (contact and any other field sent with it) waits for the
+    // user's click, so the confirmation shows exactly what will change.
+    const gated = Object.keys(patch).filter((c) => c in CLIENT_GATED_COLUMNS && (patch[c] ?? "") !== ((existing as Record<string, unknown>)[c] ?? ""));
+    if (gated.length) {
+      const changes = gated.map((c) => ({
+        field: CLIENT_GATED_COLUMNS[c],
+        from: String((existing as Record<string, unknown>)[c] ?? "") || "(ריק)",
+        to: patch[c] ?? "(ריק)",
+      }));
+      const others = Object.keys(patch).filter((c) => !(c in CLIENT_GATED_COLUMNS));
+      return {
+        content: JSON.stringify({
+          pending: true,
+          note: "שינוי מייל/טלפון דורש אישור בלחיצה. הוצג למשתמש כפתור עם הערך הישן והחדש - שום דבר עדיין לא השתנה. אמור לו ללחוץ כדי לאשר.",
+          client: existing.name,
+          changes,
+          alsoInSameClick: others,
+        }),
+        pendingUpdate: { entity: "client", id, label: existing.name as string, changes, patch },
+      };
+    }
 
     const { error } = await admin.from("clients").update(patch).eq("business_id", businessId).eq("id", id);
     if (error) return { content: `העדכון נכשל: ${error.message}` };
