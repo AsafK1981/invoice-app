@@ -14,10 +14,10 @@
 // Chrome and Safari; Firefox has no support, so the button is hidden there
 // rather than shown dead (see useSpeechRecognition's `supported` flag).
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Sparkles, X, Send, FileText, Paperclip, Table2, MessageCircle, Mic, ChevronLeft, Check, Trash2, Pencil } from "lucide-react";
+import { Sparkles, X, Send, FileText, Paperclip, Table2, MessageCircle, Mic, ChevronLeft, Check, Trash2, Pencil, Maximize2, Minimize2 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { supabase } from "@/lib/supabase";
 import { expenseStore } from "@/lib/expense-store";
@@ -189,9 +189,76 @@ const SUGGESTIONS = [
 // Must stay in sync with ATTACHMENT_ACCEPT in import-excel-text.ts.
 const ATTACHMENT_ACCEPT = ".xlsx,.xls,.csv";
 
+// The panel is resizable (Asaf, 2026-08-18: "let me stretch it up so more
+// fits"). Desktop: drag the top edge for height, the top-right corner for
+// both axes, or hit the maximize button. Phone: the sheet's grab bar drags
+// its height. The chosen size persists in localStorage.
+const SIZE_KEY = "assistant-widget-size";
+const MIN_W = 360;
+const MIN_H = 380;
+/** Space kept clear around the panel on desktop (bottom-6 + a top margin). */
+const DESKTOP_GAP = 24;
+
+interface PanelSize {
+  w: number;
+  h: number;
+}
+
+function clampSize(size: PanelSize, desktop: boolean): PanelSize {
+  if (typeof window === "undefined") return size;
+  const maxW = Math.max(MIN_W, window.innerWidth - DESKTOP_GAP * 2);
+  const maxH = Math.max(MIN_H, desktop ? window.innerHeight - DESKTOP_GAP * 2 : window.innerHeight);
+  return {
+    w: Math.min(maxW, Math.max(MIN_W, Math.round(size.w))),
+    h: Math.min(maxH, Math.max(MIN_H, Math.round(size.h))),
+  };
+}
+
+function usePanelSize() {
+  const [desktop, setDesktop] = useState(false);
+  const [size, setSize] = useState<PanelSize | null>(null);
+  const [maximized, setMaximized] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const sync = () => setDesktop(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    try {
+      const raw = localStorage.getItem(SIZE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as Partial<PanelSize> & { max?: boolean };
+        if (typeof parsed.w === "number" && typeof parsed.h === "number") {
+          setSize({ w: parsed.w, h: parsed.h });
+        }
+        if (parsed.max) setMaximized(true);
+      }
+    } catch {
+      /* ignore a corrupt value */
+    }
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+
+  const persist = useCallback((next: PanelSize | null, max: boolean) => {
+    try {
+      if (!next && !max) localStorage.removeItem(SIZE_KEY);
+      else localStorage.setItem(SIZE_KEY, JSON.stringify({ ...(next ?? {}), max }));
+    } catch {
+      /* private mode etc. - the session still works, the size just won't stick */
+    }
+  }, []);
+
+  return { desktop, size, setSize, maximized, setMaximized, persist };
+}
+
 export function AssistantWidget() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const { desktop, size, setSize, maximized, setMaximized, persist } = usePanelSize();
+  const panelRef = useRef<HTMLDivElement>(null);
+  // Set while a resize drag is in flight so the panel skips its size
+  // transition and follows the pointer 1:1.
+  const [resizing, setResizing] = useState(false);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -449,6 +516,61 @@ export function AssistantWidget() {
     }
   }
 
+  /**
+   * Pointer-driven resize. `axis` says which dimensions the handle controls.
+   * The panel is anchored bottom-left, so dragging up grows the height and
+   * dragging right grows the width - the deltas are inverted for y.
+   */
+  function startResize(e: React.PointerEvent, axis: "y" | "xy") {
+    if (!panelRef.current) return;
+    e.preventDefault();
+    const rect = panelRef.current.getBoundingClientRect();
+    const start = { x: e.clientX, y: e.clientY, w: rect.width, h: rect.height };
+    const target = e.currentTarget as HTMLElement;
+    target.setPointerCapture(e.pointerId);
+    setResizing(true);
+    setMaximized(false);
+    let last: PanelSize = { w: start.w, h: start.h };
+    const onMove = (ev: PointerEvent) => {
+      const dy = start.y - ev.clientY;
+      const dx = axis === "xy" ? ev.clientX - start.x : 0;
+      last = clampSize({ w: start.w + dx, h: start.h + dy }, desktop);
+      setSize(last);
+    };
+    const onUp = () => {
+      target.removeEventListener("pointermove", onMove);
+      target.removeEventListener("pointerup", onUp);
+      target.removeEventListener("pointercancel", onUp);
+      setResizing(false);
+      persist(last, false);
+    };
+    target.addEventListener("pointermove", onMove);
+    target.addEventListener("pointerup", onUp);
+    target.addEventListener("pointercancel", onUp);
+  }
+
+  function toggleMaximized() {
+    const next = !maximized;
+    setMaximized(next);
+    persist(size, next);
+  }
+
+  // Inline size wins over the Tailwind defaults only once the user has
+  // touched it (or maximized), so first-time users still get the tuned
+  // 440x540 / 70vh defaults from the class list.
+  const panelStyle: React.CSSProperties = {};
+  if (maximized) {
+    if (desktop) {
+      panelStyle.width = `min(760px, calc(100vw - ${DESKTOP_GAP * 2}px))`;
+      panelStyle.height = `calc(100dvh - ${DESKTOP_GAP * 2}px)`;
+    } else {
+      panelStyle.height = "100dvh";
+    }
+  } else if (size) {
+    if (desktop) panelStyle.width = `${size.w}px`;
+    panelStyle.height = `${size.h}px`;
+  }
+
   // Always bottom-left, on every route (Asaf, 2026-08-14: the launcher must
   // never change corners). InstallPrompt keeps bottom-right so they can't
   // overlap. Both `left` and `right` have to be set in the same breakpoint:
@@ -480,8 +602,36 @@ export function AssistantWidget() {
   return (
     <div
       className={`no-print fixed bottom-0 left-0 right-0 z-40 lg:bottom-6 ${side} lg:w-[440px] print:hidden`}
+      style={desktop && panelStyle.width ? { width: panelStyle.width } : undefined}
     >
-      <div className="card-soft bg-white flex flex-col h-[70vh] lg:h-[540px] max-h-[calc(100vh-2rem)] overflow-hidden rounded-b-none lg:rounded-2xl shadow-2xl shadow-orange-200/40">
+      <div
+        ref={panelRef}
+        className={`card-soft relative bg-white flex flex-col h-[70vh] lg:h-[540px] max-h-[100dvh] lg:max-h-[calc(100dvh-3rem)] overflow-hidden rounded-b-none lg:rounded-2xl shadow-2xl shadow-orange-200/40 ${
+          resizing ? "" : "transition-[width,height] duration-150"
+        }`}
+        style={panelStyle.height ? { height: panelStyle.height } : undefined}
+      >
+        {/* Resize handles. Top edge: height. Top-right corner: width + height
+            (desktop only - on the phone the sheet is always full-width). The
+            hit areas are wider than the visible bar so a finger or a rushed
+            mouse still catches them. */}
+        <div
+          role="separator"
+          aria-orientation="horizontal"
+          aria-label="שנה את גובה החלון (גרירה)"
+          onPointerDown={(e) => startResize(e, "y")}
+          className="absolute top-0 left-0 right-0 h-3 cursor-ns-resize touch-none z-10 flex items-start justify-center group"
+        >
+          <span className="mt-1 h-1 w-10 rounded-full bg-stone-300 group-hover:bg-orange-400 transition-colors lg:opacity-0 lg:group-hover:opacity-100" />
+        </div>
+        {desktop && (
+          <div
+            role="separator"
+            aria-label="שנה את גודל החלון (גרירה)"
+            onPointerDown={(e) => startResize(e, "xy")}
+            className="absolute top-0 right-0 w-4 h-4 cursor-nesw-resize touch-none z-20"
+          />
+        )}
         <div className="flex items-center gap-2 px-4 py-3 border-b border-stone-200 flex-shrink-0">
           <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center">
             <Sparkles className="w-4 h-4 text-white" />
@@ -490,6 +640,14 @@ export function AssistantWidget() {
             <p className="font-semibold text-stone-900 text-sm leading-tight">העוזר החכם</p>
             <p className="text-[11px] text-stone-500 leading-tight">מוצא, רושם, מעדכן ומכין טיוטות</p>
           </div>
+          <button
+            onClick={toggleMaximized}
+            aria-label={maximized ? "הקטן את החלון" : "הגדל את החלון"}
+            title={maximized ? "הקטן" : "הגדל"}
+            className="text-stone-400 hover:text-stone-700 p-1"
+          >
+            {maximized ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+          </button>
           <button
             onClick={() => setOpen(false)}
             aria-label="סגור"
