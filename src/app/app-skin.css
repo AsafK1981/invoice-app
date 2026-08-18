@@ -2117,6 +2117,103 @@ html .dc-empty {
   html .dc-cell[data-col="acts"] { grid-template-columns: repeat(4, 1.2rem); }
 }
 
+/* =====================================================================
+   DESKTOP DOCUMENTS TABLE - "same table, spread out" (Asaf, 2026-08-18).
+   Chosen from a side-by-side of three directions rendered from this very
+   CSS (spread / two-line cards / one dense sheet). Two complaints drove it,
+   both born the day the app root came down to 15px (see APP-SHELL DESKTOP
+   SCALE): the dates and numbers had become ~11px, and נושא - the ONE
+   flexible track - swallowed every spare pixel of a wide window as a hole
+   on both sides of a short subject.
+
+   The answer keeps every column, every centre line and every card:
+   - the type ladder goes up one step at >=1400 (the tier this list is
+     actually read at on a wide screen; the phone ladder was already here);
+     תאריך / מספר get their own size between the two rungs and step up
+     from ink2 to ink, because they are what a reader scans for;
+   - the surplus width is DISTRIBUTED: נושא becomes a content-sized track
+     (capped at 26rem) like everything else, and `justify-content:
+     space-between` on the grid hands the free space to the gaps between
+     the nine tracks in equal shares. Subgrid still lines every card up
+     under the header, so this is a one-line change to the whole list;
+   - the boxes grow with the type (rows 3 -> 3.3rem, band 2.6 -> 2.8rem,
+     chip / pill 1.5 -> 1.7rem, action tile 1.3 -> 1.5rem) so nothing
+     tightens as the type grows.
+   1024-1399 is the diet tier above; it gets only the type step (no room to
+   spread nine columns in 800px) so a ~1100px tiled window still reads.
+   ===================================================================== */
+@media (min-width: 1024px) and (max-width: 1399.98px) {
+  html {
+    --dc-fs-1: 0.66rem;
+    --dc-fs-2: 0.78rem;
+    --dc-fs-3: 0.9rem;
+    --dc-fs-4: 1.02rem;
+  }
+  html .dc-row .dc-cell[data-col="date"],
+  html .dc-row .dc-cell[data-col="number"],
+  html .dc-row .dc-cell[data-col="alloc"] {
+    color: var(--ink);
+  }
+  /* The type dot is parked at 0.25rem + 6px from the chip's start; the diet
+     tier's 0.5rem inline padding let it touch the widest label's first
+     letter. Text starts past the dot now; the end padding stays on the diet. */
+  html .dc-chip { padding-inline-start: 0.85rem; }
+}
+@media (min-width: 1400px) {
+  html {
+    --dc-fs-1: 0.72rem;
+    --dc-fs-2: 0.86rem;
+    --dc-fs-3: 1rem;
+    --dc-fs-4: 1.14rem;
+    --dc-gutter: var(--dc-sp-3);
+    --dc-edge: var(--dc-sp-3);
+  }
+  html .dc-table {
+    grid-template-columns:
+      auto /* סוג */
+      auto /* לקוח */
+      fit-content(26rem) /* נושא - content-sized now, capped */
+      auto /* תאריך */
+      auto /* מספר */
+      auto /* מייל */
+      auto /* סטטוס */
+      auto /* סכום */
+      auto; /* actions */
+    justify-content: space-between;
+    column-gap: var(--dc-sp-4);
+    row-gap: 0.3rem;
+  }
+  html .dc-table[data-alloc] {
+    grid-template-columns:
+      auto /* סוג */
+      auto /* לקוח */
+      fit-content(26rem) /* נושא */
+      auto /* תאריך */
+      auto /* מספר */
+      auto /* מספר הקצאה */
+      auto /* מייל */
+      auto /* סטטוס */
+      auto /* סכום */
+      auto; /* actions */
+  }
+  html .dc-head { height: 2.8rem; margin-bottom: 0.3rem; }
+  html .dc-row { height: 3.3rem; }
+  html .dc-chip, html .dc-pill { height: 1.7rem; }
+  html .dc-chip { padding-inline-start: 0.95rem; }
+  html .dc-name { max-width: 11rem; }
+  html .dc-subj { max-width: none; color: var(--ink2); }
+  html .dc-row .dc-cell[data-col="date"],
+  html .dc-row .dc-cell[data-col="number"],
+  html .dc-row .dc-cell[data-col="alloc"] {
+    font-size: 0.93rem;
+    color: var(--ink);
+  }
+  html .dc-mailicon { width: 1rem; height: 1rem; }
+  html .dc-cell[data-col="acts"] { grid-template-columns: repeat(4, 1.5rem); gap: 0.3rem; }
+  html .dc-act { width: 1.5rem; height: 1.5rem; }
+  html .dc-late { margin-top: 2px; }
+}
+
 /* ---- 768-1279: the mail glyph steps aside ----
    It is secondary (the mail state is also a filter and a tooltip) and it was
    spending ~45px of a row that has ~640-715px to give. */
