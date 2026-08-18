@@ -31,7 +31,7 @@ export default function NotFound() {
             href="/dashboard"
             className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-white border-2 border-orange-200 text-stone-800 hover:bg-orange-50"
           >
-            לדשבורד
+            למסך הראשי
           </Link>
         </div>
       </div>

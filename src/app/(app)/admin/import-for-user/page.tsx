@@ -211,7 +211,7 @@ export default function AdminImportForUserPage() {
           className="inline-flex items-center gap-1 text-sm text-stone-600 hover:text-orange-700"
         >
           <ArrowRight className="w-4 h-4" />
-          חזרה לדשבורד
+          חזרה למסך הראשי
         </Link>
       </div>
 

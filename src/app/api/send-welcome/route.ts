@@ -37,11 +37,11 @@ function buildWelcomeHtml(): string {
       </ul>
       <div style="text-align:center;margin:28px 0;">
         <a href="${APP_URL}/dashboard" style="display:inline-block;background:linear-gradient(135deg,#fb923c,#f43f5e);color:#fff;text-decoration:none;padding:14px 32px;border-radius:14px;font-weight:600;font-size:15px;">
-          לדשבורד שלי
+          למסך הראשי שלי
         </a>
       </div>
       <p style="color:#78716c;font-size:13px;line-height:1.5;margin:0 0 8px;">
-        טיפ: בדשבורד תמצא צ'ק-ליסט קצר עם 5 צעדים להפקת המסמך הראשון.
+        טיפ: במסך הראשי תמצא צ'ק-ליסט קצר עם 5 צעדים להפקת המסמך הראשון.
       </p>
       <p style="color:#78716c;font-size:13px;line-height:1.5;margin:0;">
         יש שאלה? פשוט תענה למייל הזה, מגיע אליי ישר.

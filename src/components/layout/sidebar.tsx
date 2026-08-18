@@ -41,7 +41,7 @@ type NavItem = {
 };
 
 const navItems: NavItem[] = [
-  { href: "/dashboard", label: "דשבורד", icon: LayoutDashboard, tone: "amber" },
+  { href: "/dashboard", label: "ראשי", icon: LayoutDashboard, tone: "amber" },
   { href: "/documents", label: "מסמכים", icon: FileText, tone: "indigo" },
   { href: "/clients", label: "לקוחות", icon: Users, tone: "teal" },
   { href: "/products", label: "מוצרים ושירותים", icon: Package, tone: "violet" },

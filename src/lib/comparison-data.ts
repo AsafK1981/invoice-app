@@ -73,7 +73,7 @@ const SHARED_FEATURES = (theirSupport: Record<string, FeatureSupport>, theirNote
     them: theirSupport.pdf ?? "yes",
   },
   {
-    feature: "דשבורד עם גרפים",
+    feature: "מסך ראשי עם גרפים",
     us: "yes",
     them: theirSupport.dashboard ?? "yes",
   },

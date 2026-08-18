@@ -81,7 +81,7 @@ export default function ResetPasswordPage() {
                 <CheckCircle2 className="w-8 h-8 text-white" />
               </div>
               <h2 className="font-bold text-stone-900 text-lg">הסיסמה עודכנה!</h2>
-              <p className="text-sm text-stone-700 mt-2">מעביר אותך לדשבורד...</p>
+              <p className="text-sm text-stone-700 mt-2">מעביר אותך למסך הראשי...</p>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">

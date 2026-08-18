@@ -46,7 +46,7 @@ export default function AppErrorPage({
             className="inline-flex items-center justify-center gap-2 min-h-[40px] px-5 rounded-xl text-sm font-semibold bg-white border border-stone-200 text-stone-800 hover:bg-stone-50"
           >
             <Home className="w-4 h-4" />
-            לדשבורד
+            למסך הראשי
           </Link>
         </div>
       </div>

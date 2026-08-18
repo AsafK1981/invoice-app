@@ -632,7 +632,7 @@ export default function OnboardingPage() {
                   onClick={() => finish("dashboard")}
                   className="inline-flex items-center gap-2 text-stone-700 hover:text-orange-700 px-4 py-3 text-sm font-medium"
                 >
-                  אולי אחר כך, לדשבורד
+                  אולי אחר כך, למסך הראשי
                 </button>
               </div>
             </div>
