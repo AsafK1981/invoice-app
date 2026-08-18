@@ -21,6 +21,7 @@ import { parseIntent, type CreateDocumentIntent } from "./intent";
 import { sendText, sendButtons, sendDocument, fetchMedia } from "./client";
 import { transcribeAudio, transcriptionConfigured } from "./transcribe";
 import { scanExpenseEvidence, normalizeMediaType } from "@/lib/expense-scan";
+import { parseExpenseEdit, EDIT_INSTRUCTIONS } from "./expense-edit";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -342,6 +343,11 @@ async function handleText(
     return;
   }
 
+  // An expense card in edit mode (user tapped ערוך) claims the next text
+  // message(s) as field corrections. Checked BEFORE the intent parser: "סכום
+  // 120" must not be read as a request to issue a 120 ₪ receipt.
+  if (await applyExpenseEdit(db, phone, identity, trimmed)) return;
+
   if (!anthropicKey) {
     await sendText(phone, "השירות אינו זמין כרגע. נסה שוב מאוחר יותר.");
     return;
@@ -567,6 +573,11 @@ async function handleButton(
 
   const nowIso = new Date().toISOString();
 
+  if (action === "edit") {
+    await enterExpenseEdit(db, phone, identity, pendingId, nowIso);
+    return;
+  }
+
   // Consume the draft with a conditional UPDATE for the same reason the link
   // code is consumed that way: `consumed_at IS NULL` in the WHERE is what makes
   // a double tap (or a webhook redelivery that slipped past dedupe) issue one
@@ -601,7 +612,14 @@ async function handleButton(
   }
 
   if (pending.kind === "expense") {
-    await saveExpense(db, phone, identity, pending.payload as ExpensePayload);
+    const p = pending.payload as ExpensePayload;
+    if (!p.vendor || p.amount == null) {
+      // Can only happen by tapping "save" on a stale card, since incomplete
+      // cards are not given a save button. Never write a half-read expense.
+      await sendText(phone, "חסר ספק או סכום, אז לא שמרתי. שלח את הקבלה שוב ולחץ ״ערוך״ כדי להשלים.");
+      return;
+    }
+    await saveExpense(db, phone, identity, p);
   }
 }
 
@@ -696,8 +714,10 @@ function normalizePhone(raw: string): string {
 // ── photo -> expense ────────────────────────────────────────────────────────
 
 interface ExpensePayload {
-  vendor: string;
-  amount: number;
+  /** null = the scanner could not read it and the user has not filled it yet.
+   *  A card with a null vendor or amount gets no "save" button. */
+  vendor: string | null;
+  amount: number | null;
   vatAmount: number | null;
   date: string;
   category: string;
@@ -705,6 +725,10 @@ interface ExpensePayload {
   /** True when the scanner could not read a date and we fell back to the
    *  send date - surfaced in the confirmation card, never silent. */
   dateAssumed?: boolean;
+  /** Set when the user tapped ערוך: the next text message is a correction. */
+  editing?: boolean;
+  /** Which fields the scanner could not read (Hebrew names), for the card. */
+  unreadFields?: string[];
 }
 
 async function handleReceiptPhoto(
@@ -751,33 +775,20 @@ async function handleReceiptPhoto(
   }
 
   const f = outcome.fields;
-
-  // The bot cannot let the user edit fields, and it must NEVER save a
-  // guessed vendor or amount. If either is unreadable, report what WAS read
-  // and hand off to the app instead of offering a save button.
-  if (!f.vendor || f.amount == null) {
-    const readLines = ["קראתי את הקבלה, אבל לא בביטחון מלא:"];
-    readLines.push(`ספק: ${f.vendor ?? "לא זוהה"}`);
-    readLines.push(`סכום: ${f.amount != null ? `${fmt(f.amount)} ₪` : "לא זוהה"}`);
-    readLines.push(`תאריך: ${f.date ? formatDateHe(f.date) : "לא זוהה"}`);
-    readLines.push("");
-    readLines.push(`כדי לא לשמור נתון שגוי, השלם את החסר באפליקציה: ${absoluteUrl("/expenses")}`);
-    readLines.push("או שלח צילום חד יותר של הקבלה.");
-    await sendText(phone, readLines.join("\n"));
-    return;
-  }
-
-  const parsed: ExpensePayload = {
+  const payload: ExpensePayload = {
+    // Never guessed: a field the scanner could not read stays null and the
+    // card offers ערוך instead of a save button until the user fills it.
     vendor: f.vendor,
     amount: f.amount,
     vatAmount: f.vatAmount,
     // Date is the one field the bot must supply to save a row. When the
     // scanner could not read one we use the day the photo was sent - and
-    // SAY so on the card, so the user can cancel and enter it in the app.
+    // SAY so on the card, so the user can tap ערוך and correct it.
     date: f.date ?? today,
     dateAssumed: !f.date,
     category: f.category,
     description: f.description ?? "",
+    unreadFields: f.unreadFields,
   };
 
   const pendingId = randomUUID();
@@ -786,7 +797,7 @@ async function handleReceiptPhoto(
     phone,
     user_id: identity.user_id,
     kind: "expense",
-    payload: parsed,
+    payload,
     expires_at: new Date(Date.now() + PENDING_TTL_MS).toISOString(),
   });
   if (error) {
@@ -795,25 +806,157 @@ async function handleReceiptPhoto(
     return;
   }
 
-  const lines = [
-    "קראתי את הקבלה:",
-    "",
-    `ספק: ${parsed.vendor}`,
-    `סכום: ${fmt(parsed.amount)} ₪`,
-  ];
-  if (parsed.vatAmount) lines.push(`מע״מ: ${fmt(parsed.vatAmount)} ₪`);
-  lines.push(`קטגוריה: ${parsed.category}`);
-  lines.push(
-    parsed.dateAssumed
-      ? `תאריך: לא זוהה בקבלה - יישמר כ-${formatDateHe(parsed.date)} (היום). לתאריך אחר, בטל והזן באפליקציה.`
-      : `תאריך: ${formatDateHe(parsed.date)}`,
-  );
-  if (f.legibility === "partial") lines.push("", "חלק מהטקסט היה קשה לקריאה - בדוק שהפרטים נכונים לפני השמירה.");
+  await sendExpenseCard(phone, pendingId, payload, f.legibility === "partial");
+}
 
-  await sendButtons(phone, lines.join("\n"), [
-    { id: `confirm:${pendingId}`, title: "שמור כהוצאה" },
-    { id: `cancel:${pendingId}`, title: "בטל" },
-  ]);
+/**
+ * The confirmation card. Complete payload → שמור / ערוך / בטל. Missing vendor
+ * or amount → ערוך / בטל only, with the missing fields marked, so a half-read
+ * receipt can be completed in chat instead of bounced to the app.
+ */
+async function sendExpenseCard(
+  phone: string,
+  pendingId: string,
+  p: ExpensePayload,
+  partialWarning = false,
+): Promise<void> {
+  const complete = !!p.vendor && p.amount != null;
+  const lines = [complete ? "קראתי את הקבלה:" : "קראתי את הקבלה, אבל לא הכל:", ""];
+  lines.push(`ספק: ${p.vendor ?? "לא זוהה ⚠️"}`);
+  lines.push(`סכום: ${p.amount != null ? `${fmt(p.amount)} ₪` : "לא זוהה ⚠️"}`);
+  if (p.vatAmount) lines.push(`מע״מ: ${fmt(p.vatAmount)} ₪`);
+  lines.push(`קטגוריה: ${p.category}`);
+  lines.push(
+    p.dateAssumed
+      ? `תאריך: לא זוהה בקבלה - יישמר כ-${formatDateHe(p.date)} (היום) ⚠️`
+      : `תאריך: ${formatDateHe(p.date)}`,
+  );
+  if (p.description) lines.push(`תיאור: ${p.description}`);
+  if (!complete) lines.push("", "לחץ ״ערוך״ כדי להשלים את מה שחסר.");
+  else if (partialWarning || p.dateAssumed) lines.push("", "לא בטוח בהכל? ״ערוך״ מאפשר לתקן כל שדה לפני השמירה.");
+
+  const buttons = complete
+    ? [
+        { id: `confirm:${pendingId}`, title: "שמור כהוצאה" },
+        { id: `edit:${pendingId}`, title: "ערוך" },
+        { id: `cancel:${pendingId}`, title: "בטל" },
+      ]
+    : [
+        { id: `edit:${pendingId}`, title: "ערוך" },
+        { id: `cancel:${pendingId}`, title: "בטל" },
+      ];
+  await sendButtons(phone, lines.join("\n"), buttons);
+}
+
+/**
+ * ערוך tapped: flag the pending row so the next text message is treated as
+ * corrections, and extend its life. Does NOT consume the row - the old card's
+ * buttons keep working against the (updated) payload.
+ */
+async function enterExpenseEdit(
+  db: SupabaseClient,
+  phone: string,
+  identity: Identity,
+  pendingId: string,
+  nowIso: string,
+): Promise<void> {
+  const { data: row } = await db
+    .from("whatsapp_pending_actions")
+    .select("payload")
+    .eq("id", pendingId)
+    .eq("phone", phone)
+    .eq("user_id", identity.user_id)
+    .eq("kind", "expense")
+    .is("consumed_at", null)
+    .gt("expires_at", nowIso)
+    .maybeSingle();
+  if (!row) {
+    await sendText(phone, "הבקשה כבר טופלה או שפג תוקפה. שלח את הקבלה שוב.");
+    return;
+  }
+  const payload = { ...(row.payload as ExpensePayload), editing: true };
+  await db
+    .from("whatsapp_pending_actions")
+    .update({ payload, expires_at: new Date(Date.now() + PENDING_TTL_MS).toISOString() })
+    .eq("id", pendingId);
+  await sendText(phone, EDIT_INSTRUCTIONS);
+}
+
+/**
+ * If this phone has an expense card in edit mode, apply the text as field
+ * corrections and re-send the card. Returns true when the message was
+ * consumed by the edit flow (so the caller must not run the intent parser).
+ */
+async function applyExpenseEdit(
+  db: SupabaseClient,
+  phone: string,
+  identity: Identity,
+  text: string,
+): Promise<boolean> {
+  const nowIso = new Date().toISOString();
+  const { data: row } = await db
+    .from("whatsapp_pending_actions")
+    .select("id, payload")
+    .eq("phone", phone)
+    .eq("user_id", identity.user_id)
+    .eq("kind", "expense")
+    .is("consumed_at", null)
+    .gt("expires_at", nowIso)
+    .eq("payload->>editing", "true")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!row) return false;
+
+  const current = row.payload as ExpensePayload;
+
+  if (/^(בטל|ביטול|cancel)$/i.test(text)) {
+    await db.from("whatsapp_pending_actions").update({ consumed_at: nowIso }).eq("id", row.id);
+    await sendText(phone, "בוטל. ההוצאה לא נשמרה.");
+    return true;
+  }
+
+  const { patch, unrecognized } = parseExpenseEdit(text, todayInIsrael());
+  const changed = Object.keys(patch).length > 0;
+
+  if (!changed) {
+    await sendText(
+      phone,
+      `לא הבנתי מה לשנות ב:\n${unrecognized.map((l) => `״${l}״`).join("\n")}\n\n${EDIT_INSTRUCTIONS}`,
+    );
+    return true;
+  }
+
+  const next: ExpensePayload = {
+    ...current,
+    ...(patch.vendor !== undefined ? { vendor: patch.vendor } : {}),
+    ...(patch.amount !== undefined ? { amount: patch.amount } : {}),
+    ...(patch.vatAmount !== undefined ? { vatAmount: patch.vatAmount } : {}),
+    ...(patch.date !== undefined ? { date: patch.date, dateAssumed: false } : {}),
+    ...(patch.category !== undefined ? { category: patch.category } : {}),
+    ...(patch.description !== undefined ? { description: patch.description } : {}),
+    editing: false,
+  };
+  if (next.vatAmount != null && next.amount != null && next.vatAmount >= next.amount) {
+    await sendText(phone, "המע״מ לא יכול להיות גדול או שווה לסכום. שלח שוב.");
+    return true;
+  }
+  next.unreadFields = [
+    ...(next.vendor ? [] : ["ספק"]),
+    ...(next.amount != null ? [] : ["סכום"]),
+    ...(next.dateAssumed ? ["תאריך"] : []),
+  ];
+
+  await db
+    .from("whatsapp_pending_actions")
+    .update({ payload: next, expires_at: new Date(Date.now() + PENDING_TTL_MS).toISOString() })
+    .eq("id", row.id);
+
+  if (unrecognized.length > 0) {
+    await sendText(phone, `עדכנתי, אבל לא הבנתי: ${unrecognized.map((l) => `״${l}״`).join(", ")}`);
+  }
+  await sendExpenseCard(phone, row.id, next);
+  return true;
 }
 
 async function saveExpense(
@@ -827,8 +970,8 @@ async function saveExpense(
     business_id: identity.business_id,
     date: p.date,
     category: p.category,
-    supplier: p.vendor,
-    amount: p.amount,
+    supplier: p.vendor!,
+    amount: p.amount!,
     // The VAT is parsed off the receipt, validated, and SHOWN to the user in
     // the confirmation card, so omitting it here silently contradicted what
     // they approved. It also feeds input-VAT credit on the periodic VAT return
@@ -842,5 +985,5 @@ async function saveExpense(
     await sendText(phone, "שמירת ההוצאה נכשלה. נסה שוב.");
     return;
   }
-  await sendText(phone, `נשמר. ✅ ההוצאה מ${p.vendor} על ${fmt(p.amount)} ₪ נרשמה.`);
+  await sendText(phone, `נשמר. ✅ ההוצאה מ${p.vendor} על ${fmt(p.amount!)} ₪ נרשמה.`);
 }
