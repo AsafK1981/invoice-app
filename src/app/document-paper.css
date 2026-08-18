@@ -33,6 +33,7 @@
   --d-gold: #8a6d26;
   --d-gold-line: #c9ab63;
   --d-gold-faint: #e7dcbf;
+  --d-gold-deep: #6a5320;
   --d-card: #ffffff;
   --d-cardline: #e8e1d0;
   --d-canvas: #efece4;
@@ -228,15 +229,15 @@
 }
 
 /* ---------- template-specific structural flourishes ----------
-   Everything else in this feature is driven purely by CSS custom
-   properties (colors/radii/border-widths/fonts), which is what keeps the
-   security model simple (one closed-set-driven var map covers all 16
-   templates). These two rules are the deliberate, narrow exceptions,
-   scoped to `data-doc-template` (itself only ever set to a validated
-   TemplateId, never a raw string): the designer template's bold display
-   name (font-weight, not a font-family change) and the tradesperson
-   template's heavier quantity column, both called out in the approved
-   template gallery mockup. */
+   Colours/radii/border-widths/fonts are driven by CSS custom properties
+   (one closed-set-driven var map covers every template); STRUCTURE is
+   driven by the `data-doc-layout` families further down. These two rules
+   are per-template exceptions on top of that, scoped to
+   `data-doc-template` (itself only ever set to a validated TemplateId,
+   never a raw string): the designer template's bold display name
+   (font-weight, not a font-family change) and the tradesperson template's
+   heavier quantity column, both called out in the approved template
+   gallery mockup. */
 .doc-paper[data-doc-template="designer"] .doc-name {
   font-weight: 800;
   font-size: 28px;
@@ -497,6 +498,456 @@
 }
 .doc-paper .doc-foot-brand a:hover {
   text-decoration: underline;
+}
+
+/* =====================================================================
+   LAYOUT FAMILIES (2026-08-18)
+   `data-doc-layout` is set by the render layer from the validated
+   DocumentDesign.layout enum (document-themes.ts LayoutKey) - never a raw
+   string. Same DOM, five structures. "cards" is the default and needs no
+   rules: it is everything above. Each family below only overrides what
+   makes it read differently; colours still come from the same --d-* vars,
+   so accent/font overrides keep working inside every structure.
+   ===================================================================== */
+
+/* ---------- banner: a full-bleed accent band carries the header ---------- */
+.doc-paper[data-doc-layout="banner"] {
+  background: #ffffff !important;
+}
+.doc-paper[data-doc-layout="banner"]::before {
+  display: none;
+}
+.doc-paper[data-doc-layout="banner"] .doc-card {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.doc-paper[data-doc-layout="banner"] .doc-head {
+  margin: -74px -68px 22px;
+  padding: 44px 68px 34px;
+  background: var(--d-gold-deep);
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  color: #ffffff;
+}
+.doc-paper[data-doc-layout="banner"] .doc-name,
+.doc-paper[data-doc-layout="banner"] .doc-num {
+  color: #ffffff;
+}
+.doc-paper[data-doc-layout="banner"] .doc-bizline,
+.doc-paper[data-doc-layout="banner"] .doc-date {
+  color: rgba(255, 255, 255, 0.84);
+}
+.doc-paper[data-doc-layout="banner"] .doc-orig {
+  color: rgba(255, 255, 255, 0.7);
+}
+.doc-paper[data-doc-layout="banner"] .doc-badge {
+  background: #ffffff;
+  border-color: #ffffff;
+  color: var(--d-gold-deep);
+}
+.doc-paper[data-doc-layout="banner"] .doc-badge.is-credit {
+  color: #94402f;
+}
+.doc-paper[data-doc-layout="banner"] .doc-mini,
+.doc-paper[data-doc-layout="banner"] .doc-info,
+.doc-paper[data-doc-layout="banner"] .doc-items,
+.doc-paper[data-doc-layout="banner"] .doc-breakdown {
+  padding-inline: 0;
+}
+.doc-paper[data-doc-layout="banner"] .doc-strip,
+.doc-paper[data-doc-layout="banner"] .doc-money,
+.doc-paper[data-doc-layout="banner"] .doc-infos {
+  gap: 28px;
+}
+.doc-paper[data-doc-layout="banner"] .doc-glabel::after {
+  background: var(--d-gold-line);
+}
+.doc-paper[data-doc-layout="banner"] .doc-table th {
+  background: var(--d-gold-faint) !important;
+  color: var(--d-ink) !important;
+  border-bottom: 0 !important;
+  padding: 10px 10px;
+}
+.doc-paper[data-doc-layout="banner"] .doc-table td {
+  padding: 12px 10px;
+}
+.doc-paper[data-doc-layout="banner"] .doc-brow.is-grand {
+  border-top: 3px solid var(--d-gold);
+}
+.doc-paper[data-doc-layout="banner"] .doc-paid {
+  background: var(--d-gold-deep);
+  border: 0;
+  padding: 18px 22px;
+}
+.doc-paper[data-doc-layout="banner"] .doc-paid-top,
+.doc-paper[data-doc-layout="banner"] .doc-paid-note {
+  color: rgba(255, 255, 255, 0.8);
+}
+.doc-paper[data-doc-layout="banner"] .doc-paid-amount {
+  color: #ffffff;
+}
+.doc-paper[data-doc-layout="banner"] .doc-infos {
+  border-top: 1px solid var(--d-cardline);
+  padding-top: 14px;
+}
+
+/* ---------- editorial: white sheet, hairlines only, air ---------- */
+.doc-paper[data-doc-layout="editorial"] {
+  background: #ffffff !important;
+}
+.doc-paper[data-doc-layout="editorial"]::before {
+  display: none;
+}
+.doc-paper[data-doc-layout="editorial"] .doc-card {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.doc-paper[data-doc-layout="editorial"] .doc-head {
+  padding: 0 0 26px;
+  margin-bottom: 26px;
+  border-bottom: 1px solid var(--d-ink);
+}
+.doc-paper[data-doc-layout="editorial"] .doc-name {
+  font-size: 34px;
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1.1;
+}
+.doc-paper[data-doc-layout="editorial"] .doc-bizline {
+  margin-top: 10px;
+}
+.doc-paper[data-doc-layout="editorial"] .doc-badge {
+  border: 0;
+  padding: 0;
+  border-radius: 0;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  margin-top: 8px;
+}
+.doc-paper[data-doc-layout="editorial"] .doc-num {
+  font-size: 32px;
+  font-weight: 500;
+}
+.doc-paper[data-doc-layout="editorial"] .doc-glabel {
+  color: var(--d-soft);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+}
+.doc-paper[data-doc-layout="editorial"] .doc-glabel::after {
+  display: none;
+}
+.doc-paper[data-doc-layout="editorial"] .doc-strip,
+.doc-paper[data-doc-layout="editorial"] .doc-money,
+.doc-paper[data-doc-layout="editorial"] .doc-infos {
+  gap: 36px;
+  margin-bottom: 26px;
+}
+.doc-paper[data-doc-layout="editorial"] .doc-mini,
+.doc-paper[data-doc-layout="editorial"] .doc-info,
+.doc-paper[data-doc-layout="editorial"] .doc-breakdown {
+  padding: 0;
+}
+.doc-paper[data-doc-layout="editorial"] .doc-items {
+  padding: 0;
+  margin-bottom: 22px;
+}
+.doc-paper[data-doc-layout="editorial"] .doc-items .doc-glabel {
+  margin: 0 0 4px;
+}
+.doc-paper[data-doc-layout="editorial"] .doc-table th {
+  border-bottom: 1px solid var(--d-ink) !important;
+  padding: 8px 0;
+}
+.doc-paper[data-doc-layout="editorial"] .doc-table td {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--d-cardline) !important;
+}
+.doc-paper[data-doc-layout="editorial"] .doc-brow.is-grand {
+  border-top: 1px solid var(--d-ink);
+}
+.doc-paper[data-doc-layout="editorial"] .doc-brow.is-grand .doc-grand-val {
+  font-size: 24px;
+  font-weight: 500;
+}
+.doc-paper[data-doc-layout="editorial"] .doc-paid {
+  background: transparent;
+  border: 0;
+  border-top: 1px solid var(--d-ink);
+  border-radius: 0;
+  padding: 14px 0 0;
+  justify-content: flex-start;
+}
+.doc-paper[data-doc-layout="editorial"] .doc-paid-amount {
+  font-size: 38px;
+  font-weight: 500;
+}
+.doc-paper[data-doc-layout="editorial"] .doc-infos {
+  border-top: 1px solid var(--d-cardline);
+  padding-top: 18px;
+}
+.doc-paper[data-doc-layout="editorial"] .doc-foot {
+  border-top: 1px solid var(--d-cardline);
+  padding-top: 16px;
+}
+
+/* ---------- ledger: ruled grid, square frames, formal ---------- */
+.doc-paper[data-doc-layout="ledger"]::before {
+  background: var(--d-gold);
+}
+.doc-paper[data-doc-layout="ledger"] .doc-card {
+  border-radius: 0;
+  box-shadow: none;
+}
+.doc-paper[data-doc-layout="ledger"] .doc-head {
+  background: transparent;
+  border: 0;
+  border-bottom: 3px double var(--d-ink);
+  padding: 0 0 18px;
+  margin-bottom: 18px;
+}
+.doc-paper[data-doc-layout="ledger"] .doc-name {
+  font-size: 24px;
+}
+.doc-paper[data-doc-layout="ledger"] .doc-badge {
+  border-radius: 0;
+  border-color: var(--d-ink);
+  color: var(--d-ink);
+}
+.doc-paper[data-doc-layout="ledger"] .doc-glabel {
+  text-transform: none;
+  letter-spacing: 0.06em;
+  font-size: 11.5px;
+}
+.doc-paper[data-doc-layout="ledger"] .doc-glabel::after {
+  background: var(--d-cardline);
+}
+.doc-paper[data-doc-layout="ledger"] .doc-mini,
+.doc-paper[data-doc-layout="ledger"] .doc-info {
+  padding: 12px 14px;
+}
+.doc-paper[data-doc-layout="ledger"] .doc-items {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.doc-paper[data-doc-layout="ledger"] .doc-items .doc-glabel {
+  margin: 0;
+  padding: 8px 12px;
+  background: var(--d-gold-faint);
+  border: 1px solid var(--d-cardline);
+  border-bottom: 0;
+}
+.doc-paper[data-doc-layout="ledger"] .doc-items .doc-glabel::after {
+  display: none;
+}
+.doc-paper[data-doc-layout="ledger"] .doc-table {
+  background: var(--d-card);
+}
+.doc-paper[data-doc-layout="ledger"] .doc-table th {
+  background: var(--d-gold-faint) !important;
+  color: var(--d-ink) !important;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 12px !important;
+  padding: 9px 12px;
+  border: 1px solid var(--d-cardline) !important;
+  border-bottom: 1.5px solid var(--d-ink) !important;
+}
+.doc-paper[data-doc-layout="ledger"] .doc-table td,
+.doc-paper[data-doc-layout="ledger"] .doc-table tbody tr:last-child td {
+  padding: 10px 12px;
+  border: 1px solid var(--d-cardline) !important;
+}
+.doc-paper[data-doc-layout="ledger"] .doc-breakdown {
+  padding: 0;
+}
+.doc-paper[data-doc-layout="ledger"] .doc-brow {
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--d-cardline);
+}
+.doc-paper[data-doc-layout="ledger"] .doc-brow.is-grand {
+  margin-top: 0;
+  padding: 10px 14px;
+  border-top: 2px solid var(--d-ink);
+  border-bottom: 0;
+  background: var(--d-gold-faint);
+}
+.doc-paper[data-doc-layout="ledger"] .doc-note-line {
+  padding: 6px 14px;
+}
+.doc-paper[data-doc-layout="ledger"] .doc-paid {
+  border-radius: 0;
+  border: 1.5px solid var(--d-ink);
+  background: var(--d-card);
+}
+
+/* ---------- stage: dark header band, one loud accent, ticket-stub rules ---------- */
+.doc-paper[data-doc-layout="stage"] {
+  background: #ffffff !important;
+}
+.doc-paper[data-doc-layout="stage"]::before {
+  display: none;
+}
+.doc-paper[data-doc-layout="stage"] .doc-card {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.doc-paper[data-doc-layout="stage"] .doc-head {
+  margin: -74px -68px 22px;
+  padding: 44px 68px 32px;
+  background: var(--d-ink);
+  border: 0;
+  border-bottom: 6px solid var(--d-gold);
+  border-radius: 0;
+  box-shadow: none;
+  color: #ffffff;
+}
+.doc-paper[data-doc-layout="stage"] .doc-name {
+  color: var(--d-gold);
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.doc-paper[data-doc-layout="stage"] .doc-bizline,
+.doc-paper[data-doc-layout="stage"] .doc-date {
+  color: rgba(255, 255, 255, 0.76);
+}
+.doc-paper[data-doc-layout="stage"] .doc-orig {
+  color: rgba(255, 255, 255, 0.6);
+}
+.doc-paper[data-doc-layout="stage"] .doc-ident {
+  border-inline-start: 1px dashed rgba(255, 255, 255, 0.4);
+  padding-inline-start: 26px;
+}
+.doc-paper[data-doc-layout="stage"][data-logo-pos="left"] .doc-ident {
+  border-inline-start: 0;
+  padding-inline-start: 0;
+  border-inline-end: 1px dashed rgba(255, 255, 255, 0.4);
+  padding-inline-end: 26px;
+}
+.doc-paper[data-doc-layout="stage"][data-logo-pos="center"] .doc-ident {
+  border: 0;
+  border-top: 1px dashed rgba(255, 255, 255, 0.4);
+  padding: 14px 0 0;
+}
+.doc-paper[data-doc-layout="stage"] .doc-badge {
+  background: var(--d-gold);
+  border-color: var(--d-gold);
+  color: #ffffff;
+  border-radius: 0;
+  font-weight: 700;
+}
+.doc-paper[data-doc-layout="stage"] .doc-badge.is-credit {
+  background: #ffffff;
+  border-color: #ffffff;
+  color: #94402f;
+}
+.doc-paper[data-doc-layout="stage"] .doc-num {
+  color: #ffffff;
+}
+.doc-paper[data-doc-layout="stage"] .doc-glabel {
+  color: var(--d-ink);
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+.doc-paper[data-doc-layout="stage"] .doc-glabel::after {
+  flex: 0 0 28px;
+  height: 3px;
+  background: var(--d-gold);
+}
+.doc-paper[data-doc-layout="stage"] .doc-mini,
+.doc-paper[data-doc-layout="stage"] .doc-info,
+.doc-paper[data-doc-layout="stage"] .doc-items,
+.doc-paper[data-doc-layout="stage"] .doc-breakdown {
+  padding-inline: 0;
+}
+.doc-paper[data-doc-layout="stage"] .doc-strip,
+.doc-paper[data-doc-layout="stage"] .doc-money,
+.doc-paper[data-doc-layout="stage"] .doc-infos {
+  gap: 28px;
+}
+.doc-paper[data-doc-layout="stage"] .doc-table th {
+  color: var(--d-ink) !important;
+  font-weight: 800;
+  border-bottom: 2px solid var(--d-ink) !important;
+  padding: 10px 0;
+}
+.doc-paper[data-doc-layout="stage"] .doc-table td {
+  padding: 13px 0;
+  border-bottom: 1px dashed var(--d-cardline) !important;
+}
+.doc-paper[data-doc-layout="stage"] .doc-brow.is-grand {
+  border-top: 2px solid var(--d-ink);
+}
+.doc-paper[data-doc-layout="stage"] .doc-paid {
+  background: var(--d-ink);
+  border: 0;
+  border-radius: 0;
+  padding: 18px 22px;
+}
+.doc-paper[data-doc-layout="stage"] .doc-paid-top,
+.doc-paper[data-doc-layout="stage"] .doc-paid-note {
+  color: rgba(255, 255, 255, 0.72);
+}
+.doc-paper[data-doc-layout="stage"] .doc-paid-amount {
+  color: var(--d-gold);
+}
+.doc-paper[data-doc-layout="stage"] .doc-infos {
+  border-top: 1px dashed var(--d-cardline);
+  padding-top: 14px;
+}
+.doc-paper[data-doc-layout="stage"] .doc-foot {
+  border-top: 1px dashed var(--d-cardline);
+  padding-top: 16px;
+}
+
+/* full-bleed bands must follow the sheet's own padding on the fluid public
+   page and in print, where .doc-paper's padding differs from the desktop
+   74px/68px */
+@media (max-width: 700px) {
+  .doc-paper.is-fluid[data-doc-layout="banner"] .doc-head,
+  .doc-paper.is-fluid[data-doc-layout="stage"] .doc-head {
+    margin: -34px -18px 18px;
+    padding: 26px 18px 22px;
+  }
+  .doc-paper.is-fluid[data-doc-layout="stage"] .doc-ident {
+    border-inline-start: 0;
+    padding-inline-start: 0;
+    border-top: 1px dashed rgba(255, 255, 255, 0.4);
+    padding-top: 14px;
+  }
+  .doc-paper.is-fluid[data-doc-layout="editorial"] .doc-strip,
+  .doc-paper.is-fluid[data-doc-layout="editorial"] .doc-money,
+  .doc-paper.is-fluid[data-doc-layout="editorial"] .doc-infos,
+  .doc-paper.is-fluid[data-doc-layout="banner"] .doc-strip,
+  .doc-paper.is-fluid[data-doc-layout="banner"] .doc-money,
+  .doc-paper.is-fluid[data-doc-layout="stage"] .doc-strip,
+  .doc-paper.is-fluid[data-doc-layout="stage"] .doc-money {
+    gap: 18px;
+  }
+}
+@media print {
+  .doc-paper[data-doc-layout="banner"] .doc-head,
+  .doc-paper[data-doc-layout="stage"] .doc-head {
+    margin: -5mm -3mm 18px;
+    padding: 30px 3mm 26px;
+  }
+  .doc-paper[data-doc-layout="banner"] .doc-head,
+  .doc-paper[data-doc-layout="stage"] .doc-head,
+  .doc-paper[data-doc-layout="banner"] .doc-paid,
+  .doc-paper[data-doc-layout="stage"] .doc-paid,
+  .doc-paper[data-doc-layout="ledger"] .doc-table th,
+  .doc-paper[data-doc-layout="ledger"] .doc-brow.is-grand {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
 }
 
 /* ---------- narrow screens ----------

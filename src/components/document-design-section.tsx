@@ -9,14 +9,18 @@ import {
   ACCENT_HEX,
   ACCENT_SWATCHES,
   FONT_OPTIONS,
+  LAYOUT_KEYS,
+  LAYOUT_OPTIONS,
   LOGO_POSITIONS,
   getTemplate,
   normalizeDocumentDesign,
   type DocumentDesign,
   type AccentKey,
   type FontKey,
+  type LayoutKey,
   type LogoPosition,
 } from "@/lib/document-themes";
+import { LayoutGlyph } from "@/components/layout-glyph";
 import { DocumentPreview, type PreviewClient } from "@/components/document-preview";
 import type { DocumentItem } from "@/lib/types";
 
@@ -24,6 +28,7 @@ const DEFAULT_DESIGN: DocumentDesign = {
   template: "general",
   accent: "gold",
   font: "heebo",
+  layout: "cards",
   logoPosition: "right",
 };
 
@@ -82,10 +87,20 @@ export function DocumentDesignSection() {
 
   function chooseTemplate(id: DocumentDesign["template"]) {
     const tpl = getTemplate(id);
-    // Picking a new template resets accent/font to ITS defaults — a fresh
-    // start for the new "character" — but keeps the user's own logo
+    // Picking a new template resets accent/font/layout to ITS defaults — a
+    // fresh start for the new "character" — but keeps the user's own logo
     // position, which is a personal preference, not part of the template.
-    setDraft((d) => ({ ...d, template: id, accent: tpl.accent, font: tpl.font }));
+    setDraft((d) => ({
+      ...d,
+      template: id,
+      accent: tpl.accent,
+      font: tpl.font,
+      layout: tpl.layout,
+    }));
+  }
+
+  function chooseLayout(layout: LayoutKey) {
+    setDraft((d) => ({ ...d, layout }));
   }
 
   function chooseAccent(accent: AccentKey) {
@@ -143,17 +158,47 @@ export function DocumentDesignSection() {
                     : "border-stone-200 bg-white hover:border-orange-200 hover:bg-orange-50/30"
                 }`}
               >
-                <span
-                  className="w-4 h-4 rounded-full flex-shrink-0 shadow-sm"
-                  style={{ background: swatchHex }}
-                  aria-hidden="true"
-                />
+                <LayoutGlyph layout={tpl.layout} accent={swatchHex} className="flex-shrink-0" />
                 <span className="text-xs font-semibold text-stone-800 leading-tight">
                   {tpl.label}
                 </span>
                 {selected && (
                   <Check className="w-3.5 h-3.5 text-orange-600 flex-shrink-0 mr-auto" />
                 )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── Layout (structure) override ── */}
+      <div>
+        <h3 className="text-sm font-semibold text-stone-900 mb-3">מבנה הדף</h3>
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+          {LAYOUT_KEYS.map((key) => {
+            const opt = LAYOUT_OPTIONS[key];
+            const selected = draft.layout === key;
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => chooseLayout(key)}
+                aria-pressed={selected}
+                title={opt.hint}
+                className={`flex flex-col items-center gap-1.5 rounded-xl border-2 px-2 py-2.5 transition-colors ${
+                  selected
+                    ? "border-orange-400 bg-orange-50/70"
+                    : "border-stone-200 bg-white hover:border-orange-200 hover:bg-orange-50/30"
+                }`}
+              >
+                <LayoutGlyph
+                  layout={key}
+                  accent={ACCENT_HEX[draft.accent].accent}
+                  size={38}
+                />
+                <span className="text-[11px] font-semibold text-stone-800 leading-tight">
+                  {opt.label}
+                </span>
               </button>
             );
           })}

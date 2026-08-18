@@ -42,7 +42,8 @@ export type TemplateId =
   | "lawyer"
   | "accountant"
   | "architect"
-  | "developer";
+  | "developer"
+  | "entertainer";
 
 // ── Accent keys ──────────────────────────────────────────────────────────
 // One accent key per template (16, all unique) plus room for future reuse.
@@ -69,7 +70,8 @@ export type AccentKey =
   | "blue"
   | "mint"
   | "graphite"
-  | "teal";
+  | "teal"
+  | "fuchsia";
 
 interface AccentFamily {
   /** hex, e.g. "#8a6d26" — text/badge/glabel/totals color */
@@ -80,6 +82,11 @@ interface AccentFamily {
   faint: string;
   /** CSS `background` value for the sheet's top bar: a gradient string or a solid hex */
   grad: string;
+  /** hex - a darker sibling that carries WHITE text legibly (the "banner"
+   *  header band and the paid block on banner/stage layouts). Mid-tone
+   *  accents like amber/coral fail contrast with white; their deep sibling
+   *  passes while still reading as the same family. */
+  deep: string;
 }
 
 /** Mix `hex` toward white by `amount` (0..1). Pure, deterministic. */
@@ -120,6 +127,7 @@ function deriveAccentFamily(base: string): AccentFamily {
     accent: base,
     line,
     faint,
+    deep: darken(base, 0.3),
     grad: `linear-gradient(177deg, ${gradLight} 0%, ${base} 42%, ${gradDark} 78%, ${gradLight2} 100%)`,
   };
 }
@@ -136,42 +144,49 @@ export const ACCENT_HEX: Record<AccentKey, AccentFamily> = {
     line: "#c9ab63",
     faint: "#e7dcbf",
     grad: "linear-gradient(177deg, #d8be77 0%, #be9e4e 42%, #8f6f2a 78%, #cbb061 100%)",
+    deep: "#6a5320",
   },
   navy: {
     accent: "#1b2a4a",
     line: "#8a95b3",
     faint: "#dde1eb",
     grad: "linear-gradient(177deg, #1b2a4a 0%, #2a3d63 50%, #16213a 100%)",
+    deep: "#131d33",
   },
   sage: {
     accent: "#62795f",
     line: "#b9cab3",
     faint: "#e7efe3",
     grad: "linear-gradient(177deg, #a9c0a2 0%, #7c9885 42%, #5e7a5b 78%, #9db597 100%)",
+    deep: "#495b47",
   },
   violet: {
     accent: "#6c4ff6",
     line: "#bcaef9",
     faint: "#ece7fe",
     grad: "linear-gradient(177deg, #9c85fb 0%, #6c4ff6 42%, #4a2fd6 78%, #8b6ff9 100%)",
+    deep: "#4a2fd6",
   },
   slate: {
     accent: "#34506b",
     line: "#9db2c4",
     faint: "#e1e9ef",
     grad: "linear-gradient(177deg, #6f92ac 0%, #4a6c86 42%, #2c4056 78%, #6786a0 100%)",
+    deep: "#263a4e",
   },
   charcoal: {
     accent: "#1a1a1a",
     line: "#c9a15a",
     faint: "#ece3d0",
     grad: "#c9a15a",
+    deep: "#111111",
   },
   amberDeep: {
     accent: "#8a5f07",
     line: "#b8860b",
     faint: "#f2e0b3",
     grad: "linear-gradient(177deg, #d9a52a 0%, #b8860b 50%, #8a5f07 100%)",
+    deep: "#5f4104",
   },
   amber: deriveAccentFamily("#d98a3d"),
   rose: deriveAccentFamily("#c77b8b"),
@@ -182,6 +197,7 @@ export const ACCENT_HEX: Record<AccentKey, AccentFamily> = {
   mint: deriveAccentFamily("#6fa287"),
   graphite: deriveAccentFamily("#2b2b2b"),
   teal: deriveAccentFamily("#0ea5a5"),
+  fuchsia: deriveAccentFamily("#d6336c"),
 };
 
 /** ~6-7 curated accent options offered as override dots in Settings, drawn
@@ -264,6 +280,27 @@ const BORDER_VALUES: Record<
   bold: { card: "2px", hdr: "2px", grand: "3px", shadow: "none" },
 };
 
+// ── Layout keys ──────────────────────────────────────────────────────────
+// The STRUCTURAL axis (added 2026-08-18). Until then every template shared
+// one sheet structure and differed only in CSS variables, which is why the
+// gallery read as "the same document, recoloured 16 times". A layout is a
+// closed enum the paper CSS keys on via `data-doc-layout` - the same DOM,
+// restyled: where the header sits, whether zones are cards or hairlines,
+// whether the table is a grid or bare rules. Each template ships a default
+// layout, and (like accent/font) the user may override it.
+
+export type LayoutKey = "cards" | "banner" | "editorial" | "ledger" | "stage";
+
+export const LAYOUT_OPTIONS: Record<LayoutKey, { label: string; hint: string }> = {
+  cards: { label: "כרטיסים", hint: "אזורים בכרטיסים רכים על רקע בהיר" },
+  banner: { label: "כותרת צבעונית", hint: "פס כותרת מלא בצבע הדגש, טבלה נקייה" },
+  editorial: { label: "מינימלי", hint: "דף לבן, קווים דקים, הרבה אוויר" },
+  ledger: { label: "קלאסי", hint: "טבלה עם רשת, מסגרות ישרות, רשמי" },
+  stage: { label: "במה", hint: "כותרת כהה, צבע חזק, מראה של כרטיס" },
+};
+
+export const LAYOUT_KEYS = Object.keys(LAYOUT_OPTIONS) as LayoutKey[];
+
 // ── Templates ────────────────────────────────────────────────────────────
 
 interface Palette {
@@ -292,6 +329,8 @@ export interface DocumentTemplate {
    * for every template, not just this one).
    */
   nameFont?: FontKey;
+  /** Default sheet structure; see {@link LayoutKey}. */
+  layout: LayoutKey;
   corner: CornerKey;
   border: BorderKey;
   palette: Palette;
@@ -320,6 +359,7 @@ export const DOCUMENT_TEMPLATES: DocumentTemplate[] = [
     // (what the "reset to original" button persists) would silently fall the
     // .doc-serif elements back to Heebo — a visible font change vs. null.
     nameFont: "frank",
+    layout: "cards",
     corner: "normal",
     border: "normal",
     palette: GENERAL_PALETTE,
@@ -329,6 +369,7 @@ export const DOCUMENT_TEMPLATES: DocumentTemplate[] = [
     label: "מטפל/ת · פסיכולוג/ית",
     accent: "sage",
     font: "rubik",
+    layout: "cards",
     corner: "soft",
     border: "hairline",
     palette: {
@@ -345,6 +386,7 @@ export const DOCUMENT_TEMPLATES: DocumentTemplate[] = [
     label: "מאמן/ת כושר · פילאטיס",
     accent: "amber",
     font: "rubik",
+    layout: "banner",
     corner: "round",
     border: "normal",
     palette: GENERAL_PALETTE,
@@ -354,6 +396,7 @@ export const DOCUMENT_TEMPLATES: DocumentTemplate[] = [
     label: "קוסמטיקאי/ת · מעצב/ת שיער",
     accent: "rose",
     font: "miriam",
+    layout: "editorial",
     corner: "soft",
     border: "hairline",
     palette: {
@@ -370,6 +413,7 @@ export const DOCUMENT_TEMPLATES: DocumentTemplate[] = [
     label: "רפואה משלימה",
     accent: "terracotta",
     font: "rubik",
+    layout: "cards",
     corner: "soft",
     border: "hairline",
     palette: {
@@ -386,6 +430,7 @@ export const DOCUMENT_TEMPLATES: DocumentTemplate[] = [
     label: "מעצב/ת גרפי/ת",
     accent: "violet",
     font: "heebo",
+    layout: "banner",
     corner: "round",
     border: "normal",
     palette: {
@@ -403,6 +448,7 @@ export const DOCUMENT_TEMPLATES: DocumentTemplate[] = [
     accent: "charcoal",
     font: "heebo",
     nameFont: "miriam",
+    layout: "editorial",
     corner: "sharp",
     border: "hairline",
     hairlineTop: true,
@@ -420,6 +466,7 @@ export const DOCUMENT_TEMPLATES: DocumentTemplate[] = [
     label: "שיווק ופרסום",
     accent: "coral",
     font: "heebo",
+    layout: "banner",
     corner: "normal",
     border: "normal",
     palette: {
@@ -436,6 +483,7 @@ export const DOCUMENT_TEMPLATES: DocumentTemplate[] = [
     label: "מאמן/ת עסקי · יועץ/ת",
     accent: "coachGold",
     font: "miriam",
+    layout: "editorial",
     corner: "soft",
     border: "normal",
     palette: {
@@ -452,6 +500,7 @@ export const DOCUMENT_TEMPLATES: DocumentTemplate[] = [
     label: "מורה פרטי/ת · חונך/ת",
     accent: "blue",
     font: "heebo",
+    layout: "cards",
     corner: "soft",
     border: "normal",
     palette: {
@@ -468,6 +517,7 @@ export const DOCUMENT_TEMPLATES: DocumentTemplate[] = [
     label: "דיאטן/ית · תזונאי/ת",
     accent: "mint",
     font: "assistant",
+    layout: "cards",
     corner: "soft",
     border: "hairline",
     palette: {
@@ -484,6 +534,7 @@ export const DOCUMENT_TEMPLATES: DocumentTemplate[] = [
     label: "בעל/ת מקצוע (חשמל, שיפוצים)",
     accent: "amberDeep",
     font: "heebo",
+    layout: "ledger",
     corner: "sharp",
     border: "bold",
     palette: {
@@ -500,6 +551,7 @@ export const DOCUMENT_TEMPLATES: DocumentTemplate[] = [
     label: "עורך/ת דין",
     accent: "navy",
     font: "frank",
+    layout: "ledger",
     corner: "sharp",
     border: "normal",
     palette: {
@@ -516,6 +568,7 @@ export const DOCUMENT_TEMPLATES: DocumentTemplate[] = [
     label: "רואה/ת חשבון",
     accent: "slate",
     font: "assistant",
+    layout: "ledger",
     corner: "normal",
     border: "normal",
     palette: {
@@ -532,6 +585,7 @@ export const DOCUMENT_TEMPLATES: DocumentTemplate[] = [
     label: "אדריכל/ית",
     accent: "graphite",
     font: "frank",
+    layout: "editorial",
     corner: "sharp",
     border: "hairline",
     palette: {
@@ -548,6 +602,7 @@ export const DOCUMENT_TEMPLATES: DocumentTemplate[] = [
     label: "מפתח/ת תוכנה",
     accent: "teal",
     font: "heebo",
+    layout: "banner",
     corner: "normal",
     border: "normal",
     palette: {
@@ -557,6 +612,23 @@ export const DOCUMENT_TEMPLATES: DocumentTemplate[] = [
       card: "#ffffff",
       cardline: "#cfe6e6",
       canvas: "#eaf5f5",
+    },
+  },
+  {
+    id: "entertainer",
+    label: "מוזיקאי/ת · זמר/ת · שחקן/ית",
+    accent: "fuchsia",
+    font: "heebo",
+    layout: "stage",
+    corner: "sharp",
+    border: "normal",
+    palette: {
+      ink: "#141414",
+      ink2: "#454545",
+      soft: "#7d7d7d",
+      card: "#ffffff",
+      cardline: "#e6e6e6",
+      canvas: "#ffffff",
     },
   },
 ];
@@ -649,6 +721,35 @@ const TEMPLATE_SUGGESTION_RULES: { template: TemplateId; keywords: string[] }[] 
     keywords: ["מורה", "הוראה", "שיעורים", "שיעור פרטי", "חונך", "חונכת"],
   },
   {
+    template: "entertainer",
+    keywords: [
+      "מוזיקאי",
+      "מוזיקאית",
+      "מוסיקאי",
+      "מוסיקאית",
+      "מוזיקה",
+      "מוסיקה",
+      "זמר",
+      "זמרת",
+      "שחקן",
+      "שחקנית",
+      "נגן",
+      "נגנית",
+      "להקה",
+      "די ג'יי",
+      "די-ג'יי",
+      "DJ",
+      "תקליטן",
+      "תקליטנית",
+      "בידור",
+      "אמן במה",
+      "אמנית במה",
+      "סטנדאפ",
+      "רקדן",
+      "רקדנית",
+    ],
+  },
+  {
     template: "beauty",
     keywords: [
       "קוסמטיקה",
@@ -698,6 +799,7 @@ export interface DocumentDesign {
   template: TemplateId;
   accent: AccentKey;
   font: FontKey;
+  layout: LayoutKey;
   logoPosition: LogoPosition;
 }
 
@@ -709,6 +811,9 @@ function isAccentKey(v: unknown): v is AccentKey {
 }
 function isFontKey(v: unknown): v is FontKey {
   return typeof v === "string" && Object.prototype.hasOwnProperty.call(FONT_OPTIONS, v);
+}
+function isLayoutKey(v: unknown): v is LayoutKey {
+  return typeof v === "string" && Object.prototype.hasOwnProperty.call(LAYOUT_OPTIONS, v);
 }
 function isLogoPosition(v: unknown): v is LogoPosition {
   return v === "right" || v === "center" || v === "left";
@@ -722,7 +827,7 @@ function isLogoPosition(v: unknown): v is LogoPosition {
  * GUARANTEED to be a member of a closed set declared in this file.
  *
  * Unknown/malformed template ids fall back to "general". Unknown/malformed
- * accent/font fall back to the resolved template's own default. Unknown
+ * accent/font/layout fall back to the resolved template's own default. Unknown
  * logoPosition falls back to "right" (today's behaviour). Nothing here ever
  * returns a string it read off `raw` verbatim — every returned value is one
  * of the literal enum members checked against above.
@@ -738,9 +843,14 @@ export function normalizeDocumentDesign(raw: unknown): DocumentDesign | null {
 
   const accent: AccentKey = isAccentKey(r.accent) ? r.accent : tpl.accent;
   const font: FontKey = isFontKey(r.font) ? r.font : tpl.font;
+  // Pre-2026-08-18 rows have no `layout` at all -> the template's own
+  // default. null and "general" stay byte-identical to the legacy sheet
+  // ("cards"); the other professions deliberately moved to their new
+  // structures - that was the whole point of adding the axis.
+  const layout: LayoutKey = isLayoutKey(r.layout) ? r.layout : tpl.layout;
   const logoPosition: LogoPosition = isLogoPosition(r.logoPosition) ? r.logoPosition : "right";
 
-  return { template, accent, font, logoPosition };
+  return { template, accent, font, layout, logoPosition };
 }
 
 // ── The CSS boundary ─────────────────────────────────────────────────────
@@ -781,6 +891,7 @@ export function designToCssVars(design: DocumentDesign | null): Record<string, s
     "--d-gold": accentFamily.accent,
     "--d-gold-line": accentFamily.line,
     "--d-gold-faint": accentFamily.faint,
+    "--d-gold-deep": accentFamily.deep,
     "--d-grad": accentFamily.grad,
     "--d-radius": corner.radius,
     "--d-badge-r": corner.badge,

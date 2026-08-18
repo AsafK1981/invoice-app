@@ -6,6 +6,7 @@ import {
   DOCUMENT_TEMPLATES,
   ACCENT_HEX,
   FONT_OPTIONS,
+  LAYOUT_OPTIONS,
   getTemplate,
   type DocumentDesign,
   type TemplateId,
@@ -35,6 +36,7 @@ describe("normalizeDocumentDesign: security boundary", () => {
       template: "general",
       accent: "gold",
       font: "heebo",
+      layout: "cards",
       logoPosition: "right",
     });
   });
@@ -90,12 +92,14 @@ describe("normalizeDocumentDesign: security boundary", () => {
       template: "lawyer",
       accent: "sage",
       font: "assistant",
+      layout: "editorial",
       logoPosition: "center",
     });
     expect(d).toEqual({
       template: "lawyer",
       accent: "sage",
       font: "assistant",
+      layout: "editorial",
       logoPosition: "center",
     });
   });
@@ -110,6 +114,7 @@ describe("normalizeDocumentDesign: security boundary", () => {
       template: "general",
       accent: "gold",
       font: "heebo",
+      layout: "cards",
       logoPosition: "right",
     });
     expect((d as unknown as Record<string, unknown>).customCss).toBeUndefined();
@@ -127,10 +132,11 @@ describe("designToCssVars: only ever emits known-safe values", () => {
         template: tpl.id,
         accent: tpl.accent,
         font: tpl.font,
+        layout: tpl.layout,
         logoPosition: "right",
       };
       const vars = designToCssVars(design);
-      for (const key of ["--d-ink", "--d-ink2", "--d-soft", "--d-card", "--d-cardline", "--d-canvas", "--d-gold", "--d-gold-line", "--d-gold-faint"]) {
+      for (const key of ["--d-ink", "--d-ink2", "--d-soft", "--d-card", "--d-cardline", "--d-canvas", "--d-gold", "--d-gold-line", "--d-gold-faint", "--d-gold-deep"]) {
         expect(vars[key], `${tpl.id} ${key}`).toMatch(HEX_RE);
       }
       expect(vars["--d-grad"], `${tpl.id} --d-grad`).toMatch(GRAD_OR_HEX_RE);
@@ -163,6 +169,7 @@ describe("designToCssVars: only ever emits known-safe values", () => {
       template: "photographer",
       accent: "charcoal",
       font: "heebo",
+      layout: "editorial",
       logoPosition: "right",
     };
     const vars = designToCssVars(design);
@@ -175,6 +182,7 @@ describe("designToCssVars: only ever emits known-safe values", () => {
       template: "photographer",
       accent: "charcoal",
       font: "assistant", // user picked a different font than the template default (heebo)
+      layout: "editorial",
       logoPosition: "right",
     };
     const vars = designToCssVars(design);
@@ -286,8 +294,35 @@ describe("ACCENT_HEX / DOCUMENT_TEMPLATES data integrity", () => {
     }
   });
 
-  it("has exactly 16 templates (15 professions + general)", () => {
-    expect(DOCUMENT_TEMPLATES.length).toBe(16);
+  it("has exactly 17 templates (16 professions + general)", () => {
+    expect(DOCUMENT_TEMPLATES.length).toBe(17);
+  });
+
+  it("every template's default layout is a known LayoutKey, and every layout family is used", () => {
+    const used = new Set<string>();
+    for (const tpl of DOCUMENT_TEMPLATES) {
+      expect(LAYOUT_OPTIONS[tpl.layout], tpl.id).toBeDefined();
+      used.add(tpl.layout);
+    }
+    for (const key of Object.keys(LAYOUT_OPTIONS)) expect(used.has(key), key).toBe(true);
+  });
+
+  it("general (and therefore null) stays on the legacy 'cards' structure", () => {
+    expect(getTemplate("general").layout).toBe("cards");
+    expect(normalizeDocumentDesign({ template: "general" })?.layout).toBe("cards");
+  });
+
+  it("layout: unknown/malformed -> the template's own default; a valid override sticks", () => {
+    expect(normalizeDocumentDesign({ template: "lawyer", layout: "evil" })?.layout).toBe("ledger");
+    expect(normalizeDocumentDesign({ template: "lawyer", layout: 7 })?.layout).toBe("ledger");
+    expect(normalizeDocumentDesign({ template: "lawyer", layout: "stage" })?.layout).toBe("stage");
+    expect(normalizeDocumentDesign({ template: "entertainer" })?.layout).toBe("stage");
+  });
+
+  it("entertainer keywords route musicians / singers / actors to the stage template", () => {
+    for (const s of ["מוזיקאי", "זמרת אורחת", "שחקן תיאטרון", "DJ לאירועים", "אמן במה", "רקדנית"]) {
+      expect(suggestTemplateForBusinessType(s), s).toBe("entertainer");
+    }
   });
 
   it("template ids are unique", () => {

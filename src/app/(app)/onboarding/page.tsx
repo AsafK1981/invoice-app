@@ -149,6 +149,7 @@ export default function OnboardingPage() {
           template: suggestedTemplate.id,
           accent: suggestedTemplate.accent,
           font: suggestedTemplate.font,
+          layout: suggestedTemplate.layout,
           logoPosition: "right",
         },
       });

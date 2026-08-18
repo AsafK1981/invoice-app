@@ -63,6 +63,7 @@ export function ReceiptView({
       className="receipt-view doc-paper is-fluid mx-auto max-w-[210mm] shadow-lg print:shadow-none"
       style={themeVars}
       data-doc-template={design?.template ?? "general"}
+      data-doc-layout={design?.layout ?? "cards"}
       data-logo-pos={design?.logoPosition ?? "right"}
     >
       <DocumentBody
