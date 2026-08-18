@@ -275,7 +275,14 @@ export function Sidebar() {
       </aside>
 
       {/* Desktop sidebar */}
-      <aside className="hidden lg:flex w-64 bg-white/80 backdrop-blur-xl border-l border-orange-100/60 flex-col">
+      {/* `data-app-sidebar` is the hook for the APP-SHELL DESKTOP SCALE rule in
+          app-skin.css (`html:has([data-app-sidebar])`). This <aside> is always
+          in the DOM (only hidden by CSS below lg), so the rule matches on every
+          app page and never on marketing / auth pages, which have no sidebar. */}
+      <aside
+        data-app-sidebar
+        className="hidden lg:flex w-64 bg-white/80 backdrop-blur-xl border-l border-orange-100/60 flex-col"
+      >
         {sidebarContent}
       </aside>
 

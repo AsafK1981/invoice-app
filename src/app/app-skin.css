@@ -2637,6 +2637,48 @@ html .text-\[11px\] { font-size: 12.5px; }
 html .text-\[13px\] { font-size: 14px; }
 
 /* =====================================================================
+   APP-SHELL DESKTOP SCALE (Asaf, 2026-08-18): "the whole app is a notch too
+   big on the computer, zoom everything out a bit".
+
+   The signed-in shell is pulled BACK DOWN from the 2026-07 ramp above, and
+   only there: marketing pages, /auth and the public document pages keep the
+   ramp, mobile keeps 16.5px, print is untouched. Asaf picked the size from a
+   side-by-side of the real dashboard / documents / clients pages rendered at
+   16 / 15 / 14px root in a 1440px window and chose 15px. The other two tiers
+   are the July ramp scaled by the same factor (15 / 18.75 = 0.8) so the feel
+   he chose at 1440px carries to a ~1100px tiled window and to an ultrawide
+   at full width.
+
+   Scoping - three guards, each doing one job:
+   - `:has([data-app-sidebar])`  the desktop <aside> in layout/sidebar.tsx is
+                                 rendered on every app page (CSS-hidden below
+                                 lg, still in the DOM) and on nothing else.
+                                 Specificity (0,1,1) beats the bare `html`
+                                 ramp above, so no ordering games.
+   - `min-width: 64rem`          desktop only; rem in a media query resolves
+                                 against the INITIAL 16px (see the note
+                                 above), so this is exactly Tailwind's `lg:`.
+   - `screen`                    the printable sheet is px-based anyway, but
+                                 this makes the promise explicit.
+
+   The three px chip nudges above were tuned for an 18-19px root; at 15px they
+   would sit ABOVE `text-xs` (11.25px) and invert the hierarchy, so inside
+   this scope they go back to their design values.
+   ===================================================================== */
+@media screen and (min-width: 64rem) {
+  html:has([data-app-sidebar]) { font-size: 14.5px; }
+  html:has([data-app-sidebar]) .text-\[10px\] { font-size: 10px; }
+  html:has([data-app-sidebar]) .text-\[11px\] { font-size: 11px; }
+  html:has([data-app-sidebar]) .text-\[13px\] { font-size: 13px; }
+}
+@media screen and (min-width: 1400px) {
+  html:has([data-app-sidebar]) { font-size: 15px; }
+}
+@media screen and (min-width: 1800px) {
+  html:has([data-app-sidebar]) { font-size: 15.5px; }
+}
+
+/* =====================================================================
    WIDE-SCREEN SHELL: stop throwing away horizontal room.
    The app shell caps at `max-w-7xl` (80rem). On a 1600px+ window that left
    200-350px of empty shell beside every page except the dashboard, which
