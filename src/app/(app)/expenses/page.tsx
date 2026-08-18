@@ -430,7 +430,7 @@ export default function ExpensesPage() {
 
           <div className="overflow-x-auto">
             <table className="gk-etable w-full min-w-[640px]">
-              <thead className="text-xs text-stone-700 bg-white">
+              <thead className="text-sm text-stone-700 bg-white">
                 <tr>
                   <th className="text-right px-6 py-3 font-semibold">תאריך</th>
                   <th className="text-right px-6 py-3 font-semibold">קטגוריה</th>
@@ -460,14 +460,14 @@ export default function ExpensesPage() {
                       key={e.id}
                       className="border-t border-orange-50 hover:bg-rose-50/40 transition-colors group"
                     >
-                      <td className="px-6 py-3 text-sm text-stone-700">{formatDate(e.date)}</td>
+                      <td className="px-6 py-3 text-sm font-bold text-stone-900 tabular-nums">{formatDate(e.date)}</td>
                       <td className="px-6 py-3 text-sm">
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-medium">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 text-sm font-medium">
                           <ShoppingBag className="w-3 h-3" />
                           {e.category}
                         </span>
                       </td>
-                      <td className="px-6 py-3 text-sm font-medium text-stone-900">
+                      <td className="px-6 py-3 text-sm font-bold text-stone-900">
                         <div className="flex items-center gap-2">
                           {e.receiptPath && (
                             <Tooltip label="פתח את הקובץ המקורי" side="top">
@@ -483,8 +483,8 @@ export default function ExpensesPage() {
                           <span>{e.supplier}</span>
                         </div>
                       </td>
-                      <td className="px-6 py-3 text-sm text-stone-700">{e.description || "-"}</td>
-                      <td className="px-6 py-3 text-sm font-bold text-left text-rose-600">
+                      <td className="px-6 py-3 text-sm font-medium text-stone-900">{e.description || "-"}</td>
+                      <td className="px-6 py-3 text-base font-bold text-left text-rose-600 tabular-nums">
                         {formatCurrency(e.amount)}
                       </td>
                       <td className="px-2 py-3 text-center">

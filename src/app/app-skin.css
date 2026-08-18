@@ -2832,6 +2832,15 @@ html .text-\[13px\] { font-size: 14px; }
 @media screen and (min-width: 1600px) {
   html main > div.max-w-7xl { max-width: 1600px; }
 }
+/* The client / product card grids follow the shell: three cards across a
+   1216px column were right, three across 1536px are ~500px cards with a
+   footer line and a lot of white between - so on the wide shell they go
+   four across (2026-08-18, same pass as the documents table spread). Done
+   here rather than as a Tailwind `min-[1600px]:` variant because that
+   variant sorts before `lg:` in the generated sheet and loses the tie. */
+@media screen and (min-width: 1600px) {
+  html .card-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
 
 /* Assistant launcher pill. On phones a screen may pin its own action bar to
    the bottom edge (the document editor's save bar publishes its height as

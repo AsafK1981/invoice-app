@@ -209,12 +209,12 @@ export default function ClientsPage() {
         </div>
       ) : (
         <>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="card-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((c) => (
             <Link
               key={c.id}
               href={`/clients/${c.id}`}
-              className="card-soft p-5 hover:shadow-md hover:-translate-y-0.5 transition-all group relative block"
+              className="card-soft p-5 hover:shadow-md hover:-translate-y-0.5 transition-all group relative flex flex-col"
             >
               <div className="absolute top-3 left-3 flex gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                 <Tooltip label="עריכת לקוח" align="start">
@@ -254,12 +254,12 @@ export default function ClientsPage() {
                 <div className="flex-1 min-w-0">
                   <h3 className="font-bold text-stone-900 truncate">{c.name}</h3>
                   {c.taxId && (
-                    <p className="text-xs text-stone-600 mt-0.5">ח.פ / ת.ז: {c.taxId}</p>
+                    <p className="text-sm text-stone-700 mt-0.5">ח.פ / ת.ז: {c.taxId}</p>
                   )}
                 </div>
               </div>
 
-              <div className="mt-4 space-y-1.5 text-sm">
+              <div className="mt-4 mb-4 space-y-1.5 text-sm">
                 {c.phone && (
                   <div className="flex items-center gap-2 text-stone-800">
                     <Phone className="w-3.5 h-3.5 text-stone-500 flex-shrink-0" />
@@ -306,22 +306,22 @@ export default function ClientsPage() {
                 const stats = statsByClient.get(c.id);
                 if (!stats || stats.docCount === 0) {
                   return (
-                    <div className="mt-4 pt-3 border-t border-orange-100 text-xs text-stone-500">
+                    <div className="mt-auto pt-3 border-t border-orange-100 text-sm text-stone-700">
                       אין מסמכים עדיין · נוסף ב-{formatDate(c.createdAt)}
                     </div>
                   );
                 }
                 return (
-                  <div className="mt-4 pt-3 border-t border-orange-100 flex items-baseline justify-between gap-2 text-xs">
+                  <div className="mt-auto pt-3 border-t border-orange-100 flex items-baseline justify-between gap-2 text-sm">
                     <span className="text-stone-700">
-                      <span className="font-bold text-stone-900" dir="ltr">
+                      <span className="font-bold text-stone-900 text-base" dir="ltr">
                         {formatCurrency(stats.totalBilled)}
                       </span>{" "}
                       ב-{stats.docCount} {stats.docCount === 1 ? "מסמך" : "מסמכים"}
                     </span>
                     {stats.lastDocDate && (
-                      <span className="text-stone-500">
-                        אחרון: {formatDate(stats.lastDocDate)}
+                      <span className="text-stone-700">
+                        אחרון: <span className="font-bold text-stone-900 tabular-nums">{formatDate(stats.lastDocDate)}</span>
                       </span>
                     )}
                   </div>
