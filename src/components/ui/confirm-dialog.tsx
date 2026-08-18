@@ -52,7 +52,10 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
     if (!state.open) return;
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") close(false);
-      if (e.key === "Enter") close(true);
+      // Danger confirms (delete, etc.) require an explicit click - Enter must
+      // not silently trigger them, e.g. from a stray keypress right after the
+      // dialog opens.
+      if (e.key === "Enter" && state.tone !== "danger") close(true);
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);

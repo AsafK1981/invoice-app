@@ -284,7 +284,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
     }
     const to = client?.email;
     if (!to) {
-      setToast({ kind: "error", text: "אין אימייל שמור ללקוח - הוסף בעמוד הלקוחות" });
+      setToast({ kind: "error", text: "אין מייל שמור ללקוח - הוסף בעמוד הלקוחות" });
       return;
     }
     setSending(true);
@@ -570,7 +570,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                 ? "חסר מספר הקצאה: אסור לשלוח חשבונית מס מבלעדיו"
                 : client?.email
                   ? `שליחה ל-${client.email}`
-                  : "אין אימייל שמור ללקוח"
+                  : "אין מייל שמור ללקוח"
             }
           >
             {sending ? (
@@ -596,7 +596,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
               const notYetEmailed = !doc.emailedAt;
               const reminderDisabled = sending || !client?.email || notYetEmailed;
               const reminderTitle = !client?.email
-                ? "אין אימייל שמור ללקוח"
+                ? "אין מייל שמור ללקוח"
                 : notYetEmailed
                   ? 'יופעל אחרי שתשלחו את המסמך פעם ראשונה (כפתור "מייל")'
                   : `שלח תזכורת ל-${client.email}`;

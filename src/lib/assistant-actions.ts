@@ -335,7 +335,10 @@ export async function runActionTool(
     const search = str(input.search, 100);
     if (search) for (const term of searchTerms(search)) q = q.ilike("name", `%${term}%`);
     const { data, error } = await q;
-    if (error) return { content: `שגיאה בשליפת מוצרים: ${error.message}` };
+    if (error) {
+      console.error("[assistant] list_products failed:", error.message);
+      return { content: "שגיאה בשליפת מוצרים." };
+    }
     if (!data?.length) return { content: "לא נמצאו מוצרים." };
     return { content: asData({ count: data.length, products: data }) };
   }
@@ -362,7 +365,10 @@ export async function runActionTool(
     if (min !== undefined) q = q.gte("amount", min);
     if (max !== undefined) q = q.lte("amount", max);
     const { data, error } = await q;
-    if (error) return { content: `שגיאה בשליפת הוצאות: ${error.message}` };
+    if (error) {
+      console.error("[assistant] list_expenses failed:", error.message);
+      return { content: "שגיאה בשליפת הוצאות." };
+    }
     if (!data?.length) return { content: "לא נמצאו הוצאות התואמות לחיפוש." };
     return {
       content: asData({
@@ -399,7 +405,10 @@ export async function runActionTool(
       description: str(input.description, 500) ?? null,
     };
     const { error } = await admin.from("expenses").insert(row);
-    if (error) return { content: `שמירת ההוצאה נכשלה: ${error.message}` };
+    if (error) {
+      console.error("[assistant] add_expense failed:", error.message);
+      return { content: "שמירת ההוצאה נכשלה." };
+    }
     const label = `${supplier} · ${money(amount)}`;
     await audit(admin, businessId, "expense.created", "expense", row.id, label, {
       category: row.category,
@@ -437,7 +446,10 @@ export async function runActionTool(
     if (!Object.keys(patch).length) return { content: "לא צוין שום שדה לעדכון." };
 
     const { error } = await admin.from("expenses").update(patch).eq("business_id", businessId).eq("id", id);
-    if (error) return { content: `העדכון נכשל: ${error.message}` };
+    if (error) {
+      console.error("[assistant] update_expense failed:", error.message);
+      return { content: "העדכון נכשל." };
+    }
     const finalSupplier = (patch.supplier as string) ?? (existing.supplier as string);
     const finalAmount = (patch.amount as number) ?? Number(existing.amount);
     const label = `${finalSupplier} · ${money(finalAmount)}`;
@@ -474,7 +486,7 @@ export async function runActionTool(
     const clientName = str(input.name, 200);
     if (!clientName) return { content: "חסר שם לקוח. שאל את המשתמש." };
     const wanted = normalizeName(clientName);
-    const { data: all } = await admin.from("clients").select("id, name").eq("business_id", businessId);
+    const { data: all } = await admin.from("clients").select("id, name").eq("business_id", businessId).limit(1000);
     const dup = (all ?? []).find((c) => normalizeName(c.name as string) === wanted);
     if (dup) {
       return {
@@ -496,7 +508,10 @@ export async function runActionTool(
       notes: str(input.notes, 1000) ?? null,
     };
     const { error } = await admin.from("clients").insert(row);
-    if (error) return { content: `שמירת הלקוח נכשלה: ${error.message}` };
+    if (error) {
+      console.error("[assistant] add_client failed:", error.message);
+      return { content: "שמירת הלקוח נכשלה." };
+    }
     await audit(admin, businessId, "client.created", "client", row.id, clientName);
     return {
       content: JSON.stringify({ done: true, note: "הלקוח נוסף והוצג למשתמש כפעולה שבוצעה.", client: row }),
@@ -553,7 +568,10 @@ export async function runActionTool(
     }
 
     const { error } = await admin.from("clients").update(patch).eq("business_id", businessId).eq("id", id);
-    if (error) return { content: `העדכון נכשל: ${error.message}` };
+    if (error) {
+      console.error("[assistant] update_client failed:", error.message);
+      return { content: "העדכון נכשל." };
+    }
     const finalName = (patch.name as string) ?? (existing.name as string);
     await audit(admin, businessId, "client.updated", "client", id, finalName, { changed: Object.keys(patch) });
     return {
@@ -589,7 +607,7 @@ export async function runActionTool(
     if (!productName) return { content: "חסר שם מוצר. שאל את המשתמש." };
     if (price === undefined || price < 0) return { content: "חסר מחיר תקין. שאל את המשתמש." };
     const wanted = normalizeName(productName);
-    const { data: all } = await admin.from("products").select("id, name, price, unit").eq("business_id", businessId);
+    const { data: all } = await admin.from("products").select("id, name, price, unit").eq("business_id", businessId).limit(1000);
     const dup = (all ?? []).find((p) => normalizeName(p.name as string) === wanted);
     if (dup) {
       return {
@@ -609,7 +627,10 @@ export async function runActionTool(
       unit: str(input.unit, 50) ?? "יחידה",
     };
     const { error } = await admin.from("products").insert(row);
-    if (error) return { content: `שמירת המוצר נכשלה: ${error.message}` };
+    if (error) {
+      console.error("[assistant] add_product failed:", error.message);
+      return { content: "שמירת המוצר נכשלה." };
+    }
     const label = `${productName} · ${money(price)} ל${row.unit}`;
     await audit(admin, businessId, "product.created", "product", row.id, productName, { price, unit: row.unit });
     return {
@@ -640,7 +661,10 @@ export async function runActionTool(
     if (!Object.keys(patch).length) return { content: "לא צוין שום שדה לעדכון." };
 
     const { error } = await admin.from("products").update(patch).eq("business_id", businessId).eq("id", id);
-    if (error) return { content: `העדכון נכשל: ${error.message}` };
+    if (error) {
+      console.error("[assistant] update_product failed:", error.message);
+      return { content: "העדכון נכשל." };
+    }
     const finalName = (patch.name as string) ?? (existing.name as string);
     const finalPrice = (patch.price as number) ?? Number(existing.price);
     const finalUnit = (patch.unit as string) ?? (existing.unit as string);
@@ -700,7 +724,10 @@ export async function runActionTool(
       .eq("business_id", businessId)
       .eq("id", id)
       .select("id");
-    if (error) return { content: `עדכון הסטטוס נכשל: ${error.message}` };
+    if (error) {
+      console.error("[assistant] set_document_status failed:", error.message);
+      return { content: "עדכון הסטטוס נכשל." };
+    }
     if (!updated?.length) return { content: "עדכון הסטטוס לא עבר." };
     const typeLabel = DOCUMENT_TYPE_LABELS[doc.type as DocumentType] ?? String(doc.type);
     const label = `${typeLabel} #${doc.number} · ${doc.client_name}`;

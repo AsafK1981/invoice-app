@@ -588,7 +588,7 @@ export function AssistantWidget() {
       <button
         onClick={() => setOpen(true)}
         aria-label="פתח את העוזר החכם"
-        className={`no-print fixed bottom-4 left-4 right-auto z-40 lg:bottom-6 ${side} h-12 pl-4 pr-3 rounded-full bg-gradient-to-br from-orange-400 to-rose-500 text-white shadow-lg shadow-orange-200/60 flex items-center gap-2 hover:scale-105 active:scale-95 transition-transform print:hidden`}
+        className={`assistant-launcher no-print fixed left-4 right-auto z-40 ${side} h-12 pl-4 pr-3 rounded-full bg-gradient-to-br from-orange-400 to-rose-500 text-white shadow-lg shadow-orange-200/60 flex items-center gap-2 hover:scale-105 active:scale-95 transition-transform print:hidden`}
       >
         <span className="relative flex items-center justify-center">
           <MessageCircle className="w-5 h-5" />

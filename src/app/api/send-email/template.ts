@@ -9,18 +9,21 @@
 // once (2026-06-01).
 
 import { DOCUMENT_TYPE_LABELS, type DocumentType } from "@/lib/types";
-import { currencySymbol } from "@/lib/currencies";
+import { formatMoney } from "@/lib/currencies";
+import { formatCurrency } from "@/lib/format";
 import { CANONICAL_ORIGIN } from "@/lib/public-url";
 
 /** Landing target for the footer credit, tagged so signups arriving through a
  *  client's invoice email are attributable to the growth loop. */
 const BRAND_URL_EMAIL = `${CANONICAL_ORIGIN}/?utm_source=document&utm_medium=email_footer&utm_campaign=growth_loop`;
 
-// Format a document total in its own currency. Defaults to ILS (₪) so
-// legacy/ILS documents render exactly as before; foreign-currency docs get
-// the correct symbol ($, €, …) instead of a hardcoded ₪.
+// Format a document total in its own currency, the same way the app itself
+// renders a total (see document-body.tsx's `money` helper): the shared
+// formatCurrency for ILS ("₪1,500.50", locale-aware decimals), formatMoney
+// with the right symbol ($, €, …) for anything else.
 function formatDocTotal(total: number, currency?: string): string {
-  return `${currencySymbol(currency || "ILS")}${Number(total).toLocaleString()}`;
+  const code = currency || "ILS";
+  return code === "ILS" ? formatCurrency(Number(total)) : formatMoney(Number(total), code);
 }
 
 function escapeHtml(str: string): string {

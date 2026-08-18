@@ -194,6 +194,24 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
   const [saving, setSaving] = useState<boolean>(false);
   const saveInFlightRef = useRef(false);
+  // The phone-only bottom action bar below is position:fixed, so anything else
+  // pinned to the bottom edge (the assistant launcher) lands on top of the
+  // save button. Publish the bar's live height as a CSS variable and let the
+  // launcher lift itself above it (see .assistant-launcher in app-skin.css).
+  const mobileDockRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = mobileDockRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const root = document.documentElement;
+    const publish = () => root.style.setProperty("--mobile-dock-h", `${el.offsetHeight}px`);
+    publish();
+    const ro = new ResizeObserver(publish);
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+      root.style.removeProperty("--mobile-dock-h");
+    };
+  }, []);
   const [toast, setToast] = useState<{ kind: "success" | "error"; text: string } | null>(null);
   const [emailVerifyModalOpen, setEmailVerifyModalOpen] = useState(false);
 
@@ -2692,7 +2710,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
         running total on one side, the primary action on the other, plus the
         reason it is disabled and the result toast, so nothing about saving
         happens off-screen. Hidden from lg up, where the sticky aside owns it. */}
-    <div className="lg:hidden fixed inset-x-0 bottom-0 z-40 no-print border-t border-orange-200 bg-white/95 backdrop-blur shadow-[0_-6px_20px_rgba(120,53,15,0.10)]">
+    <div ref={mobileDockRef} className="lg:hidden fixed inset-x-0 bottom-0 z-40 no-print border-t border-orange-200 bg-white/95 backdrop-blur shadow-[0_-6px_20px_rgba(120,53,15,0.10)]">
       <div className="max-w-7xl mx-auto px-4 pt-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))]">
         {toast && (
           <div

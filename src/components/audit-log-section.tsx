@@ -119,7 +119,7 @@ export function AuditLogSection() {
                     {who.clientId && (
                       <Link
                         href={`/documents/new?clientId=${who.clientId}`}
-                        className="inline-flex items-center gap-1 text-xs font-medium text-orange-700 hover:text-orange-800 min-h-[32px]"
+                        className="inline-flex items-center gap-1 text-xs font-medium text-orange-700 hover:text-orange-800 min-h-[40px]"
                         title={who.clientName ? `מסמך חדש ל${who.clientName}` : "מסמך חדש לאותו לקוח"}
                       >
                         <FilePlus2 className="w-3.5 h-3.5" aria-hidden="true" />
@@ -129,7 +129,7 @@ export function AuditLogSection() {
                     {who.docExists && entry.targetId && (
                       <Link
                         href={`/documents/${entry.targetId}`}
-                        className="inline-flex items-center gap-1 text-xs font-medium text-stone-600 hover:text-stone-900 min-h-[32px]"
+                        className="inline-flex items-center gap-1 text-xs font-medium text-stone-600 hover:text-stone-900 min-h-[40px]"
                       >
                         <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
                         פתח מסמך

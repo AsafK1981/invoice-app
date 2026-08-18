@@ -22,6 +22,10 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const anthropicKey = process.env.ANTHROPIC_API_KEY;
 
+// Tool-use rounds can involve several sequential model calls plus DB queries;
+// same reasoning as whatsapp/webhook/route.ts.
+export const maxDuration = 60;
+
 const MODEL = "claude-haiku-4-5-20251001";
 
 // Same reasoning as MONTHLY_SCAN_CAP in expenses/scan: the in-memory rate
@@ -445,7 +449,10 @@ async function runTool(
     if (typeof input.maxTotal === "number") q = q.lte("total", input.maxTotal);
 
     const { data, error } = await q;
-    if (error) return { content: `שגיאה בחיפוש: ${error.message}` };
+    if (error) {
+      console.error("[assistant] search_documents failed:", error.message);
+      return { content: "שגיאה בחיפוש." };
+    }
     if (!data?.length) return { content: "לא נמצאו מסמכים התואמים לחיפוש." };
 
     const rows = data.map((d) => ({
@@ -541,7 +548,10 @@ async function runTool(
       .eq("business_id", businessId)
       .gte("date", from)
       .lte("date", to);
-    if (error) return { content: `שגיאה בשליפת הנתונים: ${error.message}` };
+    if (error) {
+      console.error("[assistant] get_income_summary failed:", error.message);
+      return { content: "שגיאה בשליפת הנתונים." };
+    }
 
     // The counting rule lives in lib/income-summary (tested), not here. The
     // first version of this tool restated it inline and counted unpaid credit
@@ -559,7 +569,10 @@ async function runTool(
       .eq("business_id", businessId)
       .gte("date", from)
       .lte("date", to);
-    if (error) return { content: `שגיאה בשליפת ההוצאות: ${error.message}` };
+    if (error) {
+      console.error("[assistant] get_expense_summary failed:", error.message);
+      return { content: "שגיאה בשליפת ההוצאות." };
+    }
     return { content: asData({ period: { from, to }, ...summarizeExpenses(data || []) }) };
   }
 
@@ -576,7 +589,10 @@ async function runTool(
       }
     }
     const { data, error } = await q;
-    if (error) return { content: `שגיאה בשליפת לקוחות: ${error.message}` };
+    if (error) {
+      console.error("[assistant] list_clients failed:", error.message);
+      return { content: "שגיאה בשליפת לקוחות." };
+    }
     if (!data?.length) return { content: "לא נמצאו לקוחות." };
     return { content: asData({ count: data.length, clients: data }) };
   }
@@ -597,7 +613,8 @@ async function runTool(
     const { data: clientRows } = await admin
       .from("clients")
       .select("id, name, tax_id")
-      .eq("business_id", businessId);
+      .eq("business_id", businessId)
+      .limit(1000);
     const allClients = (clientRows ?? []).map((c) => ({
       id: c.id as string,
       name: c.name as string,
@@ -610,8 +627,12 @@ async function runTool(
       .select("id, type, date, subject, notes, payment_method, total, client_id, client_name, client_tax_id")
       .eq("business_id", businessId)
       .or(`client_id.eq.${clientId},client_id.is.null`)
-      .order("date", { ascending: false });
-    if (error) return { content: `שגיאה בשליפת המסמכים: ${error.message}` };
+      .order("date", { ascending: false })
+      .limit(50);
+    if (error) {
+      console.error("[assistant] get_client_document_examples failed:", error.message);
+      return { content: "שגיאה בשליפת המסמכים." };
+    }
     const docs = documentsForClient(
       (candidateDocs ?? []).map((d) => ({
         ...d,
@@ -881,6 +902,13 @@ export async function POST(req: NextRequest) {
     const pendingUpdates: PendingUpdate[] = [];
     let answer = "";
     const rounds = hasAttachment ? MAX_ROUNDS_WITH_ATTACHMENT : MAX_ROUNDS;
+    // Did the model try a click-to-confirm action this turn (delete_* /
+    // update_client)? Used by the consistency guard below the loop.
+    let triedPendingAction = false;
+    // True when the round cap was hit right after a tool call: the tools ran
+    // but the model never got a turn to describe the result, so `answer` is
+    // either empty or an earlier "let me check..." interim line.
+    let exhaustedWhileCalling = false;
 
     for (let round = 0; round < rounds; round++) {
       const res = await anthropic.messages.create({
@@ -909,12 +937,14 @@ export async function POST(req: NextRequest) {
 
       const toolUses = res.content.filter((b): b is Anthropic.ToolUseBlock => b.type === "tool_use");
       if (res.stop_reason !== "tool_use" || !toolUses.length) break;
+      exhaustedWhileCalling = round === rounds - 1;
 
       messages.push({ role: "assistant", content: res.content });
 
       const results: Anthropic.ToolResultBlockParam[] = [];
       for (const call of toolUses) {
         try {
+          if (/^delete_|^update_client$/.test(call.name)) triedPendingAction = true;
           const out = await runTool(
             admin,
             businessId,
@@ -945,6 +975,52 @@ export async function POST(req: NextRequest) {
         }
       }
       messages.push({ role: "user", content: results });
+    }
+
+    if (exhaustedWhileCalling) {
+      // One bounded, tools-off call so the reply reflects what actually ran
+      // (cards / actions / pending buttons are already collected above).
+      const wrap = await anthropic.messages.create({
+        model: MODEL,
+        max_tokens: 400,
+        system: [{ type: "text", text: `${SYSTEM}
+
+התאריך היום: ${today}.`, cache_control: { type: "ephemeral" } }],
+        tools: [...TOOLS, ...ACTION_TOOLS],
+        tool_choice: { type: "none" },
+        messages,
+      });
+      const wrapText = wrap.content
+        .filter((b): b is Anthropic.TextBlock => b.type === "text")
+        .map((b) => b.text)
+        .join("")
+        .trim();
+      if (wrapText) answer = wrapText;
+    }
+
+    // Consistency guard (seen live 2026-08-18): the model can SAY "the delete
+    // button is ready, click it" without delete_client ever having returned
+    // pending - then the widget has nothing to render and the user stares at a
+    // promise with no button. The prompt forbids it, but text is not a
+    // contract; the payload is. If the reply talks about a confirm button and
+    // no pending action exists, replace the claim with an honest retry hint.
+    const lastUser = history[history.length - 1]?.content;
+    const userAskedToRemoveOrEdit =
+      typeof lastUser === "string" && /מחק|תמחק|הסר|תסיר|למחוק|להסיר|שנה|תשנה|עדכן|תעדכן/.test(lastUser);
+    // Only the "your confirm button is ready / waiting for your click" phrasing
+    // the prompt teaches for pending actions - NOT generic how-to answers like
+    // "לחץ על כפתור שמור", which are legitimate.
+    const claimsReadyButton =
+      /כפתור.{0,25}מוכן|מוכן.{0,25}כפתור|מחכה ללחיצה|ממתין ללחיצה|לחץ עליו כדי|כפתור ה?אישור/.test(answer);
+    if (
+      claimsReadyButton &&
+      !pendingDeletes.length &&
+      !pendingUpdates.length &&
+      (triedPendingAction || userAskedToRemoveOrEdit)
+    ) {
+      console.warn("[assistant] reply claimed a confirm button but no pending action was produced; replaced");
+      answer =
+        "לא הצלחתי להכין את כפתור האישור הפעם. נסה שוב וציין את השם המדויק, למשל: מחק את הלקוח \"שם הלקוח\".";
     }
 
     return NextResponse.json({

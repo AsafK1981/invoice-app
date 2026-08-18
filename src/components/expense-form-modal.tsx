@@ -397,7 +397,7 @@ export function ExpenseFormModal({ open, onClose, expense, prefill, history = NO
                   role="radio"
                   aria-checked={mode === m.value}
                   onClick={() => changeMode(m.value)}
-                  className={`inline-flex items-center justify-center min-h-[36px] px-2 rounded-lg transition-colors ${
+                  className={`inline-flex items-center justify-center min-h-[40px] px-2 rounded-lg transition-colors ${
                     mode === m.value
                       ? "bg-gradient-to-l from-orange-500 to-rose-500 text-white shadow-sm"
                       : "text-stone-700 hover:text-stone-900 hover:bg-orange-50"

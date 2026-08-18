@@ -2688,3 +2688,16 @@ html .text-\[13px\] { font-size: 14px; }
 @media screen and (min-width: 1600px) {
   html main > div.max-w-7xl { max-width: 1600px; }
 }
+
+/* Assistant launcher pill. On phones a screen may pin its own action bar to
+   the bottom edge (the document editor's save bar publishes its height as
+   --mobile-dock-h); the launcher rides above it instead of covering the
+   primary button. Desktop keeps the plain 1.5rem inset. */
+.assistant-launcher {
+  bottom: calc(1rem + var(--mobile-dock-h, 0px));
+}
+@media (min-width: 1024px) {
+  .assistant-launcher {
+    bottom: 1.5rem;
+  }
+}
