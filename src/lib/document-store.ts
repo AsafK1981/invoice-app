@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { supabase } from "./supabase";
 import { getBusinessId, onBusinessReady } from "./business-init";
+import { createSharedStore } from "./shared-store";
 import { DEFAULT_NEXT_NUMBER, DOCUMENT_STATUS_LABELS, DOCUMENT_TYPE_LABELS, type DocumentType, type InvoiceDocument, type DocumentItem } from "./types";
 import { logAudit } from "./audit-log";
 import { track } from "@vercel/analytics";
@@ -72,48 +73,50 @@ function mapItemRow(row: Record<string, unknown>): DocumentItem {
   };
 }
 
+async function fetchDocuments(): Promise<InvoiceDocument[] | undefined> {
+  const bid = getBusinessId();
+  if (!bid) return undefined;
+
+  const { data: docs } = await supabase
+    .from("documents")
+    .select("*, document_items(*)")
+    .eq("business_id", bid)
+    .order("date", { ascending: false })
+    .order("sort_order", { foreignTable: "document_items" });
+
+  if (!docs || docs.length === 0) {
+    lastKnownDocumentCount = 0;
+    return [];
+  }
+
+  lastKnownDocumentCount = docs.length;
+  return docs.map((d) => {
+    const { document_items, ...docRow } = d as Record<string, unknown> & {
+      document_items?: Record<string, unknown>[];
+    };
+    return mapDocRow(docRow, (document_items || []).map(mapItemRow));
+  });
+}
+
+// One shared fetch + snapshot for every useDocuments() consumer on the page,
+// instead of each mount running its own query. Triggers are wired once, on
+// the first subscribe (browser only): the business-ready hook and the
+// CHANGE_EVENT listener live here, not inside the hook, so N mounted
+// consumers still cause exactly one refetch per change.
+const documentsStore = createSharedStore<InvoiceDocument[]>(fetchDocuments, [], (refetch) => {
+  // First subscriber only (browser only): load once the business id is known,
+  // and reload on every change event - one listener for all consumers.
+  onBusinessReady(() => refetch());
+  window.addEventListener(CHANGE_EVENT, () => refetch());
+});
+
 export function useDocuments() {
-  const [documents, setDocuments] = useState<InvoiceDocument[]>([]);
-  const [ready, setReady] = useState(false);
-
-  const fetch = useCallback(async () => {
-    const bid = getBusinessId();
-    if (!bid) return;
-
-    const { data: docs } = await supabase
-      .from("documents")
-      .select("*, document_items(*)")
-      .eq("business_id", bid)
-      .order("date", { ascending: false })
-      .order("sort_order", { foreignTable: "document_items" });
-
-    if (!docs || docs.length === 0) {
-      setDocuments([]);
-      setReady(true);
-      lastKnownDocumentCount = 0;
-      return;
-    }
-
-    setDocuments(
-      docs.map((d) => {
-        const { document_items, ...docRow } = d as Record<string, unknown> & {
-          document_items?: Record<string, unknown>[];
-        };
-        return mapDocRow(docRow, (document_items || []).map(mapItemRow));
-      }),
-    );
-    setReady(true);
-    lastKnownDocumentCount = docs.length;
-  }, []);
-
-  useEffect(() => {
-    onBusinessReady(() => fetch());
-    const handler = () => fetch();
-    window.addEventListener(CHANGE_EVENT, handler);
-    return () => window.removeEventListener(CHANGE_EVENT, handler);
-  }, [fetch]);
-
-  return { documents, ready };
+  const snapshot = useSyncExternalStore(
+    documentsStore.subscribe,
+    documentsStore.getSnapshot,
+    documentsStore.getServerSnapshot,
+  );
+  return { documents: snapshot.data, ready: snapshot.ready };
 }
 
 export function useDocument(id: string) {

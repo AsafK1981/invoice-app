@@ -11,6 +11,8 @@ const anthropicKey = process.env.ANTHROPIC_API_KEY;
 
 const RECEIPT_BUCKET = "expense-receipts";
 
+export const maxDuration = 60;
+
 // The hourly checkRate below only throttles request RATE and is in-memory
 // (resets on every cold start) - it doesn't bound total monthly spend on the
 // one ANTHROPIC_API_KEY every user's scan draws from, and this feature isn't
@@ -125,9 +127,47 @@ export async function POST(req: NextRequest) {
     }
 
     const today = todayInIsrael();
-    const outcome = await scanExpenseEvidence({ apiKey: anthropicKey, data, mediaType, today });
+
+    // The Storage upload only depends on `data`/`mediaType`, never on the OCR
+    // result, so it doesn't need to wait for scanExpenseEvidence to finish -
+    // run both concurrently instead of serializing them. `userId` is captured
+    // here (rather than reading `user.id` inside the nested function) because
+    // TypeScript doesn't carry the `!user` narrowing above into a closure.
+    const userId = user.id;
+    async function uploadReceipt(): Promise<string | null> {
+      try {
+        const ext = extForMediaType(mediaType);
+        const fileBytes = Buffer.from(data, "base64");
+        const uuid = crypto.randomUUID();
+        const path = `${userId}/${uuid}.${ext}`;
+        const { error: upErr } = await admin.storage
+          .from(RECEIPT_BUCKET)
+          .upload(path, fileBytes, { contentType: mediaType, upsert: false });
+        if (upErr) {
+          console.error("[scan] storage upload failed:", upErr.message);
+          return null;
+        }
+        return path;
+      } catch (uploadErr) {
+        console.error("[scan] storage upload exception:", uploadErr instanceof Error ? uploadErr.message : uploadErr);
+        return null;
+      }
+    }
+
+    const [outcome, receiptPath] = await Promise.all([
+      scanExpenseEvidence({ apiKey: anthropicKey, data, mediaType, today }),
+      uploadReceipt(),
+    ]);
 
     if (!outcome.ok) {
+      // OCR failed after the upload already succeeded - don't leave an
+      // orphan object in Storage for a receipt no expense will ever point at.
+      if (receiptPath) {
+        const { error: removeErr } = await admin.storage.from(RECEIPT_BUCKET).remove([receiptPath]);
+        if (removeErr) {
+          console.error("[scan] cleanup of orphaned upload failed:", removeErr.message);
+        }
+      }
       if (outcome.reason === "bad_response") {
         console.error("[scan] unparseable model output:", (outcome.raw || "").slice(0, 300));
         return NextResponse.json({ ok: false, error: outcome.message }, { status: 502 });
@@ -135,28 +175,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: outcome.message }, { status: 422 });
     }
     const r = outcome.fields;
-
-    // Persist the source file in Storage so the user can revisit it later
-    // and double-check the OCR. Path: {user_id}/{uuid}.{ext}. RLS scopes
-    // access to the owner via the first folder segment (see migration
-    // 20260531-expense-receipts.sql).
-    let receiptPath: string | null = null;
-    try {
-      const ext = extForMediaType(mediaType);
-      const fileBytes = Buffer.from(data, "base64");
-      const uuid = crypto.randomUUID();
-      const path = `${user.id}/${uuid}.${ext}`;
-      const { error: upErr } = await admin.storage
-        .from(RECEIPT_BUCKET)
-        .upload(path, fileBytes, { contentType: mediaType, upsert: false });
-      if (upErr) {
-        console.error("[scan] storage upload failed:", upErr.message);
-      } else {
-        receiptPath = path;
-      }
-    } catch (uploadErr) {
-      console.error("[scan] storage upload exception:", uploadErr instanceof Error ? uploadErr.message : uploadErr);
-    }
 
     // Every field may be null: the model was told to leave anything it
     // could not read with certainty blank, and interpretRawScan nulls out

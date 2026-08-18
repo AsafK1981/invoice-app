@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { supabase } from "./supabase";
 import { getBusinessId, onBusinessReady } from "./business-init";
+import { createSharedStore } from "./shared-store";
 import { logAudit } from "./audit-log";
 import { formatCurrency } from "./format";
 import { todayInIsrael } from "./date";
@@ -23,30 +24,33 @@ function mapRow(row: Record<string, unknown>): Expense {
   };
 }
 
+async function fetchExpenses(): Promise<Expense[] | undefined> {
+  const bid = getBusinessId();
+  if (!bid) return undefined;
+  const { data } = await supabase
+    .from("expenses")
+    .select("*")
+    .eq("business_id", bid)
+    .order("date", { ascending: false });
+  return (data || []).map(mapRow);
+}
+
+// One shared fetch + snapshot for every useExpenses() consumer on the page.
+// See document-store.ts's documentsStore for the full rationale.
+const expensesStore = createSharedStore<Expense[]>(fetchExpenses, [], (refetch) => {
+  // First subscriber only (browser only): load once the business id is known,
+  // and reload on every change event - one listener for all consumers.
+  onBusinessReady(() => refetch());
+  window.addEventListener(CHANGE_EVENT, () => refetch());
+});
+
 export function useExpenses() {
-  const [items, setItems] = useState<Expense[]>([]);
-  const [ready, setReady] = useState(false);
-
-  const fetch = useCallback(async () => {
-    const bid = getBusinessId();
-    if (!bid) return;
-    const { data } = await supabase
-      .from("expenses")
-      .select("*")
-      .eq("business_id", bid)
-      .order("date", { ascending: false });
-    setItems((data || []).map(mapRow));
-    setReady(true);
-  }, []);
-
-  useEffect(() => {
-    onBusinessReady(() => fetch());
-    const handler = () => fetch();
-    window.addEventListener(CHANGE_EVENT, handler);
-    return () => window.removeEventListener(CHANGE_EVENT, handler);
-  }, [fetch]);
-
-  return { items, ready };
+  const snapshot = useSyncExternalStore(
+    expensesStore.subscribe,
+    expensesStore.getSnapshot,
+    expensesStore.getServerSnapshot,
+  );
+  return { items: snapshot.data, ready: snapshot.ready };
 }
 
 export const expenseStore = {

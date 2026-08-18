@@ -20,18 +20,17 @@ interface Result {
   href: string;
 }
 
+/**
+ * Outer shell: just the trigger button + the Cmd+K / "N" keyboard shortcuts.
+ * This is rendered on every authed page (app layout), so it must NOT pull in
+ * useDocuments/useClients/useProducts/useExpenses - that would force four
+ * fetches on pages that never open the palette (settings, etc.). The actual
+ * data hooks live in <SearchPalette>, mounted only once the user opens it.
+ */
 export function GlobalSearch() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState("");
-  const [activeIndex, setActiveIndex] = useState(0);
 
-  const { documents } = useDocuments();
-  const { items: clients } = useClients();
-  const { items: products } = useProducts();
-  const { items: expenses } = useExpenses();
-
-  // Cmd+K / Ctrl+K to open search; "N" for new doc; Escape to close
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
@@ -56,15 +55,40 @@ export function GlobalSearch() {
     return () => window.removeEventListener("keydown", onKey);
   }, [open, router]);
 
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/70 border border-orange-100 hover:bg-white hover:border-orange-200 text-sm text-stone-600 transition-colors"
+        aria-label="חיפוש"
+        title="חיפוש"
+      >
+        <Search className="w-3.5 h-3.5" />
+        <span className="hidden sm:inline">חיפוש</span>
+      </button>
+    );
+  }
+
+  return <SearchPalette onClose={() => setOpen(false)} />;
+}
+
+/** The actual Cmd+K palette. Only mounted while `open` is true. */
+function SearchPalette({ onClose }: { onClose: () => void }) {
+  const router = useRouter();
+  const [query, setQuery] = useState("");
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  const { documents } = useDocuments();
+  const { items: clients } = useClients();
+  const { items: products } = useProducts();
+  const { items: expenses } = useExpenses();
+
   useEffect(() => {
-    if (open) {
-      setQuery("");
-      setActiveIndex(0);
-      document.body.style.overflow = "hidden";
-    } else {
+    document.body.style.overflow = "hidden";
+    return () => {
       document.body.style.overflow = "";
-    }
-  }, [open]);
+    };
+  }, []);
 
   const results = useMemo<Result[]>(() => {
     const q = query.trim().toLowerCase();
@@ -142,12 +166,12 @@ export function GlobalSearch() {
 
   function selectResult(result: Result) {
     router.push(result.href);
-    setOpen(false);
+    onClose();
   }
 
   function goTo(href: string) {
     router.push(href);
-    setOpen(false);
+    onClose();
   }
 
   const quickActions = [
@@ -188,25 +212,11 @@ export function GlobalSearch() {
     }
   }
 
-  if (!open) {
-    return (
-      <button
-        onClick={() => setOpen(true)}
-        className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/70 border border-orange-100 hover:bg-white hover:border-orange-200 text-sm text-stone-600 transition-colors"
-        aria-label="חיפוש"
-        title="חיפוש"
-      >
-        <Search className="w-3.5 h-3.5" />
-        <span className="hidden sm:inline">חיפוש</span>
-      </button>
-    );
-  }
-
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-[10vh]">
       <div
         className="absolute inset-0 bg-stone-900/40 backdrop-blur-sm animate-fade-in"
-        onClick={() => setOpen(false)}
+        onClick={onClose}
       />
       <div className="card-soft relative w-full max-w-2xl overflow-hidden animate-scale-in">
         <div className="flex items-center gap-3 px-5 py-4 border-b border-orange-100">
@@ -221,7 +231,7 @@ export function GlobalSearch() {
             className="flex-1 bg-transparent outline-none text-stone-900 placeholder:text-stone-400 focus-visible:ring-2 focus-visible:ring-orange-300 rounded-lg"
           />
           <button
-            onClick={() => setOpen(false)}
+            onClick={onClose}
             className="w-7 h-7 rounded-lg text-stone-400 hover:bg-stone-100 hover:text-stone-700 flex items-center justify-center"
             aria-label="סגור"
           >

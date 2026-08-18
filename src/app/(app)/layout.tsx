@@ -1,11 +1,21 @@
+"use client";
+
+import dynamic from "next/dynamic";
 import { Sidebar } from "@/components/layout/sidebar";
 import { AppProviders } from "@/components/providers";
 import { GlobalSearch } from "@/components/global-search";
 import { InstallPrompt } from "@/components/install-prompt";
-import { AssistantWidget } from "@/components/assistant-widget";
 import { NotificationsBell } from "@/components/notifications-bell";
 import { EmailVerificationBanner } from "@/components/email-verification-banner";
 import { TwoFactorNudge } from "@/components/two-factor-nudge";
+
+// Floating chat button - never needs to be part of the initial server-rendered
+// HTML, so keep it out of the main bundle/SSR pass entirely (same pattern as
+// the recharts usage in dashboard/page.tsx).
+const AssistantWidget = dynamic(
+  () => import("@/components/assistant-widget").then((mod) => mod.AssistantWidget),
+  { ssr: false },
+);
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (

@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { supabase } from "./supabase";
 import { getBusinessId, onBusinessReady } from "./business-init";
+import { createSharedStore } from "./shared-store";
 import { logAudit } from "./audit-log";
 import { todayInIsrael } from "./date";
 import { searchTerms, ilikeOrClause } from "./ilike-search";
@@ -33,30 +34,33 @@ function mapRow(row: Record<string, unknown>): Client {
   };
 }
 
+async function fetchClients(): Promise<Client[] | undefined> {
+  const bid = getBusinessId();
+  if (!bid) return undefined;
+  const { data } = await supabase
+    .from("clients")
+    .select("*")
+    .eq("business_id", bid)
+    .order("created_at", { ascending: false });
+  return (data || []).map(mapRow);
+}
+
+// One shared fetch + snapshot for every useClients() consumer on the page.
+// See document-store.ts's documentsStore for the full rationale.
+const clientsStore = createSharedStore<Client[]>(fetchClients, [], (refetch) => {
+  // First subscriber only (browser only): load once the business id is known,
+  // and reload on every change event - one listener for all consumers.
+  onBusinessReady(() => refetch());
+  window.addEventListener(CHANGE_EVENT, () => refetch());
+});
+
 export function useClients() {
-  const [items, setItems] = useState<Client[]>([]);
-  const [ready, setReady] = useState(false);
-
-  const fetch = useCallback(async () => {
-    const bid = getBusinessId();
-    if (!bid) return;
-    const { data } = await supabase
-      .from("clients")
-      .select("*")
-      .eq("business_id", bid)
-      .order("created_at", { ascending: false });
-    setItems((data || []).map(mapRow));
-    setReady(true);
-  }, []);
-
-  useEffect(() => {
-    onBusinessReady(() => fetch());
-    const handler = () => fetch();
-    window.addEventListener(CHANGE_EVENT, handler);
-    return () => window.removeEventListener(CHANGE_EVENT, handler);
-  }, [fetch]);
-
-  return { items, ready };
+  const snapshot = useSyncExternalStore(
+    clientsStore.subscribe,
+    clientsStore.getSnapshot,
+    clientsStore.getServerSnapshot,
+  );
+  return { items: snapshot.data, ready: snapshot.ready };
 }
 
 /**
