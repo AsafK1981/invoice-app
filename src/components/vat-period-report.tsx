@@ -9,6 +9,8 @@ interface Props {
   business: Business;
   documents: InvoiceDocument[];
   expenses: Expense[];
+  /** On its own /reports/vat page the page header already carries the title; keep only the range line. */
+  headless?: boolean;
 }
 
 type PeriodMode = "this_2m" | "last_2m" | "this_month" | "last_month" | "this_year";
@@ -81,7 +83,7 @@ function yearRange(reference: Date): { start: string; end: string; label: string
   return { start: `${y}-01-01`, end: `${y}-12-31`, label: `שנת ${y}` };
 }
 
-export function VatPeriodReport({ business, documents, expenses }: Props) {
+export function VatPeriodReport({ headless = false, business, documents, expenses }: Props) {
   // ALL hooks must run before any conditional return, same trap as
   // React #310 yesterday. The early return for עוסק פטור comes last.
   const [mode, setMode] = useState<PeriodMode>("this_2m");
@@ -163,11 +165,13 @@ export function VatPeriodReport({ business, documents, expenses }: Props) {
     <div className="card-soft p-6 print:shadow-none">
       <div className="flex items-start justify-between gap-3 mb-4 flex-wrap">
         <div>
-          <h2 className="text-xl font-bold text-stone-900 flex items-center gap-2">
-            <Receipt className="w-5 h-5 text-orange-500" />
-            דיווח מע״מ תקופתי
-          </h2>
-          <p className="text-sm text-stone-700 mt-1">
+          {!headless && (
+            <h2 className="text-xl font-bold text-stone-900 flex items-center gap-2">
+              <Receipt className="w-5 h-5 text-orange-500" />
+              דיווח מע״מ תקופתי
+            </h2>
+          )}
+          <p className={`text-sm text-stone-700 ${headless ? "font-semibold self-center" : "mt-1"}`}>
             {range.label} · {range.start.slice(0, 10)} עד {range.end.slice(0, 10)}
           </p>
         </div>

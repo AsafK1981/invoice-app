@@ -816,11 +816,8 @@ html .pgbtn-hero svg {
    selector and the three cards now sit inside one gold-tinted panel, so the
    relationship reads as one unit before the labels are even processed.
 
-   `.rp-card-*` sets the card fill directly (not via a Tailwind gradient
-   utility) because `.card-soft` above wins `background` under !important for
-   any combo that isn't already remapped by name (only the coral/orange-50
-   family is); an emerald-50/rose-50 gradient utility on a `.card-soft` node
-   would silently lose that tie and render plain white. */
+   (Since 2026-08-18 only the dashboard wears this panel; the reports page
+   moved to the `.rpt-*` block below.) */
 html .rp-period-group {
   background: linear-gradient(170deg, var(--goldtint), #fffef9);
   border: 1.5px solid var(--goldline);
@@ -851,19 +848,6 @@ html .rp-period-label::before {
   background: var(--gold-grad);
   flex-shrink: 0;
 }
-html .rp-card-income {
-  background: linear-gradient(160deg, #ecfdf5, #f0fdfa) !important;
-  border-color: transparent !important;
-}
-html .rp-card-expense {
-  background: linear-gradient(160deg, #fff1f2, #fdf2f8) !important;
-  border-color: transparent !important;
-}
-html .rp-card-profit {
-  background: linear-gradient(160deg, #fdf8ec, #fffdf8) !important;
-  border-color: transparent !important;
-}
-
 /* The dashboard's segmented period picker (חודש / חודשיים / חצי שנה / שנה),
    living in the `.rp-period-row` of the KPI panel since 2026-08-18. White
    pill on the gold-tinted panel; the active option is dark ink, not gold, so
@@ -891,6 +875,441 @@ html .dash-range {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
+}
+
+/* =====================================================================
+   REPORTS OVERVIEW (`.rpt-*`) - 2026-08-18, "לוח דוחות" (Option A of the
+   three-way canvas). One period control at the top scopes the whole page;
+   four KPI cards in ONE style (no per-card colour); a bar chart next to an
+   open-receivables digest; the monthly table; and a grid of uniform cards,
+   one per report, each opening on its own page. Everything below the header
+   is white card + gold hairline + ink type - the same vocabulary as the
+   documents table - so the page reads as one system instead of seven
+   widgets. Root is 14.5-15.5px inside the app shell, so 1rem ~ 15px.
+   ===================================================================== */
+html .rpt-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--dc-sp-4);
+  flex-wrap: wrap;
+}
+html .rpt-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-top: 0.15rem;
+}
+/* Segmented mode picker: same white pill as the dashboard's .dash-range,
+   the active option is dark ink so the page keeps zero gold controls. */
+html .rpt-modes button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 2rem;
+  padding: 0 0.9rem;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink2);
+  white-space: nowrap;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+html .rpt-modes button:hover { background: var(--goldtint); color: var(--ink); }
+html .rpt-modes button.is-active { background: var(--ink); color: #fff; font-weight: 700; }
+html .rpt-modes button.is-active:hover { background: var(--ink); }
+/* Prev / next stepper */
+html .rpt-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dc-sp-1);
+  height: 2.55rem;
+  padding: 0 0.35rem;
+  background: var(--card);
+  border: 1px solid var(--goldline);
+  border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(60, 45, 20, 0.05);
+}
+html .rpt-stepper b {
+  min-width: 5.2rem;
+  text-align: center;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap;
+}
+html .rpt-stepper button,
+html .rpt-stepper a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 9px;
+  color: var(--gold-text);
+  transition: background-color 0.15s ease;
+}
+html .rpt-stepper button:hover,
+html .rpt-stepper a:hover { background: var(--goldtint); }
+html .rpt-stepper svg { width: 0.95rem; height: 0.95rem; }
+/* Export menu */
+html .rpt-menu-wrap { position: relative; }
+html .rpt-menu-caret { width: 0.85rem !important; height: 0.85rem !important; color: var(--muted) !important; }
+html .rpt-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  inset-inline-end: 0;
+  z-index: 30;
+  min-width: 15.5rem;
+  padding: 0.4rem;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: var(--dc-sh-pop);
+}
+html .rpt-menu-cap {
+  padding: 0.45rem 0.7rem 0.25rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--gold-text);
+}
+html .rpt-menu button {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  min-height: 2.5rem;
+  padding: 0.4rem 0.7rem;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink);
+  text-align: start;
+  transition: background-color 0.15s ease;
+}
+html .rpt-menu button svg { width: 0.95rem; height: 0.95rem; color: var(--gold-text); flex: none; }
+html .rpt-menu button span { flex: 1; }
+html .rpt-menu button small { font-size: 0.72rem; font-weight: 700; color: var(--muted); }
+html .rpt-menu button:hover:not(:disabled) { background: var(--goldtint); }
+html .rpt-menu button:disabled { opacity: 0.45; cursor: default; }
+
+/* Icon tiles: quiet sand square, gold-text glyph (the app's .icotile) */
+html .rpt-icot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 12px;
+  background: var(--icotile);
+  color: var(--gold-text);
+  flex: none;
+}
+html .rpt-icot svg { width: 1.1rem; height: 1.1rem; }
+html .rpt-icot-sm { width: 2rem; height: 2rem; border-radius: 10px; }
+html .rpt-icot-sm svg { width: 0.95rem; height: 0.95rem; }
+
+/* KPI strip */
+html .rpt-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+html .rpt-kpi {
+  padding: 1rem 1.1rem 1.05rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  min-width: 0;
+}
+html .rpt-kpi-lab {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ink2);
+}
+html .rpt-kpi-val {
+  font-size: 1.55rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+  overflow-wrap: anywhere;
+}
+html .rpt-kpi-foot {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  font-size: 0.75rem;
+  color: var(--muted);
+  min-height: 1.35rem;
+}
+html .rpt-delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  height: 1.35rem;
+  padding: 0 0.5rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+html .rpt-delta svg { width: 0.75rem; height: 0.75rem; }
+html .rpt-delta-up { background: var(--dc-paid-bg); color: var(--dc-paid-ink); }
+html .rpt-delta-down { background: var(--dc-void-bg); color: var(--dc-void-ink); }
+html .rpt-delta-flat { background: var(--icotile); color: var(--ink2); }
+
+/* Cards */
+html .rpt-card { min-width: 0; }
+html .rpt-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--dc-sp-4);
+  padding: 1rem 1.1rem 0.5rem;
+}
+html .rpt-card-body { padding: 0.35rem 1.1rem 1.1rem; }
+html .rpt-h2 { font-size: 1.05rem; font-weight: 700; color: var(--ink); margin: 0; }
+html .rpt-hint { font-size: 0.8rem; color: var(--muted); margin-top: 0.15rem; }
+html .rpt-link { display: inline-flex; align-items: center; min-height: 2.2rem; font-size: 0.8rem; font-weight: 700; color: var(--gold-text); white-space: nowrap; }
+html .rpt-link:hover { color: var(--ink); text-decoration: underline; }
+html .rpt-btn-sm { min-height: 2.2rem; padding: 0.3rem 0.8rem; font-size: 0.8rem; }
+html .rpt-row2 {
+  display: grid;
+  grid-template-columns: minmax(0, 1.62fr) minmax(0, 1fr);
+  gap: 0.9rem;
+}
+
+/* Bar chart */
+html .rpt-legend {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ink2);
+  white-space: nowrap;
+}
+html .rpt-legend span { display: inline-flex; align-items: center; gap: 0.4rem; }
+html .rpt-chart-dot { width: 0.7rem; height: 0.7rem; border-radius: 3px; display: inline-block; flex: none; }
+html .rpt-chart-dot-income { background: linear-gradient(160deg, #d8be77, #a8853a); }
+html .rpt-chart-dot-expense { background: #d9d0bf; }
+html .rpt-chart { position: relative; }
+html .rpt-chart svg { display: block; width: 100%; height: 236px; direction: ltr; overflow: visible; }
+html .rpt-chart-grid { stroke: #ece6d8; stroke-width: 1; }
+html .rpt-chart-tick { font-size: 11px; font-weight: 600; fill: var(--muted); font-family: inherit; }
+html .rpt-chart-label { font-size: 11.5px; font-weight: 600; fill: var(--ink2); font-family: inherit; }
+html .rpt-chart-expense { fill: #d9d0bf; }
+html .rpt-chart-group { cursor: default; }
+html .rpt-chart-group.is-muted .rpt-chart-income,
+html .rpt-chart-group.is-muted .rpt-chart-expense { opacity: 0.32; }
+html .rpt-chart-group.is-muted .rpt-chart-label { opacity: 0.55; }
+html .rpt-chart-group.is-hover .rpt-chart-income,
+html .rpt-chart-group.is-hover .rpt-chart-expense { opacity: 1; filter: brightness(1.05); }
+html .rpt-chart-tip {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  pointer-events: none;
+  min-width: 11rem;
+  padding: 0.55rem 0.7rem;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: var(--dc-sh-pop);
+  font-size: 0.78rem;
+  color: var(--ink);
+  direction: rtl;
+}
+html .rpt-chart-tip-title { font-weight: 700; margin-bottom: 0.3rem; }
+html .rpt-chart-tip-row { display: flex; align-items: center; gap: 0.4rem; }
+html .rpt-chart-tip-row span { flex: 1; color: var(--ink2); }
+html .rpt-chart-tip-row b { font-variant-numeric: tabular-nums; }
+
+/* Open receivables digest */
+html .rpt-aging { display: flex; flex-direction: column; }
+html .rpt-aging-body { display: flex; flex-direction: column; gap: 0.9rem; flex: 1; }
+html .rpt-aging-total {
+  font-size: 1.55rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+}
+html .rpt-aging-bar {
+  display: flex;
+  height: 0.7rem;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--icotile);
+}
+html .rpt-aging-bar i { display: block; height: 100%; }
+html .rpt-aging-buckets {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.35rem 1rem;
+  margin: 0;
+  font-size: 0.8rem;
+}
+html .rpt-aging-buckets > div { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+html .rpt-aging-buckets dt { display: flex; align-items: center; gap: 0.45rem; color: var(--ink2); }
+html .rpt-aging-buckets dt i { width: 0.6rem; height: 0.6rem; border-radius: 3px; display: inline-block; flex: none; }
+html .rpt-aging-buckets dd { margin: 0; font-weight: 700; font-variant-numeric: tabular-nums; }
+html .rpt-aging-clients {
+  list-style: none;
+  margin: 0;
+  padding: 0.7rem 0 0;
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  font-size: 0.82rem;
+}
+html .rpt-aging-clients li { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
+html .rpt-aging-clients li a,
+html .rpt-aging-clients li span { font-weight: 600; color: var(--ink); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html .rpt-aging-clients li a:hover { color: var(--gold-text); }
+html .rpt-aging-clients li b { font-variant-numeric: tabular-nums; flex: none; }
+html .rpt-aging-more a { color: var(--gold-text) !important; font-weight: 700 !important; }
+
+/* Month-by-month table */
+html .rpt-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.875rem;
+}
+html .rpt-table th {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--ink2);
+  text-align: right;
+  padding: 0.55rem 1.1rem;
+  border-bottom: 1px solid var(--goldtintline);
+  background: var(--goldtint);
+  white-space: nowrap;
+}
+html .rpt-table td {
+  padding: 0.62rem 1.1rem;
+  border-bottom: 1px solid #f2ede1;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+html .rpt-table th.n,
+html .rpt-table td.n { text-align: left; }
+html .rpt-table tbody tr:last-child td { border-bottom: 0; }
+html .rpt-table tbody tr:hover td { background: var(--goldtint); }
+html .rpt-td-month { font-weight: 600; }
+html .rpt-td-income { font-weight: 600; }
+html .rpt-td-expense { color: var(--ink2); }
+html .rpt-td-profit { font-weight: 700; }
+html .rpt-total td {
+  background: var(--goldtint);
+  font-weight: 700;
+  border-top: 1px solid var(--goldtintline);
+}
+html .rpt-table tbody tr.rpt-total:hover td { background: var(--goldtint); }
+html .rpt-empty { padding: 3rem 1rem !important; text-align: center; color: var(--muted); font-size: 0.85rem; white-space: normal !important; }
+
+/* Report cards grid */
+html .rpt-sect-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--dc-sp-4);
+  flex-wrap: wrap;
+  margin-bottom: 0.7rem;
+  padding: 0 0.15rem;
+}
+html .rpt-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+html .rpt-rc {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.6rem;
+  min-height: 9.4rem;
+  padding: 1rem 1.05rem;
+  text-align: start;
+  color: var(--ink);
+  transition: background-color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+html .rpt-rc:hover {
+  background: var(--goldtint) !important;
+  border-color: var(--goldline) !important;
+  box-shadow: var(--dc-sh-lift) !important;
+  transform: translateY(-1px);
+}
+html .rpt-rc:focus-visible { outline: 2px solid var(--g3); outline-offset: 2px; }
+html .rpt-rc-featured {
+  border-color: var(--goldline) !important;
+  background: linear-gradient(170deg, var(--goldtint), #fffef9) !important;
+}
+html .rpt-rc-title { font-size: 0.95rem; font-weight: 700; }
+html .rpt-rc-desc { font-size: 0.78rem; line-height: 1.45; color: var(--muted); flex: 1; }
+html .rpt-rc-go {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--gold-text);
+}
+html .rpt-rc-go svg { width: 0.85rem; height: 0.85rem; }
+
+/* ---- responsive ---- */
+@media (max-width: 1099.98px) {
+  html .rpt-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  html .rpt-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 899.98px) {
+  html .rpt-row2 { grid-template-columns: minmax(0, 1fr); }
+  html .rpt-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 639.98px) {
+  html .rpt-head { flex-direction: column; align-items: stretch; }
+  html .rpt-controls { width: 100%; }
+  html .rpt-modes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); width: 100%; }
+  html .rpt-modes button { padding: 0 0.3rem; height: 2.35rem; }
+  html .rpt-stepper button { width: 2.3rem; height: 2.3rem; }
+  html .rpt-stepper { flex: 1 1 auto; justify-content: space-between; }
+  html .rpt-stepper b { flex: 1; }
+  html .rpt-menu-wrap { flex: 1 1 auto; }
+  html .rpt-menu-wrap > .pgbtn { width: 100%; }
+  html .rpt-menu { inset-inline: 0; min-width: 0; }
+  html .rpt-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.6rem; }
+  html .rpt-kpi { padding: 0.8rem 0.85rem 0.85rem; }
+  html .rpt-kpi-val { font-size: 1.25rem; }
+  html .rpt-kpi-foot { font-size: 0.7rem; }
+  html .rpt-card-head { flex-direction: column; gap: 0.5rem; }
+  html .rpt-legend { gap: 0.75rem; }
+  html .rpt-grid { grid-template-columns: minmax(0, 1fr); gap: 0.6rem; }
+  html .rpt-rc { min-height: 0; }
+  html .rpt-table { font-size: 0.8rem; }
+  html .rpt-table th, html .rpt-table td { padding-inline: 0.55rem; }
+  html .rpt-table th:first-child, html .rpt-table td:first-child { padding-inline-start: 0.85rem; }
+  html .rpt-table th:last-child, html .rpt-table td:last-child { padding-inline-end: 0.85rem; }
+  html .rpt-chart-tip { min-width: 9rem; }
+}
+@media (max-width: 379.98px) {
+  html .rpt-kpis { grid-template-columns: minmax(0, 1fr); }
+}
+@media print {
+  html .rpt-controls, html .rpt-menu, html .rpt-btn-sm { display: none !important; }
 }
 
 /* =====================================================================

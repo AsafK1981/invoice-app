@@ -11,6 +11,8 @@ interface Props {
   business: Business;
   documents: InvoiceDocument[];
   expenses: Expense[];
+  /** On its own /reports/form-1301 page the page header already carries the title; skip the card's. */
+  headless?: boolean;
 }
 
 interface FieldRow {
@@ -27,7 +29,7 @@ interface FieldRow {
  * are taken from the 2025 form revision; fields specific to עוסק
  * מורשה (VAT) are only shown when relevant.
  */
-export function Form1301Helper({ year, business, documents, expenses }: Props) {
+export function Form1301Helper({ headless = false, year, business, documents, expenses }: Props) {
   const [copied, setCopied] = useState<string | null>(null);
 
   const fields = useMemo<FieldRow[]>(() => {
@@ -103,16 +105,18 @@ export function Form1301Helper({ year, business, documents, expenses }: Props) {
 
   return (
     <div className="card-soft p-6 print:shadow-none">
-      <div className="flex items-start justify-between gap-3 mb-5 flex-wrap">
-        <div>
-          <h2 className="text-xl font-bold text-stone-900 flex items-center gap-2">
-            <ClipboardList className="w-5 h-5 text-blue-500" />
-            עזר למילוי טופס 1301 · {year}
-          </h2>
-          <p className="text-sm text-stone-700 mt-1">
-            הערכים מוכנים להעתקה ישירה לטופס הדוח השנתי באתר רשות המסים, או לרואה החשבון.
-          </p>
-        </div>
+      <div className={`flex items-start gap-3 mb-5 flex-wrap ${headless ? "justify-end" : "justify-between"}`}>
+        {!headless && (
+          <div>
+            <h2 className="text-xl font-bold text-stone-900 flex items-center gap-2">
+              <ClipboardList className="w-5 h-5 text-blue-500" />
+              עזר למילוי טופס 1301 · {year}
+            </h2>
+            <p className="text-sm text-stone-700 mt-1">
+              הערכים מוכנים להעתקה ישירה לטופס הדוח השנתי באתר רשות המסים, או לרואה החשבון.
+            </p>
+          </div>
+        )}
         <button
           onClick={() => window.print()}
           className="no-print inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border-2 border-orange-200 text-stone-800 hover:bg-orange-50"

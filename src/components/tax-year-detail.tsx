@@ -17,9 +17,11 @@ interface Props {
   /** All-time documents/expenses for prior-year comparison */
   allDocuments: InvoiceDocument[];
   allExpenses: Expense[];
+  /** On its own /reports/annual page the page header already carries the title; skip the card's. */
+  headless?: boolean;
 }
 
-export function TaxYearDetail({ year, documents, expenses, allDocuments, allExpenses }: Props) {
+export function TaxYearDetail({ headless = false, year, documents, expenses, allDocuments, allExpenses }: Props) {
   const stats = useMemo(() => {
     // Count only real revenue documents: exclude price quotes / proformas and
     // any doc already converted into another (its revenue lives in the target,
@@ -133,13 +135,15 @@ export function TaxYearDetail({ year, documents, expenses, allDocuments, allExpe
 
   return (
     <div className="card-soft p-6 print:shadow-none">
-      <div className="flex items-start justify-between gap-3 mb-5 flex-wrap">
-        <div>
-          <h2 className="text-xl font-bold text-stone-900">סיכום שנתי לדיווח · {year}</h2>
-          <p className="text-sm text-stone-700 mt-1">
-            כל המספרים שצריך למילוי הדוח השנתי במקום אחד. ניתן להדפיס.
-          </p>
-        </div>
+      <div className={`flex items-start gap-3 mb-5 flex-wrap ${headless ? "justify-end" : "justify-between"}`}>
+        {!headless && (
+          <div>
+            <h2 className="text-xl font-bold text-stone-900">סיכום שנתי לדיווח · {year}</h2>
+            <p className="text-sm text-stone-700 mt-1">
+              כל המספרים שצריך למילוי הדוח השנתי במקום אחד. ניתן להדפיס.
+            </p>
+          </div>
+        )}
         <button
           onClick={() => window.print()}
           className="no-print inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border-2 border-orange-200 text-stone-800 hover:bg-orange-50"

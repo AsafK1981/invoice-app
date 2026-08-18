@@ -11,6 +11,8 @@ import { exportCapitalDeclarationDraft } from "@/lib/csv-export";
 interface Props {
   documents: InvoiceDocument[];
   expenses: Expense[];
+  /** On its own /reports/capital-declaration page the page header already carries the title; skip the card's. */
+  headless?: boolean;
 }
 
 interface YearRow {
@@ -57,7 +59,7 @@ const NOT_COVERED_CATEGORIES = [
  *    explicit checklist the user must complete separately, never implied
  *    to be covered.
  */
-export function CapitalDeclarationReport({ documents, expenses }: Props) {
+export function CapitalDeclarationReport({ headless = false, documents, expenses }: Props) {
   const currentYear = new Date().getFullYear();
   const [fromYear, setFromYear] = useState<number>(currentYear - 4);
   const [toYear, setToYear] = useState<number>(currentYear);
@@ -116,16 +118,18 @@ export function CapitalDeclarationReport({ documents, expenses }: Props) {
 
   return (
     <div className="card-soft p-6 print:shadow-none">
-      <div className="flex items-start justify-between gap-3 mb-5 flex-wrap">
-        <div>
-          <h2 className="text-xl font-bold text-stone-900 flex items-center gap-2">
-            <Wallet className="w-5 h-5 text-purple-500" />
-            הכנה להצהרת הון
-          </h2>
-          <p className="text-sm text-stone-700 mt-1">
-            טיוטה חלקית לצירוף לטופס ההצהרה או לשימוש רואה החשבון - החלק העסקי בלבד.
-          </p>
-        </div>
+      <div className={`flex items-start gap-3 mb-5 flex-wrap ${headless ? "justify-end" : "justify-between"}`}>
+        {!headless && (
+          <div>
+            <h2 className="text-xl font-bold text-stone-900 flex items-center gap-2">
+              <Wallet className="w-5 h-5 text-purple-500" />
+              הכנה להצהרת הון
+            </h2>
+            <p className="text-sm text-stone-700 mt-1">
+              טיוטה חלקית לצירוף לטופס ההצהרה או לשימוש רואה החשבון - החלק העסקי בלבד.
+            </p>
+          </div>
+        )}
         <div className="no-print flex items-center gap-2">
           <button
             onClick={handleExport}

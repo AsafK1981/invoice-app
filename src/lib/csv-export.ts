@@ -53,6 +53,23 @@ export function exportExpenses(expenses: Expense[], suffix?: string) {
   download(`expenses${tag}-${date}.csv`, csv);
 }
 
+/** The reports page's month-by-month table (income / expenses / profit). */
+export function exportMonthlySummary(
+  rows: { month: string; label: string; income: number; expenses: number }[],
+  suffix?: string,
+) {
+  const out = rows.map((r) => ({
+    "חודש": r.label,
+    "הכנסות": Math.round(r.income * 100) / 100,
+    "הוצאות": Math.round(r.expenses * 100) / 100,
+    "רווח": Math.round((r.income - r.expenses) * 100) / 100,
+  }));
+  const csv = Papa.unparse(out);
+  const date = new Date().toISOString().slice(0, 10);
+  const tag = suffix ? `-${suffix}` : "";
+  download(`monthly-summary${tag}-${date}.csv`, csv);
+}
+
 /**
  * Draft export for the הצהרת הון (capital declaration) helper: the business
  * slice ONLY (declared income per year + open receivables), plus an explicit
