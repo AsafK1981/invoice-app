@@ -864,6 +864,21 @@ html .rp-card-profit {
   border-color: transparent !important;
 }
 
+/* The dashboard's segmented period picker (חודש / חודשיים / חצי שנה / שנה),
+   living in the `.rp-period-row` of the KPI panel since 2026-08-18. White
+   pill on the gold-tinted panel; the active option is dark ink, not gold, so
+   the page keeps exactly one gold control (מסמך חדש). */
+html .dash-range {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  background: var(--card);
+  border: 1px solid var(--goldline);
+  border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(60, 45, 20, 0.05);
+}
+
 @media (max-width: 639.98px) {
   html .rp-period-row {
     flex-direction: column;
@@ -871,6 +886,10 @@ html .rp-card-profit {
   }
   html .rp-period-row select {
     width: 100%;
+  }
+  html .dash-range {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 

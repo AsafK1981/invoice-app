@@ -49,58 +49,52 @@ const ExpenseCategoriesChart = dynamic(
   },
 );
 
-type DateRange = "this_month" | "last_3_months" | "this_year" | "all_time";
+/**
+ * The dashboard's period picker. Every option is "the last N calendar
+ * months, including the current one": חודש = this month, חודשיים = this
+ * month + last, and so on. One rule for all four keeps the previous-period
+ * comparison honest (the N months just before those), and lets the picker
+ * live INSIDE the KPI panel it drives with labels short enough to sit there.
+ * Replaced החודש / 3 חודשים / השנה / הכל on 2026-08-18 at the user's request.
+ */
+type DateRange = "1m" | "2m" | "6m" | "12m";
+
+const RANGE_MONTHS: Record<DateRange, number> = { "1m": 1, "2m": 2, "6m": 6, "12m": 12 };
 
 const RANGE_LABELS: Record<DateRange, string> = {
-  this_month: "החודש",
-  last_3_months: "3 חודשים אחרונים",
-  this_year: "השנה",
-  all_time: "הכל",
+  "1m": "חודש",
+  "2m": "חודשיים",
+  "6m": "חצי שנה",
+  "12m": "שנה",
 };
 
-function getRangeStart(range: DateRange): string {
+/** Hebrew name of the matching previous period, for the delta tooltips. */
+const PREV_RANGE_LABELS: Record<DateRange, string> = {
+  "1m": "חודש שעבר",
+  "2m": "החודשיים שלפניהם",
+  "6m": "חצי השנה שלפניה",
+  "12m": "השנה שלפניה",
+};
+
+/** ISO date of the first day of the month `monthsBack` months before now. */
+function monthStart(monthsBack: number): string {
   const now = new Date();
-  switch (range) {
-    case "this_month":
-      return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
-    case "last_3_months":
-      const d = new Date(now.getFullYear(), now.getMonth() - 2, 1);
-      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
-    case "this_year":
-      return `${now.getFullYear()}-01-01`;
-    case "all_time":
-      return "0000-01-01";
-  }
+  const d = new Date(now.getFullYear(), now.getMonth() - monthsBack, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
+}
+
+function getRangeStart(range: DateRange): string {
+  return monthStart(RANGE_MONTHS[range] - 1);
 }
 
 /**
- * Get the matching previous period, same length, immediately before the
- * current one. Used to compute month-over-month / year-over-year deltas
- * on the dashboard cards.
- *   this_month       -> prev month
- *   last_3_months    -> the 3 months before that
- *   this_year        -> prev year
- *   all_time         -> no prior period
+ * The matching previous period: the same number of calendar months,
+ * immediately before the current range. `end` is exclusive (the first day
+ * of the current range).
  */
-function getPreviousRange(range: DateRange): { start: string; end: string } | null {
-  const now = new Date();
-  if (range === "this_month") {
-    const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const start = `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, "0")}-01`;
-    const end = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
-    return { start, end };
-  }
-  if (range === "last_3_months") {
-    const prevStart = new Date(now.getFullYear(), now.getMonth() - 5, 1);
-    const prevEnd = new Date(now.getFullYear(), now.getMonth() - 2, 1);
-    const fmt = (d: Date) =>
-      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
-    return { start: fmt(prevStart), end: fmt(prevEnd) };
-  }
-  if (range === "this_year") {
-    return { start: `${now.getFullYear() - 1}-01-01`, end: `${now.getFullYear()}-01-01` };
-  }
-  return null; // all_time has no prior
+function getPreviousRange(range: DateRange): { start: string; end: string } {
+  const n = RANGE_MONTHS[range];
+  return { start: monthStart(2 * n - 1), end: monthStart(n - 1) };
 }
 
 /**
@@ -122,7 +116,7 @@ export default function DashboardPage() {
   const { items: clients } = useClients();
   const { items: products } = useProducts();
   const { business } = useBusiness();
-  const [range, setRange] = useState<DateRange>("this_month");
+  const [range, setRange] = useState<DateRange>("1m");
 
   const stats = useMemo(() => {
     const start = getRangeStart(range);
@@ -138,8 +132,7 @@ export default function DashboardPage() {
     const openQuotesValue = openQuotes.reduce((sum, d) => sum + (d.totalIls ?? d.total), 0);
     const avgInvoice = paidDocs.length > 0 ? income / paidDocs.length : 0;
 
-    // Previous-period stats for month-over-month-style deltas. When the
-    // range is "all_time" there's no prior; deltas are null in that case.
+    // Previous-period stats for month-over-month-style deltas.
     const prev = getPreviousRange(range);
     let prevIncome = 0;
     let prevExpense = 0;
@@ -177,20 +170,13 @@ export default function DashboardPage() {
   }, [documents, expenses, range]);
 
   /** Hebrew label for the previous period (used in tooltips on delta badges) */
-  const prevLabel =
-    range === "this_month"
-      ? "חודש שעבר"
-      : range === "last_3_months"
-      ? "3 החודשים שלפניהם"
-      : range === "this_year"
-      ? "שנה שעברה"
-      : null;
+  const prevLabel = PREV_RANGE_LABELS[range];
 
   // Build a `month=YYYY-MM` query suffix only when the dashboard is showing
   // exactly one calendar month; for other ranges the documents-table month
   // filter wouldn't match, and we'd rather show "all months" than wrong months.
   const monthQs = (() => {
-    if (range !== "this_month") return "";
+    if (range !== "1m") return "";
     const now = new Date();
     return `&month=${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   })();
@@ -294,30 +280,13 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Primary action alone at the inline-start (right), under the title;
-          the range picker hugs the opposite edge. See "PAGE ACTION BAR" in
-          app-skin.css. The picker's active state is deliberately NOT gold:
-          gold is reserved for the one call to action on the page. */}
+      {/* Primary action alone at the inline-start (right), under the title.
+          See "PAGE ACTION BAR" in app-skin.css. */}
       <div className="pgbar animate-fade-in-up">
         <Link href="/documents/new" className="pgbtn pgbtn-primary pgbtn-hero">
           <Plus aria-hidden="true" />
           מסמך חדש
         </Link>
-        <div className="card-soft p-1 flex items-center gap-1">
-          {(Object.keys(RANGE_LABELS) as DateRange[]).map((r) => (
-            <button
-              key={r}
-              onClick={() => setRange(r)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
-                range === r
-                  ? "bg-stone-800 text-white shadow-sm"
-                  : "text-stone-700 hover:bg-stone-100"
-              }`}
-            >
-              {RANGE_LABELS[r]}
-            </button>
-          ))}
-        </div>
       </div>
 
       <BetaBanner />
@@ -356,7 +325,33 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* The period picker sits INSIDE the panel with the four cards it
+          drives (same enclosure as /reports' `.rp-period-group`): a control
+          that floated in the header read as unrelated to the numbers it was
+          changing. Its active state is deliberately NOT gold - gold is
+          reserved for the one call to action on the page. */}
+      <section className="rp-period-group" aria-label="סיכום לתקופה">
+        <div className="rp-period-row">
+          <span className="rp-period-label">הנתונים לתקופה - {RANGE_LABELS[range]}</span>
+          <div className="dash-range" role="group" aria-label="בחירת תקופה">
+            {(Object.keys(RANGE_LABELS) as DateRange[]).map((r) => (
+              <button
+                key={r}
+                type="button"
+                onClick={() => setRange(r)}
+                aria-pressed={range === r}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                  range === r
+                    ? "bg-stone-800 text-white shadow-sm"
+                    : "text-stone-700 hover:bg-stone-100"
+                }`}
+              >
+                {RANGE_LABELS[r]}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {cards.map((s, idx) => {
           const Icon = s.icon;
           return (
@@ -390,7 +385,8 @@ export default function DashboardPage() {
             </Link>
           );
         })}
-      </div>
+        </div>
+      </section>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 animate-fade-in-up stagger-5">
         {secondary.map((s) => {
