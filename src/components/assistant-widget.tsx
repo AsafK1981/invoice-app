@@ -584,17 +584,23 @@ export function AssistantWidget() {
     // "talk to something", plus the words. The label stays visible at every
     // width - hiding it on mobile would put the ambiguity back exactly where
     // most first-time users are.
+    // Asaf (2026-08-18) still did not notice it in the corner, so it is a
+    // touch larger on desktop and does a short hop + glow ring every ~30s
+    // (CSS-only, respects prefers-reduced-motion) to catch the eye.
     return (
       <button
         onClick={() => setOpen(true)}
         aria-label="פתח את העוזר החכם"
-        className={`assistant-launcher no-print fixed left-4 right-auto z-40 ${side} h-12 pl-4 pr-3 rounded-full bg-gradient-to-br from-orange-400 to-rose-500 text-white shadow-lg shadow-orange-200/60 flex items-center gap-2 hover:scale-105 active:scale-95 transition-transform print:hidden`}
+        className={`assistant-launcher no-print fixed left-4 right-auto z-40 ${side} h-12 pl-4 pr-3 lg:h-14 lg:pl-5 lg:pr-4 rounded-full bg-gradient-to-br from-orange-400 to-rose-500 text-white shadow-lg shadow-orange-300/60 flex items-center gap-2 hover:scale-105 active:scale-95 transition-transform print:hidden`}
       >
+        {/* Attention ring: expands and fades once per nudge cycle (see
+            .assistant-launcher::after in app-skin.css). Decorative only. */}
+        <span aria-hidden="true" className="assistant-launcher-ring" />
         <span className="relative flex items-center justify-center">
-          <MessageCircle className="w-5 h-5" />
-          <Sparkles className="w-3 h-3 absolute -top-1 -left-1.5" />
+          <MessageCircle className="w-5 h-5 lg:w-6 lg:h-6" />
+          <Sparkles className="w-3 h-3 lg:w-3.5 lg:h-3.5 absolute -top-1 -left-1.5" />
         </span>
-        <span className="text-sm font-semibold whitespace-nowrap">עוזר חכם</span>
+        <span className="text-sm lg:text-base font-semibold whitespace-nowrap">עוזר חכם</span>
       </button>
     );
   }

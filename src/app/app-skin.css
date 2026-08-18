@@ -2854,3 +2854,42 @@ html .text-\[13px\] { font-size: 14px; }
     bottom: 1.5rem;
   }
 }
+
+/* Periodic nudge (Asaf, 2026-08-18: "I don't notice it"). Every 30s the pill
+   hops twice and a ring blooms out of it, ~1.6s total, then it sits still
+   again. Uses `translate`/`rotate` (not `transform`) so it never fights the
+   Tailwind hover:scale / active:scale utilities, which live on `scale`.
+   The first hop lands ~28s after mount, so a page never opens mid-wiggle. */
+@keyframes assistant-launcher-hop {
+  0%, 94%   { translate: 0 0; rotate: 0deg; }
+  95.2%     { translate: 0 -8px; rotate: -4deg; }
+  96.4%     { translate: 0 0; rotate: 0deg; }
+  97.4%     { translate: 0 -5px; rotate: 3deg; }
+  98.6%, 100% { translate: 0 0; rotate: 0deg; }
+}
+@keyframes assistant-launcher-ring {
+  0%, 94%   { opacity: 0; scale: 1; }
+  94.5%     { opacity: 0.85; scale: 1; }
+  99%, 100% { opacity: 0; scale: 1.45; }
+}
+.assistant-launcher {
+  animation: assistant-launcher-hop 30s ease-in-out infinite;
+}
+.assistant-launcher-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  /* Gold, not the coral the Tailwind classes suggest: the skin repaints the
+     pill with --gold-grad, so the ring must match what is actually on screen. */
+  border: 2px solid var(--g2, #c5a656);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--g2, #c5a656) 40%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  animation: assistant-launcher-ring 30s ease-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .assistant-launcher,
+  .assistant-launcher-ring {
+    animation: none;
+  }
+}
