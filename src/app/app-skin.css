@@ -537,6 +537,36 @@ html .gk-value {
    colour of its own - it stays on the element only for its SIZING rules (the
    min-width:1024px scale-up further down). */
 
+/* ---------- onboarding checklist ("כמעט שם") rows (dashboard) ----------
+   The open steps are links, and Asaf wants them to FEEL like the document
+   rows further down the same page: same rest surface, same hover. So this
+   mirrors `.dc-row` / `.dc-row:hover` one for one - card white at rest with
+   the card hairline, goldtint + goldline + the lift shadow + the 1px rise on
+   hover, and the headline turning gold-text. Done steps stay quiet: no
+   border, no hover, they are not a call to action any more. */
+html .ob-step {
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease, background-color 0.18s ease;
+}
+html .ob-step-open {
+  background: var(--card) !important;
+  border: 1px solid var(--line);
+  box-shadow: none !important;
+}
+html .ob-step-open:hover {
+  background: var(--goldtint) !important;
+  border-color: var(--goldline);
+  box-shadow: var(--dc-sh-lift) !important;
+  transform: translateY(-1px);
+}
+html .ob-step-open:focus-visible {
+  outline: none;
+  border-color: var(--goldline);
+  box-shadow: var(--dc-sh-focus) !important;
+}
+html .ob-step-open:hover .ob-step-label { color: var(--gold-text) !important; }
+html .ob-step-open:hover .ob-step-cta { color: var(--ink) !important; }
+html .ob-step-done { border: 1px solid transparent; }
+
 /* ---------- tables ---------- */
 html table thead { background: transparent !important; }
 html table thead th {

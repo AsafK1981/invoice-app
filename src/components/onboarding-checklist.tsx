@@ -146,10 +146,10 @@ export function OnboardingChecklist({ business, clients, products, documents }: 
           <Link
             key={step.id}
             href={step.href}
-            className={`flex items-center gap-3 p-3 rounded-xl transition-colors ${
+            className={`ob-step flex items-center gap-3 p-3 rounded-xl transition-colors ${
               step.done
-                ? "bg-white/40"
-                : "bg-white/70 hover:bg-white shadow-sm hover:shadow"
+                ? "ob-step-done bg-white/40"
+                : "ob-step-open bg-white/70 hover:bg-white shadow-sm hover:shadow"
             }`}
           >
             {step.done ? (
@@ -159,7 +159,7 @@ export function OnboardingChecklist({ business, clients, products, documents }: 
             )}
             <div className="flex-1 min-w-0">
               <p
-                className={`text-sm font-semibold ${
+                className={`ob-step-label text-sm font-semibold ${
                   step.done ? "text-stone-500 line-through" : "text-stone-900"
                 }`}
               >
@@ -172,7 +172,7 @@ export function OnboardingChecklist({ business, clients, products, documents }: 
               )}
             </div>
             {!step.done && (
-              <span className="inline-flex items-center gap-1 text-xs font-medium text-orange-700 group-hover:text-orange-800">
+              <span className="ob-step-cta inline-flex items-center gap-1 text-xs font-medium text-orange-700">
                 {step.cta}
                 <ArrowLeft className="w-3 h-3" />
               </span>
