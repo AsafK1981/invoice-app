@@ -1539,9 +1539,15 @@ html .dc-subj {
   -webkit-line-clamp: 2;
   line-clamp: 2;
   overflow: hidden;
-  font-size: var(--dc-fs-2);
+  /* Same size as the client name, one weight lighter, full ink (Asaf,
+     2026-08-18: "the subject is small grey, hard to read - like the client,
+     bold, so it is easy to read"). Two clamped lines at fs-3 still clear the
+     fixed row height at every tier (measured: 34px in a 43.5px row on the
+     diet tier, 39px in 49.5px at >=1400). */
+  font-size: var(--dc-fs-3);
+  font-weight: 600;
   line-height: 1.3;
-  color: var(--muted);
+  color: var(--ink);
   overflow-wrap: anywhere;
 }
 
@@ -1553,7 +1559,10 @@ html .dc-row .dc-cell[data-col="date"],
 html .dc-row .dc-cell[data-col="number"],
 html .dc-row .dc-cell[data-col="alloc"] {
   font-size: var(--dc-fs-2);
-  font-weight: 600;
+  /* 700, not 600 (Asaf, 2026-08-18): the date and the number are what he
+     scans the list by and they read as "grey and small" next to the bold
+     client name and amount. */
+  font-weight: 700;
   color: var(--ink2);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -2159,6 +2168,7 @@ html .dc-empty {
   html .dc-row .dc-cell[data-col="date"],
   html .dc-row .dc-cell[data-col="number"],
   html .dc-row .dc-cell[data-col="alloc"] {
+    font-size: 0.86rem;
     color: var(--ink);
   }
   /* The type dot is parked at 0.25rem + 6px from the chip's start; the diet
@@ -2231,7 +2241,7 @@ html .dc-empty {
   html .dc-chip, html .dc-pill { height: 1.7rem; }
   html .dc-chip { padding-inline-start: 0.95rem; }
   html .dc-name { max-width: 11rem; }
-  html .dc-subj { max-width: none; color: var(--ink2); }
+  html .dc-subj { max-width: none; }
   html .dc-row .dc-cell[data-col="date"],
   html .dc-row .dc-cell[data-col="number"],
   html .dc-row .dc-cell[data-col="alloc"] {
@@ -2498,6 +2508,13 @@ html .dc-empty {
   html .dc-subj {
     max-width: none;
     min-height: 2.6em;
+    /* The phone card keeps its quieter subject line (the desktop change of
+       2026-08-18 to ink/600/fs-3 was asked for on the desktop table, where
+       the subject is a column beside the client; here it is the second line
+       under a bold name and two bold lines read as one blob). */
+    font-size: var(--dc-fs-2);
+    font-weight: 400;
+    color: var(--muted);
   }
   /* Thumb-sized targets: 2.5rem is 41px at the phone root size of 16.5px. */
   html .dc-act { width: 2.5rem; height: 2.5rem; }
