@@ -150,6 +150,7 @@ export default function OnboardingPage() {
           accent: suggestedTemplate.accent,
           font: suggestedTemplate.font,
           layout: suggestedTemplate.layout,
+          pattern: "none",
           logoPosition: "right",
         },
       });

@@ -55,36 +55,30 @@ export type TemplateId =
 // color math (mix-with-white / mix-with-black), never from user input.
 
 export type AccentKey =
+  // brand + classic / neutral
   | "gold"
-  | "navy"
-  | "sage"
-  | "violet"
-  | "slate"
-  | "charcoal"
   | "amberDeep"
-  | "amber"
-  | "rose"
   | "terracotta"
-  | "coral"
-  | "coachGold"
-  | "blue"
-  | "mint"
+  | "navy"
+  | "slate"
+  | "sage"
   | "graphite"
-  | "teal"
+  | "charcoal"
+  | "stone"
+  // clean colour set (same hues as the approved app feature tiles)
+  | "amber"
+  | "orange"
+  | "rose"
+  | "pink"
   | "fuchsia"
-  | "sand"
-  | "apricot"
-  | "dustyRose"
-  | "lilac"
-  | "lavender"
+  | "violet"
+  | "indigo"
+  | "blue"
   | "sky"
-  | "steel"
-  | "seafoam"
-  | "moss"
-  | "olive"
-  | "cocoa"
-  | "berry"
-  | "plum";
+  | "cyan"
+  | "teal"
+  | "emerald"
+  | "lime";
 
 interface AccentFamily {
   /** hex, e.g. "#8a6d26" — text/badge/glabel/totals color */
@@ -109,13 +103,6 @@ function lighten(hex: string, amount: number): string {
   return rgbToHex(mix(r), mix(g), mix(b));
 }
 
-/** Mix `hex` toward black by `amount` (0..1). Pure, deterministic. */
-function darken(hex: string, amount: number): string {
-  const { r, g, b } = hexToRgb(hex);
-  const mix = (c: number) => Math.round(c * (1 - amount));
-  return rgbToHex(mix(r), mix(g), mix(b));
-}
-
 function hexToRgb(hex: string): { r: number; g: number; b: number } {
   const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
   if (!m) return { r: 0, g: 0, b: 0 };
@@ -127,28 +114,22 @@ function rgbToHex(r: number, g: number, b: number): string {
   return `#${c(r)}${c(g)}${c(b)}`;
 }
 
-/** Derive a full family from one base hex, following the shape of the
- *  hand-authored families below (line ≈ +55% white, faint ≈ +88% white,
- *  a 4-stop diagonal gradient echoing the original gold top bar). */
-function deriveAccentFamily(base: string): AccentFamily {
-  const line = lighten(base, 0.55);
-  const faint = lighten(base, 0.88);
-  const gradLight = lighten(base, 0.3);
-  const gradDark = darken(base, 0.28);
-  const gradLight2 = lighten(base, 0.18);
+/** A hand-picked family from four palette steps (ink/line/tint/deep) with
+ *  the same 4-stop diagonal gradient shape the original gold bar uses. */
+function tw(accent: string, line: string, faint: string, deep: string): AccentFamily {
   return {
-    accent: base,
+    accent,
     line,
     faint,
-    deep: darken(base, 0.3),
-    grad: `linear-gradient(177deg, ${gradLight} 0%, ${base} 42%, ${gradDark} 78%, ${gradLight2} 100%)`,
+    deep,
+    grad: `linear-gradient(177deg, ${lighten(accent, 0.3)} 0%, ${accent} 42%, ${deep} 78%, ${lighten(accent, 0.18)} 100%)`,
   };
 }
 
 /** The closed set of accent families. Exact hex triples are reused verbatim
  *  from the approved template gallery mockup where one exists; the rest are
- *  derived (see {@link deriveAccentFamily}) from the base hex specified in
- *  the product brief. This map is the ONLY source of accent CSS values —
+ *  hand-picked palette steps (see {@link tw}). This map is the ONLY source
+ *  of accent CSS values -
  *  `normalizeDocumentDesign` checks membership here, `designToCssVars` only
  *  ever reads from here. */
 export const ACCENT_HEX: Record<AccentKey, AccentFamily> = {
@@ -156,76 +137,58 @@ export const ACCENT_HEX: Record<AccentKey, AccentFamily> = {
     accent: "#8a6d26",
     line: "#c9ab63",
     faint: "#e7dcbf",
-    grad: "linear-gradient(177deg, #d8be77 0%, #be9e4e 42%, #8f6f2a 78%, #cbb061 100%)",
     deep: "#6a5320",
-  },
-  navy: {
-    accent: "#1b2a4a",
-    line: "#8a95b3",
-    faint: "#dde1eb",
-    grad: "linear-gradient(177deg, #1b2a4a 0%, #2a3d63 50%, #16213a 100%)",
-    deep: "#131d33",
-  },
-  sage: {
-    accent: "#62795f",
-    line: "#b9cab3",
-    faint: "#e7efe3",
-    grad: "linear-gradient(177deg, #a9c0a2 0%, #7c9885 42%, #5e7a5b 78%, #9db597 100%)",
-    deep: "#495b47",
-  },
-  violet: {
-    accent: "#6c4ff6",
-    line: "#bcaef9",
-    faint: "#ece7fe",
-    grad: "linear-gradient(177deg, #9c85fb 0%, #6c4ff6 42%, #4a2fd6 78%, #8b6ff9 100%)",
-    deep: "#4a2fd6",
-  },
-  slate: {
-    accent: "#34506b",
-    line: "#9db2c4",
-    faint: "#e1e9ef",
-    grad: "linear-gradient(177deg, #6f92ac 0%, #4a6c86 42%, #2c4056 78%, #6786a0 100%)",
-    deep: "#263a4e",
-  },
-  charcoal: {
-    accent: "#1a1a1a",
-    line: "#c9a15a",
-    faint: "#ece3d0",
-    grad: "#c9a15a",
-    deep: "#111111",
+    grad: "linear-gradient(177deg, #d8be77 0%, #be9e4e 42%, #8f6f2a 78%, #cbb061 100%)",
   },
   amberDeep: {
     accent: "#8a5f07",
     line: "#b8860b",
     faint: "#f2e0b3",
-    grad: "linear-gradient(177deg, #d9a52a 0%, #b8860b 50%, #8a5f07 100%)",
     deep: "#5f4104",
+    grad: "linear-gradient(177deg, #d9a52a 0%, #b8860b 50%, #8a5f07 100%)",
   },
-  amber: deriveAccentFamily("#d98a3d"),
-  rose: deriveAccentFamily("#c77b8b"),
-  terracotta: deriveAccentFamily("#b8734f"),
-  coral: deriveAccentFamily("#f2643b"),
-  coachGold: deriveAccentFamily("#d9a404"),
-  blue: deriveAccentFamily("#3e7cb1"),
-  mint: deriveAccentFamily("#6fa287"),
-  graphite: deriveAccentFamily("#2b2b2b"),
-  teal: deriveAccentFamily("#0ea5a5"),
-  fuchsia: deriveAccentFamily("#d6336c"),
-  // 2026-08-18: softer, gentler accents (Asaf: the swatches were "very dark
-  // and ugly"). Still dark enough to carry 10.5px label text on white.
-  sand: deriveAccentFamily("#957a3d"),
-  apricot: deriveAccentFamily("#b86a2c"),
-  dustyRose: deriveAccentFamily("#b0656f"),
-  lilac: deriveAccentFamily("#8f5f9e"),
-  lavender: deriveAccentFamily("#7b6bb5"),
-  sky: deriveAccentFamily("#4a80a8"),
-  steel: deriveAccentFamily("#5f7387"),
-  seafoam: deriveAccentFamily("#3a857a"),
-  moss: deriveAccentFamily("#5f7d5a"),
-  olive: deriveAccentFamily("#6f7c37"),
-  cocoa: deriveAccentFamily("#8a5a44"),
-  berry: deriveAccentFamily("#a04a6b"),
-  plum: deriveAccentFamily("#7f4f76"),
+  terracotta: tw("#c2410c", "#fdba74", "#ffedd5", "#7c2d12"),
+  navy: {
+    accent: "#1b2a4a",
+    line: "#8a95b3",
+    faint: "#dde1eb",
+    deep: "#131d33",
+    grad: "linear-gradient(177deg, #1b2a4a 0%, #2a3d63 50%, #16213a 100%)",
+  },
+  slate: tw("#475569", "#cbd5e1", "#f1f5f9", "#1e293b"),
+  sage: {
+    accent: "#62795f",
+    line: "#b9cab3",
+    faint: "#e7efe3",
+    deep: "#495b47",
+    grad: "linear-gradient(177deg, #a9c0a2 0%, #7c9885 42%, #5e7a5b 78%, #9db597 100%)",
+  },
+  graphite: tw("#3f3f46", "#a1a1aa", "#f4f4f5", "#18181b"),
+  charcoal: {
+    accent: "#1a1a1a",
+    line: "#c9a15a",
+    faint: "#ece3d0",
+    deep: "#111111",
+    grad: "#c9a15a",
+  },
+  stone: tw("#57534e", "#d6d3d1", "#f5f5f4", "#292524"),
+  // 2026-08-18: the clean set. Same hue system as the app's approved
+  // feature tiles (app-skin.css .ftile-*): text/ink at the 600 step,
+  // hairline at 300, pastel tint at 100, deep at 800. Replaces the earlier
+  // colour-math derived families, which came out muddy ("לא נראים טובים").
+  amber: tw("#d97706", "#fcd34d", "#fef3c7", "#92400e"),
+  orange: tw("#ea580c", "#fdba74", "#ffedd5", "#9a3412"),
+  rose: tw("#e11d48", "#fda4af", "#ffe4e6", "#9f1239"),
+  pink: tw("#db2777", "#f9a8d4", "#fce7f3", "#9d174d"),
+  fuchsia: tw("#c026d3", "#f0abfc", "#fae8ff", "#86198f"),
+  violet: tw("#7c3aed", "#c4b5fd", "#ede9fe", "#5b21b6"),
+  indigo: tw("#4f46e5", "#a5b4fc", "#e0e7ff", "#3730a3"),
+  blue: tw("#2563eb", "#93c5fd", "#dbeafe", "#1e40af"),
+  sky: tw("#0284c7", "#7dd3fc", "#e0f2fe", "#075985"),
+  cyan: tw("#0891b2", "#67e8f9", "#cffafe", "#155e75"),
+  teal: tw("#0d9488", "#5eead4", "#ccfbf1", "#115e59"),
+  emerald: tw("#059669", "#6ee7b7", "#d1fae5", "#065f46"),
+  lime: tw("#65a30d", "#bef264", "#ecfccb", "#3f6212"),
 };
 
 /** Every accent, grouped for the Settings swatch rows: the gentle set
@@ -234,44 +197,26 @@ export const ACCENT_HEX: Record<AccentKey, AccentFamily> = {
  *  rows can always get back to the template default. */
 export const ACCENT_GROUPS: { label: string; keys: AccentKey[] }[] = [
   {
-    label: "עדינים",
+    label: "צבעוני",
     keys: [
-      "sand",
-      "apricot",
-      "terracotta",
-      "dustyRose",
+      "amber",
+      "orange",
       "rose",
-      "lilac",
-      "lavender",
+      "pink",
+      "fuchsia",
+      "violet",
+      "indigo",
+      "blue",
       "sky",
-      "steel",
-      "seafoam",
-      "mint",
-      "moss",
-      "olive",
-      "cocoa",
+      "cyan",
+      "teal",
+      "emerald",
+      "lime",
     ],
   },
   {
-    label: "עמוקים",
-    keys: [
-      "gold",
-      "coachGold",
-      "amberDeep",
-      "amber",
-      "coral",
-      "fuchsia",
-      "berry",
-      "plum",
-      "violet",
-      "blue",
-      "teal",
-      "sage",
-      "slate",
-      "navy",
-      "graphite",
-      "charcoal",
-    ],
+    label: "קלאסי",
+    keys: ["gold", "amberDeep", "terracotta", "sage", "navy", "slate", "graphite", "stone", "charcoal"],
   },
 ];
 
@@ -434,6 +379,26 @@ export const LAYOUT_OPTIONS: Record<LayoutKey, { label: string; hint: string }> 
 };
 
 export const LAYOUT_KEYS = Object.keys(LAYOUT_OPTIONS) as LayoutKey[];
+
+// ── Background pattern keys ──────────────────────────────────────────────
+// A subtle accent-tinted texture painted on the sheet behind everything
+// (document-paper.css `.doc-paper::after`, keyed on `data-doc-pattern`).
+// Asaf asked for it (2026-08-18) after the flowing contour lines on the
+// marketing homepage: "קווים אופקיים כמו בדף הנחיתה, או בועות או עיגולים".
+// Always low-alpha so line items and amounts stay legible; "none" is the
+// default for every template and renders nothing at all.
+
+export type PatternKey = "none" | "topo" | "lines" | "bubbles" | "rings";
+
+export const PATTERN_OPTIONS: Record<PatternKey, { label: string; hint: string }> = {
+  none: { label: "ללא", hint: "רקע נקי" },
+  topo: { label: "קווים זורמים", hint: "קווי גובה עדינים, כמו בדף הבית" },
+  lines: { label: "שורות", hint: "קווים אופקיים דקים, כמו נייר מכתבים" },
+  bubbles: { label: "בועות", hint: "עיגולים רכים בפינות" },
+  rings: { label: "טבעות", hint: "טבעות קונצנטריות בפינה" },
+};
+
+export const PATTERN_KEYS = Object.keys(PATTERN_OPTIONS) as PatternKey[];
 
 // ── Templates ────────────────────────────────────────────────────────────
 
@@ -598,7 +563,7 @@ export const DOCUMENT_TEMPLATES: DocumentTemplate[] = [
   {
     id: "marketing",
     label: "שיווק ופרסום",
-    accent: "coral",
+    accent: "orange",
     font: "heebo",
     layout: "banner",
     corner: "normal",
@@ -615,7 +580,7 @@ export const DOCUMENT_TEMPLATES: DocumentTemplate[] = [
   {
     id: "coach",
     label: "מאמן/ת עסקי · יועץ/ת",
-    accent: "coachGold",
+    accent: "amber",
     font: "miriam",
     layout: "editorial",
     corner: "soft",
@@ -649,7 +614,7 @@ export const DOCUMENT_TEMPLATES: DocumentTemplate[] = [
   {
     id: "dietitian",
     label: "דיאטן/ית · תזונאי/ת",
-    accent: "mint",
+    accent: "emerald",
     font: "assistant",
     layout: "cards",
     corner: "soft",
@@ -934,6 +899,7 @@ export interface DocumentDesign {
   accent: AccentKey;
   font: FontKey;
   layout: LayoutKey;
+  pattern: PatternKey;
   logoPosition: LogoPosition;
 }
 
@@ -948,6 +914,9 @@ function isFontKey(v: unknown): v is FontKey {
 }
 function isLayoutKey(v: unknown): v is LayoutKey {
   return typeof v === "string" && Object.prototype.hasOwnProperty.call(LAYOUT_OPTIONS, v);
+}
+function isPatternKey(v: unknown): v is PatternKey {
+  return typeof v === "string" && Object.prototype.hasOwnProperty.call(PATTERN_OPTIONS, v);
 }
 function isLogoPosition(v: unknown): v is LogoPosition {
   return v === "right" || v === "center" || v === "left";
@@ -982,9 +951,10 @@ export function normalizeDocumentDesign(raw: unknown): DocumentDesign | null {
   // ("cards"); the other professions deliberately moved to their new
   // structures - that was the whole point of adding the axis.
   const layout: LayoutKey = isLayoutKey(r.layout) ? r.layout : tpl.layout;
+  const pattern: PatternKey = isPatternKey(r.pattern) ? r.pattern : "none";
   const logoPosition: LogoPosition = isLogoPosition(r.logoPosition) ? r.logoPosition : "right";
 
-  return { template, accent, font, layout, logoPosition };
+  return { template, accent, font, layout, pattern, logoPosition };
 }
 
 // ── The CSS boundary ─────────────────────────────────────────────────────

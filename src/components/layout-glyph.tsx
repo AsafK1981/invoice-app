@@ -1,4 +1,4 @@
-import type { LayoutKey } from "@/lib/document-themes";
+import type { LayoutKey, PatternKey } from "@/lib/document-themes";
 
 interface Props {
   layout: LayoutKey;
@@ -36,9 +36,10 @@ export function LayoutGlyph({ layout, accent, size = 30, className }: Props) {
       return (
         <svg {...common}>
           <rect x="0.5" y="0.5" width="27" height="35" rx="1.5" fill={PAPER} stroke={RULE} />
-          <rect x="0.5" y="0.5" width="27" height="9" rx="1.5" fill={accent} />
-          <rect x="4" y="3" width="10" height="1.6" rx="0.8" fill="#fff" />
-          <rect x="4" y="6" width="6" height="1.2" rx="0.6" fill="#fff" opacity="0.8" />
+          <rect x="0.5" y="0.5" width="27" height="9" rx="1.5" fill={accent} opacity="0.16" />
+          <rect x="0.5" y="9" width="27" height="1.2" fill={accent} />
+          <rect x="4" y="3" width="10" height="1.6" rx="0.8" fill={accent} />
+          <rect x="4" y="6" width="6" height="1.2" rx="0.6" fill={accent} opacity="0.6" />
           <rect x="4" y="13" width="20" height="2.4" rx="0.6" fill={accent} opacity="0.22" />
           <rect x="4" y="17.5" width="20" height="1" rx="0.5" fill={RULE} />
           <rect x="4" y="21" width="20" height="1" rx="0.5" fill={RULE} />
@@ -81,17 +82,16 @@ export function LayoutGlyph({ layout, accent, size = 30, className }: Props) {
       return (
         <svg {...common}>
           <rect x="0.5" y="0.5" width="27" height="35" rx="1.5" fill={PAPER} stroke={RULE} />
-          <rect x="0.5" y="0.5" width="27" height="10" rx="1.5" fill="#161616" />
-          <rect x="0.5" y="10" width="27" height="1.6" fill={accent} />
-          <rect x="4" y="3.5" width="11" height="2.2" rx="0.6" fill={accent} />
-          <rect x="4" y="7" width="7" height="1" rx="0.5" fill="#fff" opacity="0.7" />
-          <line x1="19" y1="3" x2="19" y2="8.5" stroke="#fff" strokeOpacity="0.5" strokeWidth="0.6" strokeDasharray="1 1" />
+          <rect x="0.5" y="10" width="27" height="2.2" fill={accent} />
+          <rect x="4" y="3.5" width="11" height="2.4" rx="0.6" fill={accent} />
+          <rect x="4" y="7.2" width="7" height="1" rx="0.5" fill={INK} opacity="0.5" />
+          <line x1="19" y1="3" x2="19" y2="8.5" stroke={accent} strokeOpacity="0.6" strokeWidth="0.6" strokeDasharray="1 1" />
           <rect x="4" y="15" width="6" height="1.4" rx="0.4" fill={INK} />
           <rect x="11" y="15.4" width="4" height="0.8" fill={accent} />
           <line x1="4" y1="20" x2="24" y2="20" stroke={INK} strokeWidth="0.9" />
           <line x1="4" y1="23.5" x2="24" y2="23.5" stroke={RULE} strokeWidth="0.7" strokeDasharray="1.2 1" />
           <line x1="4" y1="27" x2="24" y2="27" stroke={RULE} strokeWidth="0.7" strokeDasharray="1.2 1" />
-          <rect x="15" y="30" width="9" height="3.5" rx="0.4" fill="#161616" />
+          <rect x="15" y="30" width="9" height="3.5" rx="0.4" fill="none" stroke={INK} strokeWidth="0.8" />
         </svg>
       );
     case "cards":
@@ -110,5 +110,69 @@ export function LayoutGlyph({ layout, accent, size = 30, className }: Props) {
           <rect x="6" y="29.8" width="16" height="0.7" rx="0.35" fill={RULE} />
         </svg>
       );
+  }
+}
+
+interface PatternProps {
+  pattern: PatternKey;
+  accent: string;
+  size?: number;
+  className?: string;
+}
+
+/** Miniature of one background pattern on a blank page, accent-tinted. */
+export function PatternGlyph({ pattern, accent, size = 30, className }: PatternProps) {
+  const w = Math.round((size * 28) / 36);
+  const common = {
+    width: w,
+    height: size,
+    viewBox: "0 0 28 36",
+    "aria-hidden": true as const,
+    className,
+    style: { display: "block" as const },
+  };
+  const page = <rect x="0.5" y="0.5" width="27" height="35" rx="1.5" fill={PAPER} stroke={RULE} />;
+  switch (pattern) {
+    case "topo":
+      return (
+        <svg {...common}>
+          {page}
+          <path d="M1,8 C8,5 14,11 27,7" stroke={accent} strokeWidth="0.9" fill="none" opacity="0.7" />
+          <path d="M1,15 C10,12 16,19 27,14" stroke={accent} strokeWidth="0.9" fill="none" opacity="0.7" />
+          <path d="M1,22 C7,19 15,26 27,21" stroke={accent} strokeWidth="0.9" fill="none" opacity="0.7" />
+          <path d="M1,29 C9,26 17,33 27,28" stroke={accent} strokeWidth="0.9" fill="none" opacity="0.7" />
+        </svg>
+      );
+    case "lines":
+      return (
+        <svg {...common}>
+          {page}
+          {[6, 11, 16, 21, 26, 31].map((y) => (
+            <line key={y} x1="3" y1={y} x2="25" y2={y} stroke={accent} strokeWidth="0.7" opacity="0.6" />
+          ))}
+        </svg>
+      );
+    case "bubbles":
+      return (
+        <svg {...common}>
+          {page}
+          <circle cx="24" cy="4" r="6" fill={accent} opacity="0.22" />
+          <circle cx="18" cy="9" r="2.6" fill={accent} opacity="0.22" />
+          <circle cx="4" cy="32" r="5.5" fill={accent} opacity="0.22" />
+          <circle cx="10" cy="27" r="2" fill={accent} opacity="0.22" />
+        </svg>
+      );
+    case "rings":
+      return (
+        <svg {...common}>
+          {page}
+          {[4, 8, 12, 16].map((r) => (
+            <circle key={r} cx="1" cy="1" r={r} stroke={accent} strokeWidth="0.8" fill="none" opacity={0.75 - r * 0.03} />
+          ))}
+        </svg>
+      );
+    case "none":
+    default:
+      return <svg {...common}>{page}</svg>;
   }
 }

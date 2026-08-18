@@ -43,7 +43,7 @@ export const dynamic = "force-dynamic";
 export default async function DesignGalleryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ t?: string; layout?: string; fluid?: string; font?: string; accent?: string }>;
+  searchParams: Promise<{ t?: string; layout?: string; fluid?: string; font?: string; accent?: string; pattern?: string }>;
 }) {
   if (process.env.NODE_ENV === "production") notFound();
   const sp = await searchParams;
@@ -78,6 +78,7 @@ export default async function DesignGalleryPage({
           layout: forcedLayout,
           font: sp.font,
           accent: sp.accent,
+          pattern: sp.pattern,
         });
         const vars = designToCssVars(design);
         return (
@@ -98,6 +99,7 @@ export default async function DesignGalleryPage({
               style={{ width: sheetWidth, ...vars }}
               data-doc-template={design?.template ?? "general"}
               data-doc-layout={design?.layout ?? "cards"}
+              data-doc-pattern={design?.pattern ?? "none"}
               data-logo-pos="right"
             >
               <DocumentBody

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="780" viewBox="0 0 1200 780" fill="none">
+  <!-- Flowing contour lines for the marketing homepage background.
+       Each path starts and ends on the same Y so the tile repeats
+       seamlessly on the X axis; lines are spaced 130px apart and the
+       tile is 780px tall (715 + 65 = 130 across the seam) so the
+       rhythm also survives Y repetition. Two alternating warm hues. -->
+  <path d="M0,65 C280,13 640,117 1200,65" stroke="#000" stroke-width="1.5"/>
+  <path d="M0,195 C420,145 760,247 1200,195" stroke="#000" stroke-width="1.5"/>
+  <path d="M0,325 C240,381 700,269 1200,325" stroke="#000" stroke-width="1.5"/>
+  <path d="M0,455 C380,403 820,509 1200,455" stroke="#000" stroke-width="1.5"/>
+  <path d="M0,585 C300,641 660,531 1200,585" stroke="#000" stroke-width="1.5"/>
+  <path d="M0,715 C440,663 800,769 1200,715" stroke="#000" stroke-width="1.5"/>
+</svg>

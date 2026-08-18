@@ -38,6 +38,7 @@ describe("normalizeDocumentDesign: security boundary", () => {
       accent: "gold",
       font: "heebo",
       layout: "cards",
+      pattern: "none",
       logoPosition: "right",
     });
   });
@@ -94,6 +95,7 @@ describe("normalizeDocumentDesign: security boundary", () => {
       accent: "sage",
       font: "assistant",
       layout: "editorial",
+      pattern: "bubbles",
       logoPosition: "center",
     });
     expect(d).toEqual({
@@ -101,6 +103,7 @@ describe("normalizeDocumentDesign: security boundary", () => {
       accent: "sage",
       font: "assistant",
       layout: "editorial",
+      pattern: "bubbles",
       logoPosition: "center",
     });
   });
@@ -116,6 +119,7 @@ describe("normalizeDocumentDesign: security boundary", () => {
       accent: "gold",
       font: "heebo",
       layout: "cards",
+      pattern: "none",
       logoPosition: "right",
     });
     expect((d as unknown as Record<string, unknown>).customCss).toBeUndefined();
@@ -134,6 +138,7 @@ describe("designToCssVars: only ever emits known-safe values", () => {
         accent: tpl.accent,
         font: tpl.font,
         layout: tpl.layout,
+        pattern: "none",
         logoPosition: "right",
       };
       const vars = designToCssVars(design);
@@ -171,6 +176,7 @@ describe("designToCssVars: only ever emits known-safe values", () => {
       accent: "charcoal",
       font: "heebo",
       layout: "editorial",
+      pattern: "none",
       logoPosition: "right",
     };
     const vars = designToCssVars(design);
@@ -184,6 +190,7 @@ describe("designToCssVars: only ever emits known-safe values", () => {
       accent: "charcoal",
       font: "assistant", // user picked a different font than the template default (heebo)
       layout: "editorial",
+      pattern: "none",
       logoPosition: "right",
     };
     const vars = designToCssVars(design);
@@ -338,6 +345,12 @@ describe("ACCENT_HEX / DOCUMENT_TEMPLATES data integrity", () => {
     for (const g of ACCENT_GROUPS) for (const k of g.keys) seen.set(k, (seen.get(k) ?? 0) + 1);
     for (const k of Object.keys(ACCENT_HEX)) expect(seen.get(k), k).toBe(1);
     for (const tpl of DOCUMENT_TEMPLATES) expect(seen.has(tpl.accent), tpl.id).toBe(true);
+  });
+
+  it("pattern: unknown/malformed -> none; valid sticks", () => {
+    expect(normalizeDocumentDesign({ pattern: "evil" })?.pattern).toBe("none");
+    expect(normalizeDocumentDesign({ pattern: 3 })?.pattern).toBe("none");
+    expect(normalizeDocumentDesign({ pattern: "rings" })?.pattern).toBe("rings");
   });
 
   it("entertainer keywords route musicians / singers / actors to the stage template", () => {

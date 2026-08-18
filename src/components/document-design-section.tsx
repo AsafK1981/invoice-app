@@ -12,6 +12,8 @@ import {
   FONT_OPTIONS,
   LAYOUT_KEYS,
   LAYOUT_OPTIONS,
+  PATTERN_KEYS,
+  PATTERN_OPTIONS,
   LOGO_POSITIONS,
   getTemplate,
   normalizeDocumentDesign,
@@ -19,9 +21,10 @@ import {
   type AccentKey,
   type FontKey,
   type LayoutKey,
+  type PatternKey,
   type LogoPosition,
 } from "@/lib/document-themes";
-import { LayoutGlyph } from "@/components/layout-glyph";
+import { LayoutGlyph, PatternGlyph } from "@/components/layout-glyph";
 import { DocumentPreview, type PreviewClient } from "@/components/document-preview";
 import type { DocumentItem } from "@/lib/types";
 
@@ -30,6 +33,7 @@ const DEFAULT_DESIGN: DocumentDesign = {
   accent: "gold",
   font: "heebo",
   layout: "cards",
+  pattern: "none",
   logoPosition: "right",
 };
 
@@ -96,6 +100,10 @@ export function DocumentDesignSection() {
 
   function chooseLayout(layout: LayoutKey) {
     setDraft((d) => ({ ...d, layout }));
+  }
+
+  function choosePattern(pattern: PatternKey) {
+    setDraft((d) => ({ ...d, pattern }));
   }
 
   function chooseAccent(accent: AccentKey) {
@@ -191,6 +199,36 @@ export function DocumentDesignSection() {
                   accent={ACCENT_HEX[draft.accent].accent}
                   size={38}
                 />
+                <span className="text-[11px] font-semibold text-stone-800 leading-tight">
+                  {opt.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── Background pattern ── */}
+      <div>
+        <h3 className="text-sm font-semibold text-stone-900 mb-3">רקע</h3>
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+          {PATTERN_KEYS.map((key) => {
+            const opt = PATTERN_OPTIONS[key];
+            const selected = draft.pattern === key;
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => choosePattern(key)}
+                aria-pressed={selected}
+                title={opt.hint}
+                className={`flex flex-col items-center gap-1.5 rounded-xl border-2 px-2 py-2.5 transition-colors ${
+                  selected
+                    ? "border-orange-400 bg-orange-50/70"
+                    : "border-stone-200 bg-white hover:border-orange-200 hover:bg-orange-50/30"
+                }`}
+              >
+                <PatternGlyph pattern={key} accent={ACCENT_HEX[draft.accent].accent} size={38} />
                 <span className="text-[11px] font-semibold text-stone-800 leading-tight">
                   {opt.label}
                 </span>

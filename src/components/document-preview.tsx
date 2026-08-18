@@ -105,6 +105,7 @@ export function DocumentPreview(props: Props) {
     style: themeVars,
     "data-doc-template": design?.template ?? "general",
     "data-doc-layout": design?.layout ?? "cards",
+    "data-doc-pattern": design?.pattern ?? "none",
     "data-logo-pos": design?.logoPosition ?? "right",
   } as const;
 
@@ -200,6 +201,7 @@ export function DocumentPreview(props: Props) {
                 dir="rtl"
                 data-doc-template={design?.template ?? "general"}
                 data-doc-layout={design?.layout ?? "cards"}
+                data-doc-pattern={design?.pattern ?? "none"}
                 data-logo-pos={design?.logoPosition ?? "right"}
                 onClick={(e) => e.stopPropagation()}
               >

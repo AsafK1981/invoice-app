@@ -64,6 +64,7 @@ export function ReceiptView({
       style={themeVars}
       data-doc-template={design?.template ?? "general"}
       data-doc-layout={design?.layout ?? "cards"}
+      data-doc-pattern={design?.pattern ?? "none"}
       data-logo-pos={design?.logoPosition ?? "right"}
     >
       <DocumentBody
