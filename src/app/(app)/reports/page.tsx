@@ -84,17 +84,18 @@ export default function ReportsPage() {
 
   /* ---------- month buckets for the chart + the table ---------- */
   const monthTotals = useMemo(() => {
-    const map = new Map<string, { income: number; expenses: number }>();
+    const map = new Map<string, { income: number; expenses: number; docs: number }>();
     for (const d of documents) {
       if (d.status !== "paid" || !isCountableRevenue(d)) continue;
       const m = d.date.slice(0, 7);
-      const cur = map.get(m) || { income: 0, expenses: 0 };
+      const cur = map.get(m) || { income: 0, expenses: 0, docs: 0 };
       cur.income += d.totalIls ?? d.total;
+      cur.docs += 1;
       map.set(m, cur);
     }
     for (const e of expenses) {
       const m = e.date.slice(0, 7);
-      const cur = map.get(m) || { income: 0, expenses: 0 };
+      const cur = map.get(m) || { income: 0, expenses: 0, docs: 0 };
       cur.expenses += e.amount;
       map.set(m, cur);
     }
@@ -117,12 +118,32 @@ export default function ReportsPage() {
     });
   }, [monthTotals, year, period]);
 
+  /* Newest month first; `cumulative` is the running profit from the oldest
+     month of the period up to and including this row, so the top row equals
+     the period total. `margin` is null for a month with no income (an
+     expense-only month has no meaningful margin). */
   const tableRows = useMemo(() => {
-    return Array.from(monthTotals.entries())
+    const asc = Array.from(monthTotals.entries())
       .filter(([ym]) => periodMatches(period, `${ym}-01`))
-      .sort(([a], [b]) => b.localeCompare(a))
-      .map(([ym, t]) => ({ month: ym, label: monthLabel(ym), income: t.income, expenses: t.expenses }));
+      .sort(([a], [b]) => a.localeCompare(b));
+    let running = 0;
+    return asc
+      .map(([ym, t]) => {
+        running += t.income - t.expenses;
+        return {
+          month: ym,
+          label: monthLabel(ym),
+          income: t.income,
+          expenses: t.expenses,
+          docs: t.docs,
+          margin: t.income > 0 ? Math.round(((t.income - t.expenses) / t.income) * 100) : null,
+          cumulative: running,
+        };
+      })
+      .reverse();
   }, [monthTotals, period]);
+  const totalDocs = tableRows.reduce((sum, r) => sum + r.docs, 0);
+  const totalMargin = totalIncome > 0 ? Math.round((profit / totalIncome) * 100) : null;
 
   /* ---------- exports ---------- */
   const [menuOpen, setMenuOpen] = useState(false);
@@ -401,7 +422,7 @@ export default function ReportsPage() {
         <div className="rpt-card-head">
           <div>
             <h2 className="rpt-h2">פירוט חודשי</h2>
-            <p className="rpt-hint">הכנסות ששולמו, הוצאות ורווח לכל חודש · {periodLabel(period)}</p>
+            <p className="rpt-hint">הכנסות ששולמו, הוצאות, רווח ושולי רווח לכל חודש · {periodLabel(period)}</p>
           </div>
           <button
             type="button"
@@ -418,32 +439,41 @@ export default function ReportsPage() {
             <thead>
               <tr>
                 <th>חודש</th>
+                <th className="n rpt-col-wide">מסמכים</th>
                 <th className="n">הכנסות</th>
                 <th className="n">הוצאות</th>
                 <th className="n">רווח</th>
+                <th className="n rpt-col-wide">שולי רווח</th>
+                <th className="n rpt-col-wide">רווח מצטבר</th>
               </tr>
             </thead>
             <tbody>
               {tableRows.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="rpt-empty">אין נתונים לתקופה הנבחרת</td>
+                  <td colSpan={7} className="rpt-empty">אין נתונים לתקופה הנבחרת</td>
                 </tr>
               ) : (
                 <>
                   {tableRows.map((r) => (
                     <tr key={r.month}>
                       <td className="rpt-td-month">{r.label}</td>
+                      <td className="n rpt-td-docs rpt-col-wide">{r.docs}</td>
                       <td className="n rpt-td-income" dir="ltr">{formatCurrency(r.income)}</td>
                       <td className="n rpt-td-expense" dir="ltr">{formatCurrency(r.expenses)}</td>
                       <td className="n rpt-td-profit" dir="ltr">{formatCurrency(r.income - r.expenses)}</td>
+                      <td className="n rpt-col-wide"><MarginPill pct={r.margin} /></td>
+                      <td className="n rpt-td-cum rpt-col-wide" dir="ltr">{formatCurrency(r.cumulative)}</td>
                     </tr>
                   ))}
                   {tableRows.length > 1 && (
                     <tr className="rpt-total">
                       <td>סה״כ · {periodStepLabel(period)}</td>
+                      <td className="n rpt-col-wide">{totalDocs}</td>
                       <td className="n" dir="ltr">{formatCurrency(totalIncome)}</td>
                       <td className="n" dir="ltr">{formatCurrency(totalExpenses)}</td>
                       <td className="n" dir="ltr">{formatCurrency(profit)}</td>
+                      <td className="n rpt-col-wide"><MarginPill pct={totalMargin} /></td>
+                      <td className="n rpt-col-wide" dir="ltr">{formatCurrency(profit)}</td>
                     </tr>
                   )}
                 </>
@@ -480,6 +510,13 @@ function Kpi({ icon: Icon, label, value, children }: { icon: LucideIcon; label: 
       <div className="rpt-kpi-foot">{children}</div>
     </div>
   );
+}
+
+/** Profit margin of a month as a small pill; `null` = no income that month. */
+function MarginPill({ pct }: { pct: number | null }) {
+  if (pct === null) return <span className="rpt-td-cum">-</span>;
+  const tone = pct < 0 ? "down" : pct === 0 ? "flat" : "up";
+  return <span className={`rpt-delta rpt-delta-${tone}`} dir="ltr">{pct}%</span>;
 }
 
 /** "+18% לעומת 2025". `inverse`: for expenses, going UP is the bad direction. */

@@ -1244,6 +1244,9 @@ html .rpt-td-month { font-weight: 600; }
 html .rpt-td-income { font-weight: 600; }
 html .rpt-td-expense { color: var(--ink2); }
 html .rpt-td-profit { font-weight: 700; }
+html .rpt-td-docs { color: var(--ink2); }
+html .rpt-td-cum { color: var(--ink2); }
+html .rpt-table .rpt-delta { height: 1.25rem; }
 html .rpt-total td {
   background: var(--goldtint);
   font-weight: 700;
@@ -1330,6 +1333,9 @@ html .rpt-rc-go svg { width: 0.85rem; height: 0.85rem; }
   html .rpt-grid { grid-template-columns: minmax(0, 1fr); gap: 0.6rem; }
   html .rpt-rc { min-height: 0; }
   html .rpt-table { font-size: 0.8rem; }
+  /* Phone keeps the four core columns; documents / margin / cumulative are
+     desktop-only so the table never needs a horizontal scroll there. */
+  html .rpt-col-wide { display: none; }
   html .rpt-table th, html .rpt-table td { padding-inline: 0.55rem; }
   html .rpt-table th:first-child, html .rpt-table td:first-child { padding-inline-start: 0.85rem; }
   html .rpt-table th:last-child, html .rpt-table td:last-child { padding-inline-end: 0.85rem; }

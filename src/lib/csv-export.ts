@@ -55,14 +55,25 @@ export function exportExpenses(expenses: Expense[], suffix?: string) {
 
 /** The reports page's month-by-month table (income / expenses / profit). */
 export function exportMonthlySummary(
-  rows: { month: string; label: string; income: number; expenses: number }[],
+  rows: {
+    month: string;
+    label: string;
+    income: number;
+    expenses: number;
+    docs?: number;
+    margin?: number | null;
+    cumulative?: number;
+  }[],
   suffix?: string,
 ) {
   const out = rows.map((r) => ({
     "חודש": r.label,
+    "מסמכים": r.docs ?? "",
     "הכנסות": Math.round(r.income * 100) / 100,
     "הוצאות": Math.round(r.expenses * 100) / 100,
     "רווח": Math.round((r.income - r.expenses) * 100) / 100,
+    "שולי רווח %": r.margin ?? "",
+    "רווח מצטבר": r.cumulative === undefined ? "" : Math.round(r.cumulative * 100) / 100,
   }));
   const csv = Papa.unparse(out);
   const date = new Date().toISOString().slice(0, 10);
