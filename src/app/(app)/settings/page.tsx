@@ -18,7 +18,7 @@ import {
   MessageSquare,
   ShieldCheck,
   ExternalLink,
-  Bell,
+  CalendarClock,
   ArrowLeft,
 } from "lucide-react";
 import { useBusiness } from "@/lib/business-store";
@@ -272,11 +272,11 @@ export default function SettingsPage() {
       </div>
 
       <Link
-        href="/notifications?tab=settings"
+        href="/reminders"
         className="group flex items-center gap-3 px-5 py-3.5 rounded-2xl bg-orange-50/60 border border-orange-100 text-sm font-semibold text-orange-700 hover:bg-orange-50 transition-colors"
       >
-        <Bell className="w-4 h-4 flex-shrink-0" />
-        הגדרות התזכורות עברו לעמוד ההתראות
+        <CalendarClock className="w-4 h-4 flex-shrink-0" />
+        הגדרות התזכורות עברו לעמוד התזכורות
         <ArrowLeft className="mr-auto w-4 h-4 transition-transform group-hover:-translate-x-1" />
       </Link>
 

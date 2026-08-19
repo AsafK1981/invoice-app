@@ -1,7 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
-import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import {
   Bell,
   Mail,
@@ -10,7 +11,7 @@ import {
   Banknote,
   CheckSquare,
   ShieldAlert,
-  Settings2,
+  CalendarClock,
 } from "lucide-react";
 import {
   useNotifications,
@@ -24,8 +25,6 @@ import {
 } from "@/lib/notifications";
 import { formatDate } from "@/lib/format";
 import { toIsraelDate } from "@/lib/date";
-import { MonthlyReminderSettingsSection } from "@/components/monthly-reminder-settings-section";
-import { DunningSettingsSection } from "@/components/dunning-settings-section";
 
 const KIND_STYLE: Record<
   NotificationKind,
@@ -47,31 +46,17 @@ function fullTime(iso: string): string {
   return `${date} · ${time}`;
 }
 
-type TabKey = "feed" | "settings";
-
-const TABS: { key: TabKey; label: string; icon: React.ElementType }[] = [
-  { key: "feed", label: "מרכז ההתראות", icon: Bell },
-  { key: "settings", label: "הגדרות תזכורות", icon: Settings2 },
-];
-
 export default function NotificationsPage() {
   const { items, unreadCount, ready } = useNotifications(100);
   const searchParams = useSearchParams();
   const router = useRouter();
-  const pathname = usePathname();
 
-  const tab: TabKey = searchParams.get("tab") === "settings" ? "settings" : "feed";
-
-  function setTab(next: TabKey) {
-    const params = new URLSearchParams(searchParams.toString());
-    if (next === "feed") {
-      params.delete("tab");
-    } else {
-      params.set("tab", next);
-    }
-    const qs = params.toString();
-    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-  }
+  // Reminder settings used to live here under ?tab=settings (until
+  // 2026-08-19). Old links and bookmarks land on the dedicated page.
+  const legacySettingsTab = searchParams.get("tab") === "settings";
+  useEffect(() => {
+    if (legacySettingsTab) router.replace("/reminders");
+  }, [legacySettingsTab, router]);
 
   return (
     <div className="space-y-5">
@@ -84,65 +69,30 @@ export default function NotificationsPage() {
             התראות
           </h1>
           <p className="text-sm text-stone-700 mt-2 mr-14">
-            {tab === "feed"
-              ? unreadCount > 0
-                ? `${unreadCount} התראות חדשות`
-                : "הכל נקרא"
-              : "מתי ואיך תזכורות נשלחות ללקוחות ואליך"}
+            {unreadCount > 0 ? `${unreadCount} התראות חדשות` : "הכל נקרא"}
           </p>
         </div>
-        {tab === "feed" && unreadCount > 0 && (
-          <button
-            type="button"
-            onClick={() => markAllRead()}
+        <div className="flex items-center gap-2 flex-wrap">
+          <Link
+            href="/reminders"
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border-2 border-stone-200 text-stone-700 hover:bg-stone-50"
           >
-            סמן הכל כנקרא
-          </button>
-        )}
-      </div>
-
-      <div
-        className="inline-flex flex-wrap rounded-2xl p-1 bg-orange-50/60 border border-orange-100"
-        role="tablist"
-        aria-label="תצוגת התראות"
-      >
-        {TABS.map((t) => {
-          const Icon = t.icon;
-          const active = t.key === tab;
-          return (
+            <CalendarClock className="w-4 h-4" />
+            הגדרות תזכורות
+          </Link>
+          {unreadCount > 0 && (
             <button
-              key={t.key}
               type="button"
-              role="tab"
-              aria-selected={active}
-              onClick={() => setTab(t.key)}
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
-                active
-                  ? "bg-white text-orange-700 shadow-sm"
-                  : "text-stone-600 hover:text-orange-700"
-              }`}
+              onClick={() => markAllRead()}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border-2 border-stone-200 text-stone-700 hover:bg-stone-50"
             >
-              <Icon className="w-4 h-4" />
-              {t.label}
-              {t.key === "feed" && unreadCount > 0 && (
-                <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-orange-500 text-white text-[11px] font-bold">
-                  {unreadCount}
-                </span>
-              )}
+              סמן הכל כנקרא
             </button>
-          );
-        })}
+          )}
+        </div>
       </div>
 
-      {tab === "feed" ? (
-        <FeedTab ready={ready} items={items} />
-      ) : (
-        <div className="space-y-5 max-w-3xl">
-          <MonthlyReminderSettingsSection />
-          <DunningSettingsSection />
-        </div>
-      )}
+      <FeedTab ready={ready} items={items} />
     </div>
   );
 }

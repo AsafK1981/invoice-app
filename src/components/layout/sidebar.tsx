@@ -22,6 +22,7 @@ import {
   ShieldAlert,
   Landmark,
   Bell,
+  CalendarClock,
 } from "lucide-react";
 import { useBusiness } from "@/lib/business-store";
 import { signOut } from "@/lib/auth";
@@ -48,6 +49,7 @@ const navItems: NavItem[] = [
   { href: "/expenses", label: "הוצאות", icon: Wallet, tone: "pink" },
   { href: "/recurring", label: "חיובים חוזרים", icon: RefreshCw, tone: "sky" },
   { href: "/notifications", label: "התראות", icon: Bell, tone: "orange" },
+  { href: "/reminders", label: "תזכורות", icon: CalendarClock, tone: "orange" },
   { href: "/reports", label: "דו״חות", icon: TrendingUp, tone: "emerald" },
   { href: "/settings", label: "הגדרות", icon: Settings, tone: "slate" },
 ];
