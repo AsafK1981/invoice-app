@@ -1,0 +1,49 @@
+name: Health Check (Cloud Safety-Net)
+
+# Twice-weekly redundant health check, so a real outage still gets caught
+# even when Asaf's PC is off. The full check already runs locally
+# (scripts/health-check.mjs via the invoice-app-health scheduled task) with
+# GAYA_PUSH always on; this one uses --silent so a clean run stays quiet and
+# only a real fail/warn pushes a second alert.
+#
+# Replaces a cloud routine (trig_013EQFX479o6NZqfNXno1a1c) that was disabled
+# 2026-08-20: its sandbox's network egress proxy blocked ALL outbound
+# connections to non-allowlisted domains (confirmed for both curl and
+# WebFetch), so it could never actually reach the site. GitHub-hosted
+# runners have normal outbound internet, so the same script that already
+# works locally works here unmodified (aside from the .env.local fallback).
+
+on:
+  schedule:
+    # Mon + Thu 13:07 UTC - same days as the retired cloud routine, a few
+    # minutes off the hour to avoid the exact-on-the-hour pileup.
+    - cron: '7 13 * * 1,4'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: health-check-cloud
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm ci
+
+      - name: Run health check
+        env:
+          GAYA_PUSH_URL: https://136.111.197.22.nip.io/push
+          GAYA_PUSH_TOKEN: ${{ secrets.GAYA_PUSH_TOKEN }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/health-check.mjs --silent

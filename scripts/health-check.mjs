@@ -19,14 +19,22 @@ import { execSync } from "node:child_process";
 import { createClient } from "@supabase/supabase-js";
 
 const ROOT = new URL("..", import.meta.url);
-const env = readFileSync(new URL(".env.local", ROOT), "utf8")
-  .split("\n")
-  .filter((l) => l && !l.startsWith("#"))
-  .reduce((a, l) => {
-    const [k, ...r] = l.split("=");
-    if (k) a[k.trim()] = r.join("=").trim();
-    return a;
-  }, {});
+// Local runs read secrets from .env.local (gitignored). In CI there is no
+// such file - secrets arrive as real process.env vars from repo secrets -
+// so a missing file falls back to {} instead of crashing before any check
+// can run.
+let fileEnv = {};
+try {
+  fileEnv = readFileSync(new URL(".env.local", ROOT), "utf8")
+    .split("\n")
+    .filter((l) => l && !l.startsWith("#"))
+    .reduce((a, l) => {
+      const [k, ...r] = l.split("=");
+      if (k) a[k.trim()] = r.join("=").trim();
+      return a;
+    }, {});
+} catch {}
+const env = { ...process.env, ...fileEnv };
 
 // Canonical domain since the 2026-08-06 cutover. The old vercel.app host now
 // 308s every path here, so probing the old host would trip the 200 checks
