@@ -263,9 +263,12 @@ async function checkGoogleButton() {
     }
   } catch (e) {
     // Chrome missing or page structure changed: both deserve eyes, but a
-    // missing local Chrome shouldn't page as an outage.
-    if (String(e.message).includes("Failed to launch") || String(e.message).includes("ENOENT")) {
-      warn.push(`Google button click-test skipped: ${e.message.slice(0, 80)}`);
+    // missing local Chrome shouldn't page as an outage. `browser` is only
+    // assigned after a successful launch, so checking it (not matching
+    // error-message text, which varies by OS/puppeteer version) reliably
+    // distinguishes "no browser available" from "launched but broke".
+    if (!browser) {
+      warn.push(`Google button click-test skipped (no browser): ${e.message.slice(0, 80)}`);
     } else {
       fail.push(`Google button click-test: ${e.message.slice(0, 120)}`);
     }
