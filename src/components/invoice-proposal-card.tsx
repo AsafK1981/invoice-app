@@ -210,7 +210,7 @@ function ProposalRow({ proposal }: { proposal: InvoiceProposal }) {
     // The proposal stays pending on purpose: the owner may abandon the
     // editor, and a proposal marked resolved without a document would be
     // gone with nothing to show for it.
-    router.push(`/documents/new/${DOC_TYPE_ROUTE[proposal.documentType]}`);
+    router.push(`/documents/new/${DOC_TYPE_ROUTE[proposal.documentType]}?prefill=proposal`);
   }
 
   async function handleDismiss() {

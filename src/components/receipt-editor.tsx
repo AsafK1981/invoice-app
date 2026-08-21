@@ -102,6 +102,12 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   const searchParams = useSearchParams();
   const fromDocId = searchParams.get("from");
   const resumeDraftId = searchParams.get("draft");
+  // Set when another screen deliberately handed this editor a prefilled draft
+  // (today: approving-with-edits an automation's invoice proposal). The draft
+  // is then expected, not recovered wreckage from an abandoned session, so the
+  // "we restored an unsaved draft" banner would be telling the user something
+  // untrue about their own click. Everything else about the load is identical.
+  const prefilled = searchParams.get("prefill");
   const isConvert = searchParams.get("convert") === "1";
   // Prefill client when arriving from a deep-link like /documents/new/quote?clientId=...
   // (typically from the client profile page's "מסמך חדש" button). Verify the
@@ -382,7 +388,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
       setWithholdingAmountInput(d.withholdingAmountInput ?? "");
       setWithholdingTouched(d.withholdingTouched ?? false);
       setPayDetails(d.payDetails ?? {});
-      setDraftRecovered({ savedAt: stored.savedAt });
+      if (!prefilled) setDraftRecovered({ savedAt: stored.savedAt });
     }
     setDraftHydrated(true);
   }, []);
