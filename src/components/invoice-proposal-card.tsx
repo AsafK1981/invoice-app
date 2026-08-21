@@ -232,9 +232,12 @@ function ProposalRow({ proposal }: { proposal: InvoiceProposal }) {
 
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-stone-900">
+            {/* "מחכה" is gender-neutral, so it reads correctly for every
+                document label (חשבון עסקה / קבלה / חשבונית מס) without
+                inflecting the verb per type. */}
             {proposal.status === "approved"
               ? `האישור הקודם לא הושלם - ${typeLabel} עדיין לא הופק`
-              : `${typeLabel} מוכן${proposal.documentType === "proforma" ? "ה" : ""} לאישור`}
+              : `${typeLabel} מחכה לאישור`}
           </p>
           <p className="text-sm text-stone-700 mt-0.5">
             <span className="font-medium text-stone-900">{proposal.clientName}</span>
