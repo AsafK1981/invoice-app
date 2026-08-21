@@ -17,6 +17,7 @@ import { useBusiness } from "@/lib/business-store";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { createDocument } from "@/lib/document-store";
 import { saveDraft, type EditorDraft } from "@/lib/draft-storage";
+import { DOC_TYPE_ROUTE } from "@/lib/draft-store";
 import { getVatRate, computeAmounts, round2 } from "@/lib/vat";
 import { ilsEquivalents } from "@/lib/exchange-rate";
 import { todayInIsrael } from "@/lib/date";
@@ -201,10 +202,15 @@ function ProposalRow({ proposal }: { proposal: InvoiceProposal }) {
       })),
     };
     saveDraft(proposal.documentType, editorDraft);
+    // Straight into the editor for this document type. `/documents/new` is the
+    // type CHOOSER, not an editor, and it ignores a ?type= param - routing
+    // there dumped the owner on a menu and made them pick the type by hand,
+    // after they had already said which document they were editing.
+    // DOC_TYPE_ROUTE is the same map the draft-resume flow uses.
     // The proposal stays pending on purpose: the owner may abandon the
     // editor, and a proposal marked resolved without a document would be
     // gone with nothing to show for it.
-    router.push(`/documents/new?type=${proposal.documentType}`);
+    router.push(`/documents/new/${DOC_TYPE_ROUTE[proposal.documentType]}`);
   }
 
   async function handleDismiss() {
