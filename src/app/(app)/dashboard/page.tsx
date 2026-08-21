@@ -30,6 +30,7 @@ import { QuoteAging } from "@/components/quote-aging";
 import { OnboardingChecklist } from "@/components/onboarding-checklist";
 import { ExemptCeilingTracker } from "@/components/exempt-ceiling-tracker";
 import { RecurringDueAlert } from "@/components/recurring-due-alert";
+import { InvoiceProposalCard } from "@/components/invoice-proposal-card";
 import { BetaBanner } from "@/components/beta-banner";
 
 const ExpenseCategoriesChart = dynamic(
@@ -299,6 +300,8 @@ export default function DashboardPage() {
       />
 
       <ExemptCeilingTracker business={business} documents={documents} />
+
+      <InvoiceProposalCard />
 
       <RecurringDueAlert />
 

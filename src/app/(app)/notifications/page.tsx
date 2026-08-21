@@ -12,6 +12,7 @@ import {
   CheckSquare,
   ShieldAlert,
   CalendarClock,
+  Sparkles,
 } from "lucide-react";
 import {
   useNotifications,
@@ -37,6 +38,7 @@ const KIND_STYLE: Record<
   ceiling_approaching: { icon: AlertTriangle, iconColor: "text-orange-700", bg: "bg-orange-50 border-orange-200" },
   tax_token_expiring: { icon: ShieldAlert, iconColor: "text-rose-700", bg: "bg-rose-50 border-rose-200" },
   monthly_reminder_sent: { icon: Mail, iconColor: "text-orange-700", bg: "bg-orange-50 border-orange-200" },
+  proposal_ready: { icon: Sparkles, iconColor: "text-violet-700", bg: "bg-violet-50 border-violet-200" },
 };
 
 function fullTime(iso: string): string {

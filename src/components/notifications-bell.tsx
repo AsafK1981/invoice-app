@@ -10,6 +10,7 @@ import {
   Banknote,
   CheckSquare,
   ShieldAlert,
+  Sparkles,
 } from "lucide-react";
 import {
   useNotifications,
@@ -60,6 +61,11 @@ const KIND_STYLE: Record<
     icon: Mail,
     iconColor: "text-orange-700",
     bg: "bg-orange-50 border-orange-200",
+  },
+  proposal_ready: {
+    icon: Sparkles,
+    iconColor: "text-violet-700",
+    bg: "bg-violet-50 border-violet-200",
   },
 };
 
