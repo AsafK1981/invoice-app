@@ -311,9 +311,11 @@ function CreateTemplateCard({ clients }: { clients: { id: string; name: string }
   const [docType, setDocType] = useState("receipt");
   const [saving, setSaving] = useState(false);
   const today = todayInIsrael();
-  const todayDom = Number(today.slice(8, 10));
   const todayDow = new Date(`${today}T00:00:00Z`).getUTCDay();
-  const [anchorDay, setAnchorDay] = useState(todayDom);
+  // The 1st of the month is what people actually mean by a monthly retainer,
+  // so it is the default rather than whichever day the template is created on.
+  const DEFAULT_MONTH_DAY = 1;
+  const [anchorDay, setAnchorDay] = useState(DEFAULT_MONTH_DAY);
 
   async function handleCreate() {
     const numAmount = parseFloat(amount);
@@ -341,7 +343,7 @@ function CreateTemplateCard({ clients }: { clients: { id: string; name: string }
       setSubject("");
       setDescription("");
       setAmount("");
-      setAnchorDay(frequency === "monthly" ? todayDom : todayDow);
+      setAnchorDay(frequency === "monthly" ? DEFAULT_MONTH_DAY : todayDow);
     } finally {
       setSaving(false);
     }
@@ -438,7 +440,7 @@ function CreateTemplateCard({ clients }: { clients: { id: string; name: string }
             onChange={(e) => {
               const next = e.target.value as "monthly" | "weekly";
               setFrequency(next);
-              setAnchorDay(next === "monthly" ? todayDom : todayDow);
+              setAnchorDay(next === "monthly" ? DEFAULT_MONTH_DAY : todayDow);
             }}
             className="input-warm"
           >
