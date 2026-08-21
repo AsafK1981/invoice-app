@@ -101,6 +101,7 @@ function ProposalRow({ proposal }: { proposal: InvoiceProposal }) {
       clientId: source.clientId,
       clientName: source.clientName,
       subject: source.subject,
+      notes: source.notes || undefined,
       status: isPaidOnIssue ? "paid" : "sent",
       items: source.items.map((i) => {
         const netUnitPrice = round2(i.unitPrice * netUnitPriceFactor);
@@ -190,7 +191,7 @@ function ProposalRow({ proposal }: { proposal: InvoiceProposal }) {
       subject: proposal.subject,
       validUntil: "",
       paymentMethod: "bank_transfer",
-      notes: "",
+      notes: proposal.notes || "",
       vatMode: "exclusive",
       items: proposal.items.map((i) => ({
         id: crypto.randomUUID(),
@@ -268,35 +269,44 @@ function ProposalRow({ proposal }: { proposal: InvoiceProposal }) {
             </p>
           )}
 
-          {proposal.details.length > 0 && (
+          {(proposal.notes || proposal.details.length > 0) && (
             <>
               <button
                 type="button"
                 onClick={() => setShowDetails((v) => !v)}
                 className="mt-1 text-xs font-semibold text-violet-700 hover:text-violet-800"
               >
-                {showDetails ? "הסתר את הפירוט" : `הצג את ${proposal.details.length} השורות מהמקור`}
+                {showDetails ? "הסתר את הפירוט" : "הצג את הפירוט שיופיע על המסמך"}
               </button>
               {showDetails && (
-                <ul className="mt-1.5 space-y-0.5 text-xs text-stone-600 border-r-2 border-violet-200 pr-3">
-                  {proposal.details.map((d, idx) => (
-                    <li key={idx} className="flex items-center gap-2 flex-wrap">
-                      <span className="font-medium text-stone-800">{d.label}</span>
-                      {d.note && (
-                        <>
-                          <span className="text-stone-400">·</span>
-                          <span className="truncate">{d.note}</span>
-                        </>
-                      )}
-                      {d.amount != null && (
-                        <>
-                          <span className="text-stone-400">·</span>
-                          <span>{formatCurrency(d.amount)}</span>
-                        </>
-                      )}
-                    </li>
-                  ))}
-                </ul>
+                proposal.notes ? (
+                  // The literal הערות text, rendered exactly as the document
+                  // renders it (pre-wrap): what he approves is what the client
+                  // receives, with no second summary to disagree with it.
+                  <pre className="mt-1.5 text-xs text-stone-700 bg-white/70 border border-violet-100 rounded-xl p-2.5 overflow-x-auto whitespace-pre-wrap font-sans leading-relaxed">
+                    {proposal.notes}
+                  </pre>
+                ) : (
+                  <ul className="mt-1.5 space-y-0.5 text-xs text-stone-600 border-r-2 border-violet-200 pr-3">
+                    {proposal.details.map((d, idx) => (
+                      <li key={idx} className="flex items-center gap-2 flex-wrap">
+                        <span className="font-medium text-stone-800">{d.label}</span>
+                        {d.note && (
+                          <>
+                            <span className="text-stone-400">·</span>
+                            <span className="truncate">{d.note}</span>
+                          </>
+                        )}
+                        {d.amount != null && (
+                          <>
+                            <span className="text-stone-400">·</span>
+                            <span>{formatCurrency(d.amount)}</span>
+                          </>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )
               )}
               <p className="mt-1.5 text-[11px] text-stone-500">
                 מקור: {proposal.sourceLabel}

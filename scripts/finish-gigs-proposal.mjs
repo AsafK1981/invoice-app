@@ -235,6 +235,34 @@ async function pushToGaya(text) {
   }
 }
 
+/**
+ * The הערות block: one line per gig, in the format Asaf writes by hand every
+ * month. Verified against documents #90002-#90005 and their receipts:
+ *
+ *   DD/MM/YYYY<TAB>venue<TAB>1550.00 = נגינה (1200 שח) + נהיגה (350 שח)
+ *
+ * The client is used to seeing this breakdown; an invoice without it is not
+ * the invoice he has been sending. Rendered with white-space: pre-wrap
+ * (.doc-info-body), so the tabs and newlines survive onto the document.
+ *
+ * The app appends its own lines here on conversion ("הומר מהצעת מחיר #...",
+ * "הצעה בתוקף עד: ..."), so this builds only the gig lines and lets the app
+ * add the rest.
+ */
+function buildNotes(gigs) {
+  return gigs
+    .slice()
+    .sort((a, b) => a.date.d - b.date.d)
+    .map((g) => {
+      const dd = String(g.date.d).padStart(2, "0");
+      const mm = String(g.date.m).padStart(2, "0");
+      const amount = g.amount.toFixed(2);
+      const forWhat = g.forWhat ? ` = ${g.forWhat}` : "";
+      return `${dd}/${mm}/${g.date.y}\t${g.venue}\t${amount}${forWhat}`;
+    })
+    .join("\n");
+}
+
 function previousPeriod(now = new Date()) {
   const y = now.getFullYear();
   const m = now.getMonth(); // 0-based; already "last month" as a 1-based value
@@ -308,6 +336,7 @@ async function main() {
   }
 
   const { items, subject } = buildItems(pending, period);
+  const notes = buildNotes(pending);
   const total = round2(items.reduce((s, i) => s + i.total, 0));
   const details = pending.map((g) => ({
     label: `${String(g.date.d).padStart(2, "0")}/${String(g.date.m).padStart(2, "0")}`,
@@ -320,7 +349,8 @@ async function main() {
     console.log(`  ${i.description} · ${i.quantity} × ${i.unitPrice} = ${i.total}`);
   }
   console.log(`  סה"כ: ${total} ₪`);
-  console.log(details.map((d) => `  ${d.label} ${d.note}`).join("\n"));
+  console.log("\nהערות שיופיעו על המסמך:");
+  console.log(notes.split("\n").map((l) => "  " + l).join("\n"));
 
   if (dryRun) {
     console.log("\n--dry-run: לא נשלח.");
@@ -349,6 +379,7 @@ async function main() {
       clientName: billTos[0] || CLIENT_NAME,
       subject,
       items,
+      notes,
       details,
     }),
   });
@@ -382,7 +413,7 @@ ${pending.length} הופעות · ${total.toLocaleString("he-IL")} ₪
   return { posted: true, refreshed: !!json.refreshed, period, total, subject, count: pending.length };
 }
 
-export { main, readGigs, buildItems, parseCellDate, previousPeriod, newestWorkbook, GIGS_DIR };
+export { main, readGigs, buildItems, buildNotes, parseCellDate, previousPeriod, newestWorkbook, GIGS_DIR };
 
 if (import.meta.url === `file://${process.argv[1]}` || process.argv[1] === fileURLToPath(import.meta.url)) {
   main()

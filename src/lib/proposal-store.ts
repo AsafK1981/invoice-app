@@ -23,6 +23,8 @@ export interface InvoiceProposal {
   clientId: string;
   clientName: string;
   subject: string;
+  /** The הערות block that will appear on the issued document. */
+  notes: string;
   items: { description: string; quantity: number; unitPrice: number; total: number }[];
   total: number;
   /** Evidence rows from the source, display only (e.g. date + venue per gig). */
@@ -47,6 +49,7 @@ function mapRow(row: Record<string, unknown>): InvoiceProposal {
     clientId: (row.client_id as string) || "",
     clientName: (row.client_name as string) || "",
     subject: (row.subject as string) || "",
+    notes: (row.notes as string) || "",
     items: Array.isArray(row.items)
       ? (row.items as InvoiceProposal["items"]).map((i) => ({
           description: String(i.description ?? ""),

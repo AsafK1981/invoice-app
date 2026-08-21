@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildItems, parseCellDate, previousPeriod } from "../scripts/finish-gigs-proposal.mjs";
+import { buildItems, buildNotes, parseCellDate, previousPeriod } from "../scripts/finish-gigs-proposal.mjs";
 
 type Line = { description: string; quantity: number; unitPrice: number; total: number };
 
@@ -122,5 +122,29 @@ describe("previousPeriod", () => {
     expect(previousPeriod(new Date(2026, 7, 21))).toBe("2026-07");
     expect(previousPeriod(new Date(2026, 0, 15))).toBe("2025-12");
     expect(previousPeriod(new Date(2026, 1, 1))).toBe("2026-01");
+  });
+});
+
+describe("buildNotes", () => {
+  it("writes one tab-separated line per gig, in Asaf's own format", () => {
+    // Format taken verbatim from documents #90002-#90005:
+    //   DD/MM/YYYY<TAB>venue<TAB>1550.00 = נגינה (1200 שח) + נהיגה (350 שח)
+    const gigs = [gig(6, 1550), gig(1, 1550)];
+    const notes = buildNotes(gigs);
+    const lines = notes.split("\n");
+
+    expect(lines).toHaveLength(2);
+    // Chronological, regardless of the order the rows appear in the sheet.
+    expect(lines[0]).toBe(
+      "01/08/2026\tמקום 1\t1550.00 = נגינה (1200 שח) + נהיגה (350 שח)",
+    );
+    expect(lines[1].startsWith("06/08/2026\t")).toBe(true);
+    // Two-decimal money, matching the existing invoices.
+    expect(notes).toContain("1550.00");
+  });
+
+  it("omits the ' = ' clause when the source row has no 'עבור' text", () => {
+    const bare = { ...gig(3, 900), forWhat: "" };
+    expect(buildNotes([bare])).toBe("03/08/2026\tמקום 3\t900.00");
   });
 });

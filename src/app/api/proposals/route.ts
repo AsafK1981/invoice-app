@@ -37,6 +37,10 @@ const PERIOD_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
 const MAX_ITEMS = 60;
 const MAX_DETAILS = 200;
 const MAX_TEXT = 300;
+// The הערות block is a per-line breakdown, one line per billed item, so it
+// needs far more room than a subject - and it is rendered pre-wrap, never
+// interpreted, so newlines and tabs are content here rather than formatting.
+const MAX_NOTES = 4000;
 
 interface ProposalItem {
   description: string;
@@ -95,7 +99,7 @@ function parseItems(raw: unknown): { items: ProposalItem[]; total: number } | st
  * POST /api/proposals
  *
  * Body: { businessId, source, sourceLabel?, period, documentType, clientId?,
- *         clientName, subject, items[], details? }
+ *         clientName, subject, notes?, items[], details? }
  *
  * Creates (or refreshes) the single pending proposal for
  * (businessId, source, period). Never touches a proposal the owner already
@@ -133,6 +137,10 @@ export async function POST(req: NextRequest) {
   const clientId = clean(body.clientId, 40);
   const clientName = clean(body.clientName);
   const subject = clean(body.subject);
+  // Not run through clean(): that trims and would be wrong to apply per-line,
+  // and the cap differs. Only the outer whitespace is stripped.
+  const notes =
+    typeof body.notes === "string" ? body.notes.trim().slice(0, MAX_NOTES) : "";
 
   if (!UUID_RE.test(businessId)) {
     return NextResponse.json({ ok: false, error: "businessId must be a UUID" }, { status: 400 });
@@ -256,6 +264,7 @@ export async function POST(req: NextRequest) {
     client_id: safeClientId,
     client_name: clientName,
     subject,
+    notes: notes || null,
     items: parsed.items,
     total: parsed.total,
     details,
