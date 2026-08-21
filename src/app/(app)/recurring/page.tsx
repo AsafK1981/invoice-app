@@ -19,6 +19,7 @@ import {
   saveTemplate,
   deleteTemplate,
   calculateNextDue,
+  nextDueFromAnchor,
   type RecurringTemplate,
 } from "@/lib/recurring-store";
 import { useConfirm } from "@/components/ui/confirm-dialog";
@@ -30,6 +31,14 @@ import { ilsEquivalents } from "@/lib/exchange-rate";
 import { todayInIsrael } from "@/lib/date";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { DOCUMENT_TYPE_LABELS, type InvoiceDocument } from "@/lib/types";
+
+const WEEKDAY_NAMES = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
+
+function scheduleLabel(t: Pick<RecurringTemplate, "frequency" | "anchorDay">) {
+  if (t.anchorDay === undefined) return t.frequency === "monthly" ? "חודשי" : "שבועי";
+  if (t.frequency === "weekly") return `כל יום ${WEEKDAY_NAMES[t.anchorDay]}`;
+  return t.anchorDay === 31 ? "כל סוף חודש" : `כל ${t.anchorDay} לחודש`;
+}
 
 export default function RecurringPage() {
   const router = useRouter();
@@ -93,7 +102,7 @@ export default function RecurringPage() {
 
       const updated: RecurringTemplate = {
         ...template,
-        nextDue: calculateNextDue(template.nextDue, template.frequency),
+        nextDue: calculateNextDue(template.nextDue, template.frequency, template.anchorDay),
       };
       await saveTemplate(updated);
 
@@ -118,7 +127,7 @@ export default function RecurringPage() {
     // cancels for a single period but the recurring relationship continues.
     await saveTemplate({
       ...template,
-      nextDue: calculateNextDue(template.nextDue, template.frequency),
+      nextDue: calculateNextDue(template.nextDue, template.frequency, template.anchorDay),
     });
     setToast({ kind: "success", text: `דילגת על התקופה הזו של ${template.clientName}` });
   }
@@ -225,7 +234,7 @@ export default function RecurringPage() {
                         {DOCUMENT_TYPE_LABELS[t.documentType]}
                       </span>
                       <span className="text-xs px-2 py-0.5 rounded-full bg-violet-100 text-violet-700">
-                        {t.frequency === "monthly" ? "חודשי" : "שבועי"}
+                        {scheduleLabel(t)}
                       </span>
                       {!t.active && (
                         <span className="text-xs px-2 py-0.5 rounded-full bg-rose-100 text-rose-700">
@@ -301,6 +310,10 @@ function CreateTemplateCard({ clients }: { clients: { id: string; name: string }
   const [frequency, setFrequency] = useState<"monthly" | "weekly">("monthly");
   const [docType, setDocType] = useState("receipt");
   const [saving, setSaving] = useState(false);
+  const today = todayInIsrael();
+  const todayDom = Number(today.slice(8, 10));
+  const todayDow = new Date(`${today}T00:00:00Z`).getUTCDay();
+  const [anchorDay, setAnchorDay] = useState(todayDom);
 
   async function handleCreate() {
     const numAmount = parseFloat(amount);
@@ -318,7 +331,8 @@ function CreateTemplateCard({ clients }: { clients: { id: string; name: string }
         subject: subject.trim(),
         items: [{ description: description.trim(), quantity: 1, unitPrice: numAmount }],
         frequency,
-        nextDue: todayInIsrael(),
+        anchorDay,
+        nextDue: nextDueFromAnchor(today, frequency, anchorDay),
         active: true,
         createdAt: new Date().toISOString(),
       });
@@ -327,6 +341,7 @@ function CreateTemplateCard({ clients }: { clients: { id: string; name: string }
       setSubject("");
       setDescription("");
       setAmount("");
+      setAnchorDay(frequency === "monthly" ? todayDom : todayDow);
     } finally {
       setSaving(false);
     }
@@ -415,17 +430,52 @@ function CreateTemplateCard({ clients }: { clients: { id: string; name: string }
         </div>
       </div>
 
-      <div>
-        <label className="text-xs font-semibold text-stone-700 mb-1 block">תדירות</label>
-        <select
-          value={frequency}
-          onChange={(e) => setFrequency(e.target.value as "monthly" | "weekly")}
-          className="input-warm"
-        >
-          <option value="monthly">חודשי</option>
-          <option value="weekly">שבועי</option>
-        </select>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="text-xs font-semibold text-stone-700 mb-1 block">תדירות</label>
+          <select
+            value={frequency}
+            onChange={(e) => {
+              const next = e.target.value as "monthly" | "weekly";
+              setFrequency(next);
+              setAnchorDay(next === "monthly" ? todayDom : todayDow);
+            }}
+            className="input-warm"
+          >
+            <option value="monthly">חודשי</option>
+            <option value="weekly">שבועי</option>
+          </select>
+        </div>
+        <div>
+          <label className="text-xs font-semibold text-stone-700 mb-1 block">
+            {frequency === "monthly" ? "יום החיוב בחודש" : "יום החיוב בשבוע"}
+          </label>
+          <select
+            value={anchorDay}
+            onChange={(e) => setAnchorDay(Number(e.target.value))}
+            className="input-warm"
+          >
+            {frequency === "monthly"
+              ? Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
+                  <option key={d} value={d}>
+                    {d === 31 ? "31 לחודש (או היום האחרון)" : `${d} לחודש`}
+                  </option>
+                ))
+              : WEEKDAY_NAMES.map((name, i) => (
+                  <option key={name} value={i}>
+                    יום {name}
+                  </option>
+                ))}
+          </select>
+        </div>
       </div>
+
+      <p className="text-xs text-stone-600 -mt-1">
+        החיוב הראשון יופיע כמוכן להפקה ב-{formatDate(nextDueFromAnchor(today, frequency, anchorDay))}
+        {frequency === "monthly" && anchorDay > 28
+          ? " · בחודשים קצרים החיוב יופיע ביום האחרון של אותו חודש"
+          : ""}
+      </p>
 
       <div className="flex gap-2 justify-end">
         <button

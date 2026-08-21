@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { calculateNextDue, serializeWrite } from "@/lib/recurring-store";
+import { calculateNextDue, nextDueFromAnchor, serializeWrite } from "@/lib/recurring-store";
 
 describe("calculateNextDue: weekly", () => {
   it("adds 7 days", () => {
@@ -28,6 +28,40 @@ describe("calculateNextDue: monthly (end-of-month must not overflow)", () => {
   });
   it("Dec 31 -> Jan 31 next year (31-day target keeps the 31st)", () => {
     expect(calculateNextDue("2026-12-31", "monthly")).toBe("2027-01-31");
+  });
+});
+
+describe("nextDueFromAnchor: first due date for a chosen billing day", () => {
+  it("picks next month when the chosen day already passed", () => {
+    expect(nextDueFromAnchor("2026-08-21", "monthly", 1)).toBe("2026-09-01");
+  });
+  it("picks this month when the chosen day is still ahead", () => {
+    expect(nextDueFromAnchor("2026-08-21", "monthly", 25)).toBe("2026-08-25");
+  });
+  it("is due today when the chosen day is today", () => {
+    expect(nextDueFromAnchor("2026-08-21", "monthly", 21)).toBe("2026-08-21");
+  });
+  it("clamps a 31st anchor to a short month's last day", () => {
+    expect(nextDueFromAnchor("2026-02-01", "monthly", 31)).toBe("2026-02-28");
+  });
+  it("rolls December -> January for a passed anchor", () => {
+    expect(nextDueFromAnchor("2026-12-20", "monthly", 5)).toBe("2027-01-05");
+  });
+  it("weekly: finds the next occurrence of the chosen weekday", () => {
+    // 2026-08-21 is a Friday (5); next Monday (1) is 2026-08-24.
+    expect(nextDueFromAnchor("2026-08-21", "weekly", 1)).toBe("2026-08-24");
+  });
+  it("weekly: today counts when it is already the chosen weekday", () => {
+    expect(nextDueFromAnchor("2026-08-21", "weekly", 5)).toBe("2026-08-21");
+  });
+});
+
+describe("calculateNextDue: an anchor day survives a short month", () => {
+  it("Feb 28 advances back to the 31st, not to Mar 28", () => {
+    expect(calculateNextDue("2026-02-28", "monthly", 31)).toBe("2026-03-31");
+  });
+  it("mid-month anchors behave the same as before", () => {
+    expect(calculateNextDue("2026-03-15", "monthly", 15)).toBe("2026-04-15");
   });
 });
 

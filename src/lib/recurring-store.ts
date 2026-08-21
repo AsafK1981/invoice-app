@@ -13,6 +13,12 @@ export interface RecurringTemplate {
   subject: string;
   items: { description: string; quantity: number; unitPrice: number }[];
   frequency: "monthly" | "weekly";
+  /**
+   * The day the charge recurs on: 1-31 for monthly, 0-6 (Sunday-Saturday) for
+   * weekly. Optional - templates created before this existed simply keep
+   * recurring on whatever day they were created, which is what they do today.
+   */
+  anchorDay?: number;
   nextDue: string;
   active: boolean;
   createdAt: string;
@@ -107,9 +113,42 @@ export function useRecurringTemplates() {
   return { templates, ready };
 }
 
+/**
+ * The first date on or after `from` that lands on the template's anchor day.
+ * Used when a template is created: picking "the 1st of the month" on the 21st
+ * should schedule the 1st of NEXT month, not today.
+ *
+ * Monthly anchors past the end of a short month clamp to that month's last day
+ * (anchor 31 therefore means "last day of every month"), and the clamp is
+ * applied per month rather than carried forward, so a 31st template stays on
+ * the 31st in March after being served on Feb 28.
+ */
+export function nextDueFromAnchor(
+  from: string,
+  frequency: "monthly" | "weekly",
+  anchorDay: number,
+): string {
+  const [y, m, d] = from.split("-").map(Number);
+  if (frequency === "weekly") {
+    const fromDow = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+    const delta = (anchorDay - fromDow + 7) % 7;
+    return new Date(Date.UTC(y, m - 1, d + delta)).toISOString().slice(0, 10);
+  }
+  const lastThisMonth = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  const dayThisMonth = Math.min(anchorDay, lastThisMonth);
+  if (dayThisMonth >= d) {
+    return new Date(Date.UTC(y, m - 1, dayThisMonth)).toISOString().slice(0, 10);
+  }
+  const lastNextMonth = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+  return new Date(Date.UTC(y, m, Math.min(anchorDay, lastNextMonth)))
+    .toISOString()
+    .slice(0, 10);
+}
+
 export function calculateNextDue(
   currentDue: string,
   frequency: "monthly" | "weekly" | "yearly",
+  anchorDay?: number,
 ): string {
   const [y, m, d] = currentDue.split("-").map(Number);
   if (frequency === "weekly") {
@@ -126,6 +165,10 @@ export function calculateNextDue(
   const targetYear = y + Math.floor(targetMonth / 12);
   const normMonth = targetMonth % 12;
   const lastDay = new Date(Date.UTC(targetYear, normMonth + 1, 0)).getUTCDate();
-  const day = Math.min(d, lastDay);
+  // Advance from the anchor day when the template has one, so a month that
+  // clamped (Feb 28 for a 31st template) doesn't permanently pull the template
+  // back to the 28th. Without an anchor, advance from the current due day -
+  // the behaviour every existing template already has.
+  const day = Math.min(anchorDay ?? d, lastDay);
   return new Date(Date.UTC(targetYear, normMonth, day)).toISOString().slice(0, 10);
 }
