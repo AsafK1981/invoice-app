@@ -116,7 +116,40 @@ export function ReportsBarChart({ data }: Props) {
           // RTL: index 0 at the right edge.
           const cx = PAD.left + cw - (i + 0.5) * group;
           const hi = (ch * d.income) / max;
-          const he = (ch * d.expenses) / max;
+          const he = Math.max((ch * d.expenses) / max, 2);
+          const baseY = PAD.top + ch;
+          // 3D extrusion depth (up-and-right). Light source top-left, so the
+          // top face is lighter than the front and the right side is darker -
+          // a consistent solid. Chosen by Asaf from the A/B/C mockup 2026-08-23.
+          const D = Math.max(3, Math.min(6, bw * 0.4));
+          const xInc = cx - bw - gap / 2;
+          const yInc = baseY - hi;
+          const xExp = cx + gap / 2;
+          const yExp = baseY - he;
+          // A single extruded bar = top face + right side face + front.
+          const bar3d = (
+            x: number,
+            y: number,
+            hgt: number,
+            front: string,
+            top: string,
+            side: string,
+            cls: string,
+          ) => (
+            <>
+              <polygon
+                points={`${x},${y} ${x + D},${y - D} ${x + bw + D},${y - D} ${x + bw},${y}`}
+                fill={top}
+                className={cls}
+              />
+              <polygon
+                points={`${x + bw},${y} ${x + bw + D},${y - D} ${x + bw + D},${baseY - D} ${x + bw},${baseY}`}
+                fill={side}
+                className={cls}
+              />
+              <rect x={x} y={y} width={bw} height={hgt} fill={front} className={cls} />
+            </>
+          );
           return (
             <g
               key={d.key}
@@ -131,23 +164,8 @@ export function ReportsBarChart({ data }: Props) {
                 height={ch}
                 fill="transparent"
               />
-              <rect
-                x={cx - bw - gap / 2}
-                y={PAD.top + ch - hi}
-                width={bw}
-                height={hi}
-                rx="4"
-                fill={`url(#${gradId})`}
-                className="rpt-chart-income"
-              />
-              <rect
-                x={cx + gap / 2}
-                y={PAD.top + ch - Math.max(he, 2)}
-                width={bw}
-                height={Math.max(he, 2)}
-                rx="4"
-                className="rpt-chart-expense"
-              />
+              {bar3d(xInc, yInc, hi, `url(#${gradId})`, "#ecd9a0", "#8a6b28", "rpt-chart-income")}
+              {bar3d(xExp, yExp, he, "#d9d0bf", "#eae2d2", "#b3a790", "rpt-chart-expense")}
               {i % labelEvery === 0 && (
                 <text x={cx} y={H - 10} textAnchor="middle" className="rpt-chart-label">
                   {d.label}

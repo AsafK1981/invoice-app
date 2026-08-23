@@ -46,6 +46,20 @@ const COLORS = [
   "#64748b", // slate
 ];
 
+/** Darker twins of COLORS, ~30% down, for the 3D depth ring drawn behind and
+ *  below the donut so it reads as a solid with thickness (Asaf picked the 3D
+ *  direction from the A/B/C chart mockup, 2026-08-23). Same order as COLORS. */
+const COLORS_DEEP = [
+  "#c2570a",
+  "#c11f3c",
+  "#7c2fc4",
+  "#04889f",
+  "#0b8a5f",
+  "#b08706",
+  "#c21f6e",
+  "#47536a",
+];
+
 export function ExpenseCategoriesChart({ expenses }: ExpenseCategoriesChartProps) {
   const data = useMemo(() => {
     const byCategory = new Map<string, number>();
@@ -73,10 +87,28 @@ export function ExpenseCategoriesChart({ expenses }: ExpenseCategoriesChartProps
       <div className="relative" style={{ width: "100%", height: 176 }}>
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
+            {/* 3D depth ring: darker twins, shifted 6px down and drawn first
+                (behind), so the donut peeks a solid "side" at the bottom. */}
             <Pie
               data={data}
               cx="50%"
-              cy="50%"
+              cy={94}
+              innerRadius={45}
+              outerRadius={72}
+              paddingAngle={2}
+              dataKey="value"
+              isAnimationActive={false}
+              stroke="none"
+              style={{ pointerEvents: "none" }}
+            >
+              {data.map((_, idx) => (
+                <Cell key={idx} fill={COLORS_DEEP[idx % COLORS_DEEP.length]} />
+              ))}
+            </Pie>
+            <Pie
+              data={data}
+              cx="50%"
+              cy={88}
               innerRadius={45}
               outerRadius={72}
               paddingAngle={2}

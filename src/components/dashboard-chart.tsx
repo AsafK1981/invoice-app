@@ -568,26 +568,53 @@ function MonthlyLineChart({
               />
             )}
 
-            {/* lines */}
+            {/* lines. Each line gets a darker "underside" - the same path
+                shifted 5px down - drawn behind it, so the stroke reads as a
+                3D ribbon with thickness rather than a flat line (Asaf picked
+                the 3D direction from the A/B/C chart mockup, 2026-08-23). */}
             {showExpense && (
-              <path
-                d={exp.d}
-                fill="none"
-                stroke={SERIES.expense.dot}
-                strokeWidth={2.5}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
+              <>
+                <path
+                  d={exp.d}
+                  transform="translate(0,5)"
+                  fill="none"
+                  stroke="#7a3620"
+                  strokeWidth={3}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  opacity={0.45}
+                />
+                <path
+                  d={exp.d}
+                  fill="none"
+                  stroke={SERIES.expense.dot}
+                  strokeWidth={2.5}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </>
             )}
             {showIncome && (
-              <path
-                d={inc.d}
-                fill="none"
-                stroke="url(#gcIncLine)"
-                strokeWidth={2.5}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
+              <>
+                <path
+                  d={inc.d}
+                  transform="translate(0,5)"
+                  fill="none"
+                  stroke="#6d551f"
+                  strokeWidth={3.2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  opacity={0.5}
+                />
+                <path
+                  d={inc.d}
+                  fill="none"
+                  stroke="url(#gcIncLine)"
+                  strokeWidth={2.6}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </>
             )}
 
             {/* x-axis labels (sparse in dense views) */}

@@ -1138,7 +1138,8 @@ html .rpt-chart svg { display: block; width: 100%; height: 236px; direction: ltr
 html .rpt-chart-grid { stroke: #ece6d8; stroke-width: 1; }
 html .rpt-chart-tick { font-size: 11px; font-weight: 600; fill: var(--muted); font-family: inherit; }
 html .rpt-chart-label { font-size: 11.5px; font-weight: 600; fill: var(--ink2); font-family: inherit; }
-html .rpt-chart-expense { fill: #d9d0bf; }
+/* Bar face fills are set inline per-face (3D top/side/front need different
+   tints), so no `fill` rule here - it would override all three faces. */
 html .rpt-chart-group { cursor: default; }
 html .rpt-chart-group.is-muted .rpt-chart-income,
 html .rpt-chart-group.is-muted .rpt-chart-expense { opacity: 0.32; }
