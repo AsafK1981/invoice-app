@@ -22,6 +22,7 @@ import WhatsappIcon from "./components/WhatsappIcon";
 import { graph, organization, website, softwareApplication, faqPage } from "@/lib/jsonld";
 import "./marketing-light.css";
 import SignupLink from "./components/SignupLink";
+import EntranceMotion from "./components/EntranceMotion";
 
 /**
  * Landing-page FAQ. Every answer is a factual claim about THIS app, verified
@@ -435,7 +436,43 @@ export default function MarketingLanding() {
         )}
       />
 
-      <div className="ml-theme">
+      {/* No-JS escape hatch. `ml-anim` below is server-rendered, so without
+          it a browser with scripting off would hold every card at opacity 0
+          forever - the one failure mode this feature must not have. A
+          <noscript> style only parses when scripting is disabled, which is
+          exactly the condition where nothing will ever add `.is-in`. */}
+      <noscript>
+        <style
+          dangerouslySetInnerHTML={{
+            __html: ".ml-anim :is(.ml-trust-card,.ml-spot-card,.ml-adv-card,.ml-faq-item,.ml-price-frees li,.ml-price-plan,.ml-wa-phone-wrap,.ml-sheet-wrap,.ml-browser-wrap,.ml-midcta-in,.ml-compare-in,.ml-spot-head,.ml-adv-head,.ml-show-head,.ml-faq-title,.ml-pricing h2){opacity:1}",
+          }}
+        />
+      </noscript>
+      {/* Failsafe for the case <noscript> cannot cover: scripting IS enabled,
+          so the noscript block never applies, but the bundle fails to arrive
+          or EntranceMotion throws during hydration - and the cards would sit
+          invisible. After 6s the arming class is dropped and the page renders
+          as plain, fully visible markup. EntranceMotion cancels this the
+          moment it runs, so a page that is merely slow is never yanked out of
+          its animation mid-flight.
+          This script only sets a timer; it does not touch the DOM during
+          parse. An earlier version added the class to <html> here instead of
+          server-rendering it, which made the client's <html className> differ
+          from the server's and produced a hydration mismatch on every load. */}
+      <script
+        dangerouslySetInnerHTML={{
+          __html:
+            "var t=setTimeout(function(){var e=document.querySelector('.ml-anim');if(e)e.classList.remove('ml-anim')},6000);" +
+            "window.cancelAnimationFailsafe=function(){clearTimeout(t)};",
+        }}
+      />
+      <EntranceMotion />
+
+      {/* `ml-anim` is rendered by the SERVER, not added by a script, so the
+          hidden start state is in the very first paint - no flash of fully
+          visible cards that then drop out - and there is nothing for React to
+          find changed at hydration time. */}
+      <div className="ml-theme ml-anim">
         <HeaderLight />
 
         <main id="main-content">
