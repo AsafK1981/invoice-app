@@ -79,8 +79,24 @@ export default async function OpengraphImage() {
   // card now carries the one differentiator, matching the landing page's
   // lede. The Latin wordmark below stays deliberately (it matches the
   // domain and the pre-rename search association - see jsonld.ts).
-  const headlineLogical = "מספר הקצאה מרשות המסים, בלחיצה אחת";
-  const headline = visualRtl(headlineLogical);
+  //
+  // Re-ranked 2026-08-23. The content was right but the hierarchy was
+  // inverted: "MyFriendlyInvoiceApp" was set at 76px and the differentiator
+  // at 44px, so the single largest thing on the card was a Latin wordmark a
+  // Hebrew reader has never searched for and which appears nowhere else on
+  // the page (og:title and og:site_name both say "חשבונית ידידותית").
+  // Caught when the card was previewed inside a real Facebook composer
+  // before a group post. The wordmark still stays - the reason above holds -
+  // but it drops to an identity line under the headline, next to the Hebrew
+  // name it is missing today, and the differentiator takes the top slot.
+  //
+  // The headline is split across two lines rather than shrunk: at one line
+  // it needs ~1150px of the 1040px usable width at a size worth reading.
+  // The comma is dropped with the line break - it was doing the break's job,
+  // and punctuation is the one thing visualRtl below cannot place safely.
+  const headlineTop = visualRtl("מספר הקצאה מרשות המסים");
+  const headlineBottom = visualRtl("בלחיצה אחת");
+  const brandHebrew = visualRtl("חשבונית ידידותית");
 
   const heeboBold = await loadHeeboBold();
 
@@ -111,21 +127,21 @@ export default async function OpengraphImage() {
             homepage's flagship advantage card. */}
         <div
           style={{
-            width: 120,
-            height: 120,
-            borderRadius: 30,
+            width: 96,
+            height: 96,
+            borderRadius: 24,
             background: "linear-gradient(135deg, #f97316 0%, #e11d48 100%)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            marginBottom: 40,
+            marginBottom: 34,
             boxShadow:
               "0 20px 50px -10px rgba(225, 29, 72, 0.35), 0 8px 20px -8px rgba(249, 115, 22, 0.3)",
           }}
         >
           <svg
-            width={64}
-            height={64}
+            width={52}
+            height={52}
             viewBox="0 0 24 24"
             fill="none"
             stroke="#ffffff"
@@ -137,37 +153,63 @@ export default async function OpengraphImage() {
             <path d="M9 12l2 2 4-4" />
           </svg>
         </div>
+        {/* The differentiator, now the largest thing on the card. Warm ink
+            (`--ml-ink`) on the setup line, brand gradient on the payoff -
+            so the two words a scroller actually retains ("בלחיצה אחת") are
+            the ones carrying colour. */}
         <div
           style={{
-            fontSize: 76,
+            fontSize: 72,
             fontWeight: 800,
-            // Orange->rose gradient clip on the brand name (background-clip:
-            // text - the same technique the previous gold version used;
-            // satori supports it, verified against this exact bundled
-            // version - it builds a real SVG clip-path from the glyph
-            // outlines rather than silently ignoring the property).
+            color: "#292524",
+            letterSpacing: -1,
+            lineHeight: 1.15,
+            display: "flex",
+          }}
+        >
+          {headlineTop}
+        </div>
+        <div
+          style={{
+            fontSize: 72,
+            fontWeight: 800,
+            // Orange->rose gradient clip (background-clip: text - satori
+            // supports it, verified against this exact bundled version: it
+            // builds a real SVG clip-path from the glyph outlines rather
+            // than silently ignoring the property). Moved here from the
+            // wordmark, where it was decorating the least useful words.
             backgroundImage: "linear-gradient(90deg, #f97316 0%, #e11d48 100%)",
             backgroundClip: "text",
             WebkitBackgroundClip: "text",
             color: "transparent",
-            letterSpacing: -2,
-            lineHeight: 1.05,
+            letterSpacing: -1,
+            lineHeight: 1.15,
             display: "flex",
           }}
         >
-          MyFriendlyInvoiceApp
+          {headlineBottom}
         </div>
+        {/* Identity line. Hebrew and Latin are separate elements, never one
+            string: visualRtl reverses code points, so a mixed string would
+            come out with the Latin wordmark spelled backwards. In a row
+            satori emits children left to right, so the Latin name is first
+            (lands left) and the Hebrew name last (lands right, where a
+            Hebrew reader starts). */}
         <div
           style={{
-            fontSize: 44,
+            display: "flex",
+            alignItems: "center",
+            gap: 16,
+            marginTop: 44,
+            fontSize: 32,
             fontWeight: 800,
             // Warm stone, matching `--ml-ink-2` on the redesigned homepage.
-            color: "#57534e",
-            marginTop: 36,
-            display: "flex",
+            color: "#78716c",
           }}
         >
-          {headline}
+          <div style={{ display: "flex" }}>MyFriendlyInvoiceApp</div>
+          <div style={{ display: "flex", color: "#d6d3d1" }}>·</div>
+          <div style={{ display: "flex", color: "#57534e" }}>{brandHebrew}</div>
         </div>
       </div>
     ),
