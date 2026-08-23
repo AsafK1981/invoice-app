@@ -888,7 +888,14 @@ h1.ml-hero-h1 {
 /* Staggered entrance - the strip sits right under the hero, so a simple
    on-load animation reads as "the page welcoming you" without scroll
    observers. Fill-mode backwards keeps each card invisible until its
-   delay; reduced-motion users get the cards instantly. */
+   delay; reduced-motion users get the cards instantly.
+   As of 2026-08-23 this is the FALLBACK, not the live behaviour: the
+   page-wide scroll-driven block near the end of this file re-declares
+   `animation` on `.ml-trust-card` and, being later with equal specificity,
+   wins wherever `animation-timeline: view()` is supported. It stays
+   because the `@supports` guard there leaves this rule as the only
+   entrance a non-supporting browser gets - deleting it would make those
+   browsers the only ones with a dead-still trust strip. */
 @keyframes ml-trust-rise {
   from {
     opacity: 0;
@@ -2271,29 +2278,173 @@ h3 > .ml-badge-soon {
   }
 }
 
-/* ---- Scroll-driven entry motion -------------------------------------
-   CSS scroll-driven animations rather than the JS RevealOnView used
-   elsewhere: no observer, nothing to hydrate, and - the reason it matters
-   here - content can never be left stranded at opacity 0 when the script
-   is slow or absent. Double-guarded: browsers without support simply show
-   the finished state, and anyone who asks for reduced motion gets it. */
+/* ---- Scroll-driven entry motion, page-wide ---------------------------
+   Asaf 2026-08-23: "כל הריבועים יקפצו לתוך הדף... ושהם לא ישר מופיעים".
+   Until now only the spotlight and advantage cards moved; every other
+   square on the page (trust strip, FAQ rows, pricing pills, the three
+   mocks, the mid-CTA band, the comparison panel) was simply painted in
+   place. This block is the single owner of that motion for the whole
+   marketing page.
+
+   CSS scroll-driven animations, not a JS IntersectionObserver: no
+   observer, nothing to hydrate, and - the reason it matters here -
+   content can never be left stranded at opacity 0 when the script is
+   slow or absent. Triple-guarded:
+     - `@supports` -> a browser without the feature paints the finished
+       state, exactly as before this block existed.
+     - `prefers-reduced-motion: reduce` -> the whole block is skipped.
+     - every range ENDS well short of `entry 100%`, so an element sitting
+       at the very bottom of the document - which can never be scrolled
+       any further - still reaches its finished state. This is the classic
+       scroll-driven trap and the reason the ends are 40-60%, not 90%.
+
+   `entry` on both ends of every range. Mixing `entry` with `cover` parses
+   but lands the finish somewhere unintuitive, and `entry` stays sane for
+   subjects TALLER than the viewport (it ends when their top edge reaches
+   the viewport top), which is what keeps the 900px browser mock from
+   stalling half-faded.
+
+   `backwards` fill is load-bearing, not decoration: it fills the BEFORE
+   phase only, so once an element is past its range the animation no
+   longer applies any value - and the cards' own 180ms hover transitions
+   behave normally instead of being outranked by a still-running
+   animation.
+
+   Three intensities so the page reads as a hierarchy rather than one
+   uniform twitch:
+     cards  - the squares. Real lift, slight overshoot: they pop in.
+     panels - the mocks and full-width bands. Same idea, much less of it;
+              a 900px figure doing a 30px hop reads as a jolt.
+     heads  - section headings. Barely there, just enough that the heading
+              is not already sitting waiting when the eye arrives.
+
+   Nothing animated is nested inside anything else animated. A panel that
+   moves carries its own contents (the chips inside `.ml-compare-in`, the
+   stat tiles inside the browser mock), so those are deliberately absent
+   from the card list - two transforms stacked on the same pixels read as
+   a wobble, not as a cascade.
+
+   --ml-in-order is the stagger. Siblings in one row share a scroll
+   position, so without it a four-up grid flashes in as a single block;
+   each step pushes that card's range 7% later and the row becomes a short
+   wave. It is assigned per column with :nth-child (see the bottom of the
+   block) rather than threaded through the components as an inline style -
+   the column counts are a CSS fact, so the stagger is kept next to them. */
 @media (prefers-reduced-motion: no-preference) {
   @supports ((animation-timeline: view()) and (animation-range: entry)) {
-    @keyframes ml-rise {
+    /* `translate`/`scale`, NOT `transform`. Every card here already spends
+       `transform` on its hover lift (`.ml-adv-card:hover` /
+       `.ml-trust-card:hover` -> translateY(-6px) scale(1.02)), and an
+       animation outranks a plain declaration for as long as it applies -
+       so an entry animation written in `transform` is one property two
+       effects have to share. The independent transform properties compose
+       with `transform` rather than competing for it, which keeps the two
+       concerns separable: entry motion here, hover lift there.
+       Both ends of every keyframe are written out rather than leaning on
+       an implicit `to`: an implicit keyframe resolves against whatever the
+       underlying value happens to be, which is exactly the kind of
+       action-at-a-distance this block should not have. */
+    @keyframes ml-in-card {
       from {
         opacity: 0;
-        transform: translateY(26px) scale(0.97);
+        translate: 0 30px;
+        scale: 0.94;
+      }
+      to {
+        opacity: 1;
+        translate: 0 0;
+        scale: 1;
       }
     }
+    @keyframes ml-in-panel {
+      from {
+        opacity: 0;
+        translate: 0 22px;
+        scale: 0.985;
+      }
+      to {
+        opacity: 1;
+        translate: 0 0;
+        scale: 1;
+      }
+    }
+    @keyframes ml-in-head {
+      from {
+        opacity: 0;
+        translate: 0 14px;
+      }
+      to {
+        opacity: 1;
+        translate: 0 0;
+      }
+    }
+
+    /* the squares */
+    .ml-trust-card,
     .ml-spot-card,
-    .ml-adv-card {
-      animation: ml-rise auto cubic-bezier(0.2, 0.8, 0.3, 1.15) backwards;
+    .ml-adv-card,
+    .ml-faq-item,
+    .ml-price-frees li,
+    .ml-price-plan {
+      animation: ml-in-card auto cubic-bezier(0.16, 0.72, 0.3, 1.14) backwards;
       animation-timeline: view();
-      /* Both ends named on the same ruler. Mixing `entry` with `cover`
-         parses but lands the finish somewhere unintuitive; staying inside
-         `entry` means the card is fully settled once it is ~65% of the way
-         into view - readable by the time the eye reaches it. */
-      animation-range: entry 0% entry 65%;
+      /* Starts at 18%, not 0%: a card that begins moving the instant its
+         top pixel crosses the fold is already finished by the time enough
+         of it is on screen to look at - which was the whole complaint.
+         Holding it hidden for the first fifth of its entry is what makes
+         the arrival readable. 70% + a 7%-per-column stagger puts the
+         slowest card's finish at 91%, still inside `entry` so nothing can
+         stall unfinished at the bottom of the document. */
+      animation-range: entry calc(18% + var(--ml-in-order, 0) * 7%) entry
+        calc(70% + var(--ml-in-order, 0) * 7%);
+    }
+
+    /* the big blocks */
+    .ml-wa-phone-wrap,
+    .ml-sheet-wrap,
+    .ml-browser-wrap,
+    .ml-midcta-in,
+    .ml-compare-in {
+      animation: ml-in-panel auto cubic-bezier(0.2, 0.8, 0.3, 1.05) backwards;
+      animation-timeline: view();
+      animation-range: entry 5% entry 55%;
+    }
+
+    /* the headings */
+    .ml-spot-head,
+    .ml-adv-head,
+    .ml-show-head,
+    .ml-faq-title,
+    .ml-pricing h2 {
+      animation: ml-in-head auto ease-out backwards;
+      animation-timeline: view();
+      animation-range: entry 5% entry 50%;
+    }
+
+    /* Stagger, by column count. The trust strip is 4-up at >=1080px and
+       2-up above 720px; the advantages grid is 3-up at >=980px and 2-up
+       above 620px. Below those it is a single column, where the offsets
+       are harmless: each card enters at its own scroll position anyway,
+       so a range that finishes 7-21% later is not perceptible. Assigning
+       modulo the WIDEST layout keeps this to one rule set instead of one
+       per breakpoint. */
+    .ml-trust-in > :nth-child(4n + 2) {
+      --ml-in-order: 1;
+    }
+    .ml-trust-in > :nth-child(4n + 3) {
+      --ml-in-order: 2;
+    }
+    .ml-trust-in > :nth-child(4n + 4) {
+      --ml-in-order: 3;
+    }
+    .ml-adv-grid > :nth-child(3n + 2),
+    .ml-price-frees > :nth-child(3n + 2),
+    .ml-price-plans > :nth-child(3n + 2) {
+      --ml-in-order: 1;
+    }
+    .ml-adv-grid > :nth-child(3n + 3),
+    .ml-price-frees > :nth-child(3n + 3) {
+      --ml-in-order: 2;
     }
   }
 }
