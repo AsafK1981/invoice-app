@@ -2044,3 +2044,170 @@ h3 > .ml-badge-soon {
     text-align: center;
   }
 }
+
+/* ============================================================
+   SPOTLIGHT BAND  (2026-08-23)
+   The three differentiators, full width, directly under the trust strip.
+   Asaf's brief: the reasons to buy must hit before any product demo, and
+   the page should move. Layout is a horizontal band per item - big tinted
+   icon tile at the reading start, kicker + title + body beside it - so the
+   three read as a ladder rather than a second card grid.
+   ============================================================ */
+.ml-spot {
+  padding-block: 44px 20px;
+}
+@media (min-width: 760px) {
+  .ml-spot {
+    padding-block: 64px 28px;
+  }
+}
+.ml-spot-head {
+  text-align: center;
+  max-width: 620px;
+  margin: 0 auto 34px;
+}
+.ml-spot-head h2 {
+  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+  font-size: clamp(26px, 3.6vw, 36px);
+  font-weight: 800;
+  line-height: 1.2;
+  color: var(--ml-ink);
+  margin-top: 10px;
+}
+.ml-spot-list {
+  display: grid;
+  gap: 18px;
+  max-width: 940px;
+  margin-inline: auto;
+}
+.ml-spot-card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 20px;
+  padding: 22px;
+  border-radius: 20px;
+  background: #fff;
+  border: 1px solid var(--ml-line, #efe4d6);
+  /* One consistent light source for every raised surface on this page. */
+  box-shadow: 0 10px 28px -18px rgba(70, 48, 28, 0.4);
+  transition:
+    transform 0.28s cubic-bezier(0.2, 0.8, 0.3, 1.2),
+    box-shadow 0.28s ease,
+    border-color 0.28s ease;
+}
+@media (min-width: 760px) {
+  .ml-spot-card {
+    gap: 28px;
+    padding: 30px 34px;
+  }
+}
+/* Hover must be felt, not guessed at - static cards read as dead space
+   (DESIGN-TASTE 2026-08-10). Lift + deepen, no colour flash. */
+.ml-spot-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 44px -20px rgba(70, 48, 28, 0.5);
+  border-color: var(--ml-line-strong, #e6d5c1);
+}
+.ml-spot-icon {
+  display: grid;
+  place-items: center;
+  width: 62px;
+  height: 62px;
+  border-radius: 18px;
+  background: var(--ml-cream-100, #fdf6ec);
+  color: var(--ml-ink, #2b2622);
+  flex: none;
+}
+.ml-spot-icon svg {
+  width: 30px;
+  height: 30px;
+}
+@media (min-width: 760px) {
+  .ml-spot-icon {
+    width: 76px;
+    height: 76px;
+    border-radius: 22px;
+  }
+  .ml-spot-icon svg {
+    width: 36px;
+    height: 36px;
+  }
+}
+.ml-spot-kicker {
+  display: inline-block;
+  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--ml-accent, #e4622a);
+  margin-bottom: 5px;
+}
+.ml-spot-copy h3 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+  font-size: clamp(19px, 2.4vw, 24px);
+  font-weight: 800;
+  line-height: 1.3;
+  color: var(--ml-ink);
+}
+.ml-spot-copy p {
+  margin-top: 8px;
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--ml-ink-2);
+  max-width: 62ch;
+}
+
+/* ---- Scroll-driven entry motion -------------------------------------
+   CSS scroll-driven animations rather than the JS RevealOnView used
+   elsewhere: no observer, nothing to hydrate, and - the reason it matters
+   here - content can never be left stranded at opacity 0 when the script
+   is slow or absent. Double-guarded: browsers without support simply show
+   the finished state, and anyone who asks for reduced motion gets it. */
+@media (prefers-reduced-motion: no-preference) {
+  @supports ((animation-timeline: view()) and (animation-range: entry)) {
+    @keyframes ml-rise {
+      from {
+        opacity: 0;
+        transform: translateY(26px) scale(0.97);
+      }
+    }
+    .ml-spot-card,
+    .ml-adv-card {
+      animation: ml-rise auto cubic-bezier(0.2, 0.8, 0.3, 1.15) backwards;
+      animation-timeline: view();
+      /* Both ends named on the same ruler. Mixing `entry` with `cover`
+         parses but lands the finish somewhere unintuitive; staying inside
+         `entry` means the card is fully settled once it is ~65% of the way
+         into view - readable by the time the eye reaches it. */
+      animation-range: entry 0% entry 65%;
+    }
+  }
+}
+
+/* ---- Demos, shrunk (2026-08-23) --------------------------------------
+   Asaf: "לא כל כך מעניין איך האפליקציה נראית בפנים... אפשר להראות את זה
+   בהרבה יותר קטן". Both mocks keep every verified detail - they are just
+   no longer the main event, and no longer the top of the page. Narrower
+   containers do the shrinking, so nothing inside needs re-authoring. */
+.ml-show-grid {
+  max-width: 880px;
+  margin-inline: auto;
+}
+.ml-browser-wrap {
+  max-width: 640px;
+}
+.ml-show,
+.ml-app {
+  padding-block: 8px 48px;
+}
+@media (min-width: 760px) {
+  .ml-show,
+  .ml-app {
+    padding-block: 10px 64px;
+  }
+}

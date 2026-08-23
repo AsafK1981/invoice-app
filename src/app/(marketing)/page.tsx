@@ -19,7 +19,6 @@ import FooterLight from "./components/FooterLight";
 import RedirectIfAuthed from "./components/RedirectIfAuthed";
 import JsonLd from "./components/JsonLd";
 import WhatsappIcon from "./components/WhatsappIcon";
-import RevealOnView from "./components/RevealOnView";
 import { graph, organization, website, softwareApplication, faqPage } from "@/lib/jsonld";
 import "./marketing-light.css";
 
@@ -134,6 +133,16 @@ type Advantage = {
    * visitor cannot use the day they sign up carries this flag.
    */
   soon?: true;
+  /**
+   * Promotes the card out of the grid into the full-width spotlight band that
+   * runs directly under the trust strip (2026-08-23, Asaf: the demos were
+   * eating the top of the page while the reasons to buy sat below the fold).
+   * Exactly the three strongest differentiators carry this - keep it that way;
+   * a "spotlight" holding six items is just a second grid.
+   */
+  spotlight?: true;
+  /** Short punchy line shown above the title in the spotlight band only. */
+  kicker?: string;
 };
 
 const ADVANTAGES: Advantage[] = [
@@ -155,6 +164,8 @@ const ADVANTAGES: Advantage[] = [
       </svg>
     ),
     title: "מספרי הקצאה אוטומטיים",
+    spotlight: true,
+    kicker: "דרישת 2026, פתורה",
     body: "המערכת מבקשת ומקבלת מספר הקצאה מרשות המסים בלחיצה אחת, ישירות מתוך המסמך.",
   },
   {
@@ -175,6 +186,8 @@ const ADVANTAGES: Advantage[] = [
       </svg>
     ),
     title: "עוזר AI חכם בעברית",
+    spotlight: true,
+    kicker: "שואלים בעברית, מקבלים תשובה",
     body: "שאלו בשפה חופשית: כמה הכנסתי החודש? איפה החשבונית של דנה? העוזר מוצא, עונה ומכין טיוטות - ואתם רק מאשרים.",
   },
   {
@@ -202,6 +215,8 @@ const ADVANTAGES: Advantage[] = [
     tone: "green",
     icon: <WhatsappIcon aria-hidden="true" />,
     title: "וואטסאפ בלי לפתוח את האפליקציה",
+    spotlight: true,
+    kicker: "היתרון שאין לאף אחד אחר",
     body: "מוציאים קבלה ורושמים הוצאה ישירות מתוך הצ'אט, בלי להתחבר בכלל.",
     soon: true,
   },
@@ -285,6 +300,23 @@ const ADVANTAGES: Advantage[] = [
     body: "מייל, וואטסאפ או קישור ציבורי מעוצב - הלקוח מקבל מסמך מקצועי בלי להתקין כלום.",
   },
 ];
+
+/**
+ * The spotlight band renders these three full width, above the grid; the grid
+ * renders everything else. Deriving both from one array means a card can never
+ * be silently dropped or shown twice - flipping `spotlight` moves it.
+ */
+/**
+ * Order is explicit, not the ADVANTAGES order: WhatsApp leads because Asaf
+ * calls it the product's strongest differentiator and is committed to shipping
+ * it (same reason it leads the trust strip). It carries a "בקרוב" pill, so
+ * leading with it promises without misleading.
+ */
+const SPOTLIGHT_ORDER = ["whatsapp", "allocation", "ai"];
+const SPOTLIGHT = SPOTLIGHT_ORDER.map(
+  (k) => ADVANTAGES.find((a) => a.key === k && a.spotlight),
+).filter((a): a is Advantage => Boolean(a));
+const GRID_ADVANTAGES = ADVANTAGES.filter((a) => !a.spotlight);
 
 /** Small checkmark used by the trust row and the sample-document feature
  *  list - one glyph, reused, matching the approved mockup. */
@@ -523,6 +555,142 @@ export default function MarketingLanding() {
                   גיבוי לילי מוצפן במקום נפרד והצפנה על החיבור לרשות
                   המסים. <Link href="/security">איך בדיוק</Link>
                 </p>
+              </div>
+            </div>
+          </section>
+
+          {/* Spotlight band - the three differentiators, full width, above the
+              grid and above every demo. Structural call by Asaf 2026-08-23:
+              the WhatsApp/document/dashboard mocks were ~470 lines sitting on
+              top of a 40-line advantages grid, so a cold visitor met "here is
+              what the tool looks like" before ever meeting "here is why it is
+              better". That also restores his own 2026-08-10 rule -
+              differentiators in the top fold, product demo low on the page -
+              which the 08-11 reshuffle had inverted.
+              Entry motion is CSS scroll-driven (animation-timeline: view()),
+              not a JS observer: it needs no hydration, cannot
+              leave content stranded invisible when JS is slow (which is exactly
+              what the old RevealOnView did), and is wrapped in both
+              @supports and prefers-reduced-motion in marketing-light.css. */}
+          <section className="ml-spot">
+            <div className="ml-wrap">
+              <div className="ml-spot-head">
+                <span className="ml-eyebrow">למה דווקא אנחנו</span>
+                <h2>שלושה דברים שלא תקבלו במקום אחר</h2>
+              </div>
+
+              <div className="ml-spot-list">
+                {SPOTLIGHT.map((item, index) => (
+                  <article
+                    className={`ml-spot-card${item.tone ? ` ml-spot-card--${item.tone}` : ""}`}
+                    key={item.key}
+                    style={{ "--i": index } as CSSProperties}
+                  >
+                    <div
+                      className={`ml-spot-icon${item.tone ? ` ml-adv-icon--${item.tone}` : ""}`}
+                      aria-hidden="true"
+                    >
+                      {item.icon}
+                    </div>
+                    <div className="ml-spot-copy">
+                      {item.kicker ? (
+                        <span className="ml-spot-kicker">{item.kicker}</span>
+                      ) : null}
+                      <h3>
+                        <LtrText text={item.title} />
+                        {item.soon ? (
+                          <span className="ml-badge-soon">בקרוב</span>
+                        ) : null}
+                      </h3>
+                      <p>
+                        <LtrText text={item.body} />
+                      </p>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          <section className="ml-advantages">
+            <div className="ml-wrap">
+              <div className="ml-adv-head">
+                <span className="ml-adv-tag">
+                  {GRID_ADVANTAGES.length} יתרונות נוספים שמרגישים כמו הקלה
+                </span>
+                <h2>וכל השאר, במקום אחד</h2>
+                <p>
+                  לא עוד תוכנה שמרגישה כמו טופס של רשות המסים. הכול כאן,
+                  פשוט וברור.
+                </p>
+              </div>
+
+              <div className="ml-adv-grid">
+                {GRID_ADVANTAGES.map((item, index) => (
+                  <article
+                    className={`ml-adv-card${item.flagship ? " is-flagship" : ""}${item.tone ? ` ml-adv-card--${item.tone}` : ""}`}
+                    key={item.key}
+                    style={{ "--i": index } as CSSProperties}
+                  >
+                    <div
+                      className={`ml-adv-icon${item.tone ? ` ml-adv-icon--${item.tone}` : ""}`}
+                      aria-hidden="true"
+                    >
+                      {item.icon}
+                    </div>
+                    <h3>
+                      <LtrText text={item.title} />
+                      {item.soon ? (
+                        <span className="ml-badge-soon">בקרוב</span>
+                      ) : null}
+                    </h3>
+                    <p>
+                      <LtrText text={item.body} />
+                    </p>
+                  </article>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          <section className="ml-pricing" id="pricing">
+            <div className="ml-wrap">
+              <h2>בתקופת ההשקה, הכול חינם</h2>
+              {/* Restructured 2026-08-11 (Asaf): the old single paragraph
+                  wrapped "Pro" onto its own line and read as one dense run.
+                  Now the three "בלי" promises sit on one check-marked line
+                  (echoing the hero trust row) and the two future plans get
+                  their own labeled chips. Prices/names verified against
+                  src/lib/plans.ts (בסיסי ₪15/mo, Pro ₪25/mo unlimited). */}
+              <ul className="ml-price-frees">
+                <li>
+                  <CheckIcon /> בלי הגבלת מסמכים
+                </li>
+                <li>
+                  <CheckIcon /> בלי כרטיס אשראי
+                </li>
+                <li>
+                  <CheckIcon /> בלי התחייבות
+                </li>
+              </ul>
+              <p className="ml-price-later">בהמשך, אלה יהיו המסלולים:</p>
+              <div className="ml-price-plans">
+                <span className="ml-price-plan">
+                  מסלול בסיסי · <b>₪15 לחודש</b>
+                </span>
+                <span className="ml-price-plan">
+                  <Ltr>Pro</Ltr> ללא הגבלה · <b>₪25 לחודש</b>
+                </span>
+              </div>
+              <p className="ml-price-later">למצטרפים בהשקה - חודש ראשון חינם</p>
+              <Link
+                href="/login?mode=signup"
+                className="ml-btn ml-btn-primary ml-btn-lg"
+              >
+                התחילו בחינם
+              </Link>
+              <div className="fine">
+                ביטול בכל עת · נעדכן מראש לפני כל שינוי מחיר
               </div>
             </div>
           </section>
@@ -1018,88 +1186,6 @@ export default function MarketingLanding() {
             </div>
           </section>
 
-          <section className="ml-advantages">
-            <div className="ml-wrap">
-              <div className="ml-adv-head">
-                <span className="ml-adv-tag">
-                  12 יתרונות שמרגישים כמו הקלה
-                </span>
-                <h2>כל מה שעסק עצמאי צריך, במקום אחד</h2>
-                <p>
-                  לא עוד תוכנה שמרגישה כמו טופס של רשות המסים. הכול כאן,
-                  פשוט וברור.
-                </p>
-              </div>
-
-              <RevealOnView className="ml-adv-grid">
-                {ADVANTAGES.map((item, index) => (
-                  <article
-                    className={`ml-adv-card${item.flagship ? " is-flagship" : ""}${item.tone ? ` ml-adv-card--${item.tone}` : ""}`}
-                    key={item.key}
-                    style={{ "--i": index } as CSSProperties}
-                  >
-                    <div
-                      className={`ml-adv-icon${item.tone ? ` ml-adv-icon--${item.tone}` : ""}`}
-                      aria-hidden="true"
-                    >
-                      {item.icon}
-                    </div>
-                    <h3>
-                      <LtrText text={item.title} />
-                      {item.soon ? (
-                        <span className="ml-badge-soon">בקרוב</span>
-                      ) : null}
-                    </h3>
-                    <p>
-                      <LtrText text={item.body} />
-                    </p>
-                  </article>
-                ))}
-              </RevealOnView>
-            </div>
-          </section>
-
-          <section className="ml-pricing" id="pricing">
-            <div className="ml-wrap">
-              <h2>בתקופת ההשקה, הכול חינם</h2>
-              {/* Restructured 2026-08-11 (Asaf): the old single paragraph
-                  wrapped "Pro" onto its own line and read as one dense run.
-                  Now the three "בלי" promises sit on one check-marked line
-                  (echoing the hero trust row) and the two future plans get
-                  their own labeled chips. Prices/names verified against
-                  src/lib/plans.ts (בסיסי ₪15/mo, Pro ₪25/mo unlimited). */}
-              <ul className="ml-price-frees">
-                <li>
-                  <CheckIcon /> בלי הגבלת מסמכים
-                </li>
-                <li>
-                  <CheckIcon /> בלי כרטיס אשראי
-                </li>
-                <li>
-                  <CheckIcon /> בלי התחייבות
-                </li>
-              </ul>
-              <p className="ml-price-later">בהמשך, אלה יהיו המסלולים:</p>
-              <div className="ml-price-plans">
-                <span className="ml-price-plan">
-                  מסלול בסיסי · <b>₪15 לחודש</b>
-                </span>
-                <span className="ml-price-plan">
-                  <Ltr>Pro</Ltr> ללא הגבלה · <b>₪25 לחודש</b>
-                </span>
-              </div>
-              <p className="ml-price-later">למצטרפים בהשקה - חודש ראשון חינם</p>
-              <Link
-                href="/login?mode=signup"
-                className="ml-btn ml-btn-primary ml-btn-lg"
-              >
-                התחילו בחינם
-              </Link>
-              <div className="fine">
-                ביטול בכל עת · נעדכן מראש לפני כל שינוי מחיר
-              </div>
-            </div>
-          </section>
 
           <section className="ml-faq">
             <h2 className="ml-faq-title">שאלות נפוצות</h2>
