@@ -8,6 +8,9 @@ import {
   ArrowLeftRight,
   Gift,
   ShieldCheck,
+  RefreshCw,
+  Users,
+  Palette,
 } from "lucide-react";
 import { Ltr, LtrText } from "@/components/ui/ltr";
 import { COMPETITORS } from "@/lib/comparison-data";
@@ -111,7 +114,10 @@ type AdvantageTone =
   | "teal"
   | "indigo"
   | "sky"
-  | "orange";
+  | "orange"
+  | "cyan"
+  | "lime"
+  | "fuchsia";
 
 type Advantage = {
   key: string;
@@ -200,6 +206,18 @@ const ADVANTAGES: Advantage[] = [
     soon: true,
   },
   {
+    // Recurring billing templates (shipped; see src/app/(app)/recurring).
+    // Honest phrasing: there is NO cron auto-issuing documents - the system
+    // prepares the document and surfaces it on the due day, the user
+    // confirms with one click (recurring-due-alert.tsx). Copy must keep
+    // saying "אתם מאשרים", never "נשלח לבד".
+    key: "recurring",
+    tone: "cyan",
+    icon: <RefreshCw aria-hidden="true" />,
+    title: "חיוב חוזר ללקוחות קבועים",
+    body: "מגדירים פעם אחת - והמסמך החודשי מוכן לבד, ביום שבחרתם. אתם רק מאשרים בלחיצה.",
+  },
+  {
     key: "ocr",
     tone: "pink",
     icon: <ScanLine aria-hidden="true" />,
@@ -218,7 +236,27 @@ const ADVANTAGES: Advantage[] = [
     tone: "indigo",
     icon: <FileBarChart aria-hidden="true" />,
     title: "דו״חות שרואי חשבון אוהבים",
-    body: "דוח מע״מ תקופתי, עזר ל-1301, הצהרת הון, גיול חובות ויומן שנתי - הכל מוכן להורדה.",
+    body: "דוח מע״מ תקופתי, עזר ל-1301, הצהרת הון, גיול חובות, כרטסת לקוח ויומן שנתי - הכל מוכן להורדה.",
+  },
+  {
+    // Client portal (src/app/portal): the client asks for a link by email
+    // (magic link, no password) and sees every document issued to them,
+    // with paid/pending status. No claims beyond what /portal/me renders.
+    key: "portal",
+    tone: "lime",
+    icon: <Users aria-hidden="true" />,
+    title: "אזור אישי ללקוחות שלכם",
+    body: "הלקוח מקבל קישור למייל ורואה את כל המסמכים שלו במקום אחד, כולל מה שולם ומה ממתין - בלי סיסמה ובלי לחפש במיילים.",
+  },
+  {
+    // Document design choice (src/lib/document-themes.ts): 5 layout
+    // families x accent themes, picked per business. "מגוון סגנונות" keeps
+    // the copy true even as the exact theme count changes.
+    key: "design",
+    tone: "fuchsia",
+    icon: <Palette aria-hidden="true" />,
+    title: "בוחרים איך המסמך ייראה",
+    body: "מגוון סגנונות עיצוב וצבעים לבחירה - והמסמכים שלכם נראים כמו העסק שלכם, לא כמו טופס גנרי.",
   },
   {
     key: "migration",
@@ -305,7 +343,7 @@ export const metadata: Metadata = {
  * Ported faithfully from the approved mockup (cream page, warm stone body
  * copy, orange->rose gradient on primary CTAs, gold-tint accent cards,
  * soft warm shadows, 14-16px radii). Structure top to bottom: a slim sticky
- * header, a centered hero with the compliance-pain headline, the 9-card
+ * header, a centered hero with the compliance-pain headline, the 12-card
  * advantage grid HIGH on the page (right after the hero, each card now
  * individually colored - see the ADVANTAGES comment), a comparison strip
  * linking out to the /vs pages, a "how it looks for your client" section
@@ -984,7 +1022,7 @@ export default function MarketingLanding() {
             <div className="ml-wrap">
               <div className="ml-adv-head">
                 <span className="ml-adv-tag">
-                  9 יתרונות שמרגישים כמו הקלה
+                  12 יתרונות שמרגישים כמו הקלה
                 </span>
                 <h2>כל מה שעסק עצמאי צריך, במקום אחד</h2>
                 <p>

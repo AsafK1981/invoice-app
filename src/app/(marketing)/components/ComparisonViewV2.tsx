@@ -34,7 +34,7 @@ import RelatedLinks from "./RelatedLinks";
  *   1. Semantic colors are NOT brand-gold: green ✓ = supported, red ✗ =
  *      not supported, amber − = partial. Gold is reserved for accents, so a
  *      scanning eye never reads "gold" as "yes".
- *   2. Section grouping rows + zebra striping make the 15-row matrix
+ *   2. Section grouping rows + zebra striping make the 20-row matrix
  *      scannable.
  *
  * Every competitor name and data string renders through `<LtrText>`: this is
@@ -71,7 +71,7 @@ function Mark({ kind, note }: { kind: FeatureSupport; note?: string }) {
 }
 
 /**
- * Logical grouping of the 15 shared features (indices into
+ * Logical grouping of the 20 shared features (indices into
  * `competitor.features`, whose order is fixed by SHARED_FEATURES). Purely
  * presentational; the data and its order are untouched.
  */
@@ -79,6 +79,7 @@ const FEATURE_GROUPS: { title: string; count: number }[] = [
   { title: "מסמכים והפקה", count: 5 }, // 0-4
   { title: "ניתוח, מעקב וייצוא", count: 4 }, // 5-8
   { title: "שליטה בנתונים, תאימות ושקיפות", count: 6 }, // 9-14
+  { title: "אוטומציה ובינה מלאכותית", count: 5 }, // 15-19
 ];
 
 /** Slice the flat feature list into the presentational groups above. */

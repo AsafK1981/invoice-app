@@ -127,6 +127,41 @@ const SHARED_FEATURES = (theirSupport: Record<string, FeatureSupport>, theirNote
     them: theirSupport.allocationApi ?? "yes",
     note: theirNotes.allocationApi,
   },
+  // --- אוטומציה ובינה מלאכותית (added 2026-08-23; ComparisonViewV2's
+  // FEATURE_GROUPS slices this block into its own titled section - keep
+  // these five rows LAST and contiguous, and keep that group's count in
+  // sync). Defaults reflect the state of each market claim as checked
+  // 2026-08; override per competitor via theirSupport/theirNotes when a
+  // vendor demonstrably ships one of these.
+  {
+    feature: "חיוב חוזר / מסמכים קבועים ללקוחות",
+    us: "yes",
+    them: theirSupport.recurring ?? "yes",
+    note: theirNotes.recurring,
+  },
+  {
+    feature: "עוזר AI בעברית (עונה על שאלות ומכין טיוטות)",
+    us: "yes",
+    them: theirSupport.aiAssistant ?? "no",
+    note: theirNotes.aiAssistant ?? "אין עוזר צ'אט AI מובנה במערכת (נבדק 08/2026)",
+  },
+  {
+    feature: "סריקת הוצאה בצילום (ספק, סכום ומע\"מ נקלטים לבד)",
+    us: "yes",
+    them: theirSupport.expenseScan ?? "partial",
+    note: theirNotes.expenseScan ?? "קיים חלקית או במסלולים מתקדמים בלבד",
+  },
+  {
+    feature: "תזכורת חודשית להפקת מסמכים, בימים ובשעה שבחרתם",
+    us: "yes",
+    them: theirSupport.monthlyNudge ?? "no",
+  },
+  {
+    feature: "ייבוא היסטוריית מסמכים מהתוכנה הקודמת",
+    us: "yes",
+    them: theirSupport.historyImport ?? "no",
+    note: theirNotes.historyImport ?? "בדרך כלל רק ייבוא לקוחות, בלי היסטוריית מסמכים",
+  },
 ];
 
 export const COMPETITORS: Record<Competitor["slug"], Competitor> = {
@@ -191,10 +226,12 @@ export const COMPETITORS: Record<Competitor["slug"], Competitor> = {
       {
         allocationApi: "yes",
         pwa: "no",
+        expenseScan: "yes",
       },
       {
         pwa: "אתר רספונסיבי, לא PWA מותקן",
         allocationApi: "אינטגרציה מלאה לחשבונית ישראל, ממסלול Best ומעלה",
+        expenseScan: "סריקת מסמכי הוצאות קיימת",
       },
     ),
     theirStrengths: [
