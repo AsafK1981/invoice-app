@@ -21,6 +21,7 @@ import JsonLd from "./components/JsonLd";
 import WhatsappIcon from "./components/WhatsappIcon";
 import { graph, organization, website, softwareApplication, faqPage } from "@/lib/jsonld";
 import "./marketing-light.css";
+import SignupLink from "./components/SignupLink";
 
 /**
  * Landing-page FAQ. Every answer is a factual claim about THIS app, verified
@@ -464,12 +465,11 @@ export default function MarketingLanding() {
                 ההקצאה מתקבל אוטומטית, בלחיצה אחת, ישירות מתוך המסמך.
               </p>
               <div className="ml-hero-actions">
-                <Link
-                  href="/login?mode=signup"
+                <SignupLink
                   className="ml-btn ml-btn-primary ml-btn-lg"
                 >
                   התחילו בחינם
-                </Link>
+                </SignupLink>
                 <span className="ml-hero-note">
                   חינם בתקופת ההשקה, בלי כרטיס אשראי
                 </span>
@@ -700,12 +700,11 @@ export default function MarketingLanding() {
                 </span>
               </div>
               <p className="ml-price-later">למצטרפים בהשקה - חודש ראשון חינם</p>
-              <Link
-                href="/login?mode=signup"
+              <SignupLink
                 className="ml-btn ml-btn-primary ml-btn-lg"
               >
                 התחילו בחינם
-              </Link>
+              </SignupLink>
               <div className="fine">
                 ביטול בכל עת · נעדכן מראש לפני כל שינוי מחיר
               </div>
@@ -1074,12 +1073,11 @@ export default function MarketingLanding() {
           <section className="ml-midcta">
             <div className="ml-wrap ml-midcta-in">
               <p className="ml-midcta-t">משוכנעים? ההרשמה לוקחת פחות מדקה.</p>
-              <Link
-                href="/login?mode=signup"
+              <SignupLink
                 className="ml-btn ml-btn-primary ml-btn-sm"
               >
                 התחילו בחינם
-              </Link>
+              </SignupLink>
               <span className="ml-midcta-note">
                 בלי כרטיס אשראי · אפשר לבטל בכל רגע
               </span>

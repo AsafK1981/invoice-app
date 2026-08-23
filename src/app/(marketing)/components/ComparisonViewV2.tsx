@@ -24,6 +24,7 @@ import FooterV2 from "./FooterV2";
 import JsonLd from "./JsonLd";
 import VsSiblings from "./VsSiblings";
 import RelatedLinks from "./RelatedLinks";
+import SignupLink from "./SignupLink";
 
 /**
  * ComparisonViewV2, the shared body of every /vs/<competitor> page.
@@ -370,9 +371,9 @@ export function ComparisonViewV2({ competitor }: { competitor: Competitor }) {
             אשראי. כשנתחיל לגבות נעדכן מראש, בלי הפתעות.
           </p>
           <div className="row">
-            <Link href="/login?mode=signup" className="v2-cta">
+            <SignupLink className="v2-cta">
               התחילו בחינם
-            </Link>
+            </SignupLink>
             <Link href="/invite/FOR-FRIENDS-ONLY" className="ghost">
               <Gift />
               קיבלת קוד מחבר? לחצו כאן

@@ -13,6 +13,7 @@ import {
   breadcrumbList,
 } from "@/lib/jsonld";
 import { vsMetadata } from "./vs-metadata";
+import SignupLink from "../components/SignupLink";
 
 export const metadata = vsMetadata({
   path: "/vs",
@@ -116,9 +117,9 @@ export default function V2VsIndex() {
         />
 
         <div className="v2-cmp-cta" style={{ marginTop: "var(--v2-sp-5)" }}>
-          <Link href="/login?mode=signup" className="v2-cta">
+          <SignupLink className="v2-cta">
             התחילו בחינם
-          </Link>
+          </SignupLink>
           <div className="v2-fine">
             חינם עכשיו בתקופת ההשקה · ללא כרטיס אשראי · ביטול בכל עת
           </div>

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Gift } from "lucide-react";
 import { Ltr } from "@/components/ui/ltr";
+import SignupLink from "./SignupLink";
 
 /**
  * The shared "start free" call to action.
@@ -19,9 +20,9 @@ export default function SignupCta() {
         כשנתחיל לגבות נעדכן מראש, בלי הפתעות.
       </p>
       <div className="row">
-        <Link href="/login?mode=signup" className="v2-cta">
+        <SignupLink className="v2-cta">
           התחילו בחינם
-        </Link>
+        </SignupLink>
         <Link href="/invite/FOR-FRIENDS-ONLY" className="ghost">
           <Gift />
           קיבלת קוד מחבר? לחצו כאן

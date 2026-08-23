@@ -26,6 +26,7 @@ import HeaderV2 from "../components/HeaderV2";
 import FooterV2 from "../components/FooterV2";
 import JsonLd from "../components/JsonLd";
 import RelatedLinks from "../components/RelatedLinks";
+import SignupLink from "../components/SignupLink";
 
 export const metadata = pageMetadata({
   path: "/pricing",
@@ -278,9 +279,9 @@ export default function PricingPage() {
             אשראי. כשנתחיל לגבות נעדכן מראש, בלי הפתעות.
           </p>
           <div className="row">
-            <Link href="/login?mode=signup" className="v2-cta">
+            <SignupLink className="v2-cta">
               התחילו בחינם
-            </Link>
+            </SignupLink>
             <Link href="/vs" className="ghost">
               <ArrowLeft />
               השוו אותנו למתחרים

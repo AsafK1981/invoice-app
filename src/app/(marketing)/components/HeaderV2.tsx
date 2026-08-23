@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useOptionalUser } from "@/lib/auth";
 
 /**
  * HeaderV2, sticky nav for /vs, /blog, /terms, /privacy, /status,
@@ -13,11 +16,21 @@ import Link from "next/link";
  * `.v2-nav-secondary` (מגזין, השוואה): hidden below 375px only (see v2.css),
  * so the wordmark + מחירים + CTA never overflow a 320px viewport. מחירים
  * stays visible at every width on purpose.
+ *
+ * SESSION-AWARE, mirroring HeaderLight: these pages were always readable with
+ * a session, so "התחברות" and "התחילו בחינם" were being offered to people who
+ * are already customers. Signed in, the pair collapses into one לאזור האישי,
+ * and the wordmark points at /product rather than "/" - "/" would bounce them
+ * into the app, which is not what clicking a site's logo should do.
+ * `useOptionalUser` reports signed-out on the first render, so the SSR HTML a
+ * crawler sees is byte-identical to before.
  */
 export default function HeaderV2() {
+  const { user } = useOptionalUser();
+
   return (
     <header className="v2-header">
-      <Link href="/" className="v2-wordmark">
+      <Link href={user ? "/product" : "/"} className="v2-wordmark">
         חשבונית{" "}
         <span className="v2-wordmark-soft">ידידותית</span>
       </Link>
@@ -37,12 +50,20 @@ export default function HeaderV2() {
         <Link href="/pricing" className="v2-navlink">
           מחירים
         </Link>
-        <Link href="/login" className="v2-navlink v2-header-login">
-          התחברות
-        </Link>
-        <Link href="/login?mode=signup" className="v2-btn-gold">
-          התחילו בחינם
-        </Link>
+        {user ? (
+          <Link href="/dashboard" className="v2-btn-gold">
+            לאזור האישי
+          </Link>
+        ) : (
+          <>
+            <Link href="/login" className="v2-navlink v2-header-login">
+              התחברות
+            </Link>
+            <Link href="/login?mode=signup" className="v2-btn-gold">
+              התחילו בחינם
+            </Link>
+          </>
+        )}
       </nav>
     </header>
   );
