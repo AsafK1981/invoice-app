@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { after } from "next/server";
 import nodemailer from "nodemailer";
 import { createClient } from "@supabase/supabase-js";
 import { checkRate, clientIp } from "@/lib/rate-limit";
@@ -37,6 +38,16 @@ export async function POST(req: NextRequest) {
 
     // Always respond ok even when we don't find the email. Don't leak
     // whether an email is a customer of someone on the platform.
+    //
+    // Timing side-channel fix (CSO 2026-08-23): the SMTP send is only done
+    // on a match, and awaiting it before responding made a match take a full
+    // Gmail round-trip longer than a non-match - identical JSON body, but
+    // distinguishable by response latency, which was enough to enumerate
+    // registered client emails. The DB lookup below runs on BOTH paths (same
+    // latency), and the send is deferred to `after()` so the response returns
+    // immediately in both cases. `after()` keeps the serverless function alive
+    // to finish the send after the response is flushed, so deliverability is
+    // unchanged while the timing signal is gone.
     const admin = createClient(supabaseUrl, serviceKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
@@ -106,29 +117,33 @@ ${link}
 אם לא ביקשתם, אפשר להתעלם.
 `;
 
-      try {
-        const transporter = nodemailer.createTransport({
-          host: "smtp.gmail.com",
-          port: 465,
-          secure: true,
-          auth: { user: GMAIL_USER, pass: GMAIL_APP_PASSWORD.replace(/\s+/g, "") },
-        });
-        await transporter.sendMail({
-          from: `"פורטל לקוחות" <${GMAIL_USER}>`,
-          to: email,
-          subject: "קישור כניסה לפורטל הלקוחות",
-          html,
-          text,
-          headers: {
-            "X-Auto-Response-Suppress": "All",
-            "Auto-Submitted": "auto-generated",
-          },
-        });
-      } catch (err) {
-        // Log but don't reveal failure; keeps email-existence
-        // non-distinguishable across success/failure paths.
-        console.error("portal request-link send failed", err);
-      }
+      // Deferred so it runs AFTER the response is sent - see the timing
+      // side-channel note above. Never awaited on the request path.
+      after(async () => {
+        try {
+          const transporter = nodemailer.createTransport({
+            host: "smtp.gmail.com",
+            port: 465,
+            secure: true,
+            auth: { user: GMAIL_USER, pass: GMAIL_APP_PASSWORD.replace(/\s+/g, "") },
+          });
+          await transporter.sendMail({
+            from: `"פורטל לקוחות" <${GMAIL_USER}>`,
+            to: email,
+            subject: "קישור כניסה לפורטל הלקוחות",
+            html,
+            text,
+            headers: {
+              "X-Auto-Response-Suppress": "All",
+              "Auto-Submitted": "auto-generated",
+            },
+          });
+        } catch (err) {
+          // Log but don't reveal failure; keeps email-existence
+          // non-distinguishable across success/failure paths.
+          console.error("portal request-link send failed", err);
+        }
+      });
     }
 
     return NextResponse.json({

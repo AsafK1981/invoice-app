@@ -12,10 +12,18 @@ const cronSecret = process.env.CRON_SECRET;
  * when the request is authorized.
  *
  * Shared by every /api/cron/* route so the auth scheme lives in one place.
+ *
+ * FAILS CLOSED (CSO 2026-08-23): if CRON_SECRET is unset/empty, every request
+ * is rejected. The previous `if (cronSecret && ...)` guard fell OPEN when the
+ * env var went missing (env drift, a preview deploy that dropped it), letting
+ * anyone invoke the cron routes unauthenticated - db-audit leaks RLS
+ * diagnostics, tax-health leaks which businesses have failing Tax Authority
+ * connections. The sibling cron routes (dunning/run, monthly-reminder/run)
+ * already fail closed; this brings the shared helper in line.
  */
 export function cronAuthError(req: Request): NextResponse | null {
   const auth = req.headers.get("authorization");
-  if (cronSecret && auth !== `Bearer ${cronSecret}`) {
+  if (!cronSecret || auth !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
   return null;

@@ -133,16 +133,23 @@ export interface PlanStatus {
 /**
  * Source of truth for plan status.
  *
- * **Security:** `app_metadata` (admin/service-role only) takes precedence
- * over `user_metadata` (user-writable). Supabase users can update their
- * own `user_metadata` directly from a browser console; they cannot
- * touch `app_metadata`. So we always write plan_* into `app_metadata`,
- * and we read from `app_metadata` first.
+ * **Security:** plan fields are read from ONE metadata object, chosen as a
+ * coherent block, never key-by-key merged. `app_metadata` is admin/service-
+ * role only; `user_metadata` is user-writable from a browser console. A
+ * per-key merge (spread user_metadata, then app_metadata over it) leaked a
+ * spoof: a free user whose `app_metadata` never had `plan_tier` set could
+ * write `{plan_tier:'pro', plan_active:true}` into their own user_metadata
+ * and it would fall through, because there was no app_metadata key to win
+ * over it (CSO 2026-08-23).
  *
- * We still merge `user_metadata` as a fallback so any users whose plan
- * fields haven't been migrated yet aren't suddenly logged out, but
- * `app_metadata` overrides anything they might have placed in
- * `user_metadata` themselves.
+ * The fix: if `app_metadata` carries a real plan (`plan_tier` present), that
+ * object is the sole source and user_metadata is ignored entirely - a user
+ * cannot mix a self-set `plan_active` into an admin-set tier. Only when
+ * `app_metadata` has NO plan at all do we fall back to `user_metadata` as a
+ * whole, purely so users predating the app_metadata migration keep working.
+ * That fallback is itself user-writable, so it must never be the path that
+ * gates a paid capability - server routes that enforce limits read
+ * `app_metadata` directly (see /api/send-email branding suppression).
  */
 export function getPlanStatus(
   user:
@@ -153,12 +160,12 @@ export function getPlanStatus(
     | null
     | undefined,
 ): PlanStatus {
-  // Merge with app_metadata winning on key conflict. user_metadata is
-  // kept only as a fallback for users predating the migration.
-  const meta: Record<string, unknown> = {
-    ...(user?.user_metadata || {}),
-    ...(user?.app_metadata || {}),
-  };
+  const appMeta = (user?.app_metadata || {}) as Record<string, unknown>;
+  const userMeta = (user?.user_metadata || {}) as Record<string, unknown>;
+  // app_metadata wins as a whole block when it carries a plan; user_metadata
+  // is the fallback only for unmigrated users, never merged key-by-key.
+  const meta: Record<string, unknown> =
+    appMeta.plan_tier !== undefined ? appMeta : userMeta;
 
   const rawTier = (meta.plan_tier as PlanTier) || "free";
   const isBetaGrant = meta.plan_beta_grant === true;
