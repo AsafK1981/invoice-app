@@ -23,6 +23,7 @@ import {
   Landmark,
   Bell,
   CalendarClock,
+  Globe,
 } from "lucide-react";
 import { useBusiness } from "@/lib/business-store";
 import { signOut } from "@/lib/auth";
@@ -205,6 +206,20 @@ export function Sidebar() {
           <MessageCircle className="w-4 h-4" />
           הזמן חבר בוואטסאפ
         </a>
+        {/* The public landing page. "/" bounces a signed-in visitor straight
+            to /dashboard, so this points at /product - the SAME marketing page
+            at an address that never redirects. Without it a logged-in user has
+            no way to read what the product promises, or to show it to the
+            friend they just invited on the line above. Deliberately down here
+            and not in navItems: those ten entries are daily work, this is not. */}
+        <Link
+          href="/product"
+          onClick={() => setMobileOpen(false)}
+          className="flex items-center gap-2 w-full px-3 py-2 rounded-xl text-sm text-stone-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
+        >
+          <Globe className="w-4 h-4" />
+          דף הבית של האתר
+        </Link>
         <button
           onClick={() => {
             setAccountOpen(true);
