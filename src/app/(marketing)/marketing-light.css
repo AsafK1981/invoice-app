@@ -2259,19 +2259,53 @@ h3 > .ml-badge-soon {
     rgba(180, 145, 105, 0.16) 25%
   );
 }
+/* Straight-sided extruded bars. The first pass used fully rounded pill tops
+   (border-radius: 999px) on bars this narrow, which read as an unfortunate
+   shape rather than as data - Asaf flagged it immediately. Square shoulders
+   with a 3px softening only, and the depth comes from shading instead:
+     - a horizontal light-to-dark sweep across each bar = a lit cylinder face
+     - a lighter cap sitting on top via ::before = the extruded top face
+   Two gradients and one pseudo-element, no images, no transforms. */
 .ml-app-barpair i {
+  position: relative;
   width: 46%;
   max-width: 24px;
-  border-radius: 999px 999px 3px 3px;
+  border-radius: 3px 3px 0 0;
   transform-origin: bottom;
 }
+.ml-app-barpair i::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: -4px;
+  height: 6px;
+  border-radius: 3px 3px 0 0;
+  /* The top face is the same hue, lifted - so the bar reads as a solid block
+     catching light from above rather than as a separate floating chip. */
+  background: inherit;
+  filter: brightness(1.35);
+}
 .ml-app-barpair i.is-inc {
-  background: linear-gradient(180deg, #6ee7b7, #059669);
-  box-shadow: 0 6px 14px -6px rgba(5, 150, 105, 0.65);
+  background:
+    linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.42) 0%,
+      rgba(255, 255, 255, 0) 45%,
+      rgba(0, 0, 0, 0.2) 100%
+    ),
+    linear-gradient(180deg, #34d399, #047857);
+  box-shadow: 0 5px 12px -6px rgba(4, 120, 87, 0.7);
 }
 .ml-app-barpair i.is-exp {
-  background: linear-gradient(180deg, #fda4af, #e11d48);
-  box-shadow: 0 6px 14px -6px rgba(225, 29, 72, 0.55);
+  background:
+    linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.42) 0%,
+      rgba(255, 255, 255, 0) 45%,
+      rgba(0, 0, 0, 0.2) 100%
+    ),
+    linear-gradient(180deg, #fb7185, #be123c);
+  box-shadow: 0 5px 12px -6px rgba(190, 18, 60, 0.6);
 }
 
 @media (prefers-reduced-motion: no-preference) {
