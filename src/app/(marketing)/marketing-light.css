@@ -2248,7 +2248,12 @@ h3 > .ml-badge-soon {
   font-size: 15px;
   line-height: 1.7;
   color: var(--ml-ink-2);
-  max-width: 62ch;
+  /* 66ch, not the 62ch a comfortable measure would suggest: the longest
+     authored line (the WhatsApp card's first) sits at ~62 characters, right on
+     that limit, so any copy edit would silently wrap it to a third line and
+     break the even two-line rhythm across the three cards. The extra headroom
+     never shows - every line here ends on an authored break, not on the wrap. */
+  max-width: 66ch;
   /* Below the breakpoint the card is too narrow to honour authored breaks
      without stranding orphan words, so let the text flow. */
   white-space: normal;
