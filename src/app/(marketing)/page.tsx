@@ -217,7 +217,7 @@ const ADVANTAGES: Advantage[] = [
     title: "וואטסאפ בלי לפתוח את האפליקציה",
     spotlight: true,
     kicker: "היתרון שאין לאף אחד אחר",
-    body: "מוציאים קבלה ורושמים הוצאה ישירות מתוך הצ'אט, בלי להתחבר בכלל.",
+    body: "מוציאים קבלה ורושמים הוצאה ישירות מתוך הצ'אט, בלי להתחבר בכלל. נפתח בהדרגה - הנרשמים עכשיו נכנסים ראשונים.",
     soon: true,
   },
   {
@@ -534,7 +534,7 @@ export default function MarketingLanding() {
                 </span>
                 <span className="ml-trust-k">
                   חשבונית מהוואטסאפ
-                  <span className="ml-badge-soon">בקרוב</span>
+                  <span className="ml-badge-soon">בבטא סגורה</span>
                 </span>
                 <p>
                   כותבים הודעה אחת בצ&apos;אט - והחשבונית מוכנה ואצל
@@ -616,7 +616,7 @@ export default function MarketingLanding() {
                       <h3>
                         <LtrText text={item.title} />
                         {item.soon ? (
-                          <span className="ml-badge-soon">בקרוב</span>
+                          <span className="ml-badge-soon">בבטא סגורה</span>
                         ) : null}
                       </h3>
                       <p>
@@ -658,7 +658,7 @@ export default function MarketingLanding() {
                     <h3>
                       <LtrText text={item.title} />
                       {item.soon ? (
-                        <span className="ml-badge-soon">בקרוב</span>
+                        <span className="ml-badge-soon">בבטא סגורה</span>
                       ) : null}
                     </h3>
                     <p>
@@ -726,7 +726,7 @@ export default function MarketingLanding() {
                 <span className="ml-eyebrow">כך זה נראה בפועל</span>
                 <h2>מהוואטסאפ שלכם ישירות אל הלקוח</h2>
                 <p>
-                  בקרוב: כותבים הודעה אחת בצ&apos;אט - והלקוח מקבל מסמך נקי
+                  כותבים הודעה אחת בצ&apos;אט - והלקוח מקבל מסמך נקי
                   ומקצועי, עם כל השדות שרשות המסים דורשת, כולל מספר
                   ההקצאה.
                 </p>
@@ -763,7 +763,7 @@ export default function MarketingLanding() {
                   of fake conversation turns. */}
               <figure className="ml-wa-phone-wrap">
                 <h3 className="ml-show-col-title">
-                  ערוץ הוואטסאפ <span className="ml-badge-soon">בקרוב</span>
+                  ערוץ הוואטסאפ <span className="ml-badge-soon">בבטא סגורה</span>
                 </h3>
                 <div
                   className="ml-wa-phone"
