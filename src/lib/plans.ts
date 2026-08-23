@@ -133,23 +133,21 @@ export interface PlanStatus {
 /**
  * Source of truth for plan status.
  *
- * **Security:** plan fields are read from ONE metadata object, chosen as a
- * coherent block, never key-by-key merged. `app_metadata` is admin/service-
- * role only; `user_metadata` is user-writable from a browser console. A
- * per-key merge (spread user_metadata, then app_metadata over it) leaked a
- * spoof: a free user whose `app_metadata` never had `plan_tier` set could
- * write `{plan_tier:'pro', plan_active:true}` into their own user_metadata
- * and it would fall through, because there was no app_metadata key to win
- * over it (CSO 2026-08-23).
+ * **Security:** plan fields are read from `app_metadata` ONLY. `app_metadata`
+ * is admin/service-role only; `user_metadata` is user-writable from a browser
+ * console, so it must never influence plan status.
  *
- * The fix: if `app_metadata` carries a real plan (`plan_tier` present), that
- * object is the sole source and user_metadata is ignored entirely - a user
- * cannot mix a self-set `plan_active` into an admin-set tier. Only when
- * `app_metadata` has NO plan at all do we fall back to `user_metadata` as a
- * whole, purely so users predating the app_metadata migration keep working.
- * That fallback is itself user-writable, so it must never be the path that
- * gates a paid capability - server routes that enforce limits read
- * `app_metadata` directly (see /api/send-email branding suppression).
+ * History: the original code spread-merged `{...user_metadata, ...app_metadata}`,
+ * which let a user with no `app_metadata.plan_tier` spoof a plan by writing
+ * `{plan_tier:'pro', plan_active:true}` into their own user_metadata (CSO
+ * 2026-08-23). A first fix picked app_metadata as a whole block but still fell
+ * back to user_metadata when app_metadata had no plan_tier - which left the
+ * exact spoof open for the common "never subscribed" user. This version drops
+ * the user_metadata path entirely. Verified safe against the live DB first:
+ * every user who has a plan carries it in app_metadata (0 users had it in
+ * user_metadata only), so no real user is affected. All write paths (billing
+ * webhook, invite redeem) already write app_metadata; the legacy
+ * migrate-plan-meta-to-app.mjs backfill is complete.
  */
 export function getPlanStatus(
   user:
@@ -160,12 +158,11 @@ export function getPlanStatus(
     | null
     | undefined,
 ): PlanStatus {
-  const appMeta = (user?.app_metadata || {}) as Record<string, unknown>;
-  const userMeta = (user?.user_metadata || {}) as Record<string, unknown>;
-  // app_metadata wins as a whole block when it carries a plan; user_metadata
-  // is the fallback only for unmigrated users, never merged key-by-key.
-  const meta: Record<string, unknown> =
-    appMeta.plan_tier !== undefined ? appMeta : userMeta;
+  // app_metadata is the ONLY trusted source - it cannot be written by the user.
+  const meta: Record<string, unknown> = (user?.app_metadata || {}) as Record<
+    string,
+    unknown
+  >;
 
   const rawTier = (meta.plan_tier as PlanTier) || "free";
   const isBetaGrant = meta.plan_beta_grant === true;
