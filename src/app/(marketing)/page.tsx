@@ -582,7 +582,7 @@ export default function MarketingLanding() {
               <div className="ml-spot-list">
                 {SPOTLIGHT.map((item, index) => (
                   <article
-                    className={`ml-spot-card${item.tone ? ` ml-spot-card--${item.tone}` : ""}`}
+                    className={`ml-spot-card${item.flagship ? " is-flagship" : ""}${item.tone ? ` ml-spot-card--${item.tone}` : ""}`}
                     key={item.key}
                     style={{ "--i": index } as CSSProperties}
                   >

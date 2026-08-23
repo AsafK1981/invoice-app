@@ -2115,9 +2115,34 @@ h3 > .ml-badge-soon {
   width: 62px;
   height: 62px;
   border-radius: 18px;
+  flex: none;
+  /* No colour here on purpose - each card paints its own tile below. An
+     earlier version set a cream background and ink glyph here, which silently
+     overrode the tone classes and made all three tiles identical. */
   background: var(--ml-cream-100, #fdf6ec);
   color: var(--ml-ink, #2b2622);
-  flex: none;
+}
+
+/* Spotlight tiles get the strongest treatment on the page: a solid/graded tile
+   with a white glyph, rather than the grid's pale-tile + saturated-glyph
+   formula. DESIGN-TASTE carves icon tiles out of the colour-restraint rule
+   explicitly, and these three are the page's headline claims.
+   WhatsApp uses its own brand green (#25D366) so the tile is recognisable at a
+   glance - Asaf asked for "ירוק כמו הוואטסאפ", not merely a green. */
+.ml-spot-card--green .ml-spot-icon {
+  background: linear-gradient(160deg, #25d366, #12a150);
+  color: #fff;
+  box-shadow: 0 12px 24px -12px rgba(18, 161, 80, 0.6);
+}
+.ml-spot-card.is-flagship .ml-spot-icon {
+  background: linear-gradient(160deg, #f3c14b, #c9922b);
+  color: #fff;
+  box-shadow: 0 12px 24px -12px rgba(201, 146, 43, 0.6);
+}
+.ml-spot-card--violet .ml-spot-icon {
+  background: linear-gradient(160deg, #a78bfa, #7c3aed);
+  color: #fff;
+  box-shadow: 0 12px 24px -12px rgba(124, 58, 237, 0.55);
 }
 .ml-spot-icon svg {
   width: 30px;
@@ -2209,5 +2234,75 @@ h3 > .ml-badge-soon {
   .ml-show,
   .ml-app {
     padding-block: 10px 64px;
+  }
+}
+
+/* ============================================================
+   DASHBOARD CHART, made worth looking at  (2026-08-23)
+   Asaf: "הגרפים האלה נראים קצת משעממים... שיראו קצת יותר יפים".
+   The bars were two flat gradients on a bare baseline. Four changes, all
+   cheap: faint gridlines so the bars read as data rather than decoration,
+   pill tops, a coloured glow tying each bar to its series, and a growth
+   animation on scroll that uses the same view() timeline as the rest of
+   the page (so it is equally guarded and equally free of JS).
+   ============================================================ */
+.ml-app-bars {
+  height: 132px;
+  padding-bottom: 8px;
+  /* Four hairlines behind the bars. Warm, not grey, so they sit in the
+     page's palette instead of looking like a spreadsheet. */
+  background-image: repeating-linear-gradient(
+    to top,
+    transparent 0,
+    transparent calc(25% - 1px),
+    rgba(180, 145, 105, 0.16) calc(25% - 1px),
+    rgba(180, 145, 105, 0.16) 25%
+  );
+}
+.ml-app-barpair i {
+  width: 46%;
+  max-width: 24px;
+  border-radius: 999px 999px 3px 3px;
+  transform-origin: bottom;
+}
+.ml-app-barpair i.is-inc {
+  background: linear-gradient(180deg, #6ee7b7, #059669);
+  box-shadow: 0 6px 14px -6px rgba(5, 150, 105, 0.65);
+}
+.ml-app-barpair i.is-exp {
+  background: linear-gradient(180deg, #fda4af, #e11d48);
+  box-shadow: 0 6px 14px -6px rgba(225, 29, 72, 0.55);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @supports ((animation-timeline: view()) and (animation-range: entry)) {
+    @keyframes ml-bar-grow {
+      from {
+        transform: scaleY(0.05);
+        opacity: 0.5;
+      }
+    }
+    .ml-app-barpair i {
+      animation: ml-bar-grow auto cubic-bezier(0.2, 0.9, 0.3, 1.1) backwards;
+      animation-timeline: view();
+      animation-range: entry 10% entry 70%;
+    }
+    /* Left-to-right stagger: each pair finishes a little later than the one
+       before it, so the chart draws itself instead of snapping into place. */
+    .ml-app-barpair:nth-child(2) i {
+      animation-range: entry 16% entry 76%;
+    }
+    .ml-app-barpair:nth-child(3) i {
+      animation-range: entry 22% entry 82%;
+    }
+    .ml-app-barpair:nth-child(4) i {
+      animation-range: entry 28% entry 88%;
+    }
+    .ml-app-barpair:nth-child(5) i {
+      animation-range: entry 34% entry 94%;
+    }
+    .ml-app-barpair:nth-child(6) i {
+      animation-range: entry 40% entry 100%;
+    }
   }
 }
