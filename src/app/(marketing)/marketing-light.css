@@ -2249,6 +2249,21 @@ h3 > .ml-badge-soon {
   line-height: 1.7;
   color: var(--ml-ink-2);
   max-width: 62ch;
+  /* Below the breakpoint the card is too narrow to honour authored breaks
+     without stranding orphan words, so let the text flow. */
+  white-space: normal;
+}
+@media (min-width: 760px) {
+  /* Authored line breaks (
+ in the `body` strings) are honoured here.
+     Asaf set them by hand 2026-08-23 so each line ends on a clause rather
+     than wherever the container happens to run out - the three cards then
+     read as an even block instead of three different ragged shapes.
+     If a body string changes, re-check its breaks; they are content, not
+     layout, and nothing recomputes them. */
+  .ml-spot-copy p {
+    white-space: pre-line;
+  }
 }
 
 /* ---- Scroll-driven entry motion -------------------------------------
