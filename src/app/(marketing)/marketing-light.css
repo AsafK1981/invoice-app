@@ -2126,6 +2126,14 @@ h3 > .ml-badge-soon {
    ============================================================ */
 .ml-spot {
   padding-block: 44px 20px;
+  /* The spotlight cards start their entry offset sideways (see
+     `ml-in-side`), which would otherwise add scrollable width to the
+     document. `clip`, never `hidden`: `hidden` makes this a scroll
+     container and silently re-bases every `view()` timeline inside it.
+     `overflow-y` stays visible - `clip` is the one overflow value that
+     allows that pairing - so the cards' hover lift and shadows are not
+     cut off at the section's top and bottom edges. */
+  overflow-x: clip;
 }
 @media (min-width: 760px) {
   .ml-spot {
@@ -2326,7 +2334,7 @@ h3 > .ml-badge-soon {
 
    --ml-in-order is the stagger. Siblings in one row share a scroll
    position, so without it a four-up grid flashes in as a single block;
-   each step pushes that card's range 7% later and the row becomes a short
+   each step pushes that card's range 5% later and the row becomes a short
    wave. It is assigned per column with :nth-child (see the bottom of the
    block) rather than threaded through the components as an inline style -
    the column counts are a CSS fact, so the stagger is kept next to them. */
@@ -2347,8 +2355,8 @@ h3 > .ml-badge-soon {
     @keyframes ml-in-card {
       from {
         opacity: 0;
-        translate: 0 30px;
-        scale: 0.94;
+        translate: 0 36px;
+        scale: 0.93;
       }
       to {
         opacity: 1;
@@ -2379,24 +2387,27 @@ h3 > .ml-badge-soon {
       }
     }
 
-    /* the squares */
+    /* the squares. `.ml-spot-card` is deliberately absent - the three
+       spotlight rectangles get their own alternating side entry below. */
     .ml-trust-card,
-    .ml-spot-card,
     .ml-adv-card,
     .ml-faq-item,
     .ml-price-frees li,
     .ml-price-plan {
-      animation: ml-in-card auto cubic-bezier(0.16, 0.72, 0.3, 1.14) backwards;
+      animation: ml-in-card auto cubic-bezier(0.3, 0.2, 0.25, 1.06) backwards;
       animation-timeline: view();
-      /* Starts at 18%, not 0%: a card that begins moving the instant its
+      /* Starts at 20%, not 0%: a card that begins moving the instant its
          top pixel crosses the fold is already finished by the time enough
-         of it is on screen to look at - which was the whole complaint.
-         Holding it hidden for the first fifth of its entry is what makes
-         the arrival readable. 70% + a 7%-per-column stagger puts the
-         slowest card's finish at 91%, still inside `entry` so nothing can
-         stall unfinished at the bottom of the document. */
-      animation-range: entry calc(18% + var(--ml-in-order, 0) * 7%) entry
-        calc(70% + var(--ml-in-order, 0) * 7%);
+         of it is on screen to look at - which was the first version's
+         whole problem. Holding it back for the first fifth of its entry,
+         then spending the travel all the way out to 82%, is what makes the
+         arrival something you watch rather than something you find already
+         done. 82% + a 5%-per-column stagger puts the slowest card's finish
+         at 97% - still inside `entry`, so nothing can stall unfinished at
+         the bottom of the document, but only just: do not push these
+         numbers further without re-checking that. */
+      animation-range: entry calc(20% + var(--ml-in-order, 0) * 5%) entry
+        calc(82% + var(--ml-in-order, 0) * 5%);
     }
 
     /* the big blocks */
@@ -2405,9 +2416,9 @@ h3 > .ml-badge-soon {
     .ml-browser-wrap,
     .ml-midcta-in,
     .ml-compare-in {
-      animation: ml-in-panel auto cubic-bezier(0.2, 0.8, 0.3, 1.05) backwards;
+      animation: ml-in-panel auto cubic-bezier(0.3, 0.25, 0.25, 1.03) backwards;
       animation-timeline: view();
-      animation-range: entry 5% entry 55%;
+      animation-range: entry 8% entry 70%;
     }
 
     /* the headings */
@@ -2421,11 +2432,75 @@ h3 > .ml-badge-soon {
       animation-range: entry 5% entry 50%;
     }
 
+    /* The three spotlight rectangles, entering from alternating sides.
+       Asaf 2026-08-23: "אולי הראשון מצד ימין נכנס לתוך המסך, השני מצד
+       שמאל, והשלישי מצד ימין" - the uniform upward rise the rest of the
+       page uses read as too tame on these three, which are the widest and
+       most important blocks above the fold-and-a-bit.
+
+       `--ml-in-from` is the side, as a signed multiplier: +1 starts the
+       card out to the RIGHT and it travels left into place, -1 the
+       mirror. `translate` is physical, not logical, so this stays right-
+       means-right on an RTL page without a direction-aware sign flip.
+
+       Travel is a percentage of the card's OWN width, not a fixed pixel
+       count: these cards are ~940px on desktop and ~330px on a phone, and
+       a 90px slide that reads as "flying in" on the wide one reads as the
+       card being thrown off the screen on the narrow one. 11% scales with
+       whatever the card actually is.
+
+       The slide is what needs `overflow-x: clip` on the section (see
+       `.ml-spot`) - the start state sits outside the card's own column and
+       would otherwise widen the document. `clip` and not `hidden`: hidden
+       would make the section a scroll container, and every `view()`
+       timeline inside it would then be measured against a box that never
+       scrolls. */
+    @keyframes ml-in-side-fade {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+    @keyframes ml-in-side-move {
+      from {
+        translate: calc(var(--ml-in-from, 1) * 13%) 10px;
+        scale: 0.96;
+      }
+      to {
+        translate: 0 0;
+        scale: 1;
+      }
+    }
+    .ml-spot-card {
+      /* Two animations on two different ranges, and the split is the whole
+         trick. Run as one animation, the card is either legible early and
+         therefore finished moving before you look at it (the first attempt -
+         it settled while barely half on screen, which is what "not enough"
+         meant), or it keeps moving and stays a ghost while it is already
+         big on the page.
+         Split: the fade finishes at 58%, so the card is solid and readable
+         soon after it appears; the slide keeps running to 92%, so it is
+         still visibly gliding into place while you are looking straight at
+         it. That is the part that reads as motion rather than as a state
+         change. Easing is near-symmetric rather than front-loaded for the
+         same reason - a hard ease-out spends the travel in the first few
+         pixels of scroll. */
+      animation: ml-in-side-fade auto ease-out backwards,
+        ml-in-side-move auto cubic-bezier(0.42, 0.04, 0.24, 1) backwards;
+      animation-timeline: view(), view();
+      animation-range: entry 10% entry 58%, entry 16% entry 92%;
+    }
+    .ml-spot-list > :nth-child(even) {
+      --ml-in-from: -1;
+    }
+
     /* Stagger, by column count. The trust strip is 4-up at >=1080px and
        2-up above 720px; the advantages grid is 3-up at >=980px and 2-up
        above 620px. Below those it is a single column, where the offsets
        are harmless: each card enters at its own scroll position anyway,
-       so a range that finishes 7-21% later is not perceptible. Assigning
+       so a range that finishes 5-15% later is not perceptible. Assigning
        modulo the WIDEST layout keeps this to one rule set instead of one
        per breakpoint. */
     .ml-trust-in > :nth-child(4n + 2) {
