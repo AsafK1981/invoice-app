@@ -1,4 +1,68 @@
-/* ============================================================
+/* Isometric extruded bars.
+   Iteration history worth keeping, because two attempts were wrong in
+   instructive ways: v1 used fully rounded pill tops, which on bars this narrow
+   read as an unfortunate shape. v2 replaced that with a horizontal light-to-
+   dark sweep, which reads as a *cylinder* - still not a block, and Asaf asked
+   for properly three-dimensional.
+   v3 builds a real extrusion out of three faces:
+     - the element itself is the FRONT face, flat vertical gradient
+     - ::before is the TOP face, a skewX parallelogram, lightest
+     - ::after is the SIDE face, a skewY parallelogram, darkest
+   Light reads as coming from the top-left, consistently with every other
+   raised surface on the page. Height still maps 1:1 to value - the extrusion
+   is lighting, not perspective, so it cannot distort the comparison. */
+.ml-app-barpair i {
+  --d: 5px;
+  position: relative;
+  width: 42%;
+  max-width: 20px;
+  /* No radius: a solid block has square arrises. */
+  border-radius: 0;
+  transform-origin: bottom;
+  /* Leaves room for the top face so the tallest bar cannot clip it. */
+  margin-top: var(--d);
+}
+.ml-app-barpair i::before,
+.ml-app-barpair i::after {
+  content: "";
+  position: absolute;
+}
+/* TOP face */
+.ml-app-barpair i::before {
+  left: 0;
+  top: calc(var(--d) * -1);
+  width: 100%;
+  height: var(--d);
+  transform: skewX(-45deg);
+  transform-origin: bottom left;
+}
+/* SIDE face */
+.ml-app-barpair i::after {
+  right: calc(var(--d) * -1);
+  top: 0;
+  width: var(--d);
+  height: 100%;
+  transform: skewY(-45deg);
+  transform-origin: top left;
+}
+.ml-app-barpair i.is-inc {
+  background: linear-gradient(180deg, #34d399, #059669);
+}
+.ml-app-barpair i.is-inc::before {
+  background: #6ee7b7;
+}
+.ml-app-barpair i.is-inc::after {
+  background: #047857;
+}
+.ml-app-barpair i.is-exp {
+  background: linear-gradient(180deg, #fb7185, #e11d48);
+}
+.ml-app-barpair i.is-exp::before {
+  background: #fda4af;
+}
+.ml-app-barpair i.is-exp::after {
+  background: #9f1239;
+}/* ============================================================
    HOMEPAGE-ONLY "warm friendly" theme (design approved 2026-08-10).
 
    Scope: every selector here is prefixed `.ml-theme`, and `.ml-theme` is
@@ -2249,15 +2313,6 @@ h3 > .ml-badge-soon {
 .ml-app-bars {
   height: 132px;
   padding-bottom: 8px;
-  /* Four hairlines behind the bars. Warm, not grey, so they sit in the
-     page's palette instead of looking like a spreadsheet. */
-  background-image: repeating-linear-gradient(
-    to top,
-    transparent 0,
-    transparent calc(25% - 1px),
-    rgba(180, 145, 105, 0.16) calc(25% - 1px),
-    rgba(180, 145, 105, 0.16) 25%
-  );
 }
 /* Straight-sided extruded bars. The first pass used fully rounded pill tops
    (border-radius: 999px) on bars this narrow, which read as an unfortunate
@@ -2339,4 +2394,70 @@ h3 > .ml-badge-soon {
       animation-range: entry 40% entry 100%;
     }
   }
+}
+
+
+/* ============================================================
+   CHART AXES  (2026-08-23)
+   The mock had bars and nothing else - no scale, no months, no values, which
+   is why it read as filler. Axis furniture per the dataviz spec: hairline
+   solid gridlines one step off the surface, ticks rounded to clean numbers,
+   and axis text in muted ink rather than the series colour.
+   ============================================================ */
+.ml-app-plot {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+.ml-app-yaxis {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  flex: none;
+  padding-bottom: 8px;
+  font-size: 9.5px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--ml-ink-3, #9a8b7d);
+  /* Each label sits ON its gridline, so nudge the column up by half a line. */
+  transform: translateY(-4px);
+}
+.ml-app-bars {
+  position: relative;
+  flex: 1;
+}
+.ml-app-gridline {
+  position: absolute;
+  inset-inline: 0;
+  height: 1px;
+  background: var(--ml-line-soft, #efe4d6);
+  pointer-events: none;
+}
+.ml-app-gridline:nth-child(1) {
+  top: 0;
+}
+.ml-app-gridline:nth-child(2) {
+  top: 33.333%;
+}
+.ml-app-gridline:nth-child(3) {
+  top: 66.666%;
+}
+.ml-app-barpair {
+  position: relative;
+  z-index: 1;
+}
+.ml-app-xaxis {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  /* Clears the y-axis column so month labels line up under their own pair. */
+  margin-inline-start: 34px;
+  margin-top: 7px;
+  font-size: 9.5px;
+  font-weight: 600;
+  color: var(--ml-ink-3, #9a8b7d);
+}
+.ml-app-xaxis span {
+  flex: 1;
+  text-align: center;
 }

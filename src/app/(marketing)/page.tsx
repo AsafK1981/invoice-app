@@ -312,6 +312,23 @@ const ADVANTAGES: Advantage[] = [
  * it (same reason it leads the trust strip). It carries a "בקרוב" pill, so
  * leading with it promises without misleading.
  */
+/**
+ * Dashboard-mock chart data. Real shekel figures, not percentages: the axis
+ * ticks, the bar heights and the stat tiles above the chart all have to agree,
+ * and they can only do that if one set of numbers drives all three. August
+ * matches the tiles (₪24,180 / ₪5,940) on purpose.
+ */
+const CHART_MAX = 30000;
+const CHART_TICKS = [30000, 20000, 10000, 0];
+const CHART_MONTHS = [
+  { m: "מרץ", inc: 12400, exp: 3100 },
+  { m: "אפריל", inc: 16800, exp: 4200 },
+  { m: "מאי", inc: 10300, exp: 2800 },
+  { m: "יוני", inc: 21000, exp: 5400 },
+  { m: "יולי", inc: 14900, exp: 3600 },
+  { m: "אוגוסט", inc: 24180, exp: 5940 },
+];
+
 const SPOTLIGHT_ORDER = ["whatsapp", "allocation", "ai"];
 const SPOTLIGHT = SPOTLIGHT_ORDER.map(
   (k) => ADVANTAGES.find((a) => a.key === k && a.spotlight),
@@ -1144,28 +1161,45 @@ export default function MarketingLanding() {
 
                     <div className="ml-app-chart">
                       <span className="ml-app-chart-t">הכנסות והוצאות</span>
-                      {/* Bar pairs are plain divs with inline heights: a
-                          chart library would ship kilobytes of JS to a
-                          marketing page for a picture that never changes. */}
-                      <div className="ml-app-bars" aria-hidden="true">
-                        {[
-                          [46, 18],
-                          [62, 26],
-                          [38, 22],
-                          [78, 30],
-                          [55, 20],
-                          [92, 34],
-                        ].map(([inc, exp], i) => (
-                          <span className="ml-app-barpair" key={i}>
-                            <i
-                              className="is-inc"
-                              style={{ height: `${inc}%` }}
-                            />
-                            <i
-                              className="is-exp"
-                              style={{ height: `${exp}%` }}
-                            />
-                          </span>
+                      {/* Plain markup with computed heights: a chart library
+                          would ship kilobytes of JS to a marketing page for a
+                          picture that never changes.
+                          Rebuilt 2026-08-23. The first version was six pairs
+                          of arbitrary percentages with no axis, no values and
+                          no months - Asaf, correctly: "לא רואים כמה זה... נראה
+                          מאוד לא מקצועי". A bar with no scale is decoration,
+                          not a chart. Now every bar is a real shekel figure,
+                          the last month matches the stat tiles directly above
+                          it (₪24,180 in / ₪5,940 out) so the mock is
+                          internally consistent, and heights are derived from
+                          CHART_MAX rather than hand-tuned. */}
+                      <div className="ml-app-plot">
+                        <div className="ml-app-yaxis" aria-hidden="true">
+                          {CHART_TICKS.map((t) => (
+                            <span key={t}>{`₪${t / 1000}K`}</span>
+                          ))}
+                        </div>
+                        <div className="ml-app-bars" aria-hidden="true">
+                          {CHART_TICKS.slice(0, -1).map((t) => (
+                            <span className="ml-app-gridline" key={t} />
+                          ))}
+                          {CHART_MONTHS.map(({ m, inc, exp }) => (
+                            <span className="ml-app-barpair" key={m}>
+                              <i
+                                className="is-inc"
+                                style={{ height: `${(inc / CHART_MAX) * 100}%` }}
+                              />
+                              <i
+                                className="is-exp"
+                                style={{ height: `${(exp / CHART_MAX) * 100}%` }}
+                              />
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="ml-app-xaxis" aria-hidden="true">
+                        {CHART_MONTHS.map(({ m }) => (
+                          <span key={m}>{m}</span>
                         ))}
                       </div>
                       <div className="ml-app-legend">
