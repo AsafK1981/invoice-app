@@ -1,18 +1,5 @@
 import Link from "next/link";
-import {
-  ArrowRight,
-  ArrowLeft,
-  Check,
-  ShieldCheck,
-  Sparkles,
-  Bell,
-  ScanLine,
-  Gauge,
-  FileBarChart,
-  ArrowLeftRight,
-  MessageCircle,
-  Send,
-} from "lucide-react";
+import { ArrowRight, ArrowLeft, Check } from "lucide-react";
 import { Ltr, LtrText } from "@/components/ui/ltr";
 import { pageMetadata } from "@/lib/page-metadata";
 import {
@@ -27,6 +14,7 @@ import FooterV2 from "../components/FooterV2";
 import JsonLd from "../components/JsonLd";
 import RelatedLinks from "../components/RelatedLinks";
 import SignupLink from "../components/SignupLink";
+import { PRICING_ADVANTAGES } from "../advantages";
 
 export const metadata = pageMetadata({
   path: "/pricing",
@@ -67,26 +55,15 @@ const PRICING_FAQ_ITEMS: { q: string; a: string }[] = [
 ];
 
 /**
- * "מה כלול" - a short feature checklist, titles copied VERBATIM from the
- * homepage's ADVANTAGES array (src/app/(marketing)/page.tsx). The
- * "whatsapp" card joined 2026-08-15 when the channel went live and its
- * `בקרוב` badge came off everywhere (before that it was deliberately
- * excluded - same live-features-only reasoning softwareApplication() in
- * src/lib/jsonld.ts applies to its own featureList). Icons are a fresh
- * (restrained, single-tone) choice for this page, not a copy of the
- * homepage's per-card tinted icons.
+ * "מה כלול" - rendered from the SHARED advantage cards in
+ * ../advantages.tsx, the same array the homepage grid and spotlight band
+ * render (2026-08-24, Asaf: "למה פה זה בלי צבעים ובדף הראשי זה עם צבעים...
+ * אני צריך שזה יראה בדיוק אותו דבר באותן צבעים ובאותם אייקונים ושזה ירשום
+ * אותו דבר"). This page previously re-typed nine titles by hand with its own
+ * flat gold icons and no body copy; that is what drifted. Nothing here picks
+ * icons, colors or wording any more - PRICING_ADVANTAGES only names which
+ * nine cards appear and in what order.
  */
-const FEATURES: { key: string; icon: React.ReactNode; title: string }[] = [
-  { key: "allocation", icon: <ShieldCheck aria-hidden="true" />, title: "מספרי הקצאה אוטומטיים" },
-  { key: "ai", icon: <Sparkles aria-hidden="true" />, title: "עוזר AI חכם בעברית" },
-  { key: "reminders", icon: <Bell aria-hidden="true" />, title: "התראות ותזכורות חכמות" },
-  { key: "whatsapp", icon: <MessageCircle aria-hidden="true" />, title: "וואטסאפ בלי לפתוח את האפליקציה" },
-  { key: "ocr", icon: <ScanLine aria-hidden="true" />, title: "סריקת הוצאות בצילום" },
-  { key: "ceiling", icon: <Gauge aria-hidden="true" />, title: "מעקב תקרת עוסק פטור בזמן אמת" },
-  { key: "reports", icon: <FileBarChart aria-hidden="true" />, title: "דו״חות שרואי חשבון אוהבים" },
-  { key: "migration", icon: <ArrowLeftRight aria-hidden="true" />, title: "מעבר קל מכל תוכנה" },
-  { key: "channels", icon: <Send aria-hidden="true" />, title: "שליחה בכל ערוץ" },
-];
 
 /**
  * /pricing - a dedicated pricing page, replacing the "מחירים" nav links'
@@ -147,11 +124,15 @@ export default function PricingPage() {
           </p>
         </div>
 
-        {/* Launch banner: the same three "בלי" promises as the homepage's
-            pricing band (`.ml-price-frees`), rendered here with the
-            existing .v2-str checklist primitive so no new CSS is needed. */}
+        {/* Launch banner: the same heading and the same three "בלי" promises
+            as the homepage's pricing band, and now the same SHAPE too -
+            centred title over one horizontal check row (2026-08-24). It used
+            to borrow `.v2-str`, the /vs strengths checklist, which stacks its
+            items right-aligned: inside a 1112px panel that left three short
+            lines hugging the right edge and two thirds of the box empty. The
+            homepage's `.ml-price-frees` was a centred row all along. */}
         <section className="v2-cmp-sec">
-          <div className="v2-panel v2-str win">
+          <div className="v2-panel v2-launch">
             <h3>בתקופת ההשקה, הכול חינם</h3>
             <ul>
               <li>
@@ -211,13 +192,21 @@ export default function PricingPage() {
                   <span className="plan">מחיר</span>
                   <span className="val">₪25 לחודש</span>
                 </li>
+                {/* Same three rows as בסיסי above, in the same order, so the
+                    two cards read as one table and the only difference the eye
+                    has to catch is 30 -> ללא הגבלה and 10 -> ללא הגבלה. The
+                    "כמה עסקים באותו חשבון" row that used to sit here was
+                    removed 2026-08-24 (Asaf: "תעיף מיד את העסקים... אני לא
+                    מעוניין בזה"); it was also the only row with no counterpart
+                    in the בסיסי card, which is what made the two cards look
+                    misaligned. */}
                 <li>
-                  <span className="plan">מסמכים ולקוחות</span>
+                  <span className="plan">מסמכים</span>
                   <span className="val">ללא הגבלה</span>
                 </li>
                 <li>
-                  <span className="plan">עסקים</span>
-                  <span className="val">כמה עסקים באותו חשבון</span>
+                  <span className="plan">לקוחות</span>
+                  <span className="val">ללא הגבלה</span>
                 </li>
                 <li className="trial">
                   <span className="plan">למצטרפים בהשקה</span>
@@ -237,14 +226,24 @@ export default function PricingPage() {
           </div>
 
           <div className="v2-adv-grid">
-            {FEATURES.map((f) => (
-              <div className="v2-adv-card" key={f.key}>
-                <div className="v2-adv-icon" aria-hidden="true">
+            {PRICING_ADVANTAGES.map((f) => (
+              <div
+                className={`v2-adv-card${f.flagship ? " is-flagship" : ""}${f.tone ? ` v2-adv-card--${f.tone}` : ""}`}
+                key={f.key}
+              >
+                <div
+                  className={`v2-adv-icon${f.tone ? ` v2-adv-icon--${f.tone}` : ""}`}
+                  aria-hidden="true"
+                >
                   {f.icon}
                 </div>
                 <h3>
                   <LtrText text={f.title} />
+                  {f.soon ? <span className="v2-adv-soon">בבטא סגורה</span> : null}
                 </h3>
+                <p>
+                  <LtrText text={f.body} />
+                </p>
               </div>
             ))}
           </div>

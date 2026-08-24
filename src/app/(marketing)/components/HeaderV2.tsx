@@ -13,9 +13,25 @@ import { useOptionalUser } from "@/lib/auth";
  * `.v2-wordmark` in v2.css) and the CTA is the same orange-gradient pill.
  * RTL: logo sits on the right (start), nav + login on the left (end).
  *
- * `.v2-nav-secondary` (מגזין, השוואה): hidden below 375px only (see v2.css),
+ * `.v2-nav-secondary` (מגזין, השוואות): hidden below 375px only (see v2.css),
  * so the wordmark + מחירים + CTA never overflow a 320px viewport. מחירים
  * stays visible at every width on purpose.
+ *
+ * NAV PARITY WITH THE HOMEPAGE (2026-08-24, Asaf: "תעבור על כל העמודים
+ * ותוודא שהכל נראה טוב כמו בדף הראשי"). Two things had drifted and made a
+ * sub-page read as a different site the moment you left "/":
+ *   1. The /vs link showed its long form, "איזו תוכנה באמת מתאימה לך", which
+ *      next to מגזין / מחירים / התחברות did not read as a nav item at all -
+ *      it read as a stray tagline dropped into the bar. It is now the same
+ *      one-word "השוואות" HeaderLight uses, at every width, so the two-label
+ *      long/short pair is gone with it.
+ *   2. Link ORDER now matches HeaderLight exactly (מגזין, השוואות, מחירים,
+ *      התחברות); it used to lead with /vs, so the items visibly reshuffled
+ *      between pages.
+ * The row is also centred on the same 1160px measure as the homepage's
+ * `.ml-wrap` (see `.v2-header-in` in v2.css) - before this the bar was
+ * full-bleed, so the wordmark and the CTA jumped to the window edges on
+ * every page but "/".
  *
  * SESSION-AWARE, mirroring HeaderLight: these pages were always readable with
  * a session, so "התחברות" and "התחילו בחינם" were being offered to people who
@@ -30,41 +46,37 @@ export default function HeaderV2() {
 
   return (
     <header className="v2-header">
-      <Link href={user ? "/product" : "/"} className="v2-wordmark">
-        חשבונית{" "}
-        <span className="v2-wordmark-soft">ידידותית</span>
-      </Link>
-      <nav className="v2-header-nav">
-        {/* Two labels, one shown at a time by CSS. The long form is the real
-            pitch and earns its width on desktop; at phone widths it would not
-            fit beside the logo, "מגזין" and the login button, so the short
-            form takes over. display:none keeps the hidden one out of the
-            accessibility tree, so only one label is ever announced. */}
-        <Link href="/vs" className="v2-navlink v2-nav-secondary">
-          <span className="v2-nav-long">איזו תוכנה באמת מתאימה לך</span>
-          <span className="v2-nav-short">השוואה</span>
+      <div className="v2-header-in">
+        <Link href={user ? "/product" : "/"} className="v2-wordmark">
+          חשבונית{" "}
+          <span className="v2-wordmark-soft">ידידותית</span>
         </Link>
-        <Link href="/blog" className="v2-navlink v2-nav-secondary">
-          מגזין
-        </Link>
-        <Link href="/pricing" className="v2-navlink">
-          מחירים
-        </Link>
-        {user ? (
-          <Link href="/dashboard" className="v2-btn-gold">
-            לאזור האישי
+        <nav className="v2-header-nav">
+          <Link href="/blog" className="v2-navlink v2-nav-secondary">
+            מגזין
           </Link>
-        ) : (
-          <>
-            <Link href="/login" className="v2-navlink v2-header-login">
-              התחברות
+          <Link href="/vs" className="v2-navlink v2-nav-secondary">
+            השוואות
+          </Link>
+          <Link href="/pricing" className="v2-navlink">
+            מחירים
+          </Link>
+          {user ? (
+            <Link href="/dashboard" className="v2-btn-gold">
+              לאזור האישי
             </Link>
-            <Link href="/login?mode=signup" className="v2-btn-gold">
-              התחילו בחינם
-            </Link>
-          </>
-        )}
-      </nav>
+          ) : (
+            <>
+              <Link href="/login" className="v2-navlink v2-header-login">
+                התחברות
+              </Link>
+              <Link href="/login?mode=signup" className="v2-btn-gold">
+                התחילו בחינם
+              </Link>
+            </>
+          )}
+        </nav>
+      </div>
     </header>
   );
 }

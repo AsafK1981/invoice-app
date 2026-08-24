@@ -2,7 +2,7 @@
  * Pricing plans for MyFriendlyInvoiceApp.
  *
  * Two tiers (Option A from competitor research):
- *   - Basic: ₪15/mo  (₪149/yr)  ·  30 docs · 1 business · 10 clients
+ *   - Basic: ₪15/mo  (₪149/yr)  ·  30 docs · 10 clients
  *   - Pro:   ₪25/mo  (₪250/yr)  ·  unlimited everything
  *
  * Annual prices are chosen round-ish numbers below 12× the monthly rate,
@@ -82,7 +82,6 @@ export const PLANS: Record<PlanTier, Plan> = {
     description: "ללא הגבלות, לעסקים פעילים",
     features: [
       "מסמכים ולקוחות ללא הגבלה",
-      "ריבוי עסקים תחת אותו חשבון",
       "שליחה מ-Gmail האישי שלך",
       "ייבוא וייצוא לאקסל / CSV",
       "מסך ראשי עם גרפים מלאים",
