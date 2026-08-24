@@ -59,8 +59,17 @@ export const POST_RELATED: Record<string, RelatedTargets> = {
   // reader onward to the עוסק מורשה transition, which is the next thing that
   // happens to anyone who outgrows a receipt pad.
   "kabala-osek-patur": {
-    posts: ["osek-patur-madrich-2026", "maavar-osek-patur-le-osek-morshe-2026"],
+    posts: ["osek-patur-madrich-2026", "hashbonit-zikuy"],
     vs: ["greeninvoice"],
+  },
+
+  // A credit invoice is what you reach for AFTER a tax invoice went wrong, so
+  // the allocation-number guide (which explains the tax invoice itself) and
+  // the transition guide (which is when you start issuing them at all) are
+  // the two things this reader needs next.
+  "hashbonit-zikuy": {
+    posts: ["mispar-haktzaa-eich-mekablim", "maavar-osek-patur-le-osek-morshe-2026"],
+    vs: ["icount"],
   },
 };
 

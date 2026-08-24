@@ -45,7 +45,14 @@ export async function generateMetadata({
   const url = `${BASE}/blog/${post.slug}`;
 
   return {
-    title: `${post.title} | חשבונית ידידותית`,
+    // Just the post title. The root layout already carries
+    // `template: "%s | חשבונית ידידותית"`, so appending the brand here made
+    // every one of the seven live posts render it TWICE:
+    // "...ותבנית להורדה | חשבונית ידידותית | חשבונית ידידותית".
+    // Found 2026-08-24 by reading the live <title> of each post rather than
+    // the source. A doubled brand reads as broken in a result listing and
+    // burns the character budget before Google truncates.
+    title: post.title,
     description: post.description,
     alternates: { canonical: `/blog/${post.slug}` },
     // REVIEW-FIRST: drafts must never be indexed. Flip published:true in

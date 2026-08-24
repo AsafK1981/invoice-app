@@ -112,6 +112,20 @@ export const BLOG_POSTS: BlogPost[] = [
     date: "2026-08-24",
     published: true,
   },
+  {
+    // Highest-demand query in Search Console on 2026-08-24 that the site had
+    // no page for: "חשבונית זיכוי ממולאת", 37 impressions and 0 clicks. The
+    // word ממולאת is template intent, so the page leads with a filled
+    // specimen rather than a definition. Its differentiator is the fact most
+    // guides bury: a credit invoice does NOT need a מספר הקצאה - that duty
+    // covers חשבונית מס and חשבונית מס־קבלה only.
+    slug: "hashbonit-zikuy",
+    title: "חשבונית זיכוי: מתי מוציאים אותה, מה חייב להופיע ודוגמה ממולאת",
+    description:
+      "חשבונית זיכוי: מתי מוציאים, מה חייב להופיע בה ודוגמה ממולאת. למה אסור למחוק חשבונית מס, ולמה חשבונית זיכוי לא צריכה מספר הקצאה.",
+    date: "2026-08-24",
+    published: true,
+  },
 ];
 
 /** Newest first. */
