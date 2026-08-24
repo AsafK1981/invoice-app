@@ -13,12 +13,13 @@ import { BLOG_POSTS, loadPostMarkdown } from "@/lib/blog-posts";
  * we never start inventing questions that aren't on the page).
  */
 
-// The four posts carrying a "## שאלות נפוצות" section as of 2026-07-27.
+// The five posts carrying a "## שאלות נפוצות" section as of 2026-08-24.
 const POSTS_WITH_FAQ = [
   "mispar-haktzaa-eich-mekablim",
   "hashbonit-digitalit-chinam-2026",
   "maavar-me-invoice4u",
   "maavar-osek-patur-le-osek-morshe-2026",
+  "kabala-osek-patur",
 ];
 
 describe("parseFaq on real post content", () => {

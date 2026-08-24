@@ -73,6 +73,24 @@ const nextConfig: NextConfig = {
     return [
       { source: "/v2", destination: "/", permanent: true },
       { source: "/v2/:path*", destination: "/:path*", permanent: true },
+      // Two published posts shipped on placeholder slugs
+      // (/blog/article-2026-07-13-1 and -2). Both are indexed, and one of
+      // them is the site's guide to issuing receipts as an עוסק פטור - the
+      // exact topic Search Console shows demand for. A URL with no keyword
+      // in it is a wasted ranking signal and reads as noise to a human
+      // scanning results, so both were renamed. These 308s carry whatever
+      // equity the old URLs hold onto the new ones; without them the rename
+      // would throw away the indexing those pages already earned.
+      {
+        source: "/blog/article-2026-07-13-1",
+        destination: "/blog/mispar-haktzaa-madrich-2026",
+        permanent: true,
+      },
+      {
+        source: "/blog/article-2026-07-13-2",
+        destination: "/blog/osek-patur-madrich-2026",
+        permanent: true,
+      },
       // The app now lives on its own domain (friendlyinvoice.co.il), but the
       // original *.vercel.app deployment still served every page with a 200 —
       // i.e. the whole site existed twice as far as a crawler is concerned.

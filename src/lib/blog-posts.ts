@@ -80,7 +80,7 @@ export const BLOG_POSTS: BlogPost[] = [
     published: true,
   },
   {
-    slug: "article-2026-07-13-1",
+    slug: "mispar-haktzaa-madrich-2026",
     title: "מספר הקצאה לחשבוניות ב-2026: המדריך המלא לעצמאים",
     description:
       "מהו מספר הקצאה, למי הוא חובה, ומהם הספים המעודכנים ל-2026? מדריך פשוט לעצמאים על רפורמת חשבונית ישראל: איך מוציאים מספר הקצאה ואיך תוכנה עושה זאת אוטומטית.",
@@ -88,11 +88,28 @@ export const BLOG_POSTS: BlogPost[] = [
     published: true,
   },
   {
-    slug: "article-2026-07-13-2",
+    slug: "osek-patur-madrich-2026",
     title: "עוסק פטור 2026: המדריך המלא להוצאת קבלות וחשבוניות כחוק",
     description:
       "מה עוסק פטור צריך להוציא: קבלה, חשבונית עסקה או חשבונית מס? מדריך 2026 על מספור רציף, מסמך ממוחשב, שמירת מסמכים 7 שנים והטעויות הנפוצות. פשוט וברור.",
     date: "2026-07-13",
+    published: true,
+  },
+  {
+    // Written 2026-08-24 straight off Search Console data, not from a topic
+    // guess. The Performance report showed 432 impressions at average
+    // position 37.2 and exactly one click, and the top queries were
+    // "קבלות עוסק פטור" (24), "קבלה עוסק פטור להורדה" (17) and
+    // "חשבונית זיכוי ממולאת" (37). "להורדה" and "ממולאת" are template
+    // intent - people wanting a filled example they can copy - and no page
+    // on the site answered that. osek-patur-madrich-2026 covers WHICH
+    // document to issue; this one covers what goes IN it, with a filled
+    // specimen, so the two inform rather than cannibalise each other.
+    slug: "kabala-osek-patur",
+    title: "קבלה לעוסק פטור: מה חייב להופיע בה, דוגמה ממולאת ותבנית להורדה",
+    description:
+      "קבלה לעוסק פטור: מה חייב להופיע בה לפי החוק, דוגמה ממולאת שאפשר להעתיק, ושלושת הכללים שבהם באמת נכשלים - מספור רציף, הוצאה מיידית וסדר כרונולוגי.",
+    date: "2026-08-24",
     published: true,
   },
 ];

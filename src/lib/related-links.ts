@@ -34,23 +34,33 @@ export const POST_RELATED: Record<string, RelatedTargets> = {
   // These two both target "מספר הקצאה" and currently cannibalize each other.
   // Linking them tells Google they are a cluster, not duplicates.
   "mispar-haktzaa-eich-mekablim": {
-    posts: ["article-2026-07-13-1", "maavar-osek-patur-le-osek-morshe-2026"],
+    posts: ["mispar-haktzaa-madrich-2026", "maavar-osek-patur-le-osek-morshe-2026"],
     vs: ["greeninvoice"],
   },
-  "article-2026-07-13-1": {
-    posts: ["mispar-haktzaa-eich-mekablim", "article-2026-07-13-2"],
+  "mispar-haktzaa-madrich-2026": {
+    posts: ["mispar-haktzaa-eich-mekablim", "osek-patur-madrich-2026"],
   },
 
   "maavar-osek-patur-le-osek-morshe-2026": {
-    posts: ["article-2026-07-13-2", "mispar-haktzaa-eich-mekablim"],
+    posts: ["osek-patur-madrich-2026", "mispar-haktzaa-eich-mekablim"],
     vs: ["sumit"],
   },
-  "article-2026-07-13-2": {
-    posts: ["maavar-osek-patur-le-osek-morshe-2026", "hashbonit-digitalit-chinam-2026"],
+  "osek-patur-madrich-2026": {
+    posts: ["maavar-osek-patur-le-osek-morshe-2026", "kabala-osek-patur"],
   },
   "hashbonit-digitalit-chinam-2026": {
-    posts: ["article-2026-07-13-2", "mispar-haktzaa-eich-mekablim"],
+    posts: ["osek-patur-madrich-2026", "kabala-osek-patur"],
     vs: ["ezcount", "icount"],
+  },
+
+  // The receipt page answers "what goes in the document"; the 2026 guide
+  // answers "which document do I issue at all". Same reader, consecutive
+  // questions - so they point at each other, and the receipt page hands the
+  // reader onward to the עוסק מורשה transition, which is the next thing that
+  // happens to anyone who outgrows a receipt pad.
+  "kabala-osek-patur": {
+    posts: ["osek-patur-madrich-2026", "maavar-osek-patur-le-osek-morshe-2026"],
+    vs: ["greeninvoice"],
   },
 };
 
