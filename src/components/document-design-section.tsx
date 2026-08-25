@@ -284,7 +284,9 @@ export function DocumentDesignSection() {
       {/* ── Font ── */}
       <div>
         <h3 className="text-sm font-semibold text-stone-900 mb-3">גופן</h3>
-        <div className="grid grid-cols-2 gap-2">
+        {/* One column: the panel is ~325px wide, so two columns leave ~140px
+            per swatch and any real business name wraps or clips. */}
+        <div className="grid grid-cols-1 gap-2">
           {FONT_KEYS.map((key) => {
             const opt = FONT_OPTIONS[key];
             const selected = draft.font === key;
