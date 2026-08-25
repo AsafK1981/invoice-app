@@ -317,11 +317,16 @@
 
 /* ---------- hero ---------- */
 .ml-hero {
-  padding-block: 52px 44px;
+  padding-block: 44px 40px;
 }
 @media (min-width: 760px) {
   .ml-hero {
-    padding-block: 76px 56px;
+    /* Was 76px 56px. Pulled up (2026-08-25, "false bottom"): at 1920x1080
+       the hero plus the trust row ended exactly at the fold with ~230px of
+       empty cream under it, and a visitor read that as the end of the page.
+       Less air on top brings the next section's colour band (see
+       `.ml-spot`) into the first screen at every common desktop height. */
+    padding-block: 52px 48px;
   }
 }
 .ml-hero-in {
@@ -763,13 +768,14 @@ h1.ml-hero-h1 {
    deepens the same hue one step (bg *-100, border *-300) + the grid's
    lift, and the strip enters with a staggered fade-up so it feels alive
    without any JS. 1 col -> 2x2 -> 4 across. */
+/* No bottom padding: the section after it (`.ml-spot`) pulls its colour
+   band up behind the lower half of these cards, so the cards straddle the
+   edge between the cream hero field and the band. `z-index: 1` keeps them
+   painted above the band. */
 .ml-trust {
-  padding-block: 0 44px;
-}
-@media (min-width: 760px) {
-  .ml-trust {
-    padding-block: 0 60px;
-  }
+  position: relative;
+  z-index: 1;
+  padding-block: 0;
 }
 .ml-trust-in {
   display: grid;
@@ -2116,7 +2122,22 @@ h3 > .ml-badge-soon {
    three read as a ladder rather than a second card grid.
    ============================================================ */
 .ml-spot {
-  padding-block: 44px 20px;
+  /* The "there is more below" signal (Asaf, 2026-08-25: a desktop visitor
+     thought the page ended after the trust cards). This section is a
+     distinct warm band that starts BEHIND the lower half of the trust
+     cards - `margin-top` pulls it up by `--ml-band-overlap`, the padding
+     gives that space back - so on any screen tall enough to show the
+     cards, the field visibly changes colour under them and the heading
+     "למה דווקא אנחנו" is cut by the fold instead of a blank cream gap
+     reading as the end of the page. The band is peach, not gold-tint:
+     gold-tint against cream is too close to register at the card edge. */
+  --ml-band-overlap: 72px;
+  position: relative;
+  margin-top: calc(-1 * var(--ml-band-overlap));
+  padding-block: calc(var(--ml-band-overlap) + 36px) 28px;
+  background: linear-gradient(180deg, #f8e9d6 0%, var(--ml-peach) 100%);
+  border-top: 1px solid var(--ml-peach-line);
+  border-bottom: 1px solid var(--ml-peach-line);
   /* The spotlight cards start their entry offset sideways (see
      `ml-in-side`), which would otherwise add scrollable width to the
      document. `clip`, never `hidden`: `hidden` makes this a scroll
@@ -2128,7 +2149,8 @@ h3 > .ml-badge-soon {
 }
 @media (min-width: 760px) {
   .ml-spot {
-    padding-block: 64px 28px;
+    --ml-band-overlap: 104px;
+    padding-block: calc(var(--ml-band-overlap) + 48px) 40px;
   }
 }
 .ml-spot-head {
