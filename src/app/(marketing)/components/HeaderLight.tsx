@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type MouseEvent } from "react";
 import { useOptionalUser } from "@/lib/auth";
 
 /**
@@ -23,7 +23,8 @@ import { useOptionalUser } from "@/lib/auth";
  * 760px, matching the approved mockup.
  *
  * MOBILE DRAWER (2026-08-25, Asaf): below 760px the header grows a
- * hamburger button at the far end that opens a slide-in drawer. Asaf's
+ * hamburger button at the reading start (top-right, beside the logo - Asaf:
+ * that is where a hamburger belongs) that opens a slide-in drawer. Asaf's
  * complaint was that the phone version of the landing page reads as an
  * endless website - you scroll and scroll - where he wants a tight landing
  * page you can move around in. The drawer is the "move around" part: on the
@@ -85,6 +86,15 @@ export default function HeaderLight() {
   const [open, setOpen] = useState(false);
   const burgerRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
+  /* Section id waiting to be scrolled to once the drawer has unmounted and
+     the body scroll lock is released. A plain `<a href="#id">` inside the
+     drawer fires the hash navigation while `body { overflow: hidden }` is
+     still in place (the lock is only lifted in the effect cleanup, after
+     React re-renders) - Chromium queues the scroll and it lands a beat
+     later, mobile Safari/Chrome drop it, and Asaf saw a menu that "leads
+     nowhere". So the click is intercepted, the drawer closes, and the jump
+     happens explicitly in the effect below, after the lock is gone. */
+  const pendingJump = useRef<string | null>(null);
 
   // Route change closes the drawer (a site link navigates away).
   useEffect(() => {
@@ -92,30 +102,74 @@ export default function HeaderLight() {
   }, [pathname]);
 
   useEffect(() => {
-    if (!open) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    closeRef.current?.focus();
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
-    };
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      document.removeEventListener("keydown", onKey);
-      burgerRef.current?.focus();
-    };
+    if (open) {
+      const previousOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      closeRef.current?.focus();
+      const onKey = (e: KeyboardEvent) => {
+        if (e.key === "Escape") setOpen(false);
+      };
+      document.addEventListener("keydown", onKey);
+      return () => {
+        document.body.style.overflow = previousOverflow;
+        document.removeEventListener("keydown", onKey);
+      };
+    }
+
+    const id = pendingJump.current;
+    pendingJump.current = null;
+    if (!id) return;
+    const target = document.getElementById(id);
+    if (!target) return;
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    // Two frames: one for the drawer's unmount to paint, one so the
+    // overflow restore above has definitely been applied before scrolling.
+    const raf = requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        target.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
+        try {
+          history.pushState(null, "", `#${id}`);
+        } catch {
+          /* history may be unavailable in exotic embeds; the scroll still happened */
+        }
+      })
+    );
+    return () => cancelAnimationFrame(raf);
   }, [open]);
 
   const close = () => setOpen(false);
+  const jumpTo = (e: MouseEvent<HTMLAnchorElement>, id: string) => {
+    e.preventDefault();
+    pendingJump.current = id;
+    setOpen(false);
+  };
 
   return (
     <header className="ml-header">
       <div className="ml-wrap ml-header-in">
-        <Link href={homeHref} className="ml-logo">
-          חשבונית{" "}
-          <span className="ml-logo-soft">ידידותית</span>
-        </Link>
+        {/* Burger at the reading START (top-right in RTL), beside the logo,
+            where Asaf expects a hamburger to live; the CTA keeps the end. */}
+        <div className="ml-header-start">
+          <button
+            ref={burgerRef}
+            type="button"
+            className="ml-burger"
+            aria-label={open ? "סגירת התפריט" : "פתיחת התפריט"}
+            aria-expanded={open}
+            aria-controls="ml-drawer"
+            onClick={() => setOpen((v) => !v)}
+          >
+            <span className="ml-burger-bars" aria-hidden="true">
+              <i />
+              <i />
+              <i />
+            </span>
+          </button>
+          <Link href={homeHref} className="ml-logo">
+            חשבונית{" "}
+            <span className="ml-logo-soft">ידידותית</span>
+          </Link>
+        </div>
         <nav className="ml-nav">
           <Link href="/blog" className="ml-navlink">
             מגזין
@@ -142,21 +196,6 @@ export default function HeaderLight() {
               התחילו בחינם
             </Link>
           )}
-          <button
-            ref={burgerRef}
-            type="button"
-            className="ml-burger"
-            aria-label={open ? "סגירת התפריט" : "פתיחת התפריט"}
-            aria-expanded={open}
-            aria-controls="ml-drawer"
-            onClick={() => setOpen((v) => !v)}
-          >
-            <span className="ml-burger-bars" aria-hidden="true">
-              <i />
-              <i />
-              <i />
-            </span>
-          </button>
         </div>
       </div>
 
@@ -193,7 +232,11 @@ export default function HeaderLight() {
                 <ul className="ml-drawer-list">
                   {PAGE_SECTIONS.map((s) => (
                     <li key={s.id}>
-                      <a href={`#${s.id}`} className="ml-drawer-link" onClick={close}>
+                      <a
+                        href={`#${s.id}`}
+                        className="ml-drawer-link"
+                        onClick={(e) => jumpTo(e, s.id)}
+                      >
                         {s.label}
                       </a>
                     </li>
