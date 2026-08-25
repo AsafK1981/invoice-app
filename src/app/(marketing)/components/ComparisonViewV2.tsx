@@ -18,6 +18,7 @@ import {
   organization,
   softwareApplication,
   breadcrumbList,
+  faqPage,
 } from "@/lib/jsonld";
 import HeaderV2 from "./HeaderV2";
 import FooterV2 from "./FooterV2";
@@ -116,6 +117,9 @@ export function ComparisonViewV2({ competitor }: { competitor: Competitor }) {
             { name: "השוואות", path: "/vs" },
             { name: competitor.name, path: `/vs/${competitor.slug}` },
           ]),
+          // FAQPage only when the same questions are visibly rendered below;
+          // Google penalises FAQ markup that is not on the page.
+          ...(competitor.faq?.length ? [faqPage(competitor.faq)] : []),
         )}
       />
 
@@ -355,6 +359,28 @@ export function ComparisonViewV2({ competitor }: { competitor: Competitor }) {
             </div>
           </div>
         </section>
+
+        {/* FAQ: the exact questions people type about this competitor */}
+        {competitor.faq?.length ? (
+          <section className="v2-cmp-sec">
+            <div className="v2-cmp-h">
+              <h2>שאלות נפוצות</h2>
+              <span className="ln" />
+            </div>
+            <div className="v2-panel v2-faq">
+              {competitor.faq.map((item) => (
+                <div key={item.q} className="v2-faq-item">
+                  <h3>
+                    <LtrText text={item.q} />
+                  </h3>
+                  <p>
+                    <LtrText text={item.a} />
+                  </p>
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null}
 
         {/* CTA */}
         <VsSiblings current={competitor.slug} />

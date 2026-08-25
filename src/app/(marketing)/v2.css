@@ -2252,6 +2252,30 @@
 .v2-theme .v2-str.them li svg { color: var(--v2-muted); }
 .v2-theme .v2-str.win li svg { color: var(--v2-yes); }
 
+/* ---------- competitor FAQ ----------
+   Visible twin of the FAQPage JSON-LD on /vs pages. Same panel, same h3
+   token as the strengths columns; items separated by the panel hairline so
+   four Q+A pairs read as a list, not as four paragraphs. Answers are capped
+   at the measure for the same reason the founder note is. */
+.v2-theme .v2-faq { display: flex; flex-direction: column; }
+.v2-theme .v2-faq-item { padding: var(--v2-sp-2) 0; }
+.v2-theme .v2-faq-item + .v2-faq-item { border-top: 1px solid var(--v2-line); }
+.v2-theme .v2-faq-item:first-child { padding-top: 0; }
+.v2-theme .v2-faq-item:last-child { padding-bottom: 0; }
+.v2-theme .v2-faq-item h3 {
+  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+  font-weight: 700;
+  font-size: var(--v2-fs-h3);
+  color: var(--v2-g1);
+  margin-bottom: 8px;
+}
+.v2-theme .v2-faq-item p {
+  font-size: var(--v2-fs-body);
+  line-height: 1.6;
+  color: #241e16;
+  max-width: var(--v2-measure);
+}
+
 /* ---------- /pricing launch banner ----------
    The homepage's pricing band (`.ml-pricing` + `.ml-price-frees`) in panel
    form: centred heading, then the three "בלי" promises as ONE horizontal

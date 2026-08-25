@@ -43,6 +43,12 @@ export interface Competitor {
   ourStrengths: string[];
   /** Short verdict shown in hero */
   verdict: string;
+  /**
+   * Optional visible FAQ, also emitted as FAQPage JSON-LD. Written for the
+   * exact questions Search Console shows people typing about this competitor
+   * (price, cost, free, recommended), so keep answers factual and dated.
+   */
+  faq?: { q: string; a: string }[];
 }
 
 const SHARED_FEATURES = (theirSupport: Record<string, FeatureSupport>, theirNotes: Record<string, string> = {}): FeatureRow[] => [
@@ -252,6 +258,28 @@ export const COMPETITORS: Record<Competitor["slug"], Competitor> = {
     ],
     verdict:
       "חשבונית ירוקה מצוינת אם אתה צריך API ואינטגרציות עמוקות ומוכן לשלם ₪89-155 לחודש. אם אתה עצמאי שרוצה את כל הפיצ׳רים בלי הסיבוך, כאן יהיה לך פשוט יותר. ואצלנו חינם עכשיו בתקופת ההשקה, בלי כרטיס אשראי.",
+    // Search Console (28 days to 2026-08-23): this page shows for "חשבונית
+    // ירוקה מחיר / עלות / חינם / מומלצת" at position ~24-38 with 0 clicks.
+    // These answer those four queries in the words people type. Prices
+    // re-verified against greeninvoice.co.il/pricing on 2026-08-25.
+    faq: [
+      {
+        q: "כמה עולה חשבונית ירוקה ב-2026?",
+        a: "לפי דף המחירים של חשבונית ירוקה (נבדק 25.08.2026): Basic ₪29 לחודש עד 20 מסמכים, Best ₪54 לחודש (₪45 בחיוב שנתי) עד 50 מסמכים, Extra ₪89 לחודש (₪74 בחיוב שנתי) עד 200 מסמכים, ו-Prime ₪155 לחודש (₪129 בחיוב שנתי) עד 500 מסמכים. המחירים לפני מע\"מ. אין מסלול חינמי קבוע, רק תקופת ניסיון.",
+      },
+      {
+        q: "מה העלות האמיתית של חשבונית ירוקה לעוסק פטור?",
+        a: "עוסק פטור שמוציא עד 20 קבלות בחודש ישלם ₪348 בשנה במסלול Basic. מי שעובר 20 מסמכים בחודש קופץ ל-Best, כלומר ₪540-648 בשנה. לשם השוואה, חשבונית ידידותית עולה ₪149 בשנה במסלול הבסיסי ו-₪250 בשנה ב-Pro ללא הגבלת מסמכים, וכרגע, בתקופת ההשקה, היא חינם לגמרי.",
+      },
+      {
+        q: "יש חשבונית ירוקה בחינם?",
+        a: "לא. לחשבונית ירוקה יש תקופת ניסיון חינם, ואחריה כל המסלולים בתשלום. חלופה חינמית באמת: חשבונית ידידותית פתוחה בחינם בתקופת ההשקה, כל הפיצ׳רים, בלי כרטיס אשראי, כולל קבלות, חשבוניות מס ומספרי הקצאה אוטומטיים מרשות המסים.",
+      },
+      {
+        q: "האם חשבונית ירוקה מומלצת?",
+        a: "כן, אם צריכים API נרחב, אינטגרציות לחנות אונליין או ל-CRM, וכמה עסקים בחשבון אחד. זו פלטפורמה בוגרת עם מוניטין טוב אצל רואי חשבון. פחות מומלצת לעצמאי שמוציא כמה מסמכים בחודש וצריך רק להוציא קבלה או חשבונית מהר: שם משלמים על הרבה שלא משתמשים בו, וממשק פשוט יותר יחסוך זמן.",
+      },
+    ],
   },
   ifreelance: {
     slug: "ifreelance",

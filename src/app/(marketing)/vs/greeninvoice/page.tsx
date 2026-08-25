@@ -6,15 +6,20 @@ const competitor = COMPETITORS.greeninvoice;
 
 export const metadata = vsMetadata({
   path: "/vs/greeninvoice",
-  title: "חשבונית ידידותית vs חשבונית ירוקה: השוואת מחירים ופיצ׳רים (2026)",
+  // Title and description target the four queries Search Console shows this
+  // page for (מחיר / עלות / חינם / מומלצת, position ~24-38, 0 clicks on
+  // 2026-08-23). Lead with the price question, then the free alternative.
+  title: "חשבונית ירוקה מחיר 2026: כל המסלולים, ומה החלופה החינמית",
   description:
-    "השוואה הוגנת בין חשבונית ידידותית לחשבונית ירוקה (Greeninvoice). Pro ₪25 לחודש vs Extra ₪89: אותם פיצ׳רים, פי 3.5 זול.",
+    "כמה עולה חשבונית ירוקה? Basic ₪29, Best ₪54, Extra ₪89, Prime ₪155 לחודש (נבדק 8/2026). האם היא מומלצת, ואיפה מקבלים את אותם פיצ׳רים בחינם: השוואה הוגנת מול חשבונית ידידותית.",
   keywords: [
+    "חשבונית ירוקה מחיר",
+    "חשבונית ירוקה עלות",
+    "חשבונית ירוקה חינם",
+    "חשבונית ירוקה מומלצת",
     "חשבונית ירוקה השוואה",
     "חלופה לחשבונית ירוקה",
     "Greeninvoice alternative",
-    "תוכנת חשבוניות השוואה",
-    "חשבוניות אונליין",
     "עוסק פטור",
   ],
 });
