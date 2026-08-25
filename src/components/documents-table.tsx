@@ -52,7 +52,7 @@ interface Props {
    * "ייצוא ל-Excel" used to be a loud green button INSIDE the filter bar,
    * beside the document count - which read as the screen's call to action for
    * something a freelancer does once a year. It belongs on the page's action
-   * row next to "ייבוא היסטורי": import and export are the same kind of
+   * row next to "ייבוא תנועות מהבנק": both are the same kind of
    * once-in-a-while chore and should look like each other, with "מסמך חדש"
    * left as the only filled button on the page.
    *
@@ -378,7 +378,7 @@ export function DocumentsTable({ documents, limit, exportSlot }: Props) {
       </div>
 
       {/* The export button, rendered up into the page's action row beside
-          "ייבוא היסטורי" - but from HERE, so its label and its payload are the
+          "ייבוא תנועות מהבנק" - but from HERE, so its label and its payload are the
           currently filtered list. See the `exportSlot` prop. */}
       {exportSlot &&
         createPortal(

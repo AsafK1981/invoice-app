@@ -24,6 +24,7 @@ import {
   Bell,
   CalendarClock,
   Globe,
+  Import,
 } from "lucide-react";
 import { useBusiness } from "@/lib/business-store";
 import { signOut } from "@/lib/auth";
@@ -52,6 +53,12 @@ const navItems: NavItem[] = [
   { href: "/notifications", label: "התראות", icon: Bell, tone: "orange" },
   { href: "/reminders", label: "תזכורות", icon: CalendarClock, tone: "orange" },
   { href: "/reports", label: "דו״חות", icon: TrendingUp, tone: "emerald" },
+  // A first-time user who arrives from Invoice4U / Morning / iCount looks for
+  // "where do I bring my data in" before anything else, and used to find it
+  // only as a small button inside /documents (2026-08-25: one watched a new
+  // user hunt for it). So the migration guide gets its own tab, right where
+  // the one-time setup tasks live, just above settings.
+  { href: "/migrate", label: "מעבר מתוכנה אחרת", icon: Import, tone: "emerald" },
   { href: "/settings", label: "הגדרות", icon: Settings, tone: "slate" },
 ];
 

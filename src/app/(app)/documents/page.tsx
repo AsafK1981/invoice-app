@@ -2,12 +2,11 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { FileText, Plus, Upload, Banknote } from "lucide-react";
+import { FileText, Plus, Banknote } from "lucide-react";
 import { useDocuments } from "@/lib/document-store";
 import { useDrafts } from "@/lib/draft-store";
 import { DocumentsTable } from "@/components/documents-table";
 import { DraftsList } from "@/components/drafts-list";
-import { CsvImportModal } from "@/components/csv-import-modal";
 import { BankImportModal } from "@/components/bank-import-modal";
 import { formatCurrency } from "@/lib/format";
 
@@ -15,7 +14,6 @@ export default function DocumentsPage() {
   const { documents } = useDocuments();
   const { drafts } = useDrafts();
   const [tab, setTab] = useState<"documents" | "drafts">("documents");
-  const [importOpen, setImportOpen] = useState(false);
   const [bankImportOpen, setBankImportOpen] = useState(false);
   // The action row's slot for "ייצוא ל-Excel". The button itself is rendered
   // by <DocumentsTable>, which is the only thing that knows what is currently
@@ -113,14 +111,10 @@ export default function DocumentsPage() {
             <Banknote aria-hidden="true" />
             ייבוא תנועות מהבנק
           </button>
-          <button
-            onClick={() => setImportOpen(true)}
-            className="pgbtn pgbtn-quiet"
-            title="ייבוא מסמכים היסטוריים מקובץ CSV"
-          >
-            <Upload aria-hidden="true" />
-            ייבוא היסטורי
-          </button>
+          {/* Historical CSV import used to sit here as a third quiet button.
+              It moved to its own sidebar tab (/migrate, "מעבר מתוכנה אחרת"):
+              bringing data over from another tool is a one-time setup task,
+              not a documents-page chore, and new users could not find it. */}
           {/* Import's opposite number lands here, immediately beside it and in
               the same treatment: `display: contents`, so the portalled button
               is a direct child of this row (a flex item, or a grid item on a
@@ -164,12 +158,6 @@ export default function DocumentsPage() {
           <DraftsList />
         )}
       </div>
-
-      <CsvImportModal
-        open={importOpen}
-        onClose={() => setImportOpen(false)}
-        entityType="documents"
-      />
 
       <BankImportModal
         open={bankImportOpen}

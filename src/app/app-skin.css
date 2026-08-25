@@ -598,8 +598,8 @@ html .gk-etable thead th {
    PAGE ACTION ROW (`.pgactions` / `.pgbtn`) - 2026-07-30.
 
    The block of buttons that sits opposite a page title. On /documents that is
-   four of them: ייבוא תנועות מהבנק / ייבוא היסטורי / ייצוא ל-Excel (N) /
-   מסמך חדש.
+   three of them: ייבוא תנועות מהבנק / ייצוא ל-Excel (N) / מסמך חדש
+   (ייבוא היסטורי moved to its own sidebar tab, /migrate, on 2026-08-25).
 
    WHY IT IS A COMPONENT AND NOT FOUR UTILITY STRINGS. Written as Tailwind
    strings the four drifted apart, and every way they drifted was visible:

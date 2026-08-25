@@ -212,11 +212,55 @@ export default function MigratePage() {
           מעבר מתוכנה אחרת
         </h1>
         <p className="text-sm text-stone-700 mt-2 mr-14 leading-relaxed">
-          מעבירים אותך ביד מ-<Ltr>Invoice4U</Ltr> / <Ltr>Morning</Ltr> (חשבונית ירוקה) /{" "}
-          <Ltr>Excel</Ltr>. כל הלקוחות
-          והמוצרים והמסמכים שלך, בכמה דקות.
+          כל הלקוחות, המוצרים, ההוצאות והמסמכים שלך עוברים לכאן בכמה דקות. שום דבר לא
+          מוקלד מחדש, ומספרי המסמכים ממשיכים מהמקום שעצרת.
         </p>
       </div>
+
+      {/* How it works, in three sentences. Shown before the vendor picker so a
+          first-time user understands the whole journey before choosing a tool;
+          the numbered per-vendor guide below repeats the same three beats in
+          detail. Hidden once a vendor is picked so the guide is the only list
+          on screen. */}
+      {!vendor && (
+        <ol className="grid sm:grid-cols-3 gap-3">
+          {[
+            {
+              icon: ExternalLink,
+              title: "מייצאים מהכלי הישן",
+              body: "בכל תוכנה יש כפתור ייצוא ל-Excel או CSV. נראה לך בדיוק איפה הוא.",
+            },
+            {
+              icon: Upload,
+              title: "גוררים את הקבצים לכאן",
+              body: "המערכת מזהה לבד מה זה לקוחות, מה מוצרים ומה מסמכים, ומייבאת הכל יחד.",
+            },
+            {
+              icon: CheckCircle2,
+              title: "ממשיכים לעבוד",
+              body: "ההיסטוריה שלך כאן, המספור ממשיך ברצף, והמסמך הבא כבר יוצא מכאן.",
+            },
+          ].map((step, i) => {
+            const Icon = step.icon;
+            return (
+              <li key={step.title} className="card-soft p-4 flex items-start gap-3">
+                <span className="w-9 h-9 rounded-2xl bg-gradient-to-br from-orange-400 to-rose-400 text-white flex items-center justify-center shadow-sm flex-shrink-0 text-sm font-bold">
+                  {i + 1}
+                </span>
+                <div className="min-w-0">
+                  <p className="font-bold text-stone-900 text-sm flex items-center gap-1.5">
+                    <Icon className="w-4 h-4 text-orange-500" aria-hidden="true" />
+                    {step.title}
+                  </p>
+                  <p className="text-xs text-stone-700 mt-1 leading-relaxed">
+                    <LtrText text={step.body} />
+                  </p>
+                </div>
+              </li>
+            );
+          })}
+        </ol>
+      )}
 
       {/* Vendor picker */}
       {!vendor && (
