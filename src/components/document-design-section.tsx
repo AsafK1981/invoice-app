@@ -294,15 +294,16 @@ export function DocumentDesignSection() {
                 type="button"
                 onClick={() => chooseFont(key)}
                 aria-pressed={selected}
-                className={`flex flex-col items-start gap-0.5 px-3 py-2 rounded-xl border-2 text-start transition-colors ${
+                className={`flex flex-col items-start gap-0.5 min-w-0 px-3 py-2 rounded-xl border-2 text-start transition-colors ${
                   selected
                     ? "border-orange-400 bg-orange-50/70"
                     : "border-stone-200 bg-white hover:border-orange-200"
                 }`}
               >
                 <span
-                  className="text-base leading-tight text-stone-900 whitespace-nowrap"
+                  className="w-full truncate text-base leading-tight text-stone-900"
                   style={{ fontFamily: opt.family, fontSize: opt.nameScale ? `${opt.nameScale}em` : undefined }}
+                  title={`${fontSampleName} · 0118`}
                 >
                   {fontSampleName} · 0118
                 </span>
