@@ -1261,6 +1261,28 @@ h3 > .ml-badge-soon {
   margin-inline-start: auto;
   padding: 18px 20px;
 }
+/* Payment details under the totals, same slot as the real document's
+   `.doc-infos` / `.doc-info` card. Full width: the sheet sits in a column
+   too narrow for the real document's two-up grid at any viewport. */
+.ml-sh-infos {
+  margin-bottom: 18px;
+}
+.ml-sh-pay {
+  padding: 16px 20px;
+}
+.ml-sh-pay-body {
+  margin-top: 9px;
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: var(--ml-ink);
+}
+.ml-sh-pay-line {
+  color: var(--ml-ink-2);
+  font-variant-numeric: tabular-nums;
+}
+.ml-sh-pay-dim {
+  color: var(--ml-muted);
+}
 .ml-sh-brow {
   display: flex;
   justify-content: space-between;

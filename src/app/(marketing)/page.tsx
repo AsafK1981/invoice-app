@@ -820,6 +820,32 @@ export default function MarketingLanding() {
                     </div>
                   </div>
 
+                  {/* Where to pay (Asaf, 2026-08-25): the real document
+                      prints the business's bank details right under the
+                      totals (document-body.tsx, "פרטי תשלום" in
+                      `.doc-infos`), and a visitor judging "what will my
+                      client get" wants to see that the invoice tells them
+                      where to transfer. Same DOM order as the real sheet.
+                      Fictitious bank / branch / account; the Bit number is
+                      the phone already printed in the header. */}
+                  <div className="ml-sh-infos">
+                    <div className="ml-sh-card ml-sh-pay">
+                      <div className="ml-sh-glabel">פרטי תשלום</div>
+                      <div className="ml-sh-pay-body">
+                        העברה בנקאית
+                        <br />
+                        <span className="ml-sh-pay-line">
+                          בנק לאומי (<Ltr>10</Ltr>) · סניף <Ltr>800</Ltr> · חשבון{" "}
+                          <Ltr>1234567</Ltr>
+                        </span>
+                        <br />
+                        <span className="ml-sh-pay-dim">
+                          אפשר גם ב-<Ltr>Bit</Ltr> למספר <Ltr>054-1234567</Ltr>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* The separator is an explicit {" · "} expression, not two
                       JSX literals around a bare middot: the transform drops the
                       space that leads a multi-line text child, which silently
