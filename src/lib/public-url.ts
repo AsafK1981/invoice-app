@@ -14,7 +14,7 @@
 // Moving to a real domain: set NEXT_PUBLIC_SITE_ORIGIN in Vercel's
 // Production env and REDEPLOY. NEXT_PUBLIC_* is inlined at build time,
 // so setting the variable without a rebuild is a silent no-op. Set it in
-// Production only (or identically everywhere) — setting it on Preview
+// Production only (or identically everywhere) - setting it on Preview
 // alone emits preview-origin canonicals, i.e. duplicate content.
 //
 // Deliberately NOT reusing NEXT_PUBLIC_APP_URL: that variable is already
@@ -24,7 +24,7 @@
 // separate variable. While it is unset, every emitted byte is identical
 // to the hardcoded vercel.app deployment.
 //
-// Referenced as a full static member expression on purpose — Next only
+// Referenced as a full static member expression on purpose - Next only
 // inlines NEXT_PUBLIC_* when it can see `process.env.NEXT_PUBLIC_FOO`
 // literally in the source, so destructuring it would break the client
 // bundle (this module is imported by "use client" components).
@@ -63,7 +63,7 @@ export const CANONICAL_HOST = new URL(CANONICAL_ORIGIN).host;
 
 /**
  * Absolute URL for an app-relative path. Use for sitemap entries, robots,
- * JSON-LD @id values and og:url — anywhere a relative path is not allowed.
+ * JSON-LD @id values and og:url - anywhere a relative path is not allowed.
  */
 export function absoluteUrl(path: string): string {
   return `${CANONICAL_ORIGIN}${path.startsWith("/") ? path : `/${path}`}`;

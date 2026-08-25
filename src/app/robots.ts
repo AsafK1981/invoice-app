@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 import { absoluteUrl } from "@/lib/public-url";
 
 // Replaces the former static public/robots.txt so the Sitemap: line follows
-// CANONICAL_ORIGIN instead of hardcoding a domain. The two cannot coexist —
-// Next errors with "conflicting public file and page file" — so this file and
+// CANONICAL_ORIGIN instead of hardcoding a domain. The two cannot coexist -
+// Next errors with "conflicting public file and page file" - so this file and
 // the deletion of public/robots.txt must ship together.
 //
 // The Disallow list is load-bearing for privacy, not just for crawl budget:

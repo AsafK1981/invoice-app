@@ -245,7 +245,7 @@ async function handleGrowCheckout({
 // ─────────────────────────────────────────────────────────────────────────
 // Tranzila (opt-in, only reached when PAYMENT_PROVIDER=tranzila)
 //
-// NOT a tested integration — see docs/payments/tranzila-integration.md.
+// NOT a tested integration - see docs/payments/tranzila-integration.md.
 // Simpler shape than the Grow branch above: token capture happens entirely
 // on Tranzila's own hosted page (no server-side create-session call from us
 // first), so this handler only builds the redirect URL.
@@ -287,14 +287,14 @@ async function handleTranzilaCheckout({
     fullName: (user.user_metadata?.full_name as string | undefined) || user.email || "Customer",
     email: user.email || "",
     phone: (user.user_metadata?.phone as string | undefined) || "",
-    // Uses tranmode=N (SHVA J2 "checks card") instead of a standard debit —
+    // Uses tranmode=N (SHVA J2 "checks card") instead of a standard debit -
     // see the tranmode comment in tranzila.ts's buildHostedPaymentUrl(): the
     // card is verified but not actually charged for a first-time trial.
     tokenOnly: isTrial,
   });
 
   // The 30-day trial (TRIAL_DAYS) and the actual plan activation both happen
-  // once the token comes back from the hosted page — NOT built yet (see
+  // once the token comes back from the hosted page - NOT built yet (see
   // docs/payments/tranzila-integration.md item 4). This route's scope ends at
   // "build the redirect URL."
   void TRIAL_DAYS;

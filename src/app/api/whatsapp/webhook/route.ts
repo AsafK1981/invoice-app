@@ -96,7 +96,7 @@ interface WebhookBody {
         metadata?: { phone_number_id?: string };
         messages?: InboundMessage[];
         // statuses[] (sent/delivered/read receipts) also arrive here and are
-        // deliberately ignored — acting on them would cost money for nothing.
+        // deliberately ignored - acting on them would cost money for nothing.
       };
     }>;
   }>;
@@ -111,7 +111,7 @@ function extractMessages(body: WebhookBody): InboundMessage[] {
       if (change.field && change.field !== "messages") continue;
 
       // Only accept events addressed to OUR business number. The HMAC proves
-      // Meta sent this, not which of the app's numbers it was for — if this
+      // Meta sent this, not which of the app's numbers it was for - if this
       // Meta app ever hosts a second WhatsApp number, a correctly signed event
       // for that number would otherwise be processed here as though it were
       // ours. Cheap now, and the kind of check nobody adds after the fact.

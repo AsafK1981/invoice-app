@@ -1,7 +1,7 @@
 // Turns a free-text Hebrew WhatsApp message into a structured intent.
 //
 // Deliberately conservative. Anything this returns becomes a DRAFT that the user
-// must confirm with a button tap, never a write — but the draft is still what
+// must confirm with a button tap, never a write - but the draft is still what
 // the user reads and approves at a glance, so a confident wrong answer is worse
 // than an admitted "I didn't understand". The prompt is written to prefer
 // `unknown` over guessing, and every numeric field is re-validated in TypeScript
@@ -18,7 +18,7 @@ const MODEL = "claude-haiku-4-5-20251001";
  * scripts/migrations/20260808-whatsapp-channel.sql for the full reasoning: a
  * חשבונית מס can require a מספר הקצאה, and this channel has no gate for that
  * and no way to capture the customer's tax id. Kept in sync with the RPC by
- * hand — widening one without the other just moves the failure from a helpful
+ * hand - widening one without the other just moves the failure from a helpful
  * chat reply to a raised exception after the user already tapped confirm.
  */
 export type BotDocType = "receipt" | "quote";
@@ -66,7 +66,7 @@ One of these shapes:
 
 Rules:
 - docType: ONLY "receipt" or "quote" exist on this channel. "קבלה" -> receipt. "הצעת מחיר" -> quote. Bare "חשבונית" -> receipt (the common case for an עוסק פטור, and the safest: it is not a VAT document).
-- If the user explicitly asks for a "חשבונית מס" or "חשבונית מס קבלה", return {"intent":"unavailable_doc_type"} — do NOT quietly downgrade it to a receipt. Those are different legal documents and silently substituting one would be worse than saying no.
+- If the user explicitly asks for a "חשבונית מס" or "חשבונית מס קבלה", return {"intent":"unavailable_doc_type"} - do NOT quietly downgrade it to a receipt. Those are different legal documents and silently substituting one would be worse than saying no.
 - clientName: the customer's name exactly as written. Do NOT invent, translate, or correct it.
 - amount: a positive number in NIS. Understand "אלף" = 1000, "אלפיים" = 2000, "1.2k" = 1200, "500 שח" = 500. If NO amount is stated, return unknown - never guess an amount.
 - amountIncludesVat: true if the user explicitly said the amount includes VAT ("כולל מעמ" / "כולל מע\\"מ"); false if they explicitly said it is before or plus VAT ("לפני מעמ", "פלוס מעמ", "בתוספת מעמ", "לא כולל מעמ"); null if VAT was not mentioned at all. Never guess.

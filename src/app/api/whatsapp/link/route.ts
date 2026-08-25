@@ -35,7 +35,7 @@ const ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
  * binds their WhatsApp number to it and can then issue immutable tax documents
  * as that user. At 6 chars the space is 31^6 ≈ 2^29.7, and the throttles that
  * would bound guessing are per-process in-memory buckets (src/lib/rate-limit.ts)
- * that reset on every serverless cold start — so the entropy has to carry the
+ * that reset on every serverless cold start - so the entropy has to carry the
  * weight on its own. 31^8 ≈ 2^39.6 is ~950x harder for two more characters the
  * user copies with a button anyway.
  */
@@ -68,7 +68,7 @@ export async function GET(req: NextRequest) {
 
   // A failed lookup must NOT degrade to connected:false. That reads to the user
   // as "not linked", sends them to mint a code, and the redemption then fails on
-  // the unique user_id index — a confusing dead end caused by a transient error.
+  // the unique user_id index - a confusing dead end caused by a transient error.
   // Surface the failure instead.
   const { data: identity, error: identityErr } = await db
     .from("whatsapp_identities")
@@ -163,7 +163,7 @@ export async function POST(req: NextRequest) {
   //
   // The obvious order (retire, then insert) is racy: two concurrent mints can
   // both run their retirement before either inserts, and both new codes survive
-  // — the opposite of the single-outstanding-code property this is here to
+  // - the opposite of the single-outstanding-code property this is here to
   // provide. Inserting first and then retiring "every code for this user except
   // this one" is self-correcting instead: whichever request retires last leaves
   // exactly its own code live, and the loser's code is killed rather than

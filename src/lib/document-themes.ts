@@ -1,5 +1,5 @@
 /**
- * Profession-tailored document design — CLOSED SETS ONLY.
+ * Profession-tailored document design - CLOSED SETS ONLY.
  *
  * This file is the single source of truth for the "document design" feature
  * AND the security boundary for it. Users never supply raw CSS, a color
@@ -11,14 +11,14 @@
  * JSONB column, round-tripped through Supabase/the public API) into
  * something that drives rendering is {@link normalizeDocumentDesign}. Its
  * output is a `DocumentDesign` where every field is guaranteed to be one of
- * the enum values declared below — never a pass-through of the input. The
+ * the enum values declared below - never a pass-through of the input. The
  * only function allowed to turn a `DocumentDesign` into CSS is
  * {@link designToCssVars}; it only ever emits values it looked up from the
  * closed maps in this file, never a string that flowed in from outside.
  *
  * `null` (the column's default, and what every existing business has today)
  * means "no theme chosen" and must render byte-for-byte identically to the
- * design before this feature existed — the existing gold look. An explicit
+ * design before this feature existed - the existing gold look. An explicit
  * `{ template: "general" }` selection looks the same but is a real user
  * choice; `normalizeDocumentDesign` only returns `null` when the raw input
  * itself is null/undefined/not an object.
@@ -50,7 +50,7 @@ export type TemplateId =
 // Each maps to a small hand-authored color FAMILY (the "gold" family of
 // vars: badge/glabel/hairline/totals color, its lighter line tint, its
 // faintest tint, and the top-bar gradient), not a single raw hex a user
-// could inject — the family members for the 9 templates with no exact
+// could inject - the family members for the 9 templates with no exact
 // mockup reference are derived from one base hex via pure, deterministic
 // color math (mix-with-white / mix-with-black), never from user input.
 
@@ -81,11 +81,11 @@ export type AccentKey =
   | "lime";
 
 interface AccentFamily {
-  /** hex, e.g. "#8a6d26" — text/badge/glabel/totals color */
+  /** hex, e.g. "#8a6d26" - text/badge/glabel/totals color */
   accent: string;
-  /** hex — thin rule/border color (table header underline, card border on the "paid" block) */
+  /** hex - thin rule/border color (table header underline, card border on the "paid" block) */
   line: string;
-  /** hex — very light tint (glabel underline fade, table header background on bold templates) */
+  /** hex - very light tint (glabel underline fade, table header background on bold templates) */
   faint: string;
   /** CSS `background` value for the sheet's top bar: a gradient string or a solid hex */
   grad: string;
@@ -224,7 +224,7 @@ export const ACCENT_GROUPS: { label: string; keys: AccentKey[] }[] = [
 // Exactly the curated Hebrew-capable shortlist. heebo/frank/assistant are
 // already self-hosted (src/app/layout.tsx); rubik/miriam are added by this
 // feature under src/app/fonts/{rubik,miriam-libre}/, same self-hosted
-// next/font/local pattern — no Google Fonts CDN call at request time.
+// next/font/local pattern - no Google Fonts CDN call at request time.
 
 export type FontKey =
   | "heebo"
@@ -326,11 +326,11 @@ export const LOGO_POSITIONS: LogoPosition[] = ["right", "center", "left"];
 // ── Corner / border closed buckets ──────────────────────────────────────
 // The product brief describes `corner` abstractly as 'sharp'|'soft'|'round',
 // but the concrete 15-template table also uses a 4th value ("normal") for
-// marketing/accountant/developer, meaning "no special corner treatment —
+// marketing/accountant/developer, meaning "no special corner treatment -
 // keep the current default". Rather than force those three into 'soft' or
 // 'round' (which would misrepresent them), 'normal' is kept as its own
 // bucket equal to the pre-feature baseline (16px / 3px badge radius).
-// Corner and border are NOT independently user-choosable — they are baked
+// Corner and border are NOT independently user-choosable - they are baked
 // into the template definition below, so they never need their own
 // validation against raw JSON (only `design.template` does, and that
 // validation is what makes these safe to look up).
@@ -422,7 +422,7 @@ export interface DocumentTemplate {
    * when the user hasn't overridden the font away from this template's own
    * default. Undefined ⇒ same as `font` (no split). Only the photographer
    * template sets this today (Miriam Libre for the name, Heebo everywhere
-   * else) — Miriam Libre's ₪ glyph renders as a visibly split ש/ח, which is
+   * else) - Miriam Libre's ₪ glyph renders as a visibly split ש/ח, which is
    * unacceptable on the grand total, so money always stays in the body
    * font regardless (`designToCssVars` / document-paper.css enforce this
    * for every template, not just this one).
@@ -456,7 +456,7 @@ export const DOCUMENT_TEMPLATES: DocumentTemplate[] = [
     // Business name / doc number stay Frank Ruhl Libre, matching the legacy
     // (null-design) look exactly. Without this, an explicit {template:general}
     // (what the "reset to original" button persists) would silently fall the
-    // .doc-serif elements back to Heebo — a visible font change vs. null.
+    // .doc-serif elements back to Heebo - a visible font change vs. null.
     nameFont: "frank",
     layout: "cards",
     corner: "normal",
@@ -746,18 +746,18 @@ export function getTemplate(id: TemplateId): DocumentTemplate {
 
 // ── Onboarding auto-suggest ──────────────────────────────────────────────
 // Maps a free-text description of what the business does (what a new user
-// types into an optional "תחום עיסוק" onboarding field — NOT the
+// types into an optional "תחום עיסוק" onboarding field - NOT the
 // Business["businessType"] tax-status enum, which is unrelated:
 // exempt/authorized/company say nothing about profession) to the closest
 // matching profession template. Pure keyword/substring matching, no ML, no
-// network call — deterministic and instant.
+// network call - deterministic and instant.
 //
 // Groups are checked in priority order, most specific/least ambiguous
 // first, so a phrase that could plausibly match two groups (e.g. "מעצב/ת
 // פנים" containing both "מעצב" and being about interior design) resolves to
 // the more specific one (architect) before the broader one (designer) gets
 // a chance. This is a best-effort heuristic for a one-tap suggestion, not a
-// security boundary — an unmatched or ambiguous input always falls back to
+// security boundary - an unmatched or ambiguous input always falls back to
 // 'general' (the existing gold default) rather than guessing a colored
 // template the user didn't ask for.
 const TEMPLATE_SUGGESTION_RULES: { template: TemplateId; keywords: string[] }[] = [
@@ -876,7 +876,7 @@ const TEMPLATE_SUGGESTION_RULES: { template: TemplateId; keywords: string[] }[] 
  * Suggests the profession template that best matches a free-text business
  * description, for the onboarding "we picked a design for you" nudge.
  * Never returns anything the user can't already see in the template
- * gallery, and never fabricates a match — an empty string or no keyword hit
+ * gallery, and never fabricates a match - an empty string or no keyword hit
  * returns 'general' (the current gold default, always safe to suggest since
  * it changes nothing).
  */
@@ -924,15 +924,15 @@ function isLogoPosition(v: unknown): v is LogoPosition {
 
 /**
  * THE security boundary. Takes whatever came out of the `document_design`
- * JSONB column (or the public API's echo of it) — trust nothing about its
- * shape — and returns either `null` ("no theme chosen", render the
+ * JSONB column (or the public API's echo of it) - trust nothing about its
+ * shape - and returns either `null` ("no theme chosen", render the
  * original gold design) or a `DocumentDesign` where every field is
  * GUARANTEED to be a member of a closed set declared in this file.
  *
  * Unknown/malformed template ids fall back to "general". Unknown/malformed
  * accent/font/layout fall back to the resolved template's own default. Unknown
  * logoPosition falls back to "right" (today's behaviour). Nothing here ever
- * returns a string it read off `raw` verbatim — every returned value is one
+ * returns a string it read off `raw` verbatim - every returned value is one
  * of the literal enum members checked against above.
  */
 export function normalizeDocumentDesign(raw: unknown): DocumentDesign | null {
@@ -963,7 +963,7 @@ export function normalizeDocumentDesign(raw: unknown): DocumentDesign | null {
  * Maps a VALIDATED `DocumentDesign` to concrete CSS custom-property values.
  * Every value here is looked up from a closed map declared in this file
  * (ACCENT_HEX / FONT_OPTIONS / CORNER_VALUES / BORDER_VALUES / a template's
- * own `palette`) — this function never emits a string that isn't one of
+ * own `palette`) - this function never emits a string that isn't one of
  * those pre-authored values. `null` input (no design chosen) returns `{}`,
  * so the pre-existing hard-coded `.doc-paper` defaults in
  * document-paper.css keep applying unchanged.

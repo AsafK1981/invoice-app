@@ -106,7 +106,7 @@ export async function saveBusiness(business: Business): Promise<void> {
       // stale object). Never write anything to the DB that hasn't been
       // through the same normalizeDocumentDesign() validation that every
       // READ path also applies. `null` (no design chosen) round-trips as
-      // `null`, not as `{template:"general",...}` — see the doc comment on
+      // `null`, not as `{template:"general",...}` - see the doc comment on
       // normalizeDocumentDesign for why that distinction matters.
       document_design: normalizeDocumentDesign(business.documentDesign),
     })

@@ -94,10 +94,10 @@ export async function GET(
     // dropped: receivers of an invoice don't need them.
     admin
       .from("businesses")
-      // user_id is selected but NEVER returned to the caller — it is used
+      // user_id is selected but NEVER returned to the caller - it is used
       // only, below, to look up whether the owner is a paying subscriber
       // (which decides the footer credit). It is stripped before the response.
-      // document_design is returned but ALWAYS normalized first (below) —
+      // document_design is returned but ALWAYS normalized first (below) -
       // this route is the one place a malformed/hostile value in that
       // column could otherwise reach a completely unauthenticated caller.
       .select(
@@ -117,13 +117,13 @@ export async function GET(
   // ── Footer credit: on for everyone EXCEPT a genuinely paying subscriber ──
   // Growth loop (see src/components/document-body.tsx): the small "הופק
   // באמצעות" credit is how this app reaches the sender's clients. Paying
-  // customers get it removed — standard SaaS behaviour and a real upgrade
+  // customers get it removed - standard SaaS behaviour and a real upgrade
   // incentive. app_metadata is the enforcement source of truth everywhere
   // else in this codebase, so it is the source here too.
   //
   // "Paying" deliberately EXCLUDES trials and beta grants: plan_active is
   // true for those as well, but they are not paying, so they keep the credit.
-  // Fails OPEN (branding shown) on any lookup error — never silently strip
+  // Fails OPEN (branding shown) on any lookup error - never silently strip
   // the growth loop because of a transient auth-admin hiccup.
   let showBranding = true;
   const bizRow = (bizRes.data || null) as Record<string, unknown> | null;
@@ -144,7 +144,7 @@ export async function GET(
 
   // Strip user_id: the recipient of a shared invoice must never see the
   // sender's Supabase user id (it is a lookup key elsewhere in the system).
-  // document_design is re-serialized through normalizeDocumentDesign() —
+  // document_design is re-serialized through normalizeDocumentDesign() -
   // the ONLY thing an unauthenticated caller ever receives for this field
   // is a value already coerced to the closed enum sets in
   // src/lib/document-themes.ts, never the raw DB value.

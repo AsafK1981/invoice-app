@@ -6,7 +6,7 @@ import { COMPETITORS } from "@/lib/comparison-data";
 import type { RelatedTargets } from "@/lib/related-links";
 
 /**
- * "כדאי לקרוא גם" — the internal-link block that closes an article or a
+ * "כדאי לקרוא גם" - the internal-link block that closes an article or a
  * comparison page.
  *
  * Titles are resolved here from BLOG_POSTS/COMPETITORS rather than stored

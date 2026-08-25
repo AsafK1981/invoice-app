@@ -37,7 +37,7 @@ const SOFTWARE_NUMBER = parseInt(process.env.TAX_AUTHORITY_SOFTWARE_NUMBER || "0
 // domain-literal-ok: deliberately NOT CANONICAL_ORIGIN. This origin builds the
 // redirect_uri that is REGISTERED WITH רשות המסים; it must keep byte-matching
 // the registered value. Buying a domain changes NEXT_PUBLIC_SITE_ORIGIN, and if
-// this followed it, the tax integration would break the moment we deployed —
+// this followed it, the tax integration would break the moment we deployed -
 // before anyone re-registered the new redirect_uri with שע"מ.
 const APP_ORIGIN = process.env.NEXT_PUBLIC_APP_URL || "https://mysuperfriendlyinvoiceapp.vercel.app"; // domain-literal-ok
 

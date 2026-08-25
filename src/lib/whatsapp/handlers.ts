@@ -41,7 +41,7 @@ const MONTHLY_ACTION_CAP = 200;
 
 const PENDING_TTL_MS = 30 * 60 * 1000; // 30 minutes
 // Must stay in step with mintCode() in /api/whatsapp/link (4-4). A mismatch
-// here does not fail loudly — it just silently stops recognising valid codes,
+// here does not fail loudly - it just silently stops recognising valid codes,
 // so the user's binding never works and nothing is logged.
 const LINK_CODE_RE = /\b([A-Z0-9]{4}-[A-Z0-9]{4})\b/;
 
@@ -126,7 +126,7 @@ export async function handleMessage(msg: InboundMessage): Promise<void> {
     //
     // Replying to every message past the cap is not a cap at all: each warning
     // is itself a billable outbound message, so an account that keeps typing
-    // keeps costing money forever — the exact runaway the counter exists to
+    // keeps costing money forever - the exact runaway the counter exists to
     // stop. increment_whatsapp_usage returns the post-increment count, so
     // "count === cap + 1" is true for exactly one message.
     if (usageCount === MONTHLY_ACTION_CAP + 1) {
@@ -217,7 +217,7 @@ type IdentityLookup =
  * A failed lookup is NOT the same as "this number has no account".
  *
  * Collapsing the two would send every linked user a "connect your account"
- * reply during a database blip — wrong, confusing, and billable once Meta
+ * reply during a database blip - wrong, confusing, and billable once Meta
  * starts charging for service messages on 2026-10-01. The caller stays silent
  * on "error" instead.
  */
@@ -238,7 +238,7 @@ async function lookupIdentity(db: SupabaseClient, phone: string): Promise<Identi
 /**
  * An unknown number can do exactly one thing: redeem a link code.
  *
- * No account enumeration and no hints — an unrecognised message gets the same
+ * No account enumeration and no hints - an unrecognised message gets the same
  * generic instruction whether or not the sender's number belongs to a real
  * user, so the bot can't be used to test which phone numbers have accounts.
  */

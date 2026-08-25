@@ -39,7 +39,7 @@ const DEFAULT_DESIGN: DocumentDesign = {
 
 // A fabricated document, never persisted, purely so the live preview shows
 // the CHOSEN theme applied to something with real line items, a client and
-// totals — the same reason document-preview.tsx's "new document" flow
+// totals - the same reason document-preview.tsx's "new document" flow
 // already uses `placeholders`. Uses the business's OWN name/logo/tax id
 // (so the header the user sees is theirs), fake everything else.
 const SAMPLE_CLIENT: PreviewClient = {
@@ -71,7 +71,7 @@ export function DocumentDesignSection() {
   const initialized = useRef(false);
 
   // Initialize the draft from the business's SAVED design exactly once,
-  // when the business first loads — not on every refetch (a save
+  // when the business first loads - not on every refetch (a save
   // dispatches invoice-app:business-changed, which would otherwise
   // clobber further in-progress edits with the just-saved value; harmless
   // since they're equal right after a save, but wrong in general).
@@ -86,8 +86,8 @@ export function DocumentDesignSection() {
 
   function chooseTemplate(id: DocumentDesign["template"]) {
     const tpl = getTemplate(id);
-    // Picking a new template resets accent/font/layout to ITS defaults — a
-    // fresh start for the new "character" — but keeps the user's own logo
+    // Picking a new template resets accent/font/layout to ITS defaults - a
+    // fresh start for the new "character" - but keeps the user's own logo
     // position, which is a personal preference, not part of the template.
     setDraft((d) => ({
       ...d,

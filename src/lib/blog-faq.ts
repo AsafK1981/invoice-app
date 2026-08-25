@@ -74,7 +74,7 @@ export function parseFaq(markdown: string): FaqItem[] {
 
   if (current) items.push({ q: current.q, a: toPlainText(current.a.join(" ")) });
 
-  // A question with no answer is not valid FAQPage data — drop it rather than
+  // A question with no answer is not valid FAQPage data - drop it rather than
   // emitting an empty acceptedAnswer.
   return items.filter((item) => item.q.length > 0 && item.a.length > 0);
 }

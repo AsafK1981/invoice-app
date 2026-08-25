@@ -109,14 +109,14 @@ export async function POST(req: NextRequest) {
     };
     // Delivery evidence: WHO the document was sent to, not just when. Written
     // server-side (the client only knows what it typed into the box; the server
-    // knows what the SMTP server actually accepted) and UNCONDITIONALLY — a
+    // knows what the SMTP server actually accepted) and UNCONDITIONALLY - a
     // resend overwrites with the latest recipients, so the card always shows
     // where the document currently stands delivered.
     //
     // Awaited before the response so the client's post-send refetch already
     // sees it. Best-effort like stampOriginalIssued: the mail is already gone,
     // a bookkeeping failure must not turn a successful send into an error. But
-    // unlike that helper we DO inspect supabase's `error` field — a silently
+    // unlike that helper we DO inspect supabase's `error` field - a silently
     // swallowed PostgREST error is how a column ends up permanently NULL in
     // production with nothing in the logs.
     const stampEmailedTo = async (addresses: string[]) => {

@@ -76,7 +76,7 @@ export interface Business {
    * Profession-tailored document design (template/accent/font/logo
    * position), chosen in Settings. `unknown` on purpose: this is the RAW
    * value read off the `document_design` JSONB column (or echoed by the
-   * public API) — untrusted by construction. NEVER read a field off it
+   * public API) - untrusted by construction. NEVER read a field off it
    * directly; always pass it through `normalizeDocumentDesign()` from
    * `@/lib/document-themes` first, which is the only place allowed to turn
    * it into something safe to render. `undefined`/`null` (every existing
@@ -145,7 +145,7 @@ export interface InvoiceDocument {
   /**
    * Comma-joined recipient addresses of the most recent successful send (the
    * accepted ones only). Overwritten on every resend. Undefined for documents
-   * emailed before 2026-08-02, when we started recording it — never inferred
+   * emailed before 2026-08-02, when we started recording it - never inferred
    * from the client's address, so it is safe to present as fact.
    */
   emailedTo?: string;

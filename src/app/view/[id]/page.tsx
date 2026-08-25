@@ -188,7 +188,7 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
             bankAccount: biz.bank_account || undefined,
             paymentNotes: biz.payment_notes || undefined,
             // Already normalized server-side by /api/public-document (see
-            // that route's businessOut construction) — this is what flows
+            // that route's businessOut construction) - this is what flows
             // through ReceiptView -> the .doc-paper wrapper's inline style,
             // which is what the PDF route's headless Chrome then prints.
             documentDesign: biz.document_design ?? null,
@@ -344,8 +344,8 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
           looking at exactly what the app produces. A large share of them are
           עצמאים who have the same problem. Screen-only (no-print) so it can
           never appear on the printed/PDF document, and hidden entirely for
-          paying subscribers. Leads with the 2026 allocation-number mandate —
-          the actual pain — rather than with "free", which every competitor
+          paying subscribers. Leads with the 2026 allocation-number mandate -
+          the actual pain - rather than with "free", which every competitor
           already shouts. */}
       {showBranding && (
         <div className="no-print max-w-[210mm] mx-auto mt-4 mb-2">

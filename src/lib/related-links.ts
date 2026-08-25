@@ -5,7 +5,7 @@ import type { Competitor } from "@/lib/comparison-data";
  *
  * Audited 2026-07-27: the site had ZERO internal links between content pages.
  * No post linked to another post, none linked to a /vs comparison, and
- * `maavar-me-invoice4u` did not link to `/vs/invoice4u` — the single most
+ * `maavar-me-invoice4u` did not link to `/vs/invoice4u` - the single most
  * obvious pair on the site. Every article was an SEO dead end: crawlers
  * arrived, found one outbound link back to /blog, and left. Nothing passed
  * authority to the comparison pages, which are the highest-intent surfaces.

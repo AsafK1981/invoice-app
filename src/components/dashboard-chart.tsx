@@ -141,7 +141,7 @@ const SERIES = {
 function kLabel(v: unknown): string {
   const n = typeof v === "number" ? v : Number(v);
   if (!n || Number.isNaN(n)) return "";
-  // Daily buckets are often under ₪1000 — "₪0k" would be nonsense there.
+  // Daily buckets are often under ₪1000 - "₪0k" would be nonsense there.
   if (n < 1000) return `₪${Math.round(n)}`;
   return `₪${Math.round(n / 1000)}k`;
 }
@@ -156,7 +156,7 @@ const ils = new Intl.NumberFormat("he-IL", {
 export function DashboardChart({ documents, expenses }: Props) {
   const [range, setRange] = useState<RangeKey>("6m");
 
-  // Restore the saved range after mount (not in the initializer — the page is
+  // Restore the saved range after mount (not in the initializer - the page is
   // server-rendered first, and localStorage there would cause a hydration mismatch).
   useEffect(() => {
     const saved = localStorage.getItem(RANGE_STORAGE_KEY);
@@ -168,7 +168,7 @@ export function DashboardChart({ documents, expenses }: Props) {
     try {
       localStorage.setItem(RANGE_STORAGE_KEY, key);
     } catch {
-      /* private mode — selection just won't persist */
+      /* private mode - selection just won't persist */
     }
   };
 
@@ -190,7 +190,7 @@ export function DashboardChart({ documents, expenses }: Props) {
     });
   }, [documents, expenses, range]);
 
-  // Empty state only when the account has no data at all — a quiet week
+  // Empty state only when the account has no data at all - a quiet week
   // should still render (flat at ₪0), not hide the chart.
   const hasAnyData =
     expenses.length > 0 ||
@@ -308,7 +308,7 @@ function MonthlyLineChart({
   const [hover, setHover] = useState<number | null>(null);
 
   // Solo mode: click a legend pill to isolate that series (and rescale the
-  // y-axis to it — otherwise expenses are squashed flat under a taller income
+  // y-axis to it - otherwise expenses are squashed flat under a taller income
   // line). Click the same pill again to bring both series back.
   const [solo, setSolo] = useState<"income" | "expense" | null>(null);
   useEffect(() => {

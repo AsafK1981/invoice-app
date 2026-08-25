@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import { PLANS, type PlanTier, type BillingInterval } from "./plans";
 
 /**
- * Tranzila clearing client — Israeli direct card processor (Interspace /
+ * Tranzila clearing client - Israeli direct card processor (Interspace /
  * Tranzila, terminal-based). Originally written 2026-07-31 per Asaf's explicit
  * approval to author the module without opening a merchant account or
  * spending anything; PAYMENT_PROVIDER stays unset in every real environment
@@ -22,17 +22,17 @@ import { PLANS, type PlanTier, type BillingInterval } from "./plans";
  *
  * ── Why the hosted-page redirect flow (DirectNG iframe), not Hosted Fields ─
  * Tranzila offers three ways to capture a card:
- *   1. **DirectNG hosted iframe/redirect** (what this module uses) — POST/GET
+ *   1. **DirectNG hosted iframe/redirect** (what this module uses) - POST/GET
  *      the transaction fields to `https://directng.tranzila.com/{terminal}/
  *      iframenew.php`; the customer enters card details entirely on
  *      Tranzila's PCI-DSS-certified page (embedded in our iframe or a full
  *      redirect); Tranzila POSTs/redirects the result back to our
  *      success_url_address/fail_url_address. This is a straight evolution of
  *      the "Low Profile" flow the 2026-07-31 version targeted from
- *      third-party sources — same response field names (`Response`,
+ *      third-party sources - same response field names (`Response`,
  *      `TranzilaTK`, `sum`, `currency`, `index`), just a new documented URL.
  *      Confirmed: https://docs.tranzila.com/docs/payments-and-billing/iframe-integration-directng
- *   2. **Hosted Fields** — embeds Tranzila's `thostedf.js` and renders the
+ *   2. **Hosted Fields** - embeds Tranzila's `thostedf.js` and renders the
  *      card inputs as styled iframes inside OUR OWN payment form, charged via
  *      a client-side `fields.charge()` call that requires a server-generated
  *      "handshake" token first. More customizable UI, but meaningfully more
@@ -40,12 +40,12 @@ import { PLANS, type PlanTier, type BillingInterval } from "./plans";
  *      client-side charge callback) for a inert/opt-in provider with zero
  *      paying subscribers today. Confirmed:
  *      https://docs.tranzila.com/docs/payments-and-billing/hosted-fields
- *   3. **JSON API v1** (`api.tranzila.com/v1`, HMAC-signed headers) —
+ *   3. **JSON API v1** (`api.tranzila.com/v1`, HMAC-signed headers) -
  *      documented, but `/transaction/credit_card/create` takes a raw
  *      `card_number` (not a saved token) for a debit/credit/cancel; it's a
  *      server-to-server "charge a card you already have on the wire" API, not
  *      a hosted card-capture page. Used below ONLY for `refundTransaction()`.
- * DECISION: keep the DirectNG hosted redirect for card capture (#1) — it's
+ * DECISION: keep the DirectNG hosted redirect for card capture (#1) - it's
  * the simplest integration (no PCI-adjacent card-handling code of our own),
  * it's what the 2026-07-31 version already targeted, and it's now backed by
  * an authoritative, current doc page rather than third-party inference.
@@ -56,7 +56,7 @@ import { PLANS, type PlanTier, type BillingInterval } from "./plans";
  * Charging a SAVED TranzilaTK token later (our own subscription-billing cron,
  * no customer interaction) is, per the current docs, only available through
  * Tranzila's own paid **My Billing / STO v2** module (₪80/mo, deliberately
- * excluded — see docs/payments/tranzila-integration.md). No free/DIY
+ * excluded - see docs/payments/tranzila-integration.md). No free/DIY
  * "charge this existing token for ₪X now" REST endpoint is documented
  * anywhere in the Payments & Billing section as of 2026-08-05. `chargeToken()`
  * below reflects that honestly (throws, does not guess) rather than shipping
@@ -82,16 +82,16 @@ const TRANZILA_API_V1_BASE = "https://api.tranzila.com/v1";
 const TRANZILA_TERMINAL = process.env.TRANZILA_TERMINAL || "";
 // TranzilaPW ("transaction password"). NOTE: the DirectNG hosted-iframe
 // parameter table (linked above) does NOT list a supplier/TranzilaPW field
-// at all — the terminal name is embedded in the URL path and nothing else is
+// at all - the terminal name is embedded in the URL path and nothing else is
 // required to open the hosted page. TRANZILA_PASSWORD is kept as a required
 // config gate anyway (isTranzilaConfigured() fails closed without it) purely
 // as a defensive default until the still-undocumented recurring-charge-by-
-// token path (see chargeToken() below) is confirmed with Tranzila support —
+// token path (see chargeToken() below) is confirmed with Tranzila support -
 // at that point it will either turn out to need TranzilaPW (legacy
 // convention) or nothing at all.
 const TRANZILA_PASSWORD = process.env.TRANZILA_PASSWORD || "";
 
-// JSON API v1 HMAC credentials — NEW as of the 2026-08-05 rebuild. The
+// JSON API v1 HMAC credentials - NEW as of the 2026-08-05 rebuild. The
 // legacy TranzilaPW convention has nothing to do with the JSON API; API v1
 // authenticates every request with 4 headers (app key, unix request time, a
 // 40-byte nonce, and an HMAC-SHA256 access token), confirmed here:
@@ -108,7 +108,7 @@ const TRANZILA_CURRENCY_ILS = "1";
 
 /**
  * True iff the minimum Tranzila credentials are present. Mirrors
- * isGrowConfigured()/isPolarConfigured() — every caller must gate on this
+ * isGrowConfigured()/isPolarConfigured() - every caller must gate on this
  * before touching the network, so a missing env var fails closed (503) at
  * the API route rather than sending a malformed request.
  *
@@ -147,12 +147,12 @@ export interface TranzilaRawResponse {
  * Builds the 4 HMAC authentication headers required by every JSON API v1
  * call. CONFIRMED 2026-08-05 against the identical formula given in 4
  * independent language examples (PHP, Node, Python, .NET) on
- * https://docs.tranzila.com/docs/payments-and-billing/authentication — all
+ * https://docs.tranzila.com/docs/payments-and-billing/authentication - all
  * four compute the SAME thing despite the prose description reading
  * ambiguously ("hash_hmac using 'sha256' on application key with secret +
  * request-time + nonce"): the HMAC **key** is `secret + requestTime + nonce`
  * concatenated, and the **message** being signed is the app key itself.
- * (e.g. PHP: `hash_hmac('sha256', $appKey, $secret . $time . $nonce)` — in
+ * (e.g. PHP: `hash_hmac('sha256', $appKey, $secret . $time . $nonce)` - in
  * PHP's `hash_hmac(algo, data, key)` signature, `data` is $appKey and `key`
  * is the secret+time+nonce string.)
  */
@@ -211,18 +211,18 @@ async function tranzilaApiV1Call(
   }
 
   // Log the raw response so developers can inspect real Tranzila responses.
-  // NEVER log the HMAC headers or app secret — only the response is logged.
+  // NEVER log the HMAC headers or app secret - only the response is logged.
   console.log(`[tranzila] API v1 ${path} -> ${res.status}`, raw);
 
   return { parsed, raw, status: res.status };
 }
 
 export interface CreateHostedPaymentOpts {
-  /** Charge amount (NIS) — see `tokenOnly` below for what this means when a
+  /** Charge amount (NIS) - see `tokenOnly` below for what this means when a
    * trial/token-only checkout is in progress. */
   sum: number;
   /** Browser redirect after success (user-facing). Tranzila POSTs/redirects
-   * the full transaction result here, including `TranzilaTK` — see the
+   * the full transaction result here, including `TranzilaTK` - see the
    * "How the token comes back" note below. */
   successUrl: string;
   /** Browser redirect after failure/cancel (user-facing). */
@@ -233,7 +233,7 @@ export interface CreateHostedPaymentOpts {
   /**
    * True for a first-time trial checkout where we only want a saved card
    * token, no real charge. Selects `tranmode=N` (SHVA J2 "checks card")
-   * instead of `tranmode=A` (standard debit) — see TOKEN_VALIDATION_AMOUNT
+   * instead of `tranmode=A` (standard debit) - see TOKEN_VALIDATION_AMOUNT
    * for why `sum` is still sent as a positive number even in this mode.
    */
   tokenOnly?: boolean;
@@ -248,18 +248,18 @@ export interface CreateHostedPaymentOpts {
  * ── How the token comes back (CONFIRMED, no server round trip needed) ──────
  * Per https://docs.tranzila.com/docs/payments-and-billing/iframe-integration-directng
  * ("Data Retrieval"): after the transaction completes, Tranzila POSTs/
- * redirects (customer's browser, GET or POST — POST is what we request via
+ * redirects (customer's browser, GET or POST - POST is what we request via
  * `success_url_address`/`fail_url_address`) the FULL transaction result,
  * including `TranzilaTK`, `Response`, `sum`, `currency`, `index`, `ccno`,
  * `cardtype`, directly to the successUrl we pass here. There is a SEPARATE,
  * OPTIONAL `notify_url_address` field for a simultaneous server-to-server
  * copy of the same payload ("If a Notify page is configured, the transaction
- * data will also be sent to it simultaneously") — useful as a
+ * data will also be sent to it simultaneously") - useful as a
  * tamper/reliability backstop, but not required to obtain the token.
  * CONCLUSION: a callback ROUTE is still needed (to receive and parse the
  * POST to successUrl and persist the token + activate the plan), but it does
  * NOT need to be a dedicated Tranzila-initiated server callback distinct
- * from the browser's own return trip — unlike Grow, there is no separate
+ * from the browser's own return trip - unlike Grow, there is no separate
  * "create a payment process, then poll/callback" step. This callback route
  * is NOT built yet (see docs/payments/tranzila-integration.md).
  */
@@ -274,11 +274,11 @@ export function buildHostedPaymentUrl(opts: CreateHostedPaymentOpts): string {
   // table): tranmode=A is a standard debit; tranmode=N is SHVA "J2 - Checks
   // Card" verification, which validates the card WITHOUT capturing funds
   // (contrast with tranmode=V, "J5", which explicitly "takes credit limit on
-  // the amount specified" — i.e. only V holds funds; N does not). `sum` is
+  // the amount specified" - i.e. only V holds funds; N does not). `sum` is
   // still required as a positive number in N-mode (the field's stated type
   // is "Positive Decimal Number" with no zero/empty carve-out, and the
-  // `hidesum` parameter — which explicitly exists to hide `sum` from the
-  // customer "only if ... tranmode=V or tranmode=K or tranmode=N" — implies
+  // `hidesum` parameter - which explicitly exists to hide `sum` from the
+  // customer "only if ... tranmode=V or tranmode=K or tranmode=N" - implies
   // `sum` is still transmitted, just not charged, in this mode). This is why
   // TOKEN_VALIDATION_AMOUNT stays a positive ₪1 rather than becoming 0: the
   // number satisfies the field's format requirement, but tranmode=N means it
@@ -308,7 +308,7 @@ export interface ChargeTokenOpts {
 }
 
 /**
- * NOT IMPLEMENTED — intentionally throws rather than guessing.
+ * NOT IMPLEMENTED - intentionally throws rather than guessing.
  *
  * Charging a previously saved TranzilaTK token, server-to-server, with no
  * customer interaction, is required for our own `subscription-billing` cron
@@ -317,21 +317,21 @@ export interface ChargeTokenOpts {
  * section outside the paid My Billing / STO v2 module:
  *   - JSON API v1's `/transaction/credit_card/create` (the only
  *     server-to-server charge endpoint in the OpenAPI spec) takes a raw
- *     `card_number` + `expire_month` + `expire_year`, NOT a saved token —
+ *     `card_number` + `expire_month` + `expire_year`, NOT a saved token -
  *     there is no `token` field in `transactionCreditCardCreate`.
  *   - STO v2's `/sto/create` DOES accept `card.token`, but the entire STO
  *     module is explicitly gated as a paid module ("This is a paid module.
- *     Please contact sales to use this module.") — the ₪80/mo My Billing
+ *     Please contact sales to use this module.") - the ₪80/mo My Billing
  *     add-on we deliberately excluded (see
  *     docs/payments/tranzila-integration.md).
  * The pre-2026-08-05 version of this function guessed at reusing the legacy
  * CGI charge convention (TranzilaTK + TranzilaPW posted to
  * tranzila71u.cgi) based on third-party gateway source code, not Tranzila's
- * own docs — that guess is removed rather than kept, because shipping a call
+ * own docs - that guess is removed rather than kept, because shipping a call
  * to an endpoint nobody has confirmed still exists is worse than clearly
  * blocking here.
  *
- * TODO(verify): ask Tranzila support/sales directly — "does our server have
+ * TODO(verify): ask Tranzila support/sales directly - "does our server have
  * any way to charge a previously-issued TranzilaTK token for a set amount,
  * without the My Billing module, and if so what is the exact endpoint and
  * required parameters?" If the answer is "no, only via My Billing", the real
@@ -361,23 +361,23 @@ export interface RefundOpts {
  * transaction type. CONFIRMED 2026-08-05 against the official OpenAPI v1
  * spec (`/transaction/credit_card/create`, `txn_type` enum includes
  * `cancel`, code example: `{"terminal_name": ..., "txn_type": "cancel",
- * "reference_txn_id": 12345, "authorization_number": "0000000"}` — no card
+ * "reference_txn_id": 12345, "authorization_number": "0000000"}` - no card
  * data required for `cancel`, unlike `credit` which re-requires a full card
  * number).
  *
  * Success detection: `error_code === 0` at the top level (API v1's own
- * convention — NOT the legacy `Response === "000"` used by the DirectNG
+ * convention - NOT the legacy `Response === "000"` used by the DirectNG
  * hosted-page redirect). The nested `transaction_result.processor_response_code`
  * mirrors the same SHVA codes as the redirect flow's `Response` field for
  * additional detail.
  *
  * TODO(verify against a live sandbox terminal): whether `cancel` works for a
  * transaction from a prior day, or is restricted to same-day voids (SHVA
- * same-day-void windows are the norm across Israeli processors — Tranzila's
+ * same-day-void windows are the norm across Israeli processors - Tranzila's
  * own docs don't state a time limit for `cancel`). If `cancel` is same-day
  * only, a genuine multi-day refund would need `txn_type: credit`, which per
  * the spec's own code example requires re-submitting full card data
- * (card_number/expire_month/expire_year/cvv) — something we deliberately do
+ * (card_number/expire_month/expire_year/cvv) - something we deliberately do
  * NOT store (we only keep the TranzilaTK token). Ask Tranzila support
  * directly whether `credit` can reference a token instead of raw card data.
  */
@@ -407,7 +407,7 @@ export function getPlanPrice(tier: PlanTier, interval: BillingInterval): number 
 
 /**
  * The nominal amount (NIS) sent in the `sum` field of a trial/token-only
- * hosted-page checkout. NOT actually captured from the card in that case —
+ * hosted-page checkout. NOT actually captured from the card in that case -
  * see the `tranmode` comment in buildHostedPaymentUrl() for why: DirectNG's
  * `tranmode=N` (SHVA "J2 - Checks Card") verifies the card without taking
  * funds, but the `sum` field itself is documented as a required "Positive
@@ -415,7 +415,7 @@ export function getPlanPrice(tier: PlanTier, interval: BillingInterval): number 
  * must still be sent. TODO(verify on first live sandbox test): confirm that
  * tranmode=N genuinely results in a ₪0 statement impact (the docs describe
  * it as "checks card" in contrast to tranmode=V which explicitly "takes
- * credit limit" — strongly implying no capture — but this has not been
+ * credit limit" - strongly implying no capture - but this has not been
  * exercised against a real terminal).
  */
 export const TOKEN_VALIDATION_AMOUNT = 1;

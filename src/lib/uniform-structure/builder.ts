@@ -66,7 +66,7 @@ export function buildUniformStructure(input: UniformInput): UniformOutput {
     taxYear: input.taxYear,
     generatedAt: new Date(),
     // Registered software name at רשות המסים. Deliberately NOT renamed with
-    // the 2026-07-29 rebrand to "MyFriendlyInvoiceApp" — the מבנה אחיד file
+    // the 2026-07-29 rebrand to "MyFriendlyInvoiceApp" - the מבנה אחיד file
     // must match the registration. Changing it requires re-registering first.
     softwareName: input.softwareName ?? "MySuperFriendlyInvoiceApp",
     softwareVersion: input.softwareVersion ?? "1.0",

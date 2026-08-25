@@ -44,7 +44,7 @@ function docWording(type?: DocumentType): { attached: string; noun: string } {
   return { attached: `${type === "proforma" ? "מצורף" : "מצורפת"} ${label}`, noun: label };
 }
 
-// The email's default look — the same orange→rose gradient the app's
+// The email's default look - the same orange→rose gradient the app's
 // marketing chrome has always used. Kept as named constants (not inlined at
 // each call site) so the "no document design chosen" fallback is visibly
 // the exact pre-feature value, never a value that drifted.
@@ -73,9 +73,9 @@ export function buildHtml(args: {
   /**
    * The business's chosen document-design accent, already resolved to CSS
    * values by the caller via `ACCENT_HEX[normalizeDocumentDesign(...).accent]`
-   * — never a raw string read off the DB. `grad` themes the header band,
+   * - never a raw string read off the DB. `grad` themes the header band,
    * `solid` themes the CTA button and inline link colors. Omit (or pass
-   * undefined) to keep the original orange/rose look — the behaviour for
+   * undefined) to keep the original orange/rose look - the behaviour for
    * every business that hasn't chosen a document design.
    */
   accent?: { grad: string; solid: string };

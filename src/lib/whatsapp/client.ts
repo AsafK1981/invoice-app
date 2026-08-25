@@ -26,7 +26,7 @@ export function whatsappConfigured(): boolean {
  *
  * MUST be given the raw text, not a re-serialised object: JSON.stringify does
  * not round-trip byte-for-byte (key order, unicode escaping), so re-serialising
- * would make every signature fail — or worse, tempt someone to skip the check.
+ * would make every signature fail - or worse, tempt someone to skip the check.
  *
  * Same posture as the Polar billing webhook: an unverified body is an anonymous
  * internet POST that can create tax documents, so a failed check is a hard 401.
@@ -84,7 +84,7 @@ export interface Button {
 }
 
 /**
- * Interactive reply buttons — the confirmation gate.
+ * Interactive reply buttons - the confirmation gate.
  *
  * This is the mechanism that keeps a misparsed sentence from becoming a real
  * tax document: the bot proposes, the user taps, and only the tap writes.

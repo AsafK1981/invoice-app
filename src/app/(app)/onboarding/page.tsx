@@ -81,7 +81,7 @@ export default function OnboardingPage() {
 
   // The exact object saved to the DB by saveBusinessAndAdvance. The `design`
   // step's "use this design" action needs to merge document_design onto the
-  // business record — but the `business` value from useBusiness() only
+  // business record - but the `business` value from useBusiness() only
   // refreshes asynchronously after a save (it refetches on a window event),
   // so reading it back immediately after saveBusinessAndAdvance could still
   // see the pre-save snapshot and silently revert the fields the user just
@@ -127,7 +127,7 @@ export default function OnboardingPage() {
       setSavedBusiness(merged);
 
       // Only offer the design suggestion when it's a confident match (not
-      // 'general' — never nudge a user who gave no usable signal) AND the
+      // 'general' - never nudge a user who gave no usable signal) AND the
       // business hasn't already picked a design (respects "existing users
       // keep gold unless they choose"; here that means don't second-guess a
       // choice already on the record).

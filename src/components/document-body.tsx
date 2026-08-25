@@ -111,7 +111,7 @@ interface Props {
   copy?: boolean;
   /**
    * Whether to print the small "הופק באמצעות …" credit in the footer.
-   * Defaults to `true` — the growth loop that puts the app in front of every
+   * Defaults to `true` - the growth loop that puts the app in front of every
    * recipient. PAID subscribers get it suppressed (standard SaaS behaviour,
    * and a genuine upgrade incentive); the caller decides, since only the
    * server knows the document owner's plan. See
@@ -448,12 +448,12 @@ export function DocumentBody({
         </div>
         {showBranding && (
           // Growth loop: every document this app produces is seen by the
-          // sender's CLIENT — often an עצמאי who needs invoicing themselves.
+          // sender's CLIENT - often an עצמאי who needs invoicing themselves.
           // The credit is therefore a real <a>, not the inert text it was
           // before, and keeps the bare domain visible so it still works as a
           // call to action on PAPER/PDF (where nothing is clickable).
           // Deliberately restrained: this is a tax document, so it stays a
-          // 10px footnote — the explicit CTA lives on the screen-only /view
+          // 10px footnote - the explicit CTA lives on the screen-only /view
           // page instead, where it can't cheapen the printed document.
           <div className="doc-foot-brand">
             הופק באמצעות{" "}

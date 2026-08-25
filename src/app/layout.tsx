@@ -78,7 +78,7 @@ const assistant = localFont({
   display: "swap",
 });
 // Added for the profession-tailored document design feature (2026-08).
-// Same self-hosted next/font/local pattern as the three fonts above — see
+// Same self-hosted next/font/local pattern as the three fonts above - see
 // the block comment there for why (no Google Fonts CDN call at request
 // time, ever, including from the PDF route's headless Chrome). Both are
 // only ever referenced by document-paper.css's --d-font/--d-font-serif
