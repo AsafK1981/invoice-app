@@ -42,6 +42,7 @@ import { todayInIsrael } from "@/lib/date";
 import { AllocationConnectBanner } from "@/components/allocation-connect-banner";
 import { AllocationNextStepCard } from "@/components/allocation-next-step-card";
 import { Expander } from "@/components/expander";
+import { BusinessFormModal } from "@/components/business-form-modal";
 import { useTaxAuthorityStatus } from "@/lib/use-tax-authority-status";
 import { getClientDefaults } from "@/lib/client-defaults";
 import { getRecurringPrefill } from "@/lib/recurring-prefill";
@@ -99,6 +100,10 @@ function formatDateHe(iso: string): string {
 
 export function ReceiptEditor({ business, clients, products, documentType = "receipt" }: Props) {
   const router = useRouter();
+  // Opens the business-details modal straight from the "profile incomplete"
+  // block below, so a user who is one field away from issuing fixes it here
+  // instead of being sent to /settings and losing what they just filled in.
+  const [bizModalOpen, setBizModalOpen] = useState(false);
   const searchParams = useSearchParams();
   const fromDocId = searchParams.get("from");
   const resumeDraftId = searchParams.get("draft");
@@ -2669,9 +2674,20 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                 <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-rose-600" />
                 <span>
                   לפני הפקת מסמך יש להשלים את שם העסק ומספר העוסק/ח.פ.{" "}
-                  <a href="/settings" className="font-semibold underline hover:text-rose-900">
-                    להשלמת פרטי העסק בהגדרות ←
-                  </a>
+                  {/* Was a link to /settings. Onboarding deliberately stopped
+                      requiring the tax ID (requiring it was the biggest hole
+                      in the signup funnel), so the first time a user meets
+                      this rule is HERE - already in the editor, with a filled
+                      document in front of them. Sending them to another page
+                      at that exact moment is where they leave. The same modal
+                      settings uses is opened in place instead. */}
+                  <button
+                    type="button"
+                    onClick={() => setBizModalOpen(true)}
+                    className="font-semibold underline hover:text-rose-900"
+                  >
+                    להשלמת פרטי העסק כאן ←
+                  </button>
                 </span>
               </div>
             )}
@@ -2773,6 +2789,18 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
     <EmailVerificationModal
       open={emailVerifyModalOpen}
       onClose={() => setEmailVerifyModalOpen(false)}
+    />
+    {/* `business` is a server-passed prop, so after the modal saves we ask the
+        route to re-render rather than mutating local state - that way the
+        gate's isPlaceholder* checks re-run against what was actually stored,
+        not against what we hoped was stored. */}
+    <BusinessFormModal
+      open={bizModalOpen}
+      onClose={() => {
+        setBizModalOpen(false);
+        router.refresh();
+      }}
+      business={business}
     />
     </>
   );
