@@ -301,7 +301,7 @@ export function DocumentDesignSection() {
                 }`}
               >
                 <span
-                  className="w-full truncate text-base leading-tight text-stone-900"
+                  className="w-full line-clamp-2 break-words text-base leading-tight text-stone-900"
                   style={{ fontFamily: opt.family, fontSize: opt.nameScale ? `${opt.nameScale}em` : undefined }}
                   title={`${fontSampleName} · 0118`}
                 >
