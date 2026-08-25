@@ -178,6 +178,14 @@ export function parseBkmvdataText(text: string): UniformParseResult {
     // Dedupe repeated item descriptions (a 40-line invoice of the same service
     // reads as one subject), cap the length so the preview stays a table.
     const description = Array.from(new Set(h.items)).join(" | ").slice(0, 300);
+    // Credit notes (330): vendors disagree on whether C100 carries them
+    // negative or positive. The document importer (mapDocumentRow) rejects
+    // total <= 0 and applies sign = -1 to credit notes itself on save, so hand
+    // it the magnitude and let the type carry the sign, whichever way the
+    // vendor wrote it.
+    const isCredit = h.type === "330";
+    const total = isCredit ? Math.abs(h.total) : h.total;
+    const vat = isCredit ? Math.abs(h.vat) : h.vat;
     rows.push({
       "סוג מסמך": TYPE_LABEL[h.type] ?? h.type,
       "מספר מסמך": h.number,
@@ -185,8 +193,8 @@ export function parseBkmvdataText(text: string): UniformParseResult {
       "שם לקוח": h.clientName,
       "ח.פ / ת.ז": h.clientTaxId,
       "טלפון": h.phone,
-      'סה"כ': money(h.total),
-      'מע"מ': money(h.vat),
+      'סה"כ': money(total),
+      'מע"מ': money(vat),
       "סטטוס": h.cancelled ? "מבוטל" : "",
       "תיאור": description,
     });

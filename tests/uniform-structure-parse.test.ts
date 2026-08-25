@@ -59,7 +59,7 @@ describe("parseBkmvdataText", () => {
     expect(row["תיאור"]).toBe("הופעה - אוגוסט");
   });
 
-  it("flags cancelled documents and keeps credit notes negative", () => {
+  it("flags cancelled documents and hands credit notes over as magnitudes", () => {
     const cancelled = doc({ number: 7, status: "cancelled", type: "receipt" });
     const credit = doc({ number: 8, type: "credit_note", subtotal: -500, vat: -90, total: -590 });
     const text = buildC100({ recordNum: 2, meta, doc: cancelled, client: null }) + buildC100({ recordNum: 3, meta, doc: credit, client: null });
@@ -69,7 +69,9 @@ describe("parseBkmvdataText", () => {
     expect(out.rows[0]["סוג מסמך"]).toBe("קבלה");
     expect(out.rows[0]["סטטוס"]).toBe("מבוטל");
     expect(out.rows[1]["סוג מסמך"]).toBe("חשבונית זיכוי");
-    expect(out.rows[1]['סה"כ']).toBe("-590");
+    // mapDocumentRow rejects total <= 0 and negates credit notes itself
+    expect(out.rows[1]['סה"כ']).toBe("590");
+    expect(out.rows[1]['מע"מ']).toBe("90");
   });
 
   it("adopts item lines that arrive before their header and skips unknown records", () => {
