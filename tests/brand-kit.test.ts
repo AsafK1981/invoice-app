@@ -78,7 +78,7 @@ describe("interpretRawBrandKit: trusts nothing from the model", () => {
       hasLogo: "true",
       logoDescription: "a".repeat(500),
       businessName: null,
-      notes: "הברנדבוק לא מציין גופן",
+      notes: "קובץ המיתוג לא מציין גופן",
     });
     expect(kit.colors).toEqual([
       { hex: "#1b2a4a", role: "primary", estimated: false },

@@ -169,10 +169,10 @@ export function matchBrandFont(fonts: BrandFont[]): { key: FontKey; reason: stri
     const label = FONT_OPTIONS[m.key].label;
     return {
       key: m.key,
-      reason: m.exact ? `גופן: ${label} (כמו בברנדבוק)` : `גופן: ${f.name} -> ${label} (הקרוב ביותר מבין גופני האפליקציה)`,
+      reason: m.exact ? `גופן: ${label} (כמו בקובץ המיתוג)` : `גופן: ${f.name} -> ${label} (הקרוב ביותר מבין גופני האפליקציה)`,
     };
   }
-  return { key: "heebo", reason: fonts.length ? `גופן: לא זוהה גופן מוכר (${fonts[0].name}), נשאר Heebo` : "גופן: לא צוין בברנדבוק, נשאר Heebo" };
+  return { key: "heebo", reason: fonts.length ? `גופן: לא זוהה גופן מוכר (${fonts[0].name}), נשאר Heebo` : "גופן: לא צוין בקובץ המיתוג, נשאר Heebo" };
 }
 
 function rank(role: BrandFontRole): number {

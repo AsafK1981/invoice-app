@@ -32,7 +32,7 @@ const MAX_TOTAL_BASE64 = 4_400_000;
 export async function POST(req: NextRequest) {
   try {
     if (!anthropicKey) {
-      return NextResponse.json({ ok: false, error: "ייבוא ברנדבוק לא מוגדר במערכת. נדרש מפתח Anthropic." }, { status: 503 });
+      return NextResponse.json({ ok: false, error: "ייבוא קובץ מיתוג לא מוגדר במערכת. נדרש מפתח Anthropic." }, { status: 503 });
     }
 
     const ip = clientIp(req);
@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
       // Fail open, like the scanner: a bug in the counter must not block the feature.
     } else if ((monthlyCount as number) > MONTHLY_BRAND_IMPORT_CAP) {
       return NextResponse.json(
-        { ok: false, error: `חרגת ממכסת ייבוא הברנדבוק החודשית (${MONTHLY_BRAND_IMPORT_CAP} לחודש).` },
+        { ok: false, error: `חרגת ממכסת ייבוא קובצי המיתוג החודשית (${MONTHLY_BRAND_IMPORT_CAP} לחודש).` },
         { status: 429 },
       );
     }
@@ -121,6 +121,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, kit: outcome.kit, usage: { count: monthlyCount ?? null, cap: MONTHLY_BRAND_IMPORT_CAP } });
   } catch (err) {
     console.error("[brand-import] failed:", err);
-    return NextResponse.json({ ok: false, error: "ייבוא הברנדבוק נכשל. נסה שוב." }, { status: 500 });
+    return NextResponse.json({ ok: false, error: "ייבוא קובץ המיתוג נכשל. נסה שוב." }, { status: 500 });
   }
 }

@@ -271,7 +271,7 @@ export function DocumentDesignSection() {
         <div className="space-y-3">
           {draft.brandColor && (
             <div>
-              <div className="text-[11px] font-semibold text-stone-500 mb-1.5">צבע המותג (מהברנדבוק)</div>
+              <div className="text-[11px] font-semibold text-stone-500 mb-1.5">צבע המותג (מקובץ המיתוג)</div>
               <div className="flex items-center gap-2">
                 <span
                   aria-pressed="true"

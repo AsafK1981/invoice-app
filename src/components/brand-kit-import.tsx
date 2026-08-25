@@ -51,7 +51,7 @@ export function BrandKitImport({
       files.find((f) => LOGO_TYPES.has(f.type));
     const analyzable = files.filter((f) => ANALYZABLE.has(f.type)).slice(0, 3);
     if (analyzable.length === 0 && !logoFile) {
-      setError("לא זוהה קובץ מתאים. העלה PDF של הברנדבוק ו/או לוגו (PNG, JPG, WebP, SVG).");
+      setError("לא זוהה קובץ מתאים. העלה את קובץ המיתוג (PDF) ו/או לוגו (PNG, JPG, WebP, SVG).");
       return;
     }
 
@@ -65,14 +65,14 @@ export function BrandKitImport({
 
       let kit: BrandKit | null = null;
       if (analyzable.length > 0) {
-        setStep("קורא את הברנדבוק...");
+        setStep("קורא את קובץ המיתוג...");
         const payload: { data: string }[] = [];
         let total = 0;
         for (const f of analyzable) {
           const data = await prepareFile(f);
           total += Math.ceil((data.length * 3) / 4);
           if (total > MAX_TOTAL_BYTES) {
-            throw new Error("הקבצים גדולים מדי (עד 3MB יחד). ייצא מהברנדבוק רק את העמודים של הצבעים והגופנים, או צלם אותם.");
+            throw new Error("הקבצים גדולים מדי (עד 3MB יחד). ייצא מקובץ המיתוג רק את העמודים של הצבעים והגופנים, או צלם אותם.");
           }
           payload.push({ data });
         }
@@ -84,7 +84,7 @@ export function BrandKitImport({
           body: JSON.stringify({ files: payload }),
         });
         const json = await res.json().catch(() => null);
-        if (!res.ok || !json?.ok) throw new Error(json?.error || "ייבוא הברנדבוק נכשל. נסה שוב.");
+        if (!res.ok || !json?.ok) throw new Error(json?.error || "ייבוא קובץ המיתוג נכשל. נסה שוב.");
         kit = json.kit as BrandKit;
       }
 
@@ -101,11 +101,11 @@ export function BrandKitImport({
       const summary = onApply(effectiveKit, logoUrl);
       const lines = [...summary];
       if (logoUrl) lines.push("לוגו: הועלה והוצב על המסמך");
-      else if (effectiveKit.hasLogo) lines.push("לוגו: יש לוגו בברנדבוק, אבל אי אפשר לחלץ אותו מ-PDF. גרור לכאן את קובץ הלוגו (PNG/SVG) והוא יתווסף.");
+      else if (effectiveKit.hasLogo) lines.push("לוגו: יש לוגו בקובץ המיתוג, אבל אי אפשר לחלץ אותו מ-PDF. גרור לכאן את קובץ הלוגו (PNG/SVG) והוא יתווסף.");
       setResult({ kit: effectiveKit, logoUrl, summary: lines });
       setPhase("done");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "ייבוא הברנדבוק נכשל.");
+      setError(e instanceof Error ? e.message : "ייבוא קובץ המיתוג נכשל.");
       setPhase("error");
     } finally {
       setStep("");
@@ -119,11 +119,11 @@ export function BrandKitImport({
     <div className="rounded-2xl border border-orange-100 bg-orange-50/40 p-4">
       <div className="flex items-center gap-2 mb-1">
         <Sparkles className="w-4 h-4 text-orange-500" />
-        <h3 className="text-sm font-semibold text-stone-900">ייבוא ברנדבוק</h3>
+        <h3 className="text-sm font-semibold text-stone-900">ייבוא קובץ מיתוג</h3>
       </div>
       <p className="text-xs text-stone-600 mb-3 leading-relaxed">
-        יש לך ברנדבוק או קובץ מיתוג? העלה אותו (PDF) יחד עם הלוגו, ונחיל את הצבעים, הגופן והלוגו על
-        המסמך בבת אחת. אפשר גם רק לוגו: ניקח ממנו את הצבע.
+        קיבלת מהמעצב קובץ מיתוג (PDF עם הלוגו, הצבעים והגופנים)? העלה אותו יחד עם הלוגו ונחיל הכל
+        על המסמך בבת אחת. אפשר גם רק לוגו: ניקח ממנו את הצבע.
       </p>
 
       <button
@@ -152,7 +152,7 @@ export function BrandKitImport({
         ) : (
           <>
             <Upload className="w-5 h-5 text-orange-500" />
-            <span className="font-medium text-stone-800">גרור לכאן את הברנדבוק והלוגו, או לחץ לבחירה</span>
+            <span className="font-medium text-stone-800">גרור לכאן את קובץ המיתוג והלוגו, או לחץ לבחירה</span>
             <span className="text-[11px] text-stone-500">PDF, PNG, JPG, WebP, SVG · עד 3 קבצים · עד 3MB יחד</span>
           </>
         )}
