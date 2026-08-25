@@ -139,6 +139,10 @@ export function DocumentDesignSection() {
   const vatRate = getVatRate(business);
   const vat = vatRate > 0 ? calculateVat(SAMPLE_SUBTOTAL, vatRate) : 0;
   const previewBusiness = { ...business, documentDesign: draft };
+  // The font swatches render the user's OWN business name (the text the
+  // handwriting fonts actually apply to), never a hardcoded person's name.
+  // Before the user has filled in a name, fall back to a generic label.
+  const fontSampleName = business.name?.trim() || "שם העסק שלך";
 
   const editPanel = (
     <div className="space-y-6">
@@ -300,7 +304,7 @@ export function DocumentDesignSection() {
                   className="text-base leading-tight text-stone-900 whitespace-nowrap"
                   style={{ fontFamily: opt.family, fontSize: opt.nameScale ? `${opt.nameScale}em` : undefined }}
                 >
-                  אסף קוטלר · 0118
+                  {fontSampleName} · 0118
                 </span>
                 <span className="text-[11px] text-stone-500 leading-tight">
                   {opt.label} · {opt.hint}
