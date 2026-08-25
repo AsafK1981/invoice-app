@@ -62,7 +62,7 @@ const FAQ_ITEMS: { q: string; a: string }[] = [
     // entities are its three step groups (clients / products / document
     // history). No duration is promised - the wizard does not measure one.
     q: "אני כבר עובד עם תוכנה אחרת. כמה כואב לעבור?",
-    a: "יש אשף מעבר ייעודי ל-Invoice4U, Morning (חשבונית ירוקה), iCount, ריווחית וחשבשבת, וגם מסלול Excel לכל תוכנה אחרת. מעלים את קובצי הייצוא מהתוכנה הישנה, והמערכת מייבאת אוטומטית לקוחות, מוצרים, הוצאות והיסטוריית מסמכים - בלי להקליד שום דבר מחדש.",
+    a: "יש אשף מעבר ייעודי ל-Invoice4U, Morning (חשבונית ירוקה), iCount, ריווחית, חשבשבת, EZcount, SUMIT, iFreelance, MyBooks, YPAY, Priority Zoom, תמ\"ל וכספית, וגם מסלול Excel לכל תוכנה אחרת. מעלים את קובצי הייצוא מהתוכנה הישנה, והמערכת מייבאת אוטומטית לקוחות, מוצרים, הוצאות והיסטוריית מסמכים - בלי להקליד שום דבר מחדש.",
   },
   {
     q: "מה זה מספר הקצאה ואיך זה עובד כאן?",

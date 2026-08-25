@@ -130,8 +130,8 @@ export function OnboardingChecklist({ business, clients, products, documents }: 
               מגיע מתוכנת חשבוניות אחרת?
             </p>
             <p className="text-xs text-stone-700 mt-0.5">
-              <Ltr>Invoice4U</Ltr> · חשבונית ירוקה · <Ltr>iCount</Ltr> · ריווחית ·{" "}
-              <Ltr>Morning</Ltr> · חשבשבת: מדריך מעבר לכולם
+              <Ltr>Invoice4U</Ltr> · <Ltr>Morning</Ltr> · <Ltr>iCount</Ltr> · <Ltr>EZcount</Ltr> ·{" "}
+              <Ltr>SUMIT</Ltr> · ריווחית · חשבשבת ועוד: מדריך מעבר ל-13 תוכנות
             </p>
           </div>
           <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700">

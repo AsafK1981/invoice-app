@@ -115,8 +115,8 @@ export function EmptyState({
       {showMigrateHint && (
         <div className="mt-6 pt-6 border-t border-orange-100 max-w-md mx-auto">
           <p className="text-xs text-stone-600">
-            מגיע מ-<Ltr>Invoice4U</Ltr>, חשבונית ירוקה, <Ltr>iCount</Ltr>, ריווחית או{" "}
-            <Ltr>Excel</Ltr>?{" "}
+            מגיע מ-<Ltr>Invoice4U</Ltr>, <Ltr>Morning</Ltr>, <Ltr>iCount</Ltr>, <Ltr>EZcount</Ltr>,{" "}
+            <Ltr>SUMIT</Ltr>, ריווחית או <Ltr>Excel</Ltr>?{" "}
             <Link
               href="/migrate"
               className="text-orange-700 font-semibold hover:text-orange-900 underline"

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Sparkles,
@@ -41,6 +41,14 @@ type Vendor =
   | "rivhit"
   | "morning"
   | "hashavshevet"
+  | "ezcount"
+  | "sumit"
+  | "mybooks"
+  | "ypay"
+  | "ifreelance"
+  | "caspit"
+  | "priority"
+  | "accountbook"
   | "other"
   | null;
 type EntityType = "clients" | "products" | "documents" | "expenses";
@@ -79,11 +87,18 @@ const GENERIC_STEPS = (loginUrl: string, vendorName: string): ExportStep[] => [
     steps: [
       'נווט אל "מסמכים" / "חשבוניות"',
       "הגדר טווח תאריכים: מומלץ השנה הנוכחית + 2 שנים אחורה",
-      "ייצוא ל-CSV או Excel",
+      'אם יש "ייצוא במבנה אחיד" (קובץ ZIP לרשות המסים) - עדיף: כל המסמכים בקובץ אחד, וגוררים אותו כמו שהוא',
+      "אחרת: ייצוא ל-CSV או Excel",
       "ודא שמספרים רצים נשמרים, חשוב לרצף לרשות המיסים",
     ],
   },
 ];
+
+// Nearly every Israeli tool exports its full document history only as the Tax
+// Authority's מבנה אחיד ZIP (BKMVDATA.TXT + INI.TXT). The bulk zone reads that
+// ZIP directly (src/lib/uniform-structure/parse.ts), so the guides below point
+// people at it instead of hunting for an Excel button that covers one report.
+const ZIP_STEP = "יורד קובץ ZIP. אל תפתח אותו - גוררים אותו כמו שהוא לשלב הייבוא למטה, המערכת קוראת אותו";
 
 const EXPORT_GUIDES: Record<Exclude<Vendor, null>, ExportStep[]> = {
   invoice4u: [
@@ -144,6 +159,181 @@ const EXPORT_GUIDES: Record<Exclude<Vendor, null>, ExportStep[]> = {
     },
   ],
   hashavshevet: GENERIC_STEPS("https://www.hashavshevet.co.il", "חשבשבת"),
+  ezcount: [
+    {
+      title: "ייצוא לקוחות",
+      steps: [
+        "התחבר ל-EZcount",
+        'בתפריט לחץ "לקוחות"',
+        'לחץ "פעולות נוספות" ובחר "ייצוא פרטי קשר"',
+        "שמור את קובץ ה-Excel שירד",
+      ],
+      link: "https://www.ezcount.co.il/front/auth/login",
+    },
+    {
+      title: "ייצוא מוצרים / שירותים",
+      steps: [
+        'בתפריט לחץ "פריטים"',
+        "חפש כפתור ייצוא או הדפסה מעל הרשימה. אם אין, דלג: פריטים אפשר להוסיף גם אחר כך",
+      ],
+    },
+    {
+      title: "ייצוא היסטוריית מסמכים",
+      steps: [
+        'בתפריט לחץ "דוחות", ואז "דוחות לרשויות" ואז "מבנה קבצים אחיד לרשות המסים"',
+        "הגדר טווח תאריכים (מומלץ: מתחילת הפעילות עד היום)",
+        'לחץ "יצא נתונים" ובדוק את הסיכום שמוצג (כמה מסמכים מכל סוג)',
+        ZIP_STEP,
+      ],
+    },
+  ],
+  sumit: [
+    {
+      title: "ייצוא לקוחות",
+      steps: [
+        "התחבר ל-SUMIT",
+        'בתפריט לחץ "לקוחות"',
+        "חפש כפתור ייצוא ל-Excel מעל הרשימה. אם אין, דלג: הלקוחות נוצרים לבד מהמסמכים בשלב הבא",
+      ],
+      link: "https://app.sumit.co.il",
+    },
+    {
+      title: "ייצוא מוצרים / שירותים",
+      steps: ['בתפריט לחץ "מוצרים" או "קטלוג"', "ייצוא ל-Excel, אם קיים. אחרת דלג"],
+    },
+    {
+      title: "ייצוא היסטוריית מסמכים",
+      steps: [
+        'עבור אל "הנהלת חשבונות" ואז "יצוא במבנה אחיד" (או ישירות: app.sumit.co.il/accounting/openformat)',
+        'לחץ "אפשרויות נוספות" ובחר "יצוא במבנה אחיד"',
+        'בחר "טווח תאריכים" (מומלץ: מתחילת הפעילות) ולחץ "יצוא"',
+        ZIP_STEP,
+      ],
+    },
+  ],
+  mybooks: [
+    {
+      title: "ייצוא לקוחות",
+      steps: [
+        "התחבר ל-MyBooks",
+        "פתח את רשימת הלקוחות",
+        "לחץ על סמל הייצוא מעל הטבלה, ואז על הכפתור שמופיע לאישור הייצוא ל-Excel",
+        "שמור את הקובץ",
+      ],
+      link: "https://www.mybooks.co.il/login",
+    },
+    {
+      title: "ייצוא מוצרים / שירותים",
+      steps: ["פתח את מסך המוצרים / ניהול מלאי", "סמל הייצוא מעל הטבלה, ואז אישור הייצוא ל-Excel"],
+    },
+    {
+      title: "ייצוא היסטוריית מסמכים",
+      steps: [
+        'לחץ "הגדרות" ואז "ייצוא קבצים במבנה אחיד"',
+        "בחר טווח תאריכים (מומלץ: מתחילת הפעילות) ולחץ על סמל ההורדה",
+        ZIP_STEP,
+        "לחלופין: מסך המסמכים, סינון לפי תאריכים, סמל הייצוא ל-Excel",
+      ],
+    },
+  ],
+  ypay: [
+    {
+      title: "ייצוא לקוחות",
+      steps: [
+        "התחבר ל-YPAY",
+        'בתפריט הצד לחץ "פעולות נוספות" ובחר "יצוא לקוחות/ספקים"',
+        'לחץ "לחץ ליצוא" ושמור את קובץ ה-Excel',
+      ],
+      link: "https://ypay.co.il/front/login",
+    },
+    {
+      title: "ייצוא מוצרים / שירותים",
+      steps: ['פתח את "הגדרת פריטים"', "אם יש כפתור ייצוא, שמור את הקובץ. אחרת דלג: פריטים אפשר להוסיף אחר כך"],
+    },
+    {
+      title: "ייצוא היסטוריית מסמכים",
+      steps: [
+        'בתפריט הצד לחץ "פעולות נוספות" ובחר "קבצים אחידים"',
+        "הזן טווח תאריכים (מומלץ: מתחילת הפעילות)",
+        'לחץ "להורדת הקבצים"',
+        ZIP_STEP,
+      ],
+    },
+  ],
+  ifreelance: GENERIC_STEPS("https://www.ifreelance.co.il/?action=login", "iFreelance"),
+  caspit: [
+    {
+      title: "ייצוא לקוחות",
+      steps: [
+        "התחבר לכספית",
+        'בתפריט לחץ "תחזוקה" ואז "יצוא ויבוא"',
+        'בחר "יצוא לקוחות וספקים" ושמור את קובץ ה-Excel',
+      ],
+      link: "https://app.caspit.biz/Home/Login",
+    },
+    {
+      title: "ייצוא מוצרים / שירותים",
+      steps: [
+        'באותו מסך "יצוא ויבוא" בחר את ייצוא הפריטים',
+        "פתח את הקובץ ב-Excel ושמור אותו מחדש כ-xlsx",
+      ],
+    },
+    {
+      title: "ייצוא היסטוריית מסמכים",
+      steps: [
+        "פתח את רשימת המסמכים וסנן לפי טווח תאריכים (מומלץ: מתחילת הפעילות)",
+        'לחץ "הדפס רשימה", ובתצוגה המקדימה בחר ייצוא ל-Excel. כך יוצאת כל הרשימה',
+        "(צלמית ה-Excel מעל הרשימה מייצאת רק את העמוד הנוכחי, עד 200 שורות)",
+      ],
+    },
+  ],
+  priority: [
+    {
+      title: "ייצוא לקוחות",
+      steps: [
+        "היכנס ל-Priority Zoom עם הקישור האישי שקיבלת במייל (אין כתובת כניסה אחת לכולם)",
+        'פתח "שיווק ומכירות", ואז "לקוחות", ואז "לקוחות"',
+        "לחץ על אייקון ה-Excel בפינה השמאלית העליונה של המסך",
+        'אם האייקון אפור: מנהל המערכת צריך לסמן למשתמש "פריקת נתונים ממסך" בהרשאות, ולהתחבר מחדש',
+      ],
+    },
+    {
+      title: "ייצוא מוצרים / שירותים",
+      steps: ['פתח "ניהול מלאי", ואז "פריטים"', "הצג את כל הפריטים ולחץ על אייקון ה-Excel"],
+    },
+    {
+      title: "ייצוא היסטוריית מסמכים",
+      steps: [
+        'פתח את דוחות המסמכים (למשל "כספים" ואז "דוחות מסמכים")',
+        'הגדר "מ-תאריך" ו"עד-תאריך" והרץ את הדוח',
+        "לחץ על אייקון ה-Excel לייצוא כל השורות",
+        'לחלופין: הדוח "העברת קובץ להנהלת חשבונות" מייצא את כל התנועות לפי טווח תאריכים',
+      ],
+    },
+  ],
+  accountbook: [
+    {
+      title: "ייצוא לקוחות",
+      steps: [
+        "התחבר ל-AccountBook (cloud.tamal.co.il)",
+        'פתח את מסך "לקוחות", ובו "דוחות" ואז דוח לקוחות',
+        'לחץ "הדפסה ויצוא הדו"ח לאקסל"',
+      ],
+      link: "https://cloud.tamal.co.il/login.aspx",
+    },
+    {
+      title: "ייצוא מוצרים / שירותים",
+      steps: ['פתח "ניהול פריטים" ואז את הטאב "דוחות"', 'לחץ "הדפסה ויצוא הדו"ח לאקסל ו-PDF"'],
+    },
+    {
+      title: "ייצוא היסטוריית מסמכים",
+      steps: [
+        'פתח "דוחות" ובחר "דוח הכנסות" (כל המסמכים שמתעדים הכנסה)',
+        "הגדר תקופה (מומלץ: מתחילת הפעילות), ואפשר גם לקוח וסוג מסמך",
+        'לחץ "הדפסה ויצוא הדו"ח לאקסל"',
+      ],
+    },
+  ],
   other: [
     {
       title: "פתח את הקובץ במקור שלך",
@@ -157,41 +347,35 @@ const EXPORT_GUIDES: Record<Exclude<Vendor, null>, ExportStep[]> = {
 };
 
 const VENDOR_META: Record<Exclude<Vendor, null>, { name: string; color: string; tagline: string }> = {
-  invoice4u: {
-    name: "Invoice4U",
-    color: "from-rose-400 to-orange-500",
-    tagline: "מדריך ספציפי, 5 דקות",
-  },
-  icount: {
-    name: "iCount",
-    color: "from-blue-400 to-indigo-500",
-    tagline: "מדריך כללי, 5-10 דקות",
-  },
-  rivhit: {
-    name: "ריווחית",
-    color: "from-violet-400 to-purple-500",
-    tagline: "מדריך כללי, 5-10 דקות",
-  },
-  morning: {
-    name: "Morning (חשבונית ירוקה)",
-    color: "from-emerald-400 to-teal-500",
-    tagline: "מדריך ספציפי, 5 דקות",
-  },
-  hashavshevet: {
-    name: "חשבשבת",
-    color: "from-stone-500 to-stone-700",
-    tagline: "מדריך כללי, 5-10 דקות",
-  },
-  other: {
-    name: "Excel / אחר",
-    color: "from-amber-400 to-orange-500",
-    tagline: "ייבוא כללי מ-CSV / Excel",
-  },
+  // Card order in the picker: the tools people switch from most often first.
+  // The list is mirrored word-for-word in the marketing FAQ (src/app/(marketing)/page.tsx).
+  invoice4u: { name: "Invoice4U", color: "from-rose-400 to-orange-500", tagline: "מדריך ספציפי, 5 דקות" },
+  morning: { name: "Morning (חשבונית ירוקה)", color: "from-emerald-400 to-teal-500", tagline: "מדריך ספציפי, 5 דקות" },
+  icount: { name: "iCount", color: "from-blue-400 to-indigo-500", tagline: "מדריך כללי, 5-10 דקות" },
+  ezcount: { name: "EZcount", color: "from-orange-400 to-red-500", tagline: "מדריך ספציפי, 5 דקות" },
+  sumit: { name: "SUMIT", color: "from-sky-400 to-blue-600", tagline: "מדריך ספציפי, 5 דקות" },
+  rivhit: { name: "ריווחית", color: "from-violet-400 to-purple-500", tagline: "מדריך כללי, 5-10 דקות" },
+  hashavshevet: { name: "חשבשבת", color: "from-stone-500 to-stone-700", tagline: "מדריך כללי, 5-10 דקות" },
+  mybooks: { name: "MyBooks", color: "from-teal-400 to-cyan-600", tagline: "מדריך ספציפי, 5 דקות" },
+  ypay: { name: "YPAY", color: "from-lime-500 to-green-600", tagline: "מדריך ספציפי, 5 דקות" },
+  ifreelance: { name: "iFreelance", color: "from-fuchsia-400 to-pink-600", tagline: "מדריך כללי, 5-10 דקות" },
+  caspit: { name: "כספית", color: "from-yellow-400 to-amber-600", tagline: "מדריך ספציפי, 5 דקות" },
+  priority: { name: "Priority Zoom", color: "from-indigo-500 to-blue-800", tagline: "מדריך כללי, 10 דקות" },
+  accountbook: { name: 'AccountBook (תמ"ל)', color: "from-slate-400 to-slate-600", tagline: "מדריך כללי, 5-10 דקות" },
+  other: { name: "Excel / אחר", color: "from-amber-400 to-orange-500", tagline: "ייבוא כללי מ-CSV / Excel" },
 };
 
 export default function MigratePage() {
   const [vendor, setVendor] = useState<Vendor>(null);
   const [openStep, setOpenStep] = useState<number | null>(0);
+  // Deep link: /migrate?vendor=ezcount lands straight on that vendor's guide,
+  // so a /vs/<vendor> page (or a support reply) can skip the picker. Read
+  // from window on mount rather than useSearchParams, which would force a
+  // Suspense boundary around this statically rendered page for one param.
+  useEffect(() => {
+    const wanted = new URLSearchParams(window.location.search).get("vendor");
+    if (wanted && wanted in VENDOR_META) setVendor(wanted as Vendor);
+  }, []);
   const [importingEntity, setImportingEntity] = useState<EntityType | null>(null);
 
   const guides = vendor ? EXPORT_GUIDES[vendor] : [];
@@ -411,9 +595,9 @@ export default function MigratePage() {
                       ייבוא הכל בלחיצה אחת
                     </p>
                     <p className="text-sm text-stone-700 mt-0.5">
-                      גרור את כל הקבצים שייצאת (לקוחות / מוצרים / הוצאות / מסמכים), או קובץ{" "}
-                      <Ltr>Excel</Ltr> אחד עם כל הגיליונות, המערכת תזהה אוטומטית מה כל קובץ ותייבא
-                      הכל יחד.
+                      גרור את כל הקבצים שייצאת (לקוחות / מוצרים / הוצאות / מסמכים), קובץ{" "}
+                      <Ltr>Excel</Ltr> אחד עם כל הגיליונות, או את ה-<Ltr>ZIP</Ltr> של "מבנה אחיד" כמו
+                      שהוא. המערכת מזהה אוטומטית מה כל קובץ ומייבאת הכל יחד.
                     </p>
                   </div>
                 </div>

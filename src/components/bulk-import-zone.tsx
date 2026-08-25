@@ -28,6 +28,7 @@ import {
 } from "@/lib/import-documents";
 import { parseAmount } from "@/lib/import-mapping";
 import { parseCsvFile } from "@/lib/import-decode";
+import { looksLikeUniformStructure, parseUniformStructureFile } from "@/lib/uniform-structure/parse";
 import { analyzeRows, type AnalyzeResult } from "@/lib/import-analyze";
 import { ImportAnalysisPanel } from "@/components/import-analysis-panel";
 import type { Client, Product, Expense } from "@/lib/types";
@@ -147,6 +148,23 @@ export function BulkImportZone() {
     return out;
   }
 
+  // מבנה אחיד (OPENFORMAT) ZIP / BKMVDATA.TXT: for most Israeli vendors this
+  // is the only export that holds EVERY document ever issued, so it is what
+  // a switcher actually brings. One row per document, already in the same
+  // column vocabulary as a CSV, and always the documents entity.
+  async function parseUniform(file: File): Promise<DetectedFile[]> {
+    const parsed = await parseUniformStructureFile(file);
+    const note = parsed.cancelledCount ? `, מתוכם ${parsed.cancelledCount} מבוטלים` : "";
+    return [
+      {
+        label: `${file.name} → מבנה אחיד (${parsed.docCount} מסמכים${note})`,
+        entity: "documents",
+        rows: parsed.rows,
+        headers: parsed.headers,
+      },
+    ];
+  }
+
   async function handleFiles(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
@@ -157,7 +175,12 @@ export function BulkImportZone() {
     try {
       for (const file of files) {
         const ext = file.name.split(".").pop()?.toLowerCase();
-        const more = ext === "xlsx" || ext === "xls" ? await parseXlsx(file) : await parseCsv(file);
+        const more =
+          ext === "xlsx" || ext === "xls"
+            ? await parseXlsx(file)
+            : looksLikeUniformStructure(file.name)
+              ? await parseUniform(file)
+              : await parseCsv(file);
         collected.push(...more);
       }
       setDetected(collected);
@@ -412,7 +435,7 @@ export function BulkImportZone() {
         <input
           ref={inputRef}
           type="file"
-          accept=".csv,.xlsx,.xls,text/csv"
+          accept=".csv,.xlsx,.xls,.zip,.txt,text/csv,application/zip"
           multiple
           onChange={handleFiles}
           disabled={importing}
@@ -424,7 +447,7 @@ export function BulkImportZone() {
           </div>
           <p className="font-bold text-stone-900">גרור לכאן את כל הקבצים, או לחץ לבחירה</p>
           <p className="text-sm text-stone-700 mt-1">
-            CSV של לקוחות / מוצרים / הוצאות / מסמכים, או קובץ Excel אחד עם כמה גיליונות
+            CSV של לקוחות / מוצרים / הוצאות / מסמכים, קובץ Excel אחד עם כמה גיליונות, או ה-ZIP של "מבנה אחיד" מהתוכנה הישנה (כל המסמכים)
           </p>
           <p className="text-xs text-stone-500 mt-2">המערכת תזהה אוטומטית מה כל קובץ</p>
         </div>
