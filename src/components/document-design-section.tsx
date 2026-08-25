@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Palette, Check, RotateCcw } from "lucide-react";
+import { Check, RotateCcw } from "lucide-react";
 import { useBusiness, saveBusiness } from "@/lib/business-store";
 import { getVatRate, calculateVat, round2 } from "@/lib/vat";
 import {
@@ -368,25 +368,21 @@ export function DocumentDesignSection() {
 
   return (
     <div className="card-soft p-6">
-      <div className="flex items-center justify-between pb-4 border-b border-orange-100 mb-4 flex-wrap gap-2">
-        <h2 className="font-semibold text-stone-900 flex items-center gap-2">
-          <Palette className="w-4 h-4 text-orange-500" />
-          עיצוב מסמכים
-        </h2>
+      {/* The page (/design) owns the title; this row is the intro + reset. */}
+      <div className="flex items-start justify-between gap-4 pb-4 border-b border-orange-100 mb-4 flex-wrap">
+        <p className="text-sm text-stone-700 flex-1 min-w-[16rem]">
+          בחר תבנית עיצוב המותאמת לתחום העיסוק שלך. משפיע על כל המסמכים החדשים בלבד, לא על
+          מסמכים שכבר הופקו. אם לא בוחרים כלום, המסמכים ממשיכים להיראות בדיוק כמו היום.
+        </p>
         <button
           type="button"
           onClick={resetToDefault}
-          className="inline-flex items-center gap-1.5 px-3 min-h-[36px] rounded-xl text-xs font-semibold text-stone-600 hover:bg-stone-100"
+          className="inline-flex items-center gap-1.5 px-3 min-h-[36px] rounded-xl text-xs font-semibold text-stone-600 hover:bg-stone-100 flex-shrink-0"
         >
           <RotateCcw className="w-3.5 h-3.5" />
           איפוס לעיצוב המקורי
         </button>
       </div>
-
-      <p className="text-sm text-stone-700 mb-4">
-        בחר תבנית עיצוב המותאמת לתחום העיסוק שלך. משפיע על כל המסמכים החדשים בלבד, לא על
-        מסמכים שכבר הופקו. אם לא בוחרים כלום, המסמכים ממשיכים להיראות בדיוק כמו היום.
-      </p>
 
       {/* Mobile: Preview/Edit segmented toggle, full-width single panel.
           Desktop (lg+): both panels side by side, toggle bar hidden. */}

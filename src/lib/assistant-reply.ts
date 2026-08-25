@@ -49,7 +49,7 @@ export type ReplySegment =
  * looks like a path (a date written 12/03, "50/50") stays text. Keep in sync
  * with the screen list in the assistant prompt.
  */
-const INTERNAL_ROUTE = /\/(?:migrate|dashboard|documents(?:\/new(?:\/[a-z-]+)?)?|clients|products|expenses|recurring|notifications|reminders|reports(?:\/[a-z0-9-]+)?|settings(?:#[a-z-]+)?|billing|portal)\b/g;
+const INTERNAL_ROUTE = /\/(?:migrate|design|dashboard|documents(?:\/new(?:\/[a-z-]+)?)?|clients|products|expenses|recurring|notifications|reminders|reports(?:\/[a-z0-9-]+)?|settings(?:#[a-z-]+)?|billing|portal)\b/g;
 const EXTERNAL_URL = /https?:\/\/[^\s<>"']+[^\s<>"'.,;:!?)]/g;
 
 /**

@@ -25,6 +25,7 @@ import {
   CalendarClock,
   Globe,
   Import,
+  Palette,
 } from "lucide-react";
 import { useBusiness } from "@/lib/business-store";
 import { signOut } from "@/lib/auth";
@@ -59,6 +60,9 @@ const navItems: NavItem[] = [
   // user hunt for it). So the migration guide gets its own tab, right where
   // the one-time setup tasks live, just above settings.
   { href: "/migrate", label: "מעבר מתוכנה אחרת", icon: Import, tone: "emerald" },
+  // Document design was a card buried inside /settings; Asaf (2026-08-25)
+  // wanted it as its own tab, separate from settings.
+  { href: "/design", label: "עיצוב מסמך", icon: Palette, tone: "pink" },
   { href: "/settings", label: "הגדרות", icon: Settings, tone: "slate" },
 ];
 

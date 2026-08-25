@@ -68,6 +68,13 @@ describe("splitReplyLinks", () => {
     });
   });
 
+  it("links the document-design tab, which lives outside /settings", () => {
+    const segs = splitReplyLinks("את הגופן משנים במסך /design (לשונית עיצוב מסמך).");
+    expect(segs.filter((s) => s.kind === "link")).toEqual([
+      { kind: "link", text: "/design", href: "/design", external: false },
+    ]);
+  });
+
   it("does not link a path glued to a word or a URL twice", () => {
     const segs = splitReplyLinks("friendlyinvoice.co.il/migrate");
     expect(segs.every((s) => s.kind === "text")).toBe(true);

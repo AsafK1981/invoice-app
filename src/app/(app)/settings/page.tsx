@@ -20,13 +20,13 @@ import {
   ExternalLink,
   CalendarClock,
   ArrowLeft,
+  Palette,
 } from "lucide-react";
 import { useBusiness } from "@/lib/business-store";
 import { isPlaceholderBusinessName, isPlaceholderBusinessTaxId } from "@/lib/business-init";
 import { BusinessFormModal } from "@/components/business-form-modal";
 import { EmailSettingsModal } from "@/components/email-settings-modal";
 import { DocumentNumberingSettings } from "@/components/document-numbering-settings";
-import { DocumentDesignSection } from "@/components/document-design-section";
 import { AuditLogSection } from "@/components/audit-log-section";
 import { TaxAuthoritySection } from "@/components/tax-authority-section";
 import { TwoFactorSection } from "@/components/two-factor-section";
@@ -244,7 +244,23 @@ export default function SettingsPage() {
         <DocumentNumberingSettings />
       </div>
 
-      <DocumentDesignSection />
+      {/* Document design moved to its own tab (/design). Existing users
+          still look for it here, so leave a one-line pointer. */}
+      <Link
+        href="/design"
+        className="card-soft p-4 flex items-center gap-3 hover:bg-orange-50/60 transition-colors"
+      >
+        <span className="w-9 h-9 rounded-xl ftile ftile-pink flex items-center justify-center flex-shrink-0">
+          <Palette className="w-4 h-4" />
+        </span>
+        <span className="flex-1 min-w-0">
+          <span className="block font-semibold text-stone-900">עיצוב מסמך</span>
+          <span className="block text-xs text-stone-600">
+            תבנית, צבע, גופן ומיקום לוגו עברו ללשונית משלהם
+          </span>
+        </span>
+        <ArrowLeft className="w-4 h-4 text-stone-400 flex-shrink-0" />
+      </Link>
 
       <div className="card-soft p-6">
         <div className="flex items-center justify-between pb-4 border-b border-orange-100 mb-4">

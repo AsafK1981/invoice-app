@@ -12,7 +12,8 @@
  * empty states of the same feature on the same tone):
  *   dashboard=amber, documents=indigo, clients=teal, products=violet,
  *   expenses=pink, recurring=sky, notifications=orange, reports=emerald,
- *   settings=slate, admin=rose. חשבונית ישראל stays gold (the flagship
+ *   settings=slate, admin=rose, design=pink (shares with expenses, like
+ *   reminders share orange and migrate shares emerald). חשבונית ישראל stays gold (the flagship
  *   treatment, like the homepage allocation card - it takes no tone).
  */
 export type FeatureTone =
