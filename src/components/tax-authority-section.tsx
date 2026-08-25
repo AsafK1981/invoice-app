@@ -71,12 +71,12 @@ const CONNECT_STEPS = [
 ];
 
 // Faint banknote-style dot guilloché; signals "official / secure" without
-// shouting. The dot is the brand's deep gold (--g3, #8f6f2a) at 9%, not the
-// indigo it used to be, so the texture sits under the gold stepper instead of
-// tinting it cool.
+// shouting. The dot is the brand orange (--g2, #f97316) at 9%, not the
+// indigo it used to be, so the texture sits under the orange stepper instead
+// of tinting it cool.
 const SECURITY_TEXTURE: React.CSSProperties = {
   backgroundImage:
-    "radial-gradient(circle at 1px 1px, rgba(143,111,42,0.09) 1px, transparent 0)",
+    "radial-gradient(circle at 1px 1px, rgba(249,115,22,0.09) 1px, transparent 0)",
   backgroundSize: "15px 15px",
 };
 

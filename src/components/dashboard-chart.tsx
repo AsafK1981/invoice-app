@@ -115,24 +115,24 @@ const SERIES = {
   income: {
     label: "הכנסות",
     /** points, legend dot; also the light end of the stroke gradient's family */
-    dot: "#8f6f2a",
-    strokeFrom: "#a8853a",
-    strokeTo: "#7d6122",
-    areaTop: "rgba(143,111,42,.20)",
-    areaBottom: "rgba(190,158,78,0)",
+    dot: "#ea580c",
+    strokeFrom: "#f97316",
+    strokeTo: "#e11d48",
+    areaTop: "rgba(249,115,22,.18)",
+    areaBottom: "rgba(249,115,22,0)",
     /** halo / legend-dot ring */
-    glow: "rgba(143,111,42,.20)",
+    glow: "rgba(249,115,22,.22)",
     valueText: "#241e16",
   },
   expense: {
     label: "הוצאות",
-    dot: "#b8512f",
-    strokeFrom: "#b8512f",
-    strokeTo: "#b8512f",
-    areaTop: "rgba(184,81,47,.14)",
-    areaBottom: "rgba(184,81,47,0)",
-    glow: "rgba(184,81,47,.20)",
-    valueText: "#8f3d20",
+    dot: "#64748b",
+    strokeFrom: "#64748b",
+    strokeTo: "#64748b",
+    areaTop: "rgba(100,116,139,.14)",
+    areaBottom: "rgba(100,116,139,0)",
+    glow: "rgba(100,116,139,.20)",
+    valueText: "#334155",
   },
 } as const;
 
@@ -395,8 +395,8 @@ function MonthlyLineChart({
                 onClick={() => toggleSolo(key)}
                 className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[13px] font-medium transition-opacity cursor-pointer"
                 style={{
-                  background: "rgba(190,158,78,.10)",
-                  border: "1px solid rgba(190,158,78,.32)",
+                  background: "rgba(249,115,22,.08)",
+                  border: "1px solid rgba(249,115,22,.30)",
                   color: "#5a5245",
                   opacity: on ? 1 : 0.4,
                 }}
@@ -415,8 +415,8 @@ function MonthlyLineChart({
           role="tablist"
           aria-label="טווח זמן"
           style={{
-            background: "rgba(190,158,78,.10)",
-            border: "1px solid rgba(190,158,78,.32)",
+            background: "rgba(249,115,22,.08)",
+            border: "1px solid rgba(249,115,22,.30)",
           }}
         >
           {RANGES.map((r) => {
@@ -432,9 +432,9 @@ function MonthlyLineChart({
                 style={
                   active
                     ? {
-                        background: "#8f6f2a",
-                        color: "#fdfaf2",
-                        boxShadow: "0 1px 4px rgba(143,111,42,.35)",
+                        background: "linear-gradient(135deg, #f97316, #e11d48)",
+                        color: "#ffffff",
+                        boxShadow: "0 1px 4px rgba(225,29,72,.35)",
                       }
                     : { color: "#5a5245" }
                 }

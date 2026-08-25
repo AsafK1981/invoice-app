@@ -94,9 +94,9 @@
   --ml-muted: #6f6757;
   --ml-line: #ece3d3;
   --ml-line-soft: #f2ebdd;
-  --ml-gold-tint: #faf5e9;
-  --ml-gold-tint-line: #ecdfbe;
-  --ml-gold-ink: #806426;
+  --ml-gold-tint: #fff4ea;
+  --ml-gold-tint-line: #fddcc0;
+  --ml-gold-ink: #c2410c;
   --ml-orange: #f97316;
   --ml-rose: #e11d48;
   --ml-grad: linear-gradient(135deg, var(--ml-orange), var(--ml-rose));
@@ -1309,7 +1309,7 @@ h3 > .ml-badge-soon {
   padding: 14px 18px;
   border: 1px solid var(--ml-gold-tint-line);
   border-radius: 14px;
-  background: linear-gradient(160deg, #fffdf7, var(--ml-gold-tint));
+  background: linear-gradient(160deg, #fffaf6, var(--ml-gold-tint));
   font-size: 13.5px;
   line-height: 1.6;
   color: var(--ml-ink-2);

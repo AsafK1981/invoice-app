@@ -1,5 +1,5 @@
 /**
- * LogoV2, the gold "document" mark (from icon-app.svg) + "חשבונית"
+ * LogoV2, the orange "document" mark (from icon-app.svg) + "חשבונית"
  * wordmark in Heebo gold, with a small "ידידותית"
  * kicker. Two variants:
  *   - "full" (default): mark + wordmark + kicker
@@ -35,10 +35,9 @@ function Mark({ small }: { small?: boolean }) {
     >
       <defs>
         <linearGradient id="v2-logo-gold" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#D8BE77" />
-          <stop offset="0.4" stopColor="#BE9E4E" />
-          <stop offset="0.74" stopColor="#8F6F2A" />
-          <stop offset="1" stopColor="#CBB061" />
+          <stop offset="0" stopColor="#FB923C" />
+          <stop offset="0.5" stopColor="#F97316" />
+          <stop offset="1" stopColor="#E11D48" />
         </linearGradient>
       </defs>
       <rect
@@ -47,7 +46,7 @@ function Mark({ small }: { small?: boolean }) {
         width="90"
         height="90"
         rx="24"
-        fill="#120D07"
+        fill="#1c1917"
         stroke="url(#v2-logo-gold)"
         strokeWidth="2.2"
       />

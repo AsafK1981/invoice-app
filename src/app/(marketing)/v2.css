@@ -28,10 +28,10 @@
      DARKEST of the three, not the lightest - it is used for accent text,
      while g2/g3 fill the CTA gradient where white text sits on top.
      ============================================================ */
-  --v2-g1: #806426;
-  --v2-g2: #96762f;
-  --v2-g3: #6d551f;
-  --v2-gold-grad: linear-gradient(177deg, #a2802f 0%, #8a6c26 38%, #6d551f 72%, #96762f 100%);
+  --v2-g1: #c2410c;
+  --v2-g2: #f97316;
+  --v2-g3: #e11d48;
+  --v2-gold-grad: linear-gradient(135deg, #f97316, #e11d48); /* = --ml-grad, 2026-08-25 */
   --v2-line: #ece3d3;
   --v2-line-soft: #f2ebdd;
   --v2-ink: #241e16;
@@ -189,9 +189,9 @@
   --v2-paper-ink: #211c15;
   --v2-paper-ink2: #514a3d;
   --v2-paper-soft: #6f6857;
-  --v2-paper-gold: #8a6d26;
-  --v2-paper-goldline: #c9ab63;
-  --v2-paper-goldfaint: #e7dcbf;
+  --v2-paper-gold: #c2410c;
+  --v2-paper-goldline: #fdba74;
+  --v2-paper-goldfaint: #fddcc0;
 
   /* ---- CTA gradient (chrome-bridging pass, 2026-08-14) ----
      Copied BY VALUE from marketing-light.css's `--ml-orange` / `--ml-rose`
@@ -213,8 +213,8 @@
      `--v2-gold-grad` itself is left defined (still read by the unused
      /v2/login auth styles further down) but nothing rendered reads it after
      this pass. */
-  --v2-gold-tint: #faf5e9;
-  --v2-gold-tint-line: #ecdfbe;
+  --v2-gold-tint: #fff4ea;
+  --v2-gold-tint-line: #fddcc0;
 
   position: relative;
   /* Column flex, so a SHORT page still puts its footer on the bottom edge
@@ -540,7 +540,7 @@
 .v2-theme .v2-eyebrow-row span {
   font-size: var(--v2-fs-meta);
   letter-spacing: 0.26em;
-  color: #806426;
+  color: #c2410c;
 }
 
 /* (The `.v2-nav-long` / `.v2-nav-short` label-swap pair that used to live
@@ -1397,7 +1397,7 @@
   font-size: var(--v2-fs-meta);
   font-weight: 600;
   letter-spacing: 0.02em;
-  color: #806426;
+  color: #c2410c;
   margin-bottom: var(--v2-sp-1);
   transition: color 0.2s ease;
 }
@@ -1594,7 +1594,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: #806426;
+  color: #c2410c;
   transition: color 0.2s ease;
 }
 .v2-theme .v2-status-refresh:hover { color: var(--v2-g1); }
@@ -2380,7 +2380,7 @@
   gap: 7px;
   font-size: var(--v2-fs-body);
   font-weight: 600;
-  color: #806426;
+  color: #c2410c;
   padding: 13px 8px;
   transition: color 0.2s ease;
 }

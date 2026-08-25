@@ -94,8 +94,8 @@ export function ReportsBarChart({ data }: Props) {
       >
         <defs>
           <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="#d8be77" />
-            <stop offset="1" stopColor="#a8853a" />
+            <stop offset="0" stopColor="#fb923c" />
+            <stop offset="1" stopColor="#e11d48" />
           </linearGradient>
         </defs>
         {ticks.map((v) => (
@@ -164,7 +164,7 @@ export function ReportsBarChart({ data }: Props) {
                 height={ch}
                 fill="transparent"
               />
-              {bar3d(xInc, yInc, hi, `url(#${gradId})`, "#ecd9a0", "#8a6b28", "rpt-chart-income")}
+              {bar3d(xInc, yInc, hi, `url(#${gradId})`, "#fdba74", "#be123c", "rpt-chart-income")}
               {bar3d(xExp, yExp, he, "#d9d0bf", "#eae2d2", "#b3a790", "rpt-chart-expense")}
               {i % labelEvery === 0 && (
                 <text x={cx} y={H - 10} textAnchor="middle" className="rpt-chart-label">

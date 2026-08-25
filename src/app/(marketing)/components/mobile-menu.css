@@ -25,7 +25,7 @@
   transition: background-color 160ms ease-out;
 }
 .mm-burger:active {
-  background: #faf5e9;
+  background: #fff4ea;
 }
 .mm-burger:focus-visible {
   outline: 2px solid #e11d48;
@@ -53,9 +53,9 @@
   --mm-cream: #faf7f2;
   --mm-card: #ffffff;
   --mm-ink: #241e16;
-  --mm-gold-ink: #806426;
-  --mm-gold-tint: #faf5e9;
-  --mm-gold-tint-line: #ecdfbe;
+  --mm-gold-ink: #c2410c;
+  --mm-gold-tint: #fff4ea;
+  --mm-gold-tint-line: #fddcc0;
   --mm-line: #ece3d3;
   --mm-line-soft: #f2ebdd;
   --mm-grad: linear-gradient(135deg, #f97316, #e11d48);
