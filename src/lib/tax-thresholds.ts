@@ -15,13 +15,24 @@
 export const EXEMPT_CEILING_BY_YEAR: Record<number, number> = {
   2024: 107_692,
   2025: 120_000,
-  2026: 120_000, // unchanged through 2026-06; verify each January
+  // Corrected 2026-08-25. This read 120_000 with the note "unchanged through
+  // 2026-06; verify each January" - the verification never happened, so the
+  // 2025 figure was simply carried into 2026. The published 2026 ceiling is
+  // 122,833. Confirmed against two independent sources (כל-זכות's עוסק פטור
+  // entry, which states 122,833 for 2026 and 120,000 for 2025, and Bizportal's
+  // 2026 guide) before changing it.
+  //
+  // Understating this is the dangerous direction: it drives the dashboard
+  // ceiling tracker and the business-type picker, so a user turning over
+  // ₪121,000 was being told they had passed the ceiling when they had not -
+  // i.e. told to move to עוסק מורשה with ₪1,833 of headroom still left.
+  2026: 122_833,
 };
 
 /** Fallback when the requested year isn't in the table yet, used as
  *  a safe default so a stale build doesn't show ₪0. Should match the
  *  most recently published year. */
-export const FALLBACK_EXEMPT_CEILING = 120_000;
+export const FALLBACK_EXEMPT_CEILING = 122_833;
 
 export function getExemptCeiling(year: number): number {
   return EXEMPT_CEILING_BY_YEAR[year] ?? FALLBACK_EXEMPT_CEILING;
