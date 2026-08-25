@@ -37,13 +37,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           {/* Below `pt-16` so it clears the mobile hamburger button (fixed
               top-4 right-4), instead of a full-bleed row above the flex
               layout that it would otherwise overlap. */}
-          {/* paddingBottom reserves the bottom-left corner the fixed assistant
-              launcher sits in (--fab-safe-h, app-skin.css) so it never lands
-              on top of real content, whatever the page or scroll position. */}
-          <div
-            className="max-w-7xl mx-auto p-4 pt-16 lg:p-8 print:p-0 print:max-w-none"
-            style={{ paddingBottom: "var(--fab-safe-h)" }}
-          >
+          <div className="max-w-7xl mx-auto p-4 pt-16 lg:p-8 print:p-0 print:max-w-none">
             <EmailVerificationBanner />
             <TwoFactorNudge />
             <div className="no-print flex items-center justify-end gap-2 mb-4 print:hidden">

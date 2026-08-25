@@ -3311,28 +3311,6 @@ html .text-\[13px\] { font-size: 14px; }
   }
 }
 
-/* Bottom-left safe zone: the launcher is fixed to the viewport, not the page,
-   so whatever content happens to sit in that corner at any scroll position
-   gets covered (found repeatedly 2026-08-14 through 2026-08-25 on the
-   proforma editor, documents list and reports - a different page each time,
-   same root cause). --fab-safe-h reserves that corner as padding on the
-   shared authenticated-page wrapper (see (app)/layout.tsx) instead of
-   patching each affected page. Sized to button-height + inset + a slack gap;
-   zeroed for print, where the launcher itself is print:hidden. */
-html {
-  --fab-safe-h: 5rem;
-}
-@media (min-width: 1024px) {
-  html {
-    --fab-safe-h: 6rem;
-  }
-}
-@media print {
-  html {
-    --fab-safe-h: 0px;
-  }
-}
-
 /* Periodic nudge (Asaf, 2026-08-18: "I don't notice it"). Every 30s the pill
    hops twice and a ring blooms out of it, ~1.6s total, then it sits still
    again. Uses `translate`/`rotate` (not `transform`) so it never fights the
