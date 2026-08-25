@@ -98,7 +98,7 @@ const GENERIC_STEPS = (loginUrl: string, vendorName: string): ExportStep[] => [
 // Authority's מבנה אחיד ZIP (BKMVDATA.TXT + INI.TXT). The bulk zone reads that
 // ZIP directly (src/lib/uniform-structure/parse.ts), so the guides below point
 // people at it instead of hunting for an Excel button that covers one report.
-const ZIP_STEP = "יורד קובץ ZIP. אל תפתח אותו - גוררים אותו כמו שהוא לשלב הייבוא למטה, המערכת קוראת אותו";
+const ZIP_STEP = 'יורד קובץ ZIP. אל תפתח אותו - מעלים אותו כמו שהוא בריבוע הייבוא למטה (גרירה או "בחר קבצים מהמחשב"), המערכת קוראת אותו';
 
 const EXPORT_GUIDES: Record<Exclude<Vendor, null>, ExportStep[]> = {
   invoice4u: [
@@ -416,8 +416,8 @@ export default function MigratePage() {
             },
             {
               icon: Upload,
-              title: "גוררים את הקבצים לכאן",
-              body: "המערכת מזהה לבד מה זה לקוחות, מה מוצרים ומה מסמכים, ומייבאת הכל יחד.",
+              title: "מעלים את הקבצים בריבוע שלמטה",
+              body: 'גוררים אותם פנימה, או לוחצים "בחר קבצים מהמחשב". המערכת מזהה לבד מה זה לקוחות, מה מוצרים ומה מסמכים.',
             },
             {
               icon: CheckCircle2,
@@ -446,10 +446,32 @@ export default function MigratePage() {
         </ol>
       )}
 
+      {/* The upload square lives on the FIRST screen, right under step 2, so
+          "מעלים את הקבצים בריבוע שלמטה" points at something real. Before
+          2026-08-25 it only appeared after picking a vendor, and the step
+          said "drag here" with nothing to drag into. The per-vendor guide
+          below still embeds its own copy as its step 4. */}
+      {!vendor && (
+        <section className="card-soft p-5 sm:p-6 border-2 border-orange-200 bg-white">
+          <div className="flex items-start gap-3 mb-4">
+            <span className="w-10 h-10 rounded-2xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center shadow-sm flex-shrink-0">
+              <Upload className="w-5 h-5 text-white" aria-hidden="true" />
+            </span>
+            <div>
+              <h2 className="text-lg font-bold text-stone-900">כבר ייצאת את הקבצים? העלה אותם כאן</h2>
+              <p className="text-sm text-stone-700 mt-0.5">
+                עוד לא? בחר למטה מאיזו תוכנה אתה מגיע, ונראה לך בדיוק איפה כפתור הייצוא.
+              </p>
+            </div>
+          </div>
+          <BulkImportZone />
+        </section>
+      )}
+
       {/* Vendor picker */}
       {!vendor && (
         <>
-          <h2 className="text-lg font-semibold text-stone-900">מאיזה כלי אתה מגיע?</h2>
+          <h2 className="text-lg font-semibold text-stone-900">מאיזו תוכנה אתה מגיע? נראה לך איך מייצאים</h2>
           <p className="text-sm text-stone-600 -mt-3">
             לא רואה את הכלי שלך כאן? לחץ{" "}
             <strong>

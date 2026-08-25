@@ -4,6 +4,7 @@ import { useMemo, useRef, useState } from "react";
 import * as XLSX from "xlsx";
 import {
   Upload,
+  FolderOpen,
   Users as UsersIcon,
   Package,
   FileText,
@@ -111,6 +112,10 @@ export function BulkImportZone() {
   const [progress, setProgress] = useState<string | null>(null);
   const [result, setResult] = useState<Record<EntityType, EntityTotals> | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // True while a file is being dragged over the square. Drives the "you can
+  // let go now" highlight; there was no drop handling at all before
+  // 2026-08-25, so "גרור לכאן" made the browser open the file instead.
+  const [dragging, setDragging] = useState(false);
 
   async function parseCsv(file: File): Promise<DetectedFile[]> {
     const { rows, headers } = await parseCsvFile(file);
@@ -166,7 +171,27 @@ export function BulkImportZone() {
   }
 
   async function handleFiles(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(e.target.files || []);
+    await ingest(Array.from(e.target.files || []));
+  }
+
+  function onDragOver(e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    if (!dragging && !importing) setDragging(true);
+  }
+  function onDragLeave(e: React.DragEvent<HTMLDivElement>) {
+    // Children fire leave/enter pairs while the pointer crosses them; only a
+    // real exit of the square should drop the highlight.
+    if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+    setDragging(false);
+  }
+  async function onDrop(e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    setDragging(false);
+    if (importing) return;
+    await ingest(Array.from(e.dataTransfer.files || []));
+  }
+
+  async function ingest(files: File[]) {
     if (files.length === 0) return;
     setError(null);
     setResult(null);
@@ -430,8 +455,30 @@ export function BulkImportZone() {
 
   return (
     <div className="space-y-4">
-      {/* Drop zone */}
-      <label className="block">
+      {/* Drop zone: a square you can actually drop on (onDrop), plus an
+          explicit button for people who never drag anything. Clicking
+          anywhere in the square also opens the picker. */}
+      <div
+        role="button"
+        tabIndex={0}
+        aria-label="העלאת קבצים: גרור לכאן או לחץ לבחירה"
+        onClick={() => !importing && inputRef.current?.click()}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            if (!importing) inputRef.current?.click();
+          }
+        }}
+        onDragOver={onDragOver}
+        onDragEnter={onDragOver}
+        onDragLeave={onDragLeave}
+        onDrop={onDrop}
+        className={`rounded-3xl border-[3px] border-dashed px-6 py-10 sm:py-12 text-center cursor-pointer select-none transition-all duration-200 ${
+          dragging
+            ? "border-orange-500 bg-orange-100/80 shadow-xl shadow-orange-200/60 scale-[1.01]"
+            : "border-orange-300 bg-gradient-to-br from-orange-50/70 to-amber-50/50 hover:border-orange-400 hover:bg-orange-50"
+        } ${importing ? "opacity-60 cursor-wait" : ""}`}
+      >
         <input
           ref={inputRef}
           type="file"
@@ -441,17 +488,36 @@ export function BulkImportZone() {
           disabled={importing}
           className="hidden"
         />
-        <div className="card-soft border-2 border-dashed border-orange-300 bg-gradient-to-br from-orange-50/60 to-amber-50/40 p-8 text-center cursor-pointer hover:border-orange-400 transition-colors">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center shadow-md mx-auto mb-3">
-            <Upload className="w-7 h-7 text-white" />
-          </div>
-          <p className="font-bold text-stone-900">גרור לכאן את כל הקבצים, או לחץ לבחירה</p>
-          <p className="text-sm text-stone-700 mt-1">
-            CSV של לקוחות / מוצרים / הוצאות / מסמכים, קובץ Excel אחד עם כמה גיליונות, או ה-ZIP של "מבנה אחיד" מהתוכנה הישנה (כל המסמכים)
-          </p>
-          <p className="text-xs text-stone-500 mt-2">המערכת תזהה אוטומטית מה כל קובץ</p>
+        <div
+          className={`w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center shadow-md mx-auto mb-4 transition-transform ${
+            dragging ? "scale-110" : ""
+          }`}
+        >
+          <Upload className="w-8 h-8 text-white" />
         </div>
-      </label>
+        <p className="text-lg font-bold text-stone-900">
+          {dragging ? "אפשר לשחרר!" : "גרור את הקבצים לתוך הריבוע הזה"}
+        </p>
+        <p className="text-sm text-stone-500 mt-2">או</p>
+        <button
+          type="button"
+          disabled={importing}
+          onClick={(e) => {
+            e.stopPropagation();
+            inputRef.current?.click();
+          }}
+          className="mt-2 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-l from-orange-500 to-rose-500 text-white shadow-md hover:shadow-lg hover:shadow-orange-200 transition-shadow disabled:opacity-60"
+        >
+          <FolderOpen className="w-4 h-4" />
+          בחר קבצים מהמחשב
+        </button>
+        <p className="text-xs text-stone-600 mt-5 leading-relaxed">
+          אפשר לבחור כמה קבצים בבת אחת: Excel, CSV, או ה-ZIP של &quot;מבנה אחיד&quot; מהתוכנה הישנה
+        </p>
+        <p className="text-xs text-stone-500 mt-1">
+          המערכת מזהה לבד מה כל קובץ: לקוחות / מוצרים / הוצאות / מסמכים
+        </p>
+      </div>
 
       {error && (
         <div className="card-soft p-4 bg-rose-50 border-rose-200 flex items-start gap-3">
