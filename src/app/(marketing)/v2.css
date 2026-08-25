@@ -2766,6 +2766,23 @@
   .v2-theme .v2-header-nav .v2-btn-gold { padding: 9px 8px; }
 }
 
+/* Mobile menu on the sub-pages (2026-08-25, Asaf). The wordmark and the
+   shared hamburger (components/MobileMenu.tsx) form one cluster at the
+   reading start; below 760px the text links leave the bar for the drawer
+   and only the CTA stays. The "חזרה לעמוד הבית" body link goes with them:
+   Asaf found a page that opens with a back button, and no menu, ugly - the
+   drawer's דף הבית is the way back now. Desktop keeps both. */
+.v2-theme .v2-header-start {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+@media (max-width: 759.98px) {
+  .v2-theme .v2-header-nav .v2-navlink { display: none; }
+  .v2-theme .v2-back { display: none; }
+}
+
 /* ------------------------------------------------------------
    DESKTOP TIER 1 (>=1000px): the layout change.
 

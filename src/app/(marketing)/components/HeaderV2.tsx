@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useOptionalUser } from "@/lib/auth";
+import MobileMenu from "./MobileMenu";
 
 /**
  * HeaderV2, sticky nav for /vs, /blog, /terms, /privacy, /status,
@@ -40,6 +41,14 @@ import { useOptionalUser } from "@/lib/auth";
  * into the app, which is not what clicking a site's logo should do.
  * `useOptionalUser` reports signed-out on the first render, so the SSR HTML a
  * crawler sees is byte-identical to before.
+ *
+ * MOBILE (2026-08-25, Asaf): the same hamburger + drawer as the homepage,
+ * top-right beside the wordmark, on every page. His complaint: tapping
+ * מגזין or מחירים in the homepage drawer landed on a page with no hamburger
+ * and a "חזרה לעמוד הבית" text link instead - "זה לא נראה טוב". Below 760px
+ * the nav links here are hidden (they live in the drawer, together with
+ * דף הבית) and only the CTA stays beside the burger; `.v2-back` is hidden
+ * at that width too, see v2.css. Shared component: MobileMenu.tsx.
  */
 export default function HeaderV2() {
   const { user } = useOptionalUser();
@@ -47,10 +56,13 @@ export default function HeaderV2() {
   return (
     <header className="v2-header">
       <div className="v2-header-in">
-        <Link href={user ? "/product" : "/"} className="v2-wordmark">
-          חשבונית{" "}
-          <span className="v2-wordmark-soft">ידידותית</span>
-        </Link>
+        <div className="v2-header-start">
+          <MobileMenu signedIn={!!user} />
+          <Link href={user ? "/product" : "/"} className="v2-wordmark">
+            חשבונית{" "}
+            <span className="v2-wordmark-soft">ידידותית</span>
+          </Link>
+        </div>
         <nav className="v2-header-nav">
           <Link href="/blog" className="v2-navlink v2-nav-secondary">
             מגזין

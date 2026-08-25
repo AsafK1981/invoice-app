@@ -1,0 +1,212 @@
+/* ============================================================
+   MOBILE MENU  (components/MobileMenu.tsx)
+   Hamburger + slide-in drawer shared by every marketing header. Imported by
+   the component itself, so it is loaded on every route that renders a
+   header - unlike marketing-light.css, which only "/" imports.
+
+   Self-contained on purpose: the drawer is portaled to <body>, OUTSIDE both
+   `.ml-theme` and `.v2-theme`, so nothing here may rely on either theme's
+   tokens. The palette below is the homepage's --ml-* palette by value.
+   Class prefix `mm-` so it can never collide with `ml-*` or `v2-*`.
+   ============================================================ */
+
+.mm-burger {
+  display: none;
+  width: 42px;
+  height: 42px;
+  margin-inline-start: -10px;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: #241e16;
+  cursor: pointer;
+  place-items: center;
+  transition: background-color 160ms ease-out;
+}
+.mm-burger:active {
+  background: #faf5e9;
+}
+.mm-burger:focus-visible {
+  outline: 2px solid #e11d48;
+  outline-offset: 2px;
+}
+/* Below 760px the headers hide their link rows and this takes over. */
+@media (max-width: 759.98px) {
+  .mm-burger {
+    display: grid;
+  }
+}
+.mm-burger-bars {
+  display: grid;
+  gap: 5px;
+  width: 22px;
+}
+.mm-burger-bars i {
+  display: block;
+  height: 2px;
+  border-radius: 2px;
+  background: currentColor;
+}
+
+.mm-root {
+  --mm-cream: #faf7f2;
+  --mm-card: #ffffff;
+  --mm-ink: #241e16;
+  --mm-gold-ink: #806426;
+  --mm-gold-tint: #faf5e9;
+  --mm-gold-tint-line: #ecdfbe;
+  --mm-line: #ece3d3;
+  --mm-line-soft: #f2ebdd;
+  --mm-grad: linear-gradient(135deg, #f97316, #e11d48);
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  color: var(--mm-ink);
+  font-family: "Assistant", var(--font-assistant), system-ui, sans-serif;
+  line-height: 1.5;
+  text-align: right;
+}
+.mm-root a[href]:focus-visible,
+.mm-root button:focus-visible {
+  outline: 2px solid #e11d48;
+  outline-offset: 2px;
+}
+.mm-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(36, 30, 22, 0.42);
+  animation: mm-fade 200ms ease-out both;
+}
+.mm-drawer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  inset-inline-start: 0;
+  width: min(330px, 84vw);
+  display: flex;
+  flex-direction: column;
+  padding: 14px 22px 28px;
+  padding-bottom: max(28px, env(safe-area-inset-bottom));
+  overflow-y: auto;
+  background: var(--mm-cream);
+  box-shadow: 0 0 0 1px var(--mm-line), -24px 0 60px -30px rgba(36, 30, 22, 0.45);
+  animation: mm-slide 280ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+/* The drawer lives at the reading start (right edge in RTL), so it enters
+   from beyond that edge: +100% is off-screen to the right. */
+@keyframes mm-slide {
+  from {
+    transform: translateX(100%);
+  }
+}
+@keyframes mm-fade {
+  from {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mm-drawer,
+  .mm-backdrop {
+    animation: none;
+  }
+}
+.mm-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 42px;
+  margin-bottom: 20px;
+}
+.mm-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28em;
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  color: var(--mm-ink);
+}
+.mm-logo-soft {
+  color: var(--mm-gold-ink);
+}
+.mm-close {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  margin-inline-end: -8px;
+  padding: 0;
+  border: 1px solid var(--mm-line);
+  border-radius: 999px;
+  background: var(--mm-card);
+  color: var(--mm-ink);
+  cursor: pointer;
+}
+.mm-close svg {
+  width: 18px;
+  height: 18px;
+}
+.mm-group + .mm-group {
+  margin-top: 24px;
+}
+.mm-label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--mm-gold-ink);
+}
+.mm-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.mm-list li {
+  border-bottom: 1px solid var(--mm-line-soft);
+}
+.mm-link {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  font-size: 16.5px;
+  font-weight: 600;
+  color: var(--mm-ink);
+  text-decoration: none;
+}
+.mm-link:active,
+.mm-link[aria-current="page"] {
+  color: var(--mm-gold-ink);
+}
+.mm-cta {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 14px;
+  margin-top: auto;
+  padding-top: 28px;
+  text-align: center;
+}
+.mm-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 36px;
+  border-radius: 999px;
+  font-size: 16.5px;
+  font-weight: 700;
+  color: #fff;
+  text-decoration: none;
+  background: var(--mm-grad);
+  box-shadow: 0 12px 26px -12px rgba(225, 29, 72, 0.4), 0 4px 10px -4px rgba(249, 115, 22, 0.32);
+}
+.mm-login {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--mm-gold-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--mm-gold-tint-line);
+}
