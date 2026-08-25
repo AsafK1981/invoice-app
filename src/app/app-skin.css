@@ -3047,8 +3047,10 @@ html .gk-paper {
 }
 
 /* ---------- scrollbar ---------- */
-html ::-webkit-scrollbar-thumb { background: rgba(143, 111, 42, 0.28); }
-html ::-webkit-scrollbar-thumb:hover { background: rgba(143, 111, 42, 0.5); }
+/* Same visibility bump as globals.css (2026-08-25), in the app's gold. */
+html ::-webkit-scrollbar-thumb { background: rgba(143, 111, 42, 0.6); background-clip: padding-box; }
+html ::-webkit-scrollbar-thumb:hover { background: rgba(143, 111, 42, 0.85); background-clip: padding-box; }
+html { scrollbar-color: rgba(143, 111, 42, 0.6) rgba(120, 90, 40, 0.1); }
 
 /* ---------- PRINT / PDF ----------
    The server PDF route drives headless Chrome to /view and prints with

@@ -405,9 +405,11 @@ export default function MarketingLanding() {
               HeaderLight (PAGE_SECTIONS) - keep both lists in sync. */}
           <section className="ml-spot" id="why">
             <div className="ml-wrap">
+              {/* Asaf (2026-08-25): "three things you won't get elsewhere" was
+                  not a claim he believes, so the section is titled by its
+                  former eyebrow, promoted to the h2 and shown larger. */}
               <div className="ml-spot-head">
-                <span className="ml-eyebrow">למה דווקא אנחנו</span>
-                <h2>שלושה דברים שלא תקבלו במקום אחר</h2>
+                <h2>למה דווקא אנחנו</h2>
               </div>
 
               <div className="ml-spot-list">

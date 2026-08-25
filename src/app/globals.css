@@ -221,18 +221,31 @@ input:not(.input-warm):focus-visible,
 
 /* ========== SCROLLBAR ========== */
 
+/* Asaf (2026-08-25): the old 8px, 20%-alpha thumb was "too light, too
+   narrow, almost invisible" - visitors could not tell there was more page
+   to scroll. Wide rail, visible track, solid thumb with a 3px inset so it
+   still reads as a pill. Firefox gets the same via scrollbar-color. */
+html {
+  scrollbar-width: auto;
+  scrollbar-color: rgba(194, 120, 20, 0.7) rgba(120, 90, 40, 0.1);
+}
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 14px;
+  height: 14px;
 }
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: rgba(120, 90, 40, 0.1);
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(251, 146, 60, 0.2);
+  background: rgba(194, 120, 20, 0.7);
   border-radius: 9999px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+  min-height: 48px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(251, 146, 60, 0.4);
+  background: rgba(194, 120, 20, 0.95);
+  background-clip: padding-box;
 }
 
 /* ========== TABLE ROW HOVER ========== */
