@@ -28,6 +28,7 @@ import { saveDraftToServer, DOC_TYPE_ROUTE } from "@/lib/draft-store";
 import { todayInIsrael } from "@/lib/date";
 import type { ParsedAttachment } from "@/lib/import-excel-text";
 import { useSpeechRecognition, appendFinalResult } from "@/lib/use-speech-recognition";
+import { splitReplyLinks } from "@/lib/assistant-reply";
 import type { DocumentType } from "@/lib/types";
 
 interface AssistantDraft {
@@ -172,6 +173,44 @@ function DocCards({ docs, onOpen }: { docs: AssistantDocCard[]; onOpen: () => vo
         </Link>
       ))}
     </div>
+  );
+}
+
+/**
+ * The reply is plain text (the prompt forbids Markdown), but when it names a
+ * screen as a bare route ("/migrate") or a full URL, that is the user's next
+ * step and it has to be one click away - a how-to answer that ends in a path
+ * the user must retype is a dead end with extra steps.
+ */
+function ReplyText({ text, onNavigate }: { text: string; onNavigate: () => void }) {
+  const segments = splitReplyLinks(text);
+  return (
+    <>
+      {segments.map((s, i) =>
+        s.kind === "text" ? (
+          <span key={i}>{s.text}</span>
+        ) : s.external ? (
+          <a
+            key={i}
+            href={s.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-orange-700 underline underline-offset-2 break-all"
+          >
+            {s.text}
+          </a>
+        ) : (
+          <Link
+            key={i}
+            href={s.href}
+            onClick={onNavigate}
+            className="text-orange-700 underline underline-offset-2 font-semibold"
+          >
+            {s.text}
+          </Link>
+        ),
+      )}
+    </>
   );
 }
 
@@ -696,7 +735,11 @@ export function AssistantWidget() {
                     : "bg-stone-100 text-stone-800"
                 }`}
               >
-                {m.content}
+                {m.role === "assistant" ? (
+                  <ReplyText text={m.content} onNavigate={() => setOpen(false)} />
+                ) : (
+                  m.content
+                )}
                 {m.documents && m.documents.length > 0 && (
                   <DocCards docs={m.documents} onOpen={() => setOpen(false)} />
                 )}
