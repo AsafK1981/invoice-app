@@ -281,33 +281,21 @@
   align-items: center;
   gap: 14px;
 }
-/* Compact mobile-only login link: same type treatment as .ml-navlink,
-   shown only below 760px next to the CTA (the desktop copy inside .ml-nav
-   covers it above that). Without this, a returning mobile visitor had no
-   way back into the app short of scrolling to the footer. */
-.ml-header-login-mobile {
-  font-size: 13.5px;
-  white-space: nowrap;
-}
-@media (min-width: 760px) {
-  .ml-header-login-mobile {
-    display: none;
-  }
-}
-/* Small phones (iPhone SE/320px class): logo + login link + CTA no longer
+/* The compact mobile login link that used to sit beside the CTA is gone
+   (2026-08-25): the hamburger drawer (see the MOBILE DRAWER block at the
+   end of this file) carries התחברות instead, and the header row at 390px
+   could not hold logo + login + CTA + burger. */
+/* Small phones (iPhone SE/320px class): logo + CTA + burger no longer
    fit at the desktop metrics above without overflowing the viewport.
-   Tighten gaps and shrink the CTA/login text a notch, scoped to the header
-   only so the same .ml-btn-sm used later on the page (line ~799) keeps its
-   normal size. */
+   Tighten gaps and shrink the CTA text a notch, scoped to the header
+   only so the same .ml-btn-sm used later on the page keeps its normal
+   size. */
 @media (max-width: 479.98px) {
   .ml-header-in {
     gap: 10px;
   }
   .ml-header-actions {
     gap: 8px;
-  }
-  .ml-header-login-mobile {
-    font-size: 12.5px;
   }
   .ml-header-in .ml-btn-sm {
     padding: 9px 16px;
@@ -2664,4 +2652,461 @@ h3 > .ml-badge-soon {
 .ml-app-xaxis span {
   flex: 1;
   text-align: center;
+}
+
+
+/* ============================================================
+   MOBILE LANDING RESTRUCTURE  (2026-08-25)
+   Asaf: on a phone the landing page "looks like an endless website" -
+   10,386px / 12.3 screens at 390x844, measured live. Desktop is fine and is
+   untouched. Below 760px the page becomes a tight landing page you can
+   move around in instead of scroll through:
+     - a hamburger drawer in the header with an in-page jump to every
+       section (HeaderLight.tsx);
+     - the four selling-point cards become a horizontal snap carousel;
+     - the ten advantage cards become a two-column grid of icon + title
+       tiles;
+     - the three demos (WhatsApp / document / dashboard) sit behind a
+       CSS-only segmented control that shows one at a time;
+     - the FAQ is a native <details name> accordion (all widths).
+   Every rule here is additive and scoped, so nothing above changes for
+   desktop except the FAQ accordion, which is deliberate.
+   ============================================================ */
+
+/* ---- Hamburger + drawer (markup in HeaderLight.tsx) ------------------ */
+.ml-burger {
+  display: none;
+  width: 42px;
+  height: 42px;
+  margin-inline-end: -8px;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--ml-ink);
+  cursor: pointer;
+  place-items: center;
+  transition: background-color 160ms ease-out;
+}
+.ml-burger:active {
+  background: var(--ml-gold-tint);
+}
+.ml-burger-bars {
+  display: grid;
+  gap: 5px;
+  width: 22px;
+}
+.ml-burger-bars i {
+  display: block;
+  height: 2px;
+  border-radius: 2px;
+  background: currentColor;
+}
+.ml-drawer-root {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+}
+.ml-drawer-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(36, 30, 22, 0.42);
+  animation: ml-drawer-fade 200ms ease-out both;
+}
+.ml-drawer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  inset-inline-start: 0;
+  width: min(330px, 84vw);
+  display: flex;
+  flex-direction: column;
+  padding: 14px 22px 28px;
+  padding-bottom: max(28px, env(safe-area-inset-bottom));
+  overflow-y: auto;
+  background: var(--ml-cream);
+  box-shadow: 0 0 0 1px var(--ml-line), -24px 0 60px -30px rgba(36, 30, 22, 0.45);
+  animation: ml-drawer-slide 280ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+/* The drawer lives at the reading start (right edge in RTL), so it enters
+   from beyond that edge: +100% is off-screen to the right. */
+@keyframes ml-drawer-slide {
+  from {
+    transform: translateX(100%);
+  }
+}
+@keyframes ml-drawer-fade {
+  from {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ml-drawer,
+  .ml-drawer-backdrop {
+    animation: none;
+  }
+}
+.ml-drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 42px;
+  margin-bottom: 20px;
+}
+.ml-drawer-close {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  margin-inline-end: -8px;
+  padding: 0;
+  border: 1px solid var(--ml-line);
+  border-radius: 999px;
+  background: var(--ml-card);
+  color: var(--ml-ink);
+  cursor: pointer;
+}
+.ml-drawer-close svg {
+  width: 18px;
+  height: 18px;
+}
+.ml-drawer-group + .ml-drawer-group {
+  margin-top: 24px;
+}
+.ml-drawer-label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--ml-gold-ink);
+}
+.ml-drawer-list li {
+  border-bottom: 1px solid var(--ml-line-soft);
+}
+.ml-drawer-link {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  font-size: 16.5px;
+  font-weight: 600;
+  color: var(--ml-ink);
+}
+.ml-drawer-link:active {
+  color: var(--ml-gold-ink);
+}
+.ml-drawer-cta {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 14px;
+  margin-top: auto;
+  padding-top: 28px;
+  text-align: center;
+}
+.ml-drawer-login {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ml-gold-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--ml-gold-tint-line);
+}
+
+/* ---- FAQ accordion (all widths) -------------------------------------- */
+.ml-faq-item {
+  padding-block: 0;
+}
+.ml-faq-q {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding-block: 18px;
+  list-style: none;
+  cursor: pointer;
+}
+.ml-faq-q::-webkit-details-marker {
+  display: none;
+}
+.ml-faq-q::marker {
+  content: "";
+}
+.ml-faq-chev {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  color: var(--ml-muted);
+  transition: transform 200ms ease-out, color 180ms ease-out;
+}
+.ml-faq-item[open] .ml-faq-chev {
+  transform: rotate(180deg);
+  color: var(--ml-gold-ink);
+}
+.ml-faq-item[open] .ml-faq-q {
+  color: var(--ml-gold-ink);
+}
+.ml-faq-a {
+  margin-top: 0;
+  padding-bottom: 20px;
+}
+.ml-faq-q:focus-visible {
+  outline: 2px solid var(--ml-gold-ink);
+  outline-offset: 4px;
+  border-radius: 6px;
+}
+
+/* ---- Demo switcher (hidden until the mobile block below) ------------- */
+.ml-show-tabs {
+  display: none;
+}
+.ml-show-tab-in {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---- The phone layout ------------------------------------------------ */
+@media (max-width: 759.98px) {
+  .ml-burger {
+    display: grid;
+  }
+  /* Jump targets: clear the 71px sticky header plus breathing room. */
+  #why,
+  #advantages,
+  #pricing,
+  #demo,
+  #faq,
+  #compare {
+    scroll-margin-top: 84px;
+  }
+
+  .ml-hero {
+    padding-block: 40px 34px;
+  }
+  .ml-hero .ml-eyebrow {
+    margin-bottom: 18px;
+  }
+
+  /* Selling points: one card and a peek of the next, swipe for the rest.
+     The row bleeds to the viewport edges through the wrap's own padding so
+     the first card still lines up with the hero text. */
+  .ml-trust {
+    padding-block: 0 36px;
+  }
+  .ml-trust-in {
+    display: flex;
+    gap: 12px;
+    margin-inline: -24px;
+    padding-inline: 24px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: 24px;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .ml-trust-in::-webkit-scrollbar {
+    display: none;
+  }
+  /* .ml-wrap tightens to 18px under 480px (top of this file); the bleed
+     must follow it or the row pokes 6px past the viewport on each side. */
+  @media (max-width: 479.98px) {
+    .ml-trust-in {
+      margin-inline: -18px;
+      padding-inline: 18px;
+      scroll-padding-inline: 18px;
+    }
+  }
+  .ml-trust-card {
+    flex: 0 0 min(300px, 78vw);
+    scroll-snap-align: start;
+    padding: 18px;
+  }
+  .ml-trust-card p {
+    font-size: 13px;
+  }
+
+  /* Differentiators: same three cards, tighter. */
+  .ml-spot {
+    padding-block: 36px 12px;
+  }
+  .ml-spot-head {
+    margin-bottom: 22px;
+  }
+  .ml-spot-list {
+    gap: 12px;
+  }
+  .ml-spot-card {
+    gap: 14px;
+    padding: 16px;
+    border-radius: 16px;
+  }
+  .ml-spot-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 15px;
+  }
+  .ml-spot-icon svg {
+    width: 25px;
+    height: 25px;
+  }
+  .ml-spot-copy h3 {
+    font-size: 17.5px;
+  }
+  .ml-spot-copy p {
+    font-size: 13.5px;
+    line-height: 1.55;
+  }
+
+  /* Advantage grid: ten icon + title tiles, two across. The body copy is
+     desktop-only; the tile names the feature and the drawer link brings a
+     visitor here in one tap. */
+  .ml-advantages {
+    padding-block: 10px 44px;
+  }
+  .ml-adv-head {
+    margin-bottom: 20px;
+  }
+  .ml-adv-head p {
+    display: none;
+  }
+  .ml-adv-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .ml-adv-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 10px;
+    padding: 14px 12px;
+    border-radius: 14px;
+  }
+  .ml-adv-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 11px;
+    margin-bottom: 0;
+  }
+  .ml-adv-icon svg {
+    width: 19px;
+    height: 19px;
+  }
+  .ml-adv-card h3 {
+    font-size: 14.5px;
+    line-height: 1.3;
+    gap: 6px;
+  }
+  .ml-adv-card p {
+    display: none;
+  }
+  /* Nine tiles in two columns leaves one alone on the last row; let it
+     take the full width instead of sitting in a half-empty row. */
+  .ml-adv-card:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+
+  .ml-pricing {
+    padding-block: 40px;
+  }
+
+  /* Demos: one at a time. */
+  .ml-show {
+    padding-block: 8px 0;
+  }
+  .ml-show-head {
+    margin-bottom: 22px;
+  }
+  .ml-show-head p {
+    font-size: 15px;
+  }
+  .ml-show-today {
+    font-size: 13.5px;
+    line-height: 1.6;
+  }
+  .ml-show-grid {
+    gap: 40px;
+    padding-bottom: 56px;
+  }
+  .ml-show-col-title {
+    margin-bottom: 14px;
+  }
+  .ml-app {
+    padding-block: 0 56px;
+  }
+  .ml-app .ml-show-head {
+    display: none;
+  }
+  .ml-midcta {
+    padding-block: 0 44px;
+  }
+  .ml-faq {
+    padding-block: 44px;
+  }
+  .ml-faq-title {
+    margin-bottom: 18px;
+  }
+  .ml-compare {
+    padding-block: 0 48px;
+  }
+  .ml-compare-in {
+    padding: 26px 18px;
+  }
+}
+
+/* The switcher only appears where :has() can drive it; anywhere else the
+   page simply shows all three demos, exactly as before. */
+@supports selector(:has(a)) {
+  @media (max-width: 759.98px) {
+    .ml-show-tabs {
+      display: flex;
+      gap: 4px;
+      width: fit-content;
+      max-width: 100%;
+      margin: 18px auto 0;
+      padding: 4px;
+      border-radius: 999px;
+      background: var(--ml-gold-tint);
+      border: 1px solid var(--ml-gold-tint-line);
+    }
+    .ml-show-tab {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 38px;
+      padding: 0 16px;
+      border-radius: 999px;
+      font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--ml-ink-2);
+      white-space: nowrap;
+      cursor: pointer;
+      transition: background-color 160ms ease-out, color 160ms ease-out,
+        box-shadow 160ms ease-out;
+    }
+    .ml-show-tab-in:checked + .ml-show-tab {
+      background: var(--ml-card);
+      color: var(--ml-ink);
+      box-shadow: var(--ml-shadow-sm);
+    }
+    .ml-show-tab-in:focus-visible + .ml-show-tab {
+      outline: 2px solid var(--ml-gold-ink);
+      outline-offset: 2px;
+    }
+    .ml-theme:has(#ml-tab-wa:checked) .ml-sheet-wrap,
+    .ml-theme:has(#ml-tab-wa:checked) .ml-app,
+    .ml-theme:has(#ml-tab-doc:checked) .ml-wa-phone-wrap,
+    .ml-theme:has(#ml-tab-doc:checked) .ml-app,
+    .ml-theme:has(#ml-tab-app:checked) .ml-show-grid {
+      display: none;
+    }
+  }
 }

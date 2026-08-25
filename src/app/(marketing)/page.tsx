@@ -400,7 +400,10 @@ export default function MarketingLanding() {
               leave content stranded invisible when JS is slow (which is exactly
               what the old RevealOnView did), and is wrapped in both
               @supports and prefers-reduced-motion in marketing-light.css. */}
-          <section className="ml-spot">
+          {/* Section ids (why / advantages / pricing / demo / faq / compare)
+              are the in-page jump targets of the mobile drawer in
+              HeaderLight (PAGE_SECTIONS) - keep both lists in sync. */}
+          <section className="ml-spot" id="why">
             <div className="ml-wrap">
               <div className="ml-spot-head">
                 <span className="ml-eyebrow">למה דווקא אנחנו</span>
@@ -440,7 +443,7 @@ export default function MarketingLanding() {
             </div>
           </section>
 
-          <section className="ml-advantages">
+          <section className="ml-advantages" id="advantages">
             <div className="ml-wrap">
               <div className="ml-adv-head">
                 <span className="ml-adv-tag">
@@ -530,7 +533,7 @@ export default function MarketingLanding() {
               Asaf: "מהוואטסאפ שלכם ישירות אל הלקוח", so the story reads
               WhatsApp first) and the invoice sheet (left), each <figure>
               carrying its own title, visual, fact list and caption. */}
-          <section className="ml-show">
+          <section className="ml-show" id="demo">
             <div className="ml-wrap">
               <div className="ml-show-head">
                 <span className="ml-eyebrow">כך זה נראה בפועל</span>
@@ -551,10 +554,53 @@ export default function MarketingLanding() {
                     section, so without this line the page reads as if the chat
                     bot is what you get on signup. */}
                 <p className="ml-show-today">
-                  <b>מה שכבר עובד היום:</b> המסמך שמשמאל, מספר ההקצאה
+                  <b>מה שכבר עובד היום:</b> המסמך שבהדגמה, מספר ההקצאה
                   שבתוכו, ושליחה ללקוח במייל או בקישור - הכול פעיל עכשיו
                   במערכת. ערוץ הוואטסאפ מצטרף בהמשך.
                 </p>
+                {/* Mobile-only demo switcher (2026-08-25). On a phone the
+                    three mocks (WhatsApp chat, the invoice sheet, the
+                    dashboard) stacked to ~3,300px - a third of the whole
+                    page. Below 760px this segmented control shows ONE of
+                    them at a time; the radios are plain HTML and the
+                    switching is CSS (`.ml-theme:has(#ml-tab-x:checked)` in
+                    marketing-light.css), so it works before hydration and
+                    needs no JS at all. The dashboard mock lives in the
+                    NEXT section (`.ml-app`) and is toggled the same way,
+                    with its own heading hidden on mobile so the two
+                    sections read as one. Desktop never sees the control
+                    and renders everything, as before. Browsers without
+                    `:has()` also fall back to showing everything. */}
+                <div className="ml-show-tabs" role="group" aria-label="בחירת הדגמה">
+                  <input
+                    type="radio"
+                    name="ml-show-tab"
+                    id="ml-tab-wa"
+                    className="ml-show-tab-in"
+                    defaultChecked
+                  />
+                  <label htmlFor="ml-tab-wa" className="ml-show-tab">
+                    וואטסאפ
+                  </label>
+                  <input
+                    type="radio"
+                    name="ml-show-tab"
+                    id="ml-tab-doc"
+                    className="ml-show-tab-in"
+                  />
+                  <label htmlFor="ml-tab-doc" className="ml-show-tab">
+                    המסמך
+                  </label>
+                  <input
+                    type="radio"
+                    name="ml-show-tab"
+                    id="ml-tab-app"
+                    className="ml-show-tab-in"
+                  />
+                  <label htmlFor="ml-tab-app" className="ml-show-tab">
+                    המסך מבפנים
+                  </label>
+                </div>
               </div>
             </div>
 
@@ -898,30 +944,7 @@ export default function MarketingLanding() {
               "הכנסות והוצאות" chart card. Figures are illustrative and the
               caption says so. If that dashboard is ever restructured, this
               block should follow it. */}
-          {/* Mid-page CTA (2026-08-11). Measured on the live page, the
-              signup buttons sat at y=15 (header), y=424 (hero) and then
-              nothing until y=4,353 - the whole middle two thirds, where a
-              visitor is actually being convinced, offered no way to act.
-              Sits right at the midpoint of that gap - after the
-              WhatsApp/document showcase has made the case, before the
-              dashboard view and the advantage grid. A slim inline strip,
-              not a second pricing band: the real CTA further down should
-              stay the loud one. */}
-          <section className="ml-midcta">
-            <div className="ml-wrap ml-midcta-in">
-              <p className="ml-midcta-t">משוכנעים? ההרשמה לוקחת פחות מדקה.</p>
-              <SignupLink
-                className="ml-btn ml-btn-primary ml-btn-sm"
-              >
-                התחילו בחינם
-              </SignupLink>
-              <span className="ml-midcta-note">
-                בלי כרטיס אשראי · אפשר לבטל בכל רגע
-              </span>
-            </div>
-          </section>
-
-          <section className="ml-app">
+          <section className="ml-app" id="app">
             <div className="ml-wrap">
               <div className="ml-show-head">
                 <span className="ml-eyebrow">המסך שתעבדו בו</span>
@@ -1055,17 +1078,64 @@ export default function MarketingLanding() {
             </div>
           </section>
 
+          {/* Mid-page CTA (2026-08-11). Measured on the live page back then,
+              the signup buttons sat at y=15 (header), y=424 (hero) and then
+              nothing until the pricing band - the whole middle, where a
+              visitor is actually being convinced, offered no way to act.
+              Moved below the dashboard mock 2026-08-25: pricing (with its
+              own CTA) now sits ABOVE the demos, and on mobile the dashboard
+              is a tab of the demo section, so a strip wedged between the
+              two demos broke that section in half. After both demos have
+              made the case is where "משוכנעים?" belongs. A slim inline
+              strip, not a second pricing band: the pricing CTA stays the
+              loud one. */}
+          <section className="ml-midcta">
+            <div className="ml-wrap ml-midcta-in">
+              <p className="ml-midcta-t">משוכנעים? ההרשמה לוקחת פחות מדקה.</p>
+              <SignupLink
+                className="ml-btn ml-btn-primary ml-btn-sm"
+              >
+                התחילו בחינם
+              </SignupLink>
+              <span className="ml-midcta-note">
+                בלי כרטיס אשראי · אפשר לבטל בכל רגע
+              </span>
+            </div>
+          </section>
 
-          <section className="ml-faq">
+          {/* FAQ as a native exclusive accordion (2026-08-25): six answers
+              in full ran 1,160px on a phone. `<details name>` keeps one
+              open at a time, stays searchable with find-in-page, needs no
+              JS, and the JSON-LD above still carries every answer. First
+              item open so the section never reads as an empty list of
+              questions. */}
+          <section className="ml-faq" id="faq">
             <h2 className="ml-faq-title">שאלות נפוצות</h2>
-            {FAQ_ITEMS.map((item) => (
-              <div className="ml-faq-item" key={item.q}>
-                <p className="ml-faq-q">{item.q}</p>
+            {FAQ_ITEMS.map((item, index) => (
+              <details
+                className="ml-faq-item"
+                key={item.q}
+                name="ml-faq"
+                open={index === 0 ? true : undefined}
+              >
+                <summary className="ml-faq-q">
+                  {item.q}
+                  <svg className="ml-faq-chev" viewBox="0 0 16 16" aria-hidden="true">
+                    <path
+                      d="M3.5 6l4.5 4.5L12.5 6"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </summary>
                 <p className="ml-faq-a">{item.a}</p>
-              </div>
+              </details>
             ))}
           </section>
-          <section className="ml-compare">
+          <section className="ml-compare" id="compare">
             <div className="ml-wrap">
               <div className="ml-compare-in">
                 <h3>רוצים השוואה מלאה שורה מול שורה?</h3>
