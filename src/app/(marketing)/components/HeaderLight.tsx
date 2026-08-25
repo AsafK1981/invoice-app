@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type MouseEvent } from "react";
+import { createPortal } from "react-dom";
 import { useOptionalUser } from "@/lib/auth";
 
 /**
@@ -199,7 +200,15 @@ export default function HeaderLight() {
         </div>
       </div>
 
-      {open && (
+      {/* PORTALED to <body>, never rendered inside <header>. The sticky
+          header carries `backdrop-filter`, and a backdrop-filter makes its
+          element the containing block for every `position: fixed`
+          descendant. Chromium ignores that for backdrop-filter, so the
+          drawer looked right in headless QA; mobile Safari honours it, so
+          on Asaf's phone the whole drawer was squeezed into the 71px header
+          strip and all he saw was its head - "קופץ לי חשבונית ידידותית".
+          `open` is only ever true after hydration, so `document` exists. */}
+      {open && createPortal(
         <div className="ml-drawer-root" id="ml-drawer">
           <div className="ml-drawer-backdrop" onClick={close} aria-hidden="true" />
           <nav className="ml-drawer" aria-label="תפריט האתר">
@@ -283,7 +292,8 @@ export default function HeaderLight() {
               )}
             </div>
           </nav>
-        </div>
+        </div>,
+        document.body
       )}
     </header>
   );

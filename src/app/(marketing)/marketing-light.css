@@ -84,7 +84,11 @@
    end, loaded on the same page for a moment during navigation.
    ============================================================ */
 
-.ml-theme {
+/* `.ml-drawer-root` shares the palette because the mobile drawer is
+   portaled to <body> (see HeaderLight.tsx) and would otherwise sit outside
+   the `.ml-theme` subtree that defines every --ml-* token. */
+.ml-theme,
+.ml-drawer-root {
   /* warm palette, copied by value from the approved mockup
      (c-warm-friendly.html) so the two cannot drift silently */
   --ml-cream: #faf7f2;
@@ -2711,6 +2715,17 @@ h3 > .ml-badge-soon {
   position: fixed;
   inset: 0;
   z-index: 100;
+  /* Portaled to <body>: restate the .ml-theme text defaults it no longer
+     inherits (the --ml-* tokens themselves are shared at the top of this
+     file). */
+  color: var(--ml-ink);
+  font-family: "Assistant", var(--font-assistant), system-ui, sans-serif;
+  line-height: 1.5;
+  text-align: right;
+}
+.ml-drawer-root a[href]:focus-visible,
+.ml-drawer-root button:focus-visible {
+  outline-color: var(--ml-rose);
 }
 .ml-drawer-backdrop {
   position: absolute;
