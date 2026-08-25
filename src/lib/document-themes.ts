@@ -114,6 +114,61 @@ function rgbToHex(r: number, g: number, b: number): string {
   return `#${c(r)}${c(g)}${c(b)}`;
 }
 
+function darken(hex: string, amount: number): string {
+  const { r, g, b } = hexToRgb(hex);
+  const mix = (c: number) => Math.round(c * (1 - amount));
+  return rgbToHex(mix(r), mix(g), mix(b));
+}
+
+/** WCAG relative luminance, 0 (black) .. 1 (white). */
+function luminance(hex: string): number {
+  const { r, g, b } = hexToRgb(hex);
+  const lin = (c: number) => {
+    const s = c / 255;
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+}
+
+/**
+ * Expands ONE brand colour into a full accent family. Only used for a
+ * brand-book import, where the exact brand hex matters more than a
+ * hand-tuned palette. Brand colours arrive at any lightness, but the
+ * `accent` step is used for TEXT on white (totals, headings), so light ones
+ * are pulled down until they read; the tint/line/deep steps then follow the
+ * same 100/300/800 relationship the hand-picked {@link tw} families use.
+ * Every output is computed from the input; nothing is passed through.
+ */
+export function deriveAccentFamily(hex: string): AccentFamily {
+  let accent = hex.toLowerCase();
+  for (let i = 0; i < 12 && luminance(accent) > 0.3; i++) accent = darken(accent, 0.12);
+  const deep = darken(accent, 0.3);
+  return {
+    accent,
+    line: lighten(accent, 0.5),
+    faint: lighten(accent, 0.86),
+    deep,
+    grad: `linear-gradient(177deg, ${lighten(accent, 0.3)} 0%, ${accent} 42%, ${deep} 78%, ${lighten(accent, 0.18)} 100%)`,
+  };
+}
+
+/** The palette accent closest (RGB distance) to a brand colour - the picker's
+ *  home for an imported colour, and what older readers fall back to. */
+export function nearestAccentKey(hex: string): AccentKey {
+  const target = hexToRgb(hex);
+  let best: AccentKey = "gold";
+  let bestDist = Infinity;
+  for (const key of Object.keys(ACCENT_HEX) as AccentKey[]) {
+    const c = hexToRgb(ACCENT_HEX[key].accent);
+    const d = (c.r - target.r) ** 2 + (c.g - target.g) ** 2 + (c.b - target.b) ** 2;
+    if (d < bestDist) {
+      bestDist = d;
+      best = key;
+    }
+  }
+  return best;
+}
+
 /** A hand-picked family from four palette steps (ink/line/tint/deep) with
  *  the same 4-stop diagonal gradient shape the original gold bar uses. */
 function tw(accent: string, line: string, faint: string, deep: string): AccentFamily {
@@ -901,6 +956,17 @@ export interface DocumentDesign {
   layout: LayoutKey;
   pattern: PatternKey;
   logoPosition: LogoPosition;
+  /**
+   * Exact brand colour (`#rrggbb`, lowercase) imported from a brand book
+   * (2026-08-25). The one deliberate exception to "closed sets only": it is
+   * not looked up from a map, but it is still never copied verbatim from
+   * raw JSON into CSS - `normalizeDocumentDesign` admits it only through the
+   * strict hex regex, and `designToCssVars` emits only colours it computed
+   * from that validated value ({@link deriveAccentFamily}). When present it
+   * replaces the `accent` family; `accent` keeps the nearest palette key so
+   * the picker has a home for it. Absent (not undefined) when unused.
+   */
+  brandColor?: string;
 }
 
 function isTemplateId(v: unknown): v is TemplateId {
@@ -920,6 +986,27 @@ function isPatternKey(v: unknown): v is PatternKey {
 }
 function isLogoPosition(v: unknown): v is LogoPosition {
   return v === "right" || v === "center" || v === "left";
+}
+
+const BRAND_HEX_RE = /^#[0-9a-f]{6}$/;
+
+/** Strict lowercase `#rrggbb` - the only shape a brand colour may take. */
+export function isBrandHex(v: unknown): v is string {
+  return typeof v === "string" && BRAND_HEX_RE.test(v);
+}
+
+/**
+ * Coerces user/model-supplied colour text into the strict shape, or null.
+ * Accepts `#RRGGBB` in any case and `#rgb` shorthand; rejects everything
+ * else (names, rgb(), anything with a `)` - this value ends up in CSS).
+ */
+export function normalizeBrandHex(v: unknown): string | null {
+  if (typeof v !== "string") return null;
+  const s = v.trim().toLowerCase();
+  if (BRAND_HEX_RE.test(s)) return s;
+  const short = /^#([0-9a-f])([0-9a-f])([0-9a-f])$/.exec(s);
+  if (short) return `#${short[1]}${short[1]}${short[2]}${short[2]}${short[3]}${short[3]}`;
+  return null;
 }
 
 /**
@@ -954,7 +1041,11 @@ export function normalizeDocumentDesign(raw: unknown): DocumentDesign | null {
   const pattern: PatternKey = isPatternKey(r.pattern) ? r.pattern : "none";
   const logoPosition: LogoPosition = isLogoPosition(r.logoPosition) ? r.logoPosition : "right";
 
-  return { template, accent, font, layout, pattern, logoPosition };
+  const design: DocumentDesign = { template, accent, font, layout, pattern, logoPosition };
+  // Regex-gated, never verbatim: see the field's doc comment.
+  const brandColor = normalizeBrandHex(r.brandColor);
+  if (brandColor) design.brandColor = brandColor;
+  return design;
 }
 
 // ── The CSS boundary ─────────────────────────────────────────────────────
@@ -972,7 +1063,14 @@ export function designToCssVars(design: DocumentDesign | null): Record<string, s
   if (!design) return {};
 
   const tpl = getTemplate(design.template);
-  const accentFamily = ACCENT_HEX[design.accent] ?? ACCENT_HEX[tpl.accent];
+  // A brand colour (already regex-validated by normalizeDocumentDesign; the
+  // isBrandHex re-check keeps this function safe even for a hand-built
+  // DocumentDesign) is expanded into a family by colour math from that one
+  // value - still nothing copied through from untrusted input.
+  const accentFamily =
+    design.brandColor && isBrandHex(design.brandColor)
+      ? deriveAccentFamily(design.brandColor)
+      : (ACCENT_HEX[design.accent] ?? ACCENT_HEX[tpl.accent]);
   const corner = CORNER_VALUES[tpl.corner];
   const border = BORDER_VALUES[tpl.border];
   const chosen = FONT_OPTIONS[design.font] ?? FONT_OPTIONS[tpl.font];

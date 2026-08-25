@@ -26,6 +26,8 @@ import {
 } from "@/lib/document-themes";
 import { LayoutGlyph, PatternGlyph } from "@/components/layout-glyph";
 import { DocumentPreview, type PreviewClient } from "@/components/document-preview";
+import { BrandKitImport } from "@/components/brand-kit-import";
+import { applyBrandKit, type BrandKit } from "@/lib/brand-kit";
 import type { DocumentItem } from "@/lib/types";
 
 const DEFAULT_DESIGN: DocumentDesign = {
@@ -68,6 +70,10 @@ export function DocumentDesignSection() {
   const [justSaved, setJustSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [mobileTab, setMobileTab] = useState<"edit" | "preview">("edit");
+  // The logo is business data, not design data, but a brand-book import
+  // sets it together with the colours, so it is drafted here and persisted
+  // by the same "שמור עיצוב" click.
+  const [draftLogo, setDraftLogo] = useState<string | undefined>(undefined);
   const initialized = useRef(false);
 
   // Initialize the draft from the business's SAVED design exactly once,
@@ -79,8 +85,9 @@ export function DocumentDesignSection() {
     if (ready && !initialized.current) {
       initialized.current = true;
       setDraft(normalizeDocumentDesign(business.documentDesign) ?? DEFAULT_DESIGN);
+      setDraftLogo(business.logoUrl);
     }
-  }, [ready, business.documentDesign]);
+  }, [ready, business.documentDesign, business.logoUrl]);
 
   const currentTemplate = getTemplate(draft.template);
 
@@ -107,7 +114,20 @@ export function DocumentDesignSection() {
   }
 
   function chooseAccent(accent: AccentKey) {
-    setDraft((d) => ({ ...d, accent }));
+    // Picking a palette colour is an explicit step away from the imported
+    // brand colour, so the override is dropped (not just hidden).
+    setDraft((d) => {
+      const { brandColor: _dropped, ...rest } = d;
+      void _dropped;
+      return { ...rest, accent };
+    });
+  }
+
+  function handleBrandApply(kit: BrandKit, logoUrl: string | undefined): string[] {
+    const { design, summary } = applyBrandKit(draft, kit);
+    setDraft(design);
+    if (logoUrl) setDraftLogo(logoUrl);
+    return summary;
   }
 
   function chooseFont(font: FontKey) {
@@ -126,7 +146,7 @@ export function DocumentDesignSection() {
     setSaveError(null);
     setSaving(true);
     try {
-      await saveBusiness({ ...business, documentDesign: draft });
+      await saveBusiness({ ...business, logoUrl: draftLogo, documentDesign: draft });
       setJustSaved(true);
       setTimeout(() => setJustSaved(false), 2000);
     } catch (err) {
@@ -138,7 +158,7 @@ export function DocumentDesignSection() {
 
   const vatRate = getVatRate(business);
   const vat = vatRate > 0 ? calculateVat(SAMPLE_SUBTOTAL, vatRate) : 0;
-  const previewBusiness = { ...business, documentDesign: draft };
+  const previewBusiness = { ...business, logoUrl: draftLogo, documentDesign: draft };
   // The font swatches render the user's OWN business name (the text the
   // handwriting fonts actually apply to), never a hardcoded person's name.
   // Before the user has filled in a name, fall back to a generic label.
@@ -146,6 +166,9 @@ export function DocumentDesignSection() {
 
   const editPanel = (
     <div className="space-y-6">
+      {/* ── Brand-book import: colours + font + logo in one go ── */}
+      <BrandKitImport business={business} onApply={handleBrandApply} />
+
       {/* ── Template gallery ── */}
       <div>
         <h3 className="text-sm font-semibold text-stone-900 mb-3">תבנית לפי מקצוע</h3>
@@ -246,13 +269,31 @@ export function DocumentDesignSection() {
       <div>
         <h3 className="text-sm font-semibold text-stone-900 mb-3">צבע דגש</h3>
         <div className="space-y-3">
+          {draft.brandColor && (
+            <div>
+              <div className="text-[11px] font-semibold text-stone-500 mb-1.5">צבע המותג (מהברנדבוק)</div>
+              <div className="flex items-center gap-2">
+                <span
+                  aria-pressed="true"
+                  role="img"
+                  aria-label={`צבע המותג ${draft.brandColor}`}
+                  className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center ring-2 ring-offset-2 ring-orange-400"
+                  style={{ background: draft.brandColor }}
+                >
+                  <Check className="w-4 h-4 text-white drop-shadow" />
+                </span>
+                <span className="text-xs text-stone-600" dir="ltr">{draft.brandColor}</span>
+                <span className="text-[11px] text-stone-500">· בחירת צבע מהפלטה למטה מבטלת אותו</span>
+              </div>
+            </div>
+          )}
           {ACCENT_GROUPS.map((group) => (
             <div key={group.label}>
               <div className="text-[11px] font-semibold text-stone-500 mb-1.5">{group.label}</div>
               <div className="flex flex-wrap gap-2">
                 {group.keys.map((key) => {
                   const hex = ACCENT_HEX[key].accent;
-                  const selected = draft.accent === key;
+                  const selected = draft.accent === key && !draft.brandColor;
                   const isTemplateDefault = key === currentTemplate.accent;
                   return (
                     <button
