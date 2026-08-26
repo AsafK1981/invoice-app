@@ -78,7 +78,11 @@ html {
 
   /* --- accent as TEXT on a light surface (deliberately a different token) --- */
   --gold-text: #c2410c; /* orange-700: 5.0:1 on white, 4.6:1 on the sand page */
-  --gold-text-grad: linear-gradient(135deg, #ea580c, #be123c);
+  /* Big display numbers (KPI values, summary totals): NOT the accent. Asaf
+     (2026-08-26) found the orange-to-rose ramp on the 3,100-style figures
+     "stressful"; money reads calmer in green. green-700 -> teal-700, both
+     >= 5:1 on white. */
+  --gold-text-grad: linear-gradient(135deg, #15803d, #0f766e);
 
   /* --- surfaces --- */
   --bg: #f7f4ed; /* app background: warm sand */
