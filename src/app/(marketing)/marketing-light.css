@@ -933,7 +933,38 @@ h1.ml-hero-h1 {
        phone leads); it is the narrower visual, the sheet gets the wider
        left column. */
     grid-template-columns: 1fr 1.45fr;
-    gap: 48px;
+    /* Four shared row tracks - title / visual / checklist / caption - so
+       the two columns line up row for row (Asaf, 2026-08-26: the phone ran
+       ~100px taller than the sheet, so the checkmark lists sat at different
+       heights and the pair read as unbalanced). Row gap is 0: the vertical
+       rhythm comes from the items' own margins, exactly as before. */
+    grid-template-rows: auto auto auto auto;
+    gap: 0 48px;
+    align-items: stretch;
+  }
+  .ml-wa-phone-wrap,
+  .ml-sheet-wrap {
+    display: grid;
+    grid-template-rows: subgrid;
+    grid-row: span 4;
+  }
+  /* Both visuals fill the shared row. The sheet pins its footer to the
+     bottom edge (a real page keeps its footer at the foot, whatever the
+     body length); the phone lets its chat area absorb any slack so the
+     frame itself stays edge to edge with the sheet. */
+  .ml-sheet {
+    display: flex;
+    flex-direction: column;
+  }
+  .ml-sh-foot {
+    margin-top: auto;
+  }
+  .ml-wa-phone {
+    display: flex;
+    flex-direction: column;
+  }
+  .ml-wa-chat {
+    flex: 1 1 auto;
   }
 }
 .ml-show-col-title {
