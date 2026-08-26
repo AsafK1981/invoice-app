@@ -80,9 +80,10 @@ html {
   --gold-text: #c2410c; /* orange-700: 5.0:1 on white, 4.6:1 on the sand page */
   /* Big display numbers (KPI values, summary totals): NOT the accent. Asaf
      (2026-08-26) found the orange-to-rose ramp on the 3,100-style figures
-     "stressful"; money reads calmer in green. green-700 -> teal-700, both
-     >= 5:1 on white. */
-  --gold-text-grad: linear-gradient(135deg, #15803d, #0f766e);
+     "stressful"; then chose plain ink for the "ink + one touch of brand
+     orange" restyle. Solid ink on both stops so the bg-clip-text mechanism
+     that renders these numbers keeps working without a visible gradient. */
+  --gold-text-grad: linear-gradient(135deg, #1c1917, #1c1917);
 
   /* --- surfaces --- */
   --bg: #f7f4ed; /* app background: warm sand */
@@ -135,6 +136,16 @@ html {
   --dc-t-proforma: #8494bd;
   --dc-t-tax: #6f7fae;
   --dc-t-credit: #b5766a;
+
+  /* --- document cards: row tints by type, ink + one touch of brand orange
+     restyle (2026-08-26). Barely-there fills so rows read as grouped by
+     type at a glance without competing with the status pill's colour. */
+  --dc-tint-receipt: #f1f7f2;
+  --dc-tint-tax-receipt: #eff3f9;
+  --dc-tint-tax: #eff3f9;
+  --dc-tint-quote: #fbf6ec;
+  --dc-tint-proforma: #f4f3f6;
+  --dc-tint-credit: #f6f1f1;
 
   /* --- document cards: neutral furniture --- */
   --dc-hairline: #f2ede1; /* the card's own internal rule, lighter than --line */
@@ -854,8 +865,10 @@ html .pgbtn-hero svg {
    (Since 2026-08-18 only the dashboard wears this panel; the reports page
    moved to the `.rpt-*` block below.) */
 html .rp-period-group {
-  background: linear-gradient(170deg, var(--goldtint), #fffef9);
-  border: 1.5px solid var(--goldline);
+  /* 2026-08-26 colour diet: white panel, neutral hairline. The accent
+     lives on the one CTA above it, not on this enclosure. */
+  background: #ffffff;
+  border: 1px solid #e9e4d8;
   border-radius: 20px;
   padding: 16px 16px 18px;
 }
@@ -873,14 +886,14 @@ html .rp-period-label {
   gap: 7px;
   font-size: 12.5px;
   font-weight: 700;
-  color: var(--g3);
+  color: #57534e;
 }
 html .rp-period-label::before {
   content: "";
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--gold-grad);
+  background: #1c1917;
   flex-shrink: 0;
 }
 /* The dashboard's segmented period picker (חודש / חודשיים / חצי שנה / שנה),
@@ -1804,8 +1817,16 @@ html .dc-row {
   border-radius: var(--dc-r-2);
   transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease, background-color 0.18s ease;
 }
+/* Barely-there tint per document type, so the eye groups rows by type
+   without a coloured dot doing the work. Hover darkens slightly via the
+   box-shadow/lift below, it deliberately does NOT paint the row white. */
+html .dc-row[data-type="receipt"] { background: var(--dc-tint-receipt); }
+html .dc-row[data-type="tax_invoice_receipt"] { background: var(--dc-tint-tax-receipt); }
+html .dc-row[data-type="tax_invoice"] { background: var(--dc-tint-tax); }
+html .dc-row[data-type="quote"] { background: var(--dc-tint-quote); }
+html .dc-row[data-type="proforma"] { background: var(--dc-tint-proforma); }
+html .dc-row[data-type="credit_note"] { background: var(--dc-tint-credit); }
 html .dc-row:hover {
-  background-color: var(--goldtint);
   border-color: var(--goldline);
   box-shadow: var(--dc-sh-lift);
   transform: translateY(-1px);
@@ -1914,10 +1935,10 @@ html .dc-chip {
   height: 1.5rem;
   padding-inline: var(--dc-sp-3);
   border-radius: var(--dc-r-1);
-  border: 1px solid var(--goldtintline);
-  background: var(--goldtint);
-  color: var(--gold-text);
-  font-size: var(--dc-fs-2);
+  border: 1px solid transparent;
+  background: transparent;
+  color: #1c1917;
+  font-size: var(--dc-fs-3);
   font-weight: 600;
   line-height: 1;
   white-space: nowrap;
@@ -1928,6 +1949,7 @@ html .dc-chiptxt {
   text-overflow: ellipsis;
 }
 html .dc-tdot {
+  display: none;
   position: absolute;
   inset-inline-start: var(--dc-sp-1);
   top: 50%;
@@ -2048,7 +2070,7 @@ html .dc-num {
   unicode-bidi: isolate;
   text-align: end;
   font-weight: 700;
-  color: var(--gold-text);
+  color: #1c1917;
 }
 /* The placeholder for a document with no allocation number, in a list where
    some other document has one. */
@@ -2069,7 +2091,7 @@ html .dc-mail {
   color: var(--muted);
   white-space: nowrap;
 }
-html .dc-mail[data-sent] { color: var(--dc-paid-ink); }
+html .dc-mail[data-sent] { color: #57534e; }
 html .dc-mailicon {
   width: 0.95rem;
   height: 0.95rem;

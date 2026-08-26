@@ -47,14 +47,14 @@ export function TopClients({ documents, limit = 5 }: Props) {
 
   return (
     <div className="space-y-3">
-      {sorted.map((client) => {
+      {sorted.map((client, idx) => {
         const percentage = (client.total / maxTotal) * 100;
         return (
           <div key={client.name} className="group">
             <div className="flex items-center justify-between mb-1.5">
               <div className="flex items-center gap-2 min-w-0">
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-orange-200 to-rose-200 flex items-center justify-center flex-shrink-0">
-                  <Building2 className="w-4 h-4 text-orange-700" />
+                <div className="w-8 h-8 rounded-xl bg-stone-100 flex items-center justify-center flex-shrink-0">
+                  <Building2 className="w-4 h-4 text-stone-600" />
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-stone-900 truncate">{client.name}</p>
@@ -63,13 +63,13 @@ export function TopClients({ documents, limit = 5 }: Props) {
                   </p>
                 </div>
               </div>
-              <span className="text-sm font-bold text-stone-900 flex-shrink-0">
+              <span className="text-sm font-semibold text-stone-900 flex-shrink-0">
                 {formatCurrency(client.total)}
               </span>
             </div>
-            <div className="h-1.5 bg-orange-50 rounded-full overflow-hidden">
+            <div className="h-[3px] bg-[#f1efe9] rounded-full overflow-hidden">
               <div
-                className="h-full bg-gradient-to-l from-orange-400 to-rose-400 rounded-full transition-all duration-500"
+                className={`h-full rounded-full transition-all duration-500 ${idx === 0 ? "bg-orange-500" : "bg-stone-900"}`}
                 style={{ width: `${percentage}%` }}
               />
             </div>

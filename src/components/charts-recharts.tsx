@@ -13,9 +13,6 @@
 
 import { useMemo } from "react";
 import {
-  PieChart,
-  Pie,
-  Cell,
   LineChart,
   Line,
   XAxis,
@@ -35,30 +32,15 @@ interface ExpenseCategoriesChartProps {
   expenses: Expense[];
 }
 
-const COLORS = [
-  "#f97316", // orange
-  "#f43f5e", // rose
-  "#a855f7", // violet
-  "#06b6d4", // cyan
-  "#10b981", // emerald
-  "#eab308", // yellow
-  "#ec4899", // pink
-  "#64748b", // slate
-];
-
-/** Darker twins of COLORS, ~30% down, for the 3D depth ring drawn behind and
- *  below the donut so it reads as a solid with thickness (Asaf picked the 3D
- *  direction from the A/B/C chart mockup, 2026-08-23). Same order as COLORS. */
-const COLORS_DEEP = [
-  "#c2570a",
-  "#c11f3c",
-  "#7c2fc4",
-  "#04889f",
-  "#0b8a5f",
-  "#b08706",
-  "#c21f6e",
-  "#47536a",
-];
+/** Segment colours by rank, not by category identity: the biggest category
+ * is always the one touch of brand orange, everything after it steps down
+ * through ink and stone. Beyond the fifth rank every segment repeats the
+ * same barely-there grey, so a long tail of small categories reads as one
+ * quiet group instead of six more competing hues. */
+const RANK_COLORS = ["#f97316", "#1c1917", "#78716c", "#a8a29e", "#d6d3d1", "#e7e5e4"];
+function colorForRank(idx: number): string {
+  return RANK_COLORS[Math.min(idx, RANK_COLORS.length - 1)];
+}
 
 export function ExpenseCategoriesChart({ expenses }: ExpenseCategoriesChartProps) {
   const data = useMemo(() => {
@@ -83,70 +65,40 @@ export function ExpenseCategoriesChart({ expenses }: ExpenseCategoriesChartProps
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
-      <div className="relative" style={{ width: "100%", height: 176 }}>
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            {/* 3D depth ring: darker twins, shifted 6px down and drawn first
-                (behind), so the donut peeks a solid "side" at the bottom. */}
-            <Pie
-              data={data}
-              cx="50%"
-              cy={94}
-              innerRadius={45}
-              outerRadius={72}
-              paddingAngle={2}
-              dataKey="value"
-              isAnimationActive={false}
-              stroke="none"
-              style={{ pointerEvents: "none" }}
-            >
-              {data.map((_, idx) => (
-                <Cell key={idx} fill={COLORS_DEEP[idx % COLORS_DEEP.length]} />
-              ))}
-            </Pie>
-            <Pie
-              data={data}
-              cx="50%"
-              cy={88}
-              innerRadius={45}
-              outerRadius={72}
-              paddingAngle={2}
-              dataKey="value"
-            >
-              {data.map((_, idx) => (
-                <Cell key={idx} fill={COLORS[idx % COLORS.length]} />
-              ))}
-            </Pie>
-            <Tooltip
-              contentStyle={{
-                backgroundColor: "#fffaf5",
-                border: "1px solid #fed7aa",
-                borderRadius: "12px",
-                direction: "rtl",
+    <div className="space-y-4">
+      <div>
+        <p className="text-xs text-stone-600 mb-2">
+          סה״כ <span className="font-bold text-stone-900">{formatCurrency(total)}</span>
+        </p>
+        <div style={{ display: "flex", height: 10, borderRadius: 3, overflow: "hidden", gap: 2 }}>
+          {data.map((item, idx) => (
+            <div
+              key={item.name}
+              style={{
+                width: `${(item.value / total) * 100}%`,
+                backgroundColor: colorForRank(idx),
               }}
-              formatter={(value) => formatCurrency(Number(value) || 0)}
+              title={`${item.name}: ${formatCurrency(item.value)}`}
             />
-          </PieChart>
-        </ResponsiveContainer>
-        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-          <p className="text-xs text-stone-600">סה״כ</p>
-          <p className="text-base font-bold text-stone-900">{formatCurrency(total)}</p>
+          ))}
         </div>
       </div>
-      <div className="space-y-1.5">
-        {data.slice(0, 6).map((item, idx) => {
+      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+        {data.map((item, idx) => {
           const pct = ((item.value / total) * 100).toFixed(0);
           return (
-            <div key={item.name} className="flex items-center gap-2 text-sm">
-              <div
-                className="w-3 h-3 rounded-full flex-shrink-0"
-                style={{ backgroundColor: COLORS[idx % COLORS.length] }}
+            <div key={item.name} className="flex items-center gap-2 min-w-0">
+              <span
+                className="flex-shrink-0"
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: 2,
+                  backgroundColor: colorForRank(idx),
+                }}
               />
-              <span className="text-stone-700 truncate flex-1">{item.name}</span>
-              <span className="text-stone-500 text-xs flex-shrink-0">{pct}%</span>
-              <span className="text-stone-900 font-semibold text-xs flex-shrink-0 w-16 text-left">
-                {formatCurrency(item.value)}
+              <span className="text-xs text-stone-700 truncate">
+                {item.name} · {pct}%
               </span>
             </div>
           );

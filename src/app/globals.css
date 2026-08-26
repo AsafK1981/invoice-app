@@ -91,7 +91,7 @@ input:not(.input-warm):focus-visible,
   box-shadow:
     0 1px 2px rgba(120, 65, 20, 0.04),
     0 4px 20px rgba(194, 110, 40, 0.06);
-  border: 1px solid rgba(255, 237, 213, 0.8);
+  border: 1px solid #e9e4d8;
   transition: box-shadow 0.3s ease, transform 0.3s ease;
 }
 

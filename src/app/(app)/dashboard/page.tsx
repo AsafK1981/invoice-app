@@ -15,6 +15,7 @@ import {
   Receipt,
   Users,
   PiggyBank,
+  ClipboardList,
 } from "lucide-react";
 import { useDocuments } from "@/lib/document-store";
 import { isCountableRevenue } from "@/lib/types";
@@ -188,7 +189,6 @@ export default function DashboardPage() {
       value: formatCurrency(stats.income),
       sub: `${stats.paidCount} ${stats.paidCount === 1 ? "מסמך" : "מסמכים"} שולמו`,
       icon: TrendingUp,
-      bgGradient: "from-emerald-50 to-teal-50",
       href: `/documents?status=paid${monthQs}`,
       delta: stats.hasPrev ? stats.incomeDelta : null,
       /** Higher = better: for income, "up" is good (green) */
@@ -200,7 +200,6 @@ export default function DashboardPage() {
       value: formatCurrency(stats.expenseTotal),
       sub: `${stats.expensesInRange.length} פעולות`,
       icon: TrendingDown,
-      bgGradient: "from-rose-50 to-pink-50",
       href: "/expenses",
       delta: stats.hasPrev ? stats.expenseDelta : null,
       /** Lower = better: for expenses, "down" is good (green) */
@@ -212,7 +211,6 @@ export default function DashboardPage() {
       value: formatCurrency(stats.profit),
       sub: stats.income > 0 ? `${((stats.profit / stats.income) * 100).toFixed(0)}% מההכנסות` : "-",
       icon: PiggyBank,
-      bgGradient: "from-orange-50 to-amber-50",
       href: "/reports",
       delta: stats.hasPrev ? stats.profitDelta : null,
       higherIsBetter: true,
@@ -223,7 +221,6 @@ export default function DashboardPage() {
       value: formatCurrency(stats.avgInvoice),
       sub: "לפי מסמכים שולמו",
       icon: Receipt,
-      bgGradient: "from-violet-50 to-purple-50",
       href: `/documents?status=paid${monthQs}`,
       delta: stats.hasPrev ? stats.avgDelta : null,
       higherIsBetter: true,
@@ -242,8 +239,6 @@ export default function DashboardPage() {
           ? formatCurrency(stats.openQuotesValue)
           : `${stats.openQuotes.length} ${stats.openQuotes.length === 1 ? "הצעה" : "הצעות"}`,
       icon: FileQuestion,
-      color: "text-amber-600",
-      bg: "bg-amber-50 border-amber-200",
       href: "/documents?type=quote&status=sent",
       tone: "amber",
     },
@@ -252,8 +247,6 @@ export default function DashboardPage() {
       value: String(clients.length),
       sub: clients.length === 1 ? "לקוח" : "לקוחות",
       icon: Users,
-      color: "text-teal-600",
-      bg: "bg-teal-50 border-teal-200",
       href: "/clients",
       tone: "teal",
     },
@@ -262,8 +255,6 @@ export default function DashboardPage() {
       value: String(stats.inRange.length),
       sub: RANGE_LABELS[range],
       icon: Wallet,
-      color: "text-indigo-600",
-      bg: "bg-indigo-50 border-indigo-200",
       href: `/documents${monthQs ? `?${monthQs.slice(1)}` : ""}`,
       tone: "indigo",
     },
@@ -275,7 +266,6 @@ export default function DashboardPage() {
         <div>
           <h1 className="text-3xl font-bold text-stone-900 flex items-center gap-2">
             שלום
-            <Sparkles className="w-7 h-7 text-orange-400" />
           </h1>
           <p className="text-sm text-stone-700 mt-1">סקירה מהירה של הפעילות שלך</p>
         </div>
@@ -361,7 +351,7 @@ export default function DashboardPage() {
             <Link
               key={s.label}
               href={s.href}
-              className={`card-soft p-5 bg-gradient-to-br ${s.bgGradient} border-transparent hover:shadow-lg hover:-translate-y-1 animate-fade-in-up stagger-${idx + 1} block group cursor-pointer relative`}
+              className={`card-soft p-5 bg-white border-[#e9e4d8] hover:shadow-lg hover:-translate-y-1 animate-fade-in-up stagger-${idx + 1} block group cursor-pointer relative`}
             >
               <div className="flex items-start justify-between">
                 <div className="min-w-0 flex-1">
@@ -398,7 +388,7 @@ export default function DashboardPage() {
             <Link
               key={s.label}
               href={s.href}
-              className={`rounded-2xl border p-4 hover:shadow-md hover:-translate-y-0.5 transition-all block group cursor-pointer ${s.bg}`}
+              className="rounded-2xl border p-4 hover:shadow-md hover:-translate-y-0.5 transition-all block group cursor-pointer bg-white border-[#e9e4d8]"
             >
               <div className="flex items-center gap-3">
                 <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ftile ftile-${s.tone}`}>
@@ -407,12 +397,12 @@ export default function DashboardPage() {
                 <div className="min-w-0 flex-1">
                   <p className="text-xs text-stone-600">{s.label}</p>
                   <div className="flex items-baseline gap-2">
-                    <span className={`text-xl font-bold ${s.color}`}>{s.value}</span>
+                    <span className="text-xl font-bold text-stone-900">{s.value}</span>
                     <span className="text-xs text-stone-600 truncate">{s.sub}</span>
                   </div>
                 </div>
                 <ArrowLeft
-                  className={`w-4 h-4 ${s.color} opacity-0 group-hover:opacity-70 -translate-x-1 group-hover:translate-x-0 transition-all flex-shrink-0`}
+                  className="w-4 h-4 text-stone-500 opacity-0 group-hover:opacity-70 -translate-x-1 group-hover:translate-x-0 transition-all flex-shrink-0"
                 />
               </div>
             </Link>
@@ -427,7 +417,7 @@ export default function DashboardPage() {
       <div className="card-soft p-6 animate-fade-in-up stagger-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-semibold text-stone-900 flex items-center gap-2">
-            <CalendarDays className="w-5 h-5 text-orange-500" />
+            <CalendarDays className="w-5 h-5 text-stone-500" />
             הכנסות והוצאות
           </h2>
         </div>
@@ -437,7 +427,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fade-in-up stagger-6">
         <div className="card-soft p-6">
           <h2 className="font-semibold text-stone-900 mb-4 flex items-center gap-2">
-            <Users className="w-5 h-5 text-rose-500" />
+            <Users className="w-5 h-5 text-stone-500" />
             לקוחות מובילים ({RANGE_LABELS[range]})
           </h2>
           <TopClients documents={stats.inRange} limit={5} />
@@ -445,7 +435,7 @@ export default function DashboardPage() {
 
         <div className="card-soft p-6">
           <h2 className="font-semibold text-stone-900 mb-4 flex items-center gap-2">
-            <Wallet className="w-5 h-5 text-rose-500" />
+            <Wallet className="w-5 h-5 text-stone-500" />
             הוצאות לפי קטגוריה ({RANGE_LABELS[range]})
           </h2>
           <ExpenseCategoriesChart expenses={stats.expensesInRange} />
@@ -453,9 +443,9 @@ export default function DashboardPage() {
       </div>
 
       <div className="card-soft overflow-hidden animate-fade-in-up">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-orange-100">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#e9e4d8]">
           <h2 className="font-semibold text-stone-900 flex items-center gap-2">
-            <span className="text-2xl">📋</span>
+            <ClipboardList className="w-5 h-5 text-stone-500" />
             מסמכים אחרונים
           </h2>
           <Link
@@ -475,7 +465,7 @@ export default function DashboardPage() {
 /**
  * Small badge next to a KPI showing % change vs the previous period.
  * Color & icon flip based on `higherIsBetter`, for expenses, "down"
- * is the good direction so it renders green even though the delta
+ * is the good direction so it renders orange even though the delta
  * itself is negative. The label is rendered as a tooltip so the
  * card stays uncluttered.
  */
@@ -501,10 +491,10 @@ function DeltaBadge({
   if (delta.mode === "new") {
     return (
       <span
-        className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded-md"
+        className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-orange-700 bg-orange-50 px-1.5 py-0.5 rounded-md"
         title={`חדש לעומת ${prevLabel}`}
       >
-        ✨ חדש
+        חדש
       </span>
     );
   }
@@ -513,8 +503,8 @@ function DeltaBadge({
   const isPositive = delta.mode === "up";
   const isGood = higherIsBetter ? isPositive : !isPositive;
   const colorClass = isGood
-    ? "text-emerald-700 bg-emerald-100"
-    : "text-rose-700 bg-rose-100";
+    ? "text-orange-700 bg-orange-50"
+    : "text-stone-600 bg-stone-100";
   const arrow = isPositive ? "↑" : "↓";
   const pctText = `${Math.abs(delta.pct).toFixed(0)}%`;
 

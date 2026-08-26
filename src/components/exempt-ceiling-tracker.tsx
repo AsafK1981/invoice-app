@@ -47,41 +47,40 @@ export function ExemptCeilingTracker({ business, documents }: Props) {
   else if (percentage >= 70) tone = "warning";
   else tone = "ok";
 
+  // 2026-08-26 colour diet: the card is white like every other card; the
+  // meter is ink while things are fine, turns the brand orange as the
+  // ceiling nears, and only a real breach paints rose. No teal, no gradients.
   const themes = {
     ok: {
-      bg: "from-emerald-50 to-teal-50",
-      border: "border-emerald-200",
-      bar: "bg-gradient-to-l from-emerald-400 to-teal-500",
+      border: "border-[#e9e4d8]",
+      bar: "bg-stone-900",
       icon: ShieldCheck,
-      iconColor: "text-emerald-600",
-      iconBg: "bg-emerald-100",
+      iconColor: "text-stone-600",
+      iconBg: "bg-stone-100",
       title: "מחזור שנתי תקין",
     },
     warning: {
-      bg: "from-amber-50 to-yellow-50",
-      border: "border-amber-300",
-      bar: "bg-gradient-to-l from-amber-400 to-yellow-500",
+      border: "border-[#e9e4d8]",
+      bar: "bg-orange-500",
       icon: TrendingUp,
-      iconColor: "text-amber-700",
-      iconBg: "bg-amber-100",
+      iconColor: "text-orange-700",
+      iconBg: "bg-orange-50",
       title: "מתקרבים לתקרה",
     },
     danger: {
-      bg: "from-orange-50 to-rose-50",
       border: "border-orange-300",
-      bar: "bg-gradient-to-l from-orange-500 to-rose-500",
+      bar: "bg-orange-500",
       icon: AlertTriangle,
       iconColor: "text-orange-700",
-      iconBg: "bg-orange-100",
+      iconBg: "bg-orange-50",
       title: "כמעט בתקרה: שקול מעבר לעוסק מורשה",
     },
     exceeded: {
-      bg: "from-rose-50 to-pink-50",
       border: "border-rose-400",
-      bar: "bg-gradient-to-l from-rose-500 to-pink-500",
+      bar: "bg-rose-600",
       icon: AlertTriangle,
       iconColor: "text-rose-700",
-      iconBg: "bg-rose-100",
+      iconBg: "bg-rose-50",
       title: "חרגת מהתקרה: חובה לעבור לעוסק מורשה",
     },
   } as const;
@@ -91,7 +90,7 @@ export function ExemptCeilingTracker({ business, documents }: Props) {
   const widthPct = Math.min(100, Math.max(0, percentage));
 
   return (
-    <div className={`card-soft p-5 bg-gradient-to-br ${theme.bg} ${theme.border} border`}>
+    <div className={`card-soft p-5 bg-white ${theme.border} border`}>
       <div className="flex items-start gap-4">
         <div className={`w-11 h-11 rounded-2xl ${theme.iconBg} flex items-center justify-center flex-shrink-0`}>
           <Icon className={`w-5 h-5 ${theme.iconColor}`} />
@@ -104,7 +103,7 @@ export function ExemptCeilingTracker({ business, documents }: Props) {
             </p>
           </div>
 
-          <div className="mt-3 h-3 rounded-full bg-white/60 overflow-hidden">
+          <div className="mt-3 h-3 rounded-full bg-[#f1efe9] overflow-hidden">
             <div
               className={`h-full ${theme.bar} transition-all duration-500`}
               style={{ width: `${widthPct}%` }}

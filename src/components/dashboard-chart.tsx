@@ -114,25 +114,22 @@ function buildBuckets(range: RangeKey): Bucket[] {
 const SERIES = {
   income: {
     label: "הכנסות",
-    /** points, legend dot; also the light end of the stroke gradient's family */
-    dot: "#ea580c",
-    strokeFrom: "#f97316",
-    strokeTo: "#e11d48",
-    areaTop: "rgba(249,115,22,.18)",
+    /** points, legend line; the ink line has no gradient family any more,
+     * except the hero (most recent) point, which is the one touch of
+     * brand orange on the whole chart. */
+    dot: "#1c1917",
+    heroDot: "#f97316",
+    heroText: "#c2410c",
+    strokeFrom: "#1c1917",
+    strokeTo: "#1c1917",
+    areaTop: "rgba(249,115,22,.10)",
     areaBottom: "rgba(249,115,22,0)",
-    /** halo / legend-dot ring */
-    glow: "rgba(249,115,22,.22)",
-    valueText: "#241e16",
+    valueText: "#1c1917",
   },
   expense: {
     label: "הוצאות",
-    dot: "#64748b",
-    strokeFrom: "#64748b",
-    strokeTo: "#64748b",
-    areaTop: "rgba(100,116,139,.14)",
-    areaBottom: "rgba(100,116,139,0)",
-    glow: "rgba(100,116,139,.20)",
-    valueText: "#334155",
+    dot: "#a8a29e",
+    valueText: "#57534e",
   },
 } as const;
 
@@ -401,10 +398,17 @@ function MonthlyLineChart({
                   opacity: on ? 1 : 0.4,
                 }}
               >
-                <span
-                  className="inline-block w-2 h-2 rounded-full"
-                  style={{ background: s.dot, boxShadow: on ? `0 0 0 2px ${s.glow}` : "none" }}
-                />
+                {key === "income" ? (
+                  <span
+                    className="inline-block"
+                    style={{ width: 14, height: 2, background: "#1c1917" }}
+                  />
+                ) : (
+                  <span
+                    className="inline-block"
+                    style={{ width: 14, height: 0, borderTop: "1.5px dashed #a8a29e" }}
+                  />
+                )}
                 {s.label}
               </button>
             );
@@ -477,10 +481,6 @@ function MonthlyLineChart({
                 <stop offset="0" stopColor={SERIES.income.areaTop} />
                 <stop offset="1" stopColor={SERIES.income.areaBottom} />
               </linearGradient>
-              <linearGradient id="gcExpFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stopColor={SERIES.expense.areaTop} />
-                <stop offset="1" stopColor={SERIES.expense.areaBottom} />
-              </linearGradient>
               {/* fade the right edge so the closed-area drop has no hard vertical seam */}
               <linearGradient id="gcFadeRight" x1="0" y1="0" x2="1" y2="0">
                 <stop offset="0" stopColor="#fff" />
@@ -490,13 +490,6 @@ function MonthlyLineChart({
               <mask id="gcAreaMask">
                 <rect x="0" y="0" width={w} height={h} fill="url(#gcFadeRight)" />
               </mask>
-              <filter id="gcHalo" x="-120%" y="-120%" width="340%" height="340%">
-                <feGaussianBlur stdDeviation="4.2" result="b" />
-                <feMerge>
-                  <feMergeNode in="b" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
             </defs>
 
             {/* y hairlines + ₪ tick labels (right side, RTL) */}
@@ -509,14 +502,14 @@ function MonthlyLineChart({
                     y1={y}
                     x2={w - padR}
                     y2={y}
-                    stroke="rgba(60,45,20,.10)"
+                    stroke="#ece8df"
                     strokeWidth={1}
                   />
                   {v !== yMax && (
                     <text
                       x={w - padR + 12}
                       y={y + 4}
-                      fill="#6f6757"
+                      fill="#57534e"
                       fontSize={12}
                       textAnchor="start"
                     >
@@ -527,7 +520,7 @@ function MonthlyLineChart({
               );
             })}
 
-            {/* monthly profit-gap connectors: barely-there dashed gold,
+            {/* monthly profit-gap connectors: barely-there neutral hairlines,
                 drawn BEHIND areas/lines. Skip when the two points nearly touch. */}
             {showIncome && showExpense && months.map((_, i) => {
               const incY = inc.ys[i];
@@ -544,15 +537,15 @@ function MonthlyLineChart({
                   y1={yHi + gap}
                   x2={xAt(i)}
                   y2={yLo - gap}
-                  stroke={hot ? "rgba(60,45,20,.28)" : "rgba(60,45,20,.14)"}
+                  stroke={hot ? "#ece8df" : "rgba(0,0,0,0)"}
                   strokeWidth={1}
                   strokeDasharray="2 4"
                 />
               );
             })}
 
-            {/* area fills (expense under income); right edge faded via mask */}
-            {showExpense && <path d={areaFrom(exp)} fill="url(#gcExpFill)" mask="url(#gcAreaMask)" />}
+            {/* area fill (income only, no touch of orange under the flat
+                grey expense line); right edge faded via mask */}
             {showIncome && <path d={areaFrom(inc)} fill="url(#gcIncFill)" mask="url(#gcAreaMask)" />}
 
             {/* hover guide */}
@@ -562,59 +555,36 @@ function MonthlyLineChart({
                 y1={padT - 8}
                 x2={xAt(hover)}
                 y2={baseY}
-                stroke="rgba(60,45,20,.18)"
+                stroke="#d6d3d1"
                 strokeWidth={1}
                 strokeDasharray="3 3"
               />
             )}
 
-            {/* lines. Each line gets a darker "underside" - the same path
-                shifted 5px down - drawn behind it, so the stroke reads as a
-                3D ribbon with thickness rather than a flat line (Asaf picked
-                the 3D direction from the A/B/C chart mockup, 2026-08-23). */}
+            {/* lines. Ink + one touch of brand orange (2026-08-26): flat
+                strokes, no ribbon underside. Income is a solid ink line;
+                expense is a dashed neutral line, so the two read apart by
+                shape, not by a loud colour pairing. */}
             {showExpense && (
-              <>
-                <path
-                  d={exp.d}
-                  transform="translate(0,5)"
-                  fill="none"
-                  stroke="#7a3620"
-                  strokeWidth={3}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  opacity={0.45}
-                />
-                <path
-                  d={exp.d}
-                  fill="none"
-                  stroke={SERIES.expense.dot}
-                  strokeWidth={2.5}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </>
+              <path
+                d={exp.d}
+                fill="none"
+                stroke={SERIES.expense.dot}
+                strokeWidth={1.5}
+                strokeDasharray="3 4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
             )}
             {showIncome && (
-              <>
-                <path
-                  d={inc.d}
-                  transform="translate(0,5)"
-                  fill="none"
-                  stroke="#6d551f"
-                  strokeWidth={3.2}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  opacity={0.5}
-                />
-                <path
-                  d={inc.d}
-                  fill="none"
-                  stroke="url(#gcIncLine)"
-                  strokeWidth={2.6}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </>
+              <path
+                d={inc.d}
+                fill="none"
+                stroke="url(#gcIncLine)"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
             )}
 
             {/* x-axis labels (sparse in dense views) */}
@@ -624,7 +594,7 @@ function MonthlyLineChart({
                   key={`m${i}`}
                   x={xAt(i)}
                   y={h - 8}
-                  fill="#6f6757"
+                  fill="#57534e"
                   fontSize={13}
                   textAnchor="middle"
                 >
@@ -633,7 +603,7 @@ function MonthlyLineChart({
               ) : null,
             )}
 
-            {/* expense dots + labels BELOW (copper) */}
+            {/* expense dots + labels BELOW (neutral grey) */}
             {showExpense && exp.xs.map((x, i) => {
               const y = exp.ys[i];
               // Always below the expense point. Clamp above the month-axis band,
@@ -666,7 +636,8 @@ function MonthlyLineChart({
               );
             })}
 
-            {/* income dots + labels ABOVE (off-white); hero on the last point */}
+            {/* income dots + labels ABOVE; the one touch of brand orange
+                on the whole chart lives on the hero (most recent) point. */}
             {showIncome && inc.xs.map((x, i) => {
               const y = inc.ys[i];
               const last = i === inc.xs.length - 1;
@@ -675,11 +646,14 @@ function MonthlyLineChart({
               return (
                 <g key={`i${i}`}>
                   {last ? (
-                    <>
-                      <circle cx={x} cy={y} r={8} fill={SERIES.income.glow} filter="url(#gcHalo)" />
-                      <circle cx={x} cy={y} r={hot ? 6 : 5.2} fill={SERIES.income.dot} />
-                      <circle cx={x} cy={y} r={2.2} fill="#ffffff" />
-                    </>
+                    <circle
+                      cx={x}
+                      cy={y}
+                      r={hot ? 5.5 : 4.5}
+                      fill={SERIES.income.heroDot}
+                      stroke="#ffffff"
+                      strokeWidth={2}
+                    />
                   ) : (
                     <>
                       <circle cx={x} cy={y} r={hot ? 4.4 : n > 12 ? 2.6 : 3.6} fill={SERIES.income.dot} />
@@ -690,7 +664,7 @@ function MonthlyLineChart({
                     <text
                       x={x}
                       y={y - 13}
-                      fill={SERIES.income.valueText}
+                      fill={last ? SERIES.income.heroText : SERIES.income.valueText}
                       fontSize={13.5}
                       fontWeight={700}
                       textAnchor="middle"
