@@ -351,10 +351,13 @@ export default function DashboardPage() {
             <Link
               key={s.label}
               href={s.href}
-              className={`card-soft p-5 bg-white border-[#e9e4d8] hover:shadow-lg hover:-translate-y-1 animate-fade-in-up stagger-${idx + 1} block group cursor-pointer relative`}
+              // `gk-kpi*` are hooks for the PHONE rule in app-skin.css, which
+              // folds this card into one line (Asaf 2026-08-27); the Tailwind
+              // classes describe the desktop card.
+              className={`gk-kpi card-soft p-5 bg-white border-[#e9e4d8] hover:shadow-lg hover:-translate-y-1 animate-fade-in-up stagger-${idx + 1} block group cursor-pointer relative`}
             >
-              <div className="flex items-start justify-between">
-                <div className="min-w-0 flex-1">
+              <div className="gk-kpi-row flex items-start justify-between">
+                <div className="gk-kpi-body min-w-0 flex-1">
                   <p className="gk-label text-sm font-medium text-stone-700 flex items-center gap-1">
                     {s.label}
                     <ArrowLeft className="w-3 h-3 opacity-0 group-hover:opacity-50 -translate-x-1 group-hover:translate-x-0 transition-all" />
@@ -362,7 +365,7 @@ export default function DashboardPage() {
                   <p className="gk-value text-2xl font-bold mt-2 truncate">
                     {ready ? s.value : "..."}
                   </p>
-                  <div className="flex items-baseline gap-2 mt-1 flex-wrap">
+                  <div className="gk-kpi-sub flex items-baseline gap-2 mt-1 flex-wrap">
                     <p className="text-xs text-stone-600">{s.sub}</p>
                     {ready && s.delta && prevLabel && (
                       <DeltaBadge delta={s.delta} higherIsBetter={s.higherIsBetter} prevLabel={prevLabel} />
