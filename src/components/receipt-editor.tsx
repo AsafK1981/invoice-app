@@ -147,6 +147,9 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   const [clientId, setClientId] = useState<string>(prefilledClientId);
   const [adhocName, setAdhocName] = useState<string>("");
   const [adhocTaxId, setAdhocTaxId] = useState<string>("");
+  // Inline "add the ח.פ to this saved client" draft, see clientTaxIdMissing.
+  const [clientTaxIdDraft, setClientTaxIdDraft] = useState<string>("");
+  const [savingClientTaxId, setSavingClientTaxId] = useState(false);
   const [adhocEmail, setAdhocEmail] = useState<string>("");
   // "לקוח חדש" (adhoc) mode: whether the typed customer should also be
   // saved as a real client for next time. Defaults ON - calling the mode
@@ -966,6 +969,23 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
     setDraggedId(null);
   }
 
+  // Saves a ח.פ/ת.ז typed into the missing-number nag onto the SELECTED saved
+  // client. The parent page holds `clients` via useClients(), which re-reads on
+  // the store's change event, so selectedClient.taxId updates by itself and the
+  // warning by the save button clears without any local override.
+  async function saveClientTaxId() {
+    if (!selectedClient) return;
+    const taxId = clientTaxIdDraft.trim();
+    if (!taxId) return;
+    setSavingClientTaxId(true);
+    try {
+      await clientStore.save({ ...selectedClient, taxId });
+      setClientTaxIdDraft("");
+    } finally {
+      setSavingClientTaxId(false);
+    }
+  }
+
   const clientReady = adhocMode ? adhocName.trim().length > 0 : !!clientId;
 
   // #18: hard gate, a legal document may not be issued while the business
@@ -1027,6 +1047,14 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   // never tell two different stories.
   const allocCustomerTaxId =
     (adhocMode ? adhocTaxId.trim() : selectedClient?.taxId) || undefined;
+  // Missing customer ח.פ/ת.ז (Asaf 2026-08-27): the field is optional, so a
+  // distracted user ships a חשבונית מס with no customer number at all (and
+  // requiresAllocationNumber then treats the customer as private and skips the
+  // מספר הקצאה gate). Asaf's spec, chosen with buttons: ONE place, next to the
+  // save button; every document type except הצעת מחיר; a warning that never
+  // blocks (a private person legitimately has no ח.פ); and for a saved client
+  // an inline input that writes the number to the client card as well.
+  const clientTaxIdMissing = !isQuote && clientReady && !allocCustomerTaxId;
   const allocSubtotalIls = currency === "ILS" ? subtotal : round2(subtotal * rate);
   // Does the DOCUMENT ITSELF need an allocation number (type + date-aware
   // threshold + a BUSINESS customer), independent of whether one has already
@@ -1667,8 +1695,16 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                 type="text"
                 value={adhocTaxId}
                 onChange={(e) => setAdhocTaxId(e.target.value)}
-                placeholder="ח.פ / ת.ז (אופציונלי)"
+                placeholder={isQuote ? "ח.פ / ת.ז (אופציונלי)" : "ח.פ / ת.ז של הלקוח"}
                 className="input-warm"
+                aria-label="ח.פ / ת.ז של הלקוח"
+                // Inline: app-skin.css styles `html .input-warm`, which outranks
+                // a Tailwind border utility, so the amber "fill me" ring is a style.
+                style={
+                  clientTaxIdMissing
+                    ? { borderColor: "#f59e0b", boxShadow: "0 0 0 3px #fde68a" }
+                    : undefined
+                }
               />
               <input
                 type="email"
@@ -2681,6 +2717,50 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                   אחרי השמירה תגיע לעמוד המסמך, ושם תבקש את מספר ההקצאה בלחיצה אחת.
                 </p>
               )}
+              {clientTaxIdMissing && !saving && (
+                <div
+                  role="status"
+                  className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900"
+                >
+                  <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-amber-600" />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold">חסר ח״פ / ת״ז של הלקוח</p>
+                    <p className="mt-0.5 leading-relaxed text-amber-800">
+                      {adhocMode
+                        ? "אפשר להפיק גם בלי, אבל מומלץ להשלים אותו בשדה המסומן בכרטיס \"לקוח\"."
+                        : "אפשר להפיק גם בלי. הוסף אותו כאן והוא יישמר גם בכרטיס הלקוח:"}
+                    </p>
+                    {!adhocMode && selectedClient && (
+                      <div className="mt-2 flex items-center gap-2">
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          value={clientTaxIdDraft}
+                          onChange={(e) => setClientTaxIdDraft(e.target.value.replace(/[^\d]/g, ""))}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              saveClientTaxId();
+                            }
+                          }}
+                          placeholder="ח״פ / ת״ז של הלקוח"
+                          dir="ltr"
+                          className="input-warm flex-1 min-w-0 text-sm py-2"
+                          aria-label="ח״פ / ת״ז של הלקוח"
+                        />
+                        <button
+                          type="button"
+                          onClick={saveClientTaxId}
+                          disabled={!clientTaxIdDraft.trim() || savingClientTaxId}
+                          className="shrink-0 inline-flex items-center justify-center min-h-[40px] px-3 rounded-xl bg-gradient-to-l from-orange-500 to-rose-500 text-white text-xs font-semibold disabled:from-stone-300 disabled:to-stone-300 disabled:cursor-not-allowed"
+                        >
+                          {savingClientTaxId ? "שומר…" : "שמור ללקוח"}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
               <button
                 onClick={handleSaveDraft}
                 disabled={savingDraft || saving}
@@ -2774,13 +2854,13 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
             <span>{toast.text}</span>
           </div>
         )}
-        {(blockReason || businessProfileIncomplete) && (
+        {(blockReason || businessProfileIncomplete || clientTaxIdMissing) && (
           <p className="mb-2 text-[11px] text-amber-800 leading-snug flex items-start gap-1.5">
             <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
             <span>
               {businessProfileIncomplete
                 ? "יש להשלים את שם העסק ומספר העוסק/ח.פ בהגדרות"
-                : blockReason}
+                : blockReason ?? "חסר ח״פ / ת״ז של הלקוח, אפשר להפיק גם בלי"}
             </span>
           </p>
         )}
