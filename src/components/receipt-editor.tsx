@@ -2087,8 +2087,8 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                 key={item.id}
                 onDragOver={(e) => handleDragOver(e, item.id)}
                 className={`rounded-xl border border-orange-100 p-3 space-y-2 transition-opacity ${
-                  draggedId === item.id ? "opacity-40" : ""
-                }`}
+                  effectiveVatRate > 0 ? "pb-7" : ""
+                } ${draggedId === item.id ? "opacity-40" : ""}`}
               >
                 {/* An item is TWO rows inside its own hairline box, not one
                     five-track row. Every width tier we tried for the single row
@@ -2179,11 +2179,34 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                       aria-label="מחיר יחידה"
                     />
                   </div>
-                  <div className="col-span-10 sm:w-[6.5rem] sm:shrink-0">
+                  <div className="col-span-10 sm:w-[6.5rem] sm:shrink-0 relative">
                     {idx === 0 && <label className="text-xs font-semibold text-stone-700 mb-1 block">סה״כ</label>}
                     <div className="input-warm bg-gradient-to-br from-orange-50 to-amber-50 border-orange-200 text-stone-900 font-bold text-left">
                       {formatCurrency(item.quantity * item.unitPrice)}
                     </div>
+                    {/* The other side of the VAT line, right next to where the
+                        price was typed (Asaf 2026-08-27): the preview already
+                        shows it, but the user should not have to look away from
+                        the input to learn what the line is worth with/without
+                        VAT. Same per-line rounding as computeAmounts so the
+                        figures agree with the totals card. Absolutely positioned
+                        (the card's pb-7 reserves its room) so the row's
+                        items-end alignment of qty/price/total/bin is untouched. */}
+                    {effectiveVatRate > 0 && item.quantity * item.unitPrice > 0 && (
+                      <p className="absolute top-full left-0 mt-1 text-[11px] leading-tight text-stone-500 tabular-nums text-left whitespace-nowrap">
+                        {vatMode === "exclusive" ? "כולל מע״מ" : "לפני מע״מ"}{" "}
+                        <span className="font-semibold text-stone-700">
+                          {formatCurrency(
+                            vatMode === "exclusive"
+                              ? round2(
+                                  round2(item.quantity * round2(item.unitPrice)) *
+                                    (1 + effectiveVatRate / 100)
+                                )
+                              : round2(item.quantity * round2(item.unitPrice * netUnitPriceFactor))
+                          )}
+                        </span>
+                      </p>
+                    )}
                   </div>
                   <div className="col-span-2 flex justify-end sm:ms-auto">
                     <button
