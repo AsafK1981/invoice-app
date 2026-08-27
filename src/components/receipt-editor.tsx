@@ -16,6 +16,8 @@ import {
   Save,
   UserPlus,
   Users,
+  ChevronDown,
+  Search,
   Eye,
   EyeOff,
   Percent,
@@ -161,10 +163,14 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   // click. Starts expanded unless a client is already chosen (prefill /
   // convert / draft-resume), per the "no empty search on a pre-set client"
   // requirement.
-  const [clientPickerExpanded, setClientPickerExpanded] = useState<boolean>(() => !clientId);
+  // The "לקוח קיים" picker is a dropdown (Asaf 2026-08-27): CLOSED by default,
+  // opened by the chevron trigger, so a user with 20 clients is not greeted by
+  // all 20 rows. `clientPickerExpanded` = the menu is open.
+  const [clientPickerExpanded, setClientPickerExpanded] = useState<boolean>(false);
   const [clientSearchQuery, setClientSearchQuery] = useState<string>("");
   const [clientHighlightIndex, setClientHighlightIndex] = useState<number>(-1);
   const clientSearchInputRef = useRef<HTMLInputElement>(null);
+  const clientMenuRef = useRef<HTMLDivElement>(null);
 
   const [date, setDate] = useState<string>(today);
   const [subject, setSubject] = useState<string>("");
@@ -322,6 +328,18 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
     setClientHighlightIndex(-1);
   }, [clientSearchQuery]);
 
+  // Close the client dropdown on a click/tap anywhere outside it.
+  useEffect(() => {
+    if (!clientPickerExpanded) return;
+    function onPointerDown(e: PointerEvent) {
+      if (clientMenuRef.current && !clientMenuRef.current.contains(e.target as Node)) {
+        setClientPickerExpanded(false);
+      }
+    }
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [clientPickerExpanded]);
+
   const filteredClients = useMemo(
     () => filterClientsByQuery(clients, clientSearchQuery),
     [clients, clientSearchQuery]
@@ -353,8 +371,9 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
             : undefined;
       if (picked) selectClient(picked.id);
     } else if (e.key === "Escape") {
+      e.preventDefault();
       setClientHighlightIndex(-1);
-      (e.target as HTMLInputElement).blur();
+      setClientPickerExpanded(false);
     }
   }
 
@@ -1677,9 +1696,9 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
           <p className="text-xs text-stone-600 mb-3">
             {adhocMode
               ? "לקוח חדש או מזדמן: הקלד את פרטיו כאן והם יופיעו על המסמך."
-              : clientId && !clientPickerExpanded && selectedClient
-                ? "נבחר לקוח מרשימת הלקוחות שלך. לחץ \"שנה\" כדי לבחור לקוח אחר."
-                : "בחר לקוח מרשימת הלקוחות השמורים שלך."}
+              : clientId && selectedClient
+                ? "נבחר לקוח מרשימת הלקוחות שלך. לחיצה על השדה פותחת את הרשימה להחלפה."
+                : "פתח את הרשימה ובחר לקוח מהלקוחות השמורים שלך."}
           </p>
           {adhocMode ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -1729,31 +1748,128 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                   : "הלקוח לא יישמר - שמו יופיע על המסמך הזה בלבד."}
               </p>
             </div>
-          ) : clientId && !clientPickerExpanded && selectedClient ? (
+          ) : clients.length === 0 ? (
+            <p className="text-sm text-stone-600">
+              עדיין אין לקוחות שמורים.{" "}
+              <button
+                type="button"
+                onClick={() => setAdhocMode(true)}
+                className="font-semibold text-orange-600 hover:text-orange-700 hover:underline"
+              >
+                עבור ל&quot;לקוח חדש&quot;
+              </button>
+            </p>
+          ) : (
             <>
-              <div className="flex items-center justify-between gap-3 rounded-xl border border-orange-100 bg-orange-50/60 px-3 py-2.5 min-h-[44px]">
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-stone-900 truncate">
-                    {selectedClient.name}
-                  </p>
-                  {(selectedClient.taxId || selectedClient.email) && (
-                    <p className="text-xs text-stone-500 truncate">
-                      {[selectedClient.taxId, selectedClient.email].filter(Boolean).join(" · ")}
-                    </p>
-                  )}
-                </div>
+              {/* Select-style trigger: looks like a field, carries a big
+                  chevron, and shows either the chosen client or the "click
+                  here" prompt. The search box + list live in the panel below
+                  and exist only while the menu is open. */}
+              <div ref={clientMenuRef}>
                 <button
                   type="button"
+                  aria-haspopup="listbox"
+                  aria-expanded={clientPickerExpanded}
+                  aria-label={selectedClient ? `לקוח נבחר: ${selectedClient.name}. לחץ להחלפה` : "בחירת לקוח קיים"}
                   onClick={() => {
-                    setClientPickerExpanded(true);
                     setClientSearchQuery("");
+                    setClientPickerExpanded((open) => !open);
                   }}
-                  className="shrink-0 inline-flex items-center justify-center min-h-[36px] px-3 text-xs font-semibold text-orange-700 hover:text-orange-800 hover:bg-orange-100 rounded-lg"
+                  className={`input-warm flex items-center justify-between gap-3 text-right min-h-[48px] cursor-pointer ${
+                    clientPickerExpanded ? "rounded-b-none border-orange-300" : ""
+                  }`}
                 >
-                  שנה
+                  <span className="min-w-0 flex-1">
+                    {selectedClient ? (
+                      <>
+                        <span className="block text-sm font-semibold text-stone-900 truncate">
+                          {selectedClient.name}
+                        </span>
+                        {(selectedClient.taxId || selectedClient.email) && (
+                          <span className="block text-xs text-stone-500 truncate">
+                            {[selectedClient.taxId, selectedClient.email].filter(Boolean).join(" · ")}
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      <span className="block text-sm text-stone-500">
+                        לחץ כאן כדי לבחור מהלקוחות הקיימים
+                      </span>
+                    )}
+                  </span>
+                  <span
+                    className={`shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-l from-orange-500 to-rose-500 text-white shadow-sm transition-transform ${
+                      clientPickerExpanded ? "rotate-180" : ""
+                    }`}
+                    aria-hidden="true"
+                  >
+                    <ChevronDown className="w-5 h-5" />
+                  </span>
                 </button>
+                {clientPickerExpanded && (
+                  <div
+                    role="listbox"
+                    aria-label="הלקוחות השמורים"
+                    className="rounded-b-xl border border-t-0 border-orange-300 bg-white shadow-md"
+                  >
+                    <div className="relative p-2 border-b border-orange-100">
+                      <Search className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 pointer-events-none" />
+                      <input
+                        ref={clientSearchInputRef}
+                        type="text"
+                        value={clientSearchQuery}
+                        onChange={(e) => setClientSearchQuery(e.target.value)}
+                        onKeyDown={handleClientSearchKeyDown}
+                        placeholder="חיפוש לפי שם..."
+                        className="input-warm !pr-9 text-sm"
+                        aria-label="חיפוש לקוח ברשימה"
+                      />
+                    </div>
+                    {filteredClients.length === 0 ? (
+                      <p className="text-xs text-stone-600 px-3 py-3">
+                        לא נמצא לקוח בשם הזה{" "}
+                        <button
+                          type="button"
+                          onClick={() => setAdhocMode(true)}
+                          className="font-semibold text-orange-600 hover:text-orange-700 hover:underline"
+                        >
+                          עבור ל&quot;לקוח חדש&quot;
+                        </button>
+                      </p>
+                    ) : (
+                      <div className="max-h-56 overflow-y-auto divide-y divide-orange-50">
+                        {filteredClients.map((c, i) => (
+                          <button
+                            key={c.id}
+                            type="button"
+                            role="option"
+                            aria-selected={c.id === clientId}
+                            onClick={() => selectClient(c.id)}
+                            onMouseEnter={() => setClientHighlightIndex(i)}
+                            className={`w-full text-right flex flex-col justify-center min-h-[44px] px-3 py-1.5 transition-colors last:rounded-b-xl ${
+                              i === clientHighlightIndex
+                                ? "bg-orange-100"
+                                : c.id === clientId
+                                  ? "bg-orange-50/70"
+                                  : "hover:bg-orange-50"
+                            }`}
+                          >
+                            <span className="text-sm font-semibold text-stone-900 truncate">
+                              {c.name}
+                            </span>
+                            {(c.taxId || c.email) && (
+                              <span className="text-xs text-stone-500 truncate">
+                                {[c.taxId, c.email].filter(Boolean).join(" · ")}
+                              </span>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
-              {clientDefaults.documentCount > 0 && (
+              {selectedClient && !clientPickerExpanded && clientDefaults.documentCount > 0 && (
                 <p className="text-xs text-stone-600 mt-2">
                   היסטוריה: {clientDefaults.documentCount}{" "}
                   {clientDefaults.documentCount === 1 ? "מסמך" : "מסמכים"}
@@ -1764,65 +1880,6 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                     <> · אמצעי תשלום אחרון: {PAYMENT_METHOD_LABELS[clientDefaults.paymentMethod]}</>
                   )}
                 </p>
-              )}
-            </>
-          ) : (
-            <>
-              <input
-                ref={clientSearchInputRef}
-                type="text"
-                value={clientSearchQuery}
-                onChange={(e) => setClientSearchQuery(e.target.value)}
-                onKeyDown={handleClientSearchKeyDown}
-                placeholder="לחץ כאן כדי לבחור מהלקוחות הקיימים..."
-                className="input-warm"
-                aria-label="בחירת לקוח קיים"
-              />
-              {clients.length === 0 ? (
-                <p className="text-xs text-stone-600 mt-2">
-                  עדיין אין לקוחות שמורים{" "}
-                  <button
-                    type="button"
-                    onClick={() => setAdhocMode(true)}
-                    className="font-semibold text-orange-600 hover:text-orange-700 hover:underline"
-                  >
-                    עבור ל&quot;לקוח חדש&quot;
-                  </button>
-                </p>
-              ) : filteredClients.length === 0 ? (
-                <p className="text-xs text-stone-600 mt-2">
-                  לא נמצא לקוח בשם הזה{" "}
-                  <button
-                    type="button"
-                    onClick={() => setAdhocMode(true)}
-                    className="font-semibold text-orange-600 hover:text-orange-700 hover:underline"
-                  >
-                    עבור ל&quot;לקוח חדש&quot;
-                  </button>
-                </p>
-              ) : (
-                <div className="max-h-56 overflow-y-auto rounded-xl border border-orange-100 divide-y divide-orange-50 mt-2">
-                  {filteredClients.map((c, i) => (
-                    <button
-                      key={c.id}
-                      type="button"
-                      onClick={() => selectClient(c.id)}
-                      onMouseEnter={() => setClientHighlightIndex(i)}
-                      className={`w-full text-right flex flex-col justify-center min-h-[44px] px-3 py-1.5 transition-colors first:rounded-t-xl last:rounded-b-xl ${
-                        i === clientHighlightIndex ? "bg-orange-100" : "hover:bg-orange-50"
-                      }`}
-                    >
-                      <span className="text-sm font-semibold text-stone-900 truncate">
-                        {c.name}
-                      </span>
-                      {(c.taxId || c.email) && (
-                        <span className="text-xs text-stone-500 truncate">
-                          {[c.taxId, c.email].filter(Boolean).join(" · ")}
-                        </span>
-                      )}
-                    </button>
-                  ))}
-                </div>
               )}
             </>
           )}
