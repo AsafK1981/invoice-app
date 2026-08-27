@@ -1,7 +1,10 @@
 /**
  * Real pricing + feature data for the /vs/* comparison pages.
  *
- * Pricing sourced 2026-05-07 from each vendor's pricing page:
+ * Pricing sourced 2026-05-07 from each vendor's pricing page, Invoice4U
+ * re-verified 2026-08-27 (curl fetch of the live page, annual-commitment
+ * monthly price - the site's own footnote confirms this column already
+ * bakes in the new-signup discount):
  *   Invoice4U:    https://www.invoice4u.co.il/pricelist-invoice/
  *   Greeninvoice: https://www.greeninvoice.co.il/pricing
  *
@@ -179,10 +182,10 @@ export const COMPETITORS: Record<Competitor["slug"], Competitor> = {
     founded: "2010",
     bestFor: "עסקים בינוניים שכבר משתמשים במערכת ולא רוצים להחליף",
     pricing: [
-      { name: "המסלול הוורוד", priceMonthly: 19, docs: "50 / חודש", businesses: "2" },
-      { name: "המסלול הירוק", priceMonthly: 27, docs: "100 / חודש", businesses: "3" },
+      { name: "המסלול הוורוד", priceMonthly: 21, docs: "50 / חודש", businesses: "2" },
+      { name: "המסלול הירוק", priceMonthly: 31, docs: "100 / חודש", businesses: "3" },
       { name: "המסלול הכחול", priceMonthly: 44, docs: "200 / חודש", businesses: "5" },
-      { name: "המסלול האדום", priceMonthly: 82, docs: "500 / חודש", businesses: "5" },
+      { name: "המסלול האדום", priceMonthly: 89, docs: "500 / חודש", businesses: "5" },
       { name: "ללא הגבלה", priceMonthly: 59, docs: "ללא הגבלה (עד 1,000 / חודש)", businesses: "לא צוין", notes: "כולל סליקת אשראי" },
     ],
     freeTrial: "60 ימי ניסיון חינם",
@@ -204,7 +207,7 @@ export const COMPETITORS: Record<Competitor["slug"], Competitor> = {
     ],
     ourStrengths: [
       "ממשק מודרני, מהיר, נקי. בלי הצפה של תפריטים ושדות מיותרים",
-      "זול יותר במסלול הבסיסי (₪15 מול ₪19), ותמורה גדולה בהרבה במסלול ה-Pro (₪25 ללא הגבלה לעומת ₪82 אצלם)",
+      "זול יותר במסלול הבסיסי (₪15 מול ₪21), ותמורה גדולה בהרבה במסלול ה-Pro (₪25 ללא הגבלה לעומת ₪89 אצלם)",
       "Pro ב-₪25 כולל הכל ללא הגבלה. באותו מחיר ב-Invoice4U אתה מקבל רק 100 מסמכים בחודש",
       "ייצוא GDPR מלא של כל הנתונים בקליק אחד",
       "PWA אמיתי, אפליקציה מותקנת בטלפון",
