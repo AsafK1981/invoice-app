@@ -2796,31 +2796,17 @@ html .dc-empty {
   }
 }
 
-/* ---- phones (below Tailwind's `md`): no columns, a stacked card ----
-   A nine-column single line cannot be made to work at 390px, so the row
-   stops being a row: client + amount, subject, then the meta on two lines
-   and the actions as a footer bar. Every datum that loses its column header
-   grows an inline label via `data-label`.
+/* ---- phones (below Tailwind's `md`): a three-column table ----
+   A nine-column line cannot be made to work at 390px, and (until 2026-08-27)
+   the answer was a six-line stacked card per document - which Asaf rejected
+   as too tall to scan. The answer now is a NARROWER TABLE: the three columns
+   a phone can afford (type dot + client, date, amount), one hairline row per
+   document, and everything else one tap away on the document page. The
+   header keeps the date and amount sort labels and the client filter.
 
-   THE TWO META LINES, and why they are two and not three. Each meta line has
-   to be a line a reader can finish, with something at BOTH of its ends -
-   otherwise the card is a stack of half-empty rows and it just looks tall
-   and empty:
-     line 1  תאריך · מספר · [הקצאה]  - one start-aligned run of small facts
-     line 2  [status pill]  ……  [mail state]  - anchored at both ends
-   The mail state used to sit alone at the far left of line 1 while the status
-   pill had a whole third line to itself, also alone. Pairing them puts one
-   object at each end of one line and gives the card its height back.
-
-   WHY THE CENTRING RULE DOES NOT APPLY DOWN HERE. "Every column is centred"
-   is a rule about COLUMNS: a centre line only means something when 61 rows
-   share it. The phone card has no columns at all - it is one stacked card per
-   document - and centring its six lines would leave every one of them
-   floating with ragged ends. So the card keeps the layout it had: each line
-   anchored at its ends, with the type chip, the meta run and the client name
-   flush to the card's start edge and the amount and the mail state flush to
-   its end edge. The two TILES still centre their own labels, because a pill
-   with a fixed width reads better with its word in the middle. */
+   Centring does not apply down here for the same reason as before: with a
+   flexible client column and two end-aligned numbers there is no shared
+   centre line, so the name is flush start and the numbers flush end. */
 @media (max-width: 767.98px) {
   html {
     /* one step up from the desktop ladder: a phone is held closer but has no
@@ -2833,65 +2819,82 @@ html .dc-empty {
   html .dc-shell {
     padding: var(--dc-sp-2);
   }
+  /* THE PHONE TABLE (Asaf 2026-08-27).
+     Until today a phone showed a six-line CARD per document (type + amount,
+     client, subject, date + number, status + mail, four action buttons):
+     ~500px each, one and a half documents per screen. Asaf: "במובייל צריך
+     שהמסמכים יופיעו יותר כטבלה ויתפסו פחות מקום - שורה אחת". So down here it
+     is a real table again, just a narrower one: THREE columns the phone can
+     afford - the type dot + client name, the date, the amount - one line per
+     document, hairline-separated, ~15 documents per screen. Everything else
+     (number, subject, mail state, status word, the four actions) lives one
+     tap away on the document page; the row's stretched link is that tap.
+     Status survives as colour: a paid amount is green, an overdue one is the
+     wait tint, via `data-status` / `data-overdue` on the row itself. */
   html .dc-table,
-  html .dc-table[data-alloc] { display: flex; flex-direction: column; gap: var(--dc-sp-2); }
-  html .dc-note { display: inline-flex; }
-  html .dc-tail { display: inline; }
-  /* The phone card says the same thing in its own place - a chip on the status
-     line, which down here has room at both of its ends. A tag hanging under
-     the amount is a COLUMN device: it needs a fixed row height with slack in
-     it, and the phone card has neither. */
-  html .dc-late { display: none; }
-  /* ...so the tight line box it needed goes too. Down here the amount is a
-     real item in the card's first line, sharing that line with the type chip:
-     at 1.15 it stopped being the tallest thing on the line and the whole card
-     lost 3.5px. Back to the body's 1.5, which is what shipped. */
-  html .dc-amt { line-height: 1.5; }
-  /* There are no columns down here, so there is nothing for a header band to
-     head - but the three sortable labels ARE the only sort control in the
-     component, and a phone must not lose sorting. The header collapses into
-     a strip of three thumb-sized sort chips. */
-  html .dc-head {
+  html .dc-table[data-alloc] {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
+    gap: 0;
+    border: 1px solid var(--line);
+    border-radius: var(--dc-r-2);
+    background: var(--card);
+    overflow: hidden;
+  }
+  html .dc-note,
+  html .dc-late { display: none; }
+  html .dc-amt { line-height: 1.5; }
+  /* The header is a header again: the same three tracks as the rows, the
+     client label (which is also the client filter), and the two sort labels
+     the phone keeps - date and amount - as thumb-height plain labels. */
+  html .dc-head {
+    display: grid;
+    grid-template-columns: 0.75rem minmax(0, 1fr) auto auto;
+    column-gap: var(--dc-sp-2);
     align-items: center;
-    gap: var(--dc-sp-2);
-    height: auto;
-    padding: 0 0 var(--dc-sp-2);
+    height: 2.5rem;
+    padding: 0 var(--dc-sp-3);
     margin-bottom: 0;
     border: 0;
+    border-bottom: 1px solid var(--goldtintline);
     border-radius: 0;
-    background: none;
+    background: linear-gradient(180deg, #fdfaf2 0%, #f6efdc 100%);
     box-shadow: none;
   }
-  html .dc-head::before {
-    content: "מיון:";
-    font-size: var(--dc-fs-2);
-    font-weight: 700;
-    color: var(--ink2);
-  }
   html .dc-head .dc-cell { display: none; }
-  html .dc-head .dc-cell[data-col="date"],
-  html .dc-head .dc-cell[data-col="number"],
-  html .dc-head .dc-cell[data-col="amount"] {
-    display: inline-flex;
+  html .dc-head .dc-cell[data-col="type"] {
+    display: block;
+    padding: 0;
+    /* the dot track: nothing to show, it only keeps the client label on the
+       same x as the client names below it */
+    visibility: hidden;
+    min-width: 0;
+    overflow: hidden;
+  }
+  html .dc-head .dc-cell[data-col="client"] {
+    display: flex;
+    justify-content: flex-start;
     padding: 0;
   }
-  /* A thumb-sized chip, so the arrow may sit next to the word: there is no
-     column centre line to keep it off. The desktop balance spacer would only
-     make the chip wider for nothing. */
+  html .dc-head .dc-cell[data-col="date"],
+  html .dc-head .dc-cell[data-col="amount"] {
+    display: inline-flex;
+    justify-content: flex-end;
+    padding: 0;
+  }
+  html .dc-head .dc-filter,
   html .dc-head .dc-sort {
     width: auto;
     min-height: 2.5rem;
     margin-block: 0;
-    padding-inline: var(--dc-sp-3);
-    border: 1px solid var(--line);
-    border-radius: var(--dc-r-pill);
-    background: var(--card);
+    padding-inline: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
     font-size: var(--dc-fs-2);
   }
-  /* Beside the word down here, not under it: a chip is not a column head, and
-     there is no content-sized track for the glyph to widen. */
+  /* Beside the word down here, not under it: there is no content-sized track
+     for the glyph to widen. */
   html .dc-sorticon {
     position: static;
     margin-inline: var(--dc-sp-1) 0;
@@ -2900,107 +2903,86 @@ html .dc-empty {
     flex: none;
   }
   html .dc-head .dc-sort[data-active] {
-    background: var(--goldtint);
-    border-color: var(--goldtintline);
+    background: none;
+    color: var(--gold-text);
   }
-  html .dc-row {
+  /* One line per document: dot | client | date | amount. `height`, as on the
+     desktop, so 63 rows are 63 identical lines; 2.75rem is 45px at the phone
+     root size - a thumb-sized tap target for the row's stretched link. */
+  html .dc-row,
+  html .dc-table[data-alloc] .dc-row {
     display: grid;
-    height: auto;
-    grid-template-columns: auto auto minmax(0, 1fr);
-    grid-template-areas:
-      "type   type   amount"
-      "client client client"
-      "subj   subj   subj"
-      "date   number alloc"
-      "status status mail"
-      "acts   acts   acts";
+    height: 2.75rem;
+    grid-template-columns: 0.75rem minmax(0, 1fr) auto auto;
+    grid-template-areas: "type client date amount";
     column-gap: var(--dc-sp-2);
-    row-gap: var(--dc-sp-1);
-    padding: var(--dc-sp-2) var(--dc-sp-3);
+    row-gap: 0;
+    padding: 0 var(--dc-sp-3);
+    border: 0;
+    border-bottom: 1px solid var(--dc-hairline);
+    border-radius: 0;
+    transition: none;
   }
-  /* Back to a two-ends card: no columns down here, so nothing to centre. */
+  html .dc-row:last-child { border-bottom: 0; }
+  html .dc-row:hover,
+  html .dc-row:focus-within {
+    box-shadow: none;
+    transform: none;
+  }
   html .dc-row .dc-cell {
     justify-content: flex-start;
     text-align: start;
     padding-inline: 0;
   }
-  html .dc-row .dc-name,
-  html .dc-row .dc-subj { text-align: start; }
-  /* the full-width end-aligned boxes are a COLUMN device; on the card the two
-     numbers sit in a flex line next to their `data-label`, so they go back to
-     being plain inline runs */
-  html .dc-row .dc-num {
-    display: inline;
-    width: auto;
-    text-align: start;
-  }
-  /* מספר הקצאה is a 9-digit number with a 6-letter label, and on a 390px card
-     it does not fit on the same line as תאריך and מספר - the three of them
-     together overflow the card. The lists that HAVE an allocation column
-     therefore get one extra line for it, and only those: more data, more
-     room. The status/mail pairing below is untouched either way. */
-  html .dc-table[data-alloc] .dc-row {
-    grid-template-areas:
-      "type   type   amount"
-      "client client client"
-      "subj   subj   subj"
-      "date   number number"
-      "alloc  alloc  alloc"
-      "status status mail"
-      "acts   acts   acts";
-  }
-  /* Scoped to `.dc-row`: the header is a sort strip down here, and an
-     unscoped `.dc-cell[data-col=…]` rule would out-specify the rule above
-     that hides its non-sortable labels. */
+  /* Scoped to `.dc-row`: an unscoped `.dc-cell[data-col=…]` rule would
+     out-specify the header rule above that hides its other labels. */
   html .dc-row .dc-cell[data-col="type"] { grid-area: type; }
   html .dc-row .dc-cell[data-col="client"] { grid-area: client; }
-  html .dc-row .dc-cell[data-col="subj"] { grid-area: subj; display: flex; }
-  html .dc-row .dc-cell[data-col="date"] { grid-area: date; }
-  html .dc-row .dc-cell[data-col="number"] { grid-area: number; }
-  html .dc-row .dc-cell[data-col="alloc"] { grid-area: alloc; display: flex; }
-  /* the far end of the status line - the only thing on the card that is
-     deliberately end-aligned besides the amount */
-  html .dc-row .dc-cell[data-col="mail"] { grid-area: mail; display: flex; justify-content: flex-end; }
-  html .dc-row .dc-cell[data-col="status"] { grid-area: status; }
+  html .dc-row .dc-cell[data-col="date"] { grid-area: date; justify-content: flex-end; }
   html .dc-row .dc-cell[data-col="amount"] { grid-area: amount; justify-content: flex-end; }
-  html .dc-row .dc-cell[data-col="acts"] {
-    grid-area: acts;
-    /* a footer bar, so the four slots sit as one centred cluster instead of
-       hugging one edge of the card. Still the same four fixed tracks - only
-       thumb-sized and centred - so slot N is one x on the phone too. */
-    grid-template-columns: repeat(4, 2.5rem);
-    justify-content: center;
-    gap: var(--dc-sp-1);
-    margin-top: var(--dc-sp-1);
-    padding-top: var(--dc-sp-1);
-    border-top: 1px solid var(--dc-hairline);
+  html .dc-row .dc-cell[data-col="subj"],
+  html .dc-row .dc-cell[data-col="number"],
+  html .dc-row .dc-cell[data-col="alloc"],
+  html .dc-row .dc-cell[data-col="mail"],
+  html .dc-row .dc-cell[data-col="status"],
+  html .dc-row .dc-cell[data-col="acts"] { display: none; }
+  /* The type chip shrinks to its dot: the row is tinted by type already and
+     the word would cost a third of the line. The dot leaves the chip's
+     absolute parking and becomes the cell's whole content. */
+  html .dc-chip {
+    flex: 0 0 auto;
+    width: 0.75rem;
+    height: auto;
+    padding: 0;
+    border: 0;
+    justify-content: flex-start;
   }
-  /* The column headers are gone, so the bare numbers say what they are. */
-  html .dc-row .dc-cell[data-label]::before {
-    content: attr(data-label);
-    color: var(--muted);
-    font-weight: 600;
-    opacity: 0.85;
+  html .dc-chiptxt { display: none; }
+  html .dc-tdot {
+    display: block;
+    position: static;
+    margin: 0;
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
   }
-  html .dc-chip { flex: 0 0 auto; }
-  html .dc-mailtxt { display: inline; }
-  html .dc-name { max-width: none; }
-  /* The phone card has no fixed height, so the subject reserves its two
-     lines whether or not it needs both: that is what keeps every card on the
-     phone the same rectangle too. */
-  html .dc-subj {
+  html .dc-name {
     max-width: none;
-    min-height: 2.6em;
-    /* The phone card keeps its quieter subject line (the desktop change of
-       2026-08-18 to ink/600/fs-3 was asked for on the desktop table, where
-       the subject is a column beside the client; here it is the second line
-       under a bold name and two bold lines read as one blob). */
-    font-size: var(--dc-fs-2);
-    font-weight: 400;
-    color: var(--muted);
+    font-size: var(--dc-fs-3);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
-  /* Thumb-sized targets: 2.5rem is 41px at the phone root size of 16.5px. */
-  html .dc-act { width: 2.5rem; height: 2.5rem; }
+  html .dc-row .dc-cell[data-col="date"] .dc-val {
+    font-size: var(--dc-fs-2);
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  html .dc-row .dc-cell[data-col="amount"] { font-size: var(--dc-fs-3); }
+  html .dc-row[data-status="paid"] .dc-amt { color: var(--dc-paid-ink); }
+  html .dc-row[data-overdue] .dc-amt { color: var(--dc-wait-ink); }
+  html .dc-row[data-status="cancelled"] .dc-amt,
+  html .dc-row[data-status="draft"] .dc-amt { color: var(--muted); font-weight: 600; }
 
   /* THE FILTER BAR ON A PHONE.
      - It stops being sticky. Down here the six controls stack two-up, which

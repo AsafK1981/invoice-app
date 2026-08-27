@@ -564,7 +564,15 @@ function DocumentRow({ doc: d, showAlloc }: { doc: InvoiceDocument; showAlloc: b
   const subject = d.subject?.trim();
 
   return (
-    <li className="dc-row" data-type={d.type} data-status={d.status}>
+    <li
+      className="dc-row"
+      data-type={d.type}
+      data-status={d.status}
+      // Row-level copy of the overdue flag: the phone table has no status
+      // cell, it says "overdue" by colouring the amount, and CSS cannot reach
+      // the amount cell from the status cell's attribute.
+      data-overdue={unpaidDays >= OVERDUE_DAYS ? "1" : undefined}
+    >
       <span className="dc-cell" data-col="type">
         <span className="dc-chip">
           {/* The dot is absolutely positioned inside the chip so it costs the
