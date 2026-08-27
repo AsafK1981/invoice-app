@@ -15,6 +15,7 @@ import {
   Sparkles,
   Save,
   UserPlus,
+  Users,
   Eye,
   EyeOff,
   Percent,
@@ -1605,39 +1606,62 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
 
         {/* ── לקוח ── */}
         <EditorCard title="לקוח" icon={UserPlus}>
-          <div className="inline-flex bg-orange-50 rounded-xl p-1 text-xs font-semibold gap-1 mb-3">
+          {/* Mode switch (Asaf 2026-08-27): the old white-on-peach pill was too
+              quiet - users could not tell which tab was on, and had no idea what
+              the field under it wanted. Now: two equal tabs that fill the row,
+              the active one painted in the same orange-rose ramp as the VAT
+              toggle below, plus a one-line caption that names the mode and the
+              field placeholder that says exactly what to do next. */}
+          <div
+            role="tablist"
+            aria-label="סוג הלקוח"
+            className="grid grid-cols-2 bg-white rounded-xl p-1 text-sm font-semibold gap-1 mb-2 border border-orange-100"
+          >
             <button
               type="button"
+              role="tab"
+              aria-selected={!adhocMode}
               onClick={() => setAdhocMode(false)}
-              className={`inline-flex items-center justify-center min-h-[36px] px-3.5 rounded-lg transition-colors ${
+              className={`inline-flex items-center justify-center gap-1.5 min-h-[40px] px-3 rounded-lg transition-colors ${
                 !adhocMode
-                  ? "bg-white text-orange-700 shadow-sm"
-                  : "text-stone-600 hover:text-stone-800"
+                  ? "bg-gradient-to-l from-orange-500 to-rose-500 text-white shadow-sm"
+                  : "text-stone-700 hover:bg-orange-50 hover:text-stone-900"
               }`}
             >
+              <Users className="w-4 h-4" />
               לקוח קיים
             </button>
             <button
               type="button"
+              role="tab"
+              aria-selected={adhocMode}
               onClick={() => setAdhocMode(true)}
-              className={`inline-flex items-center justify-center gap-1 min-h-[36px] px-3.5 rounded-lg transition-colors ${
+              className={`inline-flex items-center justify-center gap-1.5 min-h-[40px] px-3 rounded-lg transition-colors ${
                 adhocMode
-                  ? "bg-white text-orange-700 shadow-sm"
-                  : "text-stone-600 hover:text-stone-800"
+                  ? "bg-gradient-to-l from-orange-500 to-rose-500 text-white shadow-sm"
+                  : "text-stone-700 hover:bg-orange-50 hover:text-stone-900"
               }`}
             >
-              <UserPlus className="w-3 h-3" />
+              <UserPlus className="w-4 h-4" />
               לקוח חדש
             </button>
           </div>
+          <p className="text-xs text-stone-600 mb-3">
+            {adhocMode
+              ? "לקוח חדש או מזדמן: הקלד את פרטיו כאן והם יופיעו על המסמך."
+              : clientId && !clientPickerExpanded && selectedClient
+                ? "נבחר לקוח מרשימת הלקוחות שלך. לחץ \"שנה\" כדי לבחור לקוח אחר."
+                : "בחר לקוח מרשימת הלקוחות השמורים שלך."}
+          </p>
           {adhocMode ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               <input
                 type="text"
                 value={adhocName}
                 onChange={(e) => setAdhocName(e.target.value)}
-                placeholder="שם הלקוח *"
+                placeholder="הקלד את שם הלקוח החדש *"
                 className="input-warm"
+                aria-label="שם הלקוח החדש"
               />
               <input
                 type="text"
@@ -1714,9 +1738,9 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                 value={clientSearchQuery}
                 onChange={(e) => setClientSearchQuery(e.target.value)}
                 onKeyDown={handleClientSearchKeyDown}
-                placeholder="חיפוש לקוח לפי שם..."
+                placeholder="לחץ כאן כדי לבחור מהלקוחות הקיימים..."
                 className="input-warm"
-                aria-label="חיפוש לקוח"
+                aria-label="בחירת לקוח קיים"
               />
               {clients.length === 0 ? (
                 <p className="text-xs text-stone-600 mt-2">
