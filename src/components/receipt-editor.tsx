@@ -2742,12 +2742,13 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
               )}
               {clientTaxIdMissing && !saving && (
                 <div
+                  id="client-taxid-nag"
                   role="status"
                   className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900"
                 >
                   <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-amber-600" />
                   <div className="min-w-0 flex-1">
-                    <p className="font-semibold">חסר ח״פ / ת״ז של הלקוח</p>
+                    <p className="font-semibold">חסר ח.פ / ת.ז של הלקוח</p>
                     <p className="mt-0.5 leading-relaxed text-amber-800">
                       {adhocMode
                         ? "אפשר להפיק גם בלי, אבל מומלץ להשלים אותו בשדה המסומן בכרטיס \"לקוח\"."
@@ -2766,10 +2767,10 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                               saveClientTaxId();
                             }
                           }}
-                          placeholder="ח״פ / ת״ז של הלקוח"
+                          placeholder="ח.פ / ת.ז של הלקוח"
                           dir="ltr"
                           className="input-warm flex-1 min-w-0 text-sm py-2"
-                          aria-label="ח״פ / ת״ז של הלקוח"
+                          aria-label="ח.פ / ת.ז של הלקוח"
                         />
                         <button
                           type="button"
@@ -2880,11 +2881,27 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
         {(blockReason || businessProfileIncomplete || clientTaxIdMissing) && (
           <p className="mb-2 text-[11px] text-amber-800 leading-snug flex items-start gap-1.5">
             <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-            <span>
-              {businessProfileIncomplete
-                ? "יש להשלים את שם העסק ומספר העוסק/ח.פ בהגדרות"
-                : blockReason ?? "חסר ח״פ / ת״ז של הלקוח, אפשר להפיק גם בלי"}
-            </span>
+            {businessProfileIncomplete || blockReason ? (
+              <span>
+                {businessProfileIncomplete
+                  ? "יש להשלים את שם העסק ומספר העוסק/ח.פ בהגדרות"
+                  : blockReason}
+              </span>
+            ) : (
+              /* The fix lives in the aside box at the bottom of a long mobile
+                 page, so the one-liner is a tap that scrolls there. */
+              <button
+                type="button"
+                onClick={() =>
+                  document
+                    .getElementById("client-taxid-nag")
+                    ?.scrollIntoView({ behavior: "smooth", block: "center" })
+                }
+                className="text-right underline underline-offset-2 font-medium"
+              >
+                חסר ח.פ / ת.ז של הלקוח, אפשר להפיק גם בלי. לחץ להשלמה
+              </button>
+            )}
           </p>
         )}
         <div className="flex items-center gap-3">
