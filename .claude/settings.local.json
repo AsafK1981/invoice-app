@@ -32,7 +32,18 @@
       "Bash(node scripts/run-sql.mjs \"SELECT column_name, data_type, is_nullable FROM information_schema.columns WHERE table_schema='public' AND table_name='documents' ORDER BY ordinal_position;\")",
       "Bash(curl -sIo /dev/null -w \"%{http_code}\" https://mysuperfriendlyinvoiceapp.vercel.app/auth/confirm)",
       "Bash(curl -sIo /dev/null -w \"%{http_code}\" https://mysuperfriendlyinvoiceapp.vercel.app/login)",
-      "Bash(curl -sIo /dev/null -w \"%{http_code}\" https://mysuperfriendlyinvoiceapp.vercel.app/documents/new/quote)"
+      "Bash(curl -sIo /dev/null -w \"%{http_code}\" https://mysuperfriendlyinvoiceapp.vercel.app/documents/new/quote)",
+      "Bash(\"C:\\Users\\asafk\\.claude\\skills\\gstack\\browse\\dist\\browse.exe\" goto *)",
+      "Bash(\"C:\\Users\\asafk\\.claude\\skills\\gstack\\browse\\dist\\browse.exe\" snapshot *)",
+      "Bash(\"C:\\Users\\asafk\\.claude\\skills\\gstack\\browse\\dist\\browse.exe\" screenshot *)",
+      "Bash(\"C:\\Users\\asafk\\.claude\\skills\\gstack\\browse\\dist\\browse.exe\" viewport *)",
+      "Bash(\"C:\\Users\\asafk\\.claude\\skills\\gstack\\browse\\dist\\browse.exe\" wait *)",
+      "Bash(\"C:\\Users\\asafk\\.claude\\skills\\gstack\\browse\\dist\\browse.exe\" url)",
+      "Bash(\"C:\\Users\\asafk\\.claude\\skills\\gstack\\browse\\dist\\browse.exe\" text *)",
+      "Bash(\"C:\\Users\\asafk\\.claude\\skills\\gstack\\browse\\dist\\browse.exe\" forms)",
+      "Bash(\"C:\\Users\\asafk\\.claude\\skills\\gstack\\browse\\dist\\browse.exe\" click *)",
+      "Bash(\"C:\\Users\\asafk\\.claude\\skills\\gstack\\browse\\dist\\browse.exe\" press *)",
+      "Bash(\"C:\\Users\\asafk\\.claude\\skills\\gstack\\browse\\dist\\browse.exe\" scroll *)"
     ],
     "additionalDirectories": [
       "c:\\Users\\asafk\\.claude\\skills"
