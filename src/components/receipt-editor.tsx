@@ -2734,18 +2734,164 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
         )}
 
         {/* Breathing room so the fixed mobile action bar never sits on top of
-            the last field. Desktop keeps its action in the sticky aside. */}
+            the last field. */}
         <div className="lg:hidden h-24" aria-hidden />
+
+        {/* ── DESKTOP ACTION BAR ──────────────────────────────────────────
+            The form reads top to bottom, and the action used to live at the
+            top of the OTHER column, so finishing a document meant scrolling
+            back up and crossing left (Asaf, 2026-08-27). This bar sticks to
+            the bottom of the viewport while the column is taller than the
+            screen and settles into its natural place at the column's end, so
+            the total and both save buttons are reachable from any scroll
+            position. Mobile keeps its fixed bar further down. */}
+        <div className="hidden lg:block lg:sticky lg:bottom-0 z-20 no-print pt-2">
+          <div className="rounded-2xl border-2 border-[#fdba74] bg-white/95 backdrop-blur shadow-[0_-8px_28px_rgba(120,53,15,0.12)] px-5 py-3.5 space-y-3">
+            {toast && (
+              <div
+                className={`text-sm p-3 rounded-xl flex items-start gap-2 ${
+                  toast.kind === "success"
+                    ? "bg-emerald-50 text-emerald-900 border border-emerald-200"
+                    : "bg-rose-50 text-rose-900 border border-rose-200"
+                }`}
+              >
+                {toast.kind === "success" ? (
+                  <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5 text-emerald-600" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-rose-600" />
+                )}
+                <span>{toast.text}</span>
+              </div>
+            )}
+            {businessProfileIncomplete && (
+              <div className="flex items-start gap-2 text-xs text-rose-800 bg-rose-50 p-3 rounded-xl border border-rose-200">
+                <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-rose-600" />
+                <span>
+                  לפני הפקת מסמך יש להשלים את שם העסק ומספר העוסק/ח.פ.{" "}
+                  <button
+                    type="button"
+                    onClick={() => setBizModalOpen(true)}
+                    className="font-semibold underline hover:text-rose-900"
+                  >
+                    להשלמת פרטי העסק כאן ←
+                  </button>
+                </span>
+              </div>
+            )}
+            {clientTaxIdMissing && !saving && (
+              <div
+                role="status"
+                className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900"
+              >
+                <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-amber-600" />
+                <div className="min-w-0 flex-1 flex flex-wrap items-center gap-x-3 gap-y-2">
+                  <div>
+                    <p className="font-semibold">חסר ח.פ / ת.ז של הלקוח</p>
+                    <p className="mt-0.5 leading-relaxed text-amber-800">
+                      {adhocMode
+                        ? "אפשר להפיק גם בלי, אבל מומלץ להשלים אותו בשדה המסומן בכרטיס \"לקוח\"."
+                        : "אפשר להפיק גם בלי. הוסף אותו כאן והוא יישמר גם בכרטיס הלקוח:"}
+                    </p>
+                  </div>
+                  {!adhocMode && selectedClient && (
+                    <div className="flex items-center gap-2 flex-1 min-w-[16rem]">
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={clientTaxIdDraft}
+                        onChange={(e) => setClientTaxIdDraft(e.target.value.replace(/[^\d]/g, ""))}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            saveClientTaxId();
+                          }
+                        }}
+                        placeholder="ח.פ / ת.ז של הלקוח"
+                        dir="ltr"
+                        className="input-warm flex-1 min-w-0 text-sm py-2"
+                        aria-label="ח.פ / ת.ז של הלקוח"
+                      />
+                      <button
+                        type="button"
+                        onClick={saveClientTaxId}
+                        disabled={!clientTaxIdDraft.trim() || savingClientTaxId}
+                        className="shrink-0 inline-flex items-center justify-center min-h-[40px] px-3 rounded-xl bg-gradient-to-l from-orange-500 to-rose-500 text-white text-xs font-semibold disabled:from-stone-300 disabled:to-stone-300 disabled:cursor-not-allowed"
+                      >
+                        {savingClientTaxId ? "שומר…" : "שמור ללקוח"}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            <div className="flex items-center gap-4">
+              <div className="min-w-[9rem]">
+                <p className="text-xs font-medium text-stone-600 leading-none">
+                  {isQuote ? "סה״כ הצעה" : isCreditNote ? "סה״כ זיכוי" : "סה״כ לתשלום"}
+                </p>
+                <p className="mt-1.5 text-2xl font-bold text-stone-900 leading-none tabular-nums">
+                  {formatCurrency(total)}
+                </p>
+                {effectiveVatRate > 0 && (
+                  <p className="mt-1 text-[11px] text-stone-600 leading-none">
+                    כולל מע״מ {formatCurrency(vat)}
+                  </p>
+                )}
+                {withholdingEntered && withholdingValid && withholdingAmount > 0 && (
+                  <p className="mt-1 text-[11px] text-stone-700 leading-none">
+                    שולם בפועל{" "}
+                    <span className="font-semibold text-stone-900">
+                      {formatCurrency(netAfterWithholding(total, withholdingAmount))}
+                    </span>
+                  </p>
+                )}
+              </div>
+              {blockReason && !businessProfileIncomplete && (
+                <div className="flex items-start gap-2 text-xs text-amber-800 bg-amber-50 px-3 py-2 rounded-xl border border-amber-200 max-w-xs">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                  <span>{blockReason}</span>
+                </div>
+              )}
+              {willNeedAllocation && !saving && !blockReason && (
+                <p className="text-[11px] text-stone-600 leading-snug max-w-[16rem]">
+                  אחרי השמירה תגיע לעמוד המסמך, ושם תבקש את מספר ההקצאה בלחיצה אחת.
+                </p>
+              )}
+              <div className="ms-auto flex items-center gap-2.5 flex-shrink-0">
+                <button
+                  onClick={handleSaveDraft}
+                  disabled={savingDraft || saving}
+                  title="טיוטה נשמרת בלי מספר, תוכל להמשיך אותה מלשונית טיוטות"
+                  className="inline-flex items-center justify-center gap-2 min-h-[46px] px-4 bg-white text-stone-700 border border-stone-300 rounded-2xl text-sm font-semibold hover:bg-stone-50 hover:border-stone-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                >
+                  <Save className="w-4 h-4" />
+                  {savingDraft ? "שומר טיוטה…" : "שמור טיוטה"}
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={!canSave || saving || rateLoading || businessProfileIncomplete}
+                  className="inline-flex items-center justify-center gap-2 min-h-[48px] min-w-[13rem] px-6 bg-gradient-to-l from-orange-500 to-rose-500 text-white rounded-2xl text-sm font-bold hover:shadow-lg hover:shadow-orange-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:from-stone-300 disabled:to-stone-300 disabled:cursor-not-allowed disabled:shadow-none transition-all"
+                >
+                  {!saving && !rateLoading && (
+                    willSendEmail ? <Send className="w-4 h-4" /> : <Save className="w-4 h-4" />
+                  )}
+                  {saveLabel}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* ── PREVIEW + ACTION COLUMN (inline-end / left in RTL) ──────────── */}
+      {/* ── PREVIEW COLUMN (inline-end / left in RTL) ────────────────────
+          On desktop this column is ONLY the live preview: the summary and the
+          save buttons moved to the sticky bar at the end of the form column
+          (see DESKTOP ACTION BAR above). The summary card below is kept for
+          phones, where it sits under the form and holds the draft button and
+          the tax-id nag that the fixed mobile bar scrolls to. */}
       <aside className="lg:col-span-5">
-        {/* Summary + primary action come FIRST in this column: the aside is a
-            scroll container of its own, and with the A4 preview on top the save
-            button sat below its fold, so the user had to scroll a pane they
-            didn't know was scrollable to find it. */}
         <div className="lg:sticky lg:top-4 space-y-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto lg:pl-1">
-          <div className="card-soft p-5 bg-gradient-to-br from-orange-50/50 to-amber-50/50 border-orange-200">
+          <div className="lg:hidden card-soft p-5 bg-gradient-to-br from-orange-50/50 to-amber-50/50 border-orange-200">
             <h3 className="font-semibold text-stone-900 mb-3 flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-orange-500" />
               סיכום ושליחה
@@ -2900,10 +3046,14 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
             )}
           </div>
 
-          <div className="hidden lg:block">
-            <p className="flex items-center gap-2 text-xs font-semibold text-stone-700 mb-2">
+          {/* Light-orange frame with a legend tab so the preview reads as one
+              deliberate object next to the form, not a loose sheet. */}
+          <div className="hidden lg:block relative rounded-3xl border-[3px] border-[#fdba74] bg-[#fff4ea] px-3.5 pb-3.5 pt-6">
+            <p className="absolute -top-[15px] right-5 inline-flex items-center gap-2 h-[30px] px-3.5 rounded-full bg-white border-2 border-[#fdba74] text-[13px] font-bold text-[#c2410c] whitespace-nowrap">
+              <Eye className="w-[15px] h-[15px]" />
+              תצוגה מקדימה
+              <span className="font-medium text-stone-600">· מתעדכנת תוך כדי הקלדה</span>
               <span className="w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-emerald-200" />
-              תצוגה חיה, מתעדכנת תוך כדי הקלדה
             </p>
             <DocumentPreview {...previewProps} />
           </div>
@@ -2916,7 +3066,8 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
         button was effectively hidden. This bar rides along with the user:
         running total on one side, the primary action on the other, plus the
         reason it is disabled and the result toast, so nothing about saving
-        happens off-screen. Hidden from lg up, where the sticky aside owns it. */}
+        happens off-screen. Hidden from lg up, where the desktop action bar
+        at the end of the form column owns it. */}
     <div ref={mobileDockRef} className="lg:hidden fixed inset-x-0 bottom-0 z-40 no-print border-t border-orange-200 bg-white/95 backdrop-blur shadow-[0_-6px_20px_rgba(120,53,15,0.10)]">
       <div className="max-w-7xl mx-auto px-4 pt-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))]">
         {toast && (
