@@ -132,10 +132,10 @@ html {
   /* --- document cards: type dots (6px, decorative, label always present) */
   --dc-t-receipt: #6f9b7f;
   --dc-t-tax-receipt: #4f8f8a;
-  --dc-t-quote: #f97316;
+  --dc-t-quote: #c9a227;    /* mustard, pairs with the butter row tint */
   --dc-t-proforma: #8494bd;
-  --dc-t-tax: #6f7fae;
-  --dc-t-credit: #b5766a;
+  --dc-t-tax: #e08a4e;      /* apricot, pairs with the peach row tint (Asaf's pick 2026-08-28) */
+  --dc-t-credit: #c46a86;   /* berry, pairs with the pink row tint */
 
   /* --- document cards: row tints by type, ink + one touch of brand orange
      restyle (2026-08-26). Deepened 2026-08-28: the first pass was so faint
@@ -146,10 +146,12 @@ html {
      in the matching --dc-t-* dot colour makes the type unmistakable. */
   --dc-tint-receipt: #e3f3e6;      /* green */
   --dc-tint-tax-receipt: #ddf1ef;  /* teal */
-  --dc-tint-tax: #e2ebfa;          /* blue */
-  --dc-tint-quote: #fdf0d9;        /* amber */
+  --dc-tint-tax: #fdeadb;          /* peach: Asaf chose it over blue (2026-08-28)
+                                      because green / violet / orange is a triad,
+                                      while blue sat next to the lavender */
+  --dc-tint-quote: #fbf3d3;        /* butter (moved off amber, too close to peach) */
   --dc-tint-proforma: #ebe7f6;     /* lavender */
-  --dc-tint-credit: #fae5e2;       /* rose */
+  --dc-tint-credit: #fbe4ec;       /* pink (moved off rose, too close to peach) */
 
   /* --- document cards: neutral furniture --- */
   --dc-hairline: #f2ede1; /* the card's own internal rule, lighter than --line */
