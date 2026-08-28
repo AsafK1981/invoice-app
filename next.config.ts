@@ -73,6 +73,13 @@ const nextConfig: NextConfig = {
     return [
       { source: "/v2", destination: "/", permanent: true },
       { source: "/v2/:path*", destination: "/:path*", permanent: true },
+      // /product is the landing page Asaf hands out by voice and in group
+      // replies as "FriendlyInvoice.co.il/Product" (28.08.2026). Routes are
+      // case-sensitive, so a capitalised path typed by hand was a 404. Fold
+      // the capitalisations a human actually types onto the real page.
+      { source: "/Product", destination: "/product", permanent: true },
+      { source: "/PRODUCT", destination: "/product", permanent: true },
+      { source: "/Product/:path*", destination: "/product/:path*", permanent: true },
       // Two published posts shipped on placeholder slugs
       // (/blog/article-2026-07-13-1 and -2). Both are indexed, and one of
       // them is the site's guide to issuing receipts as an עוסק פטור - the
