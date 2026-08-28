@@ -2890,7 +2890,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
           phones, where it sits under the form and holds the draft button and
           the tax-id nag that the fixed mobile bar scrolls to. */}
       <aside className="lg:col-span-5">
-        <div className="lg:sticky lg:top-4 space-y-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto lg:pl-1">
+        <div className="lg:sticky lg:top-4 space-y-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto lg:pl-1 lg:pt-4">
           <div className="lg:hidden card-soft p-5 bg-gradient-to-br from-orange-50/50 to-amber-50/50 border-orange-200">
             <h3 className="font-semibold text-stone-900 mb-3 flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-orange-500" />
