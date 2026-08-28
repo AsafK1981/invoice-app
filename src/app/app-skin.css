@@ -138,14 +138,18 @@ html {
   --dc-t-credit: #b5766a;
 
   /* --- document cards: row tints by type, ink + one touch of brand orange
-     restyle (2026-08-26). Barely-there fills so rows read as grouped by
-     type at a glance without competing with the status pill's colour. */
-  --dc-tint-receipt: #f1f7f2;
-  --dc-tint-tax-receipt: #eff3f9;
-  --dc-tint-tax: #eff3f9;
-  --dc-tint-quote: #fbf6ec;
-  --dc-tint-proforma: #f4f3f6;
-  --dc-tint-credit: #f6f1f1;
+     restyle (2026-08-26). Deepened 2026-08-28: the first pass was so faint
+     that green and blue rows read as the same colour (and tax / tax-receipt
+     WERE the same hex). Each type now sits on its own hue with a visible
+     step between neighbours, still light enough that the status pill and
+     the ink stay the loudest things on the row. The edge bar (see .dc-row)
+     in the matching --dc-t-* dot colour makes the type unmistakable. */
+  --dc-tint-receipt: #e3f3e6;      /* green */
+  --dc-tint-tax-receipt: #ddf1ef;  /* teal */
+  --dc-tint-tax: #e2ebfa;          /* blue */
+  --dc-tint-quote: #fdf0d9;        /* amber */
+  --dc-tint-proforma: #ebe7f6;     /* lavender */
+  --dc-tint-credit: #fae5e2;       /* rose */
 
   /* --- document cards: neutral furniture --- */
   --dc-hairline: #f2ede1; /* the card's own internal rule, lighter than --line */
@@ -1817,15 +1821,32 @@ html .dc-row {
   border-radius: var(--dc-r-2);
   transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease, background-color 0.18s ease;
 }
-/* Barely-there tint per document type, so the eye groups rows by type
-   without a coloured dot doing the work. Hover darkens slightly via the
-   box-shadow/lift below, it deliberately does NOT paint the row white. */
-html .dc-row[data-type="receipt"] { background: var(--dc-tint-receipt); }
-html .dc-row[data-type="tax_invoice_receipt"] { background: var(--dc-tint-tax-receipt); }
-html .dc-row[data-type="tax_invoice"] { background: var(--dc-tint-tax); }
-html .dc-row[data-type="quote"] { background: var(--dc-tint-quote); }
-html .dc-row[data-type="proforma"] { background: var(--dc-tint-proforma); }
-html .dc-row[data-type="credit_note"] { background: var(--dc-tint-credit); }
+/* Light tint per document type, so the eye groups rows by type at a glance.
+   Hover darkens slightly via the box-shadow/lift below, it deliberately does
+   NOT paint the row white. Each type also sets --dc-row-edge, the colour of
+   the leading-edge bar painted by ::before. */
+html .dc-row[data-type="receipt"] { background: var(--dc-tint-receipt); --dc-row-edge: var(--dc-t-receipt); }
+html .dc-row[data-type="tax_invoice_receipt"] { background: var(--dc-tint-tax-receipt); --dc-row-edge: var(--dc-t-tax-receipt); }
+html .dc-row[data-type="tax_invoice"] { background: var(--dc-tint-tax); --dc-row-edge: var(--dc-t-tax); }
+html .dc-row[data-type="quote"] { background: var(--dc-tint-quote); --dc-row-edge: var(--dc-t-quote); }
+html .dc-row[data-type="proforma"] { background: var(--dc-tint-proforma); --dc-row-edge: var(--dc-t-proforma); }
+html .dc-row[data-type="credit_note"] { background: var(--dc-tint-credit); --dc-row-edge: var(--dc-t-credit); }
+/* Type edge bar (2026-08-28): a 4px stripe on the row's leading edge in the
+   type's dot colour. A pseudo-element rather than a border, so the subgrid
+   tracks stay pixel-aligned with the header; it sits over the card's own 1px
+   border and hugs the rounded corner. Rows with no known type paint nothing
+   (the variable is unset). */
+html .dc-row::before {
+  content: "";
+  position: absolute;
+  inset-block: -1px;
+  inset-inline-start: -1px;
+  width: 4px;
+  background: var(--dc-row-edge, transparent);
+  border-start-start-radius: var(--dc-r-2);
+  border-end-start-radius: var(--dc-r-2);
+  pointer-events: none;
+}
 html .dc-row:hover {
   border-color: var(--goldline);
   box-shadow: var(--dc-sh-lift);
@@ -2924,6 +2945,12 @@ html .dc-empty {
     transition: none;
   }
   html .dc-row:last-child { border-bottom: 0; }
+  /* Square cards on the phone: the edge bar follows, no rounded ends. */
+  html .dc-row::before {
+    inset-block: 0;
+    inset-inline-start: 0;
+    border-radius: 0;
+  }
   html .dc-row:hover,
   html .dc-row:focus-within {
     box-shadow: none;
