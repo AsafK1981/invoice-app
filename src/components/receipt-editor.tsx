@@ -2629,7 +2629,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
           {!willNeedAllocation && (
             <p className="text-sm text-stone-700 mb-3 leading-relaxed">
               רוצה לשלוח את ה{docLabel}{" "}ללקוח במייל? כתוב כאן את הכתובת, ובסוף לחץ
-              &quot;שמור, הפק ושלח במייל&quot;. בלי כתובת, המסמך רק יופק.
+              &quot;שמור, הפק ושלח במייל&quot;quot;הפק ושלח במייל&quot;שמור, הפק ושלח במייל&quot;quot;. בלי כתובת, המסמך רק יופק.
             </p>
           )}
           {willNeedAllocation && (
@@ -2696,7 +2696,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
           {!willNeedAllocation && emailsTyped && (
             <p className={`text-xs mt-2 ${allEmailsValid ? "text-stone-600" : "text-rose-700"}`}>
               {allEmailsValid
-                ? `"שמור, הפק ושלח במייל" ישלח ל-${
+                ? `"הפק ושלח במייל" ישלח ל-${
                     emailRecipients.length === 1 ? "כתובת אחת" : `${emailRecipients.length} נמענים`
                   }: ${emailTo}`
                 : "כתובת האימייל לא תקינה, ולכן אי אפשר לשלוח. תקן אותה או מחק אותה."}
