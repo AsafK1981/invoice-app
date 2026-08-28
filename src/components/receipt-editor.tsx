@@ -1105,6 +1105,10 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
     creditRefValid &&
     discountValid &&
     withholdingValid;
+  // One place for "why the buttons are off": the desktop bar, the mobile
+  // card, the mobile dock and the allocation card all read these.
+  const saveDisabled = !canSave || saving || rateLoading || businessProfileIncomplete;
+  const draftDisabled = savingDraft || saving;
 
   // Why the save button is disabled, in one plain sentence. Rendered next to
   // BOTH save affordances (the desktop summary card and the mobile action bar),
@@ -2723,7 +2727,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
             connected={taxAuthorityStatus.connected}
             onSave={handleSave}
             saveLabel={saveLabel}
-            saveDisabled={!canSave || saving || rateLoading || businessProfileIncomplete}
+            saveDisabled={saveDisabled}
             saveBusy={saving || rateLoading}
             blockReason={
               businessProfileIncomplete
@@ -2746,83 +2750,19 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
             the total and both save buttons are reachable from any scroll
             position. Mobile keeps its fixed bar further down. */}
         <div className="hidden lg:block lg:sticky lg:bottom-0 z-20 no-print pt-2">
-          <div className="rounded-2xl border-2 border-[#fdba74] bg-white/95 backdrop-blur shadow-[0_-8px_28px_rgba(120,53,15,0.12)] px-5 py-3.5 space-y-3">
-            {toast && (
-              <div
-                className={`text-sm p-3 rounded-xl flex items-start gap-2 ${
-                  toast.kind === "success"
-                    ? "bg-emerald-50 text-emerald-900 border border-emerald-200"
-                    : "bg-rose-50 text-rose-900 border border-rose-200"
-                }`}
-              >
-                {toast.kind === "success" ? (
-                  <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5 text-emerald-600" />
-                ) : (
-                  <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-rose-600" />
-                )}
-                <span>{toast.text}</span>
-              </div>
-            )}
-            {businessProfileIncomplete && (
-              <div className="flex items-start gap-2 text-xs text-rose-800 bg-rose-50 p-3 rounded-xl border border-rose-200">
-                <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-rose-600" />
-                <span>
-                  לפני הפקת מסמך יש להשלים את שם העסק ומספר העוסק/ח.פ.{" "}
-                  <button
-                    type="button"
-                    onClick={() => setBizModalOpen(true)}
-                    className="font-semibold underline hover:text-rose-900"
-                  >
-                    להשלמת פרטי העסק כאן ←
-                  </button>
-                </span>
-              </div>
-            )}
+          <div className="rounded-2xl border-2 border-[color:var(--goldline)] bg-white/95 backdrop-blur dock-shadow px-5 py-3.5 space-y-3">
+            {toast && <ResultToast toast={toast} />}
+            {businessProfileIncomplete && <BusinessProfileNag onFix={() => setBizModalOpen(true)} />}
             {clientTaxIdMissing && !saving && (
-              <div
-                role="status"
-                className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900"
-              >
-                <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-amber-600" />
-                <div className="min-w-0 flex-1 flex flex-wrap items-center gap-x-3 gap-y-2">
-                  <div>
-                    <p className="font-semibold">חסר ח.פ / ת.ז של הלקוח</p>
-                    <p className="mt-0.5 leading-relaxed text-amber-800">
-                      {adhocMode
-                        ? "אפשר להפיק גם בלי, אבל מומלץ להשלים אותו בשדה המסומן בכרטיס \"לקוח\"."
-                        : "אפשר להפיק גם בלי. הוסף אותו כאן והוא יישמר גם בכרטיס הלקוח:"}
-                    </p>
-                  </div>
-                  {!adhocMode && selectedClient && (
-                    <div className="flex items-center gap-2 flex-1 min-w-[16rem]">
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        value={clientTaxIdDraft}
-                        onChange={(e) => setClientTaxIdDraft(e.target.value.replace(/[^\d]/g, ""))}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault();
-                            saveClientTaxId();
-                          }
-                        }}
-                        placeholder="ח.פ / ת.ז של הלקוח"
-                        dir="ltr"
-                        className="input-warm flex-1 min-w-0 text-sm py-2"
-                        aria-label="ח.פ / ת.ז של הלקוח"
-                      />
-                      <button
-                        type="button"
-                        onClick={saveClientTaxId}
-                        disabled={!clientTaxIdDraft.trim() || savingClientTaxId}
-                        className="shrink-0 inline-flex items-center justify-center min-h-[40px] px-3 rounded-xl bg-gradient-to-l from-orange-500 to-rose-500 text-white text-xs font-semibold disabled:from-stone-300 disabled:to-stone-300 disabled:cursor-not-allowed"
-                      >
-                        {savingClientTaxId ? "שומר…" : "שמור ללקוח"}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
+              <ClientTaxIdNag
+                inline
+                adhocMode={adhocMode}
+                canEdit={!adhocMode && !!selectedClient}
+                draft={clientTaxIdDraft}
+                onDraftChange={setClientTaxIdDraft}
+                onSave={saveClientTaxId}
+                saving={savingClientTaxId}
+              />
             )}
             <div className="flex items-center gap-4">
               <div className="min-w-[9rem]">
@@ -2852,6 +2792,8 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                   <span>{blockReason}</span>
                 </div>
               )}
+              {/* The mobile card shows this hint next to a block reason; in the
+                  one-row bar two competing notices would crowd the total. */}
               {willNeedAllocation && !saving && !blockReason && (
                 <p className="text-[11px] text-stone-600 leading-snug max-w-[16rem]">
                   אחרי השמירה תגיע לעמוד המסמך, ושם תבקש את מספר ההקצאה בלחיצה אחת.
@@ -2860,7 +2802,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
               <div className="ms-auto flex items-center gap-2.5 flex-shrink-0">
                 <button
                   onClick={handleSaveDraft}
-                  disabled={savingDraft || saving}
+                  disabled={draftDisabled}
                   title="טיוטה נשמרת בלי מספר, תוכל להמשיך אותה מלשונית טיוטות"
                   className="inline-flex items-center justify-center gap-2 min-h-[46px] px-4 bg-white text-stone-700 border border-stone-300 rounded-2xl text-sm font-semibold hover:bg-stone-50 hover:border-stone-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
@@ -2869,7 +2811,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                 </button>
                 <button
                   onClick={handleSave}
-                  disabled={!canSave || saving || rateLoading || businessProfileIncomplete}
+                  disabled={saveDisabled}
                   className="inline-flex items-center justify-center gap-2 min-h-[48px] min-w-[13rem] px-6 bg-gradient-to-l from-orange-500 to-rose-500 text-white rounded-2xl text-sm font-bold hover:shadow-lg hover:shadow-orange-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:from-stone-300 disabled:to-stone-300 disabled:cursor-not-allowed disabled:shadow-none transition-all"
                 >
                   {!saving && !rateLoading && (
@@ -2930,7 +2872,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
             <div className="mt-4 space-y-2">
               <button
                 onClick={handleSave}
-                disabled={!canSave || saving || rateLoading || businessProfileIncomplete}
+                disabled={saveDisabled}
                 className="w-full inline-flex items-center justify-center gap-2 min-h-[48px] bg-gradient-to-l from-orange-500 to-rose-500 text-white py-3 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:from-stone-300 disabled:to-stone-300 disabled:cursor-not-allowed disabled:shadow-none transition-all"
               >
                 {!saving && !rateLoading && (
@@ -2944,53 +2886,19 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                 </p>
               )}
               {clientTaxIdMissing && !saving && (
-                <div
+                <ClientTaxIdNag
                   id="client-taxid-nag"
-                  role="status"
-                  className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900"
-                >
-                  <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-amber-600" />
-                  <div className="min-w-0 flex-1">
-                    <p className="font-semibold">חסר ח.פ / ת.ז של הלקוח</p>
-                    <p className="mt-0.5 leading-relaxed text-amber-800">
-                      {adhocMode
-                        ? "אפשר להפיק גם בלי, אבל מומלץ להשלים אותו בשדה המסומן בכרטיס \"לקוח\"."
-                        : "אפשר להפיק גם בלי. הוסף אותו כאן והוא יישמר גם בכרטיס הלקוח:"}
-                    </p>
-                    {!adhocMode && selectedClient && (
-                      <div className="mt-2 flex items-center gap-2">
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          value={clientTaxIdDraft}
-                          onChange={(e) => setClientTaxIdDraft(e.target.value.replace(/[^\d]/g, ""))}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              e.preventDefault();
-                              saveClientTaxId();
-                            }
-                          }}
-                          placeholder="ח.פ / ת.ז של הלקוח"
-                          dir="ltr"
-                          className="input-warm flex-1 min-w-0 text-sm py-2"
-                          aria-label="ח.פ / ת.ז של הלקוח"
-                        />
-                        <button
-                          type="button"
-                          onClick={saveClientTaxId}
-                          disabled={!clientTaxIdDraft.trim() || savingClientTaxId}
-                          className="shrink-0 inline-flex items-center justify-center min-h-[40px] px-3 rounded-xl bg-gradient-to-l from-orange-500 to-rose-500 text-white text-xs font-semibold disabled:from-stone-300 disabled:to-stone-300 disabled:cursor-not-allowed"
-                        >
-                          {savingClientTaxId ? "שומר…" : "שמור ללקוח"}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                  adhocMode={adhocMode}
+                  canEdit={!adhocMode && !!selectedClient}
+                  draft={clientTaxIdDraft}
+                  onDraftChange={setClientTaxIdDraft}
+                  onSave={saveClientTaxId}
+                  saving={savingClientTaxId}
+                />
               )}
               <button
                 onClick={handleSaveDraft}
-                disabled={savingDraft || saving}
+                disabled={draftDisabled}
                 className="w-full inline-flex items-center justify-center gap-2 bg-white text-stone-700 border border-stone-300 py-2.5 rounded-2xl text-sm font-semibold hover:bg-stone-50 hover:border-stone-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
                 <Save className="w-4 h-4" />
@@ -3001,26 +2909,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
               </p>
             </div>
             {businessProfileIncomplete && (
-              <div className="mt-3 flex items-start gap-2 text-xs text-rose-800 bg-rose-50 p-3 rounded-xl border border-rose-200">
-                <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-rose-600" />
-                <span>
-                  לפני הפקת מסמך יש להשלים את שם העסק ומספר העוסק/ח.פ.{" "}
-                  {/* Was a link to /settings. Onboarding deliberately stopped
-                      requiring the tax ID (requiring it was the biggest hole
-                      in the signup funnel), so the first time a user meets
-                      this rule is HERE - already in the editor, with a filled
-                      document in front of them. Sending them to another page
-                      at that exact moment is where they leave. The same modal
-                      settings uses is opened in place instead. */}
-                  <button
-                    type="button"
-                    onClick={() => setBizModalOpen(true)}
-                    className="font-semibold underline hover:text-rose-900"
-                  >
-                    להשלמת פרטי העסק כאן ←
-                  </button>
-                </span>
-              </div>
+              <BusinessProfileNag className="mt-3" onFix={() => setBizModalOpen(true)} />
             )}
             {blockReason && !businessProfileIncomplete && (
               <div className="mt-3 flex items-start gap-2 text-xs text-amber-800 bg-amber-50 p-3 rounded-xl border border-amber-200">
@@ -3028,28 +2917,13 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                 <span>{blockReason}</span>
               </div>
             )}
-            {toast && (
-              <div
-                className={`mt-3 text-sm p-3 rounded-xl flex items-start gap-2 ${
-                  toast.kind === "success"
-                    ? "bg-emerald-50 text-emerald-900 border border-emerald-200"
-                    : "bg-rose-50 text-rose-900 border border-rose-200"
-                }`}
-              >
-                {toast.kind === "success" ? (
-                  <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5 text-emerald-600" />
-                ) : (
-                  <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-rose-600" />
-                )}
-                <span>{toast.text}</span>
-              </div>
-            )}
+            {toast && <ResultToast toast={toast} className="mt-3 text-sm p-3" />}
           </div>
 
           {/* Light-orange frame with a legend tab so the preview reads as one
               deliberate object next to the form, not a loose sheet. */}
-          <div className="hidden lg:block relative rounded-3xl border-[3px] border-[#fdba74] bg-[#fff4ea] px-3.5 pb-3.5 pt-6">
-            <p className="absolute -top-[15px] right-5 inline-flex items-center gap-2 h-[30px] px-3.5 rounded-full bg-white border-2 border-[#fdba74] text-[13px] font-bold text-[#c2410c] whitespace-nowrap">
+          <div className="hidden lg:block relative rounded-3xl border-[3px] border-[color:var(--goldline)] bg-[color:var(--goldtint)] px-3.5 pb-3.5 pt-6">
+            <p className="absolute -top-[15px] right-5 inline-flex items-center gap-2 h-[30px] px-3.5 rounded-full bg-white border-2 border-[color:var(--goldline)] text-[13px] font-bold text-[color:var(--gold-text)] whitespace-nowrap">
               <Eye className="w-[15px] h-[15px]" />
               תצוגה מקדימה
               <span className="font-medium text-stone-600">· מתעדכנת תוך כדי הקלדה</span>
@@ -3068,24 +2942,9 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
         reason it is disabled and the result toast, so nothing about saving
         happens off-screen. Hidden from lg up, where the desktop action bar
         at the end of the form column owns it. */}
-    <div ref={mobileDockRef} className="lg:hidden fixed inset-x-0 bottom-0 z-40 no-print border-t border-orange-200 bg-white/95 backdrop-blur shadow-[0_-6px_20px_rgba(120,53,15,0.10)]">
+    <div ref={mobileDockRef} className="lg:hidden fixed inset-x-0 bottom-0 z-40 no-print border-t border-orange-200 bg-white/95 backdrop-blur dock-shadow">
       <div className="max-w-7xl mx-auto px-4 pt-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))]">
-        {toast && (
-          <div
-            className={`mb-2 text-xs p-2.5 rounded-xl flex items-start gap-2 ${
-              toast.kind === "success"
-                ? "bg-emerald-50 text-emerald-900 border border-emerald-200"
-                : "bg-rose-50 text-rose-900 border border-rose-200"
-            }`}
-          >
-            {toast.kind === "success" ? (
-              <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5 text-emerald-600" />
-            ) : (
-              <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-rose-600" />
-            )}
-            <span>{toast.text}</span>
-          </div>
-        )}
+        {toast && <ResultToast toast={toast} className="mb-2 text-xs p-2.5" />}
         {(blockReason || businessProfileIncomplete || clientTaxIdMissing) && (
           <p className="mb-2 text-[11px] text-amber-800 leading-snug flex items-start gap-1.5">
             <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
@@ -3123,7 +2982,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
           </div>
           <button
             onClick={handleSave}
-            disabled={!canSave || saving || rateLoading || businessProfileIncomplete}
+            disabled={saveDisabled}
             className="flex-1 inline-flex items-center justify-center gap-2 min-h-[48px] px-3 bg-gradient-to-l from-orange-500 to-rose-500 text-white rounded-2xl text-sm font-bold text-center leading-tight hover:shadow-lg hover:shadow-orange-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:from-stone-300 disabled:to-stone-300 disabled:cursor-not-allowed disabled:shadow-none transition-all"
           >
             {!saving && !rateLoading && (
@@ -3192,6 +3051,119 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
     <div className="flex justify-between">
       <span className="text-stone-700 font-medium">{label}</span>
       <span className="text-stone-900 font-semibold">{value}</span>
+    </div>
+  );
+}
+
+type ToastState = { kind: "success" | "error"; text: string };
+
+/** Save result notice; the same block used to be pasted into all three save
+ *  surfaces (desktop bar, mobile card, mobile dock). */
+function ResultToast({ toast, className = "text-sm p-3" }: { toast: ToastState; className?: string }) {
+  return (
+    <div
+      className={`rounded-xl flex items-start gap-2 ${className} ${
+        toast.kind === "success"
+          ? "bg-emerald-50 text-emerald-900 border border-emerald-200"
+          : "bg-rose-50 text-rose-900 border border-rose-200"
+      }`}
+    >
+      {toast.kind === "success" ? (
+        <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5 text-emerald-600" />
+      ) : (
+        <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-rose-600" />
+      )}
+      <span>{toast.text}</span>
+    </div>
+  );
+}
+
+/** The gate for a business profile without a name / tax id. Was a link to
+ *  /settings. Onboarding deliberately stopped requiring the tax ID (requiring
+ *  it was the biggest hole in the signup funnel), so the first time a user
+ *  meets this rule is HERE - already in the editor, with a filled document in
+ *  front of them. Sending them to another page at that exact moment is where
+ *  they leave. The same modal settings uses is opened in place instead. */
+function BusinessProfileNag({ onFix, className = "" }: { onFix: () => void; className?: string }) {
+  return (
+    <div className={`flex items-start gap-2 text-xs text-rose-800 bg-rose-50 p-3 rounded-xl border border-rose-200 ${className}`}>
+      <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-rose-600" />
+      <span>
+        לפני הפקת מסמך יש להשלים את שם העסק ומספר העוסק/ח.פ.{" "}
+        <button type="button" onClick={onFix} className="font-semibold underline hover:text-rose-900">
+          להשלמת פרטי העסק כאן ←
+        </button>
+      </span>
+    </div>
+  );
+}
+
+/** "Client has no tax id" nudge with the inline fix. `inline` lays the copy
+ *  and the input side by side (the desktop bar); stacked otherwise. */
+function ClientTaxIdNag({
+  id,
+  inline = false,
+  adhocMode,
+  canEdit,
+  draft,
+  onDraftChange,
+  onSave,
+  saving,
+}: {
+  id?: string;
+  inline?: boolean;
+  adhocMode: boolean;
+  canEdit: boolean;
+  draft: string;
+  onDraftChange: (value: string) => void;
+  onSave: () => void;
+  saving: boolean;
+}) {
+  return (
+    <div
+      id={id}
+      role="status"
+      className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900"
+    >
+      <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-amber-600" />
+      <div className={inline ? "min-w-0 flex-1 flex flex-wrap items-center gap-x-3 gap-y-2" : "min-w-0 flex-1"}>
+        <div>
+          <p className="font-semibold">חסר ח.פ / ת.ז של הלקוח</p>
+          <p className="mt-0.5 leading-relaxed text-amber-800">
+            {adhocMode
+              ? "אפשר להפיק גם בלי, אבל מומלץ להשלים אותו בשדה המסומן בכרטיס \"לקוח\"."
+              : "אפשר להפיק גם בלי. הוסף אותו כאן והוא יישמר גם בכרטיס הלקוח:"}
+          </p>
+        </div>
+        {canEdit && (
+          <div className={inline ? "flex items-center gap-2 flex-1 min-w-[16rem]" : "mt-2 flex items-center gap-2"}>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={draft}
+              onChange={(e) => onDraftChange(e.target.value.replace(/[^\d]/g, ""))}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  onSave();
+                }
+              }}
+              placeholder="ח.פ / ת.ז של הלקוח"
+              dir="ltr"
+              className="input-warm flex-1 min-w-0 text-sm py-2"
+              aria-label="ח.פ / ת.ז של הלקוח"
+            />
+            <button
+              type="button"
+              onClick={onSave}
+              disabled={!draft.trim() || saving}
+              className="shrink-0 inline-flex items-center justify-center min-h-[40px] px-3 rounded-xl bg-gradient-to-l from-orange-500 to-rose-500 text-white text-xs font-semibold disabled:from-stone-300 disabled:to-stone-300 disabled:cursor-not-allowed"
+            >
+              {saving ? "שומר…" : "שמור ללקוח"}
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

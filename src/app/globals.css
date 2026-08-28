@@ -357,3 +357,8 @@ tr {
     animation: none !important;
   }
 }
+
+/* Upward shadow shared by the save bars (desktop sticky bar, mobile dock). */
+.dock-shadow {
+  box-shadow: 0 -8px 28px rgba(120, 53, 15, 0.12);
+}

@@ -1,10 +1,20 @@
+// Built once: Intl.NumberFormat construction (locale lookup) costs more than
+// the format call itself, and the editor calls this a dozen times per render.
+const ILS_WHOLE = new Intl.NumberFormat("he-IL", {
+  style: "currency",
+  currency: "ILS",
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 2,
+});
+const ILS_CENTS = new Intl.NumberFormat("he-IL", {
+  style: "currency",
+  currency: "ILS",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
 export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("he-IL", {
-    style: "currency",
-    currency: "ILS",
-    minimumFractionDigits: amount % 1 === 0 ? 0 : 2,
-    maximumFractionDigits: 2,
-  }).format(amount);
+  return (amount % 1 === 0 ? ILS_WHOLE : ILS_CENTS).format(amount);
 }
 
 /**
