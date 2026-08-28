@@ -204,7 +204,6 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   const updatePayDetails = (patch: Partial<PaymentDetails>) =>
     setPayDetails((p) => ({ ...p, ...patch }));
 
-  const [sendEmail, setSendEmail] = useState<boolean>(true);
   const [emails, setEmails] = useState<string[]>([""]);
   const [emailOverridden, setEmailOverridden] = useState<boolean>(false);
   const [paymentMethodTouched, setPaymentMethodTouched] = useState<boolean>(false);
@@ -1092,16 +1091,19 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
     allocCustomerTaxId,
   );
   const willNeedAllocation = !allocationNumber.trim() && docNeedsAllocationNumber;
-  // The document may not go out to the customer before its allocation number
-  // exists (same rule the document page enforces on its send buttons). So the
-  // "email it on save" option is held back rather than silently emailing a tax
-  // invoice that is missing its number.
-  const willSendEmail = sendEmail && !willNeedAllocation;
+  // Sending is a BUTTON, not a checkbox (Asaf, 2026-08-27: the "email it when
+  // I click save" tick was confusing). The user types an address in the
+  // "שליחה ללקוח" card and then picks "save and issue" or "save, issue and
+  // send by email" at the end. The send button only exists when every typed
+  // address is valid AND no allocation number is pending: the document may
+  // not go out to the customer before its number exists (same rule the
+  // document page enforces on its send buttons).
+  const emailsTyped = emailTo.length > 0;
+  const canSend = allEmailsValid && !willNeedAllocation;
 
   const canSave =
     clientReady &&
     items.every((i) => i.description.trim() && i.quantity > 0 && i.unitPrice >= 0) &&
-    (!willSendEmail || allEmailsValid) &&
     creditRefValid &&
     discountValid &&
     withholdingValid;
@@ -1123,21 +1125,14 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
           ? "יש לתקן את סכום ההנחה"
           : !withholdingValid
             ? "יש לתקן את סכום ניכוי המס במקור"
-            : willSendEmail && !allEmailsValid
-              ? 'יש להזין אימייל תקין בכרטיס "שליחה ללקוח"'
-              : "כל פריט חייב תיאור, כמות חיובית ומחיר";
+            : "כל פריט חייב תיאור, כמות חיובית ומחיר";
 
-  // What the primary button says. When an allocation number will be needed, the
-  // label names the next step instead of promising a finished document.
-  const saveLabel = saving
-    ? "שומר..."
-    : rateLoading
-      ? "טוען שער חליפין…"
-      : willNeedAllocation
-        ? "שמור והמשך לקבלת מספר הקצאה"
-        : willSendEmail
-          ? "שמור, הפק ושלח"
-          : `שמור והפק ${docLabel}`;
+  // What the two issue buttons say. When an allocation number will be needed,
+  // the label names the next step instead of promising a finished document.
+  const busyLabel = saving ? "שומר..." : rateLoading ? "טוען שער חליפין…" : null;
+  const saveLabel =
+    busyLabel ?? (willNeedAllocation ? "שמור והמשך לקבלת מספר הקצאה" : `שמור והפק ${docLabel}`);
+  const sendLabel = busyLabel ?? "שמור, הפק ושלח במייל";
 
   // Build the persisted PaymentDetails, keeping only the fields relevant to the
   // chosen method and dropping empties. Returns undefined when nothing was set.
@@ -1238,8 +1233,9 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
     }
   }
 
-  async function handleSave() {
+  async function handleSave(opts: { send?: boolean } = {}) {
     if (!canSave) return;
+    const send = opts.send === true && canSend;
     // #11: never persist while the exchange-rate fetch for a non-ILS currency
     // is still in flight; `rate` still holds 1 / the previous currency's
     // value, which would be stamped onto exchangeRate/subtotalIls/totalIls.
@@ -1415,7 +1411,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
         ? " שים לב: קישור הצעת המחיר המקורית נכשל, סמן אותה כשולמה ידנית."
         : "";
 
-      if (willSendEmail) {
+      if (send) {
         const result = await sendReceiptEmail({
           to: joinEmails(emailRecipients),
           clientName,
@@ -1658,11 +1654,12 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
         {/* ── לקוח ── */}
         <EditorCard title="לקוח" icon={UserPlus}>
           {/* Mode switch (Asaf 2026-08-27): the old white-on-peach pill was too
-              quiet - users could not tell which tab was on, and had no idea what
-              the field under it wanted. Now: two equal tabs that fill the row,
-              the active one painted in the same orange-rose ramp as the VAT
-              toggle below, plus a one-line caption that names the mode and the
-              field placeholder that says exactly what to do next. */}
+              quiet - users could not tell which tab was on. The first fix (a
+              full orange-rose fill on the active tab) overshot: the switch
+              became the loudest thing on the page. Now the active tab is a
+              soft orange tint with an orange-300 frame, the same frame the
+              open client picker wears, so it reads as "selected" without
+              competing with the real call to action. */}
           <div
             role="tablist"
             aria-label="סוג הלקוח"
@@ -1675,8 +1672,8 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
               onClick={() => setAdhocMode(false)}
               className={`inline-flex items-center justify-center gap-1.5 min-h-[40px] px-3 rounded-lg transition-colors ${
                 !adhocMode
-                  ? "bg-gradient-to-l from-orange-500 to-rose-500 text-white shadow-sm"
-                  : "text-stone-700 hover:bg-orange-50 hover:text-stone-900"
+                  ? "bg-orange-50 text-orange-700 border border-orange-300"
+                  : "border border-transparent text-stone-600 hover:bg-stone-50 hover:text-stone-900"
               }`}
             >
               <Users className="w-4 h-4" />
@@ -1689,8 +1686,8 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
               onClick={() => setAdhocMode(true)}
               className={`inline-flex items-center justify-center gap-1.5 min-h-[40px] px-3 rounded-lg transition-colors ${
                 adhocMode
-                  ? "bg-gradient-to-l from-orange-500 to-rose-500 text-white shadow-sm"
-                  : "text-stone-700 hover:bg-orange-50 hover:text-stone-900"
+                  ? "bg-orange-50 text-orange-700 border border-orange-300"
+                  : "border border-transparent text-stone-600 hover:bg-stone-50 hover:text-stone-900"
               }`}
             >
               <UserPlus className="w-4 h-4" />
@@ -2618,7 +2615,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="הערות אופציונליות שיופיעו על המסמך"
-            rows={8}
+            rows={4}
             className="input-warm"
             aria-label="הערות"
           />
@@ -2626,29 +2623,19 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
 
         {/* ── שליחה ללקוח ── */}
         <EditorCard title="שליחה ללקוח" icon={Mail}>
-          <label
-            className={`flex items-center gap-2 text-sm mb-3 ${
-              willNeedAllocation ? "cursor-not-allowed opacity-60" : "cursor-pointer"
-            }`}
-          >
-            <input
-              type="checkbox"
-              checked={sendEmail && !willNeedAllocation}
-              disabled={willNeedAllocation}
-              onChange={(e) => setSendEmail(e.target.checked)}
-              className="w-4 h-4 accent-orange-500"
-            />
-            <span className="text-stone-700">
-              שלח את ה{docLabel} במייל ללקוח מיד כשאני לוחץ שמור
-            </span>
-          </label>
+          {!willNeedAllocation && (
+            <p className="text-sm text-stone-700 mb-3 leading-relaxed">
+              רוצה לשלוח את ה{docLabel} ללקוח במייל? כתוב כאן את הכתובת, ובסוף לחץ
+              &quot;שמור, הפק ושלח במייל&quot;. בלי כתובת, המסמך רק יופק.
+            </p>
+          )}
           {willNeedAllocation && (
             <p className="text-xs text-stone-700 bg-amber-50 border border-orange-100 rounded-xl p-3 mb-3 leading-relaxed">
               המסמך הזה צריך קודם מספר הקצאה מרשות המסים, ולכן אי אפשר לשלוח אותו כבר עכשיו.
               שומרים, מבקשים את המספר בלחיצה אחת, ואז שולחים ללקוח מעמוד המסמך.
             </p>
           )}
-          <FormField label="אימייל לשליחה">
+          <FormField label="אימייל הלקוח">
             <div className="space-y-2">
               {emails.map((em, i) => (
                 <div key={i} className="flex items-center gap-2">
@@ -2703,11 +2690,13 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
               </p>
             )}
           </FormField>
-          {willSendEmail && (
-            <p className="text-xs text-stone-600 mt-2">
-              {emailRecipients.length > 0
-                ? `יישלח ל-${emailRecipients.length} נמענים: ${emailTo}`
-                : "מלא כתובת אימייל אחת לפחות, או בטל את הסימון למעלה."}
+          {!willNeedAllocation && emailsTyped && (
+            <p className={`text-xs mt-2 ${allEmailsValid ? "text-stone-600" : "text-rose-700"}`}>
+              {allEmailsValid
+                ? `"שמור, הפק ושלח במייל" ישלח ל-${
+                    emailRecipients.length === 1 ? "כתובת אחת" : `${emailRecipients.length} נמענים`
+                  }: ${emailTo}`
+                : "כתובת האימייל לא תקינה, ולכן אי אפשר לשלוח. תקן אותה או מחק אותה."}
             </p>
           )}
         </EditorCard>
@@ -2725,7 +2714,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
             allocationNumber={allocationNumber}
             onAllocationNumberChange={setAllocationNumber}
             connected={taxAuthorityStatus.connected}
-            onSave={handleSave}
+            onSave={() => handleSave()}
             saveLabel={saveLabel}
             saveDisabled={saveDisabled}
             saveBusy={saving || rateLoading}
@@ -2764,7 +2753,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                 saving={savingClientTaxId}
               />
             )}
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
               <div className="min-w-[9rem]">
                 <p className="text-xs font-medium text-stone-600 leading-none">
                   {isQuote ? "סה״כ הצעה" : isCreditNote ? "סה״כ זיכוי" : "סה״כ לתשלום"}
@@ -2799,7 +2788,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                   אחרי השמירה תגיע לעמוד המסמך, ושם תבקש את מספר ההקצאה בלחיצה אחת.
                 </p>
               )}
-              <div className="ms-auto flex items-center gap-2.5 flex-shrink-0">
+              <div className="ms-auto flex flex-wrap items-center justify-end gap-2.5">
                 <button
                   onClick={handleSaveDraft}
                   disabled={draftDisabled}
@@ -2809,16 +2798,15 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                   <Save className="w-4 h-4" />
                   {savingDraft ? "שומר טיוטה…" : "שמור טיוטה"}
                 </button>
-                <button
-                  onClick={handleSave}
+                <IssueButtons
+                  canSend={canSend}
                   disabled={saveDisabled}
-                  className="inline-flex items-center justify-center gap-2 min-h-[48px] min-w-[13rem] px-6 bg-gradient-to-l from-orange-500 to-rose-500 text-white rounded-2xl text-sm font-bold hover:shadow-lg hover:shadow-orange-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:from-stone-300 disabled:to-stone-300 disabled:cursor-not-allowed disabled:shadow-none transition-all"
-                >
-                  {!saving && !rateLoading && (
-                    willSendEmail ? <Send className="w-4 h-4" /> : <Save className="w-4 h-4" />
-                  )}
-                  {saveLabel}
-                </button>
+                  busy={saving || rateLoading}
+                  saveLabel={saveLabel}
+                  sendLabel={sendLabel}
+                  onIssue={() => handleSave()}
+                  onSend={() => handleSave({ send: true })}
+                />
               </div>
             </div>
           </div>
@@ -2870,16 +2858,16 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
               )}
             </div>
             <div className="mt-4 space-y-2">
-              <button
-                onClick={handleSave}
+              <IssueButtons
+                stacked
+                canSend={canSend}
                 disabled={saveDisabled}
-                className="w-full inline-flex items-center justify-center gap-2 min-h-[48px] bg-gradient-to-l from-orange-500 to-rose-500 text-white py-3 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:from-stone-300 disabled:to-stone-300 disabled:cursor-not-allowed disabled:shadow-none transition-all"
-              >
-                {!saving && !rateLoading && (
-                  willSendEmail ? <Send className="w-4 h-4" /> : <Save className="w-4 h-4" />
-                )}
-                {saveLabel}
-              </button>
+                busy={saving || rateLoading}
+                saveLabel={saveLabel}
+                sendLabel={sendLabel}
+                onIssue={() => handleSave()}
+                onSend={() => handleSave({ send: true })}
+              />
               {willNeedAllocation && !saving && (
                 <p className="text-xs text-stone-600 text-center leading-relaxed">
                   אחרי השמירה תגיע לעמוד המסמך, ושם תבקש את מספר ההקצאה בלחיצה אחת.
@@ -2981,18 +2969,18 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
             </p>
           </div>
           <button
-            onClick={handleSave}
+            onClick={() => handleSave({ send: canSend })}
             disabled={saveDisabled}
             className="flex-1 inline-flex items-center justify-center gap-2 min-h-[48px] px-3 bg-gradient-to-l from-orange-500 to-rose-500 text-white rounded-2xl text-sm font-bold text-center leading-tight hover:shadow-lg hover:shadow-orange-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:from-stone-300 disabled:to-stone-300 disabled:cursor-not-allowed disabled:shadow-none transition-all"
           >
             {!saving && !rateLoading && (
-              willSendEmail ? (
+              canSend ? (
                 <Send className="w-4 h-4 flex-shrink-0" />
               ) : (
                 <Save className="w-4 h-4 flex-shrink-0" />
               )
             )}
-            {saveLabel}
+            {canSend ? sendLabel : saveLabel}
           </button>
         </div>
       </div>
@@ -3056,6 +3044,56 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
 }
 
 type ToastState = { kind: "success" | "error"; text: string };
+
+const ISSUE_BTN_PRIMARY =
+  "inline-flex items-center justify-center gap-2 min-h-[48px] px-5 bg-gradient-to-l from-orange-500 to-rose-500 text-white rounded-2xl text-sm font-bold hover:shadow-lg hover:shadow-orange-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:from-stone-300 disabled:to-stone-300 disabled:cursor-not-allowed disabled:shadow-none transition-all";
+const ISSUE_BTN_SECONDARY =
+  "inline-flex items-center justify-center gap-2 min-h-[48px] px-5 bg-white text-stone-800 border-2 border-[color:var(--goldline)] rounded-2xl text-sm font-bold hover:bg-[color:var(--goldtint)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all";
+
+/** The one or two ways to finish a document: "save and issue" always, plus
+ *  "save, issue and send by email" once a valid address exists. The send
+ *  button is the gradient one when it exists; otherwise issuing is. `stacked`
+ *  puts the send button on top (the mobile card). */
+function IssueButtons({
+  stacked = false,
+  canSend,
+  disabled,
+  busy,
+  saveLabel,
+  sendLabel,
+  onIssue,
+  onSend,
+}: {
+  stacked?: boolean;
+  canSend: boolean;
+  disabled: boolean;
+  busy: boolean;
+  saveLabel: string;
+  sendLabel: string;
+  onIssue: () => void;
+  onSend: () => void;
+}) {
+  const w = stacked ? " w-full" : "";
+  const issue = (
+    <button
+      key="issue"
+      onClick={onIssue}
+      disabled={disabled}
+      className={(canSend ? ISSUE_BTN_SECONDARY : ISSUE_BTN_PRIMARY) + w}
+    >
+      {!busy && <Save className="w-4 h-4 flex-shrink-0" />}
+      {saveLabel}
+    </button>
+  );
+  if (!canSend) return issue;
+  const send = (
+    <button key="send" onClick={onSend} disabled={disabled} className={ISSUE_BTN_PRIMARY + w}>
+      {!busy && <Send className="w-4 h-4 flex-shrink-0" />}
+      {sendLabel}
+    </button>
+  );
+  return stacked ? [send, issue] : [issue, send];
+}
 
 /** Save result notice; the same block used to be pasted into all three save
  *  surfaces (desktop bar, mobile card, mobile dock). */
