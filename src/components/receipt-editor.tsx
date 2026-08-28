@@ -2742,7 +2742,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
             the total and both save buttons are reachable from any scroll
             position. Mobile keeps its fixed bar further down. */}
         <div className="hidden lg:block lg:sticky lg:bottom-0 z-20 no-print pt-2">
-          <div className="rounded-2xl border-2 border-[color:var(--goldline)] bg-white/95 backdrop-blur dock-shadow px-5 py-3.5 space-y-3">
+          <div className="rounded-2xl border-2 border-[color:var(--goldline)] bg-white/95 backdrop-blur dock-shadow px-4 py-3 space-y-3">
             {toast && <ResultToast toast={toast} />}
             {businessProfileIncomplete && <BusinessProfileNag onFix={() => setBizModalOpen(true)} />}
             {clientTaxIdMissing && !saving && (
@@ -2756,8 +2756,22 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                 saving={savingClientTaxId}
               />
             )}
+            {blockReason && !businessProfileIncomplete && (
+              <div className="flex items-start gap-2 text-xs text-amber-800 bg-amber-50 px-3 py-2 rounded-xl border border-amber-200">
+                <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                <span>{blockReason}</span>
+              </div>
+            )}
+            {willNeedAllocation && !saving && !blockReason && (
+              <p className="text-[11px] text-stone-600 leading-snug">
+                אחרי השמירה תגיע לעמוד המסמך, ושם תבקש את מספר ההקצאה בלחיצה אחת.
+              </p>
+            )}
+            {/* Total + buttons on one row: everything that can wrap sits in the
+                stack above, so at a ~565px column (Asaf's 1290px viewport with
+                the sidebar) the three buttons still fit beside the total. */}
             <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
-              <div className="min-w-[9rem]">
+              <div className="shrink-0">
                 <p className="text-xs font-medium text-stone-600 leading-none">
                   {isQuote ? "סה״כ הצעה" : isCreditNote ? "סה״כ זיכוי" : "סה״כ לתשלום"}
                 </p>
@@ -2778,28 +2792,14 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                   </p>
                 )}
               </div>
-              {blockReason && !businessProfileIncomplete && (
-                <div className="flex items-start gap-2 text-xs text-amber-800 bg-amber-50 px-3 py-2 rounded-xl border border-amber-200 max-w-xs">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                  <span>{blockReason}</span>
-                </div>
-              )}
-              {/* The mobile card shows this hint next to a block reason; in the
-                  one-row bar two competing notices would crowd the total. */}
-              {willNeedAllocation && !saving && !blockReason && (
-                <p className="text-[11px] text-stone-600 leading-snug max-w-[16rem]">
-                  אחרי השמירה תגיע לעמוד המסמך, ושם תבקש את מספר ההקצאה בלחיצה אחת.
-                </p>
-              )}
               <div className="ms-auto flex flex-col items-end gap-1.5">
-              <div className="flex flex-wrap items-center justify-end gap-2.5">
+              <div className="flex flex-wrap items-center justify-end gap-2">
                 <button
                   onClick={handleSaveDraft}
                   disabled={draftDisabled}
                   title="טיוטה נשמרת בלי מספר, תוכל להמשיך אותה מלשונית טיוטות"
-                  className="inline-flex items-center justify-center gap-2 min-h-[46px] px-4 bg-white text-stone-700 border border-stone-300 rounded-2xl text-sm font-semibold hover:bg-stone-50 hover:border-stone-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                  className="inline-flex items-center justify-center min-h-[46px] px-3.5 bg-white text-stone-700 border border-stone-300 rounded-2xl text-sm font-semibold hover:bg-stone-50 hover:border-stone-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
-                  <Save className="w-4 h-4" />
                   {savingDraft ? "שומר טיוטה…" : "שמור טיוטה"}
                 </button>
                 <IssueButtons
@@ -3053,9 +3053,9 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
 type ToastState = { kind: "success" | "error"; text: string };
 
 const ISSUE_BTN_PRIMARY =
-  "inline-flex items-center justify-center gap-2 min-h-[48px] px-5 bg-gradient-to-l from-orange-500 to-rose-500 text-white rounded-2xl text-sm font-bold hover:shadow-lg hover:shadow-orange-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:from-stone-300 disabled:to-stone-300 disabled:cursor-not-allowed disabled:shadow-none transition-all";
+  "inline-flex items-center justify-center gap-2 min-h-[48px] px-4 bg-gradient-to-l from-orange-500 to-rose-500 text-white rounded-2xl text-sm font-bold hover:shadow-lg hover:shadow-orange-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:from-stone-300 disabled:to-stone-300 disabled:cursor-not-allowed disabled:shadow-none transition-all";
 const ISSUE_BTN_SECONDARY =
-  "inline-flex items-center justify-center gap-2 min-h-[48px] px-5 bg-white text-stone-800 border-2 border-[color:var(--goldline)] rounded-2xl text-sm font-bold hover:bg-[color:var(--goldtint)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all";
+  "inline-flex items-center justify-center gap-2 min-h-[48px] px-4 bg-white text-stone-800 border-2 border-[color:var(--goldline)] rounded-2xl text-sm font-bold hover:bg-[color:var(--goldtint)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all";
 
 /** The one or two ways to finish a document: "save and issue" always, plus
  *  "save, issue and send by email" once a valid address exists. The send
@@ -3088,7 +3088,7 @@ function IssueButtons({
       disabled={disabled}
       className={(canSend ? ISSUE_BTN_SECONDARY : ISSUE_BTN_PRIMARY) + w}
     >
-      {!busy && <Save className="w-4 h-4 flex-shrink-0" />}
+      {!busy && stacked && <Save className="w-4 h-4 flex-shrink-0" />}
       {saveLabel}
     </button>
   );
