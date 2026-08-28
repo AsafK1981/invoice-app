@@ -1130,9 +1130,12 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   // What the two issue buttons say. When an allocation number will be needed,
   // the label names the next step instead of promising a finished document.
   const busyLabel = saving ? "שומר..." : rateLoading ? "טוען שער חליפין…" : null;
+  // Each finishing button starts with its own verb (הפק / שמור טיוטה) so the
+  // three are told apart by the first word; "שמור והפק" next to "שמור טיוטה"
+  // read as the same action to a first-time user.
   const saveLabel =
-    busyLabel ?? (willNeedAllocation ? "שמור והמשך לקבלת מספר הקצאה" : `שמור והפק ${docLabel}`);
-  const sendLabel = busyLabel ?? "שמור, הפק ושלח במייל";
+    busyLabel ?? (willNeedAllocation ? "שמור והמשך לקבלת מספר הקצאה" : `הפק ${docLabel}`);
+  const sendLabel = busyLabel ?? "הפק ושלח במייל";
 
   // Build the persisted PaymentDetails, keeping only the fields relevant to the
   // chosen method and dropping empties. Returns undefined when nothing was set.
@@ -2788,7 +2791,8 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                   אחרי השמירה תגיע לעמוד המסמך, ושם תבקש את מספר ההקצאה בלחיצה אחת.
                 </p>
               )}
-              <div className="ms-auto flex flex-wrap items-center justify-end gap-2.5">
+              <div className="ms-auto flex flex-col items-end gap-1.5">
+              <div className="flex flex-wrap items-center justify-end gap-2.5">
                 <button
                   onClick={handleSaveDraft}
                   disabled={draftDisabled}
@@ -2807,6 +2811,8 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                   onIssue={() => handleSave()}
                   onSend={() => handleSave({ send: true })}
                 />
+              </div>
+              {!willNeedAllocation && !saving && !blockReason && <NextStepsHint />}
               </div>
             </div>
           </div>
@@ -2868,6 +2874,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                 onIssue={() => handleSave()}
                 onSend={() => handleSave({ send: true })}
               />
+              {!willNeedAllocation && !saving && <NextStepsHint className="text-center" />}
               {willNeedAllocation && !saving && (
                 <p className="text-xs text-stone-600 text-center leading-relaxed">
                   אחרי השמירה תגיע לעמוד המסמך, ושם תבקש את מספר ההקצאה בלחיצה אחת.
@@ -3093,6 +3100,18 @@ function IssueButtons({
     </button>
   );
   return stacked ? [send, issue] : [issue, send];
+}
+
+/** What comes after the issue button. Asaf (2026-08-27) wanted the delivery
+ *  options visible already under "הפק", so nobody wonders what pressing it
+ *  leads to; the document must exist before it can be sent, so this is the
+ *  honest version: one sentence naming the four ways the next screen offers. */
+function NextStepsHint({ className = "" }: { className?: string }) {
+  return (
+    <p className={`text-[11px] text-stone-600 leading-snug ${className}`}>
+      אחרי ההפקה תוכלו לשלוח במייל או בוואטסאפ, להוריד PDF או להדפיס.
+    </p>
+  );
 }
 
 /** Save result notice; the same block used to be pasted into all three save

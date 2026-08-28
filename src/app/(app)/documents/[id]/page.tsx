@@ -198,6 +198,17 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
   // one it used to wear.
   const emailIsPrimary = !doc.emailedAt;
 
+  // The "what now?" card. Right after issuing, a user (Asaf, 2026-08-27:
+  // "a 70-year-old must understand what to do next") landed on a row of ten
+  // small icon buttons and had to guess which one delivers the document. For
+  // an issued document that has not been emailed yet the four delivery
+  // actions are shown as large labelled tiles in one card instead, and the
+  // toolbar drops them so there is exactly one place to look. Once the
+  // document has been emailed the toolbar carries them again as usual.
+  const showNextSteps = doc.status !== "draft" && doc.status !== "cancelled" && !doc.emailedAt;
+  const docReadyWord = doc.type === "proforma" ? "מוכן" : "מוכנה";
+  const docItWord = doc.type === "proforma" ? "אותו" : "אותה";
+
   async function handlePrint() {
     // Render-then-set (18ב): window.print() blocks until the print dialog is
     // dismissed, so the printed sheet reflects the CURRENT flag (מקור while
@@ -544,6 +555,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
             <LinkIcon className="w-4 h-4" />
             <span className="hidden sm:inline">העתק קישור</span>
           </button>
+          {!showNextSteps && (<>
           <button
             onClick={handleWhatsApp}
             disabled={allocationGate}
@@ -631,6 +643,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
             <Printer className="w-4 h-4" />
             <span className="hidden sm:inline">הדפס</span>
           </button>
+          </>)}
 
           {/* Mobile-only overflow menu. Desktop (sm+) shows the full
               row above; on phones we collapse the secondary actions
@@ -679,6 +692,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                   <LinkIcon className="w-4 h-4 text-stone-500" />
                   העתק קישור
                 </button>
+                {!showNextSteps && (
                 <button
                   role="menuitem"
                   disabled={allocationGate}
@@ -691,6 +705,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                   <MessageCircle className="w-4 h-4" />
                   WhatsApp
                 </button>
+                )}
                 {doc.status === "sent" &&
                   (doc.type === "quote" || doc.type === "proforma" || doc.type === "tax_invoice") && (
                     <button
@@ -706,6 +721,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                       שלח תזכורת
                     </button>
                   )}
+                {!showNextSteps && (
                 <button
                   role="menuitem"
                   onClick={() => {
@@ -717,6 +733,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                   <Printer className="w-4 h-4 text-stone-500" />
                   הדפס
                 </button>
+                )}
                 {!doc.emailedAt && (
                   <>
                     <div className="border-t border-stone-100 my-0.5" />
@@ -758,6 +775,88 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
         <AllocationNumberSection doc={doc} customerTaxId={customerTaxId} />
       </div>
 
+      {/* "The document is ready. How do you want to send it?" - the single
+          place to look right after issuing. Four large tiles, each saying in
+          plain words what happens when you press it. Email is the filled one
+          when it can actually go out; under the allocation gate the send
+          tiles stay clickable and route to the allocation card (the same
+          scroll + ring the toolbar buttons do) rather than sitting greyed out
+          with no explanation. */}
+      {showNextSteps && (
+        <section
+          aria-labelledby="next-steps-title"
+          className="no-print card-soft p-5 sm:p-6 max-w-[210mm] mx-auto border-2 border-[color:var(--goldline)]"
+        >
+          <div className="flex items-start gap-3">
+            <div className="w-11 h-11 rounded-2xl bg-emerald-500 flex items-center justify-center shrink-0">
+              <CheckCircle2 className="w-6 h-6 text-white" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <h2 id="next-steps-title" className="text-lg sm:text-xl font-bold text-stone-900 leading-snug">
+                {DOCUMENT_TYPE_LABELS[doc.type]} <span dir="ltr">#{doc.number}</span> {docReadyWord}.
+                {" "}איך לשלוח {docItWord} ללקוח?
+              </h2>
+              <p className="text-sm text-stone-600 mt-1">
+                {doc.clientName} · {formatCurrency(doc.total)}
+                {allocationGate
+                  ? " · קודם צריך מספר הקצאה, בכרטיס שלמעלה"
+                  : " · בחרו דרך אחת, אפשר גם כמה"}
+              </p>
+            </div>
+          </div>
+          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <NextStepTile
+              icon={<Mail className="w-5 h-5" />}
+              label={sending ? "שולח..." : "שלח במייל"}
+              hint={
+                !client?.email
+                  ? "אין כתובת מייל שמורה ללקוח"
+                  : allocationGate
+                    ? "אחרי מספר ההקצאה"
+                    : <>יישלח אל <Ltr>{client.email}</Ltr></>
+              }
+              primary={!!client?.email && !allocationGate}
+              disabled={sending || !client?.email}
+              onClick={() => handleResend(false)}
+            />
+            <NextStepTile
+              icon={<MessageCircle className="w-5 h-5" />}
+              iconClass="bg-emerald-50 text-emerald-700"
+              label="שלח בוואטסאפ"
+              hint={
+                allocationGate
+                  ? "אחרי מספר ההקצאה"
+                  : client?.phone
+                    ? <>נפתח וואטסאפ עם הודעה מוכנה אל <Ltr>{client.phone}</Ltr></>
+                    : "נפתח וואטסאפ עם הודעה מוכנה, בוחרים למי"
+              }
+              onClick={handleWhatsApp}
+            />
+            <NextStepTile
+              icon={<Download className="w-5 h-5" />}
+              label={downloadingPdf ? "מכין PDF..." : "הורד PDF"}
+              hint="קובץ לשמירה במחשב או לצירוף בעצמכם"
+              disabled={downloadingPdf}
+              onClick={handleDownloadPdf}
+            />
+            <NextStepTile
+              icon={<Printer className="w-5 h-5" />}
+              label="הדפס"
+              hint="הדפסה על נייר דרך המדפסת"
+              onClick={handlePrint}
+            />
+          </div>
+          <button
+            type="button"
+            onClick={handleCopyLink}
+            className="mt-4 inline-flex items-center gap-1.5 text-sm text-stone-600 hover:text-stone-900 underline underline-offset-2"
+          >
+            <LinkIcon className="w-4 h-4" />
+            או העתק קישור לצפייה במסמך
+          </button>
+        </section>
+      )}
+
       {doc.type === "quote" && doc.approvedAt && (
         <div className="no-print card-soft p-4 flex items-start gap-3 max-w-[210mm] mx-auto bg-emerald-50 border-emerald-200">
           <div className="w-10 h-10 rounded-2xl bg-emerald-500 flex items-center justify-center flex-shrink-0">
@@ -775,10 +874,8 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
 
       {/* Delivery status, separate from payment status. Set only when an
           email send actually succeeds (not on doc creation). */}
-      {doc.status !== "draft" && doc.status !== "cancelled" && (
+      {doc.status !== "draft" && doc.status !== "cancelled" && doc.emailedAt && (
         <div className="no-print card-soft p-3 flex items-center gap-3 max-w-[210mm] mx-auto">
-          {doc.emailedAt ? (
-            <>
               <div
                 className={`w-9 h-9 rounded-2xl flex items-center justify-center shrink-0 ${
                   doc.emailOpenedAt ? "bg-blue-100" : "bg-emerald-100"
@@ -844,20 +941,6 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                   )}
                 </p>
               </div>
-            </>
-          ) : (
-            <>
-              <div className="w-9 h-9 rounded-2xl bg-stone-100 flex items-center justify-center shrink-0">
-                <Mail className="w-4 h-4 text-stone-500" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-stone-700">טרם נשלח במייל</p>
-                <p className="text-xs text-stone-500">
-                  לחץ על &quot;מייל&quot; למעלה כדי לשלוח ללקוח
-                </p>
-              </div>
-            </>
-          )}
         </div>
       )}
 
@@ -1030,4 +1113,63 @@ function docTypeToRoute(type: string): string {
     default:
       return "receipt";
   }
+}
+
+/** An address or phone number inside Hebrew copy: kept LTR and moved to the
+ *  next line whole rather than split at its own hyphen ("ל--qa" / "ל-050-"
+ *  is what a plain `ל-${email}` wrapped into on a phone). */
+function Ltr({ children }: { children: React.ReactNode }) {
+  return (
+    <span dir="ltr" className="inline-block break-all">
+      {children}
+    </span>
+  );
+}
+
+/** One large, labelled action in the "what now?" card: icon, the action in
+ *  two or three words, and one plain sentence saying what will happen. Big
+ *  enough to hit on a phone; `primary` is the single filled tile. */
+function NextStepTile({
+  icon,
+  iconClass = "bg-[color:var(--goldtint)] text-[color:var(--gold-text)]",
+  label,
+  hint,
+  primary = false,
+  disabled = false,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  iconClass?: string;
+  label: string;
+  hint: React.ReactNode;
+  primary?: boolean;
+  disabled?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={`flex items-center gap-3.5 text-right rounded-2xl px-4 py-3.5 min-h-[72px] border-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+        primary
+          ? "bg-gradient-to-l from-orange-500 to-rose-500 border-transparent text-white hover:shadow-lg hover:shadow-orange-200"
+          : "bg-white border-stone-200 text-stone-900 hover:border-[color:var(--goldline)] hover:bg-[color:var(--goldtint)]"
+      }`}
+    >
+      <span
+        className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${
+          primary ? "bg-white/20 text-white" : iconClass
+        }`}
+      >
+        {icon}
+      </span>
+      <span className="min-w-0">
+        <span className="block text-base font-bold leading-tight">{label}</span>
+        <span className={`block text-xs mt-1 leading-snug break-words ${primary ? "text-white/85" : "text-stone-600"}`}>
+          {hint}
+        </span>
+      </span>
+    </button>
+  );
 }
