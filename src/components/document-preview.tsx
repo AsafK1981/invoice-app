@@ -234,8 +234,12 @@ export function DocumentPreview(props: Props) {
                     } as CSSProperties
                   }
                 >
+                  {/* In reflow mode (phones) the sheet really is as wide as the
+                      screen, so it gets `is-fluid` and the <=700px rules stack
+                      the header (business name over number) instead of
+                      squeezing both blocks into one row where they overlap. */}
                   <div
-                    className="receipt-view doc-paper shadow-2xl cursor-default"
+                    className={`receipt-view doc-paper shadow-2xl cursor-default${zoomedScale === 1 ? " is-fluid" : ""}`}
                     style={{ width: PAGE_WIDTH_PX, maxWidth: "100%", ...themeVars }}
                     dir="rtl"
                     data-doc-template={design?.template ?? "general"}
