@@ -44,11 +44,38 @@ interface Props {
 }
 
 const PAGE_WIDTH_PX = 794;
+// The enlarged view used to show the sheet at its natural A4 width (794px),
+// which on a typical laptop is barely bigger than the inline preview (Asaf,
+// 2026-08-27, twice: "not big enough, not wide enough, not spread over the
+// page"). It now scales the sheet to fill ZOOMED_VIEWPORT_FRACTION of the
+// window width (a 1290px viewport gets a ~1190px sheet), never beyond
+// ZOOMED_MAX_SCALE on very wide monitors.
+const ZOOMED_MAX_SCALE = 1.8;
+const ZOOMED_VIEWPORT_FRACTION = 0.92;
 
 export function DocumentPreview(props: Props) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.5);
   const [zoomed, setZoomed] = useState(false);
+  const [zoomedScale, setZoomedScale] = useState(1);
+
+  // Fit the enlarged sheet to the window: as big as ZOOMED_MAX_SCALE allows
+  // on wide screens. CSS `zoom` (not a transform) so text re-rasterises
+  // sharp at the new size. On a screen narrower than the A4 sheet (phones)
+  // the scale stays 1 and the sheet reflows to the screen width instead,
+  // so the text keeps its readable size rather than shrinking to fit.
+  useEffect(() => {
+    if (!zoomed) return;
+    const update = () => {
+      const available = window.innerWidth * ZOOMED_VIEWPORT_FRACTION;
+      setZoomedScale(
+        available >= PAGE_WIDTH_PX ? Math.min(ZOOMED_MAX_SCALE, available / PAGE_WIDTH_PX) : 1,
+      );
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, [zoomed]);
 
   useEffect(() => {
     if (!wrapRef.current) return;
@@ -195,17 +222,31 @@ export function DocumentPreview(props: Props) {
               className="relative z-10 flex-1 overflow-auto py-6 px-4 cursor-zoom-out"
               onClick={() => setZoomed(false)}
             >
-              <div
-                className="receipt-view doc-paper shadow-2xl mx-auto cursor-default"
-                style={{ width: PAGE_WIDTH_PX, maxWidth: "100%", ...themeVars }}
-                dir="rtl"
-                data-doc-template={design?.template ?? "general"}
-                data-doc-layout={design?.layout ?? "cards"}
-                data-doc-pattern={design?.pattern ?? "none"}
-                data-logo-pos={design?.logoPosition ?? "right"}
-                onClick={(e) => e.stopPropagation()}
-              >
-                {body}
+              {/* Same trick as the inline preview: lay the sheet out at its
+                  real A4 width and let `zoom` scale it, so the document's
+                  own layout never reflows and text stays crisp. */}
+              <div className="flex justify-center">
+                <div
+                  style={
+                    {
+                      width: zoomedScale > 1 ? PAGE_WIDTH_PX : "100%",
+                      zoom: zoomedScale,
+                    } as CSSProperties
+                  }
+                >
+                  <div
+                    className="receipt-view doc-paper shadow-2xl cursor-default"
+                    style={{ width: PAGE_WIDTH_PX, maxWidth: "100%", ...themeVars }}
+                    dir="rtl"
+                    data-doc-template={design?.template ?? "general"}
+                    data-doc-layout={design?.layout ?? "cards"}
+                    data-doc-pattern={design?.pattern ?? "none"}
+                    data-logo-pos={design?.logoPosition ?? "right"}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {body}
+                  </div>
+                </div>
               </div>
             </div>
           </div>,
