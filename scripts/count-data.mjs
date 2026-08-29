@@ -29,6 +29,8 @@ const INTERNAL_BUSINESS_IDS = new Set([
   "eda11499", // קוטלרסקי ברוך - father's עוסק מורשה, used for tax-authority testing
   "957d0e04", // סטודיו נועה (דמו) - seeded demo account
   "23673f84", // עסק ביקורת בדיקה - QA/audit account
+  "acf71faa", // העסק שלי - Asaf's own first throwaway test account (17.04, pre-dates his real business)
+  "3085885f", // עסק בדיקות QA (לינקאוס) - Lynkeus's automated QA bot, created 03.08
 ]);
 
 const isInternal = (id) => INTERNAL_BUSINESS_IDS.has(String(id).slice(0, 8));
