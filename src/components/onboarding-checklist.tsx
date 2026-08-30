@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CheckCircle2, Circle, X, Sparkles, ArrowLeft } from "lucide-react";
 import type { Business, Client, Product, InvoiceDocument } from "@/lib/types";
+import { isPlaceholderBusinessName, isPlaceholderBusinessTaxId } from "@/lib/business-init";
 import { Ltr, LtrText } from "@/components/ui/ltr";
 
 interface Props {
@@ -34,9 +35,21 @@ export function OnboardingChecklist({ business, clients, products, documents }: 
   const steps: Step[] = [
     {
       id: "business",
-      done: Boolean(business.name && business.taxId && business.address),
+      // Done once the two identity fields the app actually treats as mandatory
+      // are real: business name and מספר עוסק. The ADDRESS used to be part of
+      // this condition, and that was wrong on both counts - nothing else in the
+      // app enforces it (both the onboarding form and the business modal save
+      // happily without one, and every document renders the address only when
+      // present), while plenty of home-based עוסק פטור users deliberately keep
+      // their home address off their documents. The result was a checklist
+      // stuck forever at "4 of 5" on a profile the app considers complete.
+      // Placeholder values from the auto-created business ("העסק שלי" /
+      // "000000000") must not tick this off, or a fresh signup would count as
+      // done having typed nothing - hence the placeholder helpers rather than
+      // a plain truthiness check.
+      done: !isPlaceholderBusinessName(business.name) && !isPlaceholderBusinessTaxId(business.taxId),
       label: "פרטי העסק",
-      desc: "שם, ח.פ וכתובת, כך שיופיעו על כל מסמך",
+      desc: "שם ומספר עוסק, כך שיופיעו על כל מסמך",
       cta: "לעמוד הגדרות",
       href: "/settings",
     },

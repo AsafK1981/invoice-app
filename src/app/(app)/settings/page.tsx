@@ -48,6 +48,21 @@ export default function SettingsPage() {
   const taxIdPlaceholder = isPlaceholderBusinessTaxId(business.taxId);
   const addressEmpty = !business.address?.trim();
 
+  // The three fields a document carries as the ISSUER's identity, per הוראות
+  // מס הכנסה (ניהול פנקסי חשבונות): a חשבונית prints the business name, its
+  // מספר עוסק and its מען (סעיף 9), while a קבלה does not require the
+  // issuer's address (סעיף 5 asks for the PAYER's). The onboarding checklist
+  // deliberately does not block on the address - nothing in the app enforces
+  // it and home-based users often keep their address off documents - so this
+  // card is where a user learns WHY the field is worth filling anyway. It is
+  // an explanation, not a red "חסר" badge: phone and email are absent from
+  // this list on purpose, they carry no such requirement.
+  const missingIssuerFields = [
+    namePlaceholder ? "שם העסק" : null,
+    taxIdPlaceholder ? "מספר עוסק / ח.פ" : null,
+    addressEmpty ? "כתובת" : null,
+  ].filter((f): f is string => f !== null);
+
   const fields = [
     { icon: Building2, label: "שם העסק", value: business.name, placeholder: namePlaceholder, tone: "indigo" },
     { icon: FileText, label: "סוג עוסק", value: BUSINESS_TYPE_LABELS[business.businessType], placeholder: false, tone: "violet" },
@@ -124,6 +139,29 @@ export default function SettingsPage() {
             );
           })}
         </div>
+
+        {missingIssuerFields.length > 0 && (
+          <div className="mt-4 rounded-xl bg-amber-50 border border-amber-200 p-3.5 flex items-start gap-3">
+            <Info className="w-4 h-4 text-amber-700 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm text-amber-900">
+                <strong>עוד לא מולא: {missingIssuerFields.join(", ")}.</strong>{" "}
+                לפי הוראות מס הכנסה (ניהול פנקסי חשבונות), חשבונית נושאת את שם
+                העסק, מספר העוסק והמען שלו. על קבלה אין דרישה לכתובת שלך.
+              </p>
+              <p className="text-xs text-amber-800 mt-1.5">
+                הערה כללית, לא ייעוץ מס. בכל ספק שאל את רואה החשבון שלך.
+              </p>
+              <button
+                onClick={() => setEditOpen(true)}
+                className="mt-2 inline-flex items-center gap-1.5 px-3 min-h-[36px] rounded-xl text-sm font-semibold bg-white border border-amber-200 text-amber-900 hover:bg-amber-100"
+              >
+                <Pencil className="w-3.5 h-3.5" />
+                השלם עכשיו
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <div

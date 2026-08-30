@@ -267,7 +267,13 @@ export function BusinessFormModal({ open, onClose, business }: Props) {
           </FormField>
         </div>
 
-        <FormField label="כתובת" required>
+        {/* Not marked required: handleSubmit never enforced it, onboarding
+            never enforced it, and documents render it only when present. The
+            red asterisk was the only thing claiming otherwise. */}
+        <FormField
+          label="כתובת"
+          hint="לא חוסם אותך, אבל לפי הוראות ניהול פנקסי חשבונות חשבונית נושאת את שם העסק ומענו. על קבלה אין דרישה לכתובת שלך."
+        >
           <input
             type="text"
             name="street-address"
