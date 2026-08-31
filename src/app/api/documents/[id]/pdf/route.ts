@@ -151,6 +151,11 @@ export async function GET(
     // The /view page fetches the document client-side, so wait for the rendered
     // document body before printing; otherwise the PDF captures the loader.
     await page.waitForSelector(".receipt-view", { timeout: 20_000 });
+    // One document = one page: ReceiptView listens for beforeprint and shrinks
+    // the sheet to A4 when its content runs past the page (src/lib/print-fit.ts).
+    // Headless printToPDF does not reliably dispatch that event, so fire it
+    // ourselves; the handler is idempotent if Chrome fires it again.
+    await page.evaluate(() => window.dispatchEvent(new Event("beforeprint")));
 
     const pdf = await page.pdf({
       format: "A4",

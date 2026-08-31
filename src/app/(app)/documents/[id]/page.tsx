@@ -768,7 +768,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
       <div
         ref={allocationSectionRef}
         tabIndex={-1}
-        className={`scroll-mt-20 rounded-2xl outline-none ${
+        className={`no-print scroll-mt-20 rounded-2xl outline-none ${
           allocationRingActive ? "allocation-arrival-ring" : ""
         }`}
       >

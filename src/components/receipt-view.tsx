@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import {
   type Business,
   type Client,
@@ -7,6 +8,7 @@ import {
 } from "@/lib/types";
 import { DocumentBody, type DocumentBodyClient } from "./document-body";
 import { designToCssVars, normalizeDocumentDesign } from "@/lib/document-themes";
+import { attachPrintFit } from "@/lib/print-fit";
 
 interface Props {
   business: Business;
@@ -58,8 +60,21 @@ export function ReceiptView({
   const design = normalizeDocumentDesign(business.documentDesign);
   const themeVars = designToCssVars(design);
 
+  // One document = one printed page: on beforeprint the sheet is measured in
+  // its print geometry and shrunk (CSS zoom) just enough to fit A4 when its
+  // content runs a little past the page; afterprint restores it. The server
+  // PDF route dispatches the same beforeprint before it prints. See
+  // src/lib/print-fit.ts for why the measurement has to force the geometry.
+  const paperRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const paper = paperRef.current;
+    if (!paper) return;
+    return attachPrintFit(paper);
+  }, []);
+
   return (
     <div
+      ref={paperRef}
       className="receipt-view doc-paper is-fluid mx-auto max-w-[210mm] shadow-lg print:shadow-none"
       style={themeVars}
       data-doc-template={design?.template ?? "general"}

@@ -327,6 +327,17 @@ tr {
     margin: 0 !important;
     padding: 0 !important;
   }
+  /* The sheet is the ONLY thing that prints from a page that carries one, so
+     every sibling goes, hidden or not. document-paper.css gives the sheet
+     min-height: 267mm (the full A4 content box), which means ANY in-flow
+     sibling costs a second page: on /documents/[id] an empty anchor <div>
+     (children all no-print, so 0px tall) still carried its space-y-6
+     margin-bottom, the margin collapsed through the wrappers, the sheet
+     started 27px down the page and its bottom 27px printed alone on page 2
+     (2026-08-31). display:none is the only thing that also zeroes margins. */
+  :has(> .receipt-view) > :not(.receipt-view) {
+    display: none !important;
+  }
   /* Force colored fills (doc-type badge gradient, orange total row,
      table header, zebra rows, accent borders) to actually print. Chrome
      "Save as PDF" has Background graphics OFF by default and would drop
