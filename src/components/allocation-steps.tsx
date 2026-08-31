@@ -33,6 +33,10 @@ interface Props {
   /** 1-based index of the step the user is standing on right now. */
   current: 1 | 2 | 3;
   className?: string;
+  /** "lg" is the document-page card, which spans the whole content column
+   *  (Asaf, 2026-08-31: the A4-width card left dead space on both sides and
+   *  read too small); the in-editor banner keeps the default "md". */
+  size?: "md" | "lg";
 }
 
 /**
@@ -47,7 +51,8 @@ interface Props {
  * other filled controls. The ONLY colour that is not gold here is the emerald
  * check on a finished step, which means "done" and is kept for that reason.
  */
-export function AllocationSteps({ current, className = "" }: Props) {
+export function AllocationSteps({ current, className = "", size = "md" }: Props) {
+  const lg = size === "lg";
   return (
     <ol className={`grid gap-2 sm:grid-cols-3 ${className}`}>
       {ALLOCATION_STEPS.map((step, i) => {
@@ -58,7 +63,7 @@ export function AllocationSteps({ current, className = "" }: Props) {
           <li
             key={step.title}
             aria-current={active ? "step" : undefined}
-            className={`flex items-start gap-2.5 rounded-xl border px-3 py-2.5 ${
+            className={`flex items-start rounded-xl border ${lg ? "gap-3 px-4 py-3.5" : "gap-2.5 px-3 py-2.5"} ${
               active
                 ? "border-orange-200 bg-white shadow-sm shadow-orange-100/70"
                 : "border-transparent bg-white/45"
@@ -66,7 +71,7 @@ export function AllocationSteps({ current, className = "" }: Props) {
           >
             <span
               aria-hidden
-              className={`mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
+              className={`mt-0.5 flex flex-shrink-0 items-center justify-center rounded-full font-bold ${lg ? "h-7 w-7 text-xs" : "h-6 w-6 text-[11px]"} ${
                 done
                   ? "bg-emerald-100 text-emerald-700"
                   : active
@@ -96,14 +101,14 @@ export function AllocationSteps({ current, className = "" }: Props) {
                 )}
               </span>
               <span
-                className={`block text-[13px] font-bold leading-snug sm:min-h-9 ${
+                className={`block font-bold leading-snug ${lg ? "text-[15px] sm:min-h-10" : "text-[13px] sm:min-h-9"} ${
                   active ? "text-stone-900" : "text-stone-600"
                 }`}
               >
                 {step.title}
               </span>
               <span
-                className={`mt-0.5 block text-xs leading-relaxed ${
+                className={`mt-0.5 block leading-relaxed ${lg ? "text-sm" : "text-xs"} ${
                   active ? "text-stone-700" : "text-stone-500"
                 }`}
               >

@@ -151,14 +151,14 @@ export function AllocationNumberSection({ doc, customerTaxId }: Props) {
   // STATE 3: Already set
   if (hasNumber && !editing) {
     return (
-      <div className="no-print card-soft p-4 max-w-[210mm] mx-auto bg-emerald-50/40 border-emerald-200">
-        <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-emerald-100 flex items-center justify-center flex-shrink-0">
-            <ShieldCheck className="w-5 h-5 text-emerald-700" />
+      <div className="no-print card-soft p-5 sm:p-6 bg-emerald-50/40 border-emerald-200">
+        <div className="flex items-start gap-3 sm:gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-emerald-100 flex items-center justify-center flex-shrink-0">
+            <ShieldCheck className="w-6 h-6 text-emerald-700" />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-baseline justify-between gap-2 flex-wrap">
-              <p className="text-sm font-bold text-stone-900">מספר ההקצאה התקבל ✓</p>
+              <p className="text-lg font-bold text-stone-900">מספר ההקצאה התקבל ✓</p>
               <button
                 onClick={() => setEditing(true)}
                 className="inline-flex items-center gap-1 min-h-[40px] px-1 text-xs font-semibold text-stone-600 hover:text-stone-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 rounded-lg"
@@ -167,14 +167,14 @@ export function AllocationNumberSection({ doc, customerTaxId }: Props) {
                 ערוך
               </button>
             </div>
-            <p className="text-xs text-stone-700 mt-0.5">
+            <p className="text-sm text-stone-700 mt-0.5">
               המספר מודפס על המסמך. אפשר לשלוח אותו ללקוח.
             </p>
-            <p className="mt-1 text-base font-mono font-bold text-stone-900" dir="ltr">
+            <p className="mt-1.5 text-2xl font-mono font-bold text-stone-900" dir="ltr">
               {doc.allocationNumber}
             </p>
             {doc.allocationSetAt && (
-              <p className="mt-1 text-xs text-stone-600">
+              <p className="mt-1 text-sm text-stone-600">
                 נשמר{" "}
                 {new Date(doc.allocationSetAt).toLocaleString("he-IL", {
                   day: "2-digit",
@@ -202,7 +202,7 @@ export function AllocationNumberSection({ doc, customerTaxId }: Props) {
           onChange={(e) => setValue(e.target.value)}
           placeholder="הקלד כאן את מספר ההקצאה"
           aria-label="מספר הקצאה"
-          className="flex-1 px-3 min-h-[44px] rounded-xl border border-stone-300 bg-white text-sm font-mono focus:border-[color:var(--inputfocusline)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--goldline)]"
+          className="flex-1 px-3 min-h-[48px] rounded-xl border border-stone-300 bg-white text-[15px] font-mono focus:border-[color:var(--inputfocusline)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--goldline)]"
           dir="ltr"
           disabled={saving}
           inputMode="numeric"
@@ -211,7 +211,7 @@ export function AllocationNumberSection({ doc, customerTaxId }: Props) {
         <button
           onClick={handleSave}
           disabled={saving || value.trim().length === 0}
-          className="pgbtn-primary inline-flex items-center justify-center gap-2 min-h-[44px] px-4 rounded-xl text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+          className="pgbtn-primary inline-flex items-center justify-center gap-2 min-h-[48px] px-5 rounded-xl text-[15px] font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {saving ? "שומר..." : "שמור את המספר"}
         </button>
@@ -233,7 +233,7 @@ export function AllocationNumberSection({ doc, customerTaxId }: Props) {
         href={GOV_PORTAL_URL}
         target="_blank"
         rel="noopener noreferrer"
-        className="mt-2 inline-flex items-center gap-1.5 min-h-[40px] text-xs font-semibold text-amber-800 hover:text-[color:var(--ink)] underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--goldline)] rounded-lg"
+        className="mt-2 inline-flex items-center gap-1.5 min-h-[40px] text-sm font-semibold text-amber-800 hover:text-[color:var(--ink)] underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--goldline)] rounded-lg"
       >
         <ExternalLink className="w-3.5 h-3.5" />
         לאתר חשבונית ישראל של רשות המסים
@@ -252,10 +252,10 @@ export function AllocationNumberSection({ doc, customerTaxId }: Props) {
 
   const errorNote = error && (
     <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 p-3" dir="rtl">
-      <p className="text-xs text-rose-800 font-semibold break-words">
+      <p className="text-sm text-rose-800 font-semibold break-words">
         לא הצלחנו לקבל את המספר: {error}
       </p>
-      <p className="text-xs text-rose-700 mt-1 leading-relaxed">
+      <p className="text-sm text-rose-700 mt-1 leading-relaxed">
         אפשר לנסות שוב עוד רגע. אם זה חוזר, קבל את המספר באתר חשבונית ישראל והקלד אותו כאן.
       </p>
     </div>
@@ -264,8 +264,8 @@ export function AllocationNumberSection({ doc, customerTaxId }: Props) {
   // STATE 2b: replacing a number that is already saved. Just the form, no pitch.
   if (hasNumber) {
     return (
-      <div className="no-print card-soft p-4 max-w-[210mm] mx-auto">
-        <p className="text-sm font-bold text-stone-900 mb-2">עריכת מספר ההקצאה</p>
+      <div className="no-print card-soft p-5 sm:p-6">
+        <p className="text-base font-bold text-stone-900 mb-3">עריכת מספר ההקצאה</p>
         {manualForm}
         {errorNote}
       </div>
@@ -279,24 +279,31 @@ export function AllocationNumberSection({ doc, customerTaxId }: Props) {
     // card-soft sets `background` and `border` as shorthands, so tint/border
     // utilities on this element would be dead CSS; the gold accent comes from
     // the inset ring + the medallion instead.
-    <div className="no-print card-soft p-4 sm:p-5 max-w-[210mm] mx-auto ring-1 ring-inset ring-[color:var(--goldtintline)]">
-      <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center flex-shrink-0 shadow-sm">
-          <Landmark className="w-5 h-5" />
+    //
+    // WIDTH + SCALE. This card spans the whole content column on purpose (no
+    // A4 `max-w-[210mm]` cap like the status strips below it) and its type is
+    // a step up from the rest of the page: Asaf (2026-08-31) found the A4-wide
+    // version too small on the whole screen, with too much dead space on the
+    // sides. The body copy alone is capped at ~70ch so the line length stays
+    // readable when the column is 1200px wide.
+    <div className="no-print card-soft p-5 sm:p-7 ring-1 ring-inset ring-[color:var(--goldtintline)]">
+      <div className="flex items-start gap-3 sm:gap-4">
+        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center flex-shrink-0 shadow-sm">
+          <Landmark className="w-6 h-6" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[11px] font-bold tracking-wide text-amber-700">השלב הבא</p>
-          <p className="text-[15px] font-extrabold text-stone-900 leading-tight mt-0.5">
+          <p className="text-xs font-bold tracking-wide text-amber-700">השלב הבא</p>
+          <p className="text-xl sm:text-2xl font-extrabold text-stone-900 leading-tight mt-1">
             קבל מספר הקצאה מרשות המסים
           </p>
-          <p className="text-xs text-stone-700 mt-1.5 leading-relaxed">
+          <p className="text-sm sm:text-[15px] text-stone-700 mt-2 leading-relaxed max-w-[70ch]">
             המסמך נשמר. {thresholdSentence} לוחצים על הכפתור, ורשות המסים שולחת את המספר תוך
             שניות והוא נשמר על המסמך. עד שהמספר מתקבל אי אפשר לשלוח את המסמך ללקוח.
           </p>
         </div>
       </div>
 
-      <AllocationSteps current={2} className="mt-3.5" />
+      <AllocationSteps current={2} size="lg" className="mt-5" />
 
       {/* One primary action: ask the Tax Authority for the number now. Uses
           /api/tax-authority/request-allocation with the business's stored
@@ -319,16 +326,16 @@ export function AllocationNumberSection({ doc, customerTaxId }: Props) {
       <button
         onClick={handleAutoFetch}
         disabled={fetching || saving}
-        className="pgbtn-primary mt-3.5 w-full inline-flex items-center justify-center gap-2 min-h-[52px] rounded-2xl text-[15px] font-bold hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:hover:translate-y-0"
+        className="pgbtn-primary mt-5 w-full inline-flex items-center justify-center gap-2.5 min-h-[56px] sm:min-h-[60px] rounded-2xl text-base sm:text-[17px] font-bold hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:hover:translate-y-0"
       >
         {fetching ? (
           <>
-            <Loader2 className="w-4 h-4 animate-spin" />
+            <Loader2 className="w-5 h-5 animate-spin" />
             מבקש את המספר מרשות המסים...
           </>
         ) : (
           <>
-            <ShieldCheck className="w-[18px] h-[18px]" />
+            <ShieldCheck className="w-5 h-5" />
             קבל מספר הקצאה מרשות המסים
           </>
         )}
@@ -336,19 +343,19 @@ export function AllocationNumberSection({ doc, customerTaxId }: Props) {
 
       {errorNote}
 
-      <div className="mt-3 pt-3 border-t border-orange-100">
+      <div className="mt-4 pt-4 border-t border-orange-100">
         <button
           type="button"
           onClick={() => setManualOpen((s) => !s)}
           aria-expanded={manualOpen}
-          className="inline-flex items-center gap-1.5 min-h-[44px] text-xs font-semibold text-stone-700 hover:text-[color:var(--gold-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--goldline)] rounded-lg"
+          className="inline-flex items-center gap-1.5 min-h-[44px] text-sm font-semibold text-stone-700 hover:text-[color:var(--gold-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--goldline)] rounded-lg"
         >
           <ChevronDown
             className={`w-4 h-4 transition-transform ${manualOpen ? "rotate-180" : ""}`}
           />
           כבר קיבלתי מספר הקצאה, אקליד אותו בעצמי
         </button>
-        {manualOpen && <div className="mt-2">{manualForm}</div>}
+        {manualOpen && <div className="mt-3">{manualForm}</div>}
       </div>
     </div>
   );

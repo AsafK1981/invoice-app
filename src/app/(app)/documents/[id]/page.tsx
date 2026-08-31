@@ -785,7 +785,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
       {showNextSteps && (
         <section
           aria-labelledby="next-steps-title"
-          className="no-print card-soft p-5 sm:p-6 max-w-[210mm] mx-auto border-2 border-[color:var(--goldline)]"
+          className="no-print card-soft p-5 sm:p-6 border-2 border-[color:var(--goldline)]"
         >
           <div className="flex items-start gap-3">
             <div className="w-11 h-11 rounded-2xl bg-emerald-500 flex items-center justify-center shrink-0">
