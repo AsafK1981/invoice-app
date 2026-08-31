@@ -74,7 +74,8 @@ Rules:
 - description: one short Hebrew line describing what was paid for, only if the user said it (e.g. "שירותי צילום", "ייעוץ", "שיעור פרטי"). If the user did not say what it is for, return null - do NOT invent a description and do NOT use generic words like "תשלום".
 - date: the stated date in YYYY-MM-DD. "אתמול" = yesterday, "היום" = today. Default to today.
 - Return "unknown" whenever the customer name OR the amount is missing or ambiguous. A missing detail is normal and asking again is cheap; a wrong tax document is not.
-- Anything that is not a request to create a document, and not a general question about how the bot works, is "unknown".`;
+- Anything that is not a request to create a document, and not a general question about how the bot works, is "unknown".
+- The message may be a transcribed VOICE NOTE: spoken Hebrew with fillers ("אה", "תקשיב", "אני רוצה ש..."), a request phrased indirectly ("אפשר קבלה לדני?", "צריך להוציא לרוני חשבונית"), and amounts as words ("אלף וחמש מאות" = 1500, "מאתיים חמישים" = 250, "שלושת אלפים" = 3000). Read through the phrasing to the request; the rules above still apply to what was actually said.`;
 
 export interface ParseResult {
   intent: Intent;
@@ -279,6 +280,7 @@ Rules:
 - "הלקוח X" / "ללקוח X" / "השם X" / "ל-X" -> {"clientName":"X"} exactly as written.
 - "אתמול" = yesterday, "היום" = today, or an explicit date -> {"date":"YYYY-MM-DD"}.
 - "הצעת מחיר במקום קבלה" -> {"docType":"quote"}; "קבלה" -> {"docType":"receipt"}. A "חשבונית מס" is not available on this channel: return unknown with a Hebrew note saying so.
+- The correction may be a transcribed VOICE NOTE: spoken Hebrew with fillers, a full sentence ("לא, זה היה אלף וחמש מאות ושילם בביט"), a negation followed by the right value ("לא דני, רוני"), or amounts as words ("אלף מאתיים" = 1200, "מאה וחמישים" = 150). Map every field the user changed, ignore the filler.
 - No markdown, no commentary.`;
 
 export async function parseAmendment(

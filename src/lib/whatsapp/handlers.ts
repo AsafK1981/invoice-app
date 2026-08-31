@@ -27,7 +27,8 @@ import {
 import { sendText, sendButtons, sendList, sendDocument, fetchMedia } from "./client";
 import { transcribeAudio, transcriptionConfigured } from "./transcribe";
 import { scanExpenseEvidence, normalizeMediaType } from "@/lib/expense-scan";
-import { parseExpenseEdit, EDIT_INSTRUCTIONS } from "./expense-edit";
+import { parseExpenseEdit, parseExpenseEditSpoken, EDIT_INSTRUCTIONS } from "./expense-edit";
+import { normalizeSpoken, looksLikeFreshRequest, isCancel, stripDescriptionLead } from "./spoken";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -371,7 +372,7 @@ async function handleText(
   // over instead, so someone who changed their mind mid-flow is not trapped.
   const open = await loadOpenDraft(db, phone, identity);
   if (open) {
-    if (CANCEL_RE.test(trimmed)) {
+    if (isCancel(trimmed)) {
       await consumeDraft(db, open.id);
       await sendText(phone, "בוטל. לא הופק כלום.");
       return;
@@ -394,11 +395,27 @@ async function handleText(
       await proposeDocument(db, phone, identity, fresh);
       return;
     }
-    await applyAmendment(db, phone, identity, open, trimmed);
+    const amendment = await applyAmendment(db, phone, identity, open, trimmed);
+    if (amendment.handled) return;
+    // Not a correction the amendment parser could map. Before giving up, try
+    // it as a fresh request WITHOUT the wording gate: a spoken "אני צריך
+    // עכשיו משהו אחר, קבלה לרוני על אלף וחמש מאות" fails every regex but is a
+    // complete request, and a draft that traps every following voice note
+    // for 30 minutes is exactly the failure Asaf hit on 2026-08-31.
+    const restated = await parseIntent(normalizeSpoken(trimmed), anthropicKey);
+    if (!restated.failed && restated.intent.intent === "create_document") {
+      await consumeDraft(db, open.id);
+      await proposeDocument(db, phone, identity, restated.intent);
+      return;
+    }
+    await sendText(
+      phone,
+      `${amendment.unknown ? amendment.unknown + "\n\n" : ""}לא הבנתי מה לשנות. אפשר לכתוב או להקליט, למשל: הסכום 1500, כולל מע״מ, זה עבור ייעוץ, תשלום בביט, או הלקוח דני לוי.\n\nכדי להתחיל מסמך חדש: ״תוציא קבלה ל... על ...״. כדי לוותר: ״בטל״.`,
+    );
     return;
   }
 
-  const { intent, failed } = await parseIntent(trimmed, anthropicKey);
+  const { intent, failed } = await parseIntent(normalizeSpoken(trimmed), anthropicKey);
 
   if (failed) {
     await sendText(phone, "לא הצלחתי לעבד את ההודעה. נסה שוב בעוד רגע.");
@@ -507,9 +524,6 @@ interface OpenDraft {
   payload: DraftPayload;
 }
 
-const CANCEL_RE = /^(בטל|ביטול|בטלי|לבטל|cancel|stop)\.?$/i;
-const FRESH_REQUEST_RE = /^(תוציא|תפיק|תכין|הוצא|הפק|תעשה|צור|תיצור|קבלה|הצעת מחיר|חשבונית)\b/;
-
 const PAYMENT_ROWS = ["מזומן", "העברה בנקאית", "אשראי", "ביט", "צ׳ק", "פייפאל"];
 
 /** Newest live document draft for this phone, or null. Errors read as "no draft" (the text then starts a fresh request, which is the safe default). */
@@ -562,10 +576,11 @@ async function saveDraft(db: SupabaseClient, id: string, payload: DraftPayload, 
 /**
  * "Did the user just start over?" Only when the message reads like a command
  * AND parses into a complete request; a plain answer ("ייעוץ עסקי") never does.
+ * The wording gate accepts spoken forms too ("אני רוצה שתוציאי לי קבלה...").
  */
 async function maybeFreshRequest(text: string): Promise<CreateDocumentIntent | null> {
-  if (!FRESH_REQUEST_RE.test(text)) return null;
-  const { intent, failed } = await parseIntent(text, anthropicKey);
+  if (!looksLikeFreshRequest(text)) return null;
+  const { intent, failed } = await parseIntent(normalizeSpoken(text), anthropicKey);
   if (failed || intent.intent !== "create_document") return null;
   return intent;
 }
@@ -740,7 +755,8 @@ async function applyAnswer(
   const p = draft.payload;
   switch (p.pendingQuestion) {
     case "description": {
-      const d = text.trim().slice(0, 200);
+      // Spoken answers are sentences: "זה עבור ייעוץ עסקי." -> "ייעוץ עסקי".
+      const d = stripDescriptionLead(text).slice(0, 200);
       if (d.length < 2) {
         await sendText(phone, "כתוב במילה או שתיים עבור מה זה (למשל: ייעוץ).");
         return;
@@ -749,9 +765,9 @@ async function applyAnswer(
       return;
     }
     case "vat": {
-      // The user typed instead of tapping: accept the words too.
+      // The user typed (or said) instead of tapping: accept the words too.
       // Exclusions FIRST: "לא כולל מע״מ" contains "כולל".
-      if (/לפני|פלוס|בתוספת|לא כולל|בלי|ללא/.test(text)) {
+      if (/לפני|פלוס|בתוספת|לא כולל|בלי|ללא|בלי מע|נטו/.test(text)) {
         await advanceDraft(db, phone, { id: draft.id, payload: { ...p, amountIncludesVat: false } });
         return;
       }
@@ -775,22 +791,29 @@ async function applyAnswer(
       await advanceDraft(db, phone, { id: draft.id, payload: { ...p, paymentMethod: method } });
       return;
     }
-    default:
-      await applyAmendment(db, phone, identity, draft, text);
+    default: {
+      const r = await applyAmendment(db, phone, identity, draft, text);
+      if (!r.handled) await sendText(phone, `${r.unknown ? r.unknown + "\n\n" : ""}לא הבנתי מה לשנות. כתוב או הקלט למשל: הסכום 1500, כולל מע״מ, זה עבור ייעוץ, תשלום בביט, או הלקוח דני לוי.`);
+    }
   }
 }
 
-/** Free-text correction of a draft (after "לשנות", or typed at the summary). */
+/**
+ * Free-text correction of a draft (after "לשנות", or typed at the summary).
+ * `handled: false` only when the parser could not map the message to any
+ * field (with the model's Hebrew reason, if it gave one), so the caller can
+ * try it as a fresh request before telling the user no.
+ */
 async function applyAmendment(
   db: SupabaseClient,
   phone: string,
   identity: Identity,
   draft: OpenDraft,
   text: string,
-): Promise<void> {
+): Promise<{ handled: boolean; unknown?: string }> {
   const p = draft.payload;
   const { patch, unknown, failed } = await parseAmendment(
-    text,
+    normalizeSpoken(text),
     {
       docType: p.docType,
       clientName: p.clientName,
@@ -804,12 +827,14 @@ async function applyAmendment(
   );
   if (failed) {
     await sendText(phone, "לא הצלחתי לעבד את התיקון. נסה שוב בעוד רגע.");
-    return;
+    return { handled: true };
   }
   if (unknown || Object.keys(patch).length === 0) {
     await saveDraft(db, draft.id, { ...p, stage: "amending", pendingQuestion: null });
-    await sendText(phone, `${unknown ? unknown + "\n\n" : ""}לא הבנתי מה לשנות. כתוב למשל: הסכום 1500, כולל מע״מ, זה עבור ייעוץ, תשלום בביט, או הלקוח דני לוי.`);
-    return;
+    // The generic "לא הבנתי מה לשנות." is the caller's line; only a specific
+    // reason (e.g. "חשבונית מס לא זמינה") is worth passing up.
+    const specific = unknown && !/^לא הבנתי מה לשנות/.test(unknown) ? unknown : undefined;
+    return { handled: false, unknown: specific };
   }
 
   let next: DraftPayload = { ...p };
@@ -834,6 +859,7 @@ async function applyAmendment(
   // Re-run the missing checks: an amendment can open a question (a receipt
   // whose payment method was cleared) or close one.
   await advanceDraft(db, phone, { id: draft.id, payload: { ...next, stage: "collecting", pendingQuestion: null } });
+  return { handled: true };
 }
 
 export interface Money {
@@ -1293,16 +1319,49 @@ async function applyExpenseEdit(
 
   const current = row.payload as ExpensePayload;
 
-  if (/^(בטל|ביטול|cancel)$/i.test(text)) {
+  if (isCancel(text)) {
     await db.from("whatsapp_pending_actions").update({ consumed_at: nowIso }).eq("id", row.id);
     await sendText(phone, "בוטל. ההוצאה לא נשמרה.");
     return true;
   }
 
-  const { patch, unrecognized } = parseExpenseEdit(text, todayInIsrael());
-  const changed = Object.keys(patch).length > 0;
+  const today = todayInIsrael();
+  let { patch, unrecognized } = parseExpenseEdit(text, today);
 
-  if (!changed) {
+  if (Object.keys(patch).length === 0) {
+    // Edit mode must not become a trap. A message that reads like a new
+    // document request ("תוציא קבלה לדני על 1200") leaves edit mode and falls
+    // through to the normal pipeline, instead of being quoted back as "לא
+    // הבנתי מה לשנות" until the card expires.
+    if (looksLikeFreshRequest(text)) {
+      await db
+        .from("whatsapp_pending_actions")
+        .update({ payload: { ...current, editing: false } })
+        .eq("id", row.id);
+      return false;
+    }
+
+    // The keyword lines found nothing: this is a sentence (usually a voice
+    // note). Let the model map it, on the same rails as the typed path.
+    if (anthropicKey) {
+      const spoken = await parseExpenseEditSpoken(
+        normalizeSpoken(text),
+        { vendor: current.vendor, amount: current.amount, vatAmount: current.vatAmount, date: current.date, category: current.category, description: current.description },
+        today,
+        anthropicKey,
+      );
+      if (spoken.failed) {
+        await sendText(phone, "לא הצלחתי לעבד את התיקון כרגע. נסה שוב בעוד רגע.");
+        return true;
+      }
+      if (Object.keys(spoken.patch).length > 0) {
+        patch = spoken.patch;
+        unrecognized = [];
+      }
+    }
+  }
+
+  if (Object.keys(patch).length === 0) {
     await sendText(
       phone,
       `לא הבנתי מה לשנות ב:\n${unrecognized.map((l) => `״${l}״`).join("\n")}\n\n${EDIT_INSTRUCTIONS}`,

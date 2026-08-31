@@ -1,7 +1,29 @@
 import { describe, it, expect } from "vitest";
-import { parseExpenseEdit, parseIsraeliDate } from "@/lib/whatsapp/expense-edit";
+import { parseExpenseEdit, parseIsraeliDate, validateSpokenExpenseEdit } from "@/lib/whatsapp/expense-edit";
 
 const TODAY = "2026-08-18";
+
+describe("validateSpokenExpenseEdit (model fallback for voice-note corrections)", () => {
+  it("keeps only present, valid keys on the same rails as the typed parser", () => {
+    const r = validateSpokenExpenseEdit(
+      { vendor: " מרכז הבטיחות ", amount: 150, vatAmount: null, date: "2026-08-17", category: "ציוד", description: "כפפות" },
+      TODAY,
+    );
+    expect(r.unknown).toBeUndefined();
+    expect(r.patch).toEqual({ vendor: "מרכז הבטיחות", amount: 150, vatAmount: null, date: "2026-08-17", category: "ציוד", description: "כפפות" });
+  });
+
+  it("drops a negative amount, a future date and an off-list category, keeps the rest", () => {
+    const r = validateSpokenExpenseEdit({ amount: -5, date: "2026-09-01", category: "משהו אחר", vendor: "כנען סנטר" }, TODAY);
+    expect(r.patch).toEqual({ vendor: "כנען סנטר" });
+  });
+
+  it("vat 0 clears the vat like the typed path; unknown from the model is passed through", () => {
+    expect(validateSpokenExpenseEdit({ vatAmount: 0 }, TODAY).patch).toEqual({ vatAmount: null });
+    expect(validateSpokenExpenseEdit({ unknown: "זו לא הוראת תיקון" }, TODAY).unknown).toBe("זו לא הוראת תיקון");
+    expect(validateSpokenExpenseEdit({}, TODAY).unknown).toBeTruthy();
+  });
+});
 
 describe("parseExpenseEdit", () => {
   it("parses keyworded lines, several per message", () => {
