@@ -752,16 +752,16 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   const { subtotal, vat, total, rounding, netUnitPriceFactor } = amounts;
 
   // ניכוי מס במקור, computed on the total incl. VAT and rounded to the nearest
-  // whole shekel (Israeli practice: withholding is reported in whole shekels).
-  // Keep the amount synced to that suggestion until the user manually edits the
-  // amount field; a hand-typed amount is never rewritten.
+  // agora, half-up (same rule as every other amount on the document). Keep the
+  // amount synced to that suggestion until the user manually edits the amount
+  // field; a hand-typed amount is never rewritten.
   const withholdingEntered =
     isPaymentRecording && showWithholding && withholdingRateInput.trim() !== "";
   const withholdingRate = parseFloat(withholdingRateInput);
   useEffect(() => {
     if (withholdingTouched || !withholdingEntered) return;
     const c = suggestedWithholding(total, withholdingRate);
-    setWithholdingAmountInput(c > 0 ? String(c) : "");
+    setWithholdingAmountInput(c > 0 ? c.toFixed(2) : "");
   }, [total, withholdingRate, withholdingTouched, withholdingEntered]);
   const withholdingAmount = withholdingEntered
     ? round2(parseFloat(withholdingAmountInput) || 0)
@@ -2538,15 +2538,15 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                               setWithholdingRateInput(e.target.value);
                               setWithholdingTouched(false);
                             }}
-                            className="input-warm tabular-nums"
-                            style={{ paddingRight: "3rem" }}
+                            className="input-warm tabular-nums text-right [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                            style={{ paddingRight: "1.85rem" }}
                             dir="ltr"
                             placeholder="35"
                             aria-label="שיעור ניכוי מס במקור, אחוזים"
                           />
                           <span
                             className="pointer-events-none absolute inset-y-0 flex items-center text-xs font-medium text-stone-400"
-                            style={{ right: "1.75rem" }}
+                            style={{ right: "0.85rem" }}
                             aria-hidden="true"
                           >
                             %
@@ -2567,14 +2567,14 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                               setWithholdingAmountInput(e.target.value);
                               setWithholdingTouched(true);
                             }}
-                            className="input-warm tabular-nums"
-                            style={{ paddingRight: "3rem" }}
+                            className="input-warm tabular-nums text-right [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                            style={{ paddingRight: "1.85rem" }}
                             dir="ltr"
                             aria-label="סכום הניכוי, שקלים"
                           />
                           <span
                             className="pointer-events-none absolute inset-y-0 flex items-center text-xs font-medium text-stone-400"
-                            style={{ right: "1.75rem" }}
+                            style={{ right: "0.85rem" }}
                             aria-hidden="true"
                           >
                             ₪
