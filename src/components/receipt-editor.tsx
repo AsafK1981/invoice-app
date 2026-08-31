@@ -751,17 +751,19 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   );
   const { subtotal, vat, total, rounding, netUnitPriceFactor } = amounts;
 
-  // ניכוי מס במקור, computed on the total incl. VAT and rounded to the nearest
-  // agora, half-up (same rule as every other amount on the document). Keep the
-  // amount synced to that suggestion until the user manually edits the amount
-  // field; a hand-typed amount is never rewritten.
+  // ניכוי מס במקור, computed on the total incl. VAT: the withholding is rounded
+  // half-up to a whole shekel, and so is the net "שולם בפועל" (10,641.50 reads
+  // 10,642), with the withholding carrying any leftover agorot so the three
+  // figures still add up (see suggestedWithholding). Keep the amount synced to
+  // that suggestion until the user manually edits the amount field; a
+  // hand-typed amount is never rewritten.
   const withholdingEntered =
     isPaymentRecording && showWithholding && withholdingRateInput.trim() !== "";
   const withholdingRate = parseFloat(withholdingRateInput);
   useEffect(() => {
     if (withholdingTouched || !withholdingEntered) return;
     const c = suggestedWithholding(total, withholdingRate);
-    setWithholdingAmountInput(c > 0 ? c.toFixed(2) : "");
+    setWithholdingAmountInput(c > 0 ? (Number.isInteger(c) ? String(c) : c.toFixed(2)) : "");
   }, [total, withholdingRate, withholdingTouched, withholdingEntered]);
   const withholdingAmount = withholdingEntered
     ? round2(parseFloat(withholdingAmountInput) || 0)
@@ -2601,7 +2603,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                       </div>
                     </div>
                     <p className="text-xs text-stone-600">
-                      מחושב על הסכום כולל מע״מ ומעוגל לשקל השלם הקרוב. אפשר לשנות את הסכום ידנית.
+                      מחושב על הסכום כולל מע״מ, כך שהסכום ששולם בפועל יוצא בשקלים שלמים. אפשר לשנות את הסכום ידנית.
                       סכום המסמך אינו משתנה, זהו פיצול של התשלום.
                     </p>
                     {total > 0 && withholdingEntered && withholdingValid && withholdingAmount > 0 && (
