@@ -899,6 +899,14 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
     };
   }, [documentType, resumeDraftId]);
 
+  // An item left without a description takes the document subject. The
+  // Tax Authority allocation request never sees item text, so nothing there
+  // needs it; the requirement is ours (a document must say what it is for).
+  // Users who only fill the subject were stuck at "כל פריט חייב תיאור" one
+  // step before the allocation number, so the subject stands in for it.
+  const subjectFallback = subject.trim();
+  const itemDescription = (i: EditorItem) => i.description.trim() || subjectFallback;
+
   const previewItems = useMemo(
     () =>
       items.map((i) => {
@@ -906,13 +914,13 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
         return {
           id: i.id,
           productId: i.productId,
-          description: i.description,
+          description: i.description.trim() || subjectFallback,
           quantity: i.quantity,
           unitPrice,
           total: round2(i.quantity * unitPrice),
         };
       }),
-    [items, netUnitPriceFactor]
+    [items, netUnitPriceFactor, subjectFallback]
   );
 
   const emailTo = useMemo(() => emails.map((e) => e.trim()).filter(Boolean).join(", "), [emails]);
@@ -1103,7 +1111,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
 
   const canSave =
     clientReady &&
-    items.every((i) => i.description.trim() && i.quantity > 0 && i.unitPrice >= 0) &&
+    items.every((i) => itemDescription(i) && i.quantity > 0 && i.unitPrice >= 0) &&
     creditRefValid &&
     discountValid &&
     withholdingValid;
@@ -1125,7 +1133,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
           ? "יש לתקן את סכום ההנחה"
           : !withholdingValid
             ? "יש לתקן את סכום ניכוי המס במקור"
-            : "כל פריט חייב תיאור, כמות חיובית ומחיר";
+            : "כל פריט חייב תיאור (או נושא למסמך, שיועתק אליו), כמות חיובית ומחיר";
 
   // What the two issue buttons say. When an allocation number will be needed,
   // the label names the next step instead of promising a finished document.
@@ -1303,7 +1311,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
         return {
           id: i.id,
           productId: i.productId,
-          description: i.description,
+          description: itemDescription(i),
           quantity: sign * i.quantity,
           unitPrice: netUnitPrice,
           total: round2(sign * i.quantity * netUnitPrice),
@@ -2181,7 +2189,8 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                       type="text"
                       value={item.description}
                       onChange={(e) => updateItem(item.id, { description: e.target.value })}
-                      placeholder="תיאור השירות/מוצר"
+                      placeholder={subjectFallback || "תיאור השירות/מוצר"}
+                      title={subjectFallback ? "ריק = יועתק הנושא של המסמך" : undefined}
                       aria-label="תיאור השירות/מוצר"
                       className="input-warm flex-1"
                     />
