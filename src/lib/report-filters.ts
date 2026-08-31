@@ -51,15 +51,28 @@ export function filterDocuments(
 }
 
 /**
- * Count and total (₪) a filtered document set. Sums `totalIls ?? total`, which
- * matches every other report; credit notes stay negative, which is correct.
+ * Count and total (₪) a filtered document set, split into the pre-VAT amount,
+ * the VAT alone, and the VAT-inclusive total. Sums the `*Ils` snapshots with a
+ * fallback to the own-currency figures, which matches every other report;
+ * credit notes stay negative, which is correct. `total` may differ from
+ * `net + vat` by the documents' הפרש עיגול (rounding), on purpose.
  */
 export function summarize(docs: InvoiceDocument[]): {
   count: number;
+  /** סכום לא כולל מע״מ */
+  net: number;
+  /** רק המע״מ */
+  vat: number;
+  /** סכום כולל מע״מ */
   total: number;
 } {
-  return {
-    count: docs.length,
-    total: docs.reduce((sum, d) => sum + (d.totalIls ?? d.total), 0),
-  };
+  return docs.reduce(
+    (acc, d) => {
+      acc.net += d.subtotalIls ?? d.subtotal;
+      acc.vat += d.vatIls ?? d.vat;
+      acc.total += d.totalIls ?? d.total;
+      return acc;
+    },
+    { count: docs.length, net: 0, vat: 0, total: 0 },
+  );
 }

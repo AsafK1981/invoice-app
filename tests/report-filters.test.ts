@@ -183,16 +183,21 @@ describe("filterDocuments: combined query", () => {
 });
 
 describe("summarize", () => {
-  it("counts and sums totalIls ?? total, including a negative credit note", () => {
+  it("counts and sums net / vat / total from the ₪ snapshots, falling back to own-currency, credit note negative", () => {
     const docs = [
-      doc({ total: 100, totalIls: 100 }),
-      doc({ total: 200 }), // no totalIls → falls back to total
-      doc({ type: "credit_note", total: -50, totalIls: -50 }),
+      doc({ subtotal: 100, vat: 18, total: 118, subtotalIls: 100, vatIls: 18, totalIls: 118 }),
+      doc({ subtotal: 200, vat: 0, total: 200 }), // no *Ils → falls back
+      doc({ type: "credit_note", subtotal: -50, vat: -9, total: -59, subtotalIls: -50, vatIls: -9, totalIls: -59 }),
     ];
-    expect(summarize(docs)).toEqual({ count: 3, total: 250 });
+    expect(summarize(docs)).toEqual({ count: 3, net: 250, vat: 9, total: 259 });
+  });
+
+  it("uses the ₪ snapshot, not the foreign figure, for a USD document", () => {
+    const docs = [doc({ subtotal: 100, vat: 0, total: 100, subtotalIls: 370, vatIls: 0, totalIls: 370 })];
+    expect(summarize(docs)).toEqual({ count: 1, net: 370, vat: 0, total: 370 });
   });
 
   it("empty set", () => {
-    expect(summarize([])).toEqual({ count: 0, total: 0 });
+    expect(summarize([])).toEqual({ count: 0, net: 0, vat: 0, total: 0 });
   });
 });

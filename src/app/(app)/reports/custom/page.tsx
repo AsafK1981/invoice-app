@@ -176,7 +176,9 @@ export default function CustomReportPage() {
       "סוג מסמך",
       "לקוח",
       "ת.ז / ח.פ",
-      "סכום",
+      "סכום לא כולל מע\"מ",
+      "מע\"מ",
+      "סכום כולל מע\"מ",
       "מספר הקצאה",
       "סטטוס",
     ];
@@ -187,6 +189,8 @@ export default function CustomReportPage() {
         DOCUMENT_TYPE_LABELS[d.type],
         d.clientName,
         d.clientTaxId || taxIdByClient[d.clientId] || "",
+        (d.subtotalIls ?? d.subtotal).toFixed(2),
+        (d.vatIls ?? d.vat).toFixed(2),
         (d.totalIls ?? d.total).toFixed(2),
         d.allocationNumber || "",
         DOCUMENT_STATUS_LABELS[d.status],
@@ -422,9 +426,23 @@ export default function CustomReportPage() {
               ))}
             </p>
           </div>
-          <span className="text-sm text-stone-600">
-            {totals.count} מסמכים · סה״כ{" "}
-            <span className="font-bold text-orange-700">{formatCurrency(totals.total)}</span>
+          <span className="flex flex-wrap items-baseline gap-y-0.5 text-sm text-stone-600">
+            <span className="whitespace-nowrap">{totals.count} מסמכים</span>
+            <span className="whitespace-nowrap">
+              <span className="text-stone-300 mx-1.5">·</span>
+              סה״כ כולל מע״מ{" "}
+              <span className="font-bold text-orange-700">{formatCurrency(totals.total)}</span>
+            </span>
+            <span className="whitespace-nowrap">
+              <span className="text-stone-300 mx-1.5">·</span>
+              לא כולל מע״מ{" "}
+              <span className="font-semibold text-stone-800">{formatCurrency(totals.net)}</span>
+            </span>
+            <span className="whitespace-nowrap">
+              <span className="text-stone-300 mx-1.5">·</span>
+              מע״מ{" "}
+              <span className="font-semibold text-stone-800">{formatCurrency(totals.vat)}</span>
+            </span>
           </span>
         </div>
         {ready && rows.length === 0 ? (
@@ -441,7 +459,9 @@ export default function CustomReportPage() {
                   <th className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">סוג</th>
                   <th className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">לקוח</th>
                   <th className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">ת.ז / ח.פ</th>
-                  <th className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">סכום</th>
+                  <th className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">סכום לא כולל מע״מ</th>
+                  <th className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">מע״מ</th>
+                  <th className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">סכום כולל מע״מ</th>
                   <th className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">מספר הקצאה</th>
                   <th className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap">סטטוס</th>
                 </tr>
@@ -460,6 +480,8 @@ export default function CustomReportPage() {
                       <td className="px-4 py-3.5 text-center align-middle whitespace-nowrap text-stone-700 border-b border-l border-stone-200">{DOCUMENT_TYPE_LABELS[d.type]}</td>
                       <td className="px-4 py-3.5 text-center align-middle text-stone-700 border-b border-l border-stone-200">{d.clientName}</td>
                       <td className="px-4 py-3.5 text-center align-middle tabular-nums whitespace-nowrap text-stone-700 border-b border-l border-stone-200">{taxId || <span className="text-stone-300">-</span>}</td>
+                      <td className="px-4 py-3.5 text-center align-middle tabular-nums text-stone-700 whitespace-nowrap border-b border-l border-stone-200">{formatCurrency(d.subtotalIls ?? d.subtotal)}</td>
+                      <td className="px-4 py-3.5 text-center align-middle tabular-nums text-stone-700 whitespace-nowrap border-b border-l border-stone-200">{formatCurrency(d.vatIls ?? d.vat)}</td>
                       <td className="px-4 py-3.5 text-center align-middle tabular-nums font-extrabold text-stone-900 whitespace-nowrap border-b border-l border-stone-200">{formatCurrency(d.totalIls ?? d.total)}</td>
                       <td className="px-4 py-3.5 text-center align-middle tabular-nums whitespace-nowrap text-stone-700 border-b border-l border-stone-200">{d.allocationNumber || <span className="text-stone-300">-</span>}</td>
                       <td className="px-4 py-3.5 text-center align-middle whitespace-nowrap text-stone-700 border-b border-stone-200">{DOCUMENT_STATUS_LABELS[d.status]}</td>
@@ -472,6 +494,8 @@ export default function CustomReportPage() {
                   <td className="px-4 py-4 text-center border-t-2 border-l border-orange-200" colSpan={5}>
                     סה״כ · {totals.count} מסמכים
                   </td>
+                  <td className="px-4 py-4 text-center tabular-nums whitespace-nowrap border-t-2 border-l border-orange-200">{formatCurrency(totals.net)}</td>
+                  <td className="px-4 py-4 text-center tabular-nums whitespace-nowrap border-t-2 border-l border-orange-200">{formatCurrency(totals.vat)}</td>
                   <td className="px-4 py-4 text-center tabular-nums whitespace-nowrap border-t-2 border-l border-orange-200">{formatCurrency(totals.total)}</td>
                   <td className="px-4 py-4 border-t-2 border-l border-orange-200"></td>
                   <td className="px-4 py-4 border-t-2 border-orange-200"></td>
