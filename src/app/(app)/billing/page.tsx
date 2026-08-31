@@ -23,7 +23,7 @@ import {
   type PlanTier,
   type BillingInterval,
 } from "@/lib/plans";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, formatDate } from "@/lib/format";
 import { Modal } from "@/components/ui/modal";
 import { Ltr, LtrText } from "@/components/ui/ltr";
 
@@ -234,7 +234,7 @@ export default function BillingPage() {
     !planStatus.trialing &&
     planStatus.subscriptionId !== undefined;
   const periodEnd = planStatus.currentPeriodEnd
-    ? new Date(planStatus.currentPeriodEnd).toLocaleDateString("he-IL")
+    ? formatDate(planStatus.currentPeriodEnd)
     : null;
   const yearlySavings = (priceMonthly: number, priceYearly: number) =>
     Math.round((1 - priceYearly / (priceMonthly * 12)) * 100);

@@ -36,7 +36,7 @@ import { EmailVerificationModal } from "@/components/email-verification-modal";
 import { ReceiptView } from "@/components/receipt-view";
 import { canIssueTaxInvoices } from "@/lib/vat";
 import { requiresAllocationNumber, shouldFocusAllocationOnArrival } from "@/lib/tax-authority";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, formatDate } from "@/lib/format";
 import { DOCUMENT_TYPE_LABELS } from "@/lib/types";
 
 export default function DocumentDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -865,7 +865,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
           <div>
             <p className="font-semibold text-emerald-900">ההצעה אושרה על ידי הלקוח</p>
             <p className="text-xs text-emerald-800 mt-0.5">
-              {new Date(doc.approvedAt).toLocaleDateString("he-IL")}
+              {formatDate(doc.approvedAt)}
               {doc.approvalSignature && <> · נחתם על ידי <strong>{doc.approvalSignature}</strong></>}
             </p>
           </div>

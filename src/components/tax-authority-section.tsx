@@ -14,6 +14,7 @@ import {
   ArrowDown,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { formatDate } from "@/lib/format";
 import { canIssueTaxInvoicesByType } from "@/lib/vat";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
@@ -341,11 +342,11 @@ export function TaxAuthoritySection() {
                   },
                   {
                     label: "חובר ב-",
-                    value: new Date(status.credentials.connected_at).toLocaleDateString("he-IL"),
+                    value: formatDate(status.credentials.connected_at),
                   },
                   status.credentials.last_used_at && {
                     label: "שימוש אחרון",
-                    value: new Date(status.credentials.last_used_at).toLocaleDateString("he-IL"),
+                    value: formatDate(status.credentials.last_used_at),
                   },
                   status.credentials.last_error && {
                     label: "שגיאה אחרונה",

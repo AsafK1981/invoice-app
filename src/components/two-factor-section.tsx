@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Shield, Smartphone, Check, X, AlertTriangle, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { formatDate } from "@/lib/format";
 import { friendlyError } from "@/lib/error-message";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
@@ -183,7 +184,7 @@ export function TwoFactorSection() {
         <div className="space-y-3">
           <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-3 text-sm text-emerald-900">
             ✓ אימות דו-שלבי פעיל בחשבון שלך. הופעל ב-
-            {new Date(verifiedFactor.created_at).toLocaleDateString("he-IL")}.
+            {formatDate(verifiedFactor.created_at)}.
           </div>
           <button
             onClick={() => disableFactor(verifiedFactor.id)}
