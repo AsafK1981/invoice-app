@@ -135,6 +135,36 @@ export default function CustomReportPage() {
 
   const totals = useMemo(() => summarize(rows), [rows]);
 
+  // Human-readable description of the period the report covers. The filter
+  // controls are `no-print`, so without this line a printed / PDF'd report
+  // carried no trace of which dates it was for.
+  const periodLabel = useMemo(() => {
+    if (rangeMode === "preset") {
+      return presetOptions.find((o) => o.value === preset)?.label ?? "כל הזמנים";
+    }
+    if (fromDate && toDate) return `מ-${fmtDate(fromDate)} עד ${fmtDate(toDate)}`;
+    if (fromDate) return `מ-${fmtDate(fromDate)}`;
+    if (toDate) return `עד ${fmtDate(toDate)}`;
+    return "כל הזמנים";
+  }, [rangeMode, preset, presetOptions, fromDate, toDate]);
+
+  // The other narrowing filters, same reason: a printout that says "3 documents"
+  // should also say "for client X, paid only".
+  const activeFilterLabels = useMemo(() => {
+    const out: string[] = [];
+    if (clientId !== "all") {
+      const name = clients.find((c) => c.id === clientId)?.name;
+      if (name) out.push(`לקוח: ${name}`);
+    }
+    if (allocation === "with") out.push("עם מספר הקצאה");
+    if (allocation === "without") out.push("ללא מספר הקצאה");
+    if (status !== "all") out.push(`סטטוס: ${DOCUMENT_STATUS_LABELS[status]}`);
+    if (types.length > 0 && types.length < ALL_TYPES.length) {
+      out.push(`סוגים: ${types.map((t) => DOCUMENT_TYPE_LABELS[t]).join(", ")}`);
+    }
+    return out;
+  }, [clientId, clients, allocation, status, types]);
+
   function toggleType(t: DocumentType) {
     setTypes((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
   }
@@ -379,8 +409,19 @@ export default function CustomReportPage() {
 
       {/* Report */}
       <div className="card-soft overflow-hidden">
-        <div className="px-5 py-3.5 border-b border-stone-100 flex items-baseline justify-between">
-          <h2 className="font-bold text-stone-900 text-lg">תוצאות</h2>
+        <div className="px-5 py-3.5 border-b border-stone-100 flex items-baseline justify-between flex-wrap gap-x-4 gap-y-1">
+          <div>
+            <h2 className="font-bold text-stone-900 text-lg">תוצאות</h2>
+            <p className="text-sm text-stone-600 mt-0.5">
+              <span className="font-semibold text-stone-800">תקופה: {periodLabel}</span>
+              {activeFilterLabels.map((label) => (
+                <span key={label}>
+                  <span className="text-stone-300 mx-1.5">·</span>
+                  {label}
+                </span>
+              ))}
+            </p>
+          </div>
           <span className="text-sm text-stone-600">
             {totals.count} מסמכים · סה״כ{" "}
             <span className="font-bold text-orange-700">{formatCurrency(totals.total)}</span>
