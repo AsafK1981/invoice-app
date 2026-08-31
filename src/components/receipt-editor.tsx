@@ -2194,7 +2194,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                       placeholder={subjectFallback || "תיאור השירות/מוצר"}
                       title={subjectFallback ? "ריק = יועתק הנושא של המסמך" : undefined}
                       aria-label="תיאור השירות/מוצר"
-                      className="input-warm flex-1"
+                      className="input-warm flex-1 text-ellipsis"
                     />
                     <div className="relative">
                       <select
