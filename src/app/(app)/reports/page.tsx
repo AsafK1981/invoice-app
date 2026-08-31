@@ -21,12 +21,36 @@ import { friendlyError } from "@/lib/error-message";
 import { computeAging, AGING_BUCKET_LABELS } from "@/lib/aging";
 import {
   type Period, type PeriodMode, PERIOD_MODE_LABELS, HEBREW_MONTHS_SHORT,
-  periodMode, periodYear, periodMatches, periodLabel, periodStepLabel, shiftPeriod, switchMode,
-  periodRange, previousEquivalentRange, inRange, monthsOfYear, trailingMonths, monthLabel,
+  periodMode, periodYear, periodMatches, periodMatchesMonth, periodChartMonths, periodLabel,
+  periodStepLabel, shiftPeriod, switchMode, periodRange, previousEquivalentRange, inRange,
+  monthLabel, rangeBounds, makeRange,
 } from "@/lib/report-period";
 import { ReportsBarChart, type BarDatum } from "@/components/reports-bar-chart";
+import type { InvoiceDocument, Expense } from "@/lib/types";
 
-const MODES: PeriodMode[] = ["month", "quarter", "year", "all"];
+const MODES: PeriodMode[] = ["month", "quarter", "year", "range", "all"];
+
+type MonthTotals = { income: number; expenses: number; docs: number };
+
+/** Paid, countable income and expenses summed per "YYYY-MM". */
+function bucketByMonth(documents: InvoiceDocument[], expenses: Expense[]): Map<string, MonthTotals> {
+  const map = new Map<string, MonthTotals>();
+  for (const d of documents) {
+    if (d.status !== "paid" || !isCountableRevenue(d)) continue;
+    const m = d.date.slice(0, 7);
+    const cur = map.get(m) || { income: 0, expenses: 0, docs: 0 };
+    cur.income += d.totalIls ?? d.total;
+    cur.docs += 1;
+    map.set(m, cur);
+  }
+  for (const e of expenses) {
+    const m = e.date.slice(0, 7);
+    const cur = map.get(m) || { income: 0, expenses: 0, docs: 0 };
+    cur.expenses += e.amount;
+    map.set(m, cur);
+  }
+  return map;
+}
 
 function deltaPct(cur: number, prev: number): number | null {
   if (prev <= 0) return null;
@@ -43,6 +67,9 @@ export default function ReportsPage() {
 
   const mode = periodMode(period);
   const year = periodYear(period);
+  const bounds = rangeBounds(period);
+  /** File-name tag for the exports: "2026-08", or "2026-01-05_2026-03-10" for a range. */
+  const fileTag = period.replace("..", "_");
 
   /* ---------- period-scoped totals ---------- */
   const filteredDocs = useMemo(() => documents.filter((d) => periodMatches(period, d.date)), [documents, period]);
@@ -82,49 +109,42 @@ export default function ReportsPage() {
   /* ---------- open receivables (all time - a debt is a debt) ---------- */
   const aging = useMemo(() => computeAging(documents, clients), [documents, clients]);
 
-  /* ---------- month buckets for the chart + the table ---------- */
-  const monthTotals = useMemo(() => {
-    const map = new Map<string, { income: number; expenses: number; docs: number }>();
-    for (const d of documents) {
-      if (d.status !== "paid" || !isCountableRevenue(d)) continue;
-      const m = d.date.slice(0, 7);
-      const cur = map.get(m) || { income: 0, expenses: 0, docs: 0 };
-      cur.income += d.totalIls ?? d.total;
-      cur.docs += 1;
-      map.set(m, cur);
-    }
-    for (const e of expenses) {
-      const m = e.date.slice(0, 7);
-      const cur = map.get(m) || { income: 0, expenses: 0, docs: 0 };
-      cur.expenses += e.amount;
-      map.set(m, cur);
-    }
-    return map;
-  }, [documents, expenses]);
+  /* ---------- month buckets for the chart + the table ----------
+     `monthTotals` sums EVERYTHING, for the chart's dimmed context months;
+     `periodTotals` sums only what the period matched, so a free range that
+     starts on the 20th shows that month's bar and table row from the 20th,
+     the same figures the KPIs above add up to. For whole-month periods the
+     two agree on every active month. */
+  const monthTotals = useMemo(() => bucketByMonth(documents, expenses), [documents, expenses]);
+  const periodTotals = useMemo(
+    () => bucketByMonth(filteredDocs, filteredExpenses),
+    [filteredDocs, filteredExpenses],
+  );
 
   const chartData = useMemo<BarDatum[]>(() => {
-    const months = year === null ? trailingMonths(12) : monthsOfYear(year);
+    const months = periodChartMonths(period);
+    const showYear = year === null || months[0].slice(0, 4) !== months[months.length - 1].slice(0, 4);
     return months.map((ym) => {
-      const t = monthTotals.get(ym) || { income: 0, expenses: 0 };
+      const active = periodMatchesMonth(period, ym);
+      const t = (active ? periodTotals : monthTotals).get(ym) || { income: 0, expenses: 0 };
       const mi = parseInt(ym.slice(5, 7), 10) - 1;
       return {
         key: ym,
-        label: year === null ? `${HEBREW_MONTHS_SHORT[mi]} ${ym.slice(2, 4)}` : HEBREW_MONTHS_SHORT[mi],
+        label: showYear ? `${HEBREW_MONTHS_SHORT[mi]} ${ym.slice(2, 4)}` : HEBREW_MONTHS_SHORT[mi],
         title: monthLabel(ym),
         income: t.income,
         expenses: t.expenses,
-        active: periodMatches(period, `${ym}-01`),
+        active,
       };
     });
-  }, [monthTotals, year, period]);
+  }, [monthTotals, periodTotals, year, period]);
 
   /* Newest month first; `cumulative` is the running profit from the oldest
      month of the period up to and including this row, so the top row equals
      the period total. `margin` is null for a month with no income (an
      expense-only month has no meaningful margin). */
   const tableRows = useMemo(() => {
-    const asc = Array.from(monthTotals.entries())
-      .filter(([ym]) => periodMatches(period, `${ym}-01`))
+    const asc = Array.from(periodTotals.entries())
       .sort(([a], [b]) => a.localeCompare(b));
     let running = 0;
     return asc
@@ -141,7 +161,7 @@ export default function ReportsPage() {
         };
       })
       .reverse();
-  }, [monthTotals, period]);
+  }, [periodTotals]);
   const totalDocs = tableRows.reduce((sum, r) => sum + r.docs, 0);
   const totalMargin = totalIncome > 0 ? Math.round((profit / totalIncome) * 100) : null;
 
@@ -268,7 +288,35 @@ export default function ReportsPage() {
               </button>
             ))}
           </div>
-          {mode !== "all" && (
+          {bounds ? (
+            /* Free range: the two dates sit where the stepper's label does,
+               and the arrows slide the whole window by its own length. */
+            <div className="rpt-stepper rpt-range" role="group" aria-label="בחירת טווח תאריכים">
+              <button type="button" onClick={() => setPeriod(shiftPeriod(period, -1))} aria-label="טווח קודם באותו אורך">
+                <ChevronRight aria-hidden="true" />
+              </button>
+              <input
+                type="date"
+                value={bounds.start}
+                max={bounds.end}
+                aria-label="מתאריך"
+                dir="ltr"
+                onChange={(e) => e.target.value && setPeriod(makeRange(e.target.value, bounds.end))}
+              />
+              <span aria-hidden="true">-</span>
+              <input
+                type="date"
+                value={bounds.end}
+                min={bounds.start}
+                aria-label="עד תאריך"
+                dir="ltr"
+                onChange={(e) => e.target.value && setPeriod(makeRange(bounds.start, e.target.value))}
+              />
+              <button type="button" onClick={() => setPeriod(shiftPeriod(period, 1))} aria-label="טווח הבא באותו אורך">
+                <ChevronLeft aria-hidden="true" />
+              </button>
+            </div>
+          ) : mode !== "all" && (
             <div className="rpt-stepper" role="group" aria-label="בחירת תקופה">
               <button type="button" onClick={() => setPeriod(shiftPeriod(period, -1))} aria-label="תקופה קודמת">
                 <ChevronRight aria-hidden="true" />
@@ -295,19 +343,19 @@ export default function ReportsPage() {
               <div className="rpt-menu" role="menu">
                 <div className="rpt-menu-cap">{periodLabel(period)}</div>
                 <button type="button" role="menuitem" disabled={filteredDocs.length === 0}
-                  onClick={() => { exportDocuments(filteredDocs, period); setMenuOpen(false); }}>
+                  onClick={() => { exportDocuments(filteredDocs, fileTag); setMenuOpen(false); }}>
                   <FileSpreadsheet aria-hidden="true" />
                   <span>מסמכים ל-Excel</span>
                   <small>{filteredDocs.length}</small>
                 </button>
                 <button type="button" role="menuitem" disabled={filteredExpenses.length === 0}
-                  onClick={() => { exportExpenses(filteredExpenses, period); setMenuOpen(false); }}>
+                  onClick={() => { exportExpenses(filteredExpenses, fileTag); setMenuOpen(false); }}>
                   <FileSpreadsheet aria-hidden="true" />
                   <span>הוצאות ל-Excel</span>
                   <small>{filteredExpenses.length}</small>
                 </button>
                 <button type="button" role="menuitem" disabled={tableRows.length === 0}
-                  onClick={() => { exportMonthlySummary(tableRows, period); setMenuOpen(false); }}>
+                  onClick={() => { exportMonthlySummary(tableRows, fileTag); setMenuOpen(false); }}>
                   <FileSpreadsheet aria-hidden="true" />
                   <span>הטבלה החודשית ל-Excel</span>
                   <small>{tableRows.length}</small>
@@ -428,7 +476,7 @@ export default function ReportsPage() {
             type="button"
             className="pgbtn pgbtn-quiet rpt-btn-sm"
             disabled={tableRows.length === 0}
-            onClick={() => exportMonthlySummary(tableRows, period)}
+            onClick={() => exportMonthlySummary(tableRows, fileTag)}
           >
             <Download aria-hidden="true" />
             Excel

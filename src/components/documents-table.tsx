@@ -110,11 +110,14 @@ const VALUE_OF: Record<FilterKey, (d: InvoiceDocument) => string> = {
 
 const MAIL_LABELS: Record<string, string> = { emailed: "נשלח במייל", not_emailed: "טרם נשלח" };
 
+/** The month select's extra value that opens the free date range instead. */
+const RANGE = "__range";
+
 function filterValueLabel(key: FilterKey, value: string): string {
   if (key === "type") return DOCUMENT_TYPE_LABELS[value as DocumentType] ?? value;
   if (key === "status") return DOCUMENT_STATUS_LABELS[value as DocumentStatus] ?? value;
   if (key === "mail") return MAIL_LABELS[value] ?? value;
-  if (key === "month") return formatMonthLabel(value);
+  if (key === "month") return value === RANGE ? "טווח תאריכים..." : formatMonthLabel(value);
   return value;
 }
 
@@ -206,6 +209,20 @@ export function DocumentsTable({ documents, limit, exportSlot }: Props) {
       month: param("month").filter((v) => /^\d{4}-\d{2}$/.test(v)),
     };
   });
+  // A free date range on the תאריך column, the alternative to picking whole
+  // months. `null` = off; an empty end is open ("from 1.8" = everything
+  // since). It lives beside `selections` rather than inside it because it is
+  // two dates, not a set of column values. /documents?from=...&to=... opens
+  // it pre-filled.
+  const [range, setRange] = useState<{ from: string; to: string } | null>(() => {
+    const iso = (name: string) => {
+      const v = searchParams.get(name) ?? "";
+      return /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : "";
+    };
+    const from = iso("from");
+    const to = iso("to");
+    return from || to ? { from, to } : null;
+  });
   const [search, setSearch] = useState<string>("");
   const [sortKey, setSortKey] = useState<SortKey>("date");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
@@ -252,6 +269,11 @@ export function DocumentsTable({ documents, limit, exportSlot }: Props) {
     let result = documents.filter((d) =>
       FILTER_KEYS.every((key) => selections[key].length === 0 || selections[key].includes(VALUE_OF[key](d))),
     );
+    if (range) {
+      result = result.filter(
+        (d) => (!range.from || d.date >= range.from) && (!range.to || d.date <= range.to),
+      );
+    }
     if (search.trim()) result = result.filter((d) => matchDocument(d, search));
     result = [...result].sort((a, b) => {
       let cmp = 0;
@@ -262,14 +284,14 @@ export function DocumentsTable({ documents, limit, exportSlot }: Props) {
     });
     if (limit) result = result.slice(0, limit);
     return result;
-  }, [documents, selections, search, limit, sortKey, sortDir]);
+  }, [documents, selections, range, search, limit, sortKey, sortDir]);
 
   // A new filter/search/sort, or the underlying document list changing (an
   // add/delete/status change refetch), can leave `page` pointing past the
   // new last page - reset to page 1 whenever what's being paginated changes.
   useEffect(() => {
     setPage(0);
-  }, [selections, search, sortKey, sortDir, documents]);
+  }, [selections, range, search, sortKey, sortDir, documents]);
 
   // `limit` mode (the dashboard's "latest documents" widget) is already an
   // intentionally short, unpaginated preview - pagination only applies to
@@ -305,11 +327,29 @@ export function DocumentsTable({ documents, limit, exportSlot }: Props) {
   /** Clears BOTH controls of every column, because there is only one state. */
   function clearFilters() {
     setSelections(EMPTY_SELECTIONS);
+    setRange(null);
     setSearch("");
   }
 
   const filtersActive =
-    FILTER_KEYS.some((key) => selections[key].length > 0) || search.trim() !== "";
+    FILTER_KEYS.some((key) => selections[key].length > 0) || range !== null || search.trim() !== "";
+
+  /** The month select doubles as the way into the date range: its last
+   *  option is "טווח תאריכים…", and while the range is on the select shows
+   *  that option as its value (so the bar still has exactly six controls). */
+  const monthOptions = useMemo<FilterOption[]>(
+    () => [...options.month, { value: RANGE, label: filterValueLabel("month", RANGE), count: 0 }],
+    [options.month],
+  );
+  function setMonthOrRange(values: string[]) {
+    if (values.includes(RANGE)) {
+      setColumn("month", []);
+      setRange((r) => r ?? { from: "", to: "" });
+    } else {
+      setRange(null);
+      setColumn("month", values);
+    }
+  }
 
   return (
     <div>
@@ -360,12 +400,38 @@ export function DocumentsTable({ documents, limit, exportSlot }: Props) {
               <FilterSelect
                 key={key}
                 filterKey={key}
-                options={options[key]}
-                selected={selections[key]}
-                onChange={(values) => setColumn(key, values)}
+                options={key === "month" ? monthOptions : options[key]}
+                selected={key === "month" && range ? [RANGE] : selections[key]}
+                onChange={key === "month" ? setMonthOrRange : (values) => setColumn(key, values)}
               />
             ))}
           </div>
+          {range && (
+            <div className="dcbar-range" role="group" aria-label="טווח תאריכים">
+              <label>
+                <span>מתאריך</span>
+                <input
+                  type="date"
+                  value={range.from}
+                  max={range.to || undefined}
+                  onChange={(e) => setRange({ from: e.target.value, to: range.to })}
+                  className="input-warm dcbar-input"
+                  dir="ltr"
+                />
+              </label>
+              <label>
+                <span>עד תאריך</span>
+                <input
+                  type="date"
+                  value={range.to}
+                  min={range.from || undefined}
+                  onChange={(e) => setRange({ from: range.from, to: e.target.value })}
+                  className="input-warm dcbar-input"
+                  dir="ltr"
+                />
+              </label>
+            </div>
+          )}
           <div className="dcbar-foot">
             <span className="dcbar-count">{filtered.length} מסמכים</span>
             {filtersActive && (

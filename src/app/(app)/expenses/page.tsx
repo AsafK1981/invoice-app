@@ -113,6 +113,9 @@ function matchesExpense(e: Expense, query: string): boolean {
   return q.split(/\s+/).every((t) => haystack.includes(t));
 }
 
+/** The month filter's value that means "a free date range" instead of one month. */
+const RANGE = "__range";
+
 function formatMonthLabel(month: string): string {
   const [year, m] = month.split("-");
   const names = ["ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יוני", "יולי", "אוגוסט", "ספטמבר", "אוקטובר", "נובמבר", "דצמבר"];
@@ -131,7 +134,10 @@ export default function ExpensesPage() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  // "all" | "YYYY-MM" | RANGE - the last one opens the two date fields.
   const [monthFilter, setMonthFilter] = useState<string>("all");
+  const [rangeFrom, setRangeFrom] = useState("");
+  const [rangeTo, setRangeTo] = useState("");
   const [page, setPage] = useState(0);
   const confirm = useConfirm();
 
@@ -148,10 +154,17 @@ export default function ExpensesPage() {
   const filtered = useMemo(() => {
     let result = expenses;
     if (categoryFilter !== "all") result = result.filter((e) => e.category === categoryFilter);
-    if (monthFilter !== "all") result = result.filter((e) => e.date.startsWith(monthFilter));
+    if (monthFilter === RANGE) {
+      // An empty end is open: "from 1.8" alone means everything since then.
+      result = result.filter(
+        (e) => (!rangeFrom || e.date >= rangeFrom) && (!rangeTo || e.date <= rangeTo),
+      );
+    } else if (monthFilter !== "all") {
+      result = result.filter((e) => e.date.startsWith(monthFilter));
+    }
     if (search.trim()) result = result.filter((e) => matchesExpense(e, search));
     return [...result].sort((a, b) => b.date.localeCompare(a.date));
-  }, [expenses, search, categoryFilter, monthFilter]);
+  }, [expenses, search, categoryFilter, monthFilter, rangeFrom, rangeTo]);
 
   const filteredTotal = filtered.reduce((sum, e) => sum + e.amount, 0);
   const grandTotal = expenses.reduce((sum, e) => sum + e.amount, 0);
@@ -177,7 +190,7 @@ export default function ExpensesPage() {
   // past the new last page - reset to page 1 whenever the filtered set does.
   useEffect(() => {
     setPage(0);
-  }, [search, categoryFilter, monthFilter]);
+  }, [search, categoryFilter, monthFilter, rangeFrom, rangeTo]);
 
   function openNew() {
     setEditing(null);
@@ -287,6 +300,8 @@ export default function ExpensesPage() {
     setSearch("");
     setCategoryFilter("all");
     setMonthFilter("all");
+    setRangeFrom("");
+    setRangeTo("");
   }
 
   return (
@@ -435,8 +450,35 @@ export default function ExpensesPage() {
               options={[
                 { value: "all", label: "כל החודשים" },
                 ...availableMonths.map((m) => ({ value: m, label: formatMonthLabel(m) })),
+                { value: RANGE, label: "טווח תאריכים..." },
               ]}
             />
+            {monthFilter === RANGE && (
+              <div className="flex flex-wrap items-center gap-2 text-sm" role="group" aria-label="טווח תאריכים">
+                <label className="flex items-center gap-2">
+                  <span className="text-stone-500">מתאריך:</span>
+                  <input
+                    type="date"
+                    value={rangeFrom}
+                    max={rangeTo || undefined}
+                    onChange={(e) => setRangeFrom(e.target.value)}
+                    className="input-warm py-1.5 px-3 text-sm w-auto"
+                    dir="ltr"
+                  />
+                </label>
+                <label className="flex items-center gap-2">
+                  <span className="text-stone-500">עד:</span>
+                  <input
+                    type="date"
+                    value={rangeTo}
+                    min={rangeFrom || undefined}
+                    onChange={(e) => setRangeTo(e.target.value)}
+                    className="input-warm py-1.5 px-3 text-sm w-auto"
+                    dir="ltr"
+                  />
+                </label>
+              </div>
+            )}
             {filtersActive && (
               <button
                 onClick={clearFilters}

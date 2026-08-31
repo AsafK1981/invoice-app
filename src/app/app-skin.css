@@ -1007,6 +1007,25 @@ html .rpt-stepper a {
 html .rpt-stepper button:hover,
 html .rpt-stepper a:hover { background: var(--goldtint); }
 html .rpt-stepper svg { width: 0.95rem; height: 0.95rem; }
+/* The free-range variant of the stepper: two native date fields where the
+   label sits. They are borderless inside the pill (the pill is the border),
+   ink-weighted like the label they replace, and LTR because a date is. */
+html .rpt-range input[type="date"] {
+  height: 1.9rem;
+  padding: 0 0.4rem;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--ink);
+  direction: ltr;
+  cursor: pointer;
+}
+html .rpt-range input[type="date"]:hover { background: var(--goldtint); }
+html .rpt-range input[type="date"]:focus-visible { outline: 2px solid var(--inputfocusline); outline-offset: 1px; }
+html .rpt-range > span { color: var(--muted); font-weight: 600; }
 /* Export menu */
 html .rpt-menu-wrap { position: relative; }
 html .rpt-menu-caret { width: 0.85rem !important; height: 0.85rem !important; color: var(--muted) !important; }
@@ -1341,7 +1360,8 @@ html .rpt-rc-go svg { width: 0.85rem; height: 0.85rem; }
 @media (max-width: 639.98px) {
   html .rpt-head { flex-direction: column; align-items: stretch; }
   html .rpt-controls { width: 100%; }
-  html .rpt-modes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); width: 100%; }
+  html .rpt-modes { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); width: 100%; }
+  html .rpt-range input { flex: 1 1 0; min-width: 0; }
   html .rpt-modes button { padding: 0 0.3rem; height: 2.35rem; }
   html .rpt-stepper button { width: 2.3rem; height: 2.3rem; }
   html .rpt-stepper { flex: 1 1 auto; justify-content: space-between; }
@@ -1711,6 +1731,34 @@ html .dcbar-reset {
 }
 html .dcbar-reset:hover {
   background: #ffe4cc;
+}
+
+/* The date-range row, shown under the grid only while the month select says
+   "טווח תאריכים…". Its own line on purpose: two date fields are a seventh
+   and eighth control, and the grid's rule is that every row is full. Each
+   field caps at a comfortable width and both wrap to their own line below
+   the 2-column tier. */
+html .dcbar-range {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--dc-sp-2) var(--dc-sp-3);
+  margin-top: var(--dc-sp-2);
+}
+html .dcbar-range label {
+  display: flex;
+  align-items: center;
+  gap: var(--dc-sp-2);
+  flex: 1 1 14rem;
+  max-width: 20rem;
+  font-size: var(--dc-fs-3);
+  font-weight: 600;
+  color: var(--ink2);
+  white-space: nowrap;
+}
+html .dcbar-range input[type="date"] {
+  flex: 1 1 auto;
+  direction: ltr;
 }
 
 /* The list sits in its own sand-coloured well inside the white .card-soft the
