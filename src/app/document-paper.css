@@ -151,6 +151,13 @@
   object-fit: contain;
   flex-shrink: 0;
 }
+/* The app's own mark, shown only when the business has no logo. A touch
+   smaller than a real logo so it reads as a stamp, not as the brand. */
+.doc-paper .doc-logo.is-app {
+  width: 58px;
+  height: 58px;
+  margin-top: 2px;
+}
 .doc-paper .doc-name {
   font-size: calc(25px * var(--d-name-scale));
   font-weight: 700;

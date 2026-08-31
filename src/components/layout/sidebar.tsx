@@ -267,10 +267,12 @@ export function Sidebar() {
 
   return (
     <>
-      {/* Mobile hamburger button */}
+      {/* Mobile hamburger button. `print:hidden` matters: Chrome lays the
+          print page out narrower than `lg`, so without it this fixed button
+          was printed onto the top-right corner of every document. */}
       <button
         onClick={() => setMobileOpen(true)}
-        className="lg:hidden fixed top-4 right-4 z-40 w-10 h-10 rounded-xl bg-white shadow-md border border-orange-100 flex items-center justify-center text-stone-700 hover:bg-orange-50"
+        className="lg:hidden print:hidden fixed top-4 right-4 z-40 w-10 h-10 rounded-xl bg-white shadow-md border border-orange-100 flex items-center justify-center text-stone-700 hover:bg-orange-50"
         aria-label="תפריט"
       >
         <Menu className="w-5 h-5" />

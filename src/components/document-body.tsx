@@ -188,10 +188,12 @@ export function DocumentBody({
       {/* ── Header: business identity (start side) ↔ document identity ── */}
       <div className="doc-card doc-head">
         <div className="doc-biz">
-          {/* Logo is OPTIONAL and there is deliberately NO placeholder/monogram
-              fallback; a business without a logo simply shows its name. */}
-          {business.logoUrl && (
+          {/* Business logo is OPTIONAL. Without one, the app's own mark takes
+              the slot (Asaf, 2026-08-31) - never a monogram or initials. */}
+          {business.logoUrl ? (
             <img src={business.logoUrl} alt={business.name} className="doc-logo" />
+          ) : (
+            <img src="/logo.svg" alt="" aria-hidden="true" className="doc-logo is-app" />
           )}
           <div>
             <h1 className="doc-name doc-serif">{businessName}</h1>
