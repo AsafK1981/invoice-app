@@ -205,7 +205,7 @@ export default function ReportsPage() {
     ...(filesVat
       ? [{
           icon: Receipt, title: "דיווח מע״מ תקופתי", href: "/reports/vat",
-          desc: "מע״מ עסקאות מול מע״מ תשומות לתקופת הדיווח, מוכן להעתקה לדיווח.",
+          desc: "מע״מ עסקאות מול מע״מ תשומות לתקופת הדיווח, מוכן להעתקה לדיווח, כולל פירוט כל הוצאה.",
         } as ReportCardSpec]
       : []),
     {

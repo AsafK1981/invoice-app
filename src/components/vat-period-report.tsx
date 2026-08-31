@@ -1,8 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Printer, Receipt, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
-import { formatCurrency } from "@/lib/format";
+import Link from "next/link";
+import { Printer, Receipt, ArrowDownToLine, ArrowUpFromLine, Download } from "lucide-react";
+import { formatCurrency, formatDate } from "@/lib/format";
 import type { Business, InvoiceDocument, Expense } from "@/lib/types";
 
 interface Props {
@@ -135,11 +136,17 @@ export function VatPeriodReport({ headless = false, business, documents, expense
     // larger than the total amount (typo); base shouldn't go negative.
     let inputVat = 0;
     let inputBase = 0;
-    for (const e of expensesInRange) {
-      const v = e.vatAmount || 0;
-      inputVat += v;
-      inputBase += Math.max(0, e.amount - v);
-    }
+    let inputGross = 0;
+    const expenseRows = [...expensesInRange]
+      .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
+      .map((e) => {
+        const vat = e.vatAmount || 0;
+        const net = Math.max(0, e.amount - vat);
+        inputVat += vat;
+        inputBase += net;
+        inputGross += e.amount;
+        return { ...e, vat, net };
+      });
 
     return {
       outputVat,
@@ -151,8 +158,29 @@ export function VatPeriodReport({ headless = false, business, documents, expense
         (d) => d.type === "tax_invoice" || d.type === "tax_invoice_receipt" || d.type === "credit_note"
       ).length,
       expenseCount: expensesInRange.length,
+      expenseRows,
+      inputGross,
     };
   }, [documents, expenses, range]);
+
+  // Detailed expense listing as CSV for the accountant. BOM so Excel opens
+  // Hebrew correctly; same recipe as the invoices-period report.
+  function exportExpensesCsv() {
+    const headers = ["תאריך", "ספק", "קטגוריה", "תיאור", "סכום ללא מע\"מ", "מע\"מ", "סכום כולל"];
+    const lines = stats.expenseRows.map((r) =>
+      [formatDate(r.date), r.supplier, r.category, r.description ?? "", r.net.toFixed(2), r.vat.toFixed(2), r.amount.toFixed(2)]
+        .map((v) => `"${String(v).replace(/"/g, '""')}"`)
+        .join(","),
+    );
+    const csv = "\uFEFF" + [headers.join(","), ...lines].join("\r\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `הוצאות-${range.start}_עד_${range.end}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 
   // Hidden for עוסק פטור; they don't file VAT.
   if (business.businessType !== "authorized" && business.businessType !== "company") {
@@ -172,7 +200,7 @@ export function VatPeriodReport({ headless = false, business, documents, expense
             </h2>
           )}
           <p className={`text-sm text-stone-700 ${headless ? "font-semibold self-center" : "mt-1"}`}>
-            {range.label} · {range.start.slice(0, 10)} עד {range.end.slice(0, 10)}
+            {range.label} · {formatDate(range.start)} עד {formatDate(range.end)}
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -235,6 +263,103 @@ export function VatPeriodReport({ headless = false, business, documents, expense
               : "סכום להעביר לרשות המסים"}
           </p>
         </div>
+      </div>
+
+      {/* Itemized expenses: the periodic filing needs every expense listed,
+          not just the input-VAT total. Same table skin as the invoices report. */}
+      <div className="mb-4">
+        <div className="flex items-baseline justify-between gap-3 flex-wrap mb-2">
+          <h3 className="font-bold text-stone-900">פירוט ההוצאות בתקופה</h3>
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-stone-500">{stats.expenseRows.length} הוצאות</span>
+            {stats.expenseRows.length > 0 && (
+              <button
+                onClick={exportExpensesCsv}
+                className="no-print inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-semibold bg-white border-2 border-orange-200 text-stone-800 hover:bg-orange-50"
+              >
+                <Download className="w-4 h-4" />
+                ייצוא CSV
+              </button>
+            )}
+          </div>
+        </div>
+        {stats.expenseRows.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-stone-200 p-6 text-center text-sm text-stone-500">
+            אין הוצאות בתקופה שנבחרה.{" "}
+            <Link href="/expenses" className="no-print text-orange-700 font-semibold hover:underline">
+              להוספת הוצאה
+            </Link>
+          </div>
+        ) : (
+          <>
+          {/* Phones: one compact card per expense, the table would only show
+              date/supplier and hide the money behind a horizontal scroll. */}
+          <ul className="sm:hidden print:hidden space-y-2">
+            {stats.expenseRows.map((r) => (
+              <li key={r.id} className="rounded-xl border border-stone-200 bg-white px-3.5 py-3">
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="font-semibold text-stone-900 truncate">{r.supplier || "ללא ספק"}</span>
+                  <span className="font-extrabold text-stone-900 tabular-nums whitespace-nowrap" dir="ltr">{formatCurrency(r.amount)}</span>
+                </div>
+                <div className="mt-0.5 flex items-baseline justify-between gap-3 text-xs text-stone-500">
+                  <span className="truncate">
+                    <span className="tabular-nums">{formatDate(r.date)}</span>
+                    {r.category ? ` · ${r.category}` : ""}
+                    {r.description ? ` · ${r.description}` : ""}
+                  </span>
+                  <span className="tabular-nums whitespace-nowrap">מע״מ {formatCurrency(r.vat)}</span>
+                </div>
+              </li>
+            ))}
+            <li className="rounded-xl bg-orange-50 border border-orange-200 px-3.5 py-3 font-black text-stone-900">
+              <div className="flex items-baseline justify-between gap-3">
+                <span>סה״כ · {stats.expenseRows.length} הוצאות</span>
+                <span className="tabular-nums" dir="ltr">{formatCurrency(stats.inputGross)}</span>
+              </div>
+              <div className="mt-0.5 flex items-baseline justify-between gap-3 text-xs font-semibold text-stone-600">
+                <span>ללא מע״מ {formatCurrency(stats.inputBase)}</span>
+                <span>מע״מ {formatCurrency(stats.inputVat)}</span>
+              </div>
+            </li>
+          </ul>
+          <div className="hidden sm:block print:block overflow-x-auto">
+            <table className="gk-rtable w-full text-sm border-separate border-spacing-0 rounded-xl overflow-hidden shadow-sm">
+              <thead>
+                <tr className="bg-gradient-to-l from-orange-500 to-rose-500 text-white">
+                  <th className="px-4 py-3 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">תאריך</th>
+                  <th className="px-4 py-3 text-xs font-extrabold tracking-wide text-right whitespace-nowrap border-l border-white/20">ספק</th>
+                  <th className="px-4 py-3 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">קטגוריה</th>
+                  <th className="px-4 py-3 text-xs font-extrabold tracking-wide text-right border-l border-white/20">תיאור</th>
+                  <th className="px-4 py-3 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">ללא מע״מ</th>
+                  <th className="px-4 py-3 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">מע״מ</th>
+                  <th className="px-4 py-3 text-xs font-extrabold tracking-wide text-center whitespace-nowrap">סכום כולל</th>
+                </tr>
+              </thead>
+              <tbody>
+                {stats.expenseRows.map((r, i) => (
+                  <tr key={r.id} className={`${i % 2 ? "bg-orange-50/40" : "bg-white"} hover:bg-amber-50/40 transition-colors`}>
+                    <td className="px-4 py-3 text-center align-middle tabular-nums whitespace-nowrap text-stone-700 border-b border-l border-stone-200">{formatDate(r.date)}</td>
+                    <td className="px-4 py-3 text-right align-middle font-semibold text-stone-900 border-b border-l border-stone-200">{r.supplier || <span className="text-stone-300">-</span>}</td>
+                    <td className="px-4 py-3 text-center align-middle whitespace-nowrap text-stone-700 border-b border-l border-stone-200">{r.category || <span className="text-stone-300">-</span>}</td>
+                    <td className="px-4 py-3 text-right align-middle text-stone-600 border-b border-l border-stone-200 max-w-[22rem]">{r.description || <span className="text-stone-300">-</span>}</td>
+                    <td className="px-4 py-3 text-center align-middle tabular-nums whitespace-nowrap text-stone-700 border-b border-l border-stone-200">{formatCurrency(r.net)}</td>
+                    <td className="px-4 py-3 text-center align-middle tabular-nums whitespace-nowrap text-stone-700 border-b border-l border-stone-200">{formatCurrency(r.vat)}</td>
+                    <td className="px-4 py-3 text-center align-middle tabular-nums font-extrabold text-stone-900 whitespace-nowrap border-b border-stone-200">{formatCurrency(r.amount)}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="bg-orange-50 text-stone-900 font-black">
+                  <td className="px-4 py-3.5 text-center border-t-2 border-l border-orange-200" colSpan={4}>סה״כ · {stats.expenseRows.length} הוצאות</td>
+                  <td className="px-4 py-3.5 text-center tabular-nums whitespace-nowrap border-t-2 border-l border-orange-200">{formatCurrency(stats.inputBase)}</td>
+                  <td className="px-4 py-3.5 text-center tabular-nums whitespace-nowrap border-t-2 border-l border-orange-200">{formatCurrency(stats.inputVat)}</td>
+                  <td className="px-4 py-3.5 text-center tabular-nums whitespace-nowrap border-t-2 border-orange-200">{formatCurrency(stats.inputGross)}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+          </>
+        )}
       </div>
 
       <div className="text-xs text-stone-600 leading-relaxed border-t border-orange-100 pt-3">

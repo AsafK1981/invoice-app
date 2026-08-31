@@ -23,7 +23,7 @@ export default function VatReportPage() {
       <ReportPageHeader
         icon={Receipt}
         title="דיווח מע״מ תקופתי"
-        subtitle="מע״מ עסקאות מול מע״מ תשומות לתקופת הדיווח, מוכן להעתקה לדיווח."
+        subtitle="מע״מ עסקאות מול מע״מ תשומות לתקופת הדיווח, מוכן להעתקה לדיווח, כולל פירוט כל הוצאה."
       />
       {filesVat ? (
         <VatPeriodReport headless business={business} documents={documents} expenses={expenses} />
