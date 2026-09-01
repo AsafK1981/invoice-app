@@ -274,8 +274,8 @@ export function Sidebar() {
           <LogOut className="w-4 h-4" />
           התנתק
         </button>
-        {/* Large-text switch (Asaf, 2026-08-31): for people who find the app's
-            text small. One tap lifts the whole app ~15% (html[data-text-size]
+        {/* Larger-text switch (Asaf, 2026-08-31; label + extra bump 2026-09-01):
+            for people who find the app's text small. One tap lifts the whole app ~17% (html[data-text-size]
             in app-skin.css); the choice is cached locally and saved on the
             business row so it follows them to their other devices. A real
             <button role="switch">, not a checkbox, so screen readers announce
@@ -290,7 +290,7 @@ export function Sidebar() {
           className="flex items-center gap-2 w-full px-3 py-2 rounded-xl text-sm text-stone-700 hover:bg-orange-50 hover:text-orange-700 transition-colors"
         >
           <Type className="w-4 h-4" />
-          <span className="flex-1 text-start">טקסט גדול</span>
+          <span className="flex-1 text-start">טקסט גדול יותר</span>
           <span
             aria-hidden="true"
             className={`relative inline-block w-9 h-5 rounded-full transition-colors flex-none ${

@@ -3485,10 +3485,12 @@ html .text-\[13px\] { font-size: 14px; }
       -> 11.9-12.3px; the px chips +1.5; the documents table's two smallest
       roles (meta: header labels, pills, dates; and "days late") come up
       while name and amount stay, so the row keeps its hierarchy.
-   3. LARGE TEXT MODE, opt-in via the "טקסט גדול" switch in the sidebar
-      footer (lib/text-size.ts sets html[data-text-size="large"]). Roughly
-      +15% on everything: root 14.5/15/15.5 -> 16.5/17/17.5 on desktop and
-      16.5 -> 18.5 on mobile, with the small-text floor lifted to match.
+   3. LARGER TEXT MODE, opt-in via the "טקסט גדול יותר" switch in the
+      sidebar footer (lib/text-size.ts sets html[data-text-size="large"]).
+      Roughly +17% on everything: root 14.5/15/15.5 -> 17/17.5/18 on desktop
+      and 16.5 -> 19 on mobile, with the small-text floor lifted to match
+      (Asaf 2026-09-01: "טיפ טיפה יותר גדול" than the first +15% cut, and
+      the label says יותר). Checked live at 1024/1290/1410/390: no overflow.
       Verified at 1290px (Asaf's viewport): the nine-column documents table
       still fits with no horizontal scroll in all three states.
 
@@ -3513,9 +3515,9 @@ html:has([data-app-sidebar]) .input-warm::placeholder { color: #6f6757 !importan
 }
 
 /* --- large text mode --- */
-html[data-text-size="large"]:has([data-app-sidebar]) { font-size: 18.5px; }
+html[data-text-size="large"]:has([data-app-sidebar]) { font-size: 19px; }
 @media screen and (min-width: 64rem) {
-  html[data-text-size="large"]:has([data-app-sidebar]) { font-size: 16.5px; }
+  html[data-text-size="large"]:has([data-app-sidebar]) { font-size: 17px; }
   html[data-text-size="large"]:has([data-app-sidebar]) .text-xs { font-size: 0.86rem; }
   html[data-text-size="large"]:has([data-app-sidebar]) .text-sm { font-size: 0.95rem; line-height: 1.4; }
   html[data-text-size="large"]:has([data-app-sidebar]) .text-\[10px\] { font-size: 12.5px; }
@@ -3523,10 +3525,10 @@ html[data-text-size="large"]:has([data-app-sidebar]) { font-size: 18.5px; }
   html[data-text-size="large"]:has([data-app-sidebar]) .text-\[13px\] { font-size: 15px; }
 }
 @media screen and (min-width: 1400px) {
-  html[data-text-size="large"]:has([data-app-sidebar]) { font-size: 17px; }
+  html[data-text-size="large"]:has([data-app-sidebar]) { font-size: 17.5px; }
 }
 @media screen and (min-width: 1800px) {
-  html[data-text-size="large"]:has([data-app-sidebar]) { font-size: 17.5px; }
+  html[data-text-size="large"]:has([data-app-sidebar]) { font-size: 18px; }
 }
 @media (min-width: 1024px) and (max-width: 1399.98px) {
   html[data-text-size="large"]:has([data-app-sidebar]) { --dc-fs-1: 0.8rem; --dc-fs-2: 0.88rem; --dc-fs-3: 0.97rem; --dc-fs-4: 1.08rem; }
