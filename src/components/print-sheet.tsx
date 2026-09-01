@@ -33,14 +33,22 @@ export function usePrintSheet(): { printing: boolean; print: () => void } {
     window.addEventListener("afterprint", done);
     // Safety net: some browsers (older WebKit, a few mobile ones) never fire
     // afterprint. The window regaining focus after the print dialog closes is
-    // the fallback signal that we are done.
-    window.addEventListener("focus", done);
+    // the fallback signal that we are done. Armed only once window.print()
+    // has actually run: before that, a stray focus event (the user tabbing
+    // away right after clicking הדפסה and coming back) would tear the sheet
+    // down and silently cancel the print.
+    let dialogOpened = false;
+    const onFocus = () => {
+      if (dialogOpened) done();
+    };
+    window.addEventListener("focus", onFocus);
 
     // Two nested frames: the first is scheduled before React has committed +
     // painted the freshly mounted sheet, the second runs after it is on screen.
     let inner = 0;
     const outer = requestAnimationFrame(() => {
       inner = requestAnimationFrame(() => {
+        dialogOpened = true;
         window.print();
       });
     });
@@ -50,7 +58,7 @@ export function usePrintSheet(): { printing: boolean; print: () => void } {
       cancelAnimationFrame(outer);
       if (inner) cancelAnimationFrame(inner);
       window.removeEventListener("afterprint", done);
-      window.removeEventListener("focus", done);
+      window.removeEventListener("focus", onFocus);
     };
   }, [printing]);
 
