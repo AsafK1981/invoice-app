@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
-  TrendingUp, TrendingDown, Wallet, Clock, Download, ChevronDown, ChevronLeft, ChevronRight,
+  TrendingUp, TrendingDown, Wallet, Clock, Download, ChevronDown,
   FileText, ClipboardList, Calculator, BookOpen, FileSpreadsheet, Landmark, FileArchive,
   SlidersHorizontal, Receipt, ArrowLeft, Minus, Printer,
 } from "lucide-react";
@@ -20,15 +20,14 @@ import { useToast } from "@/components/ui/toast";
 import { friendlyError } from "@/lib/error-message";
 import { computeAging, AGING_BUCKET_LABELS } from "@/lib/aging";
 import {
-  type Period, type PeriodMode, PERIOD_MODE_LABELS, HEBREW_MONTHS_SHORT,
-  periodMode, periodYear, periodMatches, periodMatchesMonth, periodChartMonths, periodLabel,
-  periodStepLabel, shiftPeriod, switchMode, periodRange, previousEquivalentRange, inRange,
-  monthLabel, rangeBounds, makeRange,
+  type Period, HEBREW_MONTHS_SHORT,
+  periodYear, periodMatches, periodMatchesMonth, periodChartMonths, periodLabel,
+  periodStepLabel, shiftPeriod, periodRange, previousEquivalentRange, inRange,
+  monthLabel,
 } from "@/lib/report-period";
+import { PeriodPicker } from "@/components/period-picker";
 import { ReportsBarChart, type BarDatum } from "@/components/reports-bar-chart";
 import type { InvoiceDocument, Expense } from "@/lib/types";
-
-const MODES: PeriodMode[] = ["month", "quarter", "year", "range", "all"];
 
 type MonthTotals = { income: number; expenses: number; docs: number };
 
@@ -65,9 +64,7 @@ export default function ReportsPage() {
   const showToast = useToast();
   const [period, setPeriod] = useState<Period>(() => String(new Date().getFullYear()));
 
-  const mode = periodMode(period);
   const year = periodYear(period);
-  const bounds = rangeBounds(period);
   /** File-name tag for the exports: "2026-08", or "2026-01-05_2026-03-10" for a range. */
   const fileTag = period.replace("..", "_");
 
@@ -275,58 +272,7 @@ export default function ReportsPage() {
           <p className="text-sm text-stone-700 mt-2 mr-14">מה נכנס, מה יצא ומה נשאר - לפי התקופה שבחרת</p>
         </div>
         <div className="rpt-controls">
-          <div className="dash-range rpt-modes" role="group" aria-label="סוג תקופה">
-            {MODES.map((m) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => setPeriod(switchMode(period, m))}
-                aria-pressed={mode === m}
-                className={`dash-range-btn${mode === m ? " is-active" : ""}`}
-              >
-                {PERIOD_MODE_LABELS[m]}
-              </button>
-            ))}
-          </div>
-          {bounds ? (
-            /* Free range: the two dates sit where the stepper's label does,
-               and the arrows slide the whole window by its own length. */
-            <div className="rpt-stepper rpt-range" role="group" aria-label="בחירת טווח תאריכים">
-              <button type="button" onClick={() => setPeriod(shiftPeriod(period, -1))} aria-label="טווח קודם באותו אורך">
-                <ChevronRight aria-hidden="true" />
-              </button>
-              <input
-                type="date"
-                value={bounds.start}
-                max={bounds.end}
-                aria-label="מתאריך"
-                dir="ltr"
-                onChange={(e) => e.target.value && setPeriod(makeRange(e.target.value, bounds.end))}
-              />
-              <span aria-hidden="true">-</span>
-              <input
-                type="date"
-                value={bounds.end}
-                min={bounds.start}
-                aria-label="עד תאריך"
-                dir="ltr"
-                onChange={(e) => e.target.value && setPeriod(makeRange(bounds.start, e.target.value))}
-              />
-              <button type="button" onClick={() => setPeriod(shiftPeriod(period, 1))} aria-label="טווח הבא באותו אורך">
-                <ChevronLeft aria-hidden="true" />
-              </button>
-            </div>
-          ) : mode !== "all" && (
-            <div className="rpt-stepper" role="group" aria-label="בחירת תקופה">
-              <button type="button" onClick={() => setPeriod(shiftPeriod(period, -1))} aria-label="תקופה קודמת">
-                <ChevronRight aria-hidden="true" />
-              </button>
-              <b>{periodStepLabel(period)}</b>
-              <button type="button" onClick={() => setPeriod(shiftPeriod(period, 1))} aria-label="תקופה הבאה">
-                <ChevronLeft aria-hidden="true" />
-              </button>
-            </div>
-          )}
+          <PeriodPicker period={period} onChange={setPeriod} />
           <div className="rpt-menu-wrap" ref={menuRef}>
             <button
               type="button"

@@ -615,6 +615,15 @@ html .gk-etable thead th {
   color: var(--ink2) !important;
   border-color: var(--goldtintline) !important;
 }
+/* The totals row under the expenses list (2026-09-01): the same tinted band
+   as the header, a heavier rule above it, ink weight - the income reports'
+   tfoot in the list vocabulary of this table. */
+html .gk-etable tfoot td {
+  background: var(--goldtint);
+  border-top: 2px solid var(--goldline);
+  color: var(--ink);
+  font-weight: 800;
+}
 
 /* =====================================================================
    PAGE ACTION ROW (`.pgactions` / `.pgbtn`) - 2026-07-30.

@@ -12,6 +12,8 @@ import { Tooltip } from "@/components/ui/tooltip";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Pagination } from "@/components/ui/pagination";
 import { PrintSheet, usePrintSheet } from "@/components/print-sheet";
+import { PeriodPicker } from "@/components/period-picker";
+import { type Period, periodMatches, periodLabel } from "@/lib/report-period";
 import { supabase } from "@/lib/supabase";
 import type { Expense } from "@/lib/types";
 
@@ -114,15 +116,6 @@ function matchesExpense(e: Expense, query: string): boolean {
   return q.split(/\s+/).every((t) => haystack.includes(t));
 }
 
-/** The month filter's value that means "a free date range" instead of one month. */
-const RANGE = "__range";
-
-function formatMonthLabel(month: string): string {
-  const [year, m] = month.split("-");
-  const names = ["ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יוני", "יולי", "אוגוסט", "ספטמבר", "אוקטובר", "נובמבר", "דצמבר"];
-  return `${names[parseInt(m, 10) - 1]} ${year}`;
-}
-
 export default function ExpensesPage() {
   const { items: expenses } = useExpenses();
   const { business } = useBusiness();
@@ -135,18 +128,12 @@ export default function ExpensesPage() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
-  // "all" | "YYYY-MM" | RANGE - the last one opens the two date fields.
-  const [monthFilter, setMonthFilter] = useState<string>("all");
-  const [rangeFrom, setRangeFrom] = useState("");
-  const [rangeTo, setRangeTo] = useState("");
+  // Same period model as /reports ("all" | "2026" | "2026-Q3" | "2026-08" |
+  // "from..to"), driven by the shared PeriodPicker in the page header.
+  const [period, setPeriod] = useState<Period>("all");
   const [page, setPage] = useState(0);
   const confirm = useConfirm();
   const { printing, print } = usePrintSheet();
-
-  const availableMonths = useMemo(() => {
-    const set = new Set(expenses.map((e) => e.date.slice(0, 7)));
-    return Array.from(set).sort().reverse();
-  }, [expenses]);
 
   const availableCategories = useMemo(() => {
     const set = new Set(expenses.map((e) => e.category));
@@ -156,23 +143,20 @@ export default function ExpensesPage() {
   const filtered = useMemo(() => {
     let result = expenses;
     if (categoryFilter !== "all") result = result.filter((e) => e.category === categoryFilter);
-    if (monthFilter === RANGE) {
-      // An empty end is open: "from 1.8" alone means everything since then.
-      result = result.filter(
-        (e) => (!rangeFrom || e.date >= rangeFrom) && (!rangeTo || e.date <= rangeTo),
-      );
-    } else if (monthFilter !== "all") {
-      result = result.filter((e) => e.date.startsWith(monthFilter));
-    }
+    if (period !== "all") result = result.filter((e) => periodMatches(period, e.date));
     if (search.trim()) result = result.filter((e) => matchesExpense(e, search));
     return [...result].sort((a, b) => b.date.localeCompare(a.date));
-  }, [expenses, search, categoryFilter, monthFilter, rangeFrom, rangeTo]);
+  }, [expenses, search, categoryFilter, period]);
 
+  // `amount` is stored gross (VAT included) and `vatAmount` is the VAT part,
+  // so the net column is the difference - same three figures as the income
+  // reports: ללא מע״מ / מע״מ / כולל מע״מ.
   const filteredTotal = filtered.reduce((sum, e) => sum + e.amount, 0);
   const grandTotal = expenses.reduce((sum, e) => sum + e.amount, 0);
   const filteredVat = filtered.reduce((sum, e) => sum + (e.vatAmount ?? 0), 0);
   const grandVat = expenses.reduce((sum, e) => sum + (e.vatAmount ?? 0), 0);
-  const filtersActive = search.trim() !== "" || categoryFilter !== "all" || monthFilter !== "all";
+  const filteredNet = filteredTotal - filteredVat;
+  const filtersActive = search.trim() !== "" || categoryFilter !== "all" || period !== "all";
   // The expense form only offers VAT entry to עוסק מורשה / company (the ones
   // who reclaim input VAT), so an exempt business would see a column of
   // dashes. Show it for them only if VAT data actually exists (e.g. the
@@ -186,19 +170,11 @@ export default function ExpensesPage() {
   // sheet handed to an accountant says what it is a list OF.
   const printSubtitle = useMemo(() => {
     const parts: string[] = [];
-    if (monthFilter === RANGE) {
-      if (rangeFrom || rangeTo) {
-        parts.push(
-          `טווח: ${rangeFrom ? formatDate(rangeFrom) : "ההתחלה"} עד ${rangeTo ? formatDate(rangeTo) : "היום"}`,
-        );
-      }
-    } else if (monthFilter !== "all") {
-      parts.push(`חודש: ${formatMonthLabel(monthFilter)}`);
-    }
+    if (period !== "all") parts.push(`תקופה: ${periodLabel(period)}`);
     if (categoryFilter !== "all") parts.push(`קטגוריה: ${categoryFilter}`);
     if (search.trim()) parts.push(`חיפוש: "${search.trim()}"`);
     return parts.length ? parts.join(" · ") : "כל ההוצאות";
-  }, [monthFilter, rangeFrom, rangeTo, categoryFilter, search]);
+  }, [period, categoryFilter, search]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paginated = useMemo(
@@ -210,7 +186,7 @@ export default function ExpensesPage() {
   // past the new last page - reset to page 1 whenever the filtered set does.
   useEffect(() => {
     setPage(0);
-  }, [search, categoryFilter, monthFilter, rangeFrom, rangeTo]);
+  }, [search, categoryFilter, period]);
 
   function openNew() {
     setEditing(null);
@@ -319,15 +295,16 @@ export default function ExpensesPage() {
   function clearFilters() {
     setSearch("");
     setCategoryFilter("all");
-    setMonthFilter("all");
-    setRangeFrom("");
-    setRangeTo("");
+    setPeriod("all");
   }
 
   return (
     <>
     <div className="space-y-6" data-print-hidden={printing ? "true" : undefined}>
-      <div>
+      {/* Title on the inline-start, the period control on the inline-end -
+          the same header the reports page has, so a free date range is one
+          click away instead of the last entry of a month dropdown. */}
+      <div className="rpt-head">
         <div>
           <h1 className="text-3xl font-bold text-stone-900 flex items-center gap-3">
             <span className="w-11 h-11 rounded-2xl fgrad fgrad-pink flex items-center justify-center shadow-sm">
@@ -358,6 +335,11 @@ export default function ExpensesPage() {
             )}
           </p>
         </div>
+        {expenses.length > 0 && (
+          <div className="rpt-controls">
+            <PeriodPicker period={period} onChange={setPeriod} />
+          </div>
+        )}
       </div>
 
       {/* Primary alone at the inline-start (right, under the title), the
@@ -473,42 +455,6 @@ export default function ExpensesPage() {
                 ...availableCategories.map((c) => ({ value: c, label: c })),
               ]}
             />
-            <FilterSelect
-              label="חודש"
-              value={monthFilter}
-              onChange={setMonthFilter}
-              options={[
-                { value: "all", label: "כל החודשים" },
-                ...availableMonths.map((m) => ({ value: m, label: formatMonthLabel(m) })),
-                { value: RANGE, label: "טווח תאריכים..." },
-              ]}
-            />
-            {monthFilter === RANGE && (
-              <div className="flex flex-wrap items-center gap-2 text-sm" role="group" aria-label="טווח תאריכים">
-                <label className="flex items-center gap-2">
-                  <span className="text-stone-500">מתאריך:</span>
-                  <input
-                    type="date"
-                    value={rangeFrom}
-                    max={rangeTo || undefined}
-                    onChange={(e) => setRangeFrom(e.target.value)}
-                    className="input-warm py-1.5 px-3 text-sm w-auto"
-                    dir="ltr"
-                  />
-                </label>
-                <label className="flex items-center gap-2">
-                  <span className="text-stone-500">עד:</span>
-                  <input
-                    type="date"
-                    value={rangeTo}
-                    min={rangeFrom || undefined}
-                    onChange={(e) => setRangeTo(e.target.value)}
-                    className="input-warm py-1.5 px-3 text-sm w-auto"
-                    dir="ltr"
-                  />
-                </label>
-              </div>
-            )}
             {filtersActive && (
               <button
                 onClick={clearFilters}
@@ -523,22 +469,23 @@ export default function ExpensesPage() {
           </div>
 
           <div className="overflow-x-auto">
-            <table className={`gk-etable w-full ${showVat ? "min-w-[760px]" : "min-w-[640px]"}`}>
+            <table className={`gk-etable w-full ${showVat ? "min-w-[900px]" : "min-w-[640px]"}`}>
               <thead className="text-sm text-stone-700 bg-white">
                 <tr>
                   <th className="text-right px-6 py-3 font-semibold">תאריך</th>
                   <th className="text-right px-6 py-3 font-semibold">קטגוריה</th>
                   <th className="text-right px-6 py-3 font-semibold">ספק</th>
                   <th className="text-right px-6 py-3 font-semibold">תיאור</th>
+                  {showVat && <th className="text-left px-6 py-3 font-semibold whitespace-nowrap">סכום ללא מע״מ</th>}
                   {showVat && <th className="text-left px-6 py-3 font-semibold">מע״מ</th>}
-                  <th className="text-left px-6 py-3 font-semibold">סכום</th>
+                  <th className="text-left px-6 py-3 font-semibold whitespace-nowrap">{showVat ? "סכום כולל מע״מ" : "סכום"}</th>
                   <th className="px-4 py-3 w-20"></th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={showVat ? 7 : 6} className="px-6 py-16 text-center">
+                    <td colSpan={showVat ? 8 : 6} className="px-6 py-16 text-center">
                       <div className="text-4xl mb-2">🔍</div>
                       <div className="text-sm text-stone-500">אין הוצאות התואמות לסינון הנבחר</div>
                       <button
@@ -580,6 +527,11 @@ export default function ExpensesPage() {
                       </td>
                       <td className="px-6 py-3 text-sm font-medium text-stone-900">{e.description || "-"}</td>
                       {showVat && (
+                        <td className="px-6 py-3 text-sm font-semibold text-left text-stone-700 tabular-nums">
+                          {formatCurrency(e.amount - (e.vatAmount ?? 0))}
+                        </td>
+                      )}
+                      {showVat && (
                         <td className="px-6 py-3 text-sm font-semibold text-left text-stone-600 tabular-nums">
                           {e.vatAmount ? formatCurrency(e.vatAmount) : <span className="text-stone-400">-</span>}
                         </td>
@@ -613,6 +565,25 @@ export default function ExpensesPage() {
                   ))
                 )}
               </tbody>
+              {filtered.length > 0 && (
+                /* Totals of the whole filtered list (not just this page),
+                   in the same three columns as the income reports. */
+                <tfoot>
+                  <tr>
+                    <td colSpan={4} className="px-6 py-4 text-sm">
+                      סה״כ · {filtered.length} הוצאות
+                    </td>
+                    {showVat && (
+                      <td className="px-6 py-4 text-sm text-left tabular-nums whitespace-nowrap">{formatCurrency(filteredNet)}</td>
+                    )}
+                    {showVat && (
+                      <td className="px-6 py-4 text-sm text-left tabular-nums whitespace-nowrap">{formatCurrency(filteredVat)}</td>
+                    )}
+                    <td className="px-6 py-4 text-base text-left text-rose-600 tabular-nums whitespace-nowrap">{formatCurrency(filteredTotal)}</td>
+                    <td className="px-4 py-4"></td>
+                  </tr>
+                </tfoot>
+              )}
             </table>
           </div>
           <Pagination page={page} pageCount={pageCount} onPageChange={setPage} />
@@ -652,6 +623,13 @@ export default function ExpensesPage() {
           ...(showVat
             ? [
                 {
+                  key: "net",
+                  header: "סכום ללא מע״מ",
+                  align: "end" as const,
+                  render: (e: Expense) => formatCurrency(e.amount - (e.vatAmount ?? 0)),
+                  footer: formatCurrency(filteredNet),
+                },
+                {
                   key: "vat",
                   header: "מע״מ",
                   align: "end" as const,
@@ -662,7 +640,7 @@ export default function ExpensesPage() {
             : []),
           {
             key: "amount",
-            header: "סכום",
+            header: showVat ? "סכום כולל מע״מ" : "סכום",
             align: "end" as const,
             render: (e) => formatCurrency(e.amount),
             footer: formatCurrency(filteredTotal),
