@@ -14,7 +14,7 @@ import { useLayoutEffect, useRef, type TextareaHTMLAttributes } from "react";
 export function GrowingTextarea(props: TextareaHTMLAttributes<HTMLTextAreaElement>) {
   const ref = useRef<HTMLTextAreaElement>(null);
 
-  useLayoutEffect(() => {
+  function fit() {
     const el = ref.current;
     if (!el) return;
     el.style.height = "auto";
@@ -22,7 +22,28 @@ export function GrowingTextarea(props: TextareaHTMLAttributes<HTMLTextAreaElemen
     // has to be added back or the last line hides behind a scrollbar.
     const border = el.offsetHeight - el.clientHeight;
     el.style.height = `${el.scrollHeight + border}px`;
-  }, [props.value]);
+  }
+
+  useLayoutEffect(fit, [props.value]);
+
+  // The value is not the only thing that changes how tall the text is: on a
+  // phone the box gets narrower after mount (mobile QA 2026-09-01 caught the
+  // box keeping its wide-layout height and growing an inner scrollbar), and a
+  // late web font re-wraps lines. Re-fit when the WIDTH changes - never on our
+  // own height writes, or the observer would loop.
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    let lastWidth = el.offsetWidth;
+    const ro = new ResizeObserver(() => {
+      if (el.offsetWidth === lastWidth) return;
+      lastWidth = el.offsetWidth;
+      fit();
+    });
+    ro.observe(el);
+    document.fonts?.ready.then(fit).catch(() => {});
+    return () => ro.disconnect();
+  }, []);
 
   return <textarea ref={ref} {...props} />;
 }
