@@ -173,6 +173,10 @@ function readGigs(file) {
  * Anything that is not a playing fee - a keyboard stand, an expense refund -
  * gets its own line at quantity 1 rather than being folded into the average,
  * because folding it in would misstate both the per-gig rate and the count.
+ *
+ * Each line's description carries its own gig breakdown (date, venue,
+ * amount) under the title line. Until 2026-09-01 the breakdown went into
+ * הערות; Asaf wants it on the line it prices, with the notes left empty.
  */
 function buildItems(gigs, period) {
   const [year, month] = period.split("-").map(Number);
@@ -192,11 +196,12 @@ function buildItems(gigs, period) {
   const prices = [...byPrice.keys()].sort((a, b) => b - a);
   for (const price of prices) {
     const group = byPrice.get(price);
+    // With a single rate the title is the plain subject, exactly as these
+    // invoices have always read. With mixed rates each line has to say its
+    // rate or the invoice can't be reconciled against the lines.
+    const title = prices.length === 1 ? label : `${label} (${price} ₪ להופעה)`;
     items.push({
-      // With a single rate the description is the plain subject, exactly as
-      // these invoices have always read. With mixed rates each line has to
-      // say its rate or the invoice can't be reconciled against the lines.
-      description: prices.length === 1 ? label : `${label} (${price} ₪ להופעה)`,
+      description: `${title}\n${gigLines(group)}`,
       quantity: group.length,
       unitPrice: price,
       total: round2(group.length * price),
@@ -204,7 +209,7 @@ function buildItems(gigs, period) {
   }
   for (const g of other) {
     items.push({
-      description: g.forWhat || "שונות",
+      description: `${g.forWhat || "שונות"}\n${gigLines([g], { withForWhat: false })}`,
       quantity: 1,
       unitPrice: g.amount,
       total: g.amount,
@@ -249,7 +254,8 @@ async function pushToGaya(text) {
  * "הצעה בתוקף עד: ..."), so this builds only the gig lines and lets the app
  * add the rest.
  */
-function buildNotes(gigs) {
+/** One line per gig - date, venue, amount, what for - sorted by date. */
+function gigLines(gigs, { withForWhat = true } = {}) {
   return gigs
     .slice()
     .sort((a, b) => a.date.d - b.date.d)
@@ -257,7 +263,7 @@ function buildNotes(gigs) {
       const dd = String(g.date.d).padStart(2, "0");
       const mm = String(g.date.m).padStart(2, "0");
       const amount = g.amount.toFixed(2);
-      const forWhat = g.forWhat ? ` = ${g.forWhat}` : "";
+      const forWhat = withForWhat && g.forWhat ? ` = ${g.forWhat}` : "";
       return `${dd}/${mm}/${g.date.y}\t${g.venue}\t${amount}${forWhat}`;
     })
     .join("\n");
@@ -354,7 +360,6 @@ async function main() {
   }
 
   const { items, subject } = buildItems(pending, period);
-  const notes = buildNotes(pending);
   const total = round2(items.reduce((s, i) => s + i.total, 0));
   const details = pending.map((g) => ({
     label: `${String(g.date.d).padStart(2, "0")}/${String(g.date.m).padStart(2, "0")}`,
@@ -364,11 +369,11 @@ async function main() {
 
   console.log(`\nנושא: ${subject}`);
   for (const i of items) {
-    console.log(`  ${i.description} · ${i.quantity} × ${i.unitPrice} = ${i.total}`);
+    const [title, ...lines] = i.description.split("\n");
+    console.log(`  ${title} · ${i.quantity} × ${i.unitPrice} = ${i.total}`);
+    for (const l of lines) console.log(`      ${l}`);
   }
   console.log(`  סה"כ: ${total} ₪`);
-  console.log("\nהערות שיופיעו על המסמך:");
-  console.log(notes.split("\n").map((l) => "  " + l).join("\n"));
 
   // Not a blocker: the file is usually saved before the month ends and the
   // proposal is still right. But Asaf must know to double-check the count.
@@ -402,7 +407,7 @@ async function main() {
       clientName: billTos[0] || CLIENT_NAME,
       subject,
       items,
-      notes,
+      notes: "",
       details,
     }),
   });
@@ -436,7 +441,7 @@ ${pending.length} הופעות · ${total.toLocaleString("he-IL")} ₪
   return { posted: true, refreshed: !!json.refreshed, period, total, subject, count: pending.length };
 }
 
-export { main, readGigs, buildItems, buildNotes, parseCellDate, previousPeriod, newestWorkbook, staleWorkbookCaution, GIGS_DIR };
+export { main, readGigs, buildItems, gigLines, parseCellDate, previousPeriod, newestWorkbook, staleWorkbookCaution, GIGS_DIR };
 
 if (import.meta.url === `file://${process.argv[1]}` || process.argv[1] === fileURLToPath(import.meta.url)) {
   main()

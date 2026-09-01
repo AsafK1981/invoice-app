@@ -29,6 +29,7 @@ import {
 import { formatCurrency } from "@/lib/format";
 import { sendReceiptEmail } from "@/lib/email";
 import { EmailVerificationModal } from "@/components/email-verification-modal";
+import { GrowingTextarea } from "@/components/ui/growing-textarea";
 import { createDocument, getNextDocumentNumber, linkConvertedDocument, markDocumentEmailed, useDocuments } from "@/lib/document-store";
 import { getBusinessId, isPlaceholderBusinessName, isPlaceholderBusinessTaxId } from "@/lib/business-init";
 import { parseEmails, joinEmails, isValidEmail } from "@/lib/emails";
@@ -2175,7 +2176,13 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                     gives the drag-to-reorder target a visible shape. */}
                 <div>
                   {idx === 0 && <label className="text-xs font-semibold text-stone-700 mb-1 block">תיאור</label>}
-                  <div className="flex gap-1 items-center">
+                  {/* Free text in the full sense (Asaf 2026-09-01): a line per
+                      gig, per session, per deliverable - Enter breaks the line
+                      and the box grows with what is typed, like the הערות box
+                      below. The document renders those breaks (pre-wrap on
+                      td.c-desc), so the breakdown lives on the line it prices
+                      instead of being exiled to the notes. */}
+                  <div className="flex gap-1 items-start">
                     {items.length > 1 && (
                       <div
                         draggable
@@ -2187,14 +2194,14 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                         <GripVertical className="w-4 h-4" />
                       </div>
                     )}
-                    <input
-                      type="text"
+                    <GrowingTextarea
                       value={item.description}
                       onChange={(e) => updateItem(item.id, { description: e.target.value })}
-                      placeholder={subjectFallback || "תיאור השירות/מוצר"}
+                      placeholder={subjectFallback || "תיאור השירות/מוצר - Enter לשורה חדשה"}
                       title={subjectFallback ? "ריק = יועתק הנושא של המסמך" : undefined}
                       aria-label="תיאור השירות/מוצר"
-                      className="input-warm flex-1 text-ellipsis"
+                      rows={3}
+                      className="input-warm flex-1 resize-none leading-relaxed"
                     />
                     <div className="relative">
                       <select

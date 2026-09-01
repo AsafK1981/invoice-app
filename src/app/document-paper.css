@@ -349,6 +349,9 @@
 .doc-paper .doc-table td.c-desc {
   text-align: right;
   overflow-wrap: anywhere;
+  /* The editor's description box is multi-line; each typed line break is a
+     line here too (same rule as .doc-info-body for the notes). */
+  white-space: pre-wrap;
 }
 .doc-paper .doc-table td.c-qty {
   text-align: center;

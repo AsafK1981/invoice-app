@@ -37,6 +37,9 @@ const PERIOD_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
 const MAX_ITEMS = 60;
 const MAX_DETAILS = 200;
 const MAX_TEXT = 300;
+// A line's description may carry its breakdown (one gig per line) since
+// 2026-09-01, so it gets the same room as the notes.
+const MAX_DESCRIPTION = 4000;
 // The הערות block is a per-line breakdown, one line per billed item, so it
 // needs far more room than a subject - and it is rendered pre-wrap, never
 // interpreted, so newlines and tabs are content here rather than formatting.
@@ -72,7 +75,7 @@ function parseItems(raw: unknown): { items: ProposalItem[]; total: number } | st
   for (const r of raw) {
     if (!r || typeof r !== "object") return "each item must be an object";
     const row = r as Record<string, unknown>;
-    const description = clean(row.description);
+    const description = clean(row.description, MAX_DESCRIPTION);
     const quantity = Number(row.quantity);
     const unitPrice = Number(row.unitPrice);
     if (!description) return "each item needs a description";

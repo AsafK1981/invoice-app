@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildItems, buildNotes, parseCellDate, previousPeriod, staleWorkbookCaution } from "../scripts/finish-gigs-proposal.mjs";
+import { buildItems, gigLines, parseCellDate, previousPeriod, staleWorkbookCaution } from "../scripts/finish-gigs-proposal.mjs";
 
 type Line = { description: string; quantity: number; unitPrice: number; total: number };
 
@@ -43,9 +43,14 @@ describe("buildItems", () => {
     expect(items[0].quantity).toBe(4);
     expect(items[0].unitPrice).toBe(1550);
     expect(items[0].total).toBe(6200);
-    // The single-rate description is the plain subject, matching every
-    // invoice this client has ever been sent.
-    expect(items[0].description).toBe(subject);
+    // The single-rate title is the plain subject, matching every invoice
+    // this client has ever been sent; the gig breakdown sits under it on
+    // the same line item (not in the notes) since 2026-09-01.
+    const [title, ...breakdown] = items[0].description.split("\n");
+    expect(title).toBe(subject);
+    expect(breakdown).toHaveLength(4);
+    expect(breakdown[0].startsWith("01/08/2026\t")).toBe(true);
+    expect(breakdown[3].startsWith("20/08/2026\t")).toBe(true);
     expect(subject).toBe("הופעות עם פיניש - אוגוסט 2026");
     expect(sum(items)).toBe(6200);
   });
@@ -79,9 +84,12 @@ describe("buildItems", () => {
     expect(items).toHaveLength(3);
     const playing = items.find((i: Line) => i.unitPrice === 1550)!;
     expect(playing.quantity).toBe(2);
-    const stand = items.find((i: Line) => i.description === "סטנד לקלידים")!;
+    const stand = items.find((i: Line) => i.description.startsWith("סטנד לקלידים\n"))!;
     expect(stand.quantity).toBe(1);
     expect(stand.total).toBe(245);
+    // The title already says what the money was for; its gig line does not
+    // repeat it.
+    expect(stand.description).toBe("סטנד לקלידים\n06/08/2026\tמקום 6\t245.00");
     expect(sum(items)).toBe(1550 * 2 + 245 + 161);
   });
 
@@ -125,12 +133,12 @@ describe("previousPeriod", () => {
   });
 });
 
-describe("buildNotes", () => {
+describe("gigLines", () => {
   it("writes one tab-separated line per gig, in Asaf's own format", () => {
     // Format taken verbatim from documents #90002-#90005:
     //   DD/MM/YYYY<TAB>venue<TAB>1550.00 = נגינה (1200 שח) + נהיגה (350 שח)
     const gigs = [gig(6, 1550), gig(1, 1550)];
-    const notes = buildNotes(gigs);
+    const notes = gigLines(gigs);
     const lines = notes.split("\n");
 
     expect(lines).toHaveLength(2);
@@ -145,7 +153,7 @@ describe("buildNotes", () => {
 
   it("omits the ' = ' clause when the source row has no 'עבור' text", () => {
     const bare = { ...gig(3, 900), forWhat: "" };
-    expect(buildNotes([bare])).toBe("03/08/2026\tמקום 3\t900.00");
+    expect(gigLines([bare])).toBe("03/08/2026\tמקום 3\t900.00");
   });
 });
 

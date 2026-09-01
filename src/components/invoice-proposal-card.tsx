@@ -253,17 +253,29 @@ function ProposalRow({ proposal }: { proposal: InvoiceProposal }) {
           </p>
 
           <ul className="mt-2 space-y-0.5 text-xs text-stone-700">
-            {proposal.items.map((i, idx) => (
-              <li key={idx} className="flex items-center gap-2 flex-wrap">
-                <span>{i.description}</span>
-                <span className="text-stone-500">·</span>
-                <span>
-                  {i.quantity} × {formatCurrency(i.unitPrice)}
-                </span>
-                <span className="text-stone-500">=</span>
-                <span className="font-medium text-stone-900">{formatCurrency(i.total)}</span>
-              </li>
-            ))}
+            {proposal.items.map((i, idx) => {
+              // The first line names the line item; any further lines are its
+              // breakdown (one gig per line) and print under it on the document.
+              const [headline, ...breakdown] = i.description.split("\n");
+              return (
+                <li key={idx}>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span>{headline}</span>
+                    <span className="text-stone-500">·</span>
+                    <span>
+                      {i.quantity} × {formatCurrency(i.unitPrice)}
+                    </span>
+                    <span className="text-stone-500">=</span>
+                    <span className="font-medium text-stone-900">{formatCurrency(i.total)}</span>
+                  </div>
+                  {breakdown.length > 0 && (
+                    <pre className="mt-1 mb-1.5 text-xs text-stone-600 whitespace-pre-wrap font-sans leading-relaxed border-r-2 border-violet-200 pr-3">
+                      {breakdown.join("\n")}
+                    </pre>
+                  )}
+                </li>
+              );
+            })}
           </ul>
 
           <p className="mt-2 text-lg font-bold text-stone-900">
