@@ -553,6 +553,17 @@ export function hebrewForItaCode(
       return "מספר העוסק של הלקוח אינו תקין. בדקו את ח.פ / ע.מ בכרטיס הלקוח ונסו שוב.";
     case "446":
       return "חסר שדה מזהה משתמש (ת.ז מבצע ההקצאה) בבקשה";
+    case "448":
+      // Upstream text: "Vat number is not allowed to issue an invoice",
+      // Hebrew "עוסק זה אינו רשאי להפיק חשבוניות", reported on param
+      // `vat_number`. This is a state of the ISSUER's file at the Tax
+      // Authority, not anything in our request body, so no retry and no
+      // setting in this app can clear it. Known trigger: the 2026-02-17
+      // policy change that stopped partners in an unregistered partnership
+      // (סיווג 07) from issuing tax invoices; a VAT file that is not active
+      // as עוסק מורשה produces the same code. Distinct from 406, which is
+      // about the PERSON who authorized the connection lacking permission.
+      return "רשות המסים מדווחת שהעוסק אינו רשאי להפיק חשבוניות. זו הגדרה בתיק העוסק ברשות המסים ולא תקלה באפליקציה, ואי אפשר לתקן אותה מכאן. יש לפנות למשרד המע\"מ האזורי ולברר את סיווג התיק (למשל שותפות שאינה רשומה כאיחוד עוסקים, או תיק שאינו פעיל כעוסק מורשה).";
     case "460":
       return "החשבונית לא אושרה על ידי רשות המסים";
     case "461":
