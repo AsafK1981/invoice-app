@@ -150,6 +150,31 @@ describe("hebrewForItaCode: maps ITA error codes to clean Hebrew (no raw JSON)",
     expect(msg).not.toMatch(/[{}]|Not Acceptable/);
   });
 
+  it("maps 448 (issuer not allowed to issue invoices) to an actionable Hebrew reason", () => {
+    // Real rejection hit by the same בע"מ user on 2026-09-01, one day after
+    // it cleared the 406. Upstream text: "Vat number is not allowed to issue
+    // an invoice", param `vat_number`. This is the state of the issuer's own
+    // file at the Tax Authority, so the message must send the user to the VAT
+    // office rather than imply there is something to fix in the app.
+    const msg = hebrewForItaCode("448", "Vat number is not allowed to issue an invoice", "vat_number");
+    expect(msg).toContain("אינו רשאי להפיק חשבוניות");
+    expect(msg).toContain("מע\"מ האזורי");
+    // Must NOT fall through to the content-free param-name fallback, which is
+    // what the user actually saw and which sent this investigation the wrong way.
+    expect(msg).not.toContain("השדה שגרם לדחייה");
+    // Never leaks the raw upstream English or JSON punctuation.
+    expect(msg).not.toContain("Vat number is not allowed");
+    expect(msg).not.toMatch(/[{}]/);
+  });
+
+  it("keeps 448 distinct from 406: different cause, different instruction", () => {
+    // 406 is about the PERSON who authorized the connection; 448 is about the
+    // BUSINESS file itself. Conflating them sends the user to the wrong place.
+    expect(hebrewForItaCode("448")).not.toBe(hebrewForItaCode("406"));
+    expect(hebrewForItaCode("406")).toContain("רישום תאגיד");
+    expect(hebrewForItaCode("448")).not.toContain("רישום תאגיד");
+  });
+
   it("maps 432 (invalid customer vat number) to an actionable Hebrew reason", () => {
     const msg = hebrewForItaCode("432");
     expect(msg).toContain("מספר העוסק של הלקוח");

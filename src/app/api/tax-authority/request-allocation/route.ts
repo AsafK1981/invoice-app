@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import * as Sentry from "@sentry/nextjs";
 import { createClient } from "@supabase/supabase-js";
 import {
   requestAllocation,
@@ -331,6 +332,28 @@ export async function POST(req: NextRequest) {
     .eq("business_id", business.id);
 
   if (!result.allocationNumber) {
+    // Mirror the rejection to Sentry, which is already the alert sink for this
+    // subsystem (see api/cron/tax-health). Vercel Hobby drops runtime logs
+    // after an hour and the Axiom mirror in tax-authority.ts has never
+    // delivered (wrong host AND wrong path, with the error swallowed), so
+    // without this the raw upstream body is gone before anyone can read it.
+    // That already cost two diagnoses: the 406 on 2026-08-31 and the 448 on
+    // 2026-09-01. The body stays in the log sink only, never in the DB and
+    // never in the response, which is the same rule the rest of this route
+    // follows.
+    Sentry.captureMessage(`tax-allocation rejected (code ${result.resultCode || "?"})`, {
+      level: "error",
+      tags: { kind: "tax-allocation-rejected", itaCode: result.resultCode || "unknown" },
+      extra: {
+        businessId: business.id,
+        businessType: business.business_type,
+        documentId: doc.id,
+        vatNumber,
+        customerVatNumber,
+        invoiceType,
+        raw: JSON.stringify(result.raw).slice(0, 4000),
+      },
+    });
     // resultMessage is already a clean Hebrew reason (mapped from the ITA code
     // in tax-authority.ts); never the raw upstream JSON. Compose it with the
     // code for reference so the user sees actionable RTL Hebrew, not a blob.
