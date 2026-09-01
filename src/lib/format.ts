@@ -1,20 +1,35 @@
 // Built once: Intl.NumberFormat construction (locale lookup) costs more than
 // the format call itself, and the editor calls this a dozen times per render.
-const ILS_WHOLE = new Intl.NumberFormat("he-IL", {
-  style: "currency",
-  currency: "ILS",
+const NUM_WHOLE = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 0,
   maximumFractionDigits: 2,
 });
-const ILS_CENTS = new Intl.NumberFormat("he-IL", {
-  style: "currency",
-  currency: "ILS",
+const NUM_CENTS = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
 
+/**
+ * ILS amount for display: "₪1,234.50" / "₪1,234" - the shekel sign ALWAYS to
+ * the left of the digits, in every context.
+ *
+ * Why not the he-IL currency formatter: it emits "1,234 ₪" (sign after), and
+ * the sign's visual side then depends on the surrounding direction - a Hebrew
+ * RTL paragraph flips it to the left, but any dir="ltr" cell (report tables,
+ * KPI tiles, tabular numbers) shows it on the right. "₪1,234" with no space is
+ * bidi-stable on its own: a currency sign directly followed by digits is
+ * treated as part of the number by the bidi algorithm.
+ *
+ * A negative amount is wrapped in an LTR isolate (U+2066 / U+2069) so the
+ * leading minus stays on the left inside Hebrew text too ("-₪1,234", never
+ * "₪1,234-"). Positive amounts carry no invisible marks, so the common output
+ * is plain text safe for CSV, subjects, and stored labels.
+ */
 export function formatCurrency(amount: number): string {
-  return (amount % 1 === 0 ? ILS_WHOLE : ILS_CENTS).format(amount);
+  const abs = Math.abs(amount);
+  const digits = (abs % 1 === 0 ? NUM_WHOLE : NUM_CENTS).format(abs);
+  const isNegative = amount < 0 && /[1-9]/.test(digits);
+  return isNegative ? `\u2066-₪${digits}\u2069` : `₪${digits}`;
 }
 
 /**

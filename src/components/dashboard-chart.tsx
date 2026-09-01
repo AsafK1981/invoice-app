@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { isCountableRevenue, type InvoiceDocument, type Expense } from "@/lib/types";
+import { formatCurrency } from "@/lib/format";
 
 interface Props {
   documents: InvoiceDocument[];
@@ -143,12 +144,6 @@ function kLabel(v: unknown): string {
   return `₪${Math.round(n / 1000)}k`;
 }
 
-/** Full ILS currency (used in the hover tooltip, exact, not rounded to k). */
-const ils = new Intl.NumberFormat("he-IL", {
-  style: "currency",
-  currency: "ILS",
-  maximumFractionDigits: 0,
-});
 
 export function DashboardChart({ documents, expenses }: Props) {
   const [range, setRange] = useState<RangeKey>("6m");
@@ -705,7 +700,7 @@ function MonthlyLineChart({
                   className="inline-block w-2 h-2 rounded-full"
                   style={{ background: SERIES.income.dot }}
                 />
-                {SERIES.income.label}: {ils.format(income[hover] || 0)}
+                {SERIES.income.label}: {formatCurrency(Math.round(income[hover] || 0))}
               </div>
             )}
             {showExpense && (
@@ -714,7 +709,7 @@ function MonthlyLineChart({
                   className="inline-block w-2 h-2 rounded-full"
                   style={{ background: SERIES.expense.dot }}
                 />
-                {SERIES.expense.label}: {ils.format(expenses[hover] || 0)}
+                {SERIES.expense.label}: {formatCurrency(Math.round(expenses[hover] || 0))}
               </div>
             )}
           </div>

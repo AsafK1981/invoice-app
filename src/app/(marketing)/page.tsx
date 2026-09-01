@@ -833,17 +833,17 @@ export default function MarketingLanding() {
                         <tr>
                           <td className="c-desc">עיצוב לוגו ומיתוג</td>
                           <td className="c-qty">1</td>
-                          <td className="c-total">3,200 ₪</td>
+                          <td className="c-total">₪3,200</td>
                         </tr>
                         <tr>
                           <td className="c-desc">דף נחיתה</td>
                           <td className="c-qty">1</td>
-                          <td className="c-total">1,450 ₪</td>
+                          <td className="c-total">₪1,450</td>
                         </tr>
                         <tr>
                           <td className="c-desc">ייעוץ חזותי</td>
                           <td className="c-qty">1</td>
-                          <td className="c-total">600 ₪</td>
+                          <td className="c-total">₪600</td>
                         </tr>
                       </tbody>
                     </table>
@@ -853,17 +853,17 @@ export default function MarketingLanding() {
                     <div className="ml-sh-card ml-sh-breakdown">
                       <div className="ml-sh-brow">
                         <span>סכום ביניים</span>
-                        <span>5,250 ₪</span>
+                        <span>₪5,250</span>
                       </div>
                       <div className="ml-sh-brow">
                         <span>
                           מע״מ <Ltr>18%</Ltr>
                         </span>
-                        <span>945 ₪</span>
+                        <span>₪945</span>
                       </div>
                       <div className="ml-sh-brow is-grand">
                         <span>סה״כ לתשלום</span>
-                        <span className="ml-sh-grand">6,195 ₪</span>
+                        <span className="ml-sh-grand">₪6,195</span>
                       </div>
                     </div>
                   </div>

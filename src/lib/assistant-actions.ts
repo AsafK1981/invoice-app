@@ -282,7 +282,7 @@ function heDate(iso: unknown): string {
 }
 
 function money(n: number): string {
-  return `${n.toLocaleString("he-IL", { maximumFractionDigits: 2 })} ₪`;
+  return `₪${n.toLocaleString("he-IL", { maximumFractionDigits: 2 })}`;
 }
 
 /**

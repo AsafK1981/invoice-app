@@ -19,6 +19,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Sparkles, X, Send, FileText, Paperclip, Table2, MessageCircle, Mic, ChevronLeft, Check, Trash2, Pencil, Maximize2, Minimize2 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/format";
+import { formatMoney } from "@/lib/currencies";
 import { supabase } from "@/lib/supabase";
 import { expenseStore } from "@/lib/expense-store";
 import { clientStore } from "@/lib/client-store";
@@ -150,7 +151,7 @@ function DocCards({ docs, onOpen }: { docs: AssistantDocCard[]; onOpen: () => vo
             <span className="text-[13px] font-semibold text-stone-900 tabular-nums whitespace-nowrap">
               {d.currency === "ILS" || !d.currency
                 ? formatCurrency(d.total)
-                : `${d.total.toLocaleString("he-IL")} ${d.currency}`}
+                : formatMoney(d.total, d.currency)}
             </span>
           </div>
           <div className="mt-0.5 flex items-center justify-between gap-3 text-xs text-stone-600">
@@ -216,7 +217,7 @@ function ReplyText({ text, onNavigate }: { text: string; onNavigate: () => void 
 
 const SUGGESTIONS = [
   "כמה הכנסתי החודש?",
-  "תוסיף הוצאה: 120 ₪ בסופר-פארם",
+  "תוסיף הוצאה: ₪120 בסופר-פארם",
   "מי הלקוח שהכי הכניס לי השנה?",
 ];
 

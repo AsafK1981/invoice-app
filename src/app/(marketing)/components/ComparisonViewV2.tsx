@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import type { Competitor, FeatureSupport } from "@/lib/comparison-data";
 import { Ltr, LtrText } from "@/components/ui/ltr";
+import { formatCurrency } from "@/lib/format";
 import { VS_RELATED } from "@/lib/related-links";
 import {
   APP_NAME_HE,
@@ -48,12 +49,7 @@ import SignupLink from "./SignupLink";
 
 const APP_NAME = APP_NAME_HE;
 
-const formatPrice = (nis: number) =>
-  new Intl.NumberFormat("he-IL", {
-    style: "currency",
-    currency: "ILS",
-    maximumFractionDigits: 0,
-  }).format(nis);
+const formatPrice = (nis: number) => formatCurrency(Math.round(nis));
 
 /** Semantic support mark: green/red/amber, never gold. */
 function Mark({ kind, note }: { kind: FeatureSupport; note?: string }) {

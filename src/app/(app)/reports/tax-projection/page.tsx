@@ -172,7 +172,7 @@ export default function TaxProjectionPage() {
           />
           <Bar
             label="ביטוח לאומי + דמי בריאות"
-            description="7.7% עד ~7,700₪/חודש, 18% מעל זה."
+            description="7.7% עד ~₪7,700 לחודש, 18% מעל זה."
             value={projection.bituachLeumi}
             total={projection.totalTax}
             color="from-violet-400 to-violet-500"
