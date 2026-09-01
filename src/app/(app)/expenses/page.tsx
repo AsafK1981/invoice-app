@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Wallet, Plus, ShoppingBag, Pencil, Trash2, Upload, Search, X, ScanLine, Loader2, Paperclip } from "lucide-react";
 import { useExpenses, expenseStore } from "@/lib/expense-store";
+import { useBusiness } from "@/lib/business-store";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { ExpenseFormModal } from "@/components/expense-form-modal";
 import { CsvImportModal } from "@/components/csv-import-modal";
@@ -120,6 +121,7 @@ function formatMonthLabel(month: string): string {
 
 export default function ExpensesPage() {
   const { items: expenses } = useExpenses();
+  const { business } = useBusiness();
   const [modalOpen, setModalOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [editing, setEditing] = useState<Expense | null>(null);
@@ -153,7 +155,17 @@ export default function ExpensesPage() {
 
   const filteredTotal = filtered.reduce((sum, e) => sum + e.amount, 0);
   const grandTotal = expenses.reduce((sum, e) => sum + e.amount, 0);
+  const filteredVat = filtered.reduce((sum, e) => sum + (e.vatAmount ?? 0), 0);
+  const grandVat = expenses.reduce((sum, e) => sum + (e.vatAmount ?? 0), 0);
   const filtersActive = search.trim() !== "" || categoryFilter !== "all" || monthFilter !== "all";
+  // The expense form only offers VAT entry to עוסק מורשה / company (the ones
+  // who reclaim input VAT), so an exempt business would see a column of
+  // dashes. Show it for them only if VAT data actually exists (e.g. the
+  // business type was changed after some expenses were recorded with VAT).
+  const showVat =
+    business.businessType === "authorized" ||
+    business.businessType === "company" ||
+    grandVat > 0;
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paginated = useMemo(
@@ -291,11 +303,21 @@ export default function ExpensesPage() {
             {filtersActive ? (
               <>
                 מסונן: <span className="font-semibold text-rose-600">{formatCurrency(filteredTotal)}</span>
+                {showVat && (
+                  <span className="text-stone-500 mr-2">
+                    מתוכו מע״מ <span className="font-semibold text-stone-700 tabular-nums">{formatCurrency(filteredVat)}</span>
+                  </span>
+                )}
                 <span className="text-stone-500 mr-2">/ סה״כ {formatCurrency(grandTotal)}</span>
               </>
             ) : (
               <>
                 סה״כ <span className="font-semibold text-rose-600">{formatCurrency(grandTotal)}</span>
+                {showVat && (
+                  <span className="text-stone-500 mr-2">
+                    מתוכו מע״מ <span className="font-semibold text-stone-700 tabular-nums">{formatCurrency(grandVat)}</span>
+                  </span>
+                )}
               </>
             )}
           </p>
@@ -429,13 +451,14 @@ export default function ExpensesPage() {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="gk-etable w-full min-w-[640px]">
+            <table className={`gk-etable w-full ${showVat ? "min-w-[760px]" : "min-w-[640px]"}`}>
               <thead className="text-sm text-stone-700 bg-white">
                 <tr>
                   <th className="text-right px-6 py-3 font-semibold">תאריך</th>
                   <th className="text-right px-6 py-3 font-semibold">קטגוריה</th>
                   <th className="text-right px-6 py-3 font-semibold">ספק</th>
                   <th className="text-right px-6 py-3 font-semibold">תיאור</th>
+                  {showVat && <th className="text-left px-6 py-3 font-semibold">מע״מ</th>}
                   <th className="text-left px-6 py-3 font-semibold">סכום</th>
                   <th className="px-4 py-3 w-20"></th>
                 </tr>
@@ -443,7 +466,7 @@ export default function ExpensesPage() {
               <tbody>
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-16 text-center">
+                    <td colSpan={showVat ? 7 : 6} className="px-6 py-16 text-center">
                       <div className="text-4xl mb-2">🔍</div>
                       <div className="text-sm text-stone-500">אין הוצאות התואמות לסינון הנבחר</div>
                       <button
@@ -484,6 +507,11 @@ export default function ExpensesPage() {
                         </div>
                       </td>
                       <td className="px-6 py-3 text-sm font-medium text-stone-900">{e.description || "-"}</td>
+                      {showVat && (
+                        <td className="px-6 py-3 text-sm font-semibold text-left text-stone-600 tabular-nums">
+                          {e.vatAmount ? formatCurrency(e.vatAmount) : <span className="text-stone-400">-</span>}
+                        </td>
+                      )}
                       <td className="px-6 py-3 text-base font-bold text-left text-rose-600 tabular-nums">
                         {formatCurrency(e.amount)}
                       </td>

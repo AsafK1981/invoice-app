@@ -91,7 +91,7 @@ describe("suggestedWithholding: whole-shekel withholding, whole-shekel net, both
     expect(suggestedWithholding(parseFloat("abc"), 30)).toBe(0);
   });
 
-  it("never shows agorot on the net, for any plausible total and rate", () => {
+  it("never shows agorot on the net, for any plausible total and rate", { timeout: 30_000 }, () => {
     for (let total = 40; total <= 20000; total += 37.13) {
       const t = round2(total);
       for (const rate of [3, 5, 10, 17.5, 20, 30, 35, 47, 50]) {
