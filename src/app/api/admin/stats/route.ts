@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { isAdminEmail } from "@/lib/admin";
+import { logAdminAccess } from "@/lib/admin-access-log";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -15,6 +16,17 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
  * own session is validated via the anon-key client; once we know
  * the email, the ACTUAL data queries use the service-role client to
  * bypass RLS (legitimate cross-tenant aggregates).
+ *
+ * Metadata only, deliberately. Until 2026-08-31 this route also returned the
+ * last 20 documents with client_name/number/total and the last 30 cross-tenant
+ * audit_log entries with target_label + the owner's email, and the dashboard
+ * painted both. That put customer content (who was invoiced, for what, for how
+ * much) in front of the operator with no operational reason - the operator
+ * needs counts, not contents. Both are gone: documents are now counted by type,
+ * and the cross-tenant audit feed was removed outright rather than stripped,
+ * because without labels it carried no signal worth a query.
+ *
+ * Every call writes one row to admin_access_log.
  */
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
@@ -40,6 +52,12 @@ export async function GET(req: NextRequest) {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
+  await logAdminAccess(sb, {
+    actor: user.email || user.id,
+    channel: "admin_api",
+    action: "admin/stats GET",
+  });
+
   // ---- Run queries in parallel where possible ----
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
@@ -51,9 +69,8 @@ export async function GET(req: NextRequest) {
     clientCountResult,
     expenseCountResult,
     paidDocsResult,
-    docsRecentResult,
+    docs30dResult,
     businessesResult,
-    auditLogResult,
     distinctDocOwnersResult,
   ] = await Promise.all([
     sb.auth.admin.listUsers({ page: 1, perPage: 1000 }),
@@ -62,18 +79,13 @@ export async function GET(req: NextRequest) {
     sb.from("clients").select("*", { count: "exact", head: true }),
     sb.from("expenses").select("*", { count: "exact", head: true }),
     sb.from("documents").select("total, total_ils, type").eq("status", "paid"),
+    // Last 30 days by TYPE. No number, no client_name, no total: the columns
+    // selected here are the privacy boundary, so keep the list minimal.
     sb.from("documents")
-      .select("created_at, type, number, client_name, total, status")
-      .gte("created_at", thirtyDaysAgo)
-      .order("created_at", { ascending: false })
-      .limit(20),
+      .select("created_at, type, status")
+      .gte("created_at", thirtyDaysAgo),
     // Onboarding: count businesses (proxy for "users who finished onboarding")
-    sb.from("businesses").select("id, name, user_id"),
-    // Audit log: last 30 entries, all tenants
-    sb.from("audit_log")
-      .select("id, business_id, action, target_type, target_label, created_at")
-      .order("created_at", { ascending: false })
-      .limit(30),
+    sb.from("businesses").select("id, user_id"),
     // Distinct business_ids that have at least one document (engagement proxy)
     sb.from("documents").select("business_id"),
   ]);
@@ -131,10 +143,8 @@ export async function GET(req: NextRequest) {
   const businesses = businessesResult.data ?? [];
   const usersWithBusiness = new Set(businesses.map((b) => b.user_id));
   const businessIdToUser: Record<string, string> = {};
-  const businessIdToName: Record<string, string> = {};
   for (const b of businesses) {
     businessIdToUser[b.id] = b.user_id;
-    businessIdToName[b.id] = b.name || "(ללא שם)";
   }
   const usersWithDoc = new Set(
     (distinctDocOwnersResult.data ?? [])
@@ -142,21 +152,18 @@ export async function GET(req: NextRequest) {
       .filter(Boolean),
   );
 
-  // Audit log: enrich with business name + user email
-  const userIdToEmail: Record<string, string> = {};
-  for (const u of allUsers) userIdToEmail[u.id] = u.email || "";
-  const auditEntries = (auditLogResult.data ?? []).map((row) => {
-    const userId = businessIdToUser[row.business_id as string];
-    return {
-      id: row.id,
-      action: row.action,
-      target_type: row.target_type,
-      target_label: row.target_label,
-      created_at: row.created_at,
-      business_name: businessIdToName[row.business_id as string] || "?",
-      user_email: userId ? userIdToEmail[userId] || "" : "",
-    };
-  });
+  // Documents in the last 30 days, counted by type. Sorted by count so the
+  // dashboard's list leads with what the platform is actually used for.
+  const byTypeCounts: Record<string, { count: number; drafts: number }> = {};
+  for (const row of docs30dResult.data ?? []) {
+    const type = String(row.type);
+    const bucket = (byTypeCounts[type] ??= { count: 0, drafts: 0 });
+    bucket.count++;
+    if (row.status === "draft") bucket.drafts++;
+  }
+  const byType30d = Object.entries(byTypeCounts)
+    .map(([type, v]) => ({ type, count: v.count, drafts: v.drafts }))
+    .sort((a, b) => b.count - a.count);
 
   return NextResponse.json({
     ok: true,
@@ -174,7 +181,8 @@ export async function GET(req: NextRequest) {
     documents: {
       total: docCountResult.count ?? 0,
       last7d: docCount7dResult.count ?? 0,
-      recent: docsRecentResult.data ?? [],
+      last30d: (docs30dResult.data ?? []).length,
+      byType30d,
       dailyChart,
     },
     clients: {
@@ -186,6 +194,5 @@ export async function GET(req: NextRequest) {
     revenue: {
       totalPaid: totalRevenue,
     },
-    auditLog: auditEntries,
   });
 }

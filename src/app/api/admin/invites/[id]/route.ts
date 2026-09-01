@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { isAdminEmail } from "@/lib/admin";
+import { logAdminAccess } from "@/lib/admin-access-log";
 import { checkRate } from "@/lib/rate-limit";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -53,6 +54,13 @@ export async function PATCH(
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
+  await logAdminAccess(sb, {
+    actor: user.email || user.id,
+    channel: "admin_api",
+    action: "admin/invites/[id] PATCH",
+    detail: { invite_id: id, active: body.active },
+  });
+
   const { error } = await sb
     .from("beta_invites")
     .update({ active: body.active })
@@ -82,6 +90,13 @@ export async function DELETE(
 
   const sb = createClient(supabaseUrl, serviceKey, {
     auth: { autoRefreshToken: false, persistSession: false },
+  });
+
+  await logAdminAccess(sb, {
+    actor: user.email || user.id,
+    channel: "admin_api",
+    action: "admin/invites/[id] DELETE",
+    detail: { invite_id: id },
   });
 
   const { error } = await sb.from("beta_invites").delete().eq("id", id);

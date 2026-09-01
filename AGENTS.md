@@ -40,6 +40,8 @@ This is a live SaaS with real users (Israeli עוסק פטור freelancers). Tre
 
 `.env.local` (gitignored) holds: `SUPABASE_SERVICE_ROLE_KEY`, `VERCEL_ACCESS_TOKEN`, `SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROJECT_REF=ddrlnwwuzehatjfachgu`, `GMAIL_USER`, `GMAIL_APP_PASSWORD`, `RESEND_API_KEY`. Together these cover Vercel project config + deploys, Supabase Management API (auth config / RLS / SQL via `scripts/run-sql.mjs`), and direct DB access via `scripts/admin.mjs`. **The user should not need to click into a dashboard for anything in this project.**
 
+**Operator privacy (2026-08-31): metadata yes, content no.** Ad-hoc service-role scripts (everything importing `scripts/admin.mjs`, plus `run-sql.mjs`/`run-sql-file.mjs`) require `--reason "..."` and write a row to `admin_access_log`; cron/automation uses `scripts/admin-unattended.mjs`. Never SELECT or print tenant content (client names, subjects, amounts, bank details) for the operator - aggregates only - and never open a customer's `/view/<uuid>` link. The /admin dashboard shows counts and signup emails, on purpose nothing more.
+
 ## Communication
 
 The user reads English in the terminal — replying in mixed Hebrew/English breaks rendering. Reply in English even when they write in Hebrew. Be terse: state results and decisions directly, no narration of internal deliberation.

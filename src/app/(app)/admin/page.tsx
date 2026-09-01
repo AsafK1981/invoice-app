@@ -11,7 +11,6 @@ import {
   RefreshCw,
   CheckCircle2,
   AlertTriangle,
-  Activity,
   TrendingDown,
   Gift,
   Upload,
@@ -46,14 +45,13 @@ interface Stats {
   documents: {
     total: number;
     last7d: number;
-    recent: Array<{
-      created_at: string;
-      type: DocumentType;
-      number: number;
-      client_name: string;
-      total: number;
-      status: string;
-    }>;
+    last30d: number;
+    /**
+     * Counts by type over the last 30 days. This replaced a "last 20 documents"
+     * list that showed each document's client name, number and amount: operator
+     * metadata, not operator reading material. Do not put contents back here.
+     */
+    byType30d: Array<{ type: DocumentType; count: number; drafts: number }>;
     dailyChart: Array<{ date: string; count: number }>;
   };
   clients: { total: number };
@@ -64,15 +62,6 @@ interface Stats {
     createdBusiness: number;
     createdFirstDoc: number;
   };
-  auditLog?: Array<{
-    id: string;
-    action: string;
-    target_type: string;
-    target_label: string | null;
-    created_at: string;
-    business_name: string;
-    user_email: string;
-  }>;
 }
 
 interface Health {
@@ -386,68 +375,23 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* Audit log */}
-          {stats.auditLog && stats.auditLog.length > 0 && (
-            <div className="card-soft overflow-hidden">
-              <div className="px-5 py-3 border-b border-orange-100 flex items-center gap-2">
-                <Activity className="w-4 h-4 text-orange-500" />
-                <h2 className="font-semibold text-stone-900">יומן פעילות: 30 פעולות אחרונות</h2>
-              </div>
-              <ul className="divide-y divide-orange-50 max-h-96 overflow-y-auto">
-                {stats.auditLog.map((entry) => (
-                  <li
-                    key={entry.id}
-                    className="px-5 py-3 flex items-start justify-between gap-3 hover:bg-orange-50/40"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm text-stone-900 truncate">
-                        <span className="font-mono text-xs text-stone-500">{entry.action}</span>
-                        {entry.target_label && (
-                          <span className="text-stone-700"> · {entry.target_label}</span>
-                        )}
-                      </p>
-                      <p className="text-xs text-stone-600 mt-0.5">
-                        <span dir="ltr">{entry.user_email || entry.business_name}</span>
-                        {entry.user_email && entry.business_name && (
-                          <> · {entry.business_name}</>
-                        )}
-                      </p>
-                    </div>
-                    <span className="text-xs text-stone-500 flex-shrink-0 mt-0.5">
-                      {formatDate(entry.created_at.slice(0, 10))}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {/* Recent docs */}
+          {/* Documents by type, last 30 days. Counts only, on purpose: this
+              card replaced a "last 20 documents" list that named each client
+              and amount. The operator needs volume, not contents. */}
           <div className="card-soft overflow-hidden">
             <div className="px-5 py-3 border-b border-orange-100 flex items-center gap-2">
               <FileText className="w-4 h-4 text-orange-500" />
-              <h2 className="font-semibold text-stone-900">מסמכים אחרונים: כל המשתמשים</h2>
+              <h2 className="font-semibold text-stone-900">מסמכים ב-30 יום לפי סוג</h2>
+              <span className="text-xs text-stone-500 mr-auto">
+                {stats.documents.last30d} סה״כ
+              </span>
             </div>
-            {stats.documents.recent.length === 0 ? (
-              <p className="p-5 text-sm text-stone-500 italic">אין מסמכים עדיין</p>
+            {stats.documents.byType30d.length === 0 ? (
+              <p className="p-5 text-sm text-stone-500 italic">
+                לא נוצרו מסמכים ב-30 הימים האחרונים
+              </p>
             ) : (
-              <ul className="divide-y divide-orange-50">
-                {stats.documents.recent.map((d, i) => (
-                  <li key={i} className="px-5 py-3 flex items-center justify-between gap-3 hover:bg-orange-50/40">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-stone-900 truncate">
-                        {DOCUMENT_TYPE_LABELS[d.type]} #{d.number} · {d.client_name}
-                      </p>
-                      <p className="text-xs text-stone-600">
-                        {formatDate(d.created_at.slice(0, 10))} · {d.status}
-                      </p>
-                    </div>
-                    <span className="font-bold text-stone-900 text-sm flex-shrink-0" dir="ltr">
-                      {formatCurrency(d.total)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              <DocTypeCounts rows={stats.documents.byType30d} />
             )}
           </div>
         </>
@@ -539,5 +483,42 @@ function FunnelBars({
         );
       })}
     </div>
+  );
+}
+
+function DocTypeCounts({
+  rows,
+}: {
+  rows: Array<{ type: DocumentType; count: number; drafts: number }>;
+}) {
+  // Bars are relative to the busiest type, not to the total: with one dominant
+  // type every other bar would be an invisible sliver against the total.
+  const max = Math.max(...rows.map((r) => r.count), 1);
+  return (
+    <ul className="divide-y divide-orange-50">
+      {rows.map((r) => (
+        <li key={r.type} className="px-5 py-3 hover:bg-orange-50/40">
+          <div className="flex items-center justify-between gap-3 mb-1.5">
+            <span className="text-sm font-medium text-stone-900">
+              {DOCUMENT_TYPE_LABELS[r.type] || r.type}
+            </span>
+            <span className="text-sm font-bold text-stone-900">
+              {r.count}
+              {r.drafts > 0 && (
+                <span className="text-xs font-normal text-stone-500 mr-2">
+                  ({r.drafts} טיוטות)
+                </span>
+              )}
+            </span>
+          </div>
+          <div className="h-2 rounded-full bg-stone-100 overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-l from-orange-400 to-rose-500"
+              style={{ width: `${Math.round((r.count / max) * 100)}%` }}
+            />
+          </div>
+        </li>
+      ))}
+    </ul>
   );
 }

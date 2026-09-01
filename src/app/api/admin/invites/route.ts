@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { isAdminEmail } from "@/lib/admin";
+import { logAdminAccess } from "@/lib/admin-access-log";
 import { checkRate } from "@/lib/rate-limit";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -32,6 +33,12 @@ export async function GET(req: NextRequest) {
 
   const sb = createClient(supabaseUrl, serviceKey, {
     auth: { autoRefreshToken: false, persistSession: false },
+  });
+
+  await logAdminAccess(sb, {
+    actor: user.email || user.id,
+    channel: "admin_api",
+    action: "admin/invites GET",
   });
 
   const { data: invites, error } = await sb
@@ -99,6 +106,13 @@ export async function POST(req: NextRequest) {
 
   const sb = createClient(supabaseUrl, serviceKey, {
     auth: { autoRefreshToken: false, persistSession: false },
+  });
+
+  await logAdminAccess(sb, {
+    actor: user.email || user.id,
+    channel: "admin_api",
+    action: "admin/invites POST",
+    detail: { code, plan_tier: planTier, days_granted: daysGranted },
   });
 
   const { data: invite, error } = await sb

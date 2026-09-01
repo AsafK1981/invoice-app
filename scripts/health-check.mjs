@@ -131,7 +131,11 @@ async function checkTaxFailures() {
   if (error) { warn.push(`tax_authority_credentials read: ${error.message}`); return; }
   const failures = (data || []).filter((c) => c.last_error);
   if (failures.length === 0) ok.push(`tax allocations healthy (${(data || []).length} connected, 0 errors)`);
-  else fail.push(`${failures.length} business(es) with failed allocation: ${failures.map((f) => f.last_error).join("; ")}`);
+  // Count only. This line ends up in a WhatsApp push, and the raw last_error
+  // strings carry business identifiers and שע"מ payload fragments that the
+  // operator has no reason to read on a phone. The count is enough to know
+  // something needs looking at; the detail is one query away when it does.
+  else fail.push(`${failures.length} עסקים עם שגיאת חשבונית ישראל`);
 }
 
 // 6. Git drift: uncommitted or unpushed

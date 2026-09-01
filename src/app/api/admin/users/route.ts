@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { isAdminEmail } from "@/lib/admin";
+import { logAdminAccess } from "@/lib/admin-access-log";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -29,6 +30,12 @@ export async function GET(req: NextRequest) {
 
   const sb = createClient(supabaseUrl, serviceKey, {
     auth: { autoRefreshToken: false, persistSession: false },
+  });
+
+  await logAdminAccess(sb, {
+    actor: user.email || user.id,
+    channel: "admin_api",
+    action: "admin/users GET",
   });
 
   const url = new URL(req.url);

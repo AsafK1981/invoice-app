@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { isAdminEmail } from "@/lib/admin";
+import { logAdminAccess } from "@/lib/admin-access-log";
 import { checkRate } from "@/lib/rate-limit";
 import { todayInIsrael } from "@/lib/date";
 import { parseAmount } from "@/lib/import-mapping";
@@ -97,6 +98,18 @@ export async function POST(req: NextRequest) {
 
   const sb = createClient(supabaseUrl, serviceKey, {
     auth: { autoRefreshToken: false, persistSession: false },
+  });
+
+  // Operator access journal. Logged here rather than immediately after the
+  // admin check because this is the first point where targetUserId is known
+  // to be a well-formed UUID, and a row naming the tenant is worth more than
+  // a row two statements earlier that cannot.
+  await logAdminAccess(sb, {
+    actor: caller.email || caller.id,
+    channel: "admin_api",
+    action: "admin/import-for-user POST",
+    targetUserId: body.targetUserId,
+    detail: { entity_type: body.entityType, row_count: body.rows.length },
   });
 
   // Resolve target user → their primary business_id.

@@ -1,15 +1,21 @@
-import { createClient } from "@supabase/supabase-js";
-import { readFileSync } from "node:fs";
+// Platform counts. Metadata only: table totals, the north-star signup number,
+// and how many documents each business has.
+//
+// Until 2026-08-31 this script also printed every document on the platform with
+// its client name and amount, which is customer content the operator has no
+// reason to read. Business NAMES stay (account metadata, and the internal
+// account exclusion below is unreadable without them); client names and
+// per-document rows are gone. Do not put them back.
+//
+// Uses the UNATTENDED loader, not the --reason gate: Peitho (the scheduled
+// marketing agent) runs this three times a week for its GTM metric and parses
+// the signups_with_doc=N line, and a scheduled run has no human to state a
+// reason. That is acceptable here precisely because this script prints counts
+// only - a script that printed tenant content would have to take the gate.
+// Every run still lands in admin_access_log (reason 'unattended').
+import { adminClientUnattended } from "./admin-unattended.mjs";
 
-const env = readFileSync(new URL("../.env.local", import.meta.url), "utf8")
-  .split("\n")
-  .reduce((a, l) => {
-    const m = l.match(/^([A-Z_]+)=(.*)$/);
-    if (m) a[m[1]] = m[2];
-    return a;
-  }, {});
-
-const sb = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
+const sb = adminClientUnattended("count-data.mjs");
 
 /**
  * Businesses that are OURS, not customers.
@@ -40,10 +46,10 @@ for (const t of ["businesses", "clients", "documents", "document_items", "expens
   console.log(t.padEnd(16), error ? `ERR: ${error.message}` : count);
 }
 
-const { data: docs } = await sb
-  .from("documents")
-  .select("type,number,date,client_name,total,business_id,status")
-  .order("date", { ascending: false });
+// type + business_id + status only. Every line this script prints is a count,
+// so selecting number/date/client_name/total would widen the exposure and buy
+// nothing.
+const { data: docs } = await sb.from("documents").select("type,business_id,status");
 
 const { data: businesses } = await sb.from("businesses").select("id,name,created_at");
 
@@ -74,7 +80,9 @@ for (const b of (businesses || []).sort((x, y) => x.created_at.localeCompare(y.c
   );
 }
 
-console.log("\nAll documents:");
-for (const d of docs || []) {
-  console.log(`  ${d.date} | #${d.number} ${d.type.padEnd(20)} | ₪${d.total}  ${d.client_name}`);
+console.log("\nDocuments per type:");
+const perType = new Map();
+for (const d of docs || []) perType.set(d.type, (perType.get(d.type) || 0) + 1);
+for (const [type, n] of [...perType].sort((a, b) => b[1] - a[1])) {
+  console.log(`  ${String(n).padStart(4)}  ${type}`);
 }
