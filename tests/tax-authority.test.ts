@@ -140,6 +140,16 @@ describe("hebrewForItaCode: maps ITA error codes to clean Hebrew (no raw JSON)",
     expect(hebrewForItaCode("99999")).toBe("הבקשה נדחתה על ידי רשות המסים");
   });
 
+  it("maps 406 (gov.il user not permitted for this עוסק) to an actionable Hebrew reason", () => {
+    // Real rejection hit by a בע"מ user on 2026-08-31: the gateway answers a
+    // bare 406 "Not Acceptable" when the connecting gov.il user lacks the
+    // allocation permission (company skipped רישום תאגיד).
+    const msg = hebrewForItaCode("406");
+    expect(msg).toContain("הרשאה");
+    expect(msg).toContain("רישום תאגיד");
+    expect(msg).not.toMatch(/[{}]|Not Acceptable/);
+  });
+
   it("maps 432 (invalid customer vat number) to an actionable Hebrew reason", () => {
     const msg = hebrewForItaCode("432");
     expect(msg).toContain("מספר העוסק של הלקוח");

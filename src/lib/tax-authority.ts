@@ -29,6 +29,7 @@
  */
 
 import type { InvoiceDocument } from "./types";
+import { logToAxiom } from "./axiom-logger";
 
 const ENV = (process.env.TAX_AUTHORITY_ENV || "sandbox") as "sandbox" | "production";
 const CLIENT_ID = process.env.TAX_AUTHORITY_CLIENT_ID || "";
@@ -467,6 +468,19 @@ export async function requestAllocation(
       "param=", param,
       "raw=", JSON.stringify(raw),
     );
+    // Vercel Hobby keeps runtime logs for one hour, which already cost us
+    // the diagnosis of a real user's rejection (2026-08-31, code 406 lost
+    // until the request was replayed by hand). Mirror the rejection to
+    // Axiom so it survives long enough for an operator to read.
+    logToAxiom({
+      kind: "tax_allocation_rejected",
+      http: r.status,
+      code: resultCode,
+      param,
+      invoiceId: req.invoiceId,
+      vatNumber: req.vatNumber,
+      raw: JSON.stringify(raw).slice(0, 4000),
+    });
     return {
       allocationNumber: null,
       confirmationNumber: confirmation || undefined,
@@ -548,6 +562,12 @@ export function hebrewForItaCode(
     case "401":
     case "403":
       return "החיבור לרשות המסים אינו מורשה, חבר מחדש בהגדרות";
+    case "406":
+      // The gateway's bare "Not Acceptable": the gov.il user who authorized
+      // the connection is not permitted to allocate invoices for this עוסק.
+      // Happens to companies (בע"מ) that skipped רישום תאגיד, and to
+      // employees without a digital-actions permission from the owner.
+      return "למשתמש שחיבר את העסק אין הרשאה ברשות המסים להקצות חשבוניות עבור עוסק זה. בחברה בע\"מ יש להשלים רישום תאגיד באזור האישי באתר רשות המסים (ואם מקצה עובד - להעניק לו הרשאה לפעולות דיגיטליות), ואז לנסות שוב.";
     default: {
       // Unknown code, but the upstream response named the offending field:
       // point at it by name instead of a content-free generic line. The

@@ -316,12 +316,17 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Persist the result regardless; both success and failure are useful audit data
+  // Persist the result regardless; both success and failure are useful audit
+  // data. On failure keep the ITA code alongside the Hebrew reason: the
+  // 2026-08-31 rejection stored only the generic line, and by the time the
+  // health check flagged it the Vercel log with the real code (406) was gone.
   await sb
     .from("tax_authority_credentials")
     .update({
       last_used_at: new Date().toISOString(),
-      last_error: result.allocationNumber ? null : result.resultMessage || "rejected",
+      last_error: result.allocationNumber
+        ? null
+        : `(קוד ${result.resultCode || "?"}) ${result.resultMessage || "rejected"}`,
     })
     .eq("business_id", business.id);
 
