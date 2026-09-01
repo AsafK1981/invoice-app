@@ -26,8 +26,17 @@ import {
   Globe,
   Import,
   Palette,
+  Type,
 } from "lucide-react";
 import { useBusiness } from "@/lib/business-store";
+import {
+  TEXT_SIZE_EVENT,
+  applyStoredTextSize,
+  readTextSize,
+  setTextSize,
+  syncTextSizeFromBusiness,
+  type TextSize,
+} from "@/lib/text-size";
 import { signOut } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin";
 import { supabase } from "@/lib/supabase";
@@ -85,6 +94,23 @@ export function Sidebar() {
       .catch(() => setIsAdmin(false));
   }, []);
   const [accountOpen, setAccountOpen] = useState(false);
+
+  // "טקסט גדול" (large-text mode). Cached choice applies on mount so a
+  // returning user never sees a small-text flash; the business row, once it
+  // arrives, is the source of truth and overrides the cache; the switch
+  // itself just follows whatever is applied to <html> (via the event), so
+  // the desktop sidebar and the mobile drawer can never disagree.
+  const [textSize, setTextSizeState] = useState<TextSize>("normal");
+  useEffect(() => {
+    applyStoredTextSize();
+    setTextSizeState(readTextSize());
+    const onChange = () => setTextSizeState(readTextSize());
+    window.addEventListener(TEXT_SIZE_EVENT, onChange);
+    return () => window.removeEventListener(TEXT_SIZE_EVENT, onChange);
+  }, []);
+  useEffect(() => {
+    if (business.id) syncTextSizeFromBusiness(business.textSize);
+  }, [business.id, business.textSize]);
 
   // Escape closes the mobile drawer, matching the existing backdrop-click handler.
   useEffect(() => {
@@ -247,6 +273,36 @@ export function Sidebar() {
         >
           <LogOut className="w-4 h-4" />
           התנתק
+        </button>
+        {/* Large-text switch (Asaf, 2026-08-31): for people who find the app's
+            text small. One tap lifts the whole app ~15% (html[data-text-size]
+            in app-skin.css); the choice is cached locally and saved on the
+            business row so it follows them to their other devices. A real
+            <button role="switch">, not a checkbox, so screen readers announce
+            the state and the whole row is the hit target. */}
+        <button
+          type="button"
+          role="switch"
+          aria-checked={textSize === "large"}
+          onClick={() => {
+            void setTextSize(textSize === "large" ? "normal" : "large", business.id || undefined);
+          }}
+          className="flex items-center gap-2 w-full px-3 py-2 rounded-xl text-sm text-stone-700 hover:bg-orange-50 hover:text-orange-700 transition-colors"
+        >
+          <Type className="w-4 h-4" />
+          <span className="flex-1 text-start">טקסט גדול</span>
+          <span
+            aria-hidden="true"
+            className={`relative inline-block w-9 h-5 rounded-full transition-colors flex-none ${
+              textSize === "large" ? "bg-orange-500" : "bg-stone-300"
+            }`}
+          >
+            <span
+              className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${
+                textSize === "large" ? "left-0.5" : "right-0.5"
+              }`}
+            />
+          </span>
         </button>
         {/* Compliance link, not a nav item - kept quiet on purpose (no icon
             tile, no hover background). Same component renders both the

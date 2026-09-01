@@ -72,6 +72,9 @@ export interface Business {
   monthlyReminderLastSent?: string;
   /** Default state for the per-document "round total to whole shekel" toggle. */
   roundTotalDefault?: boolean;
+  /** "טקסט גדול" - opt-in large-text mode for the signed-in app (sidebar
+   *  footer switch). Mirrored to localStorage; see lib/text-size.ts. */
+  textSize?: "normal" | "large";
   /**
    * Profession-tailored document design (template/accent/font/logo
    * position), chosen in Settings. `unknown` on purpose: this is the RAW
