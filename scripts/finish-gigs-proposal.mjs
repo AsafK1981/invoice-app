@@ -263,6 +263,24 @@ function buildNotes(gigs) {
     .join("\n");
 }
 
+/**
+ * The workbook is the only source the script has, so a gig that was never
+ * typed into it cannot be billed. The one signal available is the save time:
+ * a file last saved before the billed month ended may predate its last gigs
+ * (in August 2026 the proposal was built on the 21st and missed the gig of
+ * the 27th). Returns a caution line, or "" when the file is newer than the
+ * month it bills.
+ */
+function staleWorkbookCaution(period, mtimeMs) {
+  const [year, month] = period.split("-").map(Number);
+  const periodEnd = new Date(year, month, 1).getTime(); // first ms of the next month
+  if (mtimeMs >= periodEnd) return "";
+  const saved = new Date(mtimeMs);
+  const dd = String(saved.getDate()).padStart(2, "0");
+  const mm = String(saved.getMonth() + 1).padStart(2, "0");
+  return `הקובץ נשמר לאחרונה ב-${dd}/${mm}/${saved.getFullYear()}, לפני סוף החודש. הופעה שנוספה אחרי התאריך הזה לא נכנסה - לבדוק לפני האישור.`;
+}
+
 function previousPeriod(now = new Date()) {
   const y = now.getFullYear();
   const m = now.getMonth(); // 0-based; already "last month" as a 1-based value
@@ -352,6 +370,11 @@ async function main() {
   console.log("\nהערות שיופיעו על המסמך:");
   console.log(notes.split("\n").map((l) => "  " + l).join("\n"));
 
+  // Not a blocker: the file is usually saved before the month ends and the
+  // proposal is still right. But Asaf must know to double-check the count.
+  const caution = staleWorkbookCaution(period, wb.mtime);
+  if (caution) console.warn(`\n⚠ ${caution}`);
+
   if (dryRun) {
     console.log("\n--dry-run: לא נשלח.");
     return { posted: false, reason: "dry-run", period, total, items, details, subject };
@@ -407,13 +430,13 @@ async function main() {
     `חשבונית מוכנה לאישור: ${subject}
 ${pending.length} הופעות · ${total.toLocaleString("he-IL")} ₪
 לאישור בלחיצה: ${baseUrl}/dashboard` +
-      (warnings.length ? `\n\n⚠ ${warnings.join("\n⚠ ")}` : ""),
+      (caution ? `\n\n⚠ ${caution}` : ""),
   );
 
   return { posted: true, refreshed: !!json.refreshed, period, total, subject, count: pending.length };
 }
 
-export { main, readGigs, buildItems, buildNotes, parseCellDate, previousPeriod, newestWorkbook, GIGS_DIR };
+export { main, readGigs, buildItems, buildNotes, parseCellDate, previousPeriod, newestWorkbook, staleWorkbookCaution, GIGS_DIR };
 
 if (import.meta.url === `file://${process.argv[1]}` || process.argv[1] === fileURLToPath(import.meta.url)) {
   main()

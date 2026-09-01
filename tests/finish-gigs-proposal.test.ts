@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildItems, buildNotes, parseCellDate, previousPeriod } from "../scripts/finish-gigs-proposal.mjs";
+import { buildItems, buildNotes, parseCellDate, previousPeriod, staleWorkbookCaution } from "../scripts/finish-gigs-proposal.mjs";
 
 type Line = { description: string; quantity: number; unitPrice: number; total: number };
 
@@ -146,5 +146,31 @@ describe("buildNotes", () => {
   it("omits the ' = ' clause when the source row has no 'עבור' text", () => {
     const bare = { ...gig(3, 900), forWhat: "" };
     expect(buildNotes([bare])).toBe("03/08/2026\tמקום 3\t900.00");
+  });
+});
+
+describe("staleWorkbookCaution", () => {
+  const aug = (d: number, h = 12) => new Date(2026, 7, d, h).getTime();
+
+  it("warns when the file was last saved before the billed month ended", () => {
+    // August 2026 in real life: the proposal was built on the 21st from a
+    // file saved that day, and the gig of the 27th was missing from it.
+    const text = staleWorkbookCaution("2026-08", aug(21));
+    expect(text).toContain("21/08/2026");
+    expect(text).toContain("לבדוק לפני האישור");
+  });
+
+  it("stays quiet once the file is newer than the month it bills", () => {
+    expect(staleWorkbookCaution("2026-08", new Date(2026, 8, 1, 0, 0, 1).getTime())).toBe("");
+    expect(staleWorkbookCaution("2026-08", new Date(2026, 9, 1).getTime())).toBe("");
+  });
+
+  it("treats the last second of the month as still inside it", () => {
+    expect(staleWorkbookCaution("2026-08", new Date(2026, 7, 31, 23, 59, 59).getTime())).not.toBe("");
+  });
+
+  it("handles December without spilling into the wrong year", () => {
+    expect(staleWorkbookCaution("2026-12", new Date(2027, 0, 2).getTime())).toBe("");
+    expect(staleWorkbookCaution("2026-12", new Date(2026, 11, 20).getTime())).toContain("20/12/2026");
   });
 });
