@@ -3421,6 +3421,69 @@ html .text-\[13px\] { font-size: 14px; }
   94.5%     { opacity: 0.85; scale: 1; }
   99%, 100% { opacity: 0; scale: 1.45; }
 }
+/* =====================================================================
+   READABILITY (Asaf, 2026-08-31): "people with weak eyesight find the app
+   hard to read - things are too light and the small text is too small".
+   Chosen from a three-way mockup (before / this / a root bump for all): the
+   root stays at the 2026-08-18 size, and three targeted things change.
+
+   1. LIGHT GREY -> DARKER GREY, everywhere in the app, desktop and mobile.
+      --muted 5.6:1 -> 8.5:1 and --ink2 7.7:1 -> 10.4:1 on card (AAA both).
+      Same warm hue family, only more ink, so the palette does not go cold.
+      Placeholders keep the old muted so an empty field still reads as empty.
+   2. ONLY THE SMALLEST TEXT COMES UP A NOTCH, DESKTOP ONLY. text-sm, the
+      base size, headings and the layout are untouched (Asaf: "on mobile do
+      not enlarge"; mobile already runs a 16.5px root). text-xs 10.9-11.25
+      -> 11.9-12.3px; the px chips +1.5; the documents table's two smallest
+      roles (meta: header labels, pills, dates; and "days late") come up
+      while name and amount stay, so the row keeps its hierarchy.
+   3. LARGE TEXT MODE, opt-in via the "טקסט גדול" switch in the sidebar
+      footer (lib/text-size.ts sets html[data-text-size="large"]). Roughly
+      +15% on everything: root 14.5/15/15.5 -> 16.5/17/17.5 on desktop and
+      16.5 -> 18.5 on mobile, with the small-text floor lifted to match.
+      Verified at 1290px (Asaf's viewport): the nine-column documents table
+      still fits with no horizontal scroll in all three states.
+
+   Scoping is the same `html:has([data-app-sidebar])` hook as the block
+   above, so marketing, /login and the public document pages are untouched,
+   and print (px-based sheet) is immune.
+   ===================================================================== */
+html:has([data-app-sidebar]) { --muted: #544c3e; --ink2: #463f34; }
+html:has([data-app-sidebar]) .input-warm::placeholder { color: #6f6757 !important; }
+
+@media screen and (min-width: 64rem) {
+  html:has([data-app-sidebar]) .text-xs { font-size: 0.82rem; line-height: 1.35; }
+  html:has([data-app-sidebar]) .text-\[10px\] { font-size: 11.5px; }
+  html:has([data-app-sidebar]) .text-\[11px\] { font-size: 12.5px; }
+  html:has([data-app-sidebar]) .text-\[13px\] { font-size: 13.5px; }
+}
+@media (min-width: 1024px) and (max-width: 1399.98px) {
+  html:has([data-app-sidebar]) { --dc-fs-1: 0.78rem; --dc-fs-2: 0.85rem; }
+}
+@media (min-width: 1400px) {
+  html:has([data-app-sidebar]) { --dc-fs-1: 0.8rem; --dc-fs-2: 0.9rem; }
+}
+
+/* --- large text mode --- */
+html[data-text-size="large"]:has([data-app-sidebar]) { font-size: 18.5px; }
+@media screen and (min-width: 64rem) {
+  html[data-text-size="large"]:has([data-app-sidebar]) { font-size: 16.5px; }
+  html[data-text-size="large"]:has([data-app-sidebar]) .text-xs { font-size: 0.86rem; }
+  html[data-text-size="large"]:has([data-app-sidebar]) .text-sm { font-size: 0.95rem; line-height: 1.4; }
+  html[data-text-size="large"]:has([data-app-sidebar]) .text-\[10px\] { font-size: 12.5px; }
+  html[data-text-size="large"]:has([data-app-sidebar]) .text-\[11px\] { font-size: 13.5px; }
+  html[data-text-size="large"]:has([data-app-sidebar]) .text-\[13px\] { font-size: 15px; }
+}
+@media screen and (min-width: 1400px) {
+  html[data-text-size="large"]:has([data-app-sidebar]) { font-size: 17px; }
+}
+@media screen and (min-width: 1800px) {
+  html[data-text-size="large"]:has([data-app-sidebar]) { font-size: 17.5px; }
+}
+@media (min-width: 1024px) and (max-width: 1399.98px) {
+  html[data-text-size="large"]:has([data-app-sidebar]) { --dc-fs-1: 0.8rem; --dc-fs-2: 0.88rem; --dc-fs-3: 0.97rem; --dc-fs-4: 1.08rem; }
+}
+
 .assistant-launcher {
   animation: assistant-launcher-hop 30s ease-in-out infinite;
 }

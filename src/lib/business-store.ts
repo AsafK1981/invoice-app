@@ -55,6 +55,7 @@ export function useBusiness() {
               : ["email", "inapp"],
             monthlyReminderLastSent: data.monthly_reminder_last_sent ?? undefined,
             roundTotalDefault: data.round_total_default ?? false,
+            textSize: data.text_size === "large" ? "large" : "normal",
             documentDesign: data.document_design ?? null,
           }
         : defaultBusiness
