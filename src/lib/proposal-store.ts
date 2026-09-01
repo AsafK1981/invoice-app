@@ -4,6 +4,12 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "./supabase";
 import { getBusinessId, onBusinessReady } from "./business-init";
 import type { DocumentType } from "./types";
+import {
+  ISSUED_CANDIDATE_COLUMNS,
+  findIssuedMatch,
+  periodStart,
+  toIssuedCandidate,
+} from "./proposal-match";
 
 /**
  * An invoice an automation prepared and is waiting for the owner to approve.
@@ -101,7 +107,8 @@ export function usePendingProposals() {
       .order("created_at", { ascending: false });
     // A missing table (migration not applied yet on this environment) must not
     // break the dashboard - render nothing instead.
-    setProposals(error ? [] : (data || []).map(mapRow));
+    const open = error ? [] : (data || []).map(mapRow);
+    setProposals(await reconcileIssued(bid, open));
     setReady(true);
   }, []);
 
@@ -113,6 +120,68 @@ export function usePendingProposals() {
   }, [load]);
 
   return { proposals, ready, reload: load };
+}
+
+/**
+ * Drop (and resolve) proposals whose invoice the owner already issued by hand.
+ *
+ * 2026-09-01: the August proposal sat on the dashboard as "מחכה לאישור" after
+ * proforma #90006 for exactly that invoice had been issued through the editor.
+ * The card only ever resolved itself through its own buttons, so any other
+ * route to the same invoice ("ערוך לפני הפקה", or a plain new document) left
+ * it pending, one click away from a duplicate. Every dashboard load now checks
+ * the issued documents against the open proposals with the shared matcher and
+ * links what it finds. Best-effort: a failed check leaves the card as it was.
+ */
+async function reconcileIssued(
+  businessId: string,
+  open: InvoiceProposal[],
+): Promise<InvoiceProposal[]> {
+  if (open.length === 0) return open;
+  const earliest = open.map((p) => periodStart(p.period)).sort()[0];
+  const { data, error } = await supabase
+    .from("documents")
+    .select(ISSUED_CANDIDATE_COLUMNS)
+    .eq("business_id", businessId)
+    .neq("status", "draft")
+    .gte("date", earliest)
+    .order("date", { ascending: true })
+    .limit(500);
+  if (error || !data) return open;
+  const issued = (data as Record<string, unknown>[]).map(toIssuedCandidate);
+
+  const still: InvoiceProposal[] = [];
+  for (const p of open) {
+    const match = findIssuedMatch(p, issued);
+    if (!match) {
+      still.push(p);
+      continue;
+    }
+    const linked = await linkIssuedDocument(p.id, match.id).catch(() => false);
+    if (!linked) still.push(p);
+  }
+  return still;
+}
+
+/**
+ * Resolve a proposal with a document that was issued OUTSIDE the card's own
+ * approve path (the editor, or the reconciliation above). Conditional on the
+ * row still being unresolved, so it can never re-point a proposal that already
+ * has its document. Returns false when nothing was updated.
+ */
+export async function linkIssuedDocument(id: string, documentId: string): Promise<boolean> {
+  const now = new Date().toISOString();
+  const { data, error } = await supabase
+    .from("invoice_proposals")
+    .update({ status: "approved", document_id: documentId, resolved_at: now, updated_at: now })
+    .eq("id", id)
+    .in("status", ["pending", "approved"])
+    .is("document_id", null)
+    .select("id");
+  if (error) throw new Error(error.message);
+  // No notify here: reconcileIssued runs inside the hook's own load, and a
+  // change event from there would only schedule a second, identical load.
+  return !!data && data.length > 0;
 }
 
 /**

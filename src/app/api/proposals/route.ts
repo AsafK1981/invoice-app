@@ -3,6 +3,12 @@ import { createClient } from "@supabase/supabase-js";
 import { createNotificationForBusiness } from "@/lib/notifications-server";
 import { DOCUMENT_TYPE_LABELS, type DocumentType } from "@/lib/types";
 import { canIssueTaxInvoicesByType } from "@/lib/vat";
+import {
+  ISSUED_CANDIDATE_COLUMNS,
+  findIssuedMatch,
+  periodStart,
+  toIssuedCandidate,
+} from "@/lib/proposal-match";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -258,6 +264,74 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Did the owner already issue this invoice by hand? Typing it in the editor
+  // before the 1st-of-month run is the normal case for a diligent owner, and
+  // until 2026-09-01 the automation would still plant a card for it. Same
+  // matcher as the dashboard, so the two never disagree. When it matches, the
+  // (business, source, period) row is recorded as resolved against that
+  // document, and the caller gets a 409 it can tell apart from a rejection.
+  const { data: issuedRows } = await supabase
+    .from("documents")
+    .select(`${ISSUED_CANDIDATE_COLUMNS}, number`)
+    .eq("business_id", businessId)
+    .neq("status", "draft")
+    .gte("date", periodStart(period))
+    .order("date", { ascending: true })
+    .limit(500);
+  const issuedMatch = findIssuedMatch(
+    { documentType, clientId: safeClientId, clientName, subject, total: parsed.total, period },
+    ((issuedRows || []) as Record<string, unknown>[]).map(toIssuedCandidate),
+  );
+  if (issuedMatch) {
+    const now = new Date().toISOString();
+    const resolved = {
+      status: "approved" as const,
+      document_id: issuedMatch.id,
+      resolved_at: now,
+      updated_at: now,
+    };
+    const { error: resolveErr } = existing
+      ? await supabase
+          .from("invoice_proposals")
+          .update(resolved)
+          .eq("id", existing.id)
+          .eq("status", "pending")
+      : await supabase.from("invoice_proposals").insert({
+          business_id: businessId,
+          source,
+          source_label: clean(body.sourceLabel, 80) || source,
+          period,
+          document_type: documentType,
+          client_id: safeClientId,
+          client_name: clientName,
+          subject,
+          notes: notes || null,
+          items: parsed.items,
+          total: parsed.total,
+          details,
+          ...resolved,
+        });
+    if (resolveErr) {
+      return NextResponse.json({ ok: false, error: resolveErr.message }, { status: 500 });
+    }
+    const numberRow = (issuedRows || []).find(
+      (r) => (r as Record<string, unknown>).id === issuedMatch.id,
+    ) as Record<string, unknown> | undefined;
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "already issued",
+        status: "approved",
+        alreadyIssued: true,
+        documentId: issuedMatch.id,
+        documentNumber: numberRow?.number ?? null,
+        documentSubtotal: issuedMatch.subtotal,
+        proposedTotal: parsed.total,
+      },
+      { status: 409 },
+    );
+  }
+
   const payload = {
     business_id: businessId,
     source,
@@ -315,7 +389,7 @@ export async function POST(req: NextRequest) {
       businessId,
       kind: "proposal_ready",
       title: "חשבונית מוכנה לאישור",
-      body: `${subject} · ${parsed.total.toLocaleString("he-IL")} ₪`,
+      body: `${subject} · ₪${parsed.total.toLocaleString("he-IL")}`,
       href: "/dashboard",
     });
   } catch {

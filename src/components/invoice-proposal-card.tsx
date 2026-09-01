@@ -200,6 +200,9 @@ function ProposalRow({ proposal }: { proposal: InvoiceProposal }) {
         quantity: i.quantity,
         unitPrice: i.unitPrice,
       })),
+      // The editor resolves this proposal when the document is issued, so the
+      // card cannot survive its own invoice (it did, on 2026-09-01).
+      proposal: { id: proposal.id, clientId: proposal.clientId, clientName: proposal.clientName },
     };
     saveDraft(proposal.documentType, editorDraft);
     // Straight into the editor for this document type. `/documents/new` is the

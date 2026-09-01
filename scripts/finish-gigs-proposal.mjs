@@ -413,6 +413,22 @@ async function main() {
   });
   const json = await res.json().catch(() => ({}));
 
+  if (res.status === 409 && json.alreadyIssued) {
+    // Asaf issued this month's invoice himself before the run (editor or
+    // "ערוך לפני הפקה"); the API linked the period to that document. Nothing
+    // to approve, so no card and no "ready for approval" push. Only a figure
+    // that disagrees with the sheet earns a WhatsApp - that is a gig added
+    // after the invoice went out, which does need a human.
+    const issuedTotal = Number(json.documentSubtotal);
+    const numberLabel = json.documentNumber ? `#${json.documentNumber}` : "";
+    console.log(`התקופה ${period} כבר הופקה ידנית (${numberLabel}, ${issuedTotal.toLocaleString("he-IL")} ₪) - אין מה לאשר.`);
+    if (Math.abs(issuedTotal - total) > 0.01) {
+      await pushToGaya(
+        `פיניש ${period}: כבר הופק מסמך ${numberLabel} על ${issuedTotal.toLocaleString("he-IL")} ₪, אבל הקובץ מסתכם ב-${total.toLocaleString("he-IL")} ₪ (${pending.length} הופעות מסומנות "לא"). לבדוק אם חסרה הופעה.`,
+      );
+    }
+    return { posted: false, reason: "already-issued", period, total, subject, documentId: json.documentId };
+  }
   if (res.status === 409) {
     // The period was already approved or dismissed, yet the sheet still has
     // un-invoiced gigs for it - typically a gig added late. Nobody reads this

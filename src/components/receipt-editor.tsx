@@ -50,6 +50,7 @@ import { BusinessFormModal } from "@/components/business-form-modal";
 import { useTaxAuthorityStatus } from "@/lib/use-tax-authority-status";
 import { getClientDefaults } from "@/lib/client-defaults";
 import { getRecurringPrefill } from "@/lib/recurring-prefill";
+import { linkIssuedDocument } from "@/lib/proposal-store";
 import { documentsForClient, findMatchingClient, filterClientsByQuery } from "@/lib/client-picker";
 import { clientStore } from "@/lib/client-store";
 import {
@@ -252,6 +253,10 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   // exit-autosave effect below doesn't resurrect a server draft for a
   // document that just got finalized.
   const finalizedRef = useRef(false);
+  // The invoice proposal this editor session was opened from ("ערוך לפני
+  // הפקה"), if any. Captured once at hydration and resolved on issue - see
+  // linkIssuedDocument below.
+  const proposalRef = useRef<EditorDraft["proposal"] | null>(null);
   // Kept in sync on every render with what a "שמור טיוטה" right now would
   // send, so the unmount cleanup (which can't read fresh state) has
   // something current to persist.
@@ -416,6 +421,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
       setWithholdingAmountInput(d.withholdingAmountInput ?? "");
       setWithholdingTouched(d.withholdingTouched ?? false);
       setPayDetails(d.payDetails ?? {});
+      proposalRef.current = d.proposal ?? null;
       if (!prefilled) setDraftRecovered({ savedAt: stored.savedAt });
     }
     setDraftHydrated(true);
@@ -527,6 +533,9 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
       withholdingAmountInput,
       withholdingTouched,
       payDetails,
+      // Keep the proposal link across an autosave round-trip, or leaving and
+      // coming back to the editor would silently forget where the draft came from.
+      proposal: proposalRef.current ?? undefined,
     };
     if (isDraftEmpty(draft)) {
       clearDraft(documentType);
@@ -1397,6 +1406,28 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
       // exit-autosave effect from resurrecting a server draft for it.
       clearDraft(documentType);
       finalizedRef.current = true;
+
+      // Opened from an invoice proposal ("ערוך לפני הפקה")? Then this document
+      // IS that proposal's invoice: resolve the proposal so the dashboard card
+      // goes away instead of offering the same invoice again (2026-09-01:
+      // proforma #90006 was issued this way and the card stayed pending).
+      // Only when the client is still the proposal's client - an editor session
+      // repurposed for someone else must not close out the month's proposal.
+      const fromProposal = proposalRef.current;
+      if (
+        fromProposal &&
+        (fromProposal.clientId
+          ? clientId === fromProposal.clientId
+          : adhocMode && adhocName.trim() === fromProposal.clientName.trim())
+      ) {
+        try {
+          await linkIssuedDocument(fromProposal.id, docId);
+        } catch (err) {
+          // The dashboard's reconciliation pass links it on the next load.
+          console.warn("[proposal] failed to link issued document", err);
+        }
+        proposalRef.current = null;
+      }
 
       // If this was resumed from / saved as a server draft, remove it now that
       // it's become a real numbered document.

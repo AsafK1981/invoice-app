@@ -36,6 +36,13 @@ export interface EditorDraft {
   withholdingAmountInput?: string;
   withholdingTouched?: boolean;
   payDetails?: PaymentDetails;
+  /**
+   * Set when this draft was handed to the editor by an invoice proposal
+   * ("ערוך לפני הפקה"). On issue, the editor resolves that proposal with the
+   * new document - provided the client is still the proposal's client - so the
+   * dashboard card does not keep offering an invoice that already exists.
+   */
+  proposal?: { id: string; clientId: string; clientName: string };
 }
 
 interface StoredDraft {
