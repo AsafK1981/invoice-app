@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Wallet, Plus, ShoppingBag, Pencil, Trash2, Upload, Search, X, ScanLine, Loader2, Paperclip } from "lucide-react";
+import { Wallet, Plus, ShoppingBag, Pencil, Trash2, Upload, Search, X, ScanLine, Loader2, Paperclip, Printer } from "lucide-react";
 import { useExpenses, expenseStore } from "@/lib/expense-store";
 import { useBusiness } from "@/lib/business-store";
 import { formatCurrency, formatDate } from "@/lib/format";
@@ -11,6 +11,7 @@ import { useConfirm } from "@/components/ui/confirm-dialog";
 import { Tooltip } from "@/components/ui/tooltip";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Pagination } from "@/components/ui/pagination";
+import { PrintSheet, usePrintSheet } from "@/components/print-sheet";
 import { supabase } from "@/lib/supabase";
 import type { Expense } from "@/lib/types";
 
@@ -140,6 +141,7 @@ export default function ExpensesPage() {
   const [rangeTo, setRangeTo] = useState("");
   const [page, setPage] = useState(0);
   const confirm = useConfirm();
+  const { printing, print } = usePrintSheet();
 
   const availableMonths = useMemo(() => {
     const set = new Set(expenses.map((e) => e.date.slice(0, 7)));
@@ -179,6 +181,24 @@ export default function ExpensesPage() {
     business.businessType === "authorized" ||
     business.businessType === "company" ||
     grandVat > 0;
+
+  // Human description of the active filters, printed under the title so a
+  // sheet handed to an accountant says what it is a list OF.
+  const printSubtitle = useMemo(() => {
+    const parts: string[] = [];
+    if (monthFilter === RANGE) {
+      if (rangeFrom || rangeTo) {
+        parts.push(
+          `טווח: ${rangeFrom ? formatDate(rangeFrom) : "ההתחלה"} עד ${rangeTo ? formatDate(rangeTo) : "היום"}`,
+        );
+      }
+    } else if (monthFilter !== "all") {
+      parts.push(`חודש: ${formatMonthLabel(monthFilter)}`);
+    }
+    if (categoryFilter !== "all") parts.push(`קטגוריה: ${categoryFilter}`);
+    if (search.trim()) parts.push(`חיפוש: "${search.trim()}"`);
+    return parts.length ? parts.join(" · ") : "כל ההוצאות";
+  }, [monthFilter, rangeFrom, rangeTo, categoryFilter, search]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paginated = useMemo(
@@ -305,7 +325,8 @@ export default function ExpensesPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <>
+    <div className="space-y-6" data-print-hidden={printing ? "true" : undefined}>
       <div>
         <div>
           <h1 className="text-3xl font-bold text-stone-900 flex items-center gap-3">
@@ -355,6 +376,15 @@ export default function ExpensesPage() {
             onChange={handleScanFile}
             className="hidden"
           />
+          <button
+            onClick={print}
+            disabled={filtered.length === 0}
+            title="הדפסת רשימת ההוצאות המסוננת / שמירה כ-PDF"
+            className="inline-flex items-center gap-2 bg-white border-2 border-orange-200 text-stone-800 px-4 py-2.5 rounded-2xl text-sm font-semibold hover:bg-orange-50 disabled:opacity-50"
+          >
+            <Printer className="w-4 h-4" />
+            הדפסה
+          </button>
           <button
             onClick={() => setImportOpen(true)}
             className="inline-flex items-center gap-2 bg-white border-2 border-orange-200 text-stone-800 px-4 py-2.5 rounded-2xl text-sm font-semibold hover:bg-orange-50"
@@ -606,6 +636,41 @@ export default function ExpensesPage() {
         entityType="expenses"
       />
     </div>
+    {printing && (
+      <PrintSheet
+        title="רשימת הוצאות"
+        businessName={business.name}
+        subtitle={printSubtitle}
+        rows={filtered}
+        rowKey={(e) => e.id}
+        countLabel={`${filtered.length} הוצאות`}
+        columns={[
+          { key: "date", header: "תאריך", render: (e) => formatDate(e.date), footer: "סה״כ" },
+          { key: "category", header: "קטגוריה", render: (e) => e.category },
+          { key: "supplier", header: "ספק", render: (e) => e.supplier },
+          { key: "description", header: "תיאור", render: (e) => e.description || "-" },
+          ...(showVat
+            ? [
+                {
+                  key: "vat",
+                  header: "מע״מ",
+                  align: "end" as const,
+                  render: (e: Expense) => (e.vatAmount ? formatCurrency(e.vatAmount) : "-"),
+                  footer: formatCurrency(filteredVat),
+                },
+              ]
+            : []),
+          {
+            key: "amount",
+            header: "סכום",
+            align: "end" as const,
+            render: (e) => formatCurrency(e.amount),
+            footer: formatCurrency(filteredTotal),
+          },
+        ]}
+      />
+    )}
+    </>
   );
 }
 

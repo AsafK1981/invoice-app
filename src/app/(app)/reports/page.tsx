@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
   TrendingUp, TrendingDown, Wallet, Clock, Download, ChevronDown, ChevronLeft, ChevronRight,
   FileText, ClipboardList, Calculator, BookOpen, FileSpreadsheet, Landmark, FileArchive,
-  SlidersHorizontal, Receipt, ArrowLeft, Minus,
+  SlidersHorizontal, Receipt, ArrowLeft, Minus, Printer,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useDocuments } from "@/lib/document-store";
@@ -374,6 +374,18 @@ export default function ReportsPage() {
               </div>
             )}
           </div>
+          {/* No print sheet here: this page IS the report. `.rpt-controls` is
+              already hidden in print (app-skin.css), so the button prints
+              itself away along with the rest of the controls. */}
+          <button
+            type="button"
+            className="pgbtn pgbtn-quiet"
+            onClick={() => window.print()}
+            title="הדפסת לוח הדוחות / שמירה כ-PDF"
+          >
+            <Printer aria-hidden="true" />
+            הדפסה
+          </button>
         </div>
       </div>
 

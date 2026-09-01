@@ -16,6 +16,7 @@ import {
   CheckCircle2,
   Circle,
   Download,
+  Printer,
   Mail,
   MailCheck,
   FilePlus2,
@@ -30,6 +31,7 @@ import { useToast } from "@/components/ui/toast";
 import { friendlyError } from "@/lib/error-message";
 import { Tooltip } from "@/components/ui/tooltip";
 import { Pagination } from "@/components/ui/pagination";
+import { PrintSheet, usePrintSheet } from "@/components/print-sheet";
 import { useBusiness } from "@/lib/business-store";
 import { canIssueTaxInvoices } from "@/lib/vat";
 import {
@@ -63,6 +65,15 @@ interface Props {
    * `filtered` back up on every keystroke, and the label keeps its count.
    */
   exportSlot?: HTMLElement | null;
+  /**
+   * Told when the print sheet goes up and comes down, for the same reason
+   * `exportSlot` exists in reverse: only this component knows what is
+   * filtered, but only the PAGE can hide its own heading and action row so
+   * the printed pages carry the sheet alone. The page mirrors this into
+   * `data-print-hidden` on its root. Omitted on the dashboard, where there
+   * is no print button at all.
+   */
+  onPrintingChange?: (printing: boolean) => void;
 }
 
 /**
@@ -190,9 +201,10 @@ const MULTI = "__multi";
  */
 const PAGE_SIZE = 50;
 
-export function DocumentsTable({ documents, limit, exportSlot }: Props) {
+export function DocumentsTable({ documents, limit, exportSlot, onPrintingChange }: Props) {
   const searchParams = useSearchParams();
   const { business } = useBusiness();
+  const { printing, print } = usePrintSheet();
   // Read initial filter values from URL search params so dashboard cards
   // (and other deep-links like /documents?type=quote&status=sent) can
   // pre-filter the list. A param may carry several comma-separated values,
@@ -334,6 +346,43 @@ export function DocumentsTable({ documents, limit, exportSlot }: Props) {
   const filtersActive =
     FILTER_KEYS.some((key) => selections[key].length > 0) || range !== null || search.trim() !== "";
 
+  useEffect(() => {
+    onPrintingChange?.(printing);
+  }, [printing, onPrintingChange]);
+
+  /** What the printed sheet says it is a list OF, in the user's own filters. */
+  const printSubtitle = useMemo(() => {
+    const parts: string[] = [];
+    for (const key of FILTER_KEYS) {
+      const values = selections[key];
+      if (values.length === 0) continue;
+      parts.push(`${COL_LABEL[key]}: ${values.map((v) => filterValueLabel(key, v)).join(", ")}`);
+    }
+    if (range && (range.from || range.to)) {
+      parts.push(
+        `טווח: ${range.from ? formatDate(range.from) : "ההתחלה"} עד ${range.to ? formatDate(range.to) : "היום"}`,
+      );
+    }
+    if (search.trim()) parts.push(`חיפוש: "${search.trim()}"`);
+    return parts.length ? parts.join(" · ") : "כל המסמכים";
+  }, [selections, range, search]);
+
+  /**
+   * Printed total. Drafts and cancelled documents are money that was never
+   * billed, so they are excluded - the same rule the page header's own
+   * totals use. Credit notes are stored already negative, so a plain sum
+   * subtracts them exactly once. `totalIls` normalizes foreign currency.
+   */
+  const printTotal = useMemo(
+    () =>
+      filtered.reduce(
+        (sum, d) =>
+          d.status === "draft" || d.status === "cancelled" ? sum : sum + (d.totalIls ?? d.total),
+        0,
+      ),
+    [filtered],
+  );
+
   /** The month select doubles as the way into the date range: its last
    *  option is "טווח תאריכים…", and while the range is on the select shows
    *  that option as its value (so the bar still has exactly six controls). */
@@ -448,19 +497,34 @@ export function DocumentsTable({ documents, limit, exportSlot }: Props) {
           currently filtered list. See the `exportSlot` prop. */}
       {exportSlot &&
         createPortal(
-          <button
-            onClick={() => exportDocuments(filtered, filtersActive ? "filtered" : undefined)}
-            disabled={filtered.length === 0}
-            className="pgbtn pgbtn-quiet"
-            title={
-              filtersActive
-                ? `ייצוא ${filtered.length} המסמכים המסוננים לקובץ CSV / Excel`
-                : "ייצוא כל המסמכים לקובץ CSV / Excel"
-            }
-          >
-            <Download aria-hidden="true" />
-            ייצוא ל-Excel
-          </button>,
+          <>
+            <button
+              onClick={print}
+              disabled={filtered.length === 0}
+              className="pgbtn pgbtn-quiet"
+              title={
+                filtersActive
+                  ? `הדפסת ${filtered.length} המסמכים המסוננים / שמירה כ-PDF`
+                  : "הדפסת רשימת כל המסמכים / שמירה כ-PDF"
+              }
+            >
+              <Printer aria-hidden="true" />
+              הדפסה
+            </button>
+            <button
+              onClick={() => exportDocuments(filtered, filtersActive ? "filtered" : undefined)}
+              disabled={filtered.length === 0}
+              className="pgbtn pgbtn-quiet"
+              title={
+                filtersActive
+                  ? `ייצוא ${filtered.length} המסמכים המסוננים לקובץ CSV / Excel`
+                  : "ייצוא כל המסמכים לקובץ CSV / Excel"
+              }
+            >
+              <Download aria-hidden="true" />
+              ייצוא ל-Excel
+            </button>
+          </>,
           exportSlot,
         )}
 
@@ -584,6 +648,37 @@ export function DocumentsTable({ documents, limit, exportSlot }: Props) {
         )}
         {!limit && <Pagination page={page} pageCount={pageCount} onPageChange={setPage} />}
       </div>
+
+      {/* Portalled to <body> so the sheet lands OUTSIDE the page root the
+          page has just hidden (and outside the card that wraps this table),
+          leaving the printed pages carrying the list and nothing else. */}
+      {printing &&
+        createPortal(
+          <PrintSheet
+            title="רשימת מסמכים"
+            businessName={business.name}
+            subtitle={printSubtitle}
+            rows={filtered}
+            rowKey={(d) => d.id}
+            countLabel={`${filtered.length} מסמכים`}
+            columns={[
+              { key: "date", header: "תאריך", render: (d) => formatDate(d.date), footer: "סה״כ" },
+              { key: "type", header: "סוג", render: (d) => DOCUMENT_TYPE_LABELS[d.type] },
+              { key: "number", header: "מספר", render: (d) => d.number },
+              { key: "client", header: "לקוח", render: (d) => d.clientName },
+              { key: "subject", header: "נושא", render: (d) => d.subject || "-" },
+              { key: "status", header: "סטטוס", render: (d) => DOCUMENT_STATUS_LABELS[d.status] },
+              {
+                key: "total",
+                header: "סכום",
+                align: "end" as const,
+                render: (d) => formatCurrency(d.totalIls ?? d.total),
+                footer: formatCurrency(printTotal),
+              },
+            ]}
+          />,
+          document.body,
+        )}
     </div>
   );
 }

@@ -19,6 +19,10 @@ export default function DocumentsPage() {
   // by <DocumentsTable>, which is the only thing that knows what is currently
   // filtered; this page just says WHERE it goes. See the `exportSlot` prop.
   const [exportSlot, setExportSlot] = useState<HTMLElement | null>(null);
+  // Raised by <DocumentsTable> while its print sheet is mounted. Only the
+  // table knows what is filtered; only this page can hide the heading, the
+  // action row and the tabs so the printed pages carry the sheet alone.
+  const [printing, setPrinting] = useState(false);
 
   const unpaidDocuments = useMemo(
     () =>
@@ -52,7 +56,7 @@ export default function DocumentsPage() {
   }, [documents]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-print-hidden={printing ? "true" : undefined}>
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-3xl font-bold text-stone-900 flex items-center gap-3">
@@ -153,7 +157,11 @@ export default function DocumentsPage() {
 
       <div className="card-soft overflow-hidden">
         {tab === "documents" ? (
-          <DocumentsTable documents={documents} exportSlot={exportSlot} />
+          <DocumentsTable
+            documents={documents}
+            exportSlot={exportSlot}
+            onPrintingChange={setPrinting}
+          />
         ) : (
           <DraftsList />
         )}

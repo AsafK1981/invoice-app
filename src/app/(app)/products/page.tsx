@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Package, Plus, Tag, Pencil, Trash2, Upload, Search, X } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Package, Plus, Tag, Pencil, Trash2, Upload, Printer, Search, X } from "lucide-react";
 import { useProducts, useProductsPage, productStore } from "@/lib/product-store";
 import { formatCurrency } from "@/lib/format";
 import { ProductFormModal } from "@/components/product-form-modal";
@@ -10,6 +10,8 @@ import { useConfirm } from "@/components/ui/confirm-dialog";
 import { Tooltip } from "@/components/ui/tooltip";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Pagination } from "@/components/ui/pagination";
+import { PrintSheet, usePrintSheet } from "@/components/print-sheet";
+import { useBusiness } from "@/lib/business-store";
 import type { Product } from "@/lib/types";
 
 // Search used to be matched in-memory here; it now happens server-side in
@@ -21,15 +23,32 @@ export default function ProductsPage() {
   // and the empty-catalog check, which may never be silently truncated to
   // one page. The rendered grid below reads from useProductsPage() instead.
   const { items: products } = useProducts();
+  const { business } = useBusiness();
   const [modalOpen, setModalOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
   const confirm = useConfirm();
+  const { printing, print } = usePrintSheet();
 
   const { items: filtered, total: filteredTotal, pageSize } = useProductsPage({ page, search });
   const pageCount = Math.max(1, Math.ceil(filteredTotal / pageSize));
+
+  /**
+   * The printed price list is the WHOLE catalog, not the cards on screen:
+   * the grid above is paginated server-side. The search is re-applied here
+   * in memory over the same columns the server searches.
+   */
+  const printRows = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const rows = q
+      ? products.filter((p) =>
+          [p.name, p.description].filter(Boolean).join(" ").toLowerCase().includes(q),
+        )
+      : [...products];
+    return rows.sort((a, b) => a.name.localeCompare(b.name, "he"));
+  }, [products, search]);
 
   function updateSearch(value: string) {
     setSearch(value);
@@ -56,7 +75,8 @@ export default function ProductsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <>
+    <div className="space-y-6" data-print-hidden={printing ? "true" : undefined}>
       <div>
         <div>
           <h1 className="text-3xl font-bold text-stone-900 flex items-center gap-3">
@@ -81,6 +101,15 @@ export default function ProductsPage() {
           פריט חדש
         </button>
         <div className="flex gap-2 flex-wrap">
+          <button
+            onClick={print}
+            disabled={products.length === 0}
+            className="inline-flex items-center gap-2 bg-white border-2 border-orange-200 text-stone-800 px-4 py-2.5 rounded-2xl text-sm font-semibold hover:bg-orange-50 disabled:opacity-40"
+            title="הדפסת המחירון / שמירה כ-PDF"
+          >
+            <Printer className="w-4 h-4" />
+            הדפסה
+          </button>
           <button
             onClick={() => setImportOpen(true)}
             className="inline-flex items-center gap-2 bg-white border-2 border-orange-200 text-stone-800 px-4 py-2.5 rounded-2xl text-sm font-semibold hover:bg-orange-50"
@@ -208,5 +237,27 @@ export default function ProductsPage() {
         entityType="products"
       />
     </div>
+    {printing && (
+      <PrintSheet
+        title="מחירון"
+        businessName={business.name}
+        subtitle={search.trim() ? `חיפוש: "${search.trim()}"` : "כל הפריטים"}
+        rows={printRows}
+        rowKey={(p) => p.id}
+        countLabel={`${printRows.length} פריטים`}
+        columns={[
+          { key: "name", header: "פריט", render: (p) => p.name },
+          { key: "description", header: "תיאור", render: (p) => p.description || "-" },
+          { key: "unit", header: "יחידה", render: (p) => p.unit },
+          {
+            key: "price",
+            header: "מחיר",
+            align: "end" as const,
+            render: (p) => formatCurrency(p.price),
+          },
+        ]}
+      />
+    )}
+    </>
   );
 }

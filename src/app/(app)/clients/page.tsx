@@ -14,6 +14,7 @@ import {
   MapPin,
   Upload,
   Download,
+  Printer,
   Search,
   X,
 } from "lucide-react";
@@ -28,6 +29,8 @@ import { useConfirm } from "@/components/ui/confirm-dialog";
 import { Tooltip } from "@/components/ui/tooltip";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Pagination } from "@/components/ui/pagination";
+import { PrintSheet, usePrintSheet } from "@/components/print-sheet";
+import { useBusiness } from "@/lib/business-store";
 import { exportClients } from "@/lib/csv-export";
 import type { Client, InvoiceDocument } from "@/lib/types";
 
@@ -72,14 +75,42 @@ export default function ClientsPage() {
   // useClientsPage() instead, which does the real server-side pagination.
   const { items: clients } = useClients();
   const { documents } = useDocuments();
+  const { business } = useBusiness();
   const [modalOpen, setModalOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [editing, setEditing] = useState<Client | null>(null);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
   const confirm = useConfirm();
+  const { printing, print } = usePrintSheet();
 
   const statsByClient = useMemo(() => buildStatsByClient(documents, clients), [documents, clients]);
+
+  /**
+   * The printed sheet is the WHOLE book, not the 24 cards on screen: the grid
+   * above is paginated server-side, and a printout that silently stopped at
+   * page 1 would be worse than no printout. The search is re-applied here in
+   * memory over the same columns the server searches, so a printed "filtered"
+   * sheet matches what the user is looking at.
+   */
+  const printRows = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const rows = q
+      ? clients.filter((c) =>
+          [c.name, c.taxId, c.address, c.phone, c.email, c.notes]
+            .filter(Boolean)
+            .join(" ")
+            .toLowerCase()
+            .includes(q),
+        )
+      : [...clients];
+    return rows.sort((a, b) => a.name.localeCompare(b.name, "he"));
+  }, [clients, search]);
+
+  const printBilledTotal = useMemo(
+    () => printRows.reduce((sum, c) => sum + (statsByClient.get(c.id)?.totalBilled ?? 0), 0),
+    [printRows, statsByClient],
+  );
 
   const { items: filtered, total: filteredTotal, pageSize } = useClientsPage({ page, search });
   const pageCount = Math.max(1, Math.ceil(filteredTotal / pageSize));
@@ -110,7 +141,8 @@ export default function ClientsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <>
+    <div className="space-y-6" data-print-hidden={printing ? "true" : undefined}>
       <div>
         <div>
           <h1 className="text-3xl font-bold text-stone-900 flex items-center gap-3">
@@ -135,6 +167,15 @@ export default function ClientsPage() {
           לקוח חדש
         </button>
         <div className="flex gap-2 flex-wrap">
+          <button
+            onClick={print}
+            disabled={clients.length === 0}
+            className="inline-flex items-center gap-2 bg-white border-2 border-orange-200 text-stone-800 px-4 py-2.5 rounded-2xl text-sm font-semibold hover:bg-orange-50 disabled:opacity-40"
+            title="הדפסת רשימת הלקוחות / שמירה כ-PDF"
+          >
+            <Printer className="w-4 h-4" />
+            הדפסה
+          </button>
           <button
             onClick={() => exportClients(clients)}
             disabled={clients.length === 0}
@@ -346,5 +387,35 @@ export default function ClientsPage() {
         entityType="clients"
       />
     </div>
+    {printing && (
+      <PrintSheet
+        title="רשימת לקוחות"
+        businessName={business.name}
+        subtitle={search.trim() ? `חיפוש: "${search.trim()}"` : "כל הלקוחות"}
+        rows={printRows}
+        rowKey={(c) => c.id}
+        countLabel={`${printRows.length} לקוחות`}
+        columns={[
+          { key: "name", header: "שם", render: (c) => c.name, footer: "סה״כ" },
+          { key: "taxId", header: "ח.פ / ת.ז", render: (c) => c.taxId || "-" },
+          { key: "phone", header: "טלפון", render: (c) => c.phone || "-" },
+          { key: "email", header: "אימייל", render: (c) => c.email || "-" },
+          {
+            key: "docs",
+            header: "מסמכים",
+            align: "end" as const,
+            render: (c) => statsByClient.get(c.id)?.docCount ?? 0,
+          },
+          {
+            key: "billed",
+            header: "סה״כ חויב",
+            align: "end" as const,
+            render: (c) => formatCurrency(statsByClient.get(c.id)?.totalBilled ?? 0),
+            footer: formatCurrency(printBilledTotal),
+          },
+        ]}
+      />
+    )}
+    </>
   );
 }

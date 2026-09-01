@@ -1391,6 +1391,9 @@ html .rpt-rc-go svg { width: 0.85rem; height: 0.85rem; }
 }
 @media print {
   html .rpt-controls, html .rpt-menu, html .rpt-btn-sm { display: none !important; }
+  /* Keep each report card whole across a page break, and drop the shadow -
+     it prints as a grey smear on paper. */
+  html .rpt-card { break-inside: avoid; box-shadow: none !important; }
 }
 
 /* =====================================================================

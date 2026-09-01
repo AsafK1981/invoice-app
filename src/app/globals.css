@@ -321,6 +321,35 @@ tr {
   .no-print {
     display: none !important;
   }
+  /* Shared list print sheet (see components/print-sheet.tsx). Plain black on
+     white so it survives Chrome's default "Background graphics: off". */
+  .print-sheet {
+    color: #1c1917 !important;
+  }
+  .print-sheet thead {
+    display: table-header-group;
+  }
+  .print-sheet tfoot {
+    display: table-footer-group;
+  }
+  .print-sheet tr {
+    break-inside: avoid;
+  }
+  /* While a print sheet is mounted, the page hides its own on-screen content
+     by setting data-print-hidden on its root, so the sheet is the only thing
+     that prints. A plain Ctrl+P never mounts a sheet, so the page still
+     prints normally then. */
+  [data-print-hidden="true"] {
+    display: none !important;
+  }
+  /* A sheet portalled to <body> (the documents list does this to escape its
+     card's overflow-hidden) sits AFTER the app shell's min-h-screen flex
+     wrapper. Everything inside that wrapper is hidden by then, but its
+     min-height alone still fills the first printed page and pushes the sheet
+     to page 2. Zero it while a sheet is mounted. */
+  body:has(.print-sheet) .min-h-screen {
+    min-height: 0 !important;
+  }
   .receipt-view {
     box-shadow: none !important;
     max-width: none !important;

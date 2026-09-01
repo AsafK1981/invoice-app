@@ -367,7 +367,7 @@ export function Sidebar() {
           app page and never on marketing / auth pages, which have no sidebar. */}
       <aside
         data-app-sidebar
-        className="hidden lg:flex w-64 bg-white/80 backdrop-blur-xl border-l border-orange-100/60 flex-col"
+        className="hidden lg:flex print:hidden w-64 bg-white/80 backdrop-blur-xl border-l border-orange-100/60 flex-col"
       >
         {sidebarContent}
       </aside>
