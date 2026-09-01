@@ -100,6 +100,11 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
   // still needs an allocation number (see focusAllocationSection below).
   const allocationSectionRef = useRef<HTMLDivElement | null>(null);
   const [allocationRingActive, setAllocationRingActive] = useState(false);
+  // Target for the step-2 → step-3 handoff: when the allocation number lands,
+  // the page glides down to the delivery tiles and rings them (see
+  // handleAllocationReceived below).
+  const nextStepsRef = useRef<HTMLElement | null>(null);
+  const [nextStepsRingActive, setNextStepsRingActive] = useState(false);
   useEffect(() => {
     if (!ready || !doc) return;
     const param = searchParams.get("needsAllocation");
@@ -183,10 +188,14 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
     return days;
   })();
 
-  // True when the doc legally needs a מספר הקצאה but doesn't have one yet.
-  // Used to disable any "send to client" button; sending without it would
-  // be a regulatory violation.
-  const allocationGate = requiresAllocationNumber(doc, customerTaxId) && !doc.allocationNumber;
+  // True when this doc is on the allocation track at all (legally needs a
+  // מספר הקצאה, with or without one yet): the 1-2-3 story applies to it, so
+  // the delivery card wears the step-3 medallion.
+  const allocationTrack = requiresAllocationNumber(doc, customerTaxId);
+  // True while the number is still missing. The send handlers refuse and
+  // route the user to the allocation card (toast + scroll + gold ring);
+  // sending without the number would be a regulatory violation.
+  const allocationGate = allocationTrack && !doc.allocationNumber;
 
   // "שלח במייל" is the action that actually delivers the document, so it
   // wears the app's one filled-button treatment (`.pgbtn-primary`) while the
@@ -281,6 +290,21 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
     el.focus({ preventScroll: true });
     setAllocationRingActive(true);
     window.setTimeout(() => setAllocationRingActive(false), 2400);
+  }
+
+  // Step 2 just finished (the allocation number landed): hand the user to
+  // step 3 by gliding down to the delivery tiles and ringing them, the same
+  // gold ring the allocation card gets on arrival. The delay lets the green
+  // "המספר התקבל" flip register before the page moves. When the tiles aren't
+  // mounted (a draft, or an already-emailed doc) this is a quiet no-op.
+  function handleAllocationReceived() {
+    window.setTimeout(() => {
+      const el = nextStepsRef.current;
+      if (!el) return;
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+      setNextStepsRingActive(true);
+      window.setTimeout(() => setNextStepsRingActive(false), 2400);
+    }, 900);
   }
 
   async function handleResend(asReminder = false) {
@@ -556,13 +580,17 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
             <span className="hidden sm:inline">העתק קישור</span>
           </button>
           {!showNextSteps && (<>
+          {/* Under the allocation gate the send buttons stay CLICKABLE on
+              purpose: handleWhatsApp/handleResend refuse and route the user
+              to the allocation card (toast + scroll + gold ring), which
+              teaches the order. A greyed-out button with a hover-only tooltip
+              is a dead end, especially on touch. */}
           <button
             onClick={handleWhatsApp}
-            disabled={allocationGate}
             className="hidden sm:inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-50 disabled:opacity-50 disabled:cursor-not-allowed"
             title={
               allocationGate
-                ? "חסר מספר הקצאה: אסור לשלוח חשבונית מס מבלעדיו"
+                ? "קודם מבקשים מספר הקצאה - לחיצה תוביל אותך לשם"
                 : client?.phone ? `שליחה ל-${client.phone}` : "שליחה ב-WhatsApp"
             }
           >
@@ -571,7 +599,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
           </button>
           <button
             onClick={() => handleResend(false)}
-            disabled={sending || !client?.email || allocationGate}
+            disabled={sending || !client?.email}
             className={`inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed ${
               emailIsPrimary
                 ? "pgbtn-primary"
@@ -579,7 +607,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
             }`}
             title={
               allocationGate
-                ? "חסר מספר הקצאה: אסור לשלוח חשבונית מס מבלעדיו"
+                ? "קודם מבקשים מספר הקצאה - לחיצה תוביל אותך לשם"
                 : client?.email
                   ? `שליחה ל-${client.email}`
                   : "אין מייל שמור ללקוח"
@@ -695,7 +723,6 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                 {!showNextSteps && (
                 <button
                   role="menuitem"
-                  disabled={allocationGate}
                   onClick={() => {
                     setMoreOpen(false);
                     handleWhatsApp();
@@ -772,7 +799,11 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
           allocationRingActive ? "allocation-arrival-ring" : ""
         }`}
       >
-        <AllocationNumberSection doc={doc} customerTaxId={customerTaxId} />
+        <AllocationNumberSection
+          doc={doc}
+          customerTaxId={customerTaxId}
+          onNumberReceived={handleAllocationReceived}
+        />
       </div>
 
       {/* "The document is ready. How do you want to send it?" - the single
@@ -784,8 +815,11 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
           with no explanation. */}
       {showNextSteps && (
         <section
+          ref={nextStepsRef}
           aria-labelledby="next-steps-title"
-          className="no-print card-soft p-5 sm:p-6 border-2 border-[color:var(--goldline)]"
+          className={`no-print card-soft p-5 sm:p-6 border-2 border-[color:var(--goldline)] scroll-mt-20 ${
+            nextStepsRingActive ? "allocation-arrival-ring" : ""
+          }`}
         >
           <div className="flex items-start gap-3">
             <div className="w-11 h-11 rounded-2xl bg-emerald-500 flex items-center justify-center shrink-0">
@@ -793,6 +827,19 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
             </div>
             <div className="min-w-0 flex-1">
               <h2 id="next-steps-title" className="text-lg sm:text-xl font-bold text-stone-900 leading-snug">
+                {/* On the allocation track this card IS step 3 of the 1-2-3
+                    strip, so it wears the strip's numbered medallion: the
+                    save button carries "1", the request button "2", and the
+                    delivery card "3". Same gradient recipe as the strip's
+                    active badge, so app-skin re-tints them identically. */}
+                {allocationTrack && (
+                  <span
+                    aria-hidden
+                    className="me-1.5 inline-flex h-6 w-6 -translate-y-0.5 items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-rose-500 align-middle text-[13px] font-bold"
+                  >
+                    3
+                  </span>
+                )}
                 {DOCUMENT_TYPE_LABELS[doc.type]} <span dir="ltr">#{doc.number}</span> {docReadyWord}.
                 {" "}איך לשלוח {docItWord} ללקוח?
               </h2>

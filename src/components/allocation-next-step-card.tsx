@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AlertCircle, ArrowLeft, Landmark, Save } from "lucide-react";
+import { AlertCircle, ArrowLeft, Landmark } from "lucide-react";
 import { AllocationSteps } from "@/components/allocation-steps";
 import { Expander } from "@/components/expander";
 
@@ -88,7 +88,14 @@ export function AllocationNextStepCard({
 
       {/* The button the card talks about, in the card. Same handler, same
           gating and same label as the aside / mobile-bar buttons, so the
-          three never disagree about whether saving is possible right now. */}
+          three never disagree about whether saving is possible right now.
+
+          The "1" medallion ties this button to step 1 of the strip right
+          above it: the strip numbers the steps, and the button that DOES a
+          step carries that step's number (the request button on the document
+          page carries "2" the same way). The circle keeps a bg-* class so the
+          app-skin descendant ink rule leaves the numeral on the button's own
+          ink. */}
       <div className="mt-3.5">
         <button
           type="button"
@@ -96,7 +103,12 @@ export function AllocationNextStepCard({
           disabled={saveDisabled}
           className="w-full inline-flex items-center justify-center gap-2 min-h-[52px] px-4 bg-gradient-to-l from-orange-500 to-rose-500 text-white rounded-2xl text-[15px] font-bold text-center leading-tight shadow-md shadow-orange-200/70 hover:shadow-lg hover:shadow-orange-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:from-stone-300 disabled:to-stone-300 disabled:cursor-not-allowed disabled:shadow-none transition-all"
         >
-          {!saveBusy && <Save className="w-4 h-4 flex-shrink-0" />}
+          <span
+            aria-hidden
+            className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-white/25 text-[13px] font-bold"
+          >
+            1
+          </span>
           <span>{saveLabel}</span>
           {!saveBusy && <ArrowLeft className="w-4 h-4 flex-shrink-0" aria-hidden />}
         </button>

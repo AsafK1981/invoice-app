@@ -15,6 +15,11 @@ interface Props {
    *  or the linked client's tax_id). Absent/empty ⇒ private customer (B2C),
    *  which never needs an allocation number. */
   customerTaxId?: string;
+  /** Fired once when a number lands on a doc that had none (auto-fetch OR
+   *  manual entry). The page uses it to hand the user from step 2 to step 3:
+   *  scroll to + ring the delivery tiles below, so each finished click points
+   *  at the next one instead of leaving the user parked on a green card. */
+  onNumberReceived?: () => void;
 }
 
 // The Tax Authority's manual allocation-number request service ("בקשה למספר
@@ -42,7 +47,7 @@ const GOV_PORTAL_URL =
  * Deliberately NOT an alarming red panic card: needing a number is the normal,
  * expected next step of issuing a tax invoice, not an error the user caused.
  */
-export function AllocationNumberSection({ doc, customerTaxId }: Props) {
+export function AllocationNumberSection({ doc, customerTaxId, onNumberReceived }: Props) {
   // All hooks must run unconditionally; early return MUST come after.
   // Same trap that produced the React #310 bug yesterday.
   const [editing, setEditing] = useState(false);
@@ -95,6 +100,7 @@ export function AllocationNumberSection({ doc, customerTaxId }: Props) {
       // The server saved it on the doc; mirror locally so the UI flips
       // to "received" without a full reload.
       await setAllocationNumber(doc.id, data.allocationNumber);
+      onNumberReceived?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : "שגיאה");
     } finally {
@@ -111,8 +117,13 @@ export function AllocationNumberSection({ doc, customerTaxId }: Props) {
     setSaving(true);
     setError(null);
     try {
+      // Read BEFORE the store call: `doc` is the pre-save prop, so this tells
+      // apart "first number typed in" (step 2 just finished, hand the user to
+      // step 3) from editing/replacing an existing one (no handoff).
+      const isFirstNumber = !doc.allocationNumber;
       await setAllocationNumber(doc.id, trimmed);
       setEditing(false);
+      if (isFirstNumber) onNumberReceived?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : "שגיאה בשמירה");
     } finally {
@@ -187,6 +198,11 @@ export function AllocationNumberSection({ doc, customerTaxId }: Props) {
             )}
           </div>
         </div>
+        {/* The story doesn't end on a green card: until the document actually
+            reaches the customer, keep the 3-step strip with step 3 lit so the
+            user is handed onward to sending. Once emailed, the journey is
+            over and the strip would only nag - so it goes away. */}
+        {!doc.emailedAt && <AllocationSteps current={3} size="lg" className="mt-4" />}
       </div>
     );
   }
@@ -328,6 +344,15 @@ export function AllocationNumberSection({ doc, customerTaxId }: Props) {
         disabled={fetching || saving}
         className="pgbtn-primary mt-5 w-full inline-flex items-center justify-center gap-2.5 min-h-[56px] sm:min-h-[60px] rounded-2xl text-base sm:text-[17px] font-bold hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:hover:translate-y-0"
       >
+        {/* The "2" medallion ties this button to step 2 of the strip above it,
+            the same way the editor's save button carries "1": the strip numbers
+            the steps, the button that DOES a step wears that step's number. */}
+        <span
+          aria-hidden
+          className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-white/25 text-[13px] font-bold"
+        >
+          2
+        </span>
         {fetching ? (
           <>
             <Loader2 className="w-5 h-5 animate-spin" />
