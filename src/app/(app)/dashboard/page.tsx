@@ -21,7 +21,9 @@ import { useDocuments } from "@/lib/document-store";
 import { isCountableRevenue } from "@/lib/types";
 import { useExpenses } from "@/lib/expense-store";
 import { useClients } from "@/lib/client-store";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, formatDate } from "@/lib/format";
+import { todayInIsrael } from "@/lib/date";
+import { addDays, daysInclusive } from "@/lib/report-period";
 import { useBusiness } from "@/lib/business-store";
 import { useProducts } from "@/lib/product-store";
 import { DocumentsTable } from "@/components/documents-table";
@@ -60,6 +62,9 @@ const ExpenseCategoriesChart = dynamic(
  * Replaced החודש / 3 חודשים / השנה / הכל on 2026-08-18 at the user's request.
  */
 type DateRange = "1m" | "2m" | "6m" | "12m";
+
+/** The picker's fifth option: a free מתאריך/עד-תאריך window. */
+type RangeChoice = DateRange | "custom";
 
 const RANGE_MONTHS: Record<DateRange, number> = { "1m": 1, "2m": 2, "6m": 6, "12m": 12 };
 
@@ -118,13 +123,33 @@ export default function DashboardPage() {
   const { items: clients } = useClients();
   const { items: products } = useProducts();
   const { business } = useBusiness();
-  const [range, setRange] = useState<DateRange>("1m");
+  const [range, setRange] = useState<RangeChoice>("1m");
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
+
+  /** Entering טווח starts as the last 30 days - real numbers immediately,
+   *  and a window the arrows of both date fields can then move anywhere. */
+  function enterCustomRange() {
+    if (range === "custom") return;
+    const t = todayInIsrael();
+    setCustomFrom(addDays(t, -29));
+    setCustomTo(t);
+    setRange("custom");
+  }
 
   const stats = useMemo(() => {
-    const start = getRangeStart(range);
+    // The preset ranges are open-ended ("this month and onwards" can only
+    // reach today anyway); the custom window is inclusive on both ends,
+    // and an empty end is open like the expenses/documents range filters.
+    const start = range === "custom" ? customFrom : getRangeStart(range);
+    const end = range === "custom" ? customTo : "";
 
-    const inRange = documents.filter((d) => d.date >= start);
-    const expensesInRange = expenses.filter((e) => e.date >= start);
+    const inRange = documents.filter(
+      (d) => (!start || d.date >= start) && (!end || d.date <= end),
+    );
+    const expensesInRange = expenses.filter(
+      (e) => (!start || e.date >= start) && (!end || e.date <= end),
+    );
 
     const paidDocs = inRange.filter((d) => d.status === "paid" && isCountableRevenue(d));
     const income = paidDocs.reduce((sum, d) => sum + (d.totalIls ?? d.total), 0);
@@ -134,8 +159,15 @@ export default function DashboardPage() {
     const openQuotesValue = openQuotes.reduce((sum, d) => sum + (d.totalIls ?? d.total), 0);
     const avgInvoice = paidDocs.length > 0 ? income / paidDocs.length : 0;
 
-    // Previous-period stats for month-over-month-style deltas.
-    const prev = getPreviousRange(range);
+    // Previous-period stats for month-over-month-style deltas. A custom
+    // window compares against the equally long window that ends the day
+    // before it starts; with an open end there is no honest comparison.
+    const prev =
+      range === "custom"
+        ? customFrom && customTo
+          ? { start: addDays(customFrom, -daysInclusive(customFrom, customTo)), end: customFrom }
+          : null
+        : getPreviousRange(range);
     let prevIncome = 0;
     let prevExpense = 0;
     let prevProfit = 0;
@@ -169,15 +201,35 @@ export default function DashboardPage() {
       paidCountDelta: calcDelta(paidDocs.length, prevPaidCount),
       avgDelta: calcDelta(avgInvoice, prevAvg),
     };
-  }, [documents, expenses, range]);
+  }, [documents, expenses, range, customFrom, customTo]);
 
   /** Hebrew label for the previous period (used in tooltips on delta badges) */
-  const prevLabel = PREV_RANGE_LABELS[range];
+  const prevLabel =
+    range === "custom"
+      ? customFrom && customTo
+        ? `${formatDate(addDays(customFrom, -daysInclusive(customFrom, customTo)))} - ${formatDate(addDays(customFrom, -1))}`
+        : ""
+      : PREV_RANGE_LABELS[range];
 
-  // Build a `month=YYYY-MM` query suffix only when the dashboard is showing
-  // exactly one calendar month; for other ranges the documents-table month
-  // filter wouldn't match, and we'd rather show "all months" than wrong months.
+  /** The picker's name for the period, wherever the page mentions it. */
+  const rangeLabel =
+    range === "custom"
+      ? customFrom && customTo
+        ? `${formatDate(customFrom)} - ${formatDate(customTo)}`
+        : "טווח מותאם"
+      : RANGE_LABELS[range];
+
+  // Deep-link suffix for the document-list cards: exactly one calendar month
+  // maps to the table's month filter, and a custom window maps to its
+  // from/to date-range filter; the in-between presets (חודשיים, חצי שנה)
+  // link unfiltered - we'd rather show "all months" than wrong months.
   const monthQs = (() => {
+    if (range === "custom") {
+      const parts = [customFrom && `from=${customFrom}`, customTo && `to=${customTo}`]
+        .filter(Boolean)
+        .join("&");
+      return parts ? `&${parts}` : "";
+    }
     if (range !== "1m") return "";
     const now = new Date();
     return `&month=${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -253,7 +305,7 @@ export default function DashboardPage() {
     {
       label: "סה״כ מסמכים",
       value: String(stats.inRange.length),
-      sub: RANGE_LABELS[range],
+      sub: rangeLabel,
       icon: Wallet,
       href: `/documents${monthQs ? `?${monthQs.slice(1)}` : ""}`,
       tone: "indigo",
@@ -325,7 +377,7 @@ export default function DashboardPage() {
           reserved for the one call to action on the page. */}
       <section className="rp-period-group" aria-label="סיכום לתקופה">
         <div className="rp-period-row">
-          <span className="rp-period-label">הנתונים לתקופה - {RANGE_LABELS[range]}</span>
+          <span className="rp-period-label">הנתונים לתקופה - {rangeLabel}</span>
           <div className="dash-range" role="group" aria-label="בחירת תקופה">
             {(Object.keys(RANGE_LABELS) as DateRange[]).map((r) => (
               <button
@@ -342,8 +394,54 @@ export default function DashboardPage() {
                 {RANGE_LABELS[r]}
               </button>
             ))}
+            <button
+              type="button"
+              onClick={enterCustomRange}
+              aria-pressed={range === "custom"}
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                range === "custom"
+                  ? "bg-stone-800 text-white shadow-sm"
+                  : "text-stone-700 hover:bg-stone-100"
+              }`}
+            >
+              טווח
+            </button>
           </div>
         </div>
+        {/* The two date fields get a full-width line of their own under the
+            pill (inside the row they squeezed into the leftover track and
+            stacked); LTR as a group, so "from - to" reads as one date span. */}
+        {range === "custom" && (
+          <div
+            dir="ltr"
+            className="flex flex-wrap items-center justify-start gap-2 mt-2 mb-3"
+            role="group"
+            aria-label="טווח תאריכים"
+          >
+            {/* Inline width: `.input-warm` sets an unlayered width:100%,
+                which beats any Tailwind width utility - the same trap
+                documented on `.dcbar-input`. */}
+            <input
+              type="date"
+              value={customFrom}
+              max={customTo || undefined}
+              onChange={(e) => setCustomFrom(e.target.value)}
+              aria-label="מתאריך"
+              className="input-warm py-1.5 px-2.5 text-xs"
+              style={{ width: "10.5rem" }}
+            />
+            <span className="text-xs text-stone-500" aria-hidden="true">-</span>
+            <input
+              type="date"
+              value={customTo}
+              min={customFrom || undefined}
+              onChange={(e) => setCustomTo(e.target.value)}
+              aria-label="עד תאריך"
+              className="input-warm py-1.5 px-2.5 text-xs"
+              style={{ width: "10.5rem" }}
+            />
+          </div>
+        )}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {cards.map((s, idx) => {
           const Icon = s.icon;
@@ -431,7 +529,7 @@ export default function DashboardPage() {
         <div className="card-soft p-6">
           <h2 className="font-semibold text-stone-900 mb-4 flex items-center gap-2">
             <Users className="w-5 h-5 text-stone-500" />
-            לקוחות מובילים ({RANGE_LABELS[range]})
+            לקוחות מובילים ({rangeLabel})
           </h2>
           <TopClients documents={stats.inRange} limit={5} />
         </div>
@@ -439,7 +537,7 @@ export default function DashboardPage() {
         <div className="card-soft p-6">
           <h2 className="font-semibold text-stone-900 mb-4 flex items-center gap-2">
             <Wallet className="w-5 h-5 text-stone-500" />
-            הוצאות לפי קטגוריה ({RANGE_LABELS[range]})
+            הוצאות לפי קטגוריה ({rangeLabel})
           </h2>
           <ExpenseCategoriesChart expenses={stats.expensesInRange} />
         </div>
