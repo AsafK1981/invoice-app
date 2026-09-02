@@ -1128,6 +1128,8 @@
 .v2-theme .v2-adv-icon--cyan { background: #cffafe; color: #0891b2; box-shadow: none; }
 .v2-theme .v2-adv-icon--lime { background: #ecfccb; color: #65a30d; box-shadow: none; }
 .v2-theme .v2-adv-icon--fuchsia { background: #fae8ff; color: #c026d3; box-shadow: none; }
+.v2-theme .v2-adv-icon--rose { background: #ffe4e6; color: #e11d48; box-shadow: none; }
+.v2-theme .v2-adv-icon--yellow { background: #fef9c3; color: #ca8a04; box-shadow: none; }
 
 /* The one flagship card (allocation numbers) keeps the strongest treatment
    here too: the brand orange->rose gradient with a white glyph, exactly like
@@ -1165,6 +1167,8 @@
   .v2-theme .v2-adv-card--cyan:hover { background: #ecfeff; border-color: #a5f3fc; }
   .v2-theme .v2-adv-card--lime:hover { background: #f7fee7; border-color: #d9f99d; }
   .v2-theme .v2-adv-card--fuchsia:hover { background: #fdf4ff; border-color: #f5d0fe; }
+  .v2-theme .v2-adv-card--rose:hover { background: #fff1f2; border-color: #fecdd3; }
+  .v2-theme .v2-adv-card--yellow:hover { background: #fefce8; border-color: #fef08a; }
   .v2-theme .v2-adv-card.is-flagship:hover { background: #fff7ed; border-color: #fed7aa; }
 }
 @media (prefers-reduced-motion: reduce) {

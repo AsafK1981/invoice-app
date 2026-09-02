@@ -7,6 +7,8 @@ import {
   RefreshCw,
   Users,
   Palette,
+  Type,
+  PenLine,
 } from "lucide-react";
 import WhatsappIcon from "./components/WhatsappIcon";
 
@@ -61,7 +63,9 @@ export type AdvantageTone =
   | "orange"
   | "cyan"
   | "lime"
-  | "fuchsia";
+  | "fuchsia"
+  | "rose"
+  | "yellow";
 
 export type Advantage = {
   key: string;
@@ -130,10 +134,18 @@ export const ADVANTAGES: Advantage[] = [
         <path d="M18 15l.8 2.2L21 18l-2.2.8L18 21l-.8-2.2L15 18l2.2-.8z" />
       </svg>
     ),
-    title: "עוזר AI חכם בעברית",
+    // Rewritten 2026-09-02 (Asaf): the card now carries the "knows you and
+    // learns you" story. "מכיר את הלקוחות, המסמכים וההוצאות" = the assistant
+    // reads the business's own data every turn (route.ts tools). "לומד מה
+    // חוזר על עצמו" = the recurring-pattern detection cron
+    // (src/lib/recurring-patterns.ts) that pre-writes monthly documents.
+    // The assistant itself keeps NO memory between chats yet; Asaf chose to
+    // make the full claim now and build assistant memory next. When that
+    // ships, nothing here needs to change.
+    title: "עוזר AI שמכיר ולומד אתכם",
     spotlight: true,
-    kicker: "שואלים בעברית, מקבלים תשובה",
-    body: "שאלו בשפה חופשית: כמה הכנסתי החודש? איפה החשבונית של דנה?\nהעוזר מוצא, עונה ומכין טיוטות - ואתם רק מאשרים.",
+    kicker: "מכיר את העסק שלכם, לא רק את הטופס",
+    body: "שואלים בעברית חופשית: כמה הכנסתי החודש? איפה החשבונית של דנה?\nהעוזר מכיר את הלקוחות, המסמכים וההוצאות שלכם, לומד מה חוזר על עצמו, ומכין טיוטות מראש - ואתם רק מאשרים.",
   },
   {
     key: "reminders",
@@ -166,16 +178,19 @@ export const ADVANTAGES: Advantage[] = [
     soon: true,
   },
   {
-    // Recurring billing templates (shipped; see src/app/(app)/recurring).
-    // Honest phrasing: there is NO cron auto-issuing documents - the system
-    // prepares the document and surfaces it on the due day, the user
-    // confirms with one click (recurring-due-alert.tsx). Copy must keep
-    // saying "אתם מאשרים", never "נשלח לבד".
+    // Recurring billing (shipped; see src/app/(app)/recurring). Since
+    // 2026-09-02 the daily cron (api/cron/recurring-proposals) DETECTS monthly
+    // cadences from history and writes an invoice_proposals row with the
+    // usual items and amount - so the copy now leads with "learns", not
+    // "you configure". Honest phrasing still applies: there is NO cron
+    // auto-issuing documents - it prepares a proposal and the user confirms
+    // with one click (invoice-proposal-card.tsx). Copy must keep saying
+    // "מחכה לאישור", never "נשלח לבד".
     key: "recurring",
     tone: "cyan",
     icon: <RefreshCw aria-hidden="true" />,
-    title: "חיוב חוזר ללקוחות קבועים",
-    body: "מגדירים פעם אחת - והמסמך החודשי מוכן לבד, ביום שבחרתם. אתם רק מאשרים בלחיצה.",
+    title: "המערכת לומדת את הלקוחות הקבועים שלכם",
+    body: "אחרי כמה חודשים היא מזהה לבד מי מקבל מסמך כל חודש, כותבת אותו מראש עם הפריטים והסכום הרגילים, ומחכה לאישור שלכם בלחיצה. שום דבר לא יוצא בלי שאישרתם.",
   },
   {
     key: "ocr",
@@ -196,7 +211,33 @@ export const ADVANTAGES: Advantage[] = [
     tone: "indigo",
     icon: <FileBarChart aria-hidden="true" />,
     title: "דו״חות שרואי חשבון אוהבים",
-    body: "דוח מע״מ תקופתי, עזר ל-1301, הצהרת הון, גיול חובות, כרטסת לקוח ויומן שנתי - הכל מוכן להורדה.",
+    // 2026-09-02: added the two accountant-facing features the list missed -
+    // the year-end tax projection (reports/tax-projection) and the מבנה אחיד
+    // (OPENFORMAT) export in src/lib/uniform-structure.
+    body: "דוח מע״מ תקופתי, עזר ל-1301, הצהרת הון, גיול חובות, כרטסת לקוח, יומן שנתי, תחזית מס לסוף השנה - וקובץ מבנה אחיד שרואה החשבון מייבא ישירות.",
+  },
+  {
+    // Large-text mode (src/lib/text-size.ts): one switch in the sidebar,
+    // persisted on businesses.text_size so it follows the user to every
+    // device. Added 2026-09-02 - Asaf wants the page to speak to older
+    // users explicitly.
+    key: "a11y",
+    tone: "rose",
+    icon: <Type aria-hidden="true" />,
+    title: "טקסט גדול בלחיצת כפתור",
+    body: "לא רואים טוב? כפתור אחד בתפריט מגדיל את כל הטקסט במערכת, והבחירה נשמרת לכל המכשירים שלכם. נבנה גם למי שהעיניים כבר לא בנות עשרים.",
+  },
+  {
+    // Positioning card for the paper-receipt-book crowd (2026-09-02). Every
+    // clause is a shipped fact: the editor's three essentials (client,
+    // amount, description), automatic sequential numbering, and the in-app
+    // assistant whose prompt carries the full app guide and never answers
+    // "I can't help" (2026-08-25, scripts/test-assistant-howto.mjs).
+    key: "simple",
+    tone: "yellow",
+    icon: <PenLine aria-hidden="true" />,
+    title: "פשוט כמו פנקס קבלות, רק בלי הנייר",
+    body: "למי, סכום, על מה - והקבלה מוכנה, ממוספרת ושמורה. לא בטוחים איך עושים משהו? כותבים לעוזר בתוך האפליקציה, בעברית פשוטה, והוא מסביר צעד אחר צעד. מי שעבד עד היום עם פנקס ועט ירגיש בבית מהמסמך הראשון.",
   },
   {
     // Client portal (src/app/portal): the client asks for a link by email
@@ -248,7 +289,8 @@ export const ADVANTAGES: Advantage[] = [
 
 
 /**
- * The nine cards /pricing shows under "מה כלול", in display order.
+ * The cards /pricing shows under "מה כלול", in display order (eleven since
+ * 2026-09-02: recurring + a11y joined).
  *
  * Keys only - the icon, tone, title and body all come from ADVANTAGES above,
  * so the pricing grid renders the SAME card as the homepage, pixel for pixel
@@ -262,9 +304,11 @@ const PRICING_KEYS = [
   "ai",
   "reminders",
   "whatsapp",
+  "recurring",
   "ocr",
   "ceiling",
   "reports",
+  "a11y",
   "migration",
   "channels",
 ] as const;

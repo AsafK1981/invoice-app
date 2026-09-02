@@ -65,6 +65,17 @@ const FAQ_ITEMS: { q: string; a: string }[] = [
     a: "יש אשף מעבר ייעודי ל-Invoice4U, Morning (חשבונית ירוקה), iCount, ריווחית, חשבשבת, EZcount, SUMIT, iFreelance, MyBooks, YPAY, Priority Zoom, תמ\"ל וכספית, וגם מסלול Excel לכל תוכנה אחרת. מעלים את קובצי הייצוא מהתוכנה הישנה, והמערכת מייבאת אוטומטית לקוחות, מוצרים, הוצאות והיסטוריית מסמכים - בלי להקליד שום דבר מחדש.",
   },
   {
+    // Added 2026-09-02 (Asaf): the page never spoke to the freelancer who
+    // still tears receipts off a paper pad. Every clause is shipped: the
+    // editor's three essentials, automatic numbering/dating, the large-text
+    // switch (src/lib/text-size.ts), the in-app assistant with the full app
+    // guide in its prompt (no dead ends, 2026-08-25), and the recurring
+    // proposals cron (api/cron/recurring-proposals) that pre-writes the
+    // monthly document for review.
+    q: "עד היום עבדתי עם פנקס קבלות מנייר. זה בשבילי?",
+    a: "כן, ואפילו במיוחד. קבלה חדשה זה שלושה שדות: למי, כמה ועל מה. המספור, התאריך והשמירה קורים לבד. אפשר להגדיל את כל הטקסט בלחיצה אחת. ואם לא בטוחים איך עושים משהו, יש עוזר בתוך האפליקציה שמדברים איתו בעברית פשוטה והוא מסביר איך, צעד אחר צעד, במקום לחפש בתפריטים. אחרי כמה חודשים המערכת כבר מכינה מראש את הקבלות ללקוחות הקבועים שלכם.",
+  },
+  {
     q: "מה זה מספר הקצאה ואיך זה עובד כאן?",
     a: "זה מספר שרשות המסים מנפיקה לחשבוניות עסקיות מעל סכום מסוים (כרגע: מעל 5,000 ש\"ח לפני מע\"מ), כדי שהלקוח יוכל לנכות מע\"מ. אחרי חיבור חד-פעמי לרשות המסים, המערכת מבקשת את המספר בלחיצה אחת, בלי טפסים ידניים.",
   },

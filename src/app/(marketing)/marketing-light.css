@@ -534,6 +534,16 @@ h1.ml-hero-h1 {
   background: #fae8ff;
   color: #c026d3;
 }
+/* 2026-09-02: two more tones for the a11y + "paper receipt book" cards,
+   same *-100 tile / *-600 glyph formula as the rest. */
+.ml-adv-icon--rose {
+  background: #ffe4e6;
+  color: #e11d48;
+}
+.ml-adv-icon--yellow {
+  background: #fef9c3;
+  color: #ca8a04;
+}
 
 /* Hover "pop" (owner 2026-08-10: "יש יותר מדי שטח מת... צריך שהוא יבלוט,
    יצא החוצה"): lift + deepen the shadow, scale the icon tile slightly, and
@@ -605,6 +615,14 @@ h1.ml-hero-h1 {
   .ml-adv-card--fuchsia:hover {
     background: #fdf4ff;
     border-color: #f5d0fe;
+  }
+  .ml-adv-card--rose:hover {
+    background: #fff1f2;
+    border-color: #fecdd3;
+  }
+  .ml-adv-card--yellow:hover {
+    background: #fefce8;
+    border-color: #fef08a;
   }
 }
 
