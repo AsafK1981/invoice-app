@@ -54,6 +54,8 @@ export function useBusiness() {
               ? data.monthly_reminder_channels
               : ["email", "inapp"],
             monthlyReminderLastSent: data.monthly_reminder_last_sent ?? undefined,
+            // Opt-out, not opt-in: anything but an explicit false is "on".
+            recurringSuggestionsEnabled: data.recurring_suggestions_enabled !== false,
             roundTotalDefault: data.round_total_default ?? false,
             textSize: data.text_size === "large" ? "large" : "normal",
             documentDesign: data.document_design ?? null,
@@ -101,6 +103,7 @@ export async function saveBusiness(business: Business): Promise<void> {
         business.monthlyReminderChannels && business.monthlyReminderChannels.length > 0
           ? business.monthlyReminderChannels
           : ["email", "inapp"],
+      recurring_suggestions_enabled: business.recurringSuggestionsEnabled !== false,
       round_total_default: business.roundTotalDefault ?? false,
       // Defense in depth: this is the client's own write path, but the raw
       // in-memory value could in principle be anything (a bug elsewhere, a

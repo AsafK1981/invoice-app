@@ -164,8 +164,17 @@ export function rollTextForward(text: string, fromDate: string, toDate: string):
   return shiftMonthTokens(restored, delta, fromYear || new Date().getFullYear());
 }
 
-/** Signature of what stays constant across a client's recurring documents. */
-export function documentSignature(doc: Pick<InvoiceDocument, "subject" | "items">): string {
+/**
+ * Signature of what stays constant across a client's recurring documents.
+ * Structurally typed rather than Pick<InvoiceDocument, ...> so the cadence
+ * detector (recurring-patterns.ts) can hand it the trimmed document shape it
+ * reads out of the database, without inventing item ids and totals it does
+ * not need.
+ */
+export function documentSignature(doc: {
+  subject?: string | null;
+  items?: { description?: string | null }[] | null;
+}): string {
   const subject = normalizePeriodicText(doc.subject);
   const items = (doc.items || []).map((i) => normalizePeriodicText(i.description)).filter(Boolean);
   if (!subject && items.length === 0) return "";

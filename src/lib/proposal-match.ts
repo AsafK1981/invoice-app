@@ -16,13 +16,21 @@
  *      billed month (a proposal for 2026-08 is never matched by a July invoice);
  *   2. same client: by id when the proposal carries one, otherwise by the
  *      normalised client name;
- *   3. the same invoice: an identical subject (whitespace-insensitive), OR the
- *      same document type with the same pre-VAT amount (the owner rewrote the
- *      subject but issued the same bill).
+ *   3. the same document type, AND either an identical subject
+ *      (whitespace-insensitive) or the same pre-VAT amount (the owner rewrote
+ *      the subject but issued the same bill).
  *
  * The rule is deliberately narrow: a false "already issued" hides a card and
  * loses the month's invoice, while a false "not issued" only leaves a card
  * that the owner dismisses with one click.
+ *
+ * Scope: this module is the sole matcher for ISSUED DOCUMENTS against an
+ * EXISTING proposal, on both the dashboard and the automation API.
+ * `alreadyBilledForPeriod` in lib/recurring-patterns.ts is the separate,
+ * detection-side check that runs BEFORE any proposal exists, deciding whether
+ * a cadence has already been billed this month. The two are deliberately not
+ * the same function: this one compares a concrete proposal row, that one
+ * compares a pattern signature.
  */
 
 export interface IssuedCandidate {
@@ -68,9 +76,14 @@ function sameClient(p: ProposalShape, d: IssuedCandidate): boolean {
 }
 
 function sameInvoice(p: ProposalShape, d: IssuedCandidate): boolean {
+  // The type gate is unconditional. A quote and the tax invoice that follows
+  // it routinely carry the same subject and the same amount, and matching on
+  // subject alone would let the quote resolve the invoice's proposal - the
+  // card disappears and the invoice is never issued.
+  if (d.type !== p.documentType) return false;
   const subject = norm(p.subject);
   if (subject !== "" && norm(d.subject) === subject) return true;
-  return d.type === p.documentType && Math.abs(d.subtotal - p.total) <= 0.01;
+  return Math.abs(d.subtotal - p.total) <= 0.01;
 }
 
 /**

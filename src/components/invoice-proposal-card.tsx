@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Sparkles, Check, Pencil, X, Loader2 } from "lucide-react";
+import { Sparkles, Check, Pencil, X, BellOff, Loader2 } from "lucide-react";
 import {
   usePendingProposals,
   claimProposal,
@@ -58,6 +58,15 @@ function ProposalRow({ proposal }: { proposal: InvoiceProposal }) {
   const [showDetails, setShowDetails] = useState(false);
 
   const typeLabel = DOCUMENT_TYPE_LABELS[proposal.documentType] || "מסמך";
+
+  // A proposal the app suggested by itself (detected cadence) rather than one
+  // an automation was told to prepare. It has to explain where it came from,
+  // and it has to offer a way to stop asking.
+  const isPattern = proposal.source.startsWith("pattern:") && proposal.patternMeta !== null;
+  const patternExplainer =
+    isPattern && proposal.patternMeta
+      ? `לפי ${proposal.patternMeta.occurrences} המסמכים האחרונים ל${proposal.clientName}, בערך ב-${proposal.patternMeta.dayOfMonth} לחודש`
+      : null;
 
   // Compute here what approving will actually issue, and show THAT.
   // proposal.total is the sum of the proposed lines before VAT; for a
@@ -216,17 +225,31 @@ function ProposalRow({ proposal }: { proposal: InvoiceProposal }) {
     router.push(`/documents/new/${DOC_TYPE_ROUTE[proposal.documentType]}?prefill=proposal`);
   }
 
-  async function handleDismiss() {
-    const ok = await confirm({
-      title: "לבטל את ההצעה?",
-      message: `ההצעה ל${proposal.clientName} על ${formatCurrency(amounts.total)} תוסר. אפשר תמיד ליצור את המסמך ידנית.`,
-      tone: "danger",
-      confirmLabel: "בטל הצעה",
-    });
+  /**
+   * `mute` is the "stop noticing this" answer, offered only on detected
+   * cadences: it dismisses this month's card AND tells the detector not to
+   * come back. Plain dismiss stays a one-month "לא עכשיו".
+   */
+  async function handleDismiss(mute = false) {
+    const ok = await confirm(
+      mute
+        ? {
+            title: "להפסיק לזהות את המסמך הזה?",
+            message: `לא נציע יותר את ה${typeLabel} החוזר ל${proposal.clientName}. אפשר תמיד ליצור את המסמך ידנית, וההצעות לשאר המסמכים ימשיכו כרגיל.`,
+            tone: "danger",
+            confirmLabel: "אל תזהה יותר",
+          }
+        : {
+            title: "לבטל את ההצעה?",
+            message: `ההצעה ל${proposal.clientName} על ${formatCurrency(amounts.total)} תוסר. אפשר תמיד ליצור את המסמך ידנית.`,
+            tone: "danger",
+            confirmLabel: "בטל הצעה",
+          },
+    );
     if (!ok) return;
     setBusy("dismiss");
     try {
-      await dismissProposal(proposal.id);
+      await dismissProposal(proposal.id, mute ? { mute: true } : undefined);
     } catch (err) {
       setError(err instanceof Error ? err.message : "שגיאה");
       setBusy(null);
@@ -254,6 +277,9 @@ function ProposalRow({ proposal }: { proposal: InvoiceProposal }) {
             {" · "}
             {proposal.subject}
           </p>
+          {patternExplainer && (
+            <p className="text-xs text-stone-600 mt-1">{patternExplainer}</p>
+          )}
 
           <ul className="mt-2 space-y-0.5 text-xs text-stone-700">
             {proposal.items.map((i, idx) => {
@@ -362,13 +388,24 @@ function ProposalRow({ proposal }: { proposal: InvoiceProposal }) {
             </button>
             <button
               type="button"
-              onClick={handleDismiss}
+              onClick={() => handleDismiss(false)}
               disabled={busy !== null}
               className="inline-flex items-center gap-1.5 text-sm font-medium text-stone-500 hover:text-stone-700 px-2 disabled:opacity-60"
             >
               <X className="w-4 h-4" />
               לא עכשיו
             </button>
+            {isPattern && (
+              <button
+                type="button"
+                onClick={() => handleDismiss(true)}
+                disabled={busy !== null}
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-stone-500 hover:text-rose-700 px-2 disabled:opacity-60"
+              >
+                <BellOff className="w-4 h-4" />
+                לא לזהות יותר את זה
+              </button>
+            )}
           </div>
         </div>
       </div>

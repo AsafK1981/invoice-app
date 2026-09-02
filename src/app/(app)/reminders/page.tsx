@@ -3,6 +3,7 @@
 import { CalendarClock } from "lucide-react";
 import { MonthlyReminderSettingsSection } from "@/components/monthly-reminder-settings-section";
 import { DunningSettingsSection } from "@/components/dunning-settings-section";
+import { RecurringSuggestionsSettingsSection } from "@/components/recurring-suggestions-settings-section";
 
 /**
  * /reminders - every reminder the app can send, on one page.
@@ -29,6 +30,7 @@ export default function RemindersPage() {
 
       <div className="space-y-5 max-w-3xl">
         <MonthlyReminderSettingsSection />
+        <RecurringSuggestionsSettingsSection />
         <DunningSettingsSection />
       </div>
     </div>

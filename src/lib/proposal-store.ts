@@ -35,6 +35,18 @@ export interface InvoiceProposal {
   total: number;
   /** Evidence rows from the source, display only (e.g. date + venue per gig). */
   details: { label: string; note?: string; amount?: number }[];
+  /**
+   * The `details` payload of a detected-cadence proposal, which is an OBJECT
+   * rather than the evidence ARRAY above (the גיגים automation writes the
+   * array; the recurring-pattern cron writes this). Null for every other
+   * source. Feeds the card's "why am I seeing this" line.
+   */
+  patternMeta: {
+    dayOfMonth: number;
+    occurrences: number;
+    lastDocId?: string;
+    lastDocNumber?: number;
+  } | null;
   status: "pending" | "approved" | "dismissed";
   documentId: string | null;
   /** The uuid the document will be created with. See claimProposal. */
@@ -43,6 +55,23 @@ export interface InvoiceProposal {
 }
 
 const CHANGE_EVENT = "invoice-app:proposals-changed";
+
+/** `details.pattern` when the row carries the object form, else null. */
+function readPatternMeta(details: unknown): InvoiceProposal["patternMeta"] {
+  if (!details || typeof details !== "object" || Array.isArray(details)) return null;
+  const pattern = (details as Record<string, unknown>).pattern;
+  if (!pattern || typeof pattern !== "object") return null;
+  const p = pattern as Record<string, unknown>;
+  const dayOfMonth = Number(p.dayOfMonth);
+  const occurrences = Number(p.occurrences);
+  if (!Number.isFinite(dayOfMonth) || !Number.isFinite(occurrences)) return null;
+  return {
+    dayOfMonth,
+    occurrences,
+    lastDocId: p.lastDocId != null ? String(p.lastDocId) : undefined,
+    lastDocNumber: p.lastDocNumber != null ? Number(p.lastDocNumber) : undefined,
+  };
+}
 
 function mapRow(row: Record<string, unknown>): InvoiceProposal {
   const rawDetails = Array.isArray(row.details) ? row.details : [];
@@ -73,6 +102,7 @@ function mapRow(row: Record<string, unknown>): InvoiceProposal {
         amount: rec.amount != null ? Number(rec.amount) : undefined,
       };
     }),
+    patternMeta: readPatternMeta(row.details),
     status: (row.status as InvoiceProposal["status"]) || "pending",
     documentId: (row.document_id as string) || null,
     intendedDocumentId: (row.intended_document_id as string) || null,
@@ -292,14 +322,56 @@ export async function releaseProposal(id: string): Promise<void> {
   notifyProposalsChanged();
 }
 
-/** Dismiss a proposal the owner does not want issued. */
-export async function dismissProposal(id: string): Promise<void> {
+/**
+ * Dismiss a proposal the owner does not want issued.
+ *
+ * `mute` is the stronger answer, offered only on detected-cadence proposals
+ * ("לא לזהות יותר את זה"): it stamps `details.mute = true` on the dismissed
+ * row, and the cron treats that as permanent for this pattern instead of
+ * coming back next month. The flag is MERGED into the existing details so the
+ * `pattern` block survives - the row is also the audit trail of what was
+ * offered.
+ */
+export async function dismissProposal(id: string, opts?: { mute?: boolean }): Promise<void> {
   const now = new Date().toISOString();
+  const update: Record<string, unknown> = {
+    status: "dismissed",
+    resolved_at: now,
+    updated_at: now,
+  };
+
+  if (opts?.mute) {
+    const { data: row } = await supabase
+      .from("invoice_proposals")
+      .select("details")
+      .eq("id", id)
+      .maybeSingle();
+    const existing =
+      row?.details && typeof row.details === "object" && !Array.isArray(row.details)
+        ? (row.details as Record<string, unknown>)
+        : {};
+    update.details = { ...existing, mute: true };
+  }
+
   const { error } = await supabase
     .from("invoice_proposals")
-    .update({ status: "dismissed", resolved_at: now, updated_at: now })
+    .update(update)
     .eq("id", id)
     .in("status", ["pending", "approved"]);
   if (error) throw new Error(error.message);
+
+  // The update above is conditional on the row still being unresolved, which
+  // is right for the status - but it means a plain "לא עכשיו" that landed
+  // first (another tab, the phone) would leave this row dismissed WITHOUT the
+  // mute flag, and the pattern would come back next month even though the
+  // owner asked it to stop. Re-assert the flag unconditionally on the row.
+  if (opts?.mute) {
+    const { error: muteError } = await supabase
+      .from("invoice_proposals")
+      .update({ details: update.details, updated_at: new Date().toISOString() })
+      .eq("id", id);
+    if (muteError) throw new Error(muteError.message);
+  }
+
   notifyProposalsChanged();
 }

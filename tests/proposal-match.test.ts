@@ -64,6 +64,14 @@ describe("findIssuedMatch", () => {
     expect(findIssuedMatch(proposal, [doc({ subject: "משהו אחר", type: "receipt" })])).toBeNull();
   });
 
+  it("does not match an identical subject issued as a different document type", () => {
+    // The quote that preceded this proforma carries the same subject and the
+    // same amount. Matching it would resolve the proposal against a document
+    // that bills nobody, and the proforma would never be issued.
+    expect(findIssuedMatch(proposal, [doc({ type: "quote" })])).toBeNull();
+    expect(findIssuedMatch(proposal, [doc({ type: "receipt" })])).toBeNull();
+  });
+
   it("never matches a draft", () => {
     expect(findIssuedMatch(proposal, [doc({ status: "draft" })])).toBeNull();
   });

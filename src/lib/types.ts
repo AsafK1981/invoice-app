@@ -70,6 +70,10 @@ export interface Business {
   /** `YYYY-MM-DD` of the last time this business's reminder was sent or
    *  evaluated-and-skipped, so the cron doesn't re-check it every hour. */
   monthlyReminderLastSent?: string;
+  /** When false, the daily recurring-proposal cron never prepares a card for
+   *  this business, even when it detects a clear monthly cadence. Defaults to
+   *  true (the DB column is NOT NULL DEFAULT true). */
+  recurringSuggestionsEnabled?: boolean;
   /** Default state for the per-document "round total to whole shekel" toggle. */
   roundTotalDefault?: boolean;
   /** "טקסט גדול" - opt-in large-text mode for the signed-in app (sidebar
