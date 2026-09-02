@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
   // browser and silently log the victim into the attacker's account.
   const csrfCookie = req.cookies.get("g_csrf_token")?.value;
   if (typeof csrfBody !== "string" || !csrfCookie || csrfBody !== csrfCookie) {
-    emitSecurityEvent({
+    await emitSecurityEvent({
       kind: "google_login_csrf",
       ip: clientIp(req),
       message:

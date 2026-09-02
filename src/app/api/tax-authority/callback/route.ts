@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
     .maybeSingle();
 
   if (!stateRow) {
-    emitSecurityEvent({
+    await emitSecurityEvent({
       kind: "tax_authority_unauthorized",
       ip: clientIp(req),
       message: "OAuth callback with invalid/unknown state: possible CSRF or replay",

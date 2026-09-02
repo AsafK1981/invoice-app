@@ -44,7 +44,7 @@ export interface SecurityEvent {
   extra?: Record<string, string | number | boolean | null>;
 }
 
-export function emitSecurityEvent(ev: SecurityEvent): void {
+export async function emitSecurityEvent(ev: SecurityEvent): Promise<void> {
   const severity = ev.severity ?? "warning";
   try {
     Sentry.withScope((scope) => {
@@ -72,9 +72,12 @@ export function emitSecurityEvent(ev: SecurityEvent): void {
     { ip: ev.ip, userId: ev.userId, businessId: ev.businessId, extra: ev.extra },
   );
 
-  // Direct ingest to Axiom (free; doesn't require Vercel Pro Log
-  // Drains). Fire-and-forget, never blocks the request.
-  logToAxiom({
+  // Direct ingest to Axiom (free; doesn't require Vercel Pro Log Drains).
+  // AWAITED on purpose: Vercel kills the function the moment the handler
+  // returns, so an un-awaited POST is dropped on any fast path. Security
+  // events are rare and always on an error branch, so the extra round trip
+  // costs nothing that matters. logToAxiom never rejects.
+  await logToAxiom({
     source: "security-events",
     severity,
     kind: ev.kind,

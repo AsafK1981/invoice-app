@@ -472,7 +472,7 @@ export async function requestAllocation(
     // the diagnosis of a real user's rejection (2026-08-31, code 406 lost
     // until the request was replayed by hand). Mirror the rejection to
     // Axiom so it survives long enough for an operator to read.
-    logToAxiom({
+    await logToAxiom({
       kind: "tax_allocation_rejected",
       http: r.status,
       code: resultCode,

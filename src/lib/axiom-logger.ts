@@ -76,10 +76,17 @@ async function post(payload: unknown[]): Promise<void> {
 }
 
 /**
- * Log one event. Never throws, never blocks the caller. See the header for
- * why this stays fire-and-forget rather than using `after()`.
+ * Log one event. Never throws.
+ *
+ * Returns the in-flight POST so a SERVER caller can await it. That await is
+ * not optional in practice: Vercel tears the function down as soon as the
+ * handler returns, and a fire-and-forget fetch to Axiom loses the race on
+ * every fast path. Verified on 2026-09-02 by emitting a real production
+ * security event with the URL already corrected and finding nothing in the
+ * dataset. Callers that cannot await (client-reachable code) may still drop
+ * the promise; they simply lose the event.
  */
-export function logToAxiom(event: AxiomEvent): void {
-  if (!AXIOM_INGEST_TOKEN) return; // ingest disabled (dev or unconfigured)
-  void post([{ _time: new Date().toISOString(), ...event }]);
+export function logToAxiom(event: AxiomEvent): Promise<void> {
+  if (!AXIOM_INGEST_TOKEN) return Promise.resolve(); // disabled (dev or unconfigured)
+  return post([{ _time: new Date().toISOString(), ...event }]);
 }

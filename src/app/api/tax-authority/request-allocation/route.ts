@@ -223,7 +223,7 @@ export async function POST(req: NextRequest) {
   try {
     accessToken = decryptColumn(creds.access_token as string);
   } catch (err) {
-    emitSecurityEvent({
+    await emitSecurityEvent({
       kind: "tax_authority_token_decrypt_failed",
       ip: clientIp(req),
       businessId: business.id as string,
