@@ -9,6 +9,7 @@ import {
   Palette,
   Type,
   PenLine,
+  Coins,
 } from "lucide-react";
 import WhatsappIcon from "./components/WhatsappIcon";
 
@@ -65,7 +66,8 @@ export type AdvantageTone =
   | "lime"
   | "fuchsia"
   | "rose"
-  | "yellow";
+  | "yellow"
+  | "blue";
 
 export type Advantage = {
   key: string;
@@ -250,14 +252,29 @@ export const ADVANTAGES: Advantage[] = [
     body: "הלקוח מקבל קישור למייל ורואה את כל המסמכים שלו במקום אחד, כולל מה שולם ומה ממתין - בלי סיסמה ובלי לחפש במיילים.",
   },
   {
-    // Document design choice (src/lib/document-themes.ts): 5 layout
-    // families x accent themes, picked per business. "מגוון סגנונות" keeps
-    // the copy true even as the exact theme count changes.
+    // Document design (src/lib/document-themes.ts + document-design-section):
+    // logo upload with LOGO_POSITIONS, DOCUMENT_TEMPLATES as ready-made
+    // starting points, and free choice of layout family / accent / font on
+    // top. Rewritten 2026-09-02 to Asaf's wording: logo + templates or
+    // your own design, simply. "מגוון" keeps the copy true as counts change.
     key: "design",
     tone: "fuchsia",
     icon: <Palette aria-hidden="true" />,
-    title: "בוחרים איך המסמך ייראה",
-    body: "מגוון סגנונות עיצוב וצבעים לבחירה - והמסמכים שלכם נראים כמו העסק שלכם, לא כמו טופס גנרי.",
+    title: "הלוגו שלכם, העיצוב שלכם",
+    body: "מעלים לוגו, בוחרים תבנית מוכנה או מעצבים בעצמכם - סגנון, צבע ופונט - בכמה לחיצות. המסמכים נראים כמו העסק שלכם, לא כמו טופס גנרי.",
+  },
+  {
+    // Foreign-currency documents (2026-09-02, the twelfth card so the 3-col
+    // grid closes on a full row). Facts: CURRENCIES in src/lib/currencies.ts
+    // (USD/EUR/GBP + more), the editor's currency picker (receipt-editor)
+    // pulls the Bank of Israel representative rate via /api/exchange-rate
+    // (src/lib/exchange-rate.ts, user can override it), and ilsEquivalents
+    // stores the shekel subtotal/VAT/total on the document for the reports.
+    key: "currency",
+    tone: "blue",
+    icon: <Coins aria-hidden="true" />,
+    title: "חשבוניות גם בדולר ובאירו",
+    body: "לקוח מחו״ל? מוציאים את המסמך במטבע שלו. השער היציג של בנק ישראל נמשך לבד, והסכום בשקלים נשמר בשביל הדוחות והמע״מ.",
   },
   {
     key: "migration",
@@ -289,8 +306,8 @@ export const ADVANTAGES: Advantage[] = [
 
 
 /**
- * The cards /pricing shows under "מה כלול", in display order (eleven since
- * 2026-09-02: recurring + a11y joined).
+ * The cards /pricing shows under "מה כלול", in display order (twelve since
+ * 2026-09-02: recurring + a11y + currency joined).
  *
  * Keys only - the icon, tone, title and body all come from ADVANTAGES above,
  * so the pricing grid renders the SAME card as the homepage, pixel for pixel
@@ -309,6 +326,7 @@ const PRICING_KEYS = [
   "ceiling",
   "reports",
   "a11y",
+  "currency",
   "migration",
   "channels",
 ] as const;

@@ -544,6 +544,10 @@ h1.ml-hero-h1 {
   background: #fef9c3;
   color: #ca8a04;
 }
+.ml-adv-icon--blue {
+  background: #dbeafe;
+  color: #2563eb;
+}
 
 /* Hover "pop" (owner 2026-08-10: "יש יותר מדי שטח מת... צריך שהוא יבלוט,
    יצא החוצה"): lift + deepen the shadow, scale the icon tile slightly, and
@@ -623,6 +627,10 @@ h1.ml-hero-h1 {
   .ml-adv-card--yellow:hover {
     background: #fefce8;
     border-color: #fef08a;
+  }
+  .ml-adv-card--blue:hover {
+    background: #eff6ff;
+    border-color: #bfdbfe;
   }
 }
 
