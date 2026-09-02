@@ -63,6 +63,11 @@ interface Status {
     environment: "sandbox" | "production";
     last_error: string | null;
   } | null;
+  /**
+   * Whether an operator ת.ז is on file for this connection. Only the flag
+   * crosses the wire; the number itself stays on a service-role-only table.
+   */
+  hasOperatorTaxId?: boolean;
 }
 
 const CONNECT_STEPS = [
@@ -87,6 +92,7 @@ export function TaxAuthoritySection() {
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState(false);
   const [toast, setToast] = useState<{ kind: "success" | "error"; text: string } | null>(null);
+  const [operatorInput, setOperatorInput] = useState("");
   const confirm = useConfirm();
 
   useEffect(() => {
@@ -136,6 +142,34 @@ export function TaxAuthoritySection() {
       }
     } catch (err) {
       setToast({ kind: "error", text: err instanceof Error ? err.message : "שגיאה" });
+      setActing(false);
+    }
+  }
+
+  async function handleSaveOperator() {
+    setActing(true);
+    setToast(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch("/api/tax-authority/operator", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ operatorTaxId: operatorInput }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setToast({ kind: "success", text: "ת.ז מבצע ההקצאה נשמרה." });
+        setOperatorInput("");
+        load();
+      } else {
+        setToast({ kind: "error", text: data.error || "שגיאה" });
+      }
+    } catch (err) {
+      setToast({ kind: "error", text: err instanceof Error ? err.message : "שגיאה" });
+    } finally {
       setActing(false);
     }
   }
@@ -384,6 +418,49 @@ export function TaxAuthoritySection() {
               ))}
             </dl>
           </div>
+          {/* Companies only. A sole trader's עוסק number IS their ת.ז, so the
+              allocation already carries a valid person ID and this would be
+              noise. A חברה has a ח.פ., which is not a person, and רשות המסים
+              expects the ID of whoever actually performs the allocation. */}
+          {status.businessType === "company" && (
+            <div
+              className={`rounded-2xl border p-4 ${
+                status.hasOperatorTaxId
+                  ? "border-stone-200 bg-white/70"
+                  : "border-amber-200 bg-amber-50/70"
+              }`}
+            >
+              <p className="text-sm font-bold text-stone-900">ת.ז של מבצע ההקצאה</p>
+              <p className="text-[11px] leading-relaxed text-stone-600 mt-1.5">
+                רשות המסים מבקשת את תעודת הזהות של האדם שמבצע את ההקצאה, ולא את מספר
+                החברה. אצל חברה בע&quot;מ אלה שני מספרים שונים, ולכן צריך למלא זאת פעם אחת.
+                המספר נשמר אצלנו בלבד ואינו מוצג שוב.
+              </p>
+              {status.hasOperatorTaxId ? (
+                <p className="mt-2.5 text-xs font-semibold text-emerald-700">
+                  ✓ שמור. אפשר להחליף בהזנת מספר חדש.
+                </p>
+              ) : null}
+              <div className="mt-3 flex gap-2">
+                <input
+                  value={operatorInput}
+                  onChange={(e) => setOperatorInput(e.target.value.replace(/\D/g, "").slice(0, 9))}
+                  inputMode="numeric"
+                  dir="ltr"
+                  placeholder="123456782"
+                  aria-label="ת.ז של מבצע ההקצאה"
+                  className="flex-1 min-w-0 rounded-xl border border-stone-300 px-3 py-2 font-mono text-sm text-stone-900 placeholder:text-stone-400 focus:border-stone-400 focus:outline-none"
+                />
+                <button
+                  onClick={handleSaveOperator}
+                  disabled={acting || operatorInput.length !== 9}
+                  className="flex-shrink-0 rounded-xl bg-stone-900 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-stone-800 disabled:cursor-not-allowed disabled:bg-stone-300"
+                >
+                  שמירה
+                </button>
+              </div>
+            </div>
+          )}
           <button
             onClick={handleDisconnect}
             disabled={acting}

@@ -54,9 +54,16 @@ export async function GET(req: NextRequest) {
 
   const { data: creds } = await sb
     .from("tax_authority_credentials")
-    .select("vat_number, connected_at, expires_at, last_used_at, environment, last_error")
+    .select(
+      "vat_number, connected_at, expires_at, last_used_at, environment, last_error, operator_tax_id",
+    )
     .eq("business_id", biz.id)
     .maybeSingle();
+
+  // Report only WHETHER an operator ת.ז is set, never the number itself. It
+  // lives on a service-role-only table precisely so it does not reach the
+  // browser, and echoing it back here would undo that.
+  const { operator_tax_id: operatorTaxId, ...safeCreds } = creds ?? {};
 
   return NextResponse.json({
     ok: true,
@@ -64,7 +71,8 @@ export async function GET(req: NextRequest) {
     environment: taxAuthorityEnv(),
     businessType: biz.business_type,
     connected: !!creds,
-    credentials: creds || null,
+    credentials: creds ? safeCreds : null,
+    hasOperatorTaxId: !!operatorTaxId,
     threshold: allocationRequiredThreshold(),
   });
 }

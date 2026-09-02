@@ -287,10 +287,29 @@ export async function POST(req: NextRequest) {
   const discountIls =
     (Number(doc.discount_amount ?? 0) || 0) * (Number(doc.exchange_rate ?? 1) || 1);
 
+  // `user_id` in the ITA v2 body is the ת.ז of the HUMAN performing the
+  // allocation, not the issuer's number. requestAllocation defaults it to
+  // vatNumber, which is right by coincidence for an עוסק מורשה (a sole
+  // trader's עוסק number IS their ת.ז) and wrong for a חברה, where it sends
+  // a ח.פ. where a person belongs.
+  //
+  // Only override for a company, and only when an operator ת.ז has actually
+  // been saved. A company with none keeps today's exact behaviour rather
+  // than being blocked: no company has ever completed an allocation, so
+  // there is no evidence the current shape always fails, and refusing
+  // locally would remove a path that might work. Never override for a sole
+  // trader - dropping the fallback there regresses the one flow that does
+  // work, with code 446.
+  const operatorTaxId =
+    business.business_type === "company"
+      ? String(creds.operator_tax_id || "").replace(/\D/g, "")
+      : "";
+
   const allocRequest: AllocationRequest = {
     invoiceId: doc.id as string,
     invoiceType,
     vatNumber,
+    ...(operatorTaxId ? { userId: operatorTaxId } : {}),
     invoiceReferenceNumber: String(doc.number ?? ""),
     customerVatNumber,
     invoiceDate: doc.date as string,
