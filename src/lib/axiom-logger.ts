@@ -23,11 +23,20 @@
 //      handler returns, which the old comment admitted while doing it
 //      anyway.
 //
+// Faults 1 and 2 are fixed below and are what actually kept every event
+// from landing. Fault 3 is NOT fixed here, on purpose: the obvious fix is
+// `after()` from next/server, but this module is reachable from a client
+// bundle (tax-authority.ts is imported by app/(app)/documents/[id]/page.tsx),
+// and importing next/server there fails the build outright. Tried on
+// 2026-09-02 and it broke production. The one path where a dropped event
+// would really hurt, an allocation rejection, is covered by an awaited
+// Sentry.captureMessage in api/tax-authority/request-allocation instead.
+// If this ever needs to be airtight, move logToAxiom behind a route rather
+// than importing a server-only API into shared code.
+//
 // AXIOM_API_BASE is deliberately NOT reused here: /api/cron/axiom-archive
 // needs it for the control-plane `_apl` query, which the edge host does
 // not serve. Ingest and query are different hosts; keep them separate.
-
-import { after } from "next/server";
 
 const AXIOM_INGEST_TOKEN = process.env.AXIOM_INGEST_TOKEN || "";
 const AXIOM_DATASET = process.env.AXIOM_DATASET || "mysuperfriendlyinvoiceapp";
@@ -67,23 +76,10 @@ async function post(payload: unknown[]): Promise<void> {
 }
 
 /**
- * Log one event. Never throws. The POST is deferred with `after()` so it
- * survives the handler returning; callers do not await, and a logging
- * failure never affects the user request.
+ * Log one event. Never throws, never blocks the caller. See the header for
+ * why this stays fire-and-forget rather than using `after()`.
  */
 export function logToAxiom(event: AxiomEvent): void {
   if (!AXIOM_INGEST_TOKEN) return; // ingest disabled (dev or unconfigured)
-
-  const payload = [{ _time: new Date().toISOString(), ...event }];
-
-  try {
-    // Keeps the serverless function alive until the POST resolves. Same
-    // mechanism api/portal/request-link already uses for deferred work.
-    after(() => post(payload));
-  } catch {
-    // `after()` throws outside a request scope (a script, module init, a
-    // test). Fall back to a plain fire-and-forget rather than losing the
-    // event or crashing the caller.
-    void post(payload);
-  }
+  void post([{ _time: new Date().toISOString(), ...event }]);
 }
