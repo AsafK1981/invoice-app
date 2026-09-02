@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Sparkles, Mail, LogIn, UserPlus, Eye, EyeOff, ArrowRight, Check } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { track } from "@vercel/analytics";
+import { readAttribution } from "@/lib/attribution";
 
 type Mode = "login" | "signup" | "forgot";
 
@@ -192,15 +193,24 @@ function LoginForm() {
     setSuccess(null);
 
     if (mode === "signup") {
+      // Where this person came from, captured on their first page view (see
+      // src/lib/attribution.ts). It rides along in user_metadata so the
+      // channel is answerable with one SQL query instead of inferred from
+      // timestamps, which is how the first two real users had to be
+      // attributed. Returns {} when unknown, and never throws.
+      const attribution = readAttribution();
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
-        options: { emailRedirectTo: `${window.location.origin}/auth/confirm?next=/onboarding` },
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/confirm?next=/onboarding`,
+          data: attribution,
+        },
       });
       if (signUpError) {
         setError(signUpError.message);
       } else {
-        track("sign_up");
+        track("sign_up", attribution);
         // Deferred email verification: whether signUp() itself hands back a
         // session (some GoTrue configs sign the caller in immediately when
         // unverified sign-ins are allowed) is not guaranteed the same way

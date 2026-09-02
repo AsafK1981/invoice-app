@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { SwRegister } from "@/components/sw-register";
+import { AttributionCapture } from "@/components/attribution-capture";
 import { CANONICAL_ORIGIN } from "@/lib/public-url";
 import "./globals.css";
 // THE app skin, the warm light shell every user sees. Unconditional since
@@ -290,6 +291,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col font-sans text-stone-800">
         {children}
         <SwRegister />
+        <AttributionCapture />
         <Analytics />
         <SpeedInsights />
       </body>
