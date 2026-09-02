@@ -5,8 +5,13 @@ import { cronAuthError, cronAdminClient } from "@/lib/cron";
 
 const AXIOM_API_TOKEN = process.env.AXIOM_API_TOKEN || "";
 const AXIOM_DATASET = process.env.AXIOM_DATASET || "mysuperfriendlyinvoiceapp";
-// EU instance because the org was created on EU Central 1.
-const AXIOM_BASE = process.env.AXIOM_API_BASE || "https://api.eu.axiom.co";
+// The CONTROL PLANE, which is where `_apl` queries are served, and it is
+// api.axiom.co even for a dataset deployed on EU Central 1. Probed live
+// 2026-09-02: api.eu.axiom.co answers a bare 403 "forbidden" for every
+// request, so this archive has been reading nothing since it was set up.
+// Ingest is a different host entirely (the dataset's edge deployment); see
+// src/lib/axiom-logger.ts. Do not collapse the two back into one variable.
+const AXIOM_BASE = process.env.AXIOM_API_BASE || "https://api.axiom.co";
 
 /**
  * Weekly archive of Axiom logs into Supabase Storage. Solves the
