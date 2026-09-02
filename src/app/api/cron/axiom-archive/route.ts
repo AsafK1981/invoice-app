@@ -63,7 +63,12 @@ export async function GET(req: Request) {
         startTime: startIso,
         endTime: endIso,
       };
-      if (cursor) body.cursor = cursor;
+      // includeCursor:false means "start AFTER this row", so the row the
+      // previous page ended on is not archived twice.
+      if (cursor) {
+        body.cursor = cursor;
+        body.includeCursor = false;
+      }
 
       const r = await fetch(`${AXIOM_BASE}/v1/datasets/_apl?format=tabular`, {
         method: "POST",
@@ -79,24 +84,41 @@ export async function GET(req: Request) {
         throw new Error(`Axiom API ${r.status}: ${errText}`);
       }
 
+      // Axiom's `format=tabular` response, verified against the live API on
+      // 2026-09-02. This was previously parsed as `columns` = definitions and
+      // `rows` = row-oriented data, which is neither of the two things Axiom
+      // sends: definitions are in `fields`, and `columns` IS the data, stored
+      // column-oriented. There is no top-level `cursor` either; paging uses
+      // `status.maxCursor`. The old shape threw "Cannot read properties of
+      // undefined (reading 'length')" on the first real response, which
+      // nobody saw because the token was rejected with 403 long before this
+      // line ever ran.
       const data = (await r.json()) as {
-        tables?: Array<{ columns: Array<{ name: string }>; rows: unknown[][] }>;
-        cursor?: string;
-        status?: { rowsExamined: number; rowsMatched: number };
+        tables?: Array<{
+          fields?: Array<{ name: string; type?: string }>;
+          columns?: unknown[][];
+        }>;
+        status?: { maxCursor?: string; rowsMatched?: number };
       };
       const table = data.tables?.[0];
-      if (table && table.rows.length > 0) {
-        const colNames = table.columns.map((c) => c.name);
-        for (const row of table.rows) {
-          const obj: Record<string, unknown> = {};
-          colNames.forEach((name, i) => {
-            obj[name] = row[i];
-          });
-          rows.push(obj);
-        }
+      const fields = table?.fields ?? [];
+      const cols = table?.columns ?? [];
+      const rowCount = cols[0]?.length ?? 0;
+
+      for (let i = 0; i < rowCount; i++) {
+        const obj: Record<string, unknown> = {};
+        fields.forEach((f, c) => {
+          obj[f.name] = cols[c]?.[i];
+        });
+        rows.push(obj);
       }
-      if (!data.cursor || !table || table.rows.length === 0) break;
-      cursor = data.cursor;
+
+      // Stop on an empty page, a missing cursor, or a cursor that did not
+      // advance. The last guard is what keeps a malformed response from
+      // spinning this loop to MAX_PAGES.
+      const next = data.status?.maxCursor;
+      if (rowCount === 0 || !next || next === cursor) break;
+      cursor = next;
       pages++;
     }
   } catch (err) {
