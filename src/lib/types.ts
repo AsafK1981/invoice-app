@@ -76,6 +76,12 @@ export interface Business {
   recurringSuggestionsEnabled?: boolean;
   /** Default state for the per-document "round total to whole shekel" toggle. */
   roundTotalDefault?: boolean;
+  /**
+   * אחוז המקדמות from the פנקס מקדמות the assessing office sent (e.g. 4.5).
+   * The מקדמות מס הכנסה report multiplies the period's pre-VAT turnover by
+   * it. Undefined until the owner types it in on that report.
+   */
+  incomeTaxAdvanceRate?: number;
   /** "טקסט גדול" - opt-in large-text mode for the signed-in app (sidebar
    *  footer switch). Mirrored to localStorage; see lib/text-size.ts. */
   textSize?: "normal" | "large";
@@ -275,6 +281,26 @@ export interface Expense {
   /** Storage path in the `expense-receipts` bucket, set when the expense
    *  was created from a scanned document. */
   receiptPath?: string;
+  /**
+   * Supplier's מספר עוסק / ח.פ (digits). Required by the PCN874 detailed VAT
+   * file for any input whose VAT is 300 ₪ or more; smaller inputs without it
+   * are summed into the "קופה קטנה" record. Only meaningful for עוסק מורשה.
+   */
+  supplierTaxId?: string;
+  /** The supplier's invoice number (מספר חשבונית הספק), reported per input in PCN874. */
+  reference?: string;
+  /**
+   * ציוד / רכוש קבוע (computer, camera, furniture) vs a running expense. The
+   * periodic VAT return splits input VAT into "מס תשומות ציוד" and "מס תשומות
+   * אחרות"; this flag drives that split. Defaults to false.
+   */
+  isEquipment?: boolean;
+  /**
+   * מספר הקצאה printed on the SUPPLIER's invoice (חשבונית ישראל). Since 2024
+   * the ITA only recognises input VAT above the allocation threshold when the
+   * number is reported; it goes into the allocation field of the T record.
+   */
+  allocationNumber?: string;
 }
 
 export interface DocumentAttachment {

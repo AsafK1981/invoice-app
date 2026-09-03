@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useMemo, useState } from "react";
-import { Wallet } from "lucide-react";
+import { ChevronDown, ChevronLeft, Wallet } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 import { FormField } from "@/components/ui/form-field";
 import { expenseStore } from "@/lib/expense-store";
@@ -122,6 +122,15 @@ export function ExpenseFormModal({ open, onClose, expense, prefill, history = NO
     amount: "",
     description: "",
   });
+  // Supplier-invoice details that only the PCN874 detailed VAT file needs.
+  // Kept in their own state bag so the everyday fields above stay untouched.
+  const [vatDetails, setVatDetails] = useState({
+    supplierTaxId: "",
+    reference: "",
+    allocationNumber: "",
+  });
+  const [isEquipment, setIsEquipment] = useState(false);
+  const [vatDetailsOpen, setVatDetailsOpen] = useState(false);
   const [mode, setMode] = useState<EntryMode>("inclusive");
   // The VAT the user typed by hand. null = derive it from amount + mode.
   // Cleared whenever amount or mode changes, so VAT follows the number.
@@ -149,6 +158,17 @@ export function ExpenseFormModal({ open, onClose, expense, prefill, history = NO
       const m = modeForStored(expense.vatAmount, showVatField);
       setMode(m.mode);
       setVatOverride(m.override);
+      setVatDetails({
+        supplierTaxId: expense.supplierTaxId || "",
+        reference: expense.reference || "",
+        allocationNumber: expense.allocationNumber || "",
+      });
+      setIsEquipment(Boolean(expense.isEquipment));
+      // Already-filled details must be visible, otherwise editing looks like
+      // the data was lost.
+      setVatDetailsOpen(
+        Boolean(expense.supplierTaxId || expense.reference || expense.allocationNumber || expense.isEquipment),
+      );
     } else if (prefill) {
       // Coerce the scan output's category to one of our common values; fall
       // back to "אחר" if the model returned something off-list.
@@ -172,6 +192,9 @@ export function ExpenseFormModal({ open, onClose, expense, prefill, history = NO
       const m = modeForStored(prefill.vatAmount, showVatField);
       setMode(m.mode);
       setVatOverride(m.override);
+      setVatDetails({ supplierTaxId: "", reference: "", allocationNumber: "" });
+      setIsEquipment(false);
+      setVatDetailsOpen(false);
     } else {
       setForm({
         date: today,
@@ -182,6 +205,9 @@ export function ExpenseFormModal({ open, onClose, expense, prefill, history = NO
       });
       setMode(showVatField ? getLastUsedMode() : "inclusive");
       setVatOverride(null);
+      setVatDetails({ supplierTaxId: "", reference: "", allocationNumber: "" });
+      setIsEquipment(false);
+      setVatDetailsOpen(false);
     }
   }, [open, expense, prefill, showVatField]);
 
@@ -248,6 +274,14 @@ export function ExpenseFormModal({ open, onClose, expense, prefill, history = NO
       setVatOverride(m.override);
       setAutofilledFrom(last);
     }
+    // The supplier's מספר עוסק belongs to the supplier, not to one invoice,
+    // so it carries over. The invoice number and the allocation number are
+    // per-invoice and are never copied.
+    const knownTaxId = last.supplierTaxId;
+    if (showVatField && knownTaxId) {
+      setVatDetails((d) => (d.supplierTaxId ? d : { ...d, supplierTaxId: knownTaxId }));
+      setVatDetailsOpen(true);
+    }
   }
 
   function handleAmountChange(value: string) {
@@ -268,6 +302,13 @@ export function ExpenseFormModal({ open, onClose, expense, prefill, history = NO
       description: form.description.trim() || undefined,
       vatAmount: vat > 0 ? round2(vat) : 0,
       receiptPath: expense?.receiptPath || prefill?.receiptPath || undefined,
+      // PCN874 details. Only meaningful when this expense carries VAT, but we
+      // keep whatever was typed so flipping the entry mode back and forth
+      // doesn't silently drop the supplier's invoice number.
+      supplierTaxId: vatDetails.supplierTaxId.trim() || undefined,
+      reference: vatDetails.reference.trim() || undefined,
+      isEquipment: vatOn ? isEquipment : false,
+      allocationNumber: vatDetails.allocationNumber.trim() || undefined,
     };
     setSaving(true);
     await expenseStore.save(record);
@@ -471,6 +512,93 @@ export function ExpenseFormModal({ open, onClose, expense, prefill, history = NO
               >
                 חזרה לחישוב אוטומטי
               </button>
+            )}
+          </div>
+        )}
+
+        {vatOn && (
+          <div className="rounded-xl border border-orange-100 bg-white overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setVatDetailsOpen((o) => !o)}
+              aria-expanded={vatDetailsOpen}
+              className="w-full flex items-center justify-between gap-2 text-right min-h-[44px] px-3 py-2.5 hover:bg-orange-50/60 transition-colors"
+            >
+              <span className="text-xs font-semibold text-stone-800">פרטי חשבונית הספק לדוח מע״מ</span>
+              {vatDetailsOpen ? (
+                <ChevronDown className="w-4 h-4 text-stone-500 shrink-0" aria-hidden="true" />
+              ) : (
+                <ChevronLeft className="w-4 h-4 text-stone-500 shrink-0" aria-hidden="true" />
+              )}
+            </button>
+            {vatDetailsOpen && (
+              <div className="px-3 pb-3 space-y-3 border-t border-orange-100 pt-3">
+                <p className="text-xs text-stone-600 leading-relaxed">
+                  בלי מספר עוסק ומספר חשבונית, הוצאה עם מע״מ של 300 ₪ ומעלה לא תתקבל בדוח המפורט (PCN874).
+                  הוצאות קטנות יותר מסוכמות כקופה קטנה.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <FormField label="מספר עוסק / ח.פ של הספק">
+                    <input
+                      type="text"
+                      dir="ltr"
+                      inputMode="numeric"
+                      maxLength={9}
+                      value={vatDetails.supplierTaxId}
+                      onChange={(e) =>
+                        setVatDetails((d) => ({
+                          ...d,
+                          supplierTaxId: e.target.value.replace(/\D/g, "").slice(0, 9),
+                        }))
+                      }
+                      placeholder="123456789"
+                      className="input-warm"
+                    />
+                  </FormField>
+                  <FormField label="מספר חשבונית הספק">
+                    <input
+                      type="text"
+                      dir="ltr"
+                      value={vatDetails.reference}
+                      onChange={(e) => setVatDetails((d) => ({ ...d, reference: e.target.value }))}
+                      placeholder="1042"
+                      className="input-warm"
+                    />
+                  </FormField>
+                </div>
+                <label className="flex items-start gap-2.5 min-h-[40px] cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isEquipment}
+                    onChange={(e) => setIsEquipment(e.target.checked)}
+                    className="mt-0.5 w-4 h-4 shrink-0 accent-orange-500"
+                  />
+                  <span>
+                    <span className="block text-xs font-semibold text-stone-800">
+                      ציוד / רכוש קבוע (מחשב, מצלמה, ריהוט)
+                    </span>
+                    <span className="block text-xs text-stone-600 mt-0.5">
+                      מע״מ על ציוד מדווח בשורה נפרדת בדוח התקופתי
+                    </span>
+                  </span>
+                </label>
+                <FormField
+                  label="מספר הקצאה של חשבונית הספק"
+                  hint="נדרש לחשבוניות ספק מעל סף חשבונית ישראל כדי שהמע״מ יוכר"
+                >
+                  <input
+                    type="text"
+                    dir="ltr"
+                    inputMode="numeric"
+                    value={vatDetails.allocationNumber}
+                    onChange={(e) =>
+                      setVatDetails((d) => ({ ...d, allocationNumber: e.target.value.replace(/\D/g, "") }))
+                    }
+                    placeholder="אופציונלי"
+                    className="input-warm"
+                  />
+                </FormField>
+              </div>
             )}
           </div>
         )}

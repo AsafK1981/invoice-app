@@ -22,16 +22,14 @@ export default function VatReportPage() {
     <div className="space-y-6">
       <ReportPageHeader
         icon={Receipt}
-        title="דיווח מע״מ תקופתי"
-        subtitle="מע״מ עסקאות מול מע״מ תשומות לתקופת הדיווח, מוכן להעתקה לדיווח, כולל פירוט כל הוצאה."
+        title={filesVat ? "דיווח מע״מ תקופתי" : "הצהרת עוסק פטור שנתית"}
+        subtitle={
+          filesVat
+            ? "מע״מ עסקאות מול מע״מ תשומות לתקופת הדיווח, מוכן להעתקה לדיווח, כולל פירוט כל הוצאה."
+            : "המחזור השנתי שמדווחים למע״מ פעם בשנה, מוכן להעתקה."
+        }
       />
-      {filesVat ? (
-        <VatPeriodReport headless business={business} documents={documents} expenses={expenses} />
-      ) : (
-        <div className="card-soft p-6 text-sm text-stone-700">
-          עוסק פטור לא מדווח מע״מ, ולכן הדוח הזה לא רלוונטי לעסק שלך. אם העסק הפך לעוסק מורשה, עדכן את סוג העסק בהגדרות והדוח יופיע כאן.
-        </div>
-      )}
+      <VatPeriodReport headless business={business} documents={documents} expenses={expenses} />
     </div>
   );
 }

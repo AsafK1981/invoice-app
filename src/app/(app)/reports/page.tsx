@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
   TrendingUp, TrendingDown, Wallet, Clock, Download, ChevronDown,
   FileText, ClipboardList, Calculator, BookOpen, FileSpreadsheet, Landmark, FileArchive,
-  SlidersHorizontal, Receipt, ArrowLeft, Minus, Printer,
+  SlidersHorizontal, Receipt, ArrowLeft, Minus, Printer, Percent,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useDocuments } from "@/lib/document-store";
@@ -225,9 +225,18 @@ export default function ReportsPage() {
     ...(filesVat
       ? [{
           icon: Receipt, title: "דיווח מע״מ תקופתי", href: "/reports/vat",
-          desc: "מע״מ עסקאות מול מע״מ תשומות לתקופת הדיווח, מוכן להעתקה לדיווח, כולל פירוט כל הוצאה.",
+          desc: "הסכומים לטופס הדיווח, קובץ PCN874 לדיווח המפורט ופירוט כל הוצאה.",
         } as ReportCardSpec]
-      : []),
+      : [{
+          // עוסק פטור files no periodic return, only the annual turnover
+          // declaration - same page, a different card.
+          icon: Receipt, title: "הצהרת עוסק פטור שנתית", href: "/reports/vat",
+          desc: "המחזור השנתי שמדווחים למע״מ עד 31 בינואר, מוכן להעתקה.",
+        } as ReportCardSpec]),
+    {
+      icon: Percent, title: "מקדמות מס הכנסה", href: "/reports/advances",
+      desc: "המחזור לתקופה, אחוז המקדמה והסכום לתשלום ב-15 לחודש, מוכנים להעתקה.",
+    },
     {
       icon: Calculator, title: "צפי מס שנתי", href: "/reports/tax-projection",
       desc: "כמה מס הכנסה וביטוח לאומי צפויים לסוף השנה, וכמה כדאי לשמור בצד.",

@@ -21,6 +21,20 @@ function mapRow(row: Record<string, unknown>): Expense {
     description: (row.description as string) || undefined,
     vatAmount: row.vat_amount != null ? Number(row.vat_amount) : 0,
     receiptPath: (row.receipt_path as string) || undefined,
+    supplierTaxId: (row.supplier_tax_id as string) || undefined,
+    reference: (row.reference as string) || undefined,
+    isEquipment: Boolean(row.is_equipment),
+    allocationNumber: (row.allocation_number as string) || undefined,
+  };
+}
+
+/** The VAT-filing columns, shared by insert and update so they can never drift apart. */
+function filingColumns(expense: Expense) {
+  return {
+    supplier_tax_id: expense.supplierTaxId?.replace(/\D/g, "") || null,
+    reference: expense.reference?.trim() || null,
+    is_equipment: expense.isEquipment ?? false,
+    allocation_number: expense.allocationNumber?.replace(/\D/g, "") || null,
   };
 }
 
@@ -75,6 +89,7 @@ export const expenseStore = {
           description: expense.description || null,
           vat_amount: expense.vatAmount ?? 0,
           receipt_path: expense.receiptPath || null,
+          ...filingColumns(expense),
         })
         .eq("id", expense.id);
     } else {
@@ -88,6 +103,7 @@ export const expenseStore = {
         description: expense.description || null,
         vat_amount: expense.vatAmount ?? 0,
         receipt_path: expense.receiptPath || null,
+        ...filingColumns(expense),
       });
     }
     window.dispatchEvent(new Event(CHANGE_EVENT));

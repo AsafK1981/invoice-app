@@ -57,6 +57,8 @@ export function useBusiness() {
             // Opt-out, not opt-in: anything but an explicit false is "on".
             recurringSuggestionsEnabled: data.recurring_suggestions_enabled !== false,
             roundTotalDefault: data.round_total_default ?? false,
+            incomeTaxAdvanceRate:
+              data.income_tax_advance_rate == null ? undefined : Number(data.income_tax_advance_rate),
             textSize: data.text_size === "large" ? "large" : "normal",
             documentDesign: data.document_design ?? null,
           }
@@ -73,6 +75,26 @@ export function useBusiness() {
   }, [fetch]);
 
   return { business, ready, refetch: fetch };
+}
+
+/**
+ * Persist only אחוז המקדמה. Its own small UPDATE (not saveBusiness) for the
+ * same reason text-size.ts does it: the מקדמות report edits one number, and
+ * a whole-row write from its snapshot could revert a logo / design / reminder
+ * setting saved elsewhere in the meantime. Broadcasts the change so every
+ * useBusiness() consumer refetches.
+ */
+export async function saveIncomeTaxAdvanceRate(
+  businessId: string,
+  rate: number | undefined,
+): Promise<void> {
+  const value = rate != null && Number.isFinite(rate) ? rate : null;
+  const { error } = await supabase
+    .from("businesses")
+    .update({ income_tax_advance_rate: value })
+    .eq("id", businessId);
+  if (error) throw new Error(error.message);
+  window.dispatchEvent(new Event(CHANGE_EVENT));
 }
 
 export async function saveBusiness(business: Business): Promise<void> {
@@ -105,6 +127,10 @@ export async function saveBusiness(business: Business): Promise<void> {
           : ["email", "inapp"],
       recurring_suggestions_enabled: business.recurringSuggestionsEnabled !== false,
       round_total_default: business.roundTotalDefault ?? false,
+      income_tax_advance_rate:
+        business.incomeTaxAdvanceRate != null && Number.isFinite(business.incomeTaxAdvanceRate)
+          ? business.incomeTaxAdvanceRate
+          : null,
       // Defense in depth: this is the client's own write path, but the raw
       // in-memory value could in principle be anything (a bug elsewhere, a
       // stale object). Never write anything to the DB that hasn't been
