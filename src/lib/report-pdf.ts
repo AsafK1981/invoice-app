@@ -44,12 +44,32 @@ function collectStyles(): { css: string; links: string[] } {
   for (const sheet of Array.from(document.styleSheets)) {
     try {
       const rules = (sheet as CSSStyleSheet).cssRules;
-      chunks.push(Array.from(rules).map((r) => r.cssText).join("\n"));
+      const text = Array.from(rules).map((r) => r.cssText).join("\n");
+      chunks.push(absolutizeUrls(text, sheet.href ?? document.baseURI));
     } catch {
       if (sheet.href) links.push(sheet.href);
     }
   }
   return { css: chunks.join("\n"), links };
+}
+
+/**
+ * url() values inside a stylesheet resolve against THAT sheet's address, not
+ * the document's. Next's CSS chunk lives under /_next/static/css/ and points
+ * at its fonts as "../media/x.woff2"; once inlined into a <style> at the
+ * document root that would resolve to /media/x.woff2, a 404, and every page
+ * would print in the renderer's fallback font. Make every URL absolute first.
+ */
+function absolutizeUrls(css: string, base: string): string {
+  return css.replace(/url\(\s*(['"]?)([^'")]+)\1\s*\)/g, (match, _q: string, raw: string) => {
+    const value = raw.trim();
+    if (/^(data:|blob:|#)/i.test(value)) return match;
+    try {
+      return `url("${new URL(value, base).href}")`;
+    } catch {
+      return match;
+    }
+  });
 }
 
 /** A static HTML document of the page as it is right now. */

@@ -120,8 +120,18 @@ export async function POST(req: Request) {
     // crafted payload doing anything at all inside the render.
     await page.setJavaScriptEnabled(false);
     await page.setRequestInterception(true);
+    // The snapshot is served from a made-up path on OUR origin, fulfilled
+    // right here from memory, instead of page.setContent(): setContent gives
+    // the document an opaque ("null") origin, and web fonts are CORS-checked,
+    // so every self-hosted font would be refused and the whole report would
+    // print in the renderer's fallback face. Same-origin has no such check.
+    const snapshotUrl = `${base}/__report-pdf__/${Date.now()}`;
     page.on("request", (r) => {
       const url = r.url();
+      if (url === snapshotUrl) {
+        void r.respond({ status: 200, contentType: "text/html; charset=utf-8", body: doc });
+        return;
+      }
       if (url.startsWith("data:")) {
         void r.continue();
         return;
@@ -143,7 +153,7 @@ export async function POST(req: Request) {
 
     await page.setViewport({ width: 1280, height: 900 });
     try {
-      await page.setContent(doc, { waitUntil: "load", timeout: 30_000 });
+      await page.goto(snapshotUrl, { waitUntil: "load", timeout: 30_000 });
       await page.waitForNetworkIdle({ idleTime: 300, timeout: 15_000 });
     } catch (e) {
       // A font or image that never settles must not cost the user the PDF;
