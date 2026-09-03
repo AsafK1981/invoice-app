@@ -177,10 +177,10 @@ export default function ClientsPage() {
             הדפסה
           </button>
           <button
-            onClick={() => exportClients(clients)}
+            onClick={() => exportClients(clients, { businessName: business.name })}
             disabled={clients.length === 0}
             className="inline-flex items-center gap-2 bg-white border-2 border-orange-200 text-stone-800 px-4 py-2.5 rounded-2xl text-sm font-semibold hover:bg-orange-50 disabled:opacity-40"
-            title="ייצוא לקוחות ל-CSV"
+            title="ייצוא לקוחות ל-Excel"
           >
             <Download className="w-4 h-4" />
             ייצוא

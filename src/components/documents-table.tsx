@@ -512,13 +512,18 @@ export function DocumentsTable({ documents, limit, exportSlot, onPrintingChange 
               הדפסה
             </button>
             <button
-              onClick={() => exportDocuments(filtered, filtersActive ? "filtered" : undefined)}
+              onClick={() =>
+                exportDocuments(filtered, filtersActive ? "filtered" : undefined, {
+                  businessName: business.name,
+                  subtitle: printSubtitle,
+                })
+              }
               disabled={filtered.length === 0}
               className="pgbtn pgbtn-quiet"
               title={
                 filtersActive
-                  ? `ייצוא ${filtered.length} המסמכים המסוננים לקובץ CSV / Excel`
-                  : "ייצוא כל המסמכים לקובץ CSV / Excel"
+                  ? `ייצוא ${filtered.length} המסמכים המסוננים לקובץ Excel`
+                  : "ייצוא כל המסמכים לקובץ Excel"
               }
             >
               <Download aria-hidden="true" />

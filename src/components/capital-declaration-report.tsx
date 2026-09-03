@@ -7,6 +7,7 @@ import { todayInIsrael } from "@/lib/date";
 import { DOCUMENT_TYPE_LABELS, isCountableRevenue, type InvoiceDocument, type Expense } from "@/lib/types";
 import { computeOpenReceivables } from "@/lib/capital-declaration";
 import { exportCapitalDeclarationDraft } from "@/lib/csv-export";
+import { useBusiness } from "@/lib/business-store";
 
 interface Props {
   documents: InvoiceDocument[];
@@ -60,6 +61,7 @@ const NOT_COVERED_CATEGORIES = [
  *    to be covered.
  */
 export function CapitalDeclarationReport({ headless = false, documents, expenses }: Props) {
+  const { business } = useBusiness();
   const currentYear = new Date().getFullYear();
   const [fromYear, setFromYear] = useState<number>(currentYear - 4);
   const [toYear, setToYear] = useState<number>(currentYear);
@@ -113,6 +115,7 @@ export function CapitalDeclarationReport({ headless = false, documents, expenses
       yearRows: rows,
       receivables,
       notCoveredCategories: NOT_COVERED_CATEGORIES,
+      businessName: business.name,
     });
   }
 

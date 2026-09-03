@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Printer, Receipt, ArrowDownToLine, ArrowUpFromLine, Download } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/format";
 import type { Business, InvoiceDocument, Expense } from "@/lib/types";
+import { exportVatPeriodExpenses } from "@/lib/csv-export";
 
 interface Props {
   business: Business;
@@ -163,23 +164,18 @@ export function VatPeriodReport({ headless = false, business, documents, expense
     };
   }, [documents, expenses, range]);
 
-  // Detailed expense listing as CSV for the accountant. BOM so Excel opens
-  // Hebrew correctly; same recipe as the invoices-period report.
+  // Detailed expense listing for the accountant: styled .xlsx with a total
+  // row (csv-export.ts), same anatomy as the printed report.
   function exportExpensesCsv() {
-    const headers = ["תאריך", "ספק", "קטגוריה", "תיאור", "סכום ללא מע\"מ", "מע\"מ", "סכום כולל"];
-    const lines = stats.expenseRows.map((r) =>
-      [formatDate(r.date), r.supplier, r.category, r.description ?? "", r.net.toFixed(2), r.vat.toFixed(2), r.amount.toFixed(2)]
-        .map((v) => `"${String(v).replace(/"/g, '""')}"`)
-        .join(","),
-    );
-    const csv = "\uFEFF" + [headers.join(","), ...lines].join("\r\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `הוצאות-${range.start}_עד_${range.end}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    void exportVatPeriodExpenses({
+      rows: stats.expenseRows,
+      range: {
+        start: range.start,
+        end: range.end,
+        label: `${range.label} · ${formatDate(range.start)} עד ${formatDate(range.end)}`,
+      },
+      businessName: business.name,
+    });
   }
 
   // Hidden for עוסק פטור; they don't file VAT.
@@ -278,7 +274,7 @@ export function VatPeriodReport({ headless = false, business, documents, expense
                 className="no-print inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-semibold bg-white border-2 border-orange-200 text-stone-800 hover:bg-orange-50"
               >
                 <Download className="w-4 h-4" />
-                ייצוא CSV
+                ייצוא Excel
               </button>
             )}
           </div>

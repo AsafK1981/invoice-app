@@ -210,6 +210,8 @@ export default function ReportsPage() {
 
   /* ---------- the report cards ---------- */
   const filesVat = business.businessType === "authorized" || business.businessType === "company";
+  /** Header block of every Excel export from this page: who, and which period. */
+  const exportMeta = { businessName: business.name, subtitle: periodLabel(period) };
   const cards: ReportCardSpec[] = [
     {
       icon: FileText, title: "סיכום שנתי לדיווח", href: `/reports/annual/${exportYear}`, featured: true,
@@ -289,19 +291,19 @@ export default function ReportsPage() {
               <div className="rpt-menu" role="menu">
                 <div className="rpt-menu-cap">{periodLabel(period)}</div>
                 <button type="button" role="menuitem" disabled={filteredDocs.length === 0}
-                  onClick={() => { exportDocuments(filteredDocs, fileTag); setMenuOpen(false); }}>
+                  onClick={() => { exportDocuments(filteredDocs, fileTag, exportMeta); setMenuOpen(false); }}>
                   <FileSpreadsheet aria-hidden="true" />
                   <span>מסמכים ל-Excel</span>
                   <small>{filteredDocs.length}</small>
                 </button>
                 <button type="button" role="menuitem" disabled={filteredExpenses.length === 0}
-                  onClick={() => { exportExpenses(filteredExpenses, fileTag); setMenuOpen(false); }}>
+                  onClick={() => { exportExpenses(filteredExpenses, fileTag, { ...exportMeta, showVat: filesVat }); setMenuOpen(false); }}>
                   <FileSpreadsheet aria-hidden="true" />
                   <span>הוצאות ל-Excel</span>
                   <small>{filteredExpenses.length}</small>
                 </button>
                 <button type="button" role="menuitem" disabled={tableRows.length === 0}
-                  onClick={() => { exportMonthlySummary(tableRows, fileTag); setMenuOpen(false); }}>
+                  onClick={() => { exportMonthlySummary(tableRows, fileTag, exportMeta); setMenuOpen(false); }}>
                   <FileSpreadsheet aria-hidden="true" />
                   <span>הטבלה החודשית ל-Excel</span>
                   <small>{tableRows.length}</small>
@@ -434,7 +436,7 @@ export default function ReportsPage() {
             type="button"
             className="pgbtn pgbtn-quiet rpt-btn-sm"
             disabled={tableRows.length === 0}
-            onClick={() => exportMonthlySummary(tableRows, fileTag)}
+            onClick={() => exportMonthlySummary(tableRows, fileTag, exportMeta)}
           >
             <Download aria-hidden="true" />
             Excel

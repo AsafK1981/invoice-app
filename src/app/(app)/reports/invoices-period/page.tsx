@@ -8,6 +8,8 @@ import { useClients } from "@/lib/client-store";
 import { formatCurrency } from "@/lib/format";
 import { todayInIsrael } from "@/lib/date";
 import { DOCUMENT_TYPE_LABELS, type DocumentType } from "@/lib/types";
+import { useBusiness } from "@/lib/business-store";
+import { exportInvoicesPeriod } from "@/lib/csv-export";
 
 // VAT documents that carry a net/VAT breakdown and an allocation number.
 const REPORT_TYPES: DocumentType[] = ["tax_invoice", "tax_invoice_receipt", "credit_note"];
@@ -53,6 +55,7 @@ function rangeLabel(endYm: string, lengthMonths: number): string {
 export default function InvoicesPeriodReportPage() {
   const { documents, ready } = useDocuments();
   const { items: clients } = useClients();
+  const { business } = useBusiness();
 
   const [rangeMode, setRangeMode] = useState<"preset" | "custom">("preset");
   const [lengthMonths, setLengthMonths] = useState<number>(2);
@@ -119,23 +122,14 @@ export default function InvoicesPeriodReportPage() {
     return `${d}/${m}/${y}`;
   }
 
+  // Styled .xlsx with a total row (csv-export.ts).
   function exportCsv() {
-    const headers = ["ת.ז / ח.פ", "מספר חשבונית", "תאריך", "סכום ללא מע\"מ", "מע\"מ", "סכום כולל מע\"מ", "מספר הקצאה"];
-    const lines = rows.map((r) =>
-      [r.customerTaxId, r.number, fmtDate(r.date), r.net.toFixed(2), r.vat.toFixed(2), r.total.toFixed(2), r.allocation]
-        .map((v) => `"${String(v).replace(/"/g, '""')}"`)
-        .join(","),
-    );
-    const csv = "﻿" + [headers.join(","), ...lines].join("\r\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `דוח-חשבוניות-${
-      rangeMode === "custom" ? `${fromDate}_עד_${toDate}` : `${endMonth}-${lengthMonths}ח`
-    }.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    void exportInvoicesPeriod({
+      rows,
+      periodLabel: currentLabel,
+      fileTag: rangeMode === "custom" ? `${fromDate}_עד_${toDate}` : `${endMonth}-${lengthMonths}ח`,
+      businessName: business.name,
+    });
   }
 
   return (
@@ -169,7 +163,7 @@ export default function InvoicesPeriodReportPage() {
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-white border-2 border-emerald-200 text-stone-800 hover:bg-emerald-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Download className="w-4 h-4 text-emerald-600" />
-            ייצוא Excel/CSV
+            ייצוא Excel
           </button>
           <button
             onClick={() => window.print()}

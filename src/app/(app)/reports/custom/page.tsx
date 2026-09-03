@@ -13,6 +13,8 @@ import {
   type DocumentType,
 } from "@/lib/types";
 import { filterDocuments, summarize, type ReportFilters } from "@/lib/report-filters";
+import { useBusiness } from "@/lib/business-store";
+import { exportCustomReport } from "@/lib/csv-export";
 
 const ALL_TYPES: DocumentType[] = [
   "tax_invoice",
@@ -98,6 +100,7 @@ export default function CustomReportPage() {
   const { documents, ready } = useDocuments();
   const { items: clients } = useClients();
 
+  const { business } = useBusiness();
   const [rangeMode, setRangeMode] = useState<"preset" | "custom">("preset");
   const [preset, setPreset] = useState<Preset>("all");
   const [fromDate, setFromDate] = useState<string>("");
@@ -182,43 +185,15 @@ export default function CustomReportPage() {
     setTypes((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
   }
 
+  // Styled .xlsx with a total row (csv-export.ts); the subtitle carries the
+  // period and the active filters, same as the printed report's header.
   function exportCsv() {
-    const headers = [
-      "תאריך",
-      "מספר",
-      "סוג מסמך",
-      "לקוח",
-      "ת.ז / ח.פ",
-      "סכום לא כולל מע\"מ",
-      "מע\"מ",
-      "סכום כולל מע\"מ",
-      "מספר הקצאה",
-      "סטטוס",
-    ];
-    const lines = rows.map((d) =>
-      [
-        fmtDate(d.date),
-        d.number,
-        DOCUMENT_TYPE_LABELS[d.type],
-        d.clientName,
-        d.clientTaxId || taxIdByClient[d.clientId] || "",
-        (d.subtotalIls ?? d.subtotal).toFixed(2),
-        (d.vatIls ?? d.vat).toFixed(2),
-        (d.totalIls ?? d.total).toFixed(2),
-        d.allocationNumber || "",
-        DOCUMENT_STATUS_LABELS[d.status],
-      ]
-        .map((v) => `"${String(v).replace(/"/g, '""')}"`)
-        .join(","),
-    );
-    const csv = "﻿" + [headers.join(","), ...lines].join("\r\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "דוח-מותאם.csv";
-    a.click();
-    URL.revokeObjectURL(url);
+    void exportCustomReport({
+      rows,
+      taxIdFor: (d) => d.clientTaxId || taxIdByClient[d.clientId] || "",
+      subtitle: [periodLabel, ...activeFilterLabels].join(" · "),
+      businessName: business.name,
+    });
   }
 
   return (
@@ -249,7 +224,7 @@ export default function CustomReportPage() {
             className="pgbtn pgbtn-quiet"
           >
             <Download aria-hidden="true" />
-            ייצוא Excel/CSV
+            ייצוא Excel
           </button>
           <button
             onClick={() => window.print()}
