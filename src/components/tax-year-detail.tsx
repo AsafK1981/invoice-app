@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { Printer, FileText, Users, Tag, TrendingUp, TrendingDown } from "lucide-react";
+import { DownloadPdfButton } from "@/components/download-pdf-button";
 import { formatCurrency } from "@/lib/format";
 import {
   DOCUMENT_TYPE_LABELS,
@@ -144,13 +145,20 @@ export function TaxYearDetail({ headless = false, year, documents, expenses, all
             </p>
           </div>
         )}
-        <button
-          onClick={() => window.print()}
-          className="no-print inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border-2 border-orange-200 text-stone-800 hover:bg-orange-50"
-        >
-          <Printer className="w-4 h-4" />
-          הדפס סיכום
-        </button>
+        <div className="no-print flex items-center gap-2 flex-wrap">
+          <DownloadPdfButton
+            filename={`סיכום-שנתי-${year}`}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border-2 border-orange-200 text-stone-800 hover:bg-orange-50"
+            iconClassName="w-4 h-4"
+          />
+          <button
+            onClick={() => window.print()}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border-2 border-orange-200 text-stone-800 hover:bg-orange-50"
+          >
+            <Printer className="w-4 h-4" />
+            הדפס סיכום
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">

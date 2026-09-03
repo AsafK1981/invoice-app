@@ -30,6 +30,7 @@ import { Tooltip } from "@/components/ui/tooltip";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Pagination } from "@/components/ui/pagination";
 import { PrintSheet, usePrintSheet } from "@/components/print-sheet";
+import { DownloadPdfButton } from "@/components/download-pdf-button";
 import { useBusiness } from "@/lib/business-store";
 import { exportClients } from "@/lib/csv-export";
 import type { Client, InvoiceDocument } from "@/lib/types";
@@ -82,7 +83,7 @@ export default function ClientsPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
   const confirm = useConfirm();
-  const { printing, print } = usePrintSheet();
+  const { printing, print, downloadPdf, pdfBusy } = usePrintSheet();
 
   const statsByClient = useMemo(() => buildStatsByClient(documents, clients), [documents, clients]);
 
@@ -167,11 +168,20 @@ export default function ClientsPage() {
           לקוח חדש
         </button>
         <div className="flex gap-2 flex-wrap">
+          <DownloadPdfButton
+            filename="רשימת-לקוחות"
+            onDownload={() => downloadPdf("רשימת-לקוחות")}
+            busy={pdfBusy}
+            disabled={clients.length === 0}
+            className="inline-flex items-center gap-2 bg-white border-2 border-orange-200 text-stone-800 px-4 py-2.5 rounded-2xl text-sm font-semibold hover:bg-orange-50 disabled:opacity-40"
+            iconClassName="w-4 h-4"
+            title="הורדת רשימת הלקוחות כקובץ PDF למחשב"
+          />
           <button
             onClick={print}
             disabled={clients.length === 0}
             className="inline-flex items-center gap-2 bg-white border-2 border-orange-200 text-stone-800 px-4 py-2.5 rounded-2xl text-sm font-semibold hover:bg-orange-50 disabled:opacity-40"
-            title="הדפסת רשימת הלקוחות / שמירה כ-PDF"
+            title="הדפסת רשימת הלקוחות"
           >
             <Printer className="w-4 h-4" />
             הדפסה

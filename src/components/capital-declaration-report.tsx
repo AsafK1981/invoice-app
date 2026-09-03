@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Wallet, Printer, Download, ExternalLink, Info, Circle } from "lucide-react";
+import { DownloadPdfButton } from "@/components/download-pdf-button";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { todayInIsrael } from "@/lib/date";
 import { DOCUMENT_TYPE_LABELS, isCountableRevenue, type InvoiceDocument, type Expense } from "@/lib/types";
@@ -141,6 +142,11 @@ export function CapitalDeclarationReport({ headless = false, documents, expenses
             <Download className="w-4 h-4" />
             ייצוא CSV
           </button>
+          <DownloadPdfButton
+            filename={`הכנה-להצהרת-הון-${asOfDate}`}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border-2 border-orange-200 text-stone-800 hover:bg-orange-50"
+            iconClassName="w-4 h-4"
+          />
           <button
             onClick={() => window.print()}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border-2 border-orange-200 text-stone-800 hover:bg-orange-50"

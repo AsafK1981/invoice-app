@@ -18,6 +18,7 @@ import { exportDocuments, exportExpenses, exportMonthlySummary } from "@/lib/csv
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/ui/toast";
 import { friendlyError } from "@/lib/error-message";
+import { DownloadPdfButton } from "@/components/download-pdf-button";
 import { computeAging, AGING_BUCKET_LABELS } from "@/lib/aging";
 import {
   type Period, HEBREW_MONTHS_SHORT,
@@ -325,11 +326,16 @@ export default function ReportsPage() {
           {/* No print sheet here: this page IS the report. `.rpt-controls` is
               already hidden in print (app-skin.css), so the button prints
               itself away along with the rest of the controls. */}
+          <DownloadPdfButton
+            filename={`לוח-דוחות-${exportYear}`}
+            className="pgbtn pgbtn-quiet"
+            title="הורדת לוח הדוחות כקובץ PDF למחשב"
+          />
           <button
             type="button"
             className="pgbtn pgbtn-quiet"
             onClick={() => window.print()}
-            title="הדפסת לוח הדוחות / שמירה כ-PDF"
+            title="הדפסת לוח הדוחות"
           >
             <Printer aria-hidden="true" />
             הדפסה

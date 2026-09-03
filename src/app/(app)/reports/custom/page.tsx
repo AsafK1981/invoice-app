@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, SlidersHorizontal, Download, Printer } from "lucide-react";
+import { DownloadPdfButton } from "@/components/download-pdf-button";
 import { useDocuments } from "@/lib/document-store";
 import { useClients } from "@/lib/client-store";
 import { formatCurrency } from "@/lib/format";
@@ -226,13 +227,19 @@ export default function CustomReportPage() {
             <Download aria-hidden="true" />
             ייצוא Excel
           </button>
+          <DownloadPdfButton
+            filename="דוח-מותאם"
+            landscape
+            disabled={rows.length === 0}
+            className="pgbtn pgbtn-quiet"
+          />
           <button
             onClick={() => window.print()}
             disabled={rows.length === 0}
             className="pgbtn pgbtn-quiet"
           >
             <Printer aria-hidden="true" />
-            הדפסה / PDF
+            הדפסה
           </button>
         </div>
       </div>

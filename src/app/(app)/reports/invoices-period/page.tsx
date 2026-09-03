@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, FileSpreadsheet, Download, Printer } from "lucide-react";
+import { DownloadPdfButton } from "@/components/download-pdf-button";
 import { useDocuments } from "@/lib/document-store";
 import { useClients } from "@/lib/client-store";
 import { formatCurrency } from "@/lib/format";
@@ -165,13 +166,20 @@ export default function InvoicesPeriodReportPage() {
             <Download className="w-4 h-4 text-emerald-600" />
             ייצוא Excel
           </button>
+          <DownloadPdfButton
+            filename="דוח-חשבוניות-תקופתי"
+            landscape
+            disabled={rows.length === 0}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-white border-2 border-orange-200 text-stone-800 hover:bg-orange-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            iconClassName="w-4 h-4 text-orange-600"
+          />
           <button
             onClick={() => window.print()}
             disabled={rows.length === 0}
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-white border-2 border-orange-200 text-stone-800 hover:bg-orange-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Printer className="w-4 h-4 text-orange-600" />
-            הדפסה / PDF
+            הדפסה
           </button>
         </div>
       </div>

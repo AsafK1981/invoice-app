@@ -32,6 +32,7 @@ import { friendlyError } from "@/lib/error-message";
 import { Tooltip } from "@/components/ui/tooltip";
 import { Pagination } from "@/components/ui/pagination";
 import { PrintSheet, usePrintSheet } from "@/components/print-sheet";
+import { DownloadPdfButton } from "@/components/download-pdf-button";
 import { useBusiness } from "@/lib/business-store";
 import { canIssueTaxInvoices } from "@/lib/vat";
 import {
@@ -204,7 +205,7 @@ const PAGE_SIZE = 50;
 export function DocumentsTable({ documents, limit, exportSlot, onPrintingChange }: Props) {
   const searchParams = useSearchParams();
   const { business } = useBusiness();
-  const { printing, print } = usePrintSheet();
+  const { printing, print, downloadPdf, pdfBusy } = usePrintSheet();
   // Read initial filter values from URL search params so dashboard cards
   // (and other deep-links like /documents?type=quote&status=sent) can
   // pre-filter the list. A param may carry several comma-separated values,
@@ -498,14 +499,26 @@ export function DocumentsTable({ documents, limit, exportSlot, onPrintingChange 
       {exportSlot &&
         createPortal(
           <>
+            <DownloadPdfButton
+              filename={filtersActive ? "רשימת-מסמכים-מסוננת" : "רשימת-מסמכים"}
+              onDownload={() => downloadPdf(filtersActive ? "רשימת-מסמכים-מסוננת" : "רשימת-מסמכים")}
+              busy={pdfBusy}
+              disabled={filtered.length === 0}
+              className="pgbtn pgbtn-quiet"
+              title={
+                filtersActive
+                  ? `הורדת ${filtered.length} המסמכים המסוננים כקובץ PDF למחשב`
+                  : "הורדת רשימת כל המסמכים כקובץ PDF למחשב"
+              }
+            />
             <button
               onClick={print}
               disabled={filtered.length === 0}
               className="pgbtn pgbtn-quiet"
               title={
                 filtersActive
-                  ? `הדפסת ${filtered.length} המסמכים המסוננים / שמירה כ-PDF`
-                  : "הדפסת רשימת כל המסמכים / שמירה כ-PDF"
+                  ? `הדפסת ${filtered.length} המסמכים המסוננים`
+                  : "הדפסת רשימת כל המסמכים"
               }
             >
               <Printer aria-hidden="true" />

@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { CANONICAL_ORIGIN } from "@/lib/public-url";
 import { DOCUMENT_TYPE_LABELS } from "@/lib/types";
 import { clientIp } from "@/lib/rate-limit";
+import { launchPdfBrowser } from "@/lib/pdf-browser";
 
 // Headless-Chrome cold start + a full page render can take a while; give the
 // serverless function real headroom so a slow cold boot doesn't 504.
@@ -40,21 +41,6 @@ function checkRateLimit(ip: string): { allowed: boolean; retryAfter: number } {
   }
   entry.count++;
   return { allowed: true, retryAfter: 0 };
-}
-
-// Local dev / non-Vercel: fall back to a locally-installed Chrome so the route
-// can be exercised without the bundled @sparticuz binary (which only ships a
-// Linux build). On Vercel, chromium.executablePath() resolves the bundled one.
-function localChromePath(): string | undefined {
-  const candidates = [
-    process.env.PUPPETEER_EXECUTABLE_PATH,
-    process.env.CHROME_PATH,
-    "C:/Program Files/Google/Chrome/Application/chrome.exe",
-    "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe",
-    "/usr/bin/google-chrome",
-    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-  ].filter(Boolean) as string[];
-  return candidates[0];
 }
 
 export async function GET(
@@ -96,15 +82,6 @@ export async function GET(
     return NextResponse.json({ ok: false, error: "המסמך לא נמצא." }, { status: 404 });
   }
 
-  // Load the ~50MB chromium binary + puppeteer-core only once we know the
-  // document exists and the request survived the rate limiter. Importing
-  // these at module scope would pull the binary into memory on cold start
-  // even for requests rejected above (429 / 400 / 404).
-  const [{ default: chromium }, { default: puppeteer }] = await Promise.all([
-    import("@sparticuz/chromium"),
-    import("puppeteer-core"),
-  ]);
-
   // Navigate Chrome to the app's own public /view page so the PDF reuses the
   // exact print CSS (RTL, print-color-adjust, page breaks, allocation number).
   // SSRF guard: on Vercel (production AND preview) always use the trusted
@@ -129,22 +106,12 @@ export async function GET(
   const wantCopy = new URL(req.url).searchParams.get("copy") === "1";
   const url = `${base}/view/${id}${wantCopy ? "?copy=1" : ""}`;
 
-  let browser: Awaited<ReturnType<typeof puppeteer.launch>> | null = null;
+  // Chrome (~50MB binary + puppeteer-core) is loaded only now, once we know
+  // the document exists and the request survived the rate limiter; see
+  // src/lib/pdf-browser.ts.
+  let browser: Awaited<ReturnType<typeof launchPdfBrowser>> | null = null;
   try {
-    browser = await puppeteer.launch(
-      isVercel
-        ? {
-            args: chromium.args,
-            executablePath: await chromium.executablePath(),
-            headless: true,
-          }
-        : {
-            // Local dev: use a system Chrome install.
-            executablePath: localChromePath(),
-            headless: true,
-            args: ["--no-sandbox", "--disable-setuid-sandbox"],
-          },
-    );
+    browser = await launchPdfBrowser();
 
     const page = await browser.newPage();
     await page.goto(url, { waitUntil: "networkidle0", timeout: 45_000 });

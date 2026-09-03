@@ -3,6 +3,7 @@
 import { use, useMemo } from "react";
 import Link from "next/link";
 import { Printer, ArrowRight } from "lucide-react";
+import { DownloadPdfButton } from "@/components/download-pdf-button";
 import { useDocuments } from "@/lib/document-store";
 import { useExpenses } from "@/lib/expense-store";
 import { useBusiness } from "@/lib/business-store";
@@ -130,21 +131,28 @@ export default function YearJournalPage({ params }: { params: Promise<{ year: st
           <ArrowRight className="w-4 h-4" />
           חזרה לדו״חות
         </Link>
-        <button
-          onClick={() => {
-            const original = document.title;
-            document.title = `יומן הוצאות והכנסות ${year} - ${business.name}`;
-            try {
-              window.print();
-            } finally {
-              document.title = original;
-            }
-          }}
-          className="inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-5 py-2.5 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200 transition-all"
-        >
-          <Printer className="w-4 h-4" />
-          הדפס / שמור כ-PDF
-        </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <DownloadPdfButton
+            filename={`יומן-הוצאות-והכנסות-${year}-${business.name}`}
+            className="inline-flex items-center gap-2 bg-white border-2 border-orange-200 text-stone-800 px-5 py-2.5 rounded-2xl text-sm font-semibold hover:bg-orange-50 transition-all"
+            iconClassName="w-4 h-4"
+          />
+          <button
+            onClick={() => {
+              const original = document.title;
+              document.title = `יומן הוצאות והכנסות ${year} - ${business.name}`;
+              try {
+                window.print();
+              } finally {
+                document.title = original;
+              }
+            }}
+            className="inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-5 py-2.5 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200 transition-all"
+          >
+            <Printer className="w-4 h-4" />
+            הדפס
+          </button>
+        </div>
       </div>
 
       <div className="gk-paper bg-white rounded-2xl shadow-sm border border-orange-100 p-6 sm:p-8 print:shadow-none print:border-0 print:rounded-none print:p-0">

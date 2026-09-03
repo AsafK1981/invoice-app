@@ -1,7 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { formatDate } from "@/lib/format";
+import { useToast } from "@/components/ui/toast";
+import { capturePageHtml, submitPageHtmlAsPdf } from "@/lib/report-pdf";
 
 /**
  * Shared "print this list" plumbing for the list pages (documents, clients,
@@ -18,17 +20,73 @@ import { formatDate } from "@/lib/format";
  *    on every render of the page, for a feature used once a month;
  *  - keeping it unmounted means a plain Ctrl+P still prints the screen the
  *    way it always did. Only the explicit "הדפסה" button swaps in the sheet.
+ *
+ * `downloadPdf` reuses the same sheet for a real .pdf file: mount it, snapshot
+ * the page (src/lib/report-pdf.ts), unmount, and send the snapshot to
+ * /api/reports/pdf. `pdfBusy` stays true until the file has been handed to
+ * the browser, so the button can show progress.
  */
-export function usePrintSheet(): { printing: boolean; print: () => void } {
-  const [printing, setPrinting] = useState(false);
+export function usePrintSheet(): {
+  printing: boolean;
+  print: () => void;
+  downloadPdf: (filename: string) => void;
+  pdfBusy: boolean;
+} {
+  const [mode, setMode] = useState<"idle" | "print" | "pdf">("idle");
+  const [pdfFilename, setPdfFilename] = useState("");
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const showToast = useToast();
+  const toastRef = useRef(showToast);
+  toastRef.current = showToast;
+  const printing = mode !== "idle";
 
-  const print = useCallback(() => setPrinting(true), []);
+  const print = useCallback(() => setMode("print"), []);
+  const downloadPdf = useCallback((filename: string) => {
+    setPdfFilename(filename);
+    setPdfBusy(true);
+    setMode("pdf");
+  }, []);
 
   useEffect(() => {
-    if (!printing) return;
+    if (mode !== "pdf") return;
+    let cancelled = false;
+    let inner = 0;
+    // Same two-frame wait as the print path: the sheet has to be painted
+    // before the snapshot is taken.
+    const outer = requestAnimationFrame(() => {
+      inner = requestAnimationFrame(() => {
+        if (cancelled) return;
+        let html: string | null = null;
+        try {
+          html = capturePageHtml(pdfFilename);
+        } catch {
+          html = null;
+        }
+        setMode("idle");
+        if (!html) {
+          setPdfBusy(false);
+          toastRef.current("יצירת ה-PDF נכשלה. נסה שוב.");
+          return;
+        }
+        submitPageHtmlAsPdf(html, { filename: pdfFilename })
+          .catch((err) => {
+            toastRef.current(err instanceof Error ? err.message : "יצירת ה-PDF נכשלה. נסה שוב.");
+          })
+          .finally(() => setPdfBusy(false));
+      });
+    });
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(outer);
+      if (inner) cancelAnimationFrame(inner);
+    };
+  }, [mode, pdfFilename]);
+
+  useEffect(() => {
+    if (mode !== "print") return;
     let cancelled = false;
     const done = () => {
-      if (!cancelled) setPrinting(false);
+      if (!cancelled) setMode("idle");
     };
     window.addEventListener("afterprint", done);
     // Safety net: some browsers (older WebKit, a few mobile ones) never fire
@@ -60,9 +118,9 @@ export function usePrintSheet(): { printing: boolean; print: () => void } {
       window.removeEventListener("afterprint", done);
       window.removeEventListener("focus", onFocus);
     };
-  }, [printing]);
+  }, [mode]);
 
-  return { printing, print };
+  return { printing, print, downloadPdf, pdfBusy };
 }
 
 export type PrintColumn<T> = {

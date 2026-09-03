@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Printer, Receipt, ArrowDownToLine, ArrowUpFromLine, Download } from "lucide-react";
+import { DownloadPdfButton } from "@/components/download-pdf-button";
 import { formatCurrency, formatDate } from "@/lib/format";
 import type { Business, InvoiceDocument, Expense } from "@/lib/types";
 import { exportVatPeriodExpenses } from "@/lib/csv-export";
@@ -209,6 +210,11 @@ export function VatPeriodReport({ headless = false, business, documents, expense
               <option key={m} value={m}>{MODE_LABELS[m]}</option>
             ))}
           </select>
+          <DownloadPdfButton
+            filename={`דוח-מעמ-${range.label}`}
+            className="no-print inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-semibold bg-white border-2 border-orange-200 text-stone-800 hover:bg-orange-50"
+            iconClassName="w-4 h-4"
+          />
           <button
             onClick={() => window.print()}
             className="no-print inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-semibold bg-white border-2 border-orange-200 text-stone-800 hover:bg-orange-50"

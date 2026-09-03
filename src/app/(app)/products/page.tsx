@@ -11,6 +11,7 @@ import { Tooltip } from "@/components/ui/tooltip";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Pagination } from "@/components/ui/pagination";
 import { PrintSheet, usePrintSheet } from "@/components/print-sheet";
+import { DownloadPdfButton } from "@/components/download-pdf-button";
 import { useBusiness } from "@/lib/business-store";
 import type { Product } from "@/lib/types";
 
@@ -30,7 +31,7 @@ export default function ProductsPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
   const confirm = useConfirm();
-  const { printing, print } = usePrintSheet();
+  const { printing, print, downloadPdf, pdfBusy } = usePrintSheet();
 
   const { items: filtered, total: filteredTotal, pageSize } = useProductsPage({ page, search });
   const pageCount = Math.max(1, Math.ceil(filteredTotal / pageSize));
@@ -101,11 +102,20 @@ export default function ProductsPage() {
           פריט חדש
         </button>
         <div className="flex gap-2 flex-wrap">
+          <DownloadPdfButton
+            filename="מחירון"
+            onDownload={() => downloadPdf("מחירון")}
+            busy={pdfBusy}
+            disabled={products.length === 0}
+            className="inline-flex items-center gap-2 bg-white border-2 border-orange-200 text-stone-800 px-4 py-2.5 rounded-2xl text-sm font-semibold hover:bg-orange-50 disabled:opacity-40"
+            iconClassName="w-4 h-4"
+            title="הורדת המחירון כקובץ PDF למחשב"
+          />
           <button
             onClick={print}
             disabled={products.length === 0}
             className="inline-flex items-center gap-2 bg-white border-2 border-orange-200 text-stone-800 px-4 py-2.5 rounded-2xl text-sm font-semibold hover:bg-orange-50 disabled:opacity-40"
-            title="הדפסת המחירון / שמירה כ-PDF"
+            title="הדפסת המחירון"
           >
             <Printer className="w-4 h-4" />
             הדפסה

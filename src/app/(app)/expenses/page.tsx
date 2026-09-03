@@ -12,6 +12,7 @@ import { Tooltip } from "@/components/ui/tooltip";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Pagination } from "@/components/ui/pagination";
 import { PrintSheet, usePrintSheet } from "@/components/print-sheet";
+import { DownloadPdfButton } from "@/components/download-pdf-button";
 import { PeriodPicker } from "@/components/period-picker";
 import { type Period, periodMatches, periodLabel } from "@/lib/report-period";
 import { supabase } from "@/lib/supabase";
@@ -133,7 +134,7 @@ export default function ExpensesPage() {
   const [period, setPeriod] = useState<Period>("all");
   const [page, setPage] = useState(0);
   const confirm = useConfirm();
-  const { printing, print } = usePrintSheet();
+  const { printing, print, downloadPdf, pdfBusy } = usePrintSheet();
 
   const availableCategories = useMemo(() => {
     const set = new Set(expenses.map((e) => e.category));
@@ -358,10 +359,19 @@ export default function ExpensesPage() {
             onChange={handleScanFile}
             className="hidden"
           />
+          <DownloadPdfButton
+            filename="רשימת-הוצאות"
+            onDownload={() => downloadPdf("רשימת-הוצאות")}
+            busy={pdfBusy}
+            disabled={filtered.length === 0}
+            title="הורדת רשימת ההוצאות המסוננת כקובץ PDF למחשב"
+            className="inline-flex items-center gap-2 bg-white border-2 border-orange-200 text-stone-800 px-4 py-2.5 rounded-2xl text-sm font-semibold hover:bg-orange-50 disabled:opacity-50"
+            iconClassName="w-4 h-4"
+          />
           <button
             onClick={print}
             disabled={filtered.length === 0}
-            title="הדפסת רשימת ההוצאות המסוננת / שמירה כ-PDF"
+            title="הדפסת רשימת ההוצאות המסוננת"
             className="inline-flex items-center gap-2 bg-white border-2 border-orange-200 text-stone-800 px-4 py-2.5 rounded-2xl text-sm font-semibold hover:bg-orange-50 disabled:opacity-50"
           >
             <Printer className="w-4 h-4" />

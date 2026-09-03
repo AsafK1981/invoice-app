@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { ClipboardList, Printer, Copy, Check } from "lucide-react";
+import { DownloadPdfButton } from "@/components/download-pdf-button";
 import { useState } from "react";
 import { formatCurrency } from "@/lib/format";
 import { isCountableRevenue, type Business, type InvoiceDocument, type Expense } from "@/lib/types";
@@ -117,13 +118,20 @@ export function Form1301Helper({ headless = false, year, business, documents, ex
             </p>
           </div>
         )}
-        <button
-          onClick={() => window.print()}
-          className="no-print inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border-2 border-orange-200 text-stone-800 hover:bg-orange-50"
-        >
-          <Printer className="w-4 h-4" />
-          הדפס
-        </button>
+        <div className="no-print flex items-center gap-2 flex-wrap">
+          <DownloadPdfButton
+            filename={`עזר-לטופס-1301-${year}`}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border-2 border-orange-200 text-stone-800 hover:bg-orange-50"
+            iconClassName="w-4 h-4"
+          />
+          <button
+            onClick={() => window.print()}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border-2 border-orange-200 text-stone-800 hover:bg-orange-50"
+          >
+            <Printer className="w-4 h-4" />
+            הדפס
+          </button>
+        </div>
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-blue-100">
