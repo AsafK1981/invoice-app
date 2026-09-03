@@ -3,6 +3,8 @@
  *   "all"        every document ever
  *   "2026"       a calendar year
  *   "2026-Q3"    a quarter (Jul-Sep)
+ *   "2026-B4"    a bimonth (Jul-Aug) - the six fixed two-month windows of
+ *                the year, the same ones the VAT bimonthly return runs on
  *   "2026-08"    a month
  *   "2026-01-05..2026-03-10"  a free date range (inclusive on both ends)
  * Pure helpers, no React, so the page, the exports and the tests share one
@@ -12,7 +14,7 @@
 import { toIsraelDate } from "./date";
 import { formatDate, formatMonth } from "./format";
 
-export type PeriodMode = "month" | "quarter" | "year" | "range" | "all";
+export type PeriodMode = "month" | "bimonth" | "quarter" | "year" | "range" | "all";
 export type Period = string;
 
 export const HEBREW_MONTHS_SHORT = [
@@ -22,6 +24,7 @@ export const HEBREW_MONTHS_SHORT = [
 
 export const PERIOD_MODE_LABELS: Record<PeriodMode, string> = {
   month: "חודש",
+  bimonth: "חודשיים",
   quarter: "רבעון",
   year: "שנה",
   range: "טווח",
@@ -61,6 +64,7 @@ export function periodMode(p: Period): PeriodMode {
   if (p === "all") return "all";
   if (/^\d{4}$/.test(p)) return "year";
   if (/^\d{4}-Q[1-4]$/.test(p)) return "quarter";
+  if (/^\d{4}-B[1-6]$/.test(p)) return "bimonth";
   if (RANGE_RE.test(p)) return "range";
   return "month";
 }
@@ -78,6 +82,10 @@ function monthSpan(p: Period): [number, number] {
     case "quarter": {
       const q = parseInt(p.slice(-1), 10);
       return [(q - 1) * 3 + 1, q * 3];
+    }
+    case "bimonth": {
+      const b = parseInt(p.slice(-1), 10);
+      return [(b - 1) * 2 + 1, b * 2];
     }
     case "month": {
       const m = parseInt(p.slice(5, 7), 10);
@@ -119,12 +127,20 @@ export function periodLabel(p: Period): string {
       const [from, to] = monthSpan(p);
       return `רבעון ${q} · ${y} (${HEBREW_MONTHS_SHORT[from - 1]}-${HEBREW_MONTHS_SHORT[to - 1]})`;
     }
+    case "bimonth":
+      return `${bimonthLabel(p)} ${periodYear(p)}`;
     case "month":
       return monthLabel(p);
   }
 }
 
-/** The stepper's centre label: "2026" / "רבעון 3 · 2026" / "אוגוסט 2026". */
+/** "ינו׳-פבר׳" for a bimonth period: the two months it spans, no year. */
+function bimonthLabel(p: Period): string {
+  const [from, to] = monthSpan(p);
+  return `${HEBREW_MONTHS_SHORT[from - 1]}-${HEBREW_MONTHS_SHORT[to - 1]}`;
+}
+
+/** The stepper's centre label: "2026" / "רבעון 3 · 2026" / "יול׳-אוג׳ 2026" / "אוגוסט 2026". */
 export function periodStepLabel(p: Period): string {
   switch (periodMode(p)) {
     case "all":
@@ -135,6 +151,8 @@ export function periodStepLabel(p: Period): string {
       return p;
     case "quarter":
       return `רבעון ${p.slice(-1)} · ${periodYear(p)}`;
+    case "bimonth":
+      return `${bimonthLabel(p)} ${periodYear(p)}`;
     case "month":
       return monthLabel(p);
   }
@@ -159,6 +177,12 @@ export function shiftPeriod(p: Period, delta: 1 | -1): Period {
       if (q < 1) return `${y - 1}-Q4`;
       if (q > 4) return `${y + 1}-Q1`;
       return `${y}-Q${q}`;
+    }
+    case "bimonth": {
+      const b = parseInt(p.slice(-1), 10) + delta;
+      if (b < 1) return `${y - 1}-B6`;
+      if (b > 6) return `${y + 1}-B1`;
+      return `${y}-B${b}`;
     }
     case "month": {
       const m = parseInt(p.slice(5, 7), 10) + delta;
@@ -204,6 +228,7 @@ export function switchMode(p: Period, mode: PeriodMode, today = new Date()): Per
   else anchor = from;
   if (mode === "year") return String(y);
   if (mode === "quarter") return `${y}-Q${Math.ceil(anchor / 3)}`;
+  if (mode === "bimonth") return `${y}-B${Math.ceil(anchor / 2)}`;
   return `${y}-${pad2(anchor)}`;
 }
 
@@ -249,6 +274,7 @@ export function previousEquivalentRange(p: Period, today = new Date()): { start:
   let end: Date;
   if (mode === "year") end = new Date(ey - 1, em - 1, 1);
   else if (mode === "quarter") end = new Date(ey, em - 4, 1);
+  else if (mode === "bimonth") end = new Date(ey, em - 3, 1);
   else end = new Date(ey, em - 2, 1);
   const lastDay = new Date(end.getFullYear(), end.getMonth() + 1, 0).getDate();
   end.setDate(Math.min(ed, lastDay));
@@ -293,7 +319,7 @@ export function periodMatchesMonth(p: Period, ym: string): boolean {
 
 /**
  * The months the reports chart lays out for a period, oldest first: the
- * trailing twelve for "all", the whole calendar year for a year / quarter /
+ * trailing twelve for "all", the whole calendar year for a year / quarter / bimonth /
  * month (the inactive months give the active ones context), and for a range
  * the calendar year it sits in - or, when it crosses a year boundary, exactly
  * the months it spans.

@@ -6,12 +6,14 @@ import {
   periodMode, periodStepLabel, shiftPeriod, switchMode, rangeBounds, makeRange,
 } from "@/lib/report-period";
 
-const MODES: PeriodMode[] = ["month", "quarter", "year", "range", "all"];
+const MODES: PeriodMode[] = ["month", "bimonth", "quarter", "year", "range", "all"];
 
 /**
  * The one period control every list / report page shares (reports since
  * 2026-08-18, expenses since 2026-09-01): a segmented pill of granularities
- * (חודש / רבעון / שנה / טווח / הכל) next to a prev/next stepper. Picking
+ * (חודש / חודשיים / רבעון / שנה / טווח / הכל) next to a prev/next stepper.
+ * חודשיים is the VAT bimonthly window (ינו-פבר, מרץ-אפר, ...), added
+ * 2026-09-03 because most of the returns people file are bimonthly. Picking
  * טווח turns the stepper's label into two date fields, so a free range is
  * a first-class option that is always visible - never an entry hidden at
  * the bottom of a month dropdown. Styles: `.rpt-modes` / `.rpt-stepper` /

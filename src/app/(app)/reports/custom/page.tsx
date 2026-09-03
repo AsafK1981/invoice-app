@@ -30,7 +30,7 @@ const MONTH_NAMES = [
   "יולי", "אוגוסט", "ספטמבר", "אוקטובר", "נובמבר", "דצמבר",
 ];
 
-type Preset = string; // "all" | "2026" | "2026-Q1" | "2026-01"
+type Preset = string; // "all" | "2026" | "2026-Q1" | "2026-B1" (bimonth, Jan-Feb) | "2026-01"
 
 interface PresetBounds {
   from: string | null;
@@ -53,6 +53,14 @@ function presetBounds(preset: Preset): PresetBounds {
       to: lastDayOfMonth(Number(y), startMonth + 2),
     };
   }
+  if (preset.includes("-B")) {
+    const [y, b] = preset.split("-B");
+    const startMonth = (Number(b) - 1) * 2 + 1;
+    return {
+      from: `${y}-${String(startMonth).padStart(2, "0")}-01`,
+      to: lastDayOfMonth(Number(y), startMonth + 1),
+    };
+  }
   if (/^\d{4}-\d{2}$/.test(preset)) {
     const [y, m] = preset.split("-");
     return { from: `${preset}-01`, to: lastDayOfMonth(Number(y), Number(m)) };
@@ -69,6 +77,11 @@ function buildPresetOptions(years: number[]): { value: Preset; label: string }[]
     opts.push({ value: `${y}-Q2`, label: `${y} · רבעון 2 (אפר-יונ)` });
     opts.push({ value: `${y}-Q3`, label: `${y} · רבעון 3 (יול-ספט)` });
     opts.push({ value: `${y}-Q4`, label: `${y} · רבעון 4 (אוק-דצמ)` });
+    // The six VAT bimonthly windows, the period most returns are filed for.
+    for (let b = 1; b <= 6; b++) {
+      const from = (b - 1) * 2;
+      opts.push({ value: `${y}-B${b}`, label: `${y} · חודשיים ${b} (${MONTH_NAMES[from]}-${MONTH_NAMES[from + 1]})` });
+    }
     for (let m = 1; m <= 12; m++) {
       opts.push({ value: `${y}-${String(m).padStart(2, "0")}`, label: `${MONTH_NAMES[m - 1]} ${y}` });
     }

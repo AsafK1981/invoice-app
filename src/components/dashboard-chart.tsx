@@ -15,12 +15,13 @@ type MonthDatum = { month: string; הכנסות: number; הוצאות: number };
 /* Time-range selection                                                */
 /* ------------------------------------------------------------------ */
 
-type RangeKey = "day" | "week" | "month" | "6m" | "year" | "2y" | "5y";
+type RangeKey = "day" | "week" | "month" | "2m" | "6m" | "year" | "2y" | "5y";
 
 const RANGES: { key: RangeKey; label: string }[] = [
   { key: "day", label: "יום" },
   { key: "week", label: "שבוע" },
   { key: "month", label: "חודש" },
+  { key: "2m", label: "חודשיים" },
   { key: "6m", label: "6 חודשים" },
   { key: "year", label: "שנה" },
   { key: "2y", label: "שנתיים" },
@@ -85,6 +86,11 @@ function buildBuckets(range: RangeKey): Bucket[] {
       break;
     case "month":
       dayBuckets(30);
+      break;
+    case "2m":
+      // Still daily: two monthly points would be a line between two dots,
+      // not a chart. The x-axis thins its labels for dense views anyway.
+      dayBuckets(61);
       break;
     case "6m":
       monthBuckets(6, false, false);

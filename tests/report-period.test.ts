@@ -100,3 +100,48 @@ describe("range period model", () => {
     expect(switchMode("2026-08-01..2026-09-30", "month", TODAY)).toBe("2026-08");
   });
 });
+
+describe("bimonth period model (the VAT two-month window)", () => {
+  it("detects the mode and spans exactly its two months", () => {
+    expect(periodMode("2026-B4")).toBe("bimonth");
+    expect(periodMatches("2026-B4", "2026-06-30")).toBe(false);
+    expect(periodMatches("2026-B4", "2026-07-01")).toBe(true);
+    expect(periodMatches("2026-B4", "2026-08-31")).toBe(true);
+    expect(periodMatches("2026-B4", "2026-09-01")).toBe(false);
+    expect(periodMatchesMonth("2026-B1", "2026-02")).toBe(true);
+    expect(periodMatchesMonth("2026-B1", "2026-03")).toBe(false);
+  });
+
+  it("labels the window by its two months", () => {
+    expect(periodStepLabel("2026-B4")).toBe("יול׳-אוג׳ 2026");
+    expect(periodLabel("2026-B1")).toBe("ינו׳-פבר׳ 2026");
+  });
+
+  it("steps across the year boundary", () => {
+    expect(shiftPeriod("2026-B6", 1)).toBe("2027-B1");
+    expect(shiftPeriod("2026-B1", -1)).toBe("2025-B6");
+    expect(shiftPeriod("2026-B3", 1)).toBe("2026-B4");
+  });
+
+  it("switches into the bimonth the user is already in, and out of it sensibly", () => {
+    expect(switchMode("2026-08", "bimonth", TODAY)).toBe("2026-B4");
+    expect(switchMode("2026-Q1", "bimonth", TODAY)).toBe("2026-B1");
+    expect(switchMode("2025", "bimonth", TODAY)).toBe("2025-B6");
+    expect(switchMode("all", "bimonth", TODAY)).toBe("2026-B4");
+    expect(switchMode("2026-B4", "month", TODAY)).toBe("2026-08");
+    expect(switchMode("2026-B2", "quarter", TODAY)).toBe("2026-Q1");
+    expect(switchMode("2026-B4", "year", TODAY)).toBe("2026");
+  });
+
+  it("clips a bimonth in progress to today and compares it against the previous one to the same day", () => {
+    expect(periodRange("2026-B4", TODAY)).toEqual({ start: "2026-07-01", end: "2026-08-31" });
+    expect(previousEquivalentRange("2026-B4", TODAY)).toEqual({ start: "2026-05-01", end: "2026-06-30" });
+    const midway = new Date(Date.UTC(2026, 6, 20, 12));
+    expect(periodRange("2026-B4", midway)).toEqual({ start: "2026-07-01", end: "2026-07-20" });
+    expect(previousEquivalentRange("2026-B4", midway)).toEqual({ start: "2026-05-01", end: "2026-05-20" });
+  });
+
+  it("lays the chart out over the whole year", () => {
+    expect(periodChartMonths("2026-B4", TODAY)).toHaveLength(12);
+  });
+});
