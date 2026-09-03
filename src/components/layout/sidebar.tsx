@@ -112,14 +112,24 @@ export function Sidebar() {
     if (business.id) syncTextSizeFromBusiness(business.textSize);
   }, [business.id, business.textSize]);
 
-  // Escape closes the mobile drawer, matching the existing backdrop-click handler.
+  // Escape closes the mobile drawer, matching the existing backdrop-click
+  // handler. While it is open the page behind it must not scroll: on phones a
+  // swipe inside the drawer otherwise moved the PAGE, and the drawer itself
+  // (taller than any phone viewport) could never be scrolled to its bottom
+  // entries (Asaf, 2026-09-03). Restoring the previous value on close keeps
+  // any other component's own lock intact.
   useEffect(() => {
     if (!mobileOpen) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setMobileOpen(false);
     };
     document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = previousOverflow;
+    };
   }, [mobileOpen]);
 
   const sidebarContent = (
@@ -342,7 +352,13 @@ export function Sidebar() {
         />
       )}
 
-      {/* Mobile sidebar */}
+      {/* Mobile sidebar. The panel is viewport-high but its content (13+ nav
+          rows plus the account block) is taller than any phone screen, so the
+          scrolling happens in the inner wrapper: the drawer itself stays put,
+          the close button stays pinned at the top, and `overscroll-contain`
+          keeps a swipe that reaches the end from bouncing the page behind.
+          `min-h-0` is what lets a flex child shrink below its content and
+          actually scroll instead of overflowing invisibly. */}
       <aside
         aria-hidden={!mobileOpen}
         inert={!mobileOpen}
@@ -352,12 +368,17 @@ export function Sidebar() {
       >
         <button
           onClick={() => setMobileOpen(false)}
-          className="absolute top-4 left-4 w-8 h-8 rounded-xl bg-stone-100 flex items-center justify-center text-stone-600 hover:bg-stone-200"
+          className="absolute top-4 left-4 z-10 w-8 h-8 rounded-xl bg-stone-100 flex items-center justify-center text-stone-600 hover:bg-stone-200"
           aria-label="סגור"
         >
           <X className="w-4 h-4" />
         </button>
-        {sidebarContent}
+        <div
+          className="flex-1 min-h-0 overflow-y-auto overscroll-contain flex flex-col pb-[env(safe-area-inset-bottom)]"
+          style={{ WebkitOverflowScrolling: "touch" }}
+        >
+          {sidebarContent}
+        </div>
       </aside>
 
       {/* Desktop sidebar */}
