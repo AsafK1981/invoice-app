@@ -281,7 +281,7 @@ export function VatPeriodReport({ headless = false, business, documents, expense
             </button>
           </div>
           <p className="text-xs text-stone-600 mt-1">
-            על {exempt.docCount} מסמכים ששולמו בשנה, בשקלים שלמים
+            על {exempt.docCount} מסמכים שהופקו בשנה, בשקלים שלמים
           </p>
         </div>
 
@@ -296,7 +296,7 @@ export function VatPeriodReport({ headless = false, business, documents, expense
             : `המחזור מתחת לתקרת עוסק פטור לשנת ${exemptYear} (${formatCurrency(exempt.ceiling)}).`}
         </p>
         <p className="text-xs text-stone-600 mt-3 leading-relaxed border-t border-orange-100 pt-3">
-          המחזור מחושב לפי המסמכים ששולמו בשנה, בלי טיוטות וביטולים, וחשבוניות זיכוי מקטינות אותו.
+          המחזור מחושב לפי כל המסמכים שהופקו בשנה (גם אם טרם שולמו), בלי טיוטות וביטולים, וחשבוניות זיכוי מקטינות אותו. זו אותה הגדרה כמו מד התקרה בדף הראשי.
           עוסק פטור אינו מדווח מע״מ תקופתי ואינו מגיש קובץ.
         </p>
       </div>
