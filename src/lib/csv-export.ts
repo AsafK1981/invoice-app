@@ -81,8 +81,9 @@ export function exportExpenses(
   meta: ExportMeta & { showVat?: boolean } = {},
 ) {
   // עוסק פטור never records VAT on expenses, so the two VAT columns would be
-  // all zeros; show them only when the business (or the data) has VAT.
-  const showVat = meta.showVat ?? expenses.some((e) => (e.vatAmount ?? 0) > 0);
+  // all zeros; show them when the business files VAT OR the data carries any,
+  // the same rule as the expenses page's print sheet.
+  const showVat = Boolean(meta.showVat) || expenses.some((e) => (e.vatAmount ?? 0) > 0);
   return downloadXlsx(
     fileName("expenses", suffix),
     [
