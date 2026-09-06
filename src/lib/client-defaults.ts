@@ -6,6 +6,13 @@ export interface ClientDefaults {
   recentSubject?: string;
   documentCount: number;
   averageTotal?: number;
+  /**
+   * The language of this client's most recent document. There is no
+   * client-level language column: a customer who was invoiced in English last
+   * time gets English again, and one flip of the editor's select is all it
+   * takes to change that for good. Undefined when the client has no documents.
+   */
+  language?: "he" | "en";
 }
 
 /**
@@ -32,6 +39,9 @@ export function getClientDefaults(
   // Most-recent non-empty values
   const recentPaymentMethod = clientDocs.find((d) => d.paymentMethod)?.paymentMethod;
   const recentSubject = clientDocs.find((d) => d.subject?.trim())?.subject?.trim();
+  // The newest document decides, including a Hebrew one: switching a customer
+  // back to Hebrew must stick just as firmly as switching them to English.
+  const recentLanguage = clientDocs[0].language === "en" ? "en" : "he";
 
   const totals = clientDocs.map((d) => Math.abs(d.total)).filter((t) => t > 0);
   const averageTotal =
@@ -42,5 +52,6 @@ export function getClientDefaults(
     recentSubject,
     documentCount: clientDocs.length,
     averageTotal,
+    language: recentLanguage,
   };
 }

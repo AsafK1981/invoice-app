@@ -59,6 +59,7 @@ function mapDocRow(row: Record<string, unknown>, items: DocumentItem[]): Invoice
     vatIls: row.vat_ils != null ? Number(row.vat_ils) : Number(row.vat) || 0,
     totalIls: row.total_ils != null ? Number(row.total_ils) : Number(row.total) || 0,
     zeroRated: Boolean(row.zero_rated),
+    language: row.language === "en" ? "en" : "he",
   };
 }
 
@@ -197,6 +198,7 @@ export async function createDocument(
     p_discount_amount: doc.discountAmount ?? null,
     p_payment_details: doc.paymentDetails ?? null,
     p_payment_reference: doc.paymentReference ?? null,
+    p_language: doc.language === "en" ? "en" : "he",
   });
 
   if (error) {

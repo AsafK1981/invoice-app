@@ -13,6 +13,7 @@ import {
 } from "@/lib/types";
 import { DocumentBody, type DocumentBodyClient } from "./document-body";
 import { designToCssVars, normalizeDocumentDesign } from "@/lib/document-themes";
+import { docDir, toDocLang } from "@/lib/document-strings";
 
 export type PreviewClient = DocumentBodyClient;
 
@@ -41,6 +42,8 @@ interface Props {
   zeroRated?: boolean;
   /** מספר הקצאה, mirrors the live allocation-banner value onto the preview. */
   allocationNumber?: string;
+  /** Document language: "he" (default, unchanged RTL) or "en" (LTR English). */
+  language?: string;
 }
 
 const PAGE_WIDTH_PX = 794;
@@ -136,6 +139,12 @@ export function DocumentPreview(props: Props) {
     "data-logo-pos": design?.logoPosition ?? "right",
   } as const;
 
+  // Same sheet, two reading directions: the preview must show exactly what the
+  // issued document will look like, so the language drives both the words
+  // (DocumentBody) and the paper's `dir` in both render sites below.
+  const language = toDocLang(props.language);
+  const dir = docDir(language);
+
   const body = (
     <DocumentBody
       business={props.business}
@@ -161,6 +170,7 @@ export function DocumentPreview(props: Props) {
       totalIls={props.totalIls}
       zeroRated={props.zeroRated}
       allocationNumber={props.allocationNumber}
+      language={language}
       placeholders
     />
   );
@@ -182,7 +192,7 @@ export function DocumentPreview(props: Props) {
               } as CSSProperties
             }
           >
-            <div className="receipt-view doc-paper shadow-md" dir="rtl" {...themeAttrs}>
+            <div className="receipt-view doc-paper shadow-md" dir={dir} lang={language} {...themeAttrs}>
               {body}
             </div>
           </div>
@@ -241,7 +251,8 @@ export function DocumentPreview(props: Props) {
                   <div
                     className={`receipt-view doc-paper shadow-2xl cursor-default${zoomedScale === 1 ? " is-fluid" : ""}`}
                     style={{ width: PAGE_WIDTH_PX, maxWidth: "100%", ...themeVars }}
-                    dir="rtl"
+                    dir={dir}
+                    lang={language}
                     data-doc-template={design?.template ?? "general"}
                     data-doc-layout={design?.layout ?? "cards"}
                     data-doc-pattern={design?.pattern ?? "none"}

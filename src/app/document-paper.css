@@ -123,11 +123,20 @@
   color: var(--d-gold);
   text-transform: uppercase;
 }
+/* The rule fades AWAY from the label, so its direction follows the reading
+   direction: in RTL the rule sits to the label's left and fades leftwards; on
+   an English (LTR) document it sits to the right and must fade rightwards.
+   Gradients have no logical keyword, hence the explicit [dir="ltr"] override -
+   the paper element always carries an explicit dir (receipt-view.tsx,
+   document-preview.tsx), so this is never ambiguous. */
 .doc-paper .doc-glabel::after {
   content: "";
   flex: 1;
   height: 1px;
   background: linear-gradient(to left, var(--d-gold-faint), transparent);
+}
+.doc-paper[dir="ltr"] .doc-glabel::after {
+  background: linear-gradient(to right, var(--d-gold-faint), transparent);
 }
 
 /* ---------- header: business identity ↔ document identity ---------- */
@@ -171,8 +180,11 @@
   margin-top: 6px;
   line-height: 1.6;
 }
+/* `end`, not `left`: the document identity block hugs the far edge of the
+   sheet, which is the left on a Hebrew document and the right on an English
+   one. Every alignment in this file is logical for that reason. */
 .doc-paper .doc-ident {
-  text-align: left;
+  text-align: end;
   flex-shrink: 0;
 }
 .doc-paper .doc-orig {
@@ -212,14 +224,22 @@
 /* ---------- logo position (right = default/unchanged, left, center) -----
    `data-logo-pos` is set by the render layer from the SAME validated
    DocumentDesign.logoPosition enum ('right'|'center'|'left') that drives
-   everything else — never a raw string. "right" needs no rule: it's the
-   current DOM order (business block first ⇒ right side in RTL). */
+   everything else, never a raw string. "right" needs no rule: it's the
+   current DOM order (business block first ⇒ right side in RTL).
+
+   These names are RELATIVE TO THE READING DIRECTION, not to the page: on a
+   Hebrew (RTL) document "right" is the reading start and "left" the far edge;
+   on an English (LTR) document the same setting puts the logo at the start,
+   which is now the left. "left" therefore keeps meaning "the far edge,
+   opposite the document identity" in both languages, which is why the swap
+   below is expressed with flex `order` + logical text-align and needs no
+   per-direction variant. */
 .doc-paper[data-logo-pos="left"] .doc-biz {
   order: 2;
 }
 .doc-paper[data-logo-pos="left"] .doc-ident {
   order: 1;
-  text-align: right;
+  text-align: start;
 }
 .doc-paper[data-logo-pos="center"] .doc-head {
   flex-direction: column;
@@ -325,14 +345,14 @@
   background: transparent !important;
 }
 .doc-paper .doc-table th.c-desc {
-  text-align: right;
+  text-align: start;
 }
 .doc-paper .doc-table th.c-qty {
   text-align: center;
   width: 62px;
 }
 .doc-paper .doc-table th.c-num {
-  text-align: left;
+  text-align: end;
   width: 116px;
 }
 .doc-paper .doc-table td {
@@ -347,7 +367,7 @@
   border-bottom: 0 !important;
 }
 .doc-paper .doc-table td.c-desc {
-  text-align: right;
+  text-align: start;
   overflow-wrap: anywhere;
   /* The editor's description box is multi-line; each typed line break is a
      line here too (same rule as .doc-info-body for the notes). */
@@ -358,11 +378,11 @@
   color: var(--d-ink2) !important;
 }
 .doc-paper .doc-table td.c-num {
-  text-align: left;
+  text-align: end;
   color: var(--d-ink2) !important;
 }
 .doc-paper .doc-table td.c-total {
-  text-align: left;
+  text-align: end;
   font-weight: 600;
   color: var(--d-ink) !important;
 }
@@ -1031,7 +1051,7 @@
     padding: 18px;
   }
   .doc-paper.is-fluid .doc-ident {
-    text-align: right;
+    text-align: start;
   }
   .doc-paper.is-fluid .doc-strip,
   .doc-paper.is-fluid .doc-money {

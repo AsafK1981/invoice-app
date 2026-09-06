@@ -111,6 +111,9 @@ export async function issueSelfInvoice(
     currency: "ILS",
     exchange_rate: 1,
     zero_rated: false,
+    // The self-invoice for a subscription payment is always a Hebrew document:
+    // its customer is the subscriber, an Israeli freelancer.
+    language: "he",
     payment_method: "אשראי",
     paid_at: paidAt,
   });

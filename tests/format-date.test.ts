@@ -48,6 +48,33 @@ describe("formatDate", () => {
     expect(formatDate("")).toBe("");
     expect(formatDate("not a date")).toBe("not a date");
   });
+
+  // English documents print the date with a named month, so a foreign customer
+  // cannot read 05.09.2026 as the 9th of May.
+  it("formats an English document date as 'D MMM YYYY'", () => {
+    expect(formatDate("2026-09-05", "en")).toBe("5 Sep 2026");
+    expect(formatDate("2026-01-01", "en")).toBe("1 Jan 2026");
+    expect(formatDate("2026-12-31", "en")).toBe("31 Dec 2026");
+  });
+
+  it("never shifts an English calendar date by a timezone either", () => {
+    for (const tz of ["UTC", "Asia/Jerusalem", "America/Los_Angeles", "Pacific/Kiritimati"]) {
+      withTZ(tz, () => {
+        expect(formatDate("2026-09-05", "en"), `TZ=${tz}`).toBe("5 Sep 2026");
+      });
+    }
+  });
+
+  it("renders English ISO instants in Israel time, with a named month", () => {
+    expect(formatDate("2026-09-05T22:30:00Z", "en")).toBe("6 Sep 2026");
+    expect(formatDate("2026-09-05T00:30:00Z", "en")).toBe("5 Sep 2026");
+  });
+
+  it("leaves Hebrew untouched for any other language value", () => {
+    expect(formatDate("2026-09-05", "he")).toBe("05.09.2026");
+    expect(formatDate("2026-09-05", "EN")).toBe("05.09.2026");
+    expect(formatDate("2026-09-05")).toBe("05.09.2026");
+  });
 });
 
 describe("formatMonth", () => {

@@ -5,11 +5,8 @@ import { formatMoney } from "@/lib/currencies";
 import { netAfterWithholding } from "@/lib/withholding";
 import { Ltr } from "@/components/ui/ltr";
 import { CANONICAL_HOST, CANONICAL_ORIGIN } from "@/lib/public-url";
+import { docStrings, type DocLang, type DocStrings } from "@/lib/document-strings";
 import {
-  BUSINESS_TYPE_LABELS,
-  DOC_SUM_LABEL,
-  DOCUMENT_TYPE_LABELS,
-  PAYMENT_METHOD_LABELS,
   type Business,
   type DocumentItem,
   type DocumentType,
@@ -33,20 +30,22 @@ export interface DocumentBodyClient {
 function paymentDetailsParts(
   method: PaymentMethod,
   d: PaymentDetails | undefined,
+  s: DocStrings,
+  lang: DocLang,
 ): string[] {
   if (!d) return [];
   const parts: string[] = [];
   if (method === "check") {
-    if (d.checkNumber) parts.push(`שיק ${d.checkNumber}`);
+    if (d.checkNumber) parts.push(s.check(d.checkNumber));
     if (d.checkBank) parts.push(d.checkBank);
-    if (d.checkBranch) parts.push(`סניף ${d.checkBranch}`);
-    if (d.checkAccount) parts.push(`חשבון ${d.checkAccount}`);
-    if (d.checkDueDate) parts.push(`ז״פ ${formatDate(d.checkDueDate)}`);
+    if (d.checkBranch) parts.push(s.branch(d.checkBranch));
+    if (d.checkAccount) parts.push(s.account(d.checkAccount));
+    if (d.checkDueDate) parts.push(s.checkDueDate(formatDate(d.checkDueDate, lang)));
   } else if (method === "credit_card") {
-    if (d.cardLast4) parts.push(`מסתיים ב-${d.cardLast4}`);
-    if (d.cardApproval) parts.push(`אישור ${d.cardApproval}`);
+    if (d.cardLast4) parts.push(s.cardLast4(d.cardLast4));
+    if (d.cardApproval) parts.push(s.cardApproval(d.cardApproval));
   } else if (method === "bank_transfer" || method === "bit" || method === "paypal") {
-    if (d.reference) parts.push(`אסמכתא ${d.reference}`);
+    if (d.reference) parts.push(s.reference(d.reference));
   }
   return parts;
 }
@@ -118,6 +117,14 @@ interface Props {
    * `src/app/api/public-document/[id]/route.ts` for how that flag is derived.
    */
   showBranding?: boolean;
+  /**
+   * The language the document itself is written in. "he" (default) keeps every
+   * word and the RTL layout exactly as they have always been; "en" renders the
+   * same document in English for a foreign customer. Setting `dir` on the paper
+   * wrapper is the caller's job (receipt-view / document-preview), because that
+   * element lives there.
+   */
+  language?: DocLang;
 }
 
 export function DocumentBody({
@@ -147,12 +154,14 @@ export function DocumentBody({
   zeroRated = false,
   copy = false,
   showBranding = true,
+  language = "he",
 }: Props) {
+  const s = docStrings(language);
   const currency = currencyProp || "ILS";
   const money = (n: number) => (currency === "ILS" ? formatCurrency(n) : formatMoney(n, currency));
 
-  const numberStr = number != null ? String(number).padStart(4, "0") : "(אוטומטי)";
-  const dateStr = date ? formatDate(date) : "-";
+  const numberStr = number != null ? String(number).padStart(4, "0") : s.autoNumber;
+  const dateStr = date ? formatDate(date, language) : "-";
   const businessName = business.name || (placeholders ? "-" : "");
   const showItemsEmptyState =
     placeholders && (items.length === 0 || items.every((i) => !i.description));
@@ -165,19 +174,19 @@ export function DocumentBody({
   // breakdown for any future VAT doc. This is display-only and NEVER fires for a
   // document that actually has line items, nor in the editor placeholder state.
   const useFallbackRow = !placeholders && items.length === 0;
-  const fallbackDescription = subject?.trim() || DOCUMENT_TYPE_LABELS[documentType];
+  const fallbackDescription = subject?.trim() || s.documentTypes[documentType];
   const hasWithholding = withholdingAmount != null && withholdingAmount > 0;
 
   // Business identity line: "עוסק מורשה 003244266" then address · phone · email.
   const bizContact = [business.address, business.phone, business.email].filter(Boolean);
 
   const paymentParts = paymentMethod
-    ? paymentDetailsParts(paymentMethod, paymentDetails)
+    ? paymentDetailsParts(paymentMethod, paymentDetails, s, language)
     : [];
   const bankLine = [
     business.bankName,
-    business.bankBranch ? `סניף ${business.bankBranch}` : "",
-    business.bankAccount ? `חשבון ${business.bankAccount}` : "",
+    business.bankBranch ? s.branch(business.bankBranch) : "",
+    business.bankAccount ? s.account(business.bankAccount) : "",
   ]
     .filter(Boolean)
     .join(" · ");
@@ -198,7 +207,7 @@ export function DocumentBody({
           <div>
             <h1 className="doc-name doc-serif">{businessName}</h1>
             <p className="doc-bizline">
-              {BUSINESS_TYPE_LABELS[business.businessType]}
+              {s.businessTypes[business.businessType]}
               {business.taxId && (
                 <>
                   {" "}
@@ -220,11 +229,11 @@ export function DocumentBody({
           </div>
         </div>
         <div className="doc-ident">
-          <div className="doc-orig">{copy ? "העתק" : "מקור"}</div>
+          <div className="doc-orig">{copy ? s.copy : s.original}</div>
           <div
             className={`doc-badge${documentType === "credit_note" ? " is-credit" : ""}`}
           >
-            {DOCUMENT_TYPE_LABELS[documentType]}
+            {s.documentTypes[documentType]}
           </div>
           <div className="doc-num doc-serif doc-mono">{numberStr}</div>
           <div className="doc-date doc-tab">{dateStr}</div>
@@ -239,13 +248,13 @@ export function DocumentBody({
           Placement only: no field, label or value changes. */}
       <div className="doc-strip">
         <div className="doc-card doc-mini">
-          <div className="doc-glabel">לכבוד</div>
+          <div className="doc-glabel">{s.toLabel}</div>
           {client ? (
             <>
               <div className="doc-mini-v doc-serif">{client.name}</div>
               {client.taxId && (
                 <div className="doc-mini-sub">
-                  ח.פ / ת.ז <span className="doc-mono">{client.taxId}</span>
+                  {s.clientTaxId} <span className="doc-mono">{client.taxId}</span>
                 </div>
               )}
               {client.address && <div className="doc-mini-sub">{client.address}</div>}
@@ -257,18 +266,18 @@ export function DocumentBody({
               )}
             </>
           ) : (
-            <div className="doc-mini-v is-empty">לקוח לא נבחר</div>
+            <div className="doc-mini-v is-empty">{s.noClient}</div>
           )}
         </div>
         {allocationNumber && (
           <div className="doc-card doc-mini">
-            <div className="doc-glabel">מספר הקצאה · חשבונית ישראל</div>
+            <div className="doc-glabel">{s.allocationLabel}</div>
             <div className="doc-mini-v is-gold doc-mono">{allocationNumber}</div>
           </div>
         )}
         {subject && (
           <div className="doc-card doc-mini">
-            <div className="doc-glabel">בגין</div>
+            <div className="doc-glabel">{s.subjectLabel}</div>
             <div className="doc-mini-v is-reg">{subject}</div>
           </div>
         )}
@@ -276,21 +285,21 @@ export function DocumentBody({
 
       {/* ── Line items ── */}
       <div className="doc-card doc-items">
-        <div className="doc-glabel">פירוט</div>
+        <div className="doc-glabel">{s.itemsLabel}</div>
         <table className="doc-table">
           <thead>
             <tr>
-              <th className="c-desc">תיאור</th>
-              <th className="c-qty">כמות</th>
-              <th className="c-num">מחיר יחידה</th>
-              <th className="c-num">סכום</th>
+              <th className="c-desc">{s.thDescription}</th>
+              <th className="c-qty">{s.thQuantity}</th>
+              <th className="c-num">{s.thUnitPrice}</th>
+              <th className="c-num">{s.thAmount}</th>
             </tr>
           </thead>
           <tbody>
             {showItemsEmptyState ? (
               <tr>
                 <td colSpan={4} className="c-empty">
-                  לא הוזנו פריטים עדיין
+                  {s.noItems}
                 </td>
               </tr>
             ) : useFallbackRow ? (
@@ -320,11 +329,11 @@ export function DocumentBody({
           {discount > 0 && (
             <>
               <div className="doc-brow">
-                <span>סה״כ לפני הנחה</span>
+                <span>{s.totalBeforeDiscount}</span>
                 <span className="doc-tab">{money(subtotal + discount)}</span>
               </div>
               <div className="doc-brow is-discount">
-                <span>הנחה</span>
+                <span>{s.discount}</span>
                 <span className="doc-tab">
                   <bdi dir="ltr">-{money(discount)}</bdi>
                 </span>
@@ -332,19 +341,19 @@ export function DocumentBody({
             </>
           )}
           <div className="doc-brow">
-            <span>סכום ביניים</span>
+            <span>{s.subtotal}</span>
             <span className="doc-tab">{money(subtotal)}</span>
           </div>
           {zeroRated ? (
             <div className="doc-brow">
-              <span>מע״מ</span>
-              <span>עסקה בשיעור אפס: ייצוא שירותים</span>
+              <span>{s.vat}</span>
+              <span>{s.zeroRatedNote}</span>
             </div>
           ) : (
             vatRate > 0 && (
               <div className="doc-brow">
                 <span>
-                  מע״מ <bdi dir="ltr">{vatRate}%</bdi>
+                  {s.vat} <bdi dir="ltr">{vatRate}%</bdi>
                 </span>
                 <span className="doc-tab">{money(vat)}</span>
               </div>
@@ -352,24 +361,25 @@ export function DocumentBody({
           )}
           {rounding !== 0 && (
             <div className="doc-brow">
-              <span>עיגול</span>
+              <span>{s.rounding}</span>
               <span className="doc-tab">{money(rounding)}</span>
             </div>
           )}
           <div className="doc-brow is-grand">
-            <span>{DOC_SUM_LABEL[documentType]}</span>
+            <span>{s.sumLabel[documentType]}</span>
             <span className="doc-grand-val doc-serif doc-tab">{money(total)}</span>
           </div>
           {currency !== "ILS" && (
             <div className="doc-note-line">
-              סה״כ ב-₪ <bdi dir="ltr">(שער {Number(exchangeRate ?? 1).toFixed(4)})</bdi>:{" "}
+              {s.totalInIls}{" "}
+              <bdi dir="ltr">{s.exchangeRate(Number(exchangeRate ?? 1).toFixed(4))}</bdi>:{" "}
               {formatMoney(Number(totalIls ?? 0), "ILS")}
             </div>
           )}
           {hasWithholding && (
             <div className="doc-brow is-deduct">
               <span>
-                ניכוי מס במקור
+                {s.withholding}
                 {withholdingRate != null && withholdingRate > 0 && (
                   <>
                     {" "}
@@ -386,13 +396,11 @@ export function DocumentBody({
 
         {hasWithholding && (
           <div className="doc-paid">
-            <div className="doc-paid-top">שולם בפועל</div>
+            <div className="doc-paid-top">{s.paidActual}</div>
             <div className="doc-paid-amount doc-serif doc-tab">
               {money(netAfterWithholding(total, withholdingAmount as number))}
             </div>
-            <div className="doc-paid-note">
-              הסכום נטו שהתקבל, אחרי ניכוי מס במקור
-            </div>
+            <div className="doc-paid-note">{s.paidNote}</div>
           </div>
         )}
       </div>
@@ -402,9 +410,9 @@ export function DocumentBody({
         <div className="doc-infos">
           {paymentMethod && (
             <div className="doc-card doc-info">
-              <div className="doc-glabel">אמצעי תשלום</div>
+              <div className="doc-glabel">{s.paymentMethodLabel}</div>
               <div className="doc-info-body">
-                {PAYMENT_METHOD_LABELS[paymentMethod]}
+                {s.paymentMethods[paymentMethod]}
                 {paymentParts.length > 0 && (
                   <>
                     <br />
@@ -416,11 +424,11 @@ export function DocumentBody({
           )}
           {showBank && (
             <div className="doc-card doc-info">
-              <div className="doc-glabel">פרטי תשלום</div>
+              <div className="doc-glabel">{s.paymentDetailsLabel}</div>
               <div className="doc-info-body">
                 {bankLine && (
                   <>
-                    העברה בנקאית
+                    {s.bankTransfer}
                     <br />
                     <span className="doc-dim doc-mono">{bankLine}</span>
                   </>
@@ -436,7 +444,7 @@ export function DocumentBody({
           )}
           {notes && (
             <div className="doc-card doc-info doc-info-full">
-              <div className="doc-glabel">הערות</div>
+              <div className="doc-glabel">{s.notesLabel}</div>
               <div className="doc-info-body">{notes}</div>
             </div>
           )}
@@ -446,7 +454,8 @@ export function DocumentBody({
       {/* ── Footer: electronic-issuance statement + brand mark ── */}
       <div className="doc-foot">
         <div className="doc-foot-sig">
-          מסמך זה הופק אלקטרונית{business.name ? ` · ${business.name}` : ""}
+          {s.footerIssued}
+          {business.name ? ` · ${business.name}` : ""}
         </div>
         {showBranding && (
           // Growth loop: every document this app produces is seen by the
@@ -458,7 +467,7 @@ export function DocumentBody({
           // 10px footnote - the explicit CTA lives on the screen-only /view
           // page instead, where it can't cheapen the printed document.
           <div className="doc-foot-brand">
-            הופק באמצעות{" "}
+            {s.footerBrand}{" "}
             <a
               href={`${CANONICAL_ORIGIN}/?utm_source=document&utm_medium=doc_footer&utm_campaign=growth_loop`}
               target="_blank"

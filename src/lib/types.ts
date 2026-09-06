@@ -246,6 +246,14 @@ export interface InvoiceDocument {
   totalIls?: number;
   /** Zero-rated export transaction (0% VAT, distinct from עוסק פטור). */
   zeroRated?: boolean;
+  /**
+   * The language the document itself is rendered in: Hebrew (default) or
+   * English, for a foreign customer. Undefined reads as "he". Snapshotted at
+   * issue and frozen by the immutability trigger, like the currency - the
+   * customer holds a copy of what was issued. App chrome stays Hebrew either
+   * way; see src/lib/document-strings.ts.
+   */
+  language?: "he" | "en";
 }
 
 /**

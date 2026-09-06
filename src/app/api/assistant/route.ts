@@ -242,6 +242,13 @@ const TOOLS: Anthropic.Tool[] = [
           },
         },
         notes: { type: "string", description: "הערות למסמך" },
+        language: {
+          type: "string",
+          enum: ["he", "en"],
+          description:
+            "שפת המסמך עצמו. ברירת מחדל he. השתמש ב-en רק כשהמשתמש ביקש מסמך באנגלית " +
+            "או כשברור שהלקוח זר. זו שפת המסמך בלבד, לא שפת השיחה.",
+        },
       },
       required: ["documentType", "items"],
     },
@@ -803,6 +810,9 @@ async function runTool(
         .replace(/\\n/g, "\n")
         .replace(/\\t/g, "\t")
         .slice(0, 1000),
+      // The enum is a hint to the model, not a guarantee: anything that is not
+      // exactly "en" opens the editor in Hebrew, as before.
+      language: input.language === "en" ? "en" : "he",
       items,
     };
     const sum = items.reduce((acc, i) => acc + i.quantity * i.unitPrice, 0);

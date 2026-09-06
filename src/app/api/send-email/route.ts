@@ -4,7 +4,8 @@ import nodemailer from "nodemailer";
 import { createClient } from "@supabase/supabase-js";
 import { checkRate, clientIp } from "@/lib/rate-limit";
 import { sanitizeEmailSubject } from "@/lib/email-subject";
-import { DOCUMENT_TYPE_LABELS, type DocumentType } from "@/lib/types";
+import { type DocumentType } from "@/lib/types";
+import { docStrings, toDocLang } from "@/lib/document-strings";
 import { requiresAllocationNumber, normalizeCustomerVatNumber } from "@/lib/tax-authority";
 import { CANONICAL_ORIGIN } from "@/lib/public-url";
 import { canIssueTaxInvoicesByType } from "@/lib/vat";
@@ -138,7 +139,7 @@ export async function POST(req: NextRequest) {
     const { data: docRow } = await admin
       .from("documents")
       .select(
-        "id, business_id, number, total, client_name, type, currency, date, subtotal, subtotal_ils, total_ils, allocation_number, client_id, client_tax_id",
+        "id, business_id, number, total, client_name, type, currency, date, subtotal, subtotal_ils, total_ils, allocation_number, client_id, client_tax_id, language",
       )
       .eq("id", documentId)
       .maybeSingle();
@@ -214,7 +215,13 @@ export async function POST(req: NextRequest) {
     const clientName = (docRow.client_name as string) || "";
     const currency = (docRow.currency as string) || "ILS";
     const documentType = docRow.type as DocumentType | undefined;
-    const docLabel = (documentType && DOCUMENT_TYPE_LABELS[documentType]) || "מסמך";
+    // The covering email speaks the document's language: an English invoice
+    // must not arrive wrapped in a Hebrew message. The SUBJECT line stays in
+    // the owner's own naming for a Hebrew document; for an English one it uses
+    // the English type label, since the customer is the one reading it.
+    const docLanguage = toDocLang(docRow.language as string | undefined);
+    const docLabel =
+      (documentType && docStrings(docLanguage).documentTypes[documentType]) || "מסמך";
 
     // Always use the canonical URL: never NEXT_PUBLIC_VERCEL_URL, which
     // is the immutable per-deploy hash and will decay into stale-code
@@ -238,7 +245,9 @@ export async function POST(req: NextRequest) {
 
     const isReminder = kind === "reminder";
     const baseSubject = sanitizeEmailSubject(subject, `${businessName} - ${docLabel} #${receiptNumber}`);
-    const emailSubject = isReminder ? `תזכורת: ${baseSubject}` : baseSubject;
+    const emailSubject = isReminder
+      ? `${docLanguage === "en" ? "Reminder" : "תזכורת"}: ${baseSubject}`
+      : baseSubject;
     // Tracking pixel: only when we have a documentId to attribute the
     // open event to. Suffix `.gif` for mail clients that are picky about
     // extensionless image URLs.
@@ -272,6 +281,7 @@ export async function POST(req: NextRequest) {
       currency,
       showBranding,
       accent: emailAccent,
+      language: docLanguage,
     });
     const text = buildText({
       businessName,
@@ -284,6 +294,7 @@ export async function POST(req: NextRequest) {
       documentType,
       currency,
       showBranding,
+      language: docLanguage,
     });
 
     // Pick Gmail credentials: prefer the user's own, fall back to global env vars

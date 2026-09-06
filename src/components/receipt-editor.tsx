@@ -262,6 +262,13 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   // something current to persist.
   const exitAutosaveRef = useRef<{ payload: DraftPayload; title: string } | null>(null);
   const [currency, setCurrency] = useState("ILS");
+  // The language the DOCUMENT is written in (not the app's). Hebrew unless the
+  // customer is foreign; sits next to the currency because it is the same kind
+  // of decision and the same audience makes it.
+  const [language, setLanguage] = useState<"he" | "en">("he");
+  // Once the user has picked a language by hand, the per-client default below
+  // stops overriding it for the rest of the session.
+  const [languageTouched, setLanguageTouched] = useState(false);
   const [zeroRated, setZeroRated] = useState(false);
   const [rate, setRate] = useState(1);
   const [rateLoading, setRateLoading] = useState(false);
@@ -302,6 +309,19 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
       setPaymentMethod(clientDefaults.paymentMethod);
     }
   }, [clientId, clientDefaults.paymentMethod]);
+
+  // Same idea for the document language: a customer who got an English invoice
+  // last month gets one again, without the user going back into the advanced
+  // panel every time. Only while the user has not chosen a language by hand.
+  // Unlike the payment method this also applies to a copy/convert: nothing
+  // hydrates the language from the source document, so the client's own
+  // history is the best available answer.
+  useEffect(() => {
+    if (languageTouched || !clientId) return;
+    if (clientDefaults.language && clientDefaults.language !== language) {
+      setLanguage(clientDefaults.language);
+    }
+  }, [clientId, clientDefaults.language]);
 
   // Collapse the "לקוח קיים" picker to its compact selected-row state
   // whenever a clientId appears - whether from a user picking a row, or
@@ -412,6 +432,8 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
       setNotes(d.notes);
       setVatMode(d.vatMode);
       setRoundTotal(d.roundTotal ?? business.roundTotalDefault ?? false);
+      if (d.language) setLanguage(d.language);
+      setLanguageTouched(Boolean(d.languageTouched));
       setItems(d.items);
       setShowDiscount(d.showDiscount ?? false);
       setDiscountMode(d.discountMode ?? "amount");
@@ -524,6 +546,8 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
       notes,
       vatMode,
       roundTotal,
+      language,
+      languageTouched,
       items,
       showDiscount,
       discountMode,
@@ -558,6 +582,8 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
     notes,
     vatMode,
     roundTotal,
+    language,
+    languageTouched,
     items,
     showDiscount,
     discountMode,
@@ -586,6 +612,8 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
       notes,
       vatMode,
       roundTotal,
+      language,
+      languageTouched,
       items: items.map((i) => ({
         id: i.id,
         productId: i.productId,
@@ -624,6 +652,8 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
     notes,
     vatMode,
     roundTotal,
+    language,
+    languageTouched,
     items,
     showDiscount,
     discountMode,
@@ -891,6 +921,8 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
         );
       }
       setCurrency(p.currency || "ILS");
+      if (p.language) setLanguage(p.language);
+      setLanguageTouched(Boolean(p.languageTouched));
       setZeroRated(Boolean(p.zeroRated));
       setRate(p.rate || 1);
       setAllocationNumber(p.allocationNumber || "");
@@ -1387,6 +1419,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
         currency,
         exchangeRate: effectiveRate,
         zeroRated,
+        language,
         ...ilsEquivalents(
           {
             subtotal: round2(sign * subtotal),
@@ -1547,6 +1580,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
     exchangeRate: currency === "ILS" ? 1 : rate,
     totalIls: currency === "ILS" ? total : round2(total * rate),
     zeroRated,
+    language,
   };
 
   return (
@@ -2040,7 +2074,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
 
           {/* Quiet expander: everything most users never touch. */}
           <Expander
-            label="הגדרות מתקדמות (מטבע, מע״מ, עיגול, לוגו)"
+            label="הגדרות מתקדמות (מטבע, שפה, מע״מ, עיגול, לוגו)"
             open={showAdvanced}
             onToggle={() => setShowAdvanced((s) => !s)}
           >
@@ -2056,6 +2090,23 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                       {c.code} · {c.name}
                     </option>
                   ))}
+                </select>
+              </FormField>
+
+              {/* Document language: the app stays Hebrew, the DOCUMENT does not
+                  have to. Sits next to the currency because a foreign customer
+                  usually means both decisions at once. */}
+              <FormField label="שפת המסמך">
+                <select
+                  value={language}
+                  onChange={(e) => {
+                    setLanguage(e.target.value === "en" ? "en" : "he");
+                    setLanguageTouched(true);
+                  }}
+                  className="input-warm"
+                >
+                  <option value="he">עברית</option>
+                  <option value="en">English</option>
                 </select>
               </FormField>
 

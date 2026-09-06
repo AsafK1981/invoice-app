@@ -4,9 +4,65 @@ import { use, useEffect, useState } from "react";
 import { Printer, Download, CheckCircle2, AlertCircle } from "lucide-react";
 import { ReceiptView } from "@/components/receipt-view";
 import { PaymentOptionsCard } from "@/components/payment-options-card";
-import { DOCUMENT_TYPE_LABELS } from "@/lib/types";
 import { formatDate } from "@/lib/format";
+import { docDir, docStrings, toDocLang, type DocLang } from "@/lib/document-strings";
 import type { Business, Client, InvoiceDocument, DocumentItem } from "@/lib/types";
+
+/**
+ * The page CHROME around the document (buttons, approval block, hints). It
+ * follows the document's own language: whoever opens this link is the customer,
+ * and if their invoice is in English the buttons around it must not be Hebrew.
+ * The document itself is rendered by ReceiptView from the same language.
+ *
+ * Deliberately small: the growth-loop card at the bottom stays Hebrew in both
+ * cases, because it markets an Israeli product to Israeli freelancers.
+ */
+const VIEW_STRINGS: Record<DocLang, Record<string, string>> = {
+  he: {
+    loading: "טוען מסמך...",
+    notFound: "המסמך לא נמצא",
+    notFoundHint: "הקישור אינו תקין או שהמסמך נמחק",
+    downloadPdf: "הורד PDF",
+    downloadPdfBusy: "מכין PDF...",
+    downloadPdfTitle: "הורד את המסמך כקובץ PDF",
+    print: "הדפס",
+    printTitle: "הדפס דרך הדפדפן",
+    approved: "ההצעה אושרה",
+    approvedOn: "אושרה בתאריך",
+    approvedBy: "על ידי",
+    approveTitle: "אישור ההצעה",
+    approveOptional: "לא חובה",
+    approveNamePlaceholder: "שם מלא (רק אם בוחרים לאשר)",
+    approveButton: "אשר",
+    approveBusy: "מאשר...",
+    approveNameRequired: "יש להזין שם מלא",
+    approveFailed: "שגיאה באישור",
+    networkError: "שגיאת רשת",
+    footerHint: 'לחץ "הורד PDF" כדי לשמור את המסמך, או "הדפס" כדי לפתוח את חלון ההדפסה.',
+  },
+  en: {
+    loading: "Loading document...",
+    notFound: "Document not found",
+    notFoundHint: "The link is invalid, or the document was deleted",
+    downloadPdf: "Download PDF",
+    downloadPdfBusy: "Preparing PDF...",
+    downloadPdfTitle: "Download this document as a PDF file",
+    print: "Print",
+    printTitle: "Print from your browser",
+    approved: "Quote approved",
+    approvedOn: "Approved on",
+    approvedBy: "by",
+    approveTitle: "Approve this quote",
+    approveOptional: "optional",
+    approveNamePlaceholder: "Full name (only if you choose to approve)",
+    approveButton: "Approve",
+    approveBusy: "Approving...",
+    approveNameRequired: "Please enter your full name",
+    approveFailed: "Approval failed",
+    networkError: "Network error",
+    footerHint: 'Use "Download PDF" to save the document, or "Print" to open the print dialog.',
+  },
+};
 
 export default function PublicDocumentPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -29,6 +85,10 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
   // the URL directly (not useSearchParams) so the page needs no Suspense
   // boundary; it is fully client-rendered behind a loader anyway.
   const [copy, setCopy] = useState(false);
+  // Everything on this page speaks the document's language; until the document
+  // has loaded (and if it never does) that is Hebrew, as it always was.
+  const language = toDocLang(doc?.language);
+  const t = VIEW_STRINGS[language];
   useEffect(() => {
     if (typeof window !== "undefined") {
       setCopy(new URLSearchParams(window.location.search).get("copy") === "1");
@@ -37,7 +97,7 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
 
   async function handleDownloadPdf() {
     if (!doc || downloadingPdf) return;
-    const docLabel = DOCUMENT_TYPE_LABELS[doc.type];
+    const docLabel = docStrings(doc.language).documentTypes[doc.type];
     const filename =
       `${docLabel}-${doc.number}-${doc.clientName}`.replace(/[\\/:*?"<>|]/g, "-") + ".pdf";
     setDownloadingPdf(true);
@@ -65,7 +125,7 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
   async function handleApprove() {
     const name = signatureName.trim();
     if (!name || name.length < 2) {
-      setApproveError("יש להזין שם מלא");
+      setApproveError(t.approveNameRequired);
       return;
     }
     setApproving(true);
@@ -78,7 +138,7 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
       });
       const data = await res.json();
       if (!data.ok) {
-        setApproveError(data.error || "שגיאה באישור");
+        setApproveError(data.error || t.approveFailed);
         return;
       }
       setDoc((prev) =>
@@ -87,7 +147,7 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
           : prev
       );
     } catch (err) {
-      setApproveError(err instanceof Error ? err.message : "שגיאת רשת");
+      setApproveError(err instanceof Error ? err.message : t.networkError);
     } finally {
       setApproving(false);
     }
@@ -170,6 +230,9 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
           vatIls: docRow.vat_ils != null ? Number(docRow.vat_ils) : undefined,
           totalIls: docRow.total_ils != null ? Number(docRow.total_ils) : undefined,
           zeroRated: docRow.zero_rated || undefined,
+          // The document's own language drives its rendering AND this page's
+          // chrome; a legacy row without the column reads as Hebrew.
+          language: docRow.language === "en" ? "en" : "he",
         });
 
         if (data.business) {
@@ -222,7 +285,7 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-amber-50">
-        <p className="text-stone-600 font-medium">טוען מסמך...</p>
+        <p className="text-stone-600 font-medium">{t.loading}</p>
       </div>
     );
   }
@@ -232,8 +295,8 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-amber-50">
         <div className="bg-white rounded-3xl shadow-lg p-10 text-center max-w-md">
           <div className="text-4xl mb-3">🔍</div>
-          <h2 className="font-bold text-stone-900 text-lg mb-2">המסמך לא נמצא</h2>
-          <p className="text-sm text-stone-600">הקישור אינו תקין או שהמסמך נמחק</p>
+          <h2 className="font-bold text-stone-900 text-lg mb-2">{t.notFound}</h2>
+          <p className="text-sm text-stone-600">{t.notFoundHint}</p>
         </div>
       </div>
     );
@@ -244,24 +307,28 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
     // (headless Chrome + printBackground) would otherwise print as a coloured
     // frame around the sheet (BLACK, under the gold skin). document-paper.css
     // flattens anything carrying this marker to white, zero-padding, in print.
-    <div className="doc-print-host min-h-screen bg-gradient-to-br from-orange-50 to-amber-50 py-8 px-4">
+    <div
+      className="doc-print-host min-h-screen bg-gradient-to-br from-orange-50 to-amber-50 py-8 px-4"
+      dir={docDir(language)}
+      lang={language}
+    >
       <div className="no-print max-w-[210mm] mx-auto mb-6 flex items-center justify-end gap-3">
         <button
           onClick={handleDownloadPdf}
           disabled={downloadingPdf}
           className="inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-5 py-2.5 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-          title="הורד את המסמך כקובץ PDF"
+          title={t.downloadPdfTitle}
         >
           <Download className="w-4 h-4" />
-          {downloadingPdf ? "מכין PDF..." : "הורד PDF"}
+          {downloadingPdf ? t.downloadPdfBusy : t.downloadPdf}
         </button>
         <button
           onClick={() => window.print()}
           className="inline-flex items-center gap-2 bg-white border border-orange-200 text-stone-800 px-4 py-2.5 rounded-2xl text-sm font-semibold hover:bg-orange-50"
-          title="הדפס דרך הדפדפן"
+          title={t.printTitle}
         >
           <Printer className="w-4 h-4" />
-          הדפס
+          {t.print}
         </button>
       </div>
 
@@ -273,7 +340,14 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
         showBranding={showBranding}
       />
 
-      <PaymentOptionsCard business={business} document={doc} />
+      {/* Screen-only cards that are still Hebrew by design (the payment-options
+          helper and the growth-loop CTA, which markets an Israeli product to
+          Israeli freelancers). On an English document the page is LTR, so they
+          get their own dir back or Hebrew punctuation ends up on the wrong
+          side. */}
+      <div dir="rtl" lang="he">
+        <PaymentOptionsCard business={business} document={doc} />
+      </div>
 
       {doc.type === "quote" && (
         <div className="no-print max-w-[210mm] mx-auto mt-6">
@@ -283,29 +357,41 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
                 <CheckCircle2 className="w-6 h-6 text-white" />
               </div>
               <div className="flex-1">
-                <p className="font-bold text-emerald-900">ההצעה אושרה</p>
+                <p className="font-bold text-emerald-900">{t.approved}</p>
                 <p className="text-sm text-emerald-800 mt-1">
-                  אושרה בתאריך {formatDate(doc.approvedAt.slice(0, 10))}
-                  {doc.approvalSignature && <> על ידי <strong>{doc.approvalSignature}</strong></>}
+                  {t.approvedOn} {formatDate(doc.approvedAt.slice(0, 10), language)}
+                  {doc.approvalSignature && (
+                    <> {t.approvedBy} <strong>{doc.approvalSignature}</strong></>
+                  )}
                 </p>
               </div>
             </div>
           ) : (
             <div className="bg-stone-50/70 rounded-2xl border border-stone-200 p-4">
               <div className="flex items-baseline justify-between gap-2 flex-wrap mb-1">
-                <h3 className="font-semibold text-stone-800 text-sm">אישור ההצעה</h3>
-                <span className="text-xs text-stone-500 font-medium">לא חובה</span>
+                <h3 className="font-semibold text-stone-800 text-sm">{t.approveTitle}</h3>
+                <span className="text-xs text-stone-500 font-medium">{t.approveOptional}</span>
               </div>
               <p className="text-xs text-stone-600 mb-3">
-                אם נוח לכם, תוכלו לאשר כאן בלחיצה והאישור יישלח חזרה ל{business?.name || "ספק"}.
-                ניתן גם פשוט לחזור במייל או בטלפון.
+                {language === "en" ? (
+                  <>
+                    If it suits you, you can approve here in one click and the
+                    approval goes straight back to {business?.name || "the supplier"}.
+                    Replying by email or phone works just as well.
+                  </>
+                ) : (
+                  <>
+                    אם נוח לכם, תוכלו לאשר כאן בלחיצה והאישור יישלח חזרה ל{business?.name || "ספק"}.
+                    ניתן גם פשוט לחזור במייל או בטלפון.
+                  </>
+                )}
               </p>
               <div className="flex flex-col sm:flex-row gap-2">
                 <input
                   type="text"
                   value={signatureName}
                   onChange={(e) => setSignatureName(e.target.value)}
-                  placeholder="שם מלא (רק אם בוחרים לאשר)"
+                  placeholder={t.approveNamePlaceholder}
                   autoComplete="name"
                   inputMode="text"
                   className="flex-1 px-3 py-2 rounded-xl border border-stone-300 bg-white focus:border-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-300 text-sm"
@@ -317,7 +403,7 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
                   className="inline-flex items-center justify-center gap-2 bg-white border border-stone-300 text-stone-700 hover:bg-stone-100 px-4 py-2 rounded-xl text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
                   <CheckCircle2 className="w-4 h-4" />
-                  {approving ? "מאשר..." : "אשר"}
+                  {approving ? t.approveBusy : t.approveButton}
                 </button>
               </div>
               {approveError && (
@@ -333,9 +419,7 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
 
       <div className="no-print max-w-[210mm] mx-auto mt-6">
         <div className="bg-white rounded-2xl shadow-sm border border-orange-100 p-4 text-center">
-          <p className="text-xs text-stone-500">
-            לחץ "הורד PDF" כדי לשמור את המסמך, או "הדפס" כדי לפתוח את חלון ההדפסה.
-          </p>
+          <p className="text-xs text-stone-500">{t.footerHint}</p>
         </div>
       </div>
 
@@ -348,7 +432,7 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
           the actual pain - rather than with "free", which every competitor
           already shouts. */}
       {showBranding && (
-        <div className="no-print max-w-[210mm] mx-auto mt-4 mb-2">
+        <div className="no-print max-w-[210mm] mx-auto mt-4 mb-2" dir="rtl" lang="he">
           <div className="rounded-2xl border border-orange-200 bg-gradient-to-l from-orange-50 to-amber-50 p-5 text-center">
             <p className="text-sm font-semibold text-stone-800">
               גם אתם מוציאים חשבוניות?

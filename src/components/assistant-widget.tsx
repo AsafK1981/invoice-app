@@ -45,6 +45,8 @@ interface AssistantDraft {
   clientName: string;
   subject: string;
   notes: string;
+  /** Document language, "he" unless the user asked for an English document. */
+  language?: "he" | "en";
   items: { description: string; quantity: number; unitPrice: number }[];
 }
 
@@ -640,6 +642,11 @@ export function AssistantWidget() {
           notes: draft.notes || "",
           vatMode: "exclusive",
           roundTotal: false,
+          language: draft.language === "en" ? "en" : "he",
+          // An explicit "in English" from the assistant is a deliberate choice
+          // and must survive the editor's per-client default; a plain Hebrew
+          // draft leaves the default free to apply.
+          languageTouched: draft.language === "en",
           items: draft.items.map((it, i) => ({
             id: `assistant-${i}`,
             description: it.description,

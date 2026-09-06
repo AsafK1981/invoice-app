@@ -9,6 +9,7 @@
 // once (2026-06-01).
 
 import { DOCUMENT_TYPE_LABELS, type DocumentType } from "@/lib/types";
+import { docStrings, toDocLang, type DocLang } from "@/lib/document-strings";
 import { formatMoney } from "@/lib/currencies";
 import { formatCurrency } from "@/lib/format";
 import { CANONICAL_ORIGIN } from "@/lib/public-url";
@@ -38,7 +39,17 @@ function escapeHtml(str: string): string {
 // חשבון עסקה") instead of a generic "מסמך". Only "חשבון עסקה" (proforma) is
 // grammatically masculine; the rest, including "הצעת מחיר" (quote), are
 // feminine → "מצורפת".
-function docWording(type?: DocumentType): { attached: string; noun: string } {
+function docWording(
+  type?: DocumentType,
+  lang: DocLang = "he",
+): { attached: string; noun: string } {
+  if (lang === "en") {
+    // English has no grammatical gender to get right, so the wording is the
+    // same for every type: "Attached is your tax invoice".
+    if (!type || !DOCUMENT_TYPE_LABELS[type]) return { attached: "Attached is a document", noun: "document" };
+    const label = docStrings("en").documentTypes[type];
+    return { attached: `Attached is your ${label}`, noun: label };
+  }
   if (!type || !DOCUMENT_TYPE_LABELS[type]) return { attached: "מצורף מסמך", noun: "מסמך" };
   const label = DOCUMENT_TYPE_LABELS[type];
   return { attached: `${type === "proforma" ? "מצורף" : "מצורפת"} ${label}`, noun: label };
@@ -79,28 +90,59 @@ export function buildHtml(args: {
    * every business that hasn't chosen a document design.
    */
   accent?: { grad: string; solid: string };
+  /**
+   * The language of the DOCUMENT this email carries. An English invoice
+   * arrives with an English covering email; anything else (the default) keeps
+   * the Hebrew message exactly as it has always been.
+   */
+  language?: string;
 }): string {
-  const { businessName, clientName, receiptNumber, total, viewUrl, logoUrl, kind = "initial", daysSinceSent, documentType, trackingPixelUrl, currency, showBranding = true, accent } = args;
+  const { businessName, clientName, receiptNumber, total, viewUrl, logoUrl, kind = "initial", daysSinceSent, documentType, trackingPixelUrl, currency, showBranding = true, accent, language } = args;
+  const lang = toDocLang(language);
+  const isEnglish = lang === "en";
   const isReminder = kind === "reminder";
-  const { attached, noun } = docWording(documentType);
+  const { attached, noun } = docWording(documentType, lang);
   const totalFormatted = escapeHtml(formatDocTotal(total, currency));
   const accentGrad = accent?.grad || DEFAULT_ACCENT_GRAD;
   const accentSolid = accent?.solid || DEFAULT_ACCENT_SOLID;
-  const introLine = isReminder
-    ? `מקווה שאתם בסדר. רק תזכורת קלה לגבי ${escapeHtml(noun)} מספר <strong>#${escapeHtml(String(receiptNumber))}</strong> על סך <strong>${totalFormatted}</strong>${
-        daysSinceSent ? ` ששלחנו לפני ${daysSinceSent} ימים` : ""
-      }. אשמח לדעת אם הוא הגיע ומה דעתכם.`
-    : `${escapeHtml(attached)} מספר <strong>#${escapeHtml(String(receiptNumber))}</strong> על סך <strong>${totalFormatted}</strong>.`;
-  const ctaLine = isReminder
-    ? "לצפייה חוזרת במסמך המלא:"
-    : "לצפייה במסמך המלא והדפסה/הורדה כ-PDF, לחץ על הכפתור למטה.";
+  const number = escapeHtml(String(receiptNumber));
+  const introLine = isEnglish
+    ? isReminder
+      ? `Hope all is well. Just a gentle reminder about ${escapeHtml(noun)} no. <strong>#${number}</strong> for <strong>${totalFormatted}</strong>${
+          daysSinceSent ? `, sent ${daysSinceSent} days ago` : ""
+        }. Let me know that it arrived and what you think.`
+      : `${escapeHtml(attached)} no. <strong>#${number}</strong> for <strong>${totalFormatted}</strong>.`
+    : isReminder
+      ? `מקווה שאתם בסדר. רק תזכורת קלה לגבי ${escapeHtml(noun)} מספר <strong>#${number}</strong> על סך <strong>${totalFormatted}</strong>${
+          daysSinceSent ? ` ששלחנו לפני ${daysSinceSent} ימים` : ""
+        }. אשמח לדעת אם הוא הגיע ומה דעתכם.`
+      : `${escapeHtml(attached)} מספר <strong>#${number}</strong> על סך <strong>${totalFormatted}</strong>.`;
+  const ctaLine = isEnglish
+    ? isReminder
+      ? "To view the full document again:"
+      : "To view the full document, print it or download it as a PDF, use the button below."
+    : isReminder
+      ? "לצפייה חוזרת במסמך המלא:"
+      : "לצפייה במסמך המלא והדפסה/הורדה כ-PDF, לחץ על הכפתור למטה.";
+  const greeting = isEnglish ? `Hello ${escapeHtml(clientName)},` : `שלום ${escapeHtml(clientName)},`;
+  const ctaButton = isEnglish ? "View document &rarr;" : "צפה במסמך ←";
+  const fallbackLine = isEnglish
+    ? "If the button does not open, copy this link:"
+    : "אם הכפתור לא נפתח, העתק את הקישור:";
+  const sentByLine = isEnglish
+    ? isReminder
+      ? `Automatic reminder from ${escapeHtml(businessName)}`
+      : `This document was sent automatically from ${escapeHtml(businessName)}`
+    : isReminder
+      ? `תזכורת אוטומטית מ${escapeHtml(businessName)}`
+      : `מסמך זה נשלח אוטומטית מ${escapeHtml(businessName)}`;
 
   // Full HTML document: corporate mail filters (Microsoft 365 Defender,
   // Mimecast, etc.) flag bare HTML fragments as suspicious. Wrap with a
   // proper doctype + charset + body so Outlook/Exchange clients accept
   // the message and render the Hebrew correctly.
   return `<!DOCTYPE html>
-<html lang="he" dir="rtl" xmlns="http://www.w3.org/1999/xhtml">
+<html lang="${lang}" dir="${isEnglish ? "ltr" : "rtl"}" xmlns="http://www.w3.org/1999/xhtml">
 <head>
   <meta charset="UTF-8" />
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
@@ -109,7 +151,7 @@ export function buildHtml(args: {
   <title>${escapeHtml(businessName)}</title>
 </head>
 <body style="margin:0; padding:0; background:#f5f5f4; font-family: Arial, sans-serif;">
-  <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div dir="${isEnglish ? "ltr" : "rtl"}" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
     <div style="background: ${accentGrad}; padding: 24px; border-radius: 16px; color: white; text-align: center; margin-bottom: 24px;">
       ${logoUrl ? `<img src="${escapeHtml(logoUrl)}" alt="${escapeHtml(businessName)}" style="max-height: 60px; max-width: 200px; margin-bottom: 12px; background: white; padding: 8px; border-radius: 8px;" />` : ""}
       <h1 style="margin: 0; font-size: 24px;">${escapeHtml(businessName)}</h1>
@@ -117,7 +159,7 @@ export function buildHtml(args: {
 
     <div style="background: #fffaf5; border: 1px solid #fed7aa; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
       <p style="margin: 0 0 12px 0; font-size: 16px; color: #44403c;">
-        שלום ${escapeHtml(clientName)},
+        ${greeting}
       </p>
       <p style="margin: 0 0 16px 0; font-size: 16px; color: #44403c;">
         ${introLine}
@@ -129,13 +171,13 @@ export function buildHtml(args: {
 
     <div style="text-align: center; margin-bottom: 24px;">
       <a href="${escapeHtml(viewUrl)}" style="display: inline-block; background: ${accentGrad}; color: white; text-decoration: none; padding: 14px 32px; border-radius: 12px; font-size: 16px; font-weight: bold;">
-        צפה במסמך ←
+        ${ctaButton}
       </a>
     </div>
 
     <div style="text-align: center; margin-bottom: 16px;">
       <p style="font-size: 13px; color: #57534e; margin: 0 0 6px 0;">
-        אם הכפתור לא נפתח, העתק את הקישור:
+        ${fallbackLine}
       </p>
       <p style="font-size: 12px; color: #78716c; margin: 0; word-break: break-all;">
         <a href="${escapeHtml(viewUrl)}" style="color: ${accentSolid};">${escapeHtml(viewUrl)}</a>
@@ -144,12 +186,12 @@ export function buildHtml(args: {
 
     <div style="text-align: center; margin-bottom: 24px;">
       <p style="font-size: 13px; color: #a8a29e;">
-        ${isReminder ? `תזכורת אוטומטית מ${escapeHtml(businessName)}` : `מסמך זה נשלח אוטומטית מ${escapeHtml(businessName)}`}
+        ${sentByLine}
       </p>
       ${
         showBranding
           ? `<p style="font-size: 11px; color: #c4c0ba; margin: 6px 0 0 0;">
-        נשלח באמצעות <a href="${escapeHtml(BRAND_URL_EMAIL)}" style="color: #c4c0ba; text-decoration: underline;">MyFriendlyInvoiceApp</a> · חשבוניות לעצמאים בחינם
+        ${isEnglish ? "Sent with" : "נשלח באמצעות"} <a href="${escapeHtml(BRAND_URL_EMAIL)}" style="color: #c4c0ba; text-decoration: underline;">MyFriendlyInvoiceApp</a> · ${isEnglish ? "free invoicing for Israeli freelancers" : "חשבוניות לעצמאים בחינם"}
       </p>`
           : ""
       }
@@ -178,11 +220,30 @@ export function buildText(args: {
   currency?: string;
   /** Growth loop: mirrors buildHtml's footer credit in the plain-text part. */
   showBranding?: boolean;
+  /** Language of the document this email carries; mirrors buildHtml. */
+  language?: string;
 }): string {
-  const { businessName, clientName, receiptNumber, total, viewUrl, kind = "initial", daysSinceSent, documentType, currency, showBranding = true } = args;
+  const { businessName, clientName, receiptNumber, total, viewUrl, kind = "initial", daysSinceSent, documentType, currency, showBranding = true, language } = args;
+  const lang = toDocLang(language);
   const isReminder = kind === "reminder";
-  const { attached, noun } = docWording(documentType);
+  const { attached, noun } = docWording(documentType, lang);
   const totalFormatted = formatDocTotal(total, currency);
+  if (lang === "en") {
+    const intro = isReminder
+      ? `A gentle reminder about ${noun} no. #${receiptNumber} for ${totalFormatted}${
+          daysSinceSent ? `, sent ${daysSinceSent} days ago` : ""
+        }.`
+      : `${attached} no. #${receiptNumber} for ${totalFormatted}.`;
+    return `Hello ${clientName},
+
+${intro}
+
+To view the full document, print it or download it as a PDF, open this link:
+${viewUrl}
+
+${isReminder ? "Automatic reminder" : "Document sent automatically"} from ${businessName}
+${showBranding ? `\nSent with MyFriendlyInvoiceApp · free invoicing for Israeli freelancers\n${BRAND_URL_EMAIL}\n` : ""}`;
+  }
   const intro = isReminder
     ? `תזכורת קלה לגבי ${noun} מספר #${receiptNumber} על סך ${totalFormatted}${
         daysSinceSent ? ` ששלחנו לפני ${daysSinceSent} ימים` : ""

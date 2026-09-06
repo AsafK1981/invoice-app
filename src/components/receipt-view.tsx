@@ -9,6 +9,7 @@ import {
 import { DocumentBody, type DocumentBodyClient } from "./document-body";
 import { designToCssVars, normalizeDocumentDesign } from "@/lib/document-themes";
 import { attachPrintFit } from "@/lib/print-fit";
+import { docDir, toDocLang } from "@/lib/document-strings";
 
 interface Props {
   business: Business;
@@ -50,6 +51,11 @@ export function ReceiptView({
   const vatRate =
     doc.subtotal !== 0 ? Math.round((doc.vat / doc.subtotal) * 100) : 0;
   const bodyClient = toBodyClient(client, doc.clientName);
+  // The document's own language decides how the sheet reads. Hebrew (the
+  // default, and every document issued before this existed) stays RTL and
+  // byte-identical; an English document flips the paper to LTR, which is what
+  // the logical text-align rules in document-paper.css key off.
+  const language = toDocLang(doc.language);
 
   // Security boundary: business.documentDesign is untrusted (read straight
   // off the DB / the public API's echo of it). normalizeDocumentDesign()
@@ -77,6 +83,8 @@ export function ReceiptView({
       ref={paperRef}
       className="receipt-view doc-paper is-fluid mx-auto max-w-[210mm] shadow-lg print:shadow-none"
       style={themeVars}
+      dir={docDir(language)}
+      lang={language}
       data-doc-template={design?.template ?? "general"}
       data-doc-layout={design?.layout ?? "cards"}
       data-doc-pattern={design?.pattern ?? "none"}
@@ -108,6 +116,7 @@ export function ReceiptView({
         zeroRated={doc.zeroRated}
         copy={copy}
         showBranding={showBranding}
+        language={language}
       />
     </div>
   );

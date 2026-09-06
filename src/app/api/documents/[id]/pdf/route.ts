@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { CANONICAL_ORIGIN } from "@/lib/public-url";
-import { DOCUMENT_TYPE_LABELS } from "@/lib/types";
+import { docStrings } from "@/lib/document-strings";
 import { clientIp } from "@/lib/rate-limit";
 import { launchPdfBrowser } from "@/lib/pdf-browser";
 
@@ -171,9 +171,11 @@ export async function GET(
   }
 }
 
-// A human-friendly Hebrew filename with the doc type + number, e.g.
-// "חשבונית-מס-96.pdf". Best-effort: a service-role read fetches type/number;
-// if that fails we still return a sane fallback.
+// A human-friendly filename with the doc type + number, e.g.
+// "חשבונית-מס-96.pdf" - or "Tax Invoice-96.pdf" for a document issued in
+// English, whose recipient has no reason to receive a Hebrew filename.
+// Best-effort: a service-role read fetches type/number/language; if that fails
+// we still return a sane fallback.
 async function buildFilename(id: string): Promise<string> {
   try {
     const admin = createClient(supabaseUrl, serviceKey, {
@@ -181,11 +183,14 @@ async function buildFilename(id: string): Promise<string> {
     });
     const res = await admin
       .from("documents")
-      .select("type, number")
+      .select("type, number, language")
       .eq("id", id)
       .maybeSingle();
     if (res.data) {
-      const label = (DOCUMENT_TYPE_LABELS as Record<string, string>)[res.data.type] || "מסמך";
+      const labels = docStrings(res.data.language as string | undefined).documentTypes;
+      const label =
+        (labels as Record<string, string>)[res.data.type] ||
+        (res.data.language === "en" ? "Document" : "מסמך");
       const safe = `${label}-${res.data.number}`.replace(/[\\/:*?"<>|]/g, "-");
       return `${safe}.pdf`;
     }

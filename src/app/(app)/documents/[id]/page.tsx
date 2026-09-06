@@ -38,6 +38,7 @@ import { canIssueTaxInvoices } from "@/lib/vat";
 import { requiresAllocationNumber, shouldFocusAllocationOnArrival } from "@/lib/tax-authority";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { DOCUMENT_TYPE_LABELS } from "@/lib/types";
+import { docStrings } from "@/lib/document-strings";
 
 export default function DocumentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -238,7 +239,10 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
     // /view page with headless Chrome (full print CSS: RTL, colors,
     // page-breaks, allocation number) and streams back a PDF; no more
     // "switch the print destination to Save as PDF" dance.
-    const docLabel = DOCUMENT_TYPE_LABELS[doc.type];
+    // The downloaded file is the one the owner forwards to the customer, so it
+    // is named in the DOCUMENT's language, matching the server route's own
+    // Content-Disposition filename.
+    const docLabel = docStrings(doc.language).documentTypes[doc.type];
     const filename =
       `${docLabel}-${doc.number}-${doc.clientName}`.replace(/[\\/:*?"<>|]/g, "-") + ".pdf";
     setDownloadingPdf(true);

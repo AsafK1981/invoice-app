@@ -24,6 +24,13 @@ export interface EditorDraft {
   /** Round the final total to a whole shekel (הפרש עיגול). Optional for
    *  backward compatibility with drafts saved before the feature existed. */
   roundTotal?: boolean;
+  /** Document language ("he" default, "en" for a foreign customer). Optional:
+   *  drafts saved before English documents existed have no value and resume
+   *  as Hebrew. `languageTouched` records whether the user chose it by hand,
+   *  so resuming a draft does not freeze the per-client default (same pattern
+   *  as withholdingTouched). */
+  language?: "he" | "en";
+  languageTouched?: boolean;
   items: DraftItem[];
   // הנחה / ניכוי מס במקור / פירוט אמצעי תשלום, all optional (backward compatible
   // with drafts saved before these features). Raw editor inputs are stored so a

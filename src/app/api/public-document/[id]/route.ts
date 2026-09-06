@@ -67,7 +67,7 @@ export async function GET(
   const docRes = await admin
     .from("documents")
     .select(
-      "id, business_id, type, number, date, client_id, client_name, subject, status, subtotal, vat, total, rounding, round_total, payment_method, payment_details, withholding_rate, withholding_amount, discount_amount, notes, approved_at, approval_signature, original_issued_at, allocation_number, allocation_set_at, currency, exchange_rate, subtotal_ils, vat_ils, total_ils, zero_rated",
+      "id, business_id, type, number, date, client_id, client_name, subject, status, subtotal, vat, total, rounding, round_total, payment_method, payment_details, withholding_rate, withholding_amount, discount_amount, notes, approved_at, approval_signature, original_issued_at, allocation_number, allocation_set_at, currency, exchange_rate, subtotal_ils, vat_ils, total_ils, zero_rated, language",
     )
     .eq("id", id)
     .maybeSingle();
