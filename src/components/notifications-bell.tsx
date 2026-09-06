@@ -11,6 +11,7 @@ import {
   CheckSquare,
   ShieldAlert,
   Sparkles,
+  MessageCircle,
 } from "lucide-react";
 import {
   useNotifications,
@@ -66,6 +67,11 @@ const KIND_STYLE: Record<
     icon: Sparkles,
     iconColor: "text-violet-700",
     bg: "bg-violet-50 border-violet-200",
+  },
+  whatsapp_reminder_ready: {
+    icon: MessageCircle,
+    iconColor: "text-emerald-700",
+    bg: "bg-emerald-50 border-emerald-200",
   },
 };
 

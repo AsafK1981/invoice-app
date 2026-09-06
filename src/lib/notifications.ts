@@ -11,7 +11,8 @@ export type NotificationKind =
   | "ceiling_approaching"
   | "tax_token_expiring"
   | "monthly_reminder_sent"
-  | "proposal_ready";
+  | "proposal_ready"
+  | "whatsapp_reminder_ready";
 
 export interface NotificationRow {
   id: string;
@@ -59,6 +60,7 @@ export const NOTIFICATION_KIND_LABELS: Record<NotificationKind, string> = {
   tax_token_expiring: "האישור לרשות המסים פג בקרוב",
   monthly_reminder_sent: "תזכורת חודשית נשלחה",
   proposal_ready: "חשבונית מוכנה לאישור",
+  whatsapp_reminder_ready: "תזכורת בוואטסאפ מוכנה לשליחה",
 };
 
 /** Same-origin guard for href values stored in notifications. Never let a

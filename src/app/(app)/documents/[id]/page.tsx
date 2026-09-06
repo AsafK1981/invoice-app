@@ -39,6 +39,8 @@ import { requiresAllocationNumber, shouldFocusAllocationOnArrival } from "@/lib/
 import { formatCurrency, formatDate } from "@/lib/format";
 import { DOCUMENT_TYPE_LABELS } from "@/lib/types";
 import { docStrings } from "@/lib/document-strings";
+import { waDigits, whatsappLink } from "@/lib/whatsapp-link";
+import { daysSinceIssue, dunningStageFor, whatsappReminderText } from "@/lib/dunning-copy";
 
 export default function DocumentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -106,6 +108,12 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
   // handleAllocationReceived below).
   const nextStepsRef = useRef<HTMLElement | null>(null);
   const [nextStepsRingActive, setNextStepsRingActive] = useState(false);
+  // Landing target for the "תזכורת בוואטסאפ מוכנה" notification
+  // (/documents/<id>?remind=whatsapp): the owner arrives from a push on
+  // their phone and must see the button, not hunt for it.
+  const waReminderRef = useRef<HTMLButtonElement | null>(null);
+  const [waReminderRingActive, setWaReminderRingActive] = useState(false);
+  const remindHandledRef = useRef(false);
   useEffect(() => {
     if (!ready || !doc) return;
     const param = searchParams.get("needsAllocation");
@@ -115,6 +123,25 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
     // the scroll/ring on a doc that may have gotten its number since.
     router.replace(`/documents/${id}`);
   }, [ready, doc, customerTaxId, id]);
+
+  // Arrival from the assisted-collections notification: scroll to the
+  // WhatsApp reminder button and pulse it once. The param is stripped with
+  // replaceState (not router.replace) so the page doesn't re-render and
+  // re-run this on a doc whose state may have changed since; a ref guard
+  // keeps it to a single pulse either way.
+  useEffect(() => {
+    if (!ready || !doc) return;
+    if (remindHandledRef.current) return;
+    if (searchParams.get("remind") !== "whatsapp") return;
+    remindHandledRef.current = true;
+    window.history.replaceState(null, "", `/documents/${id}`);
+    const el = waReminderRef.current;
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    setWaReminderRingActive(true);
+    const timer = window.setTimeout(() => setWaReminderRingActive(false), 2400);
+    return () => window.clearTimeout(timer);
+  }, [ready, doc, id, searchParams]);
 
   if (!ready) {
     return <div className="text-center py-16 text-stone-500">טוען...</div>;
@@ -177,6 +204,16 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
     ? allDocuments.find((d) => d.id === doc.originalDocumentId)
     : null;
   const isPaid = doc.status === "paid";
+  // An open receivable: money actually owed right now. Quotes are out (an
+  // unaccepted offer is not a debt), so are paid and already-converted docs.
+  // This is the same set the assisted-collections pass chases (see
+  // src/lib/assisted-dunning.ts), so the button is there whenever a
+  // notification could point at it.
+  const isOpenReceivable =
+    (doc.type === "tax_invoice" || doc.type === "proforma") &&
+    doc.status === "sent" &&
+    !doc.paidAt &&
+    !doc.convertedToId;
   // Always use the canonical origin for share links so they don't bake in
   // a per-deploy hash URL and decay into stale-code views.
   const publicUrl = publicDocumentUrl(doc.id);
@@ -386,11 +423,36 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
       `שלום ${doc.clientName},\n\n` +
       `מצורף ${docLabel} מספר #${doc.number} על סך ${formatCurrency(doc.total)}.\n\n` +
       `לצפייה והורדה: ${publicUrl}`;
-    const phone = (client?.phone || "").replace(/\D/g, "");
-    const url = phone
-      ? `https://wa.me/${phone.startsWith("0") ? "972" + phone.slice(1) : phone}?text=${encodeURIComponent(message)}`
-      : `https://wa.me/?text=${encodeURIComponent(message)}`;
-    window.open(url, "_blank", "noopener");
+    window.open(whatsappLink(client?.phone, message), "_blank", "noopener");
+  }
+
+  // "תזכורת בוואטסאפ": the same 3 / 14 / 30 wording the dunning email uses,
+  // opened in the owner's own WhatsApp with the message ready. The app sends
+  // nothing here - the owner presses send, from their number, to a client who
+  // knows them. Before day 3 the tone is neutral (nothing is late yet).
+  function handleWhatsAppReminder() {
+    if (!doc) return;
+    if (requiresAllocationNumber(doc, customerTaxId) && !doc.allocationNumber) {
+      setToast({ kind: "error", text: "יש להוסיף מספר הקצאה לפני שליחה." });
+      focusAllocationSection();
+      return;
+    }
+    if (!waDigits(client?.phone)) {
+      setToast({ kind: "error", text: "ללקוח אין מספר טלפון" });
+      return;
+    }
+    const days = daysSinceIssue(doc.date);
+    const message = whatsappReminderText({
+      businessName: business.name,
+      clientName: doc.clientName,
+      number: doc.number,
+      total: doc.total,
+      date: formatDate(doc.date),
+      days,
+      stage: dunningStageFor(days),
+      viewUrl: publicUrl,
+    });
+    window.open(whatsappLink(client?.phone, message), "_blank", "noopener");
   }
 
   async function handleDuplicate() {
@@ -676,6 +738,32 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
             <span className="hidden sm:inline">הדפס</span>
           </button>
           </>)}
+
+          {/* Assisted collections: one tap opens the owner's own WhatsApp
+              with the day 3 / 14 / 30 wording ready. Deliberately inline at
+              every width (not tucked into the "⋯" menu): the notification
+              that brings people here lands on a phone, and it is the ring
+              target for ?remind=whatsapp. */}
+          {isOpenReceivable && (
+            <button
+              ref={waReminderRef}
+              onClick={handleWhatsAppReminder}
+              disabled={!waDigits(client?.phone)}
+              className={`inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-emerald-50 border border-emerald-200 text-emerald-800 hover:bg-emerald-100 disabled:opacity-50 disabled:cursor-not-allowed scroll-mt-24 ${
+                waReminderRingActive ? "allocation-arrival-ring" : ""
+              }`}
+              title={
+                !waDigits(client?.phone)
+                  ? "ללקוח אין מספר טלפון"
+                  : allocationGate
+                    ? "קודם מבקשים מספר הקצאה - לחיצה תוביל אותך לשם"
+                    : `נפתח וואטסאפ שלכם עם תזכורת מוכנה אל ${client?.phone}. אתם שולחים`
+              }
+            >
+              <MessageCircle className="w-4 h-4" />
+              <span className="hidden sm:inline">תזכורת בוואטסאפ</span>
+            </button>
+          )}
 
           {/* Mobile-only overflow menu. Desktop (sm+) shows the full
               row above; on phones we collapse the secondary actions

@@ -60,6 +60,12 @@ export interface Business {
   dunningEnabled?: boolean;
   /** Optional friendly From name on dunning emails (defaults to name). */
   dunningFromName?: string;
+  /** When true (the default), the same daily run notifies the OWNER that a
+   *  WhatsApp reminder is ready for an overdue invoice, at day 3 / 14 / 30.
+   *  Nothing reaches the client on this path: the owner sends it from their
+   *  own number with one tap, which is why it can default to on.
+   *  Written only by saveDunningWhatsappEnabled(), never by saveBusiness(). */
+  dunningWhatsappEnabled?: boolean;
   /** When true, the hourly monthly-reminder cron may notify this business's
    *  owner a monthly nudge (open quotes/proformas, quiet retainer clients). */
   monthlyReminderEnabled?: boolean;

@@ -3,6 +3,19 @@ import nodemailer from "nodemailer";
 import { createClient } from "@supabase/supabase-js";
 import { createNotificationForBusiness } from "@/lib/notifications-server";
 import { CANONICAL_ORIGIN } from "@/lib/public-url";
+import {
+  DUNNING_SUBJECTS,
+  DUNNING_TONES,
+  daysSinceIssue,
+  dunningStageFor,
+  fillDunningVars,
+  type DunningStage,
+} from "@/lib/dunning-copy";
+import {
+  WHATSAPP_ASSIST_CHANNEL,
+  planAssistedReminders,
+  type AssistedDocRow,
+} from "@/lib/assisted-dunning";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -12,32 +25,8 @@ const DUNNING_CRON_SECRET = process.env.DUNNING_CRON_SECRET || "";
 
 const APP_URL = CANONICAL_ORIGIN;
 
-type DayBucket = 3 | 14 | 30;
-const BUCKETS: DayBucket[] = [30, 14, 3]; // newest first; earliest match wins
-
-const SUBJECTS: Record<DayBucket, string> = {
-  3: "תזכורת: חשבונית מספר {n}",
-  14: "תזכורת שנייה: חשבונית מספר {n}",
-  30: "חשבונית מספר {n}: תשלום מתעכב",
-};
-
-const TONES: Record<DayBucket, { intro: string; cta: string; signoff: string }> = {
-  3: {
-    intro: "מקווה שהמסמך הגיע בסדר. רק רציתי לוודא שראיתם את חשבונית מס מספר {n} על סך ₪{total} ששלחנו ב-{date}.",
-    cta: "אם נוח לכם, אשמח לסגור את התשלום. כל פרטי התשלום נמצאים בחשבונית.",
-    signoff: "תודה רבה,",
-  },
-  14: {
-    intro: "אנחנו עוקבים אחרי חשבונית מספר {n} על סך ₪{total} ששלחנו ב-{date}. חלפו כבר {days} ימים ולא ראינו את התשלום.",
-    cta: "אשמח לקבל עדכון: האם התשלום בוצע ולא הגיע, או שעדיין מתעכב?",
-    signoff: "תודה,",
-  },
-  30: {
-    intro: "חשבונית מספר {n} על סך ₪{total} מ-{date} עדיין לא שולמה. חלפו {days} ימים.",
-    cta: "אנא תאמו אתנו תאריך תשלום בהקדם. אם יש בעיה או שאלה, נשמח לסייע.",
-    signoff: "בכבוד רב,",
-  },
-};
+// Stage machinery + the Hebrew wording live in lib/dunning-copy.ts, shared
+// byte-for-byte with the assisted WhatsApp reminder the owner sends by hand.
 
 interface DocRow {
   id: string;
@@ -50,12 +39,14 @@ interface DocRow {
   type: string;
   status: string;
   paid_at: string | null;
+  converted_to_id: string | null;
 }
 
 interface BusinessRow {
   id: string;
   name: string;
   dunning_enabled: boolean;
+  dunning_whatsapp_enabled: boolean | null;
   dunning_from_name: string | null;
   email: string | null;
   user_id: string;
@@ -64,24 +55,7 @@ interface BusinessRow {
 interface ClientRow {
   id: string;
   email: string | null;
-}
-
-function daysSince(dateStr: string): number {
-  // Compare calendar day to calendar day. dateStr ("YYYY-MM-DD") parses as
-  // UTC midnight; mixing it with a local Date.now() drifts ±1 day near
-  // midnight and can fire a reminder bucket a day early/late.
-  const [y, m, d] = dateStr.split("-").map(Number);
-  const issuedUTC = Date.UTC(y, m - 1, d);
-  const now = new Date();
-  const todayUTC = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
-  return Math.floor((todayUTC - issuedUTC) / 86400000);
-}
-
-function bucketFor(days: number): DayBucket | null {
-  for (const b of BUCKETS) {
-    if (days >= b) return b;
-  }
-  return null;
+  phone: string | null;
 }
 
 function escapeHtml(s: string): string {
@@ -92,10 +66,6 @@ function escapeHtml(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
-function fill(template: string, vars: Record<string, string>): string {
-  return template.replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? "");
-}
-
 function buildHtml(args: {
   businessName: string;
   fromName: string;
@@ -104,11 +74,11 @@ function buildHtml(args: {
   total: number;
   date: string;
   days: number;
-  bucket: DayBucket;
+  bucket: DunningStage;
   viewUrl: string;
 }): string {
   const { businessName, fromName, clientName, number, total, date, days, bucket, viewUrl } = args;
-  const tone = TONES[bucket];
+  const tone = DUNNING_TONES[bucket];
   const vars = {
     n: String(number),
     total: total.toLocaleString("he-IL"),
@@ -129,8 +99,8 @@ function buildHtml(args: {
     </div>
     <div style="background:#fffaf5;border:1px solid #fed7aa;border-radius:12px;padding:24px;margin-bottom:24px;">
       <p style="margin:0 0 12px 0;font-size:16px;color:#44403c;">שלום ${escapeHtml(clientName)},</p>
-      <p style="margin:0 0 16px 0;font-size:15px;color:#44403c;line-height:1.6;">${escapeHtml(fill(tone.intro, vars))}</p>
-      <p style="margin:0 0 12px 0;font-size:14px;color:#44403c;line-height:1.6;">${escapeHtml(fill(tone.cta, vars))}</p>
+      <p style="margin:0 0 16px 0;font-size:15px;color:#44403c;line-height:1.6;">${escapeHtml(fillDunningVars(tone.intro, vars))}</p>
+      <p style="margin:0 0 12px 0;font-size:14px;color:#44403c;line-height:1.6;">${escapeHtml(fillDunningVars(tone.cta, vars))}</p>
     </div>
     <div style="text-align:center;margin-bottom:24px;">
       <a href="${escapeHtml(viewUrl)}" style="display:inline-block;background:linear-gradient(135deg,#f97316,#e11d48);color:white;text-decoration:none;padding:14px 32px;border-radius:12px;font-size:16px;font-weight:bold;">
@@ -158,11 +128,11 @@ function buildText(args: {
   total: number;
   date: string;
   days: number;
-  bucket: DayBucket;
+  bucket: DunningStage;
   viewUrl: string;
 }): string {
   const { fromName, clientName, number, total, date, days, bucket, viewUrl } = args;
-  const tone = TONES[bucket];
+  const tone = DUNNING_TONES[bucket];
   const vars = {
     n: String(number),
     total: total.toLocaleString("he-IL"),
@@ -171,9 +141,9 @@ function buildText(args: {
   };
   return `שלום ${clientName},
 
-${fill(tone.intro, vars)}
+${fillDunningVars(tone.intro, vars)}
 
-${fill(tone.cta, vars)}
+${fillDunningVars(tone.cta, vars)}
 
 לצפייה במסמך:
 ${viewUrl}
@@ -193,10 +163,16 @@ export async function POST(req: NextRequest) {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
+  // Two passes ride on this one run, with independent switches:
+  //  * dunning_enabled (opt-in, default false) emails the CLIENT;
+  //  * dunning_whatsapp_enabled (opt-out, default true) only notifies the
+  //    OWNER that a WhatsApp reminder is ready for them to send by hand.
+  // A business that turned the email pass off still gets the assisted one,
+  // so the query has to be an OR, not the old .eq on dunning_enabled.
   const { data: bizs } = await admin
     .from("businesses")
-    .select("id, name, dunning_enabled, dunning_from_name, email, user_id")
-    .eq("dunning_enabled", true);
+    .select("id, name, dunning_enabled, dunning_whatsapp_enabled, dunning_from_name, email, user_id")
+    .or("dunning_enabled.eq.true,dunning_whatsapp_enabled.eq.true");
 
   if (!bizs || bizs.length === 0) {
     return NextResponse.json({ ok: true, sent: 0, skipped: 0, message: "no businesses opted in" });
@@ -225,6 +201,7 @@ export async function POST(req: NextRequest) {
   );
 
   let sent = 0;
+  let prepared = 0;
   let skipped = 0;
   let errors = 0;
   let skippedUnverifiedBusinesses = 0;
@@ -238,14 +215,21 @@ export async function POST(req: NextRequest) {
   });
 
   for (const biz of bizs as BusinessRow[]) {
-    if (!ownerConfirmed.get(biz.user_id)) {
+    // The verification gate gates EMAIL only. The assisted pass sends nothing
+    // to anyone but the account owner themselves, so there is nothing for an
+    // unverified account to abuse there.
+    const ownerVerified = ownerConfirmed.get(biz.user_id) === true;
+    const emailPass = biz.dunning_enabled === true && ownerVerified;
+    const assistPass = biz.dunning_whatsapp_enabled !== false;
+    if (biz.dunning_enabled === true && !ownerVerified) {
       skippedUnverifiedBusinesses++;
       details.push({ doc: biz.id, bucket: 0, outcome: "skipped: owner email not verified" });
-      continue;
     }
+    if (!emailPass && !assistPass) continue;
+
     const { data: docs } = await admin
       .from("documents")
-      .select("id, business_id, client_id, client_name, number, date, total, type, status, paid_at")
+      .select("id, business_id, client_id, client_name, number, date, total, type, status, paid_at, converted_to_id")
       .eq("business_id", biz.id)
       .in("type", ["quote", "proforma", "tax_invoice"])
       .eq("status", "sent")
@@ -261,25 +245,47 @@ export async function POST(req: NextRequest) {
     ) as string[];
 
     const { data: clients } = clientIds.length
-      ? await admin.from("clients").select("id, email").in("id", clientIds)
+      ? await admin.from("clients").select("id, email, phone").in("id", clientIds)
       : { data: [] };
 
     const emailByClient = new Map<string, string | null>(
       (clients as ClientRow[] | null)?.map((c) => [c.id, c.email]) || [],
     );
 
-    const { data: existingLogs } = await admin
+    const { data: existingLogs, error: logsError } = await admin
       .from("dunning_log")
-      .select("document_id, day_bucket")
+      .select("document_id, day_bucket, channel")
       .in("document_id", (docs as DocRow[]).map((d) => d.id));
 
+    // Fail closed. Without the log we cannot tell what already went out, and
+    // treating the read failure as "nothing sent yet" would re-email real
+    // clients every run until it recovers. Skipping the business costs at
+    // most a day of delay; tomorrow's run picks the same documents up.
+    if (logsError) {
+      errors++;
+      details.push({
+        doc: biz.id,
+        bucket: 0,
+        outcome: `error: dunning_log read failed (${logsError.message})`,
+      });
+      continue;
+    }
+
+    // Email dedupe reads only its own channel's rows. Rows written before
+    // the channel column existed default to 'email', which is what they are.
     const seenBuckets = new Set(
-      (existingLogs || []).map((l) => `${l.document_id}:${l.day_bucket}`),
+      (existingLogs || [])
+        .filter((l) => (l.channel ?? "email") === "email")
+        .map((l) => `${l.document_id}:${l.day_bucket}`),
     );
 
-    for (const doc of docs as DocRow[]) {
-      const days = daysSince(doc.date);
-      const bucket = bucketFor(days);
+    // Empty when the business only opted in to the assisted pass, so the
+    // whole email block below is skipped without another level of nesting.
+    const emailQueue = emailPass ? (docs as DocRow[]) : [];
+
+    for (const doc of emailQueue) {
+      const days = daysSinceIssue(doc.date);
+      const bucket = dunningStageFor(days);
       if (!bucket) {
         skipped++;
         continue;
@@ -296,7 +302,7 @@ export async function POST(req: NextRequest) {
       }
 
       const fromName = biz.dunning_from_name || biz.name;
-      const subject = fill(SUBJECTS[bucket], { n: String(doc.number) });
+      const subject = fillDunningVars(DUNNING_SUBJECTS[bucket], { n: String(doc.number) });
       const viewUrl = `${APP_URL}/view/${doc.id}`;
       const html = buildHtml({
         businessName: biz.name,
@@ -339,6 +345,10 @@ export async function POST(req: NextRequest) {
           day_bucket: bucket,
           sent_to: clientEmail,
           success: true,
+          // Explicit, though it is also the column default: the assisted
+          // pass below writes rows for the same (document, bucket) pair and
+          // only the channel tells them apart.
+          channel: "email",
         });
         await createNotificationForBusiness({
           businessId: biz.id,
@@ -353,7 +363,7 @@ export async function POST(req: NextRequest) {
       } catch (err) {
         const msg = err instanceof Error ? err.message : "unknown error";
         // Deliberately do NOT write a dunning_log row on failure: the
-        // UNIQUE(document_id, day_bucket) constraint + the seenBuckets
+        // UNIQUE(document_id, day_bucket, channel) constraint + the seenBuckets
         // check would then treat this bucket as already-done and never
         // retry, so a transient send failure would silently drop that
         // reminder forever. Leaving no row means the next run retries.
@@ -362,11 +372,64 @@ export async function POST(req: NextRequest) {
         details.push({ doc: doc.id, bucket, outcome: `error: ${msg}` });
       }
     }
+
+    // Assisted pass: prepare, do not send. One notification per (document,
+    // stage) telling the owner a WhatsApp reminder is ready; the message
+    // itself is composed on the document page when they tap it, and leaves
+    // from their own number. Nothing here touches the client.
+    if (assistPass) {
+      const plans = planAssistedReminders(
+        docs as AssistedDocRow[],
+        (clients as ClientRow[] | null) || [],
+        existingLogs || [],
+      );
+      for (const plan of plans) {
+        const notified = await createNotificationForBusiness({
+          businessId: biz.id,
+          kind: "whatsapp_reminder_ready",
+          title: plan.title,
+          body: plan.body,
+          href: plan.href,
+          documentId: plan.documentId,
+        });
+        // Same rule as the email path: log only what actually happened, so a
+        // failed notification is retried tomorrow instead of being marked
+        // done forever by the dedupe key.
+        if (!notified) {
+          errors++;
+          details.push({ doc: plan.documentId, bucket: plan.stage, outcome: "error: notification failed" });
+          continue;
+        }
+        const { error: logError } = await admin.from("dunning_log").insert({
+          document_id: plan.documentId,
+          business_id: biz.id,
+          day_bucket: plan.stage,
+          // For this channel sent_to is the number the owner was prompted to
+          // message, and success means "the owner was notified" - the client
+          // has received nothing at this point.
+          sent_to: plan.phone,
+          success: true,
+          channel: WHATSAPP_ASSIST_CHANNEL,
+        });
+        if (logError) {
+          errors++;
+          details.push({
+            doc: plan.documentId,
+            bucket: plan.stage,
+            outcome: `error: whatsapp log failed (${logError.message})`,
+          });
+          continue;
+        }
+        prepared++;
+        details.push({ doc: plan.documentId, bucket: plan.stage, outcome: "whatsapp reminder prepared" });
+      }
+    }
   }
 
   return NextResponse.json({
     ok: true,
     sent,
+    prepared,
     skipped,
     errors,
     businesses: bizs.length,

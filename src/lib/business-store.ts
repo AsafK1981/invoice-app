@@ -46,6 +46,9 @@ export function useBusiness() {
             defaultDocNotes: data.default_doc_notes ?? undefined,
             dunningEnabled: data.dunning_enabled ?? false,
             dunningFromName: data.dunning_from_name ?? undefined,
+            // Opt-out, not opt-in: the assisted pass only notifies the owner,
+            // so anything but an explicit false is "on".
+            dunningWhatsappEnabled: data.dunning_whatsapp_enabled !== false,
             monthlyReminderEnabled: data.monthly_reminder_enabled ?? false,
             monthlyReminderDays: Array.isArray(data.monthly_reminder_days)
               ? data.monthly_reminder_days
@@ -126,6 +129,24 @@ export async function savePushKinds(
   window.dispatchEvent(new Event(CHANGE_EVENT));
 }
 
+/**
+ * Persist only the assisted-WhatsApp switch, for the same reason
+ * savePushKinds has its own UPDATE: the reminders card flips one boolean,
+ * and a whole-row write from its snapshot could revert a logo / design /
+ * reminder setting saved elsewhere in the meantime.
+ */
+export async function saveDunningWhatsappEnabled(
+  businessId: string,
+  enabled: boolean,
+): Promise<void> {
+  const { error } = await supabase
+    .from("businesses")
+    .update({ dunning_whatsapp_enabled: enabled })
+    .eq("id", businessId);
+  if (error) throw new Error(error.message);
+  window.dispatchEvent(new Event(CHANGE_EVENT));
+}
+
 export async function saveBusiness(business: Business): Promise<void> {
   const { data, error } = await supabase
     .from("businesses")
@@ -168,6 +189,10 @@ export async function saveBusiness(business: Business): Promise<void> {
       // `null`, not as `{template:"general",...}` - see the doc comment on
       // normalizeDocumentDesign for why that distinction matters.
       document_design: normalizeDocumentDesign(business.documentDesign),
+      // dunning_whatsapp_enabled is deliberately absent too: it is owned by
+      // saveDunningWhatsappEnabled(), so a settings save made from a stale
+      // snapshot can't flip the owner's collection reminders back on or off.
+      //
       // inbox_token / inbox_enabled are deliberately absent. They are owned by
       // /api/email-inbox, and this whole-row UPDATE writes a snapshot the form
       // was opened with - so including them would let a settings save made in

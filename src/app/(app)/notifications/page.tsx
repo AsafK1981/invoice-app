@@ -14,6 +14,7 @@ import {
   CalendarClock,
   Sparkles,
   BellRing,
+  MessageCircle,
 } from "lucide-react";
 import {
   useNotifications,
@@ -41,6 +42,7 @@ const KIND_STYLE: Record<
   tax_token_expiring: { icon: ShieldAlert, iconColor: "text-rose-700", bg: "bg-rose-50 border-rose-200" },
   monthly_reminder_sent: { icon: Mail, iconColor: "text-orange-700", bg: "bg-orange-50 border-orange-200" },
   proposal_ready: { icon: Sparkles, iconColor: "text-violet-700", bg: "bg-violet-50 border-violet-200" },
+  whatsapp_reminder_ready: { icon: MessageCircle, iconColor: "text-emerald-700", bg: "bg-emerald-50 border-emerald-200" },
 };
 
 function fullTime(iso: string): string {

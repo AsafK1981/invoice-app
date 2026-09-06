@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Bell, BellOff, AlertCircle } from "lucide-react";
-import { useBusiness, saveBusiness } from "@/lib/business-store";
+import { Bell, BellOff, AlertCircle, MessageCircle } from "lucide-react";
+import { useBusiness, saveBusiness, saveDunningWhatsappEnabled } from "@/lib/business-store";
 import { useToast } from "@/components/ui/toast";
 
 interface Draft {
@@ -18,6 +18,12 @@ export function DunningSettingsSection() {
   const [baseline, setBaseline] = useState<Draft>(draft);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  // The WhatsApp switch is NOT part of the draft above: it writes its own
+  // single column the moment it is flipped (saveDunningWhatsappEnabled), so
+  // a stale snapshot of this form can never revert it. Local state only
+  // mirrors the saved value for an instant response.
+  const [waEnabled, setWaEnabled] = useState(true);
+  const [waSaving, setWaSaving] = useState(false);
 
   useEffect(() => {
     if (!ready) return;
@@ -28,6 +34,29 @@ export function DunningSettingsSection() {
     setDraft(loaded);
     setBaseline(loaded);
   }, [ready, business.dunningEnabled, business.dunningFromName]);
+
+  useEffect(() => {
+    if (!ready) return;
+    setWaEnabled(business.dunningWhatsappEnabled !== false);
+  }, [ready, business.dunningWhatsappEnabled]);
+
+  async function handleWhatsappToggle(on: boolean) {
+    if (!business.id) return;
+    setErr(null);
+    setWaEnabled(on);
+    setWaSaving(true);
+    try {
+      await saveDunningWhatsappEnabled(business.id, on);
+      showToast(on ? "תזכורות הוואטסאפ מופעלות" : "תזכורות הוואטסאפ כבויות", "success");
+    } catch (e) {
+      setWaEnabled(!on);
+      const message = e instanceof Error ? e.message : "שגיאה בשמירה";
+      setErr(message);
+      showToast(message, "error");
+    } finally {
+      setWaSaving(false);
+    }
+  }
 
   const dirty = draft.enabled !== baseline.enabled || draft.fromName !== baseline.fromName;
 
@@ -101,6 +130,32 @@ export function DunningSettingsSection() {
             </p>
           </div>
         )}
+      </div>
+
+      <div className="mt-5 pt-4 border-t border-stone-100">
+        <label className="flex items-start gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={waEnabled}
+            disabled={waSaving || !business.id}
+            onChange={(e) => handleWhatsappToggle(e.target.checked)}
+            className="w-5 h-5 mt-0.5 rounded text-emerald-600 focus:ring-emerald-500 disabled:opacity-50"
+          />
+          <span className="min-w-0">
+            <span className="flex items-center gap-2 text-sm font-medium text-stone-900">
+              <MessageCircle className="w-4 h-4 text-emerald-700" />
+              תזכורות גבייה בוואטסאפ (אתם שולחים בלחיצה)
+            </span>
+            <span className="block text-xs text-stone-600 mt-1 leading-relaxed">
+              כשחשבונית פתוחה מגיעה ליום 3, 14 או 30 בלי תשלום, תקבלו התראה עם הודעה מוכנה.
+              לחיצה פותחת את הוואטסאפ שלכם עם הטקסט, ואתם שולחים מהמספר שלכם. המערכת לא שולחת
+              ללקוח כלום בדרך הזו, ולא עולה כסף.
+            </span>
+            <span className="block text-xs text-stone-500 mt-1">
+              {waSaving ? "שומר..." : "נשמר מיד, בלי כפתור שמירה"}
+            </span>
+          </span>
+        </label>
       </div>
 
       <div className="mt-5 pt-4 border-t border-stone-100 flex items-center gap-3 flex-wrap">
