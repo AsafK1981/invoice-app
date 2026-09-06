@@ -7,6 +7,7 @@
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { NotificationKind } from "./notifications";
+import { sendPushForNotification } from "./push-server";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -47,19 +48,43 @@ export async function createNotificationForBusiness(args: CreateArgs): Promise<b
       .eq("id", args.businessId)
       .maybeSingle();
     if (!biz?.user_id) return false;
-    const { error } = await client.from("notifications").insert({
-      business_id: args.businessId,
-      user_id: biz.user_id,
-      kind: args.kind,
-      title: args.title,
-      body: args.body || null,
-      href: args.href || null,
-      document_id: args.documentId || null,
-    });
+    // `.select("id")` only so the push can carry the row id as its tag, which
+    // is what stops a retried cron from stacking the same banner twice.
+    const { data: inserted, error } = await client
+      .from("notifications")
+      .insert({
+        business_id: args.businessId,
+        user_id: biz.user_id,
+        kind: args.kind,
+        title: args.title,
+        body: args.body || null,
+        href: args.href || null,
+        document_id: args.documentId || null,
+      })
+      .select("id")
+      .maybeSingle();
     if (error) {
       console.warn("[notifications] server write failed:", error);
       return false;
     }
+
+    // The device copy of the same event, if the owner asked for this kind.
+    // Awaited so a serverless function is not killed mid-send, but its own
+    // try/catch means a push problem never changes what this function
+    // returns - the in-app row is already written and is the durable channel.
+    try {
+      await sendPushForNotification({
+        businessId: args.businessId,
+        kind: args.kind,
+        title: args.title,
+        body: args.body,
+        href: args.href,
+        notificationId: (inserted?.id as string) || undefined,
+      });
+    } catch (err) {
+      console.warn("[notifications] push failed:", err);
+    }
+
     return true;
   } catch (err) {
     console.warn("[notifications] server write failed:", err);

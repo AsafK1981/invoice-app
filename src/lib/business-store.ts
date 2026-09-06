@@ -6,6 +6,7 @@ import { getBusinessId } from "./business-init";
 import { sanitizeReminderDays } from "./reminder-schedule";
 import { normalizeDocumentDesign } from "./document-themes";
 import type { Business } from "./types";
+import { NOTIFICATION_KIND_LABELS, type NotificationKind } from "./notifications";
 
 const CHANGE_EVENT = "invoice-app:business-changed";
 
@@ -63,6 +64,9 @@ export function useBusiness() {
             documentDesign: data.document_design ?? null,
             inboxToken: data.inbox_token ?? undefined,
             inboxEnabled: data.inbox_enabled ?? false,
+            pushKinds: Array.isArray(data.push_kinds)
+              ? (data.push_kinds as NotificationKind[])
+              : [],
           }
         : defaultBusiness
     );
@@ -94,6 +98,29 @@ export async function saveIncomeTaxAdvanceRate(
   const { error } = await supabase
     .from("businesses")
     .update({ income_tax_advance_rate: value })
+    .eq("id", businessId);
+  if (error) throw new Error(error.message);
+  window.dispatchEvent(new Event(CHANGE_EVENT));
+}
+
+/**
+ * Persist only the web-push opt-in list, for the same reason
+ * saveIncomeTaxAdvanceRate has its own UPDATE: the התרעות בדפדפן card flips
+ * one switch, and a whole-row write from its snapshot could revert a logo /
+ * design / reminder setting saved elsewhere in the meantime.
+ *
+ * Unknown values are dropped rather than stored: this list is read by the
+ * sender on every notification, and it should only ever contain kinds the app
+ * actually produces.
+ */
+export async function savePushKinds(
+  businessId: string,
+  kinds: NotificationKind[],
+): Promise<void> {
+  const clean = Array.from(new Set(kinds)).filter((k) => k in NOTIFICATION_KIND_LABELS);
+  const { error } = await supabase
+    .from("businesses")
+    .update({ push_kinds: clean })
     .eq("id", businessId);
   if (error) throw new Error(error.message);
   window.dispatchEvent(new Event(CHANGE_EVENT));

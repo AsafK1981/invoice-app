@@ -88,17 +88,50 @@ interface CreateClientArgs {
  *  matcher and other in-browser producers. */
 export async function createNotificationClient(args: CreateClientArgs): Promise<void> {
   try {
-    await supabase.from("notifications").insert({
-      business_id: args.businessId,
-      user_id: args.userId,
-      kind: args.kind,
-      title: args.title,
-      body: args.body || null,
-      href: args.href || null,
-      document_id: args.documentId || null,
-    });
+    const { data } = await supabase
+      .from("notifications")
+      .insert({
+        business_id: args.businessId,
+        user_id: args.userId,
+        kind: args.kind,
+        title: args.title,
+        body: args.body || null,
+        href: args.href || null,
+        document_id: args.documentId || null,
+      })
+      .select("id")
+      .maybeSingle();
     window.dispatchEvent(new Event(CHANGE_EVENT));
+    if (data?.id) void requestPushForNotification(data.id as string);
   } catch (err) {
     console.warn("[notifications] client write failed:", err);
+  }
+}
+
+/**
+ * Ask the server to push the row we just wrote.
+ *
+ * The browser has no VAPID private key, so it cannot send the push itself; it
+ * hands over the id and /api/push/send re-reads the row scoped to this user
+ * before sending anything. Fire-and-forget on purpose - the notification is
+ * already in the feed, and the import that produced it must not wait on, or
+ * fail because of, a push service.
+ */
+async function requestPushForNotification(notificationId: string): Promise<void> {
+  try {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session) return;
+    await fetch("/api/push/send", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ notificationId }),
+    });
+  } catch {
+    /* best effort; the in-app notification is the durable channel */
   }
 }

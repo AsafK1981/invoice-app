@@ -1,3 +1,7 @@
+// The only import here, and a type-only one: Business.pushKinds is a subset of
+// the notification kinds, and duplicating that union would let the two drift.
+import type { NotificationKind } from "./notifications";
+
 export type DocumentType =
   | "receipt"
   | "quote"
@@ -108,6 +112,13 @@ export interface Business {
   inboxToken?: string;
   /** Whether inbound mail to that address is accepted. Defaults to false. */
   inboxEnabled?: boolean;
+  /**
+   * Which notification kinds are also pushed to the owner's devices
+   * ("התרעות בדפדפן"). Empty / undefined = push off, which is the default:
+   * nothing reaches a device until the owner presses the button in הגדרות.
+   * Written only by savePushKinds(), never by saveBusiness().
+   */
+  pushKinds?: NotificationKind[];
 }
 
 export interface Client {

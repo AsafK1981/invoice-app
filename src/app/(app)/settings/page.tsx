@@ -33,6 +33,7 @@ import { TaxAuthoritySection } from "@/components/tax-authority-section";
 import { TwoFactorSection } from "@/components/two-factor-section";
 import { WhatsAppSection } from "@/components/whatsapp-section";
 import { EmailInboxSection } from "@/components/email-inbox-section";
+import { PushSettingsSection } from "@/components/push-settings-section";
 import { ALLOCATION_THRESHOLD_SCHEDULE, formatThreshold } from "@/lib/tax-authority";
 import { DangerZoneSection } from "@/components/danger-zone-section";
 import { BUSINESS_TYPE_LABELS } from "@/lib/types";
@@ -328,6 +329,8 @@ export default function SettingsPage() {
       <div id="tax-authority" className="scroll-mt-6">
         <TaxAuthoritySection />
       </div>
+
+      <PushSettingsSection />
 
       <Link
         href="/reminders"

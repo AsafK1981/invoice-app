@@ -162,6 +162,21 @@ export async function POST(req: NextRequest) {
     deleted.notifications = res.count || 0;
   });
 
+  // 3b) Push subscriptions: the devices that were receiving those
+  //     notifications. Wiping the data without them would leave endpoints
+  //     alive for an account with nothing left to say.
+  await step("push_subscriptions", async () => {
+    const res = await admin
+      .from("push_subscriptions")
+      .delete({ count: "exact" })
+      .eq("business_id", businessId);
+    // 42P01 = the table does not exist yet (migration not applied). Nothing to
+    // wipe, and a wipe must not report a partial failure over that.
+    if (res.error && (res.error as { code?: string }).code === "42P01") return;
+    assertOk(res, "delete push_subscriptions");
+    deleted.push_subscriptions = res.count || 0;
+  });
+
   // 4) Clear delivery markers, THEN delete the parent documents.
   //    A DB trigger (enforce_document_immutability) blocks DELETE of any row
   //    with emailed_at set ("delivered documents cannot be deleted"). This is

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
@@ -13,6 +13,7 @@ import {
   ShieldAlert,
   CalendarClock,
   Sparkles,
+  BellRing,
 } from "lucide-react";
 import {
   useNotifications,
@@ -26,6 +27,7 @@ import {
 } from "@/lib/notifications";
 import { formatDate } from "@/lib/format";
 import { toIsraelDate } from "@/lib/date";
+import { getExistingSubscription, isPushSupported } from "@/lib/push-client";
 
 const KIND_STYLE: Record<
   NotificationKind,
@@ -75,6 +77,7 @@ export default function NotificationsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
+          <PushHint />
           <Link
             href="/reminders"
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border-2 border-stone-200 text-stone-700 hover:bg-stone-50"
@@ -96,6 +99,40 @@ export default function NotificationsPage() {
 
       <FeedTab ready={ready} items={items} />
     </div>
+  );
+}
+
+/**
+ * The feed is the page you only see when you come looking. This is the one
+ * place that says the same events can reach the device - shown only when this
+ * browser could do it and has not been switched on yet, so it disappears the
+ * moment it stops being news.
+ */
+function PushHint() {
+  const [show, setShow] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!isPushSupported()) return;
+      const existing = await getExistingSubscription();
+      if (!cancelled) setShow(existing === null);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (!show) return null;
+
+  return (
+    <Link
+      href="/settings#push"
+      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-orange-700 hover:bg-orange-50"
+    >
+      <BellRing className="w-4 h-4" />
+      התרעות בדפדפן
+    </Link>
   );
 }
 
