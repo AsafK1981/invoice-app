@@ -9,8 +9,8 @@ const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 /**
  * Destructive: wipes ALL business data (documents, items, expenses, clients,
  * products, counters, attachments + storage files, dunning log, notifications,
- * the email inbox queue + its stored receipts, recurring templates in auth
- * metadata). Audit log is kept and gets a
+ * the email inbox queue + its stored receipts, assistant memory, recurring
+ * templates in auth metadata). Audit log is kept and gets a
  * `data.cleared` row appended; business profile + tax-authority OAuth +
  * the Auth user itself stay.
  *
@@ -240,7 +240,7 @@ export async function POST(req: NextRequest) {
     deleted.email_inbox_items = res.count || 0;
   });
 
-  // 8-10) Clients, products, counters.
+  // 8-11) Clients, products, counters, assistant memory.
   await step("clients", async () => {
     const res = await admin
       .from("clients")
@@ -264,6 +264,19 @@ export async function POST(req: NextRequest) {
       .eq("business_id", businessId);
     assertOk(res, "delete document_counters");
     deleted.document_counters = res.count || 0;
+  });
+  // The assistant's memory is the user's own sentences about themselves, so
+  // "wipe all my data" has to reach it too. It hangs off the business rather
+  // than off any document, so nothing deleted above cascades it away, and a
+  // business that stays (this route keeps the profile) would otherwise carry
+  // the old facts into the next conversation.
+  await step("assistant_memory", async () => {
+    const res = await admin
+      .from("assistant_memory")
+      .delete({ count: "exact" })
+      .eq("business_id", businessId);
+    assertOk(res, "delete assistant_memory");
+    deleted.assistant_memory = res.count || 0;
   });
 
   // 11) Storage cleanup; delete in chunks so we don't blow past Supabase's

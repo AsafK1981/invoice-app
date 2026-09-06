@@ -38,6 +38,7 @@ const COUNT_LABELS: Record<string, string> = {
   storage_attachments: "קבצים מצורפים שנמחקו מ-storage",
   storage_expense_receipts: "קבלות סרוקות שנמחקו מ-storage",
   recurring_templates: "תבניות חיובים חוזרים",
+  assistant_memory: "דברים שהעוזר החכם זכר עליך",
 };
 
 export function DangerZoneSection() {
@@ -219,6 +220,7 @@ function WarningStage({
             <li>{counts.products} מוצרים/שירותים</li>
             <li>כל התזכורות שנשלחו וההתראות במערכת</li>
             <li>תבניות חיובים חוזרים</li>
+            <li>כל מה שהעוזר החכם זכר עליך</li>
             <li>מונים: חשבונית חדשה תתחיל מחדש מ-1001/201</li>
           </ul>
           <p className="mt-2 text-xs">פרטי העסק, חיבור לרשות המסים, ויומן הביקורת נשארים.</p>
