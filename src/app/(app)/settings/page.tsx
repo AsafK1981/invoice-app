@@ -28,6 +28,7 @@ import { BusinessFormModal } from "@/components/business-form-modal";
 import { EmailSettingsModal } from "@/components/email-settings-modal";
 import { DocumentNumberingSettings } from "@/components/document-numbering-settings";
 import { AuditLogSection } from "@/components/audit-log-section";
+import { AssistantMemorySection } from "@/components/assistant-memory-section";
 import { TaxAuthoritySection } from "@/components/tax-authority-section";
 import { TwoFactorSection } from "@/components/two-factor-section";
 import { WhatsAppSection } from "@/components/whatsapp-section";
@@ -338,6 +339,8 @@ export default function SettingsPage() {
       </Link>
 
       <TwoFactorSection />
+
+      <AssistantMemorySection />
 
       <AuditLogSection />
 

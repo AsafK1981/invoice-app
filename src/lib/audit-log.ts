@@ -20,9 +20,11 @@ export type AuditAction =
   | "expense.deleted"
   | "data.cleared"
   | "recurring.deleted"
-  | "attachment.deleted";
+  | "attachment.deleted"
+  | "assistant_memory.added"
+  | "assistant_memory.deleted";
 
-export type AuditTargetType = "document" | "client" | "product" | "expense" | "recurring" | "attachment" | "all";
+export type AuditTargetType = "document" | "client" | "product" | "expense" | "recurring" | "attachment" | "memory" | "all";
 
 export interface AuditEntry {
   id: string;
@@ -126,6 +128,8 @@ const ACTION_LABELS: Record<AuditAction, string> = {
   "data.cleared": "כל הנתונים נמחקו",
   "recurring.deleted": "תבנית חוזרת נמחקה",
   "attachment.deleted": "קובץ מצורף נמחק",
+  "assistant_memory.added": "העוזר התבקש לזכור עובדה",
+  "assistant_memory.deleted": "עובדה נמחקה מזיכרון העוזר",
 };
 
 export function formatAuditAction(action: AuditAction): string {

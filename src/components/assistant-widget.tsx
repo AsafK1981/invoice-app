@@ -9,6 +9,11 @@
 // A delete arrives as a `pendingDelete` and runs only when the user clicks the
 // red button below the reply, through the same store the screen uses.
 //
+// Memory works the same way (2026-09-06): the server can only PROPOSE a fact
+// to remember or forget, and the row is written or removed here, with the
+// user's own session, on the click. The facts are listed and deletable in
+// /settings#assistant-memory.
+//
 // Voice dictation (the mic button in the composer) uses the browser-native
 // Web Speech API - free, no API key, no server round-trip. Supported in
 // Chrome and Safari; Firefox has no support, so the button is hidden there
@@ -17,7 +22,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Sparkles, X, Send, FileText, Paperclip, Table2, MessageCircle, Mic, ChevronLeft, Check, Trash2, Pencil, Maximize2, Minimize2 } from "lucide-react";
+import { Sparkles, X, Send, FileText, Paperclip, Table2, MessageCircle, Mic, ChevronLeft, Check, Trash2, Pencil, Brain, Maximize2, Minimize2 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { formatMoney } from "@/lib/currencies";
 import { supabase } from "@/lib/supabase";
@@ -25,6 +30,8 @@ import { expenseStore } from "@/lib/expense-store";
 import { clientStore } from "@/lib/client-store";
 import { productStore } from "@/lib/product-store";
 import { logAudit } from "@/lib/audit-log";
+import { getBusinessId } from "@/lib/business-init";
+import { MEMORY_CHANGED_EVENT, normalizeFact } from "@/lib/assistant-memory";
 import { saveDraftToServer, DOC_TYPE_ROUTE } from "@/lib/draft-store";
 import { todayInIsrael } from "@/lib/date";
 import type { ParsedAttachment } from "@/lib/import-excel-text";
@@ -80,6 +87,21 @@ interface PendingUpdate {
   patch: Record<string, string | null>;
 }
 
+/**
+ * A fact the assistant offers to remember, and one it offers to forget. The
+ * server never writes either: the INSERT and the DELETE below run here, with
+ * the user's own session, only after the click. That is what keeps text the
+ * model read from a document out of the next conversation's prompt.
+ */
+interface PendingMemory {
+  fact: string;
+}
+
+interface PendingForget {
+  id: string;
+  fact: string;
+}
+
 interface ChatMessage {
   role: "user" | "assistant";
   content: string;
@@ -88,6 +110,8 @@ interface ChatMessage {
   actions?: AssistantAction[];
   pendingDeletes?: PendingDelete[];
   pendingUpdates?: PendingUpdate[];
+  pendingMemory?: PendingMemory[];
+  pendingForget?: PendingForget[];
 }
 
 // The stores' own change events (each store listens for its own). Firing them
@@ -306,6 +330,8 @@ export function AssistantWidget() {
   const [deleteState, setDeleteState] = useState<Record<string, "working" | "done">>({});
   /** Same, for confirm-gated client updates. */
   const [updateState, setUpdateState] = useState<Record<string, "working" | "done">>({});
+  /** Same, for memory cards - which can also be turned down outright. */
+  const [memoryState, setMemoryState] = useState<Record<string, "working" | "done" | "declined">>({});
   const [error, setError] = useState("");
   const [openingDraft, setOpeningDraft] = useState("");
   const [attachment, setAttachment] = useState<ParsedAttachment | null>(null);
@@ -450,6 +476,8 @@ export function AssistantWidget() {
           actions: Array.isArray(json.actions) ? (json.actions as AssistantAction[]) : [],
           pendingDeletes: Array.isArray(json.pendingDeletes) ? (json.pendingDeletes as PendingDelete[]) : [],
           pendingUpdates: Array.isArray(json.pendingUpdates) ? (json.pendingUpdates as PendingUpdate[]) : [],
+          pendingMemory: Array.isArray(json.pendingMemory) ? (json.pendingMemory as PendingMemory[]) : [],
+          pendingForget: Array.isArray(json.pendingForget) ? (json.pendingForget as PendingForget[]) : [],
         },
       ]);
       if (Array.isArray(json.actions)) {
@@ -511,6 +539,79 @@ export function AssistantWidget() {
         return next;
       });
       setError("המחיקה נכשלה. נסה שוב.");
+    }
+  }
+
+  /**
+   * The only path that writes to the assistant's memory. Same shape as
+   * confirmUpdate: the user's own session, so RLS decides whether the row may
+   * exist, and the fact is normalised again here because the server's copy of
+   * the string is not the one being stored.
+   */
+  async function confirmMemory(p: PendingMemory, key: string) {
+    const fact = normalizeFact(p.fact);
+    const businessId = getBusinessId();
+    if (!fact || !businessId) {
+      setError("שמירת העובדה נכשלה. נסה שוב.");
+      return;
+    }
+    setMemoryState((s) => ({ ...s, [key]: "working" }));
+    setError("");
+    try {
+      const { data, error } = await supabase
+        .from("assistant_memory")
+        .insert({ business_id: businessId, fact })
+        .select("id");
+      if (error || !data?.length) throw new Error(error?.message || "no rows");
+      logAudit({
+        action: "assistant_memory.added",
+        targetType: "memory",
+        targetId: data[0].id as string,
+        targetLabel: fact,
+        payload: { via: "assistant", confirmed: true },
+      });
+      window.dispatchEvent(new Event(MEMORY_CHANGED_EVENT));
+      setMemoryState((s) => ({ ...s, [key]: "done" }));
+    } catch {
+      setMemoryState((s) => {
+        const next = { ...s };
+        delete next[key];
+        return next;
+      });
+      // The 30-fact cap is enforced by a DB trigger, so a full memory lands
+      // here rather than as a silent no-op.
+      setError("שמירת העובדה נכשלה. יכול להיות שהזיכרון מלא - אפשר לפנות מקום בהגדרות.");
+    }
+  }
+
+  async function confirmForget(p: PendingForget, key: string) {
+    setMemoryState((s) => ({ ...s, [key]: "working" }));
+    setError("");
+    try {
+      // .select() so a row RLS refused to touch comes back empty instead of
+      // as a silent success the card would report as "deleted".
+      const { data, error } = await supabase
+        .from("assistant_memory")
+        .delete()
+        .eq("id", p.id)
+        .select("id");
+      if (error || !data?.length) throw new Error(error?.message || "no rows");
+      logAudit({
+        action: "assistant_memory.deleted",
+        targetType: "memory",
+        targetId: p.id,
+        targetLabel: p.fact,
+        payload: { via: "assistant", confirmed: true },
+      });
+      window.dispatchEvent(new Event(MEMORY_CHANGED_EVENT));
+      setMemoryState((s) => ({ ...s, [key]: "done" }));
+    } catch {
+      setMemoryState((s) => {
+        const next = { ...s };
+        delete next[key];
+        return next;
+      });
+      setError("המחיקה מהזיכרון נכשלה. נסה שוב.");
     }
   }
 
@@ -791,6 +892,116 @@ export function AssistantWidget() {
                     </div>
                   );
                 })}
+                {m.pendingMemory?.map((p, pi) => {
+                  const key = `mem-${i}-${pi}`;
+                  const state = memoryState[key];
+                  return (
+                    <div
+                      key={key}
+                      className={`mt-2 rounded-xl border px-3 py-2 text-[13px] ${
+                        state === "done" || state === "declined"
+                          ? "bg-stone-50 border-stone-200 text-stone-500"
+                          : "bg-white border-stone-200 text-stone-800"
+                      }`}
+                    >
+                      {state === "done" ? (
+                        <span className="flex items-center gap-2">
+                          <Check className="w-4 h-4 text-stone-400" />
+                          נשמר בזיכרון: {p.fact}
+                        </span>
+                      ) : state === "declined" ? (
+                        <span className="flex items-center gap-2">
+                          <X className="w-4 h-4 text-stone-400" />
+                          לא נשמר
+                        </span>
+                      ) : (
+                        <>
+                          <div className="flex items-start gap-2">
+                            <Brain className="w-4 h-4 flex-shrink-0 mt-0.5 text-orange-500" />
+                            <span dir="auto">
+                              <span className="font-medium">לזכור: </span>
+                              {p.fact}
+                            </span>
+                          </div>
+                          <div className="mt-2 flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => confirmMemory(p, key)}
+                              disabled={state === "working"}
+                              className="inline-flex items-center gap-1.5 rounded-lg bg-orange-500 hover:bg-orange-600 disabled:opacity-60 text-white px-3 py-1.5 text-xs font-semibold transition-colors"
+                            >
+                              <Check className="w-3.5 h-3.5" />
+                              {state === "working" ? "שומר..." : "כן, זכור"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setMemoryState((s) => ({ ...s, [key]: "declined" }))}
+                              disabled={state === "working"}
+                              className="rounded-lg border border-stone-200 bg-white text-stone-600 hover:text-stone-900 px-3 py-1.5 text-xs font-semibold transition-colors"
+                            >
+                              לא
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
+                {m.pendingForget?.map((p, pi) => {
+                  const key = `forget-${i}-${pi}`;
+                  const state = memoryState[key];
+                  return (
+                    <div
+                      key={key}
+                      className={`mt-2 rounded-xl border px-3 py-2 text-[13px] ${
+                        state === "done" || state === "declined"
+                          ? "bg-stone-50 border-stone-200 text-stone-500"
+                          : "bg-white border-stone-200 text-stone-800"
+                      }`}
+                    >
+                      {state === "done" ? (
+                        <span className="flex items-center gap-2">
+                          <Check className="w-4 h-4 text-stone-400" />
+                          נמחק מהזיכרון: {p.fact}
+                        </span>
+                      ) : state === "declined" ? (
+                        <span className="flex items-center gap-2">
+                          <X className="w-4 h-4 text-stone-400" />
+                          נשאר בזיכרון
+                        </span>
+                      ) : (
+                        <>
+                          <div className="flex items-start gap-2">
+                            <Brain className="w-4 h-4 flex-shrink-0 mt-0.5 text-stone-400" />
+                            <span dir="auto">
+                              <span className="font-medium">למחוק מהזיכרון: </span>
+                              {p.fact}
+                            </span>
+                          </div>
+                          <div className="mt-2 flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => confirmForget(p, key)}
+                              disabled={state === "working"}
+                              className="inline-flex items-center gap-1.5 rounded-lg bg-stone-700 hover:bg-stone-800 disabled:opacity-60 text-white px-3 py-1.5 text-xs font-semibold transition-colors"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              {state === "working" ? "מוחק..." : "כן, שכח"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setMemoryState((s) => ({ ...s, [key]: "declined" }))}
+                              disabled={state === "working"}
+                              className="rounded-lg border border-stone-200 bg-white text-stone-600 hover:text-stone-900 px-3 py-1.5 text-xs font-semibold transition-colors"
+                            >
+                              לא
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
                 {m.pendingDeletes?.map((p, pi) => {
                   const key = `del-${i}-${pi}`;
                   const state = deleteState[key];
@@ -961,7 +1172,7 @@ export function AssistantWidget() {
             </button>
           </div>
           <p className="text-[10px] text-stone-400 mt-2 text-center">
-            העוזר יכול לטעות. מסמכים הוא רק מכין כטיוטה; מחיקה ושינוי פרטי קשר של לקוח תמיד עוברים דרכך.
+            העוזר יכול לטעות. מסמכים הוא רק מכין כטיוטה; מחיקה, שינוי פרטי קשר של לקוח ושמירה בזיכרון תמיד עוברים דרכך.
           </p>
         </div>
       </div>
