@@ -242,6 +242,10 @@ export default function ReportsPage() {
       desc: "כמה מס הכנסה וביטוח לאומי צפויים לסוף השנה, וכמה כדאי לשמור בצד.",
     },
     {
+      icon: TrendingUp, title: "תחזית תזרים", href: "/reports/cash-flow",
+      desc: "מה צפוי להיכנס ולצאת ב-3 החודשים הקרובים.",
+    },
+    {
       icon: BookOpen, title: "יומן שנתי", href: `/reports/journal/${exportYear}`,
       desc: "יומן הכנסות והוצאות מעוצב להדפסה או לשמירה כ-PDF.",
     },

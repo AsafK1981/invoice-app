@@ -6,8 +6,11 @@ import { todayInIsrael } from "@/lib/date";
 import { searchTerms } from "@/lib/ilike-search";
 import { documentsForClient, normalizeName } from "@/lib/client-picker";
 import { DOCUMENT_TYPE_LABELS, DOCUMENT_STATUS_LABELS } from "@/lib/types";
+import type { Business, DocumentItem, Expense, InvoiceDocument } from "@/lib/types";
 import { summarizeIncome } from "@/lib/income-summary";
 import { summarizeExpenses } from "@/lib/expense-summary";
+import { forecastCashFlow } from "@/lib/cash-flow-forecast";
+import { monthsBackStart } from "@/lib/recurring-patterns";
 import { isDeadEndReply } from "@/lib/assistant-reply";
 import type { DocumentType } from "@/lib/types";
 import {
@@ -72,6 +75,15 @@ const DRAFT_DOCUMENT_TYPES: string[] = [
 const MAX_HISTORY = 8;
 /** Rows a single search may return - keeps tool results out of the context. */
 const SEARCH_LIMIT = 15;
+/**
+ * The cash-flow forecast reads the whole history, the way the report page
+ * does (its store holds every document), because an invoice from two years
+ * ago that was never paid is still money the forecast owes an answer about.
+ * Only the line items are narrowed - they exist here for cadence detection,
+ * which never looks past twelve months anyway.
+ */
+const FORECAST_DOC_LIMIT = 3000;
+const FORECAST_ITEM_DOC_LIMIT = 500;
 
 /** The person behind the app, offered whenever the software itself has no path. */
 const HUMAN_FALLBACK =
@@ -163,6 +175,17 @@ const TOOLS: Anthropic.Tool[] = [
       },
       required: ["dateFrom", "dateTo"],
     },
+  },
+  {
+    name: "get_cash_flow_forecast",
+    description:
+      "מחשב תחזית תזרים מזומנים לשלושת החודשים הקרובים: כמה צפוי להיכנס, כמה לצאת וכמה יישאר, " +
+      "חודש בחודש. קרא לזה לכל שאלה על העתיד הכספי הקרוב - 'מה צפוי להיכנס בחודש הבא', " +
+      "'איך נראה התזרים', 'יהיה לי מספיק כסף', 'כמה כסף אני מצפה לקבל'. " +
+      "מבוסס על מסמכים פתוחים (לפי קצב התשלומים של כל לקוח בעבר), חיובים חוזרים שזוהו, " +
+      "ממוצע ההוצאות, מקדמות מס הכנסה ומע״מ. בלי פרמטרים. " +
+      "מחזיר גם רשימת הנחות - הזכר למשתמש שזו תחזית ולא התחייבות.",
+    input_schema: { type: "object", properties: {} },
   },
   {
     name: "list_clients",
@@ -458,6 +481,149 @@ async function runTool(
       return { content: "שגיאה בשליפת ההוצאות." };
     }
     return { content: asData({ period: { from, to }, ...summarizeExpenses(data || []) }) };
+  }
+
+  // The forecast rule lives in lib/cash-flow-forecast (pure and tested), the
+  // same module the /reports/cash-flow page renders, so the assistant's answer
+  // and the page cannot drift apart. This handler only fetches and maps.
+  if (name === "get_cash_flow_forecast") {
+    const today = todayInIsrael();
+    const itemsSince = monthsBackStart(today, 12);
+
+    const { data: bizRow, error: bizError } = await admin
+      .from("businesses")
+      .select("business_type, income_tax_advance_rate")
+      .eq("id", businessId)
+      .maybeSingle();
+    if (bizError || !bizRow) {
+      console.error("[assistant] get_cash_flow_forecast business failed:", bizError?.message);
+      return { content: "שגיאה בשליפת פרטי העסק." };
+    }
+
+    const { data: docRows, error: docsError } = await admin
+      .from("documents")
+      .select(
+        "id, number, type, status, date, client_id, client_name, client_tax_id, subject, notes, currency, zero_rated, discount_amount, withholding_amount, subtotal, subtotal_ils, vat, vat_ils, total, total_ils, exchange_rate, paid_at, converted_to_id, original_document_id",
+      )
+      .eq("business_id", businessId)
+      .order("date", { ascending: false })
+      .limit(FORECAST_DOC_LIMIT);
+    if (docsError) {
+      console.error("[assistant] get_cash_flow_forecast documents failed:", docsError.message);
+      return { content: "שגיאה בשליפת המסמכים." };
+    }
+
+    const { data: itemRows } = await admin
+      .from("documents")
+      .select("id, document_items(description, quantity, unit_price, sort_order)")
+      .eq("business_id", businessId)
+      .gte("date", itemsSince)
+      .order("date", { ascending: false })
+      .order("sort_order", { foreignTable: "document_items" })
+      .limit(FORECAST_ITEM_DOC_LIMIT);
+    const itemsByDoc = new Map<string, DocumentItem[]>();
+    for (const row of (itemRows ?? []) as Record<string, unknown>[]) {
+      const raw = Array.isArray(row.document_items)
+        ? (row.document_items as Record<string, unknown>[])
+        : [];
+      itemsByDoc.set(
+        String(row.id),
+        raw.map((i, index) => {
+          const quantity = money(i.quantity);
+          const unitPrice = money(i.unit_price);
+          return {
+            id: `${row.id}:${index}`,
+            description: String(i.description ?? ""),
+            quantity,
+            unitPrice,
+            total: quantity * unitPrice,
+          };
+        }),
+      );
+    }
+
+    const { data: expenseRows } = await admin
+      .from("expenses")
+      .select("id, date, category, supplier, amount, vat_amount")
+      .eq("business_id", businessId)
+      .gte("date", itemsSince);
+    const { data: clientRows } = await admin
+      .from("clients")
+      .select("id, name, tax_id")
+      .eq("business_id", businessId)
+      .limit(1000);
+
+    const documents: InvoiceDocument[] = ((docRows ?? []) as Record<string, unknown>[]).map((row) => ({
+      id: String(row.id),
+      type: row.type as DocumentType,
+      number: Number(row.number) || 0,
+      date: String(row.date ?? ""),
+      clientId: (row.client_id as string) || "",
+      clientName: (row.client_name as string) || "",
+      clientTaxId: (row.client_tax_id as string) || undefined,
+      subject: (row.subject as string) || undefined,
+      status: (row.status as InvoiceDocument["status"]) || "draft",
+      items: itemsByDoc.get(String(row.id)) ?? [],
+      subtotal: money(row.subtotal),
+      vat: money(row.vat),
+      total: money(row.total),
+      subtotalIls: row.subtotal_ils != null ? money(row.subtotal_ils) : money(row.subtotal),
+      vatIls: row.vat_ils != null ? money(row.vat_ils) : money(row.vat),
+      totalIls: row.total_ils != null ? money(row.total_ils) : money(row.total),
+      exchangeRate: row.exchange_rate != null ? money(row.exchange_rate) : 1,
+      currency: (row.currency as string) || "ILS",
+      zeroRated: row.zero_rated === true,
+      discountAmount: row.discount_amount != null ? money(row.discount_amount) : undefined,
+      withholdingAmount: row.withholding_amount != null ? money(row.withholding_amount) : undefined,
+      notes: (row.notes as string) || undefined,
+      paidAt: (row.paid_at as string) || undefined,
+      convertedToId: (row.converted_to_id as string) || undefined,
+      originalDocumentId: (row.original_document_id as string) || undefined,
+    }));
+
+    const expenses: Expense[] = ((expenseRows ?? []) as Record<string, unknown>[]).map((row) => ({
+      id: String(row.id),
+      date: String(row.date ?? ""),
+      category: (row.category as string) || "",
+      supplier: (row.supplier as string) || "",
+      amount: money(row.amount),
+      vatAmount: money(row.vat_amount),
+    }));
+
+    const forecast = forecastCashFlow({
+      documents,
+      expenses,
+      clients: ((clientRows ?? []) as Record<string, unknown>[]).map((c) => ({
+        id: String(c.id),
+        name: (c.name as string) || "",
+        taxId: (c.tax_id as string) || undefined,
+      })),
+      business: {
+        businessType: (bizRow.business_type as Business["businessType"]) || "exempt",
+        incomeTaxAdvanceRate:
+          bizRow.income_tax_advance_rate == null ? undefined : Number(bizRow.income_tax_advance_rate),
+      },
+      today,
+    });
+
+    return {
+      content: asData({
+        today,
+        // The per-line detail stays out: the model needs the shape of the
+        // months, not forty rows it would read back to the user.
+        months: forecast.months.map((m) => ({
+          period: m.period,
+          label: m.label,
+          inflow: m.inflow,
+          outflow: m.outflow,
+          net: m.net,
+          lineCount: m.lines.length,
+        })),
+        totals: forecast.totals,
+        potentialQuotes: forecast.potentialQuotes,
+        assumptions: forecast.assumptions,
+      }),
+    };
   }
 
   if (name === "list_clients") {

@@ -7,8 +7,10 @@
  */
 import type { InvoiceDocument, Expense, Client, DocumentType } from "./types";
 import { DOCUMENT_TYPE_LABELS, DOCUMENT_STATUS_LABELS, PAYMENT_METHOD_LABELS } from "./types";
-import { formatDate } from "./format";
+import { formatCurrency, formatDate } from "./format";
 import type { OpenReceivablesResult } from "./capital-declaration";
+import type { ForecastLine, ForecastResult } from "./cash-flow-forecast";
+import { FORECAST_CONFIDENCE_LABELS, FORECAST_KIND_LABELS } from "./cash-flow-forecast";
 import { downloadXlsx, sheet } from "./xlsx-export";
 
 /** Header-block context every export can carry. */
@@ -359,6 +361,45 @@ export function exportVatPeriodExpenses(params: {
         { header: "סכום ללא מע״מ", value: (r) => r.net, kind: "money", total: "sum" },
         { header: "מע״מ", value: (r) => r.vat, kind: "money", total: "sum" },
         { header: "סכום כולל", value: (r) => r.amount, kind: "money", total: "sum" },
+      ],
+    }),
+  ]);
+}
+
+/**
+ * Cash-flow forecast: every forecast line of every month in one sheet, with
+ * the signed amounts summing to the net the page shows. The assumptions ride
+ * along as notes under the table - a forecast without them is a promise.
+ */
+export function exportCashFlowForecast(result: ForecastResult, meta: ExportMeta = {}) {
+  type Row = ForecastLine & { period: string; monthLabel: string };
+  const rows: Row[] = result.months.flatMap((m) =>
+    m.lines.map((line) => ({ ...line, period: m.period, monthLabel: m.label })),
+  );
+  const notes = [...result.assumptions];
+  if (result.potentialQuotes.count > 0) {
+    notes.unshift(
+      `בנוסף: ${result.potentialQuotes.count} הצעות מחיר פתוחות בסך ${formatCurrency(result.potentialQuotes.total)}, שאינן נכללות בסכומים.`,
+    );
+  }
+  return downloadXlsx(fileName("cash-flow-forecast"), [
+    sheet<Row>({
+      name: "תחזית תזרים",
+      title: "תחזית תזרים מזומנים",
+      subtitle: meta.subtitle,
+      businessName: meta.businessName,
+      countLabel: `${rows.length} שורות`,
+      rows,
+      totalLabel: "נטו צפוי",
+      notes,
+      columns: [
+        { header: "חודש", value: (r) => r.monthLabel },
+        { header: "תאריך צפוי", value: (r) => r.date, kind: "date" },
+        { header: "פירוט", value: (r) => r.label, width: 28 },
+        { header: "לקוח", value: (r) => r.clientName ?? "" },
+        { header: "סוג", value: (r) => FORECAST_KIND_LABELS[r.kind] },
+        { header: "ודאות", value: (r) => FORECAST_CONFIDENCE_LABELS[r.confidence] },
+        { header: "סכום", value: (r) => r.amount, kind: "money", total: "sum" },
       ],
     }),
   ]);

@@ -43,6 +43,7 @@ const SYSTEM = `אתה העוזר החכם של "חשבונית ידידותית
 - "כמה הכנסתי השנה" / "ב-2026" -> get_income_summary מ-01/01 עד היום
 - "כמה הוצאתי" / "על מה אני מוציא הכי הרבה" -> get_expense_summary
 - "מה הרווח שלי" -> גם get_income_summary וגם get_expense_summary, והרווח הוא ההפרש
+- "מה צפוי להיכנס החודש הבא" / "איך נראה התזרים" / "יהיה לי מספיק כסף" -> get_cash_flow_forecast
 - "מי הלקוחות שלי" -> list_clients
 - "תוציא קבלה ל..." -> קודם list_clients כדי לזהות את הלקוח, ואז prepare_document_draft
 - "תוסיף הוצאה 120 שקל סופר-פארם" / "קניתי מקלדת ב-250" / "שילמתי לזום 89" -> add_expense מיד
@@ -145,7 +146,8 @@ const SYSTEM = `אתה העוזר החכם של "חשבונית ידידותית
 לדיווח (/reports/annual), עזר לטופס 1301 (/reports/form-1301), צפי מס שנתי
 (/reports/tax-projection), יומן הכנסות והוצאות (/reports/journal), דוח חשבוניות
 תקופתי (/reports/invoices-period), הכנה להצהרת הון (/reports/capital-declaration),
-דוח מותאם (/reports/custom), חובות פתוחים / גיול (/reports/aging), דיווח מע"מ
+דוח מותאם (/reports/custom), חובות פתוחים / גיול (/reports/aging), תחזית תזרים
+ל-3 חודשים קדימה (/reports/cash-flow), דיווח מע"מ
 (/reports/vat, למורשה). כפתור "ייצוא" מוריד לאקסל, ו"מבנה אחיד" מוריד קובץ
 OPENFORMAT לרשות המסים.
 הגדרות (/settings): "פרטי העסק" (שם, סוג עוסק, מספר עוסק, כתובת, לוגו - "העלה לוגו",
