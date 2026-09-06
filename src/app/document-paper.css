@@ -21,12 +21,12 @@
    ===================================================================== */
 
 .doc-paper {
-  /* palette: warm near-black ink, thin antique-gold accents (the DEFAULT —
+  /* palette: warm near-black ink, thin antique-gold accents (the DEFAULT -
      these are also the exact fallback values a business with no chosen
      document_design renders, and what an explicit "general" template
      resolves to; see src/lib/document-themes.ts). A themed business gets
      every one of these vars overridden via an inline style on this element
-     (designToCssVars()) — nothing here needs to change for that to work. */
+     (designToCssVars()) - nothing here needs to change for that to work. */
   --d-ink: #211c15;
   --d-ink2: #514a3d;
   --d-soft: #6f6857;
@@ -85,9 +85,9 @@
 }
 /* Money always stays in the body font, even on templates whose --d-font-serif
    is a display/serif face reserved for the business name (e.g. photographer's
-   Miriam Libre) — Miriam Libre's ₪ glyph renders as a visibly split ש/ח,
+   Miriam Libre) - Miriam Libre's ₪ glyph renders as a visibly split ש/ח,
    unacceptable on the grand total. Same specificity as .doc-serif above
-   (one class each), so source order — this rule comes after — decides the
+   (one class each), so source order - this rule comes after - decides the
    tie for elements that carry both classes. */
 .doc-paper .doc-grand-val,
 .doc-paper .doc-paid-amount {
