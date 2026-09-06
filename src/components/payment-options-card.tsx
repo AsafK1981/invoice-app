@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Copy, Check, Phone, Wallet, Smartphone } from "lucide-react";
 import type { Business, InvoiceDocument } from "@/lib/types";
+import { formatMoney } from "@/lib/currencies";
 
 interface Props {
   business: Business;
@@ -78,10 +79,8 @@ export function PaymentOptionsCard({ business, document: doc }: Props) {
 
   if (!hasBank && !hasMobilePayment) return null;
 
-  const totalFmt = `₪${doc.total.toLocaleString("he-IL", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
+  // The document's own currency: a $3,600 quote must not read "₪3,600" here.
+  const totalFmt = formatMoney(doc.total, doc.currency || "ILS");
 
   const phoneFormatted = business.phone ? formatPhone(business.phone) : null;
 
