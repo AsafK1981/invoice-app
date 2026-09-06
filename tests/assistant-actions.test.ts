@@ -314,7 +314,10 @@ describe("remember_fact", () => {
   it("returns a pending fact and writes nothing", async () => {
     const r = await run("remember_fact", { fact: "התעריף שלי 300 לשעה" });
     expect(r?.pendingMemory).toEqual({ fact: "התעריף שלי 300 לשעה" });
-    expect(JSON.parse(r!.content).pending).toBe(true);
+    // The proposal goes back to the model inside the DATA boundary, so an
+    // instruction-shaped fact has no more authority than any other row.
+    expect(r!.content.startsWith("DATA:")).toBe(true);
+    expect(JSON.parse(r!.content.slice("DATA:".length)).pending).toBe(true);
     expect(db.tables.assistant_memory).toHaveLength(0);
     expect(db.writes).toHaveLength(0);
   });

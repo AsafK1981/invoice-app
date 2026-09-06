@@ -853,7 +853,7 @@ export async function runActionTool(
       };
     }
     return {
-      content: JSON.stringify({
+      content: asData({
         pending: true,
         note: "העובדה מוצגת למשתמש לאישור, עדיין לא נשמרה. אמור לו בקצרה שהיא מחכה ללחיצה שלו.",
         fact,
@@ -902,7 +902,7 @@ export async function runActionTool(
       };
     }
     return {
-      content: JSON.stringify({
+      content: asData({
         pending: true,
         note: "הוצג למשתמש כפתור אישור. העובדה עדיין בזיכרון - אמור לו ללחוץ כדי למחוק אותה.",
         fact: matches[0].fact,

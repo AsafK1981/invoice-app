@@ -339,12 +339,18 @@ export function forecastCashFlow(inputs: ForecastInputs): ForecastResult {
 
   const sourceDocs = documents.map(toSourceDoc);
   const patterns = detectRecurringPatterns(sourceDocs, { today });
+  // Pattern items are stored net of VAT (the editor divides gross unit prices
+  // by the VAT factor before saving), while every other inflow here is the
+  // gross cash the client actually pays. Gross the lines up for businesses
+  // that charge VAT; exempt dealers have a zero rate and are unchanged.
+  const recurringVatFactor = 1 + (VAT_RATES[business.businessType] ?? 0);
   let recurringCount = 0;
   for (const pattern of patterns) {
     // The pattern carries no total - it is a template, not a document - so the
-    // money is the sum of its lines.
+    // money is the sum of its lines, grossed up to cash.
     const amount = round2(
-      pattern.items.reduce((sum, i) => sum + (i.quantity || 0) * (i.unitPrice || 0), 0),
+      pattern.items.reduce((sum, i) => sum + (i.quantity || 0) * (i.unitPrice || 0), 0) *
+        recurringVatFactor,
     );
     if (amount <= 0) continue;
     const key = clientKeyOf(

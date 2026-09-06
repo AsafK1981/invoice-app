@@ -80,6 +80,11 @@ AS $$
 DECLARE
   existing integer;
 BEGIN
+  -- Serialize per business: two confirmations landing at once would each
+  -- count 29 rows and both insert, so take a transaction-scoped advisory
+  -- lock keyed on the business before counting.
+  PERFORM pg_advisory_xact_lock(hashtext(NEW.business_id::text)::bigint);
+
   SELECT count(*) INTO existing
   FROM public.assistant_memory
   WHERE business_id = NEW.business_id;
