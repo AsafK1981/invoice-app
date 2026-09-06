@@ -158,13 +158,28 @@ async function fetchInbox(): Promise<EmailInboxSnapshot | undefined> {
   }
 }
 
+/**
+ * How often an open, visible tab re-reads the queue. The Gmail forwarding
+ * code is the case that matters: the user has Gmail on one screen and the
+ * app on another, clicks "add forwarding address", and looks straight at the
+ * app. The tab never went hidden, so a visibility listener alone showed
+ * nothing until a manual refresh (Asaf, 2026-09-06). Fifteen seconds is well
+ * inside Gmail's patience and costs one small authenticated GET per tick.
+ */
+const POLL_MS = 15_000;
+
 const inboxStore = createSharedStore<EmailInboxSnapshot>(fetchInbox, EMPTY, (refetch) => {
   onBusinessReady(() => void refetch());
-  // Mail arrives while the tab sits open. No polling loop: re-read when the
-  // user comes back to the tab, which is exactly when they would look.
+  // Re-read the moment the user comes back to this tab or window...
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") void refetch();
   });
+  window.addEventListener("focus", () => void refetch());
+  // ...and keep a visible tab current on its own, so a code or an invoice
+  // that lands while the page is already on screen shows up by itself.
+  setInterval(() => {
+    if (document.visibilityState === "visible") void refetch();
+  }, POLL_MS);
 });
 
 export function useEmailInbox() {

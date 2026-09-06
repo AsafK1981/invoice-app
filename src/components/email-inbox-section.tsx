@@ -10,6 +10,7 @@ import {
   RefreshCw,
   AlertCircle,
   ArrowLeft,
+  ExternalLink,
 } from "lucide-react";
 import { Expander } from "@/components/expander";
 import { useConfirm } from "@/components/ui/confirm-dialog";
@@ -30,12 +31,11 @@ import { useEmailInbox, setEmailInboxState } from "@/lib/email-inbox-client";
  *
  * Hides itself entirely when `/api/email-inbox` is not answering, rather than
  * offering a switch that cannot be flipped.
- */
-/**
- * The setup card lives in Settings and, since 2026-09-06 at Asaf's request,
- * also at the bottom of /expenses so the feature is found where it is used.
- * `onExpensesPage` drops the two "go to /expenses" links, which would point
- * at the page the reader is already on.
+ *
+ * Lives in Settings and, since 2026-09-06 at Asaf's request, also at the
+ * bottom of /expenses so the feature is found where it is used.
+ * `onExpensesPage` drops the "go to /expenses" links, which would point at
+ * the page the reader is already on.
  */
 export function EmailInboxSection({ onExpensesPage = false }: { onExpensesPage?: boolean } = {}) {
   const { enabled, address, ready, available } = useEmailInbox();
@@ -164,28 +164,73 @@ export function EmailInboxSection({ onExpensesPage = false }: { onExpensesPage?:
           </div>
 
           <Expander
-            label={guideOpen ? "הסתר את מדריך ההעברה האוטומטית" : "איך מעבירים חשבוניות אוטומטית (3 צעדים)"}
+            label={guideOpen ? "הסתר את המדריך" : "איך מגדירים העברה אוטומטית מ-Gmail (פעם אחת, במחשב)"}
             open={guideOpen}
             onToggle={() => setGuideOpen((o) => !o)}
           >
+            <p className="text-xs text-stone-600 leading-relaxed mb-3">
+              ההגדרה נעשית באתר Gmail במחשב, לא באפליקציה בטלפון. הכפתורים פותחים את המסך
+              הנכון ב-Gmail בכרטיסייה חדשה, וכאן כתוב מה ללחוץ שם.
+            </p>
             <ol className="space-y-2.5">
-              <Step n={1}>
-                ב-Gmail: <b>הגדרות</b> ← <b>העברה ו-POP/IMAP</b> ← <b>הוסף כתובת העברה</b>.
-                הדביקו את הכתובת ואשרו. Gmail שולח קוד אימות לכתובת החדשה -{" "}
-                {onExpensesPage ? (
-                  <b>קוד האימות יופיע כאן, בראש עמוד ההוצאות</b>
-                ) : (
-                  <Link href="/expenses" className="font-semibold text-pink-800 hover:underline">
-                    קוד האימות יופיע בעמוד ההוצאות
-                  </Link>
-                )}
-                .
+              <Step n={1} title="מחברים את הכתובת ל-Gmail">
+                <GmailButton href="https://mail.google.com/mail/u/0/#settings/fwdandpop">
+                  פתח את הגדרות ההעברה ב-Gmail
+                </GmailButton>
+                <ul className="mt-2 space-y-1.5">
+                  <Sub>
+                    לוחצים <b>הוספת כתובת להעברה</b>, מדביקים את הכתובת מלמעלה (כפתור &quot;העתק&quot;),
+                    ואז <b>הבא</b> ← <b>המשך</b> ← <b>אישור</b>.
+                  </Sub>
+                  <Sub>
+                    Gmail שולח קוד אימות לכתובת החדשה.{" "}
+                    {onExpensesPage ? (
+                      <>
+                        <b>הקוד מופיע כאן, בראש עמוד ההוצאות, תוך כמה שניות</b> (בלי לרענן),
+                      </>
+                    ) : (
+                      <>
+                        <Link href="/expenses" className="font-semibold text-pink-800 hover:underline">
+                          הקוד מופיע בראש עמוד ההוצאות
+                        </Link>{" "}
+                        תוך כמה שניות (בלי לרענן),
+                      </>
+                    )}{" "}
+                    עם כפתור <b>אשר את ההעברה ב-Gmail</b>. לוחצים עליו, וזה סוגר את שלב 1.
+                  </Sub>
+                  <Sub warn>
+                    באותו מסך, את הבחירה <b>השבתת ההעברה</b> משאירים כמו שהיא. לא לבחור
+                    &quot;העבר עותק של דואר נכנס&quot;, כי זה מעביר את <b>כל</b> המייל שלכם.
+                    הפילטר בשלב 2 מעביר רק חשבוניות.
+                  </Sub>
+                </ul>
               </Step>
-              <Step n={2}>
-                צרו פילטר: <b>יש קובץ מצורף</b> + מילים כמו <b>חשבונית / קבלה / invoice</b>. פעולה:{" "}
-                <b>העבר אל</b> הכתובת.
+              <Step n={2} title="פילטר שמעביר רק מיילים עם חשבונית">
+                <GmailButton href="https://mail.google.com/mail/u/0/#settings/filters">
+                  פתח את הפילטרים ב-Gmail
+                </GmailButton>
+                <ul className="mt-2 space-y-1.5">
+                  <Sub>
+                    בתחתית הרשימה לוחצים <b>יצירת פילטר חדש</b>. נפתח טופס חיפוש.
+                  </Sub>
+                  <Sub>
+                    בשורה <b>כולל את המילים</b> מדביקים:
+                    <CopyChip value="חשבונית OR קבלה OR invoice OR receipt" />
+                  </Sub>
+                  <Sub>
+                    מסמנים <b>יש קובץ מצורף</b>, ולוחצים <b>יצירת פילטר</b> (לא &quot;חיפוש&quot;).
+                  </Sub>
+                  <Sub>
+                    במסך הבא מסמנים <b>העבר אל</b> ובוחרים את הכתובת שלכם מהרשימה (היא מופיעה
+                    שם רק אחרי שלב 1). לוחצים <b>יצירת פילטר</b>. זה הכול.
+                  </Sub>
+                </ul>
               </Step>
-              <Step n={3}>מעכשיו כל חשבונית מגיעה לכאן לאישור.</Step>
+              <Step n={3} title="מעכשיו זה אוטומטי">
+                כל מייל שמגיע אליכם עם חשבונית או קבלה מצורפת מועבר לבד, נקרא, ומופיע{" "}
+                {onExpensesPage ? "כאן למעלה" : "בעמוד ההוצאות"} תוך דקה, ממתין לאישור שלכם.
+                שום דבר לא נכנס לדוח בלי לחיצה שלכם.
+              </Step>
             </ol>
             <p className="text-xs text-stone-600 mt-3 leading-relaxed">
               ב-Outlook: <b>הגדרות</b> ← <b>דואר</b> ← <b>כללים</b> ← כלל חדש, תנאי
@@ -239,13 +284,82 @@ export function EmailInboxSection({ onExpensesPage = false }: { onExpensesPage?:
   );
 }
 
-function Step({ n, children }: { n: number; children: React.ReactNode }) {
+function Step({
+  n,
+  title,
+  children,
+}: {
+  n: number;
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
     <li className="flex items-start gap-3 rounded-xl bg-pink-50/60 border border-pink-200 p-3">
       <span className="w-6 h-6 rounded-lg bg-gradient-to-br from-pink-200 to-pink-400 text-pink-950 text-xs font-bold flex items-center justify-center flex-shrink-0">
         {n}
       </span>
-      <span className="text-sm text-stone-700 leading-relaxed flex-1 min-w-0">{children}</span>
+      <div className="text-sm text-stone-700 leading-relaxed flex-1 min-w-0">
+        <p className="font-semibold text-stone-900 mb-1.5">{title}</p>
+        {children}
+      </div>
     </li>
+  );
+}
+
+/** One instruction inside a step. `warn` marks the "don't do this" line. */
+function Sub({ children, warn = false }: { children: React.ReactNode; warn?: boolean }) {
+  return (
+    <li
+      className={`flex items-start gap-2 text-sm leading-relaxed ${
+        warn ? "text-amber-900 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5" : "text-stone-700"
+      }`}
+    >
+      <span className="mt-2 w-1.5 h-1.5 rounded-full bg-pink-400 flex-shrink-0" aria-hidden />
+      <span className="flex-1 min-w-0">{children}</span>
+    </li>
+  );
+}
+
+/** Opens the exact Gmail settings screen in a new tab. */
+function GmailButton({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex items-center gap-1.5 min-h-[36px] px-3 rounded-lg border border-pink-300 bg-white text-xs font-semibold text-pink-900 hover:bg-pink-50"
+    >
+      <ExternalLink className="w-3.5 h-3.5" />
+      {children}
+    </a>
+  );
+}
+
+/** A value to paste somewhere else, with its own one-click copy. */
+function CopyChip({ value }: { value: string }) {
+  const [copied, setCopied] = useState(false);
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* clipboard unavailable: the value is still visible to select by hand */
+    }
+  }
+  return (
+    <span className="mt-1.5 flex items-center gap-2 flex-wrap">
+      <code dir="ltr" className="font-mono text-xs bg-white border border-pink-200 rounded-md px-2 py-1 text-stone-900">
+        {value}
+      </code>
+      <button
+        type="button"
+        onClick={copy}
+        className="inline-flex items-center gap-1 text-xs font-semibold text-pink-900 border border-pink-300 bg-white rounded-md px-2 min-h-[30px] hover:bg-pink-50"
+      >
+        {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+        {copied ? "הועתק" : "העתק"}
+      </button>
+    </span>
   );
 }
