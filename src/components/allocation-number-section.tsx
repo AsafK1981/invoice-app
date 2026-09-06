@@ -304,7 +304,7 @@ export function AllocationNumberSection({ doc, customerTaxId, onNumberReceived }
     // readable when the column is 1200px wide.
     <div className="no-print card-soft p-5 sm:p-7 ring-1 ring-inset ring-[color:var(--goldtintline)]">
       <div className="flex items-start gap-3 sm:gap-4">
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center flex-shrink-0 shadow-sm">
+        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-700 flex items-center justify-center flex-shrink-0 shadow-sm">
           <Landmark className="w-6 h-6" />
         </div>
         <div className="flex-1 min-w-0">

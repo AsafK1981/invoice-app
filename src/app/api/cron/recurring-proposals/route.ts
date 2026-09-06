@@ -606,20 +606,20 @@ async function sendPatternEmail(
     html: `<!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head><meta charset="UTF-8" /><title>${escapeHtml(biz.name)}</title></head>
-<body style="margin:0;padding:0;background:#f5f5f4;font-family:Arial,sans-serif;">
+<body style="margin:0;padding:0;background:#f7f7f2;font-family:Arial,sans-serif;">
   <div dir="rtl" style="max-width:600px;margin:0 auto;padding:20px;">
-    <div style="background:linear-gradient(135deg,#f97316,#e11d48);padding:24px;border-radius:16px;color:white;text-align:center;margin-bottom:24px;">
+    <div style="background:#2f3a45;background-image:linear-gradient(135deg,#2f3a45,#263039);padding:24px;border-radius:16px;color:#ffffff;text-align:center;margin-bottom:24px;">
       <h1 style="margin:0;font-size:22px;">${escapeHtml(biz.name)}</h1>
       <p style="margin:8px 0 0 0;font-size:14px;opacity:0.9;">מסמך חוזר מוכן לאישור</p>
     </div>
-    <div style="background:#fffaf5;border:1px solid #fed7aa;border-radius:12px;padding:24px;margin-bottom:24px;">
-      <p style="margin:0 0 12px 0;font-size:15px;color:#44403c;line-height:1.6;">הכנו מסמך שנראה שאתה מוציא כל חודש. הוא לא יופק בלי שתאשר.</p>
-      <p style="margin:0;font-size:15px;font-weight:bold;color:#1c1917;">${escapeHtml(line)}</p>
+    <div style="background:#ffffff;border:1px solid #e4e7e2;border-radius:12px;padding:24px;margin-bottom:24px;">
+      <p style="margin:0 0 12px 0;font-size:15px;color:#1f252b;line-height:1.6;">הכנו מסמך שנראה שאתה מוציא כל חודש. הוא לא יופק בלי שתאשר.</p>
+      <p style="margin:0;font-size:15px;font-weight:bold;color:#1f252b;">${escapeHtml(line)}</p>
     </div>
     <div style="text-align:center;margin-bottom:24px;">
-      <a href="${escapeHtml(APP_URL)}/dashboard" style="display:inline-block;background:linear-gradient(135deg,#f97316,#e11d48);color:white;text-decoration:none;padding:14px 32px;border-radius:12px;font-size:16px;font-weight:bold;">לאישור המסמך ←</a>
+      <a href="${escapeHtml(APP_URL)}/dashboard" style="display:inline-block;background:#2f3a45;background-image:linear-gradient(135deg,#2f3a45,#263039);color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:12px;font-size:16px;font-weight:bold;">לאישור המסמך ←</a>
     </div>
-    <p style="font-size:11px;color:#a8a29e;text-align:center;">הצעה אוטומטית למסמך חוזר. ניתן לכבות בעמוד התזכורות.</p>
+    <p style="font-size:11px;color:#8b95a0;text-align:center;">הצעה אוטומטית למסמך חוזר. ניתן לכבות בעמוד התזכורות.</p>
   </div>
 </body>
 </html>`,

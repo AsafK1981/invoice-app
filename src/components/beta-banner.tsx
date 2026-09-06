@@ -66,7 +66,7 @@ export function BetaBanner() {
   const palette = isExpired
     ? "from-rose-50 to-pink-50 border-rose-300 text-rose-900"
     : isUrgent
-    ? "from-rose-50 to-orange-50 border-rose-200 text-rose-900"
+    ? "from-orange-50 to-orange-100 border-rose-200 text-rose-900"
     : isReminder
     ? "from-amber-50 to-orange-50 border-amber-200 text-amber-900"
     : "from-emerald-50 to-teal-50 border-emerald-200 text-emerald-900";
@@ -126,7 +126,7 @@ export function BetaBanner() {
           {(isExpired || isUrgent || isReminder) && (
             <Link
               href="/billing"
-              className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-gradient-to-l from-orange-500 to-rose-500 text-white hover:shadow-md hover:shadow-orange-200"
+              className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-gradient-to-l from-orange-500 to-orange-700 text-white hover:shadow-md hover:shadow-orange-200"
             >
               <Sparkles className="w-4 h-4" />
               {isExpired ? "שדרג עכשיו" : "המשך לתשלום"}

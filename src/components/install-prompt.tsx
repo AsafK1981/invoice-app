@@ -96,18 +96,18 @@ export function InstallPrompt() {
       className="fixed bottom-4 inset-x-4 z-50 lg:bottom-6 lg:inset-x-auto lg:right-6 lg:max-w-sm no-print"
     >
       <div className="card-soft p-4 bg-white shadow-xl shadow-orange-200/40 border-orange-200 flex items-start gap-3 animate-fade-in-up">
-        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center flex-shrink-0">
+        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-700 flex items-center justify-center flex-shrink-0">
           <Download className="w-5 h-5 text-white" />
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-stone-900 text-sm">להתקין את האפליקציה?</p>
           <p className="text-xs text-stone-600 mt-1">
-            הוסף את MyFriendlyInvoiceApp למסך הבית לגישה מהירה כמו אפליקציה רגילה.
+            הוסף את חשבונית ידידותית למסך הבית לגישה מהירה כמו אפליקציה רגילה.
           </p>
           <div className="flex gap-2 mt-3 flex-wrap">
             <button
               onClick={install}
-              className="inline-flex items-center justify-center min-h-[36px] px-4 rounded-xl bg-gradient-to-l from-orange-500 to-rose-500 text-white text-sm font-semibold hover:shadow-lg hover:shadow-orange-200 transition-all"
+              className="inline-flex items-center justify-center min-h-[36px] px-4 rounded-xl bg-gradient-to-l from-orange-500 to-orange-700 text-white text-sm font-semibold hover:shadow-lg hover:shadow-orange-200 transition-all"
             >
               התקן
             </button>

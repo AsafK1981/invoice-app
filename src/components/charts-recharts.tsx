@@ -37,7 +37,7 @@ interface ExpenseCategoriesChartProps {
  * through ink and stone. Beyond the fifth rank every segment repeats the
  * same barely-there grey, so a long tail of small categories reads as one
  * quiet group instead of six more competing hues. */
-const RANK_COLORS = ["#f97316", "#1c1917", "#78716c", "#a8a29e", "#d6d3d1", "#e7e5e4"];
+const RANK_COLORS = ["#2A7A62", "#2F3A45", "#5F6B76", "#8B95A0", "#BFC5CB", "#E4E7E2"];
 function colorForRank(idx: number): string {
   return RANK_COLORS[Math.min(idx, RANK_COLORS.length - 1)];
 }
@@ -124,7 +124,7 @@ export function AdminDailyChart({ data }: AdminDailyChartProps) {
         <XAxis dataKey="date" tick={{ fontSize: 10 }} reversed />
         <YAxis allowDecimals={false} tick={{ fontSize: 10 }} />
         <Tooltip />
-        <Line type="monotone" dataKey="count" stroke="#f97316" strokeWidth={2} dot={{ r: 3 }} />
+        <Line type="monotone" dataKey="count" stroke="#2F3A45" strokeWidth={2} dot={{ r: 3 }} />
       </LineChart>
     </ResponsiveContainer>
   );

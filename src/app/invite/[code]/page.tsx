@@ -120,7 +120,7 @@ export default function InviteLandingPage() {
           <>
             <div className="rounded-2xl bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-100 p-5 space-y-2">
               <p className="text-sm text-stone-800 leading-relaxed">
-                ברוך הבא ל-<strong>MyFriendlyInvoiceApp</strong>, אפליקציה
+                ברוך הבא ל-<strong>חשבונית ידידותית</strong>, אפליקציה
                 להפקת חשבוניות וקבלות לעצמאיים.
               </p>
               <p className="text-sm text-stone-700 leading-relaxed">
@@ -173,7 +173,7 @@ export default function InviteLandingPage() {
             </div>
             <Link
               href="/dashboard"
-              className="w-full btn-glow inline-flex items-center justify-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white py-3 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200/60"
+              className="w-full btn-glow inline-flex items-center justify-center gap-2 bg-gradient-to-l from-orange-500 to-orange-700 text-white py-3 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200/60"
               onClick={() => router.refresh()}
             >
               <Sparkles className="w-4 h-4" />

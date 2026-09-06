@@ -4,32 +4,36 @@
   <meta charset="UTF-8">
   <title>Logo Preview</title>
   <style>
-    body { font-family: system-ui; background: #fef6ed; padding: 40px; }
+    body { font-family: system-ui; background: #F7F7F2; padding: 40px; }
     .preview { display: flex; gap: 40px; align-items: center; flex-wrap: wrap; }
-    .box { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 4px 20px rgba(194,110,40,0.1); }
-    .box.dark { background: #1c1917; }
+    .box { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 4px 20px rgba(47,58,69,0.1); }
+    .box.dark { background: #2F3A45; }
     img { display: block; }
-    h2 { color: #44403c; }
+    h2 { color: #1F252B; }
   </style>
 </head>
 <body>
   <h1>Logo Preview</h1>
   <div class="preview">
     <div>
-      <h2>200×200 (large)</h2>
+      <h2>200x200 (large)</h2>
       <div class="box"><img src="/logo.svg" width="200" height="200" alt="Logo"/></div>
     </div>
     <div>
-      <h2>96×96 (medium)</h2>
+      <h2>96x96 (medium)</h2>
       <div class="box"><img src="/logo.svg" width="96" height="96" alt="Logo"/></div>
     </div>
     <div>
-      <h2>44×44 (sidebar)</h2>
+      <h2>44x44 (sidebar)</h2>
       <div class="box"><img src="/logo.svg" width="44" height="44" alt="Logo"/></div>
     </div>
     <div>
-      <h2>On dark</h2>
-      <div class="box dark"><img src="/logo.svg" width="96" height="96" alt="Logo"/></div>
+      <h2>Bare mark (logo-v2)</h2>
+      <div class="box"><img src="/logo-v2.svg" width="96" height="100" alt="Logo"/></div>
+    </div>
+    <div>
+      <h2>Bare mark on dark</h2>
+      <div class="box dark"><img src="/logo-v2.svg" width="96" height="100" alt="Logo"/></div>
     </div>
   </div>
 </body>

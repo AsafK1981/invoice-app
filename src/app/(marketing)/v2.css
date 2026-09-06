@@ -28,22 +28,22 @@
      DARKEST of the three, not the lightest - it is used for accent text,
      while g2/g3 fill the CTA gradient where white text sits on top.
      ============================================================ */
-  --v2-g1: #c2410c;
-  --v2-g2: #f97316;
-  --v2-g3: #e11d48;
-  --v2-gold-grad: linear-gradient(135deg, #f97316, #e11d48); /* = --ml-grad, 2026-08-25 */
-  --v2-line: #ece3d3;
-  --v2-line-soft: #f2ebdd;
-  --v2-ink: #241e16;
+  --v2-g1: #2F3A45;
+  --v2-g2: #2F3A45;
+  --v2-g3: #263039;
+  --v2-gold-grad: linear-gradient(135deg, #2F3A45, #263039); /* = --ml-grad, 2026-08-25 */
+  --v2-line: #E4E7E2;
+  --v2-line-soft: #EEF0EC;
+  --v2-ink: #1F252B;
   /* Secondary text. Was #c2b9a8, brightened 2026-08-04 for readability on
      the near-black field; the same requirement on cream points the other
      way, so this now matches `--ml-muted` (~5.3:1 on #faf7f2). */
-  --v2-muted: #6f6757;
+  --v2-muted: #5F6B76;
   --v2-card: #ffffff;
   /* Name kept deliberately: ~90 rules reference `--v2-obsidian` as "the
      page field". It is the cream field now - renaming it would have
      touched every one of them for no behavioural gain. */
-  --v2-obsidian: #faf7f2;
+  --v2-obsidian: #F7F7F2;
 
   /* ---- containers ----
      THREE widths, not one. They used to be a single 680px `--v2-shell` shared
@@ -157,14 +157,14 @@
      rgba(0,0,0,0.8+) values were tuned to separate a near-black card from
      a near-black page; on cream they read as dirt. Same warm hue and
      downward light direction as `--ml-shadow-*`. */
-  --v2-sh-rest: 0 1px 2px rgba(120, 65, 20, 0.05), 0 6px 18px -12px rgba(120, 65, 20, 0.18);
-  --v2-sh-hover: 0 26px 50px -24px rgba(120, 65, 20, 0.28);
-  --v2-sh-float: 0 30px 56px -20px rgba(120, 65, 20, 0.34), 0 12px 24px -10px rgba(120, 65, 20, 0.2);
+  --v2-sh-rest: 0 1px 2px rgba(47, 58, 69, 0.05), 0 6px 18px -12px rgba(47, 58, 69, 0.18);
+  --v2-sh-hover: 0 26px 50px -24px rgba(47, 58, 69, 0.28);
+  --v2-sh-float: 0 30px 56px -20px rgba(47, 58, 69, 0.34), 0 12px 24px -10px rgba(47, 58, 69, 0.2);
   /* A fourth tier, and only the landing hero sheet uses it. The other three
      lift a DARK panel off a dark field, where a soft shadow is enough. The
      hero sheet is white paper on obsidian: at `float` it reads as pasted on,
      because a real sheet that bright would cast further and darker. */
-  --v2-sh-sheet: 0 34px 64px -26px rgba(120, 65, 20, 0.3);
+  --v2-sh-sheet: 0 34px 64px -26px rgba(47, 58, 69, 0.3);
   --v2-sh-edge: 0 0 0 1px rgba(128, 100, 38, 0.1);
   --v2-sh-inset: inset 0 1px 0 rgba(255, 255, 255, 0.6);
   /* gold glow: the button equivalent of rest/hover */
@@ -189,7 +189,7 @@
   --v2-paper-ink: #211c15;
   --v2-paper-ink2: #514a3d;
   --v2-paper-soft: #6f6857;
-  --v2-paper-gold: #c2410c;
+  --v2-paper-gold: #2F3A45;
   --v2-paper-goldline: #fdba74;
   --v2-paper-goldfaint: #fddcc0;
 
@@ -200,8 +200,8 @@
      orange-to-rose pill exactly, without importing a stylesheet that is
      scoped to the homepage only. Page BODIES keep the gold family
      untouched - only `.v2-btn-gold` (the header/footer CTA) reads this. */
-  --v2-cta-orange: #f97316;
-  --v2-cta-rose: #e11d48;
+  --v2-cta-orange: #2F3A45;
+  --v2-cta-rose: #263039;
   --v2-cta-grad: linear-gradient(135deg, var(--v2-cta-orange), var(--v2-cta-rose));
 
   /* ---- soft gold-tint pair (body-bridging pass, 2026-08-14) ----
@@ -540,7 +540,7 @@
 .v2-theme .v2-eyebrow-row span {
   font-size: var(--v2-fs-meta);
   letter-spacing: 0.26em;
-  color: #c2410c;
+  color: #2F3A45;
 }
 
 /* (The `.v2-nav-long` / `.v2-nav-short` label-swap pair that used to live
@@ -1128,7 +1128,7 @@
 .v2-theme .v2-adv-icon--cyan { background: #cffafe; color: #0891b2; box-shadow: none; }
 .v2-theme .v2-adv-icon--lime { background: #ecfccb; color: #65a30d; box-shadow: none; }
 .v2-theme .v2-adv-icon--fuchsia { background: #fae8ff; color: #c026d3; box-shadow: none; }
-.v2-theme .v2-adv-icon--rose { background: #ffe4e6; color: #e11d48; box-shadow: none; }
+.v2-theme .v2-adv-icon--rose { background: #FDEEE6; color: #B85A32; box-shadow: none; }
 .v2-theme .v2-adv-icon--yellow { background: #fef9c3; color: #ca8a04; box-shadow: none; }
 .v2-theme .v2-adv-icon--blue { background: #dbeafe; color: #2563eb; box-shadow: none; }
 
@@ -1154,8 +1154,8 @@
     transform: translateY(-3px);
     /* = marketing-light.css's --ml-shadow-lift, by value (no --v2-sh-lift
        token exists; same warm rgba(120,65,20,*) hue as --v2-sh-rest above). */
-    box-shadow: 0 30px 56px -20px rgba(120, 65, 20, 0.34),
-      0 12px 24px -10px rgba(120, 65, 20, 0.2), var(--v2-sh-inset);
+    box-shadow: 0 30px 56px -20px rgba(47, 58, 69, 0.34),
+      0 12px 24px -10px rgba(47, 58, 69, 0.2), var(--v2-sh-inset);
   }
   .v2-theme .v2-adv-card--violet:hover { background: #f5f3ff; border-color: #ddd6fe; }
   .v2-theme .v2-adv-card--amber:hover { background: #fffbeb; border-color: #fde68a; }
@@ -1403,7 +1403,7 @@
   font-size: var(--v2-fs-meta);
   font-weight: 600;
   letter-spacing: 0.02em;
-  color: #c2410c;
+  color: #2F3A45;
   margin-bottom: var(--v2-sp-1);
   transition: color 0.2s ease;
 }
@@ -1600,7 +1600,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: #c2410c;
+  color: #2F3A45;
   transition: color 0.2s ease;
 }
 .v2-theme .v2-status-refresh:hover { color: var(--v2-g1); }
@@ -2386,7 +2386,7 @@
   gap: 7px;
   font-size: var(--v2-fs-body);
   font-weight: 600;
-  color: #c2410c;
+  color: #2F3A45;
   padding: 13px 8px;
   transition: color 0.2s ease;
 }

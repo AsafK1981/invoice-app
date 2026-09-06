@@ -1,0 +1,267 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800;900&family=Rubik:wght@500;700;800;900&display=swap">
+  <style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Heebo", "Segoe UI", Arial, sans-serif; color: #1F252B; background: #F7F7F2; -webkit-font-smoothing: antialiased; }
+  a { color: #2F3A45; text-decoration: none; } a:hover { color: #2A7A62; }
+  .wm { font-family: "Rubik", "Heebo", Arial, sans-serif; font-weight: 900; letter-spacing: -0.01em; color: #2F3A45; line-height: 1; }
+  .h { font-family: "Rubik", "Heebo", Arial, sans-serif; font-weight: 800; color: #2F3A45; letter-spacing: -0.01em; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 46px; padding: 0 22px; border-radius: 12px; font-weight: 700; font-size: 15px; border: 1px solid transparent; white-space: nowrap; }
+  .btn-primary { background: #2F3A45; color: #FFFFFF; }
+  .btn-secondary { background: #FFFFFF; color: #2F3A45; border-color: #E4E7E2; }
+  .btn-mint { background: #9ED8C3; color: #2F3A45; }
+  .btn-sm { height: 38px; padding: 0 16px; font-size: 14px; border-radius: 10px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 12px; border-radius: 999px; font-size: 13px; font-weight: 600; }
+  .chip-paid { background: #E6F5EE; color: #2A7A62; }
+  .chip-wait { background: #FDEEE6; color: #B85A32; }
+  .chip-draft { background: #EEF0EE; color: #5F6B76; }
+  .chip-sent { background: #E9EEF5; color: #34506E; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .card { background: #FFFFFF; border: 1px solid #E4E7E2; border-radius: 16px; }
+  .ico { width: 20px; height: 20px; }
+  .tile { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  .page { width: 1440px; background: #F7F7F2; direction: rtl; }
+  .wrap { width: 1120px; margin: 0 auto; }
+  .nav a { font-size: 15px; font-weight: 500; color: #2F3A45; }
+  .hero-h1 { font-size: 58px; line-height: 1.12; margin: 0; }
+  .hi { background: linear-gradient(transparent 62%, #9ED8C3 62%, #9ED8C3 92%, transparent 92%); padding: 0 4px; }
+  .lede { font-size: 20px; line-height: 1.6; color: #5F6B76; margin: 0; max-width: 640px; }
+  .trust li { display: flex; align-items: center; gap: 8px; font-size: 15px; color: #5F6B76; }
+  .trust svg { color: #2A7A62; }
+  .spot { padding: 22px; display: flex; flex-direction: column; gap: 12px; }
+  .spot h3 { margin: 0; font-size: 17px; font-weight: 700; color: #2F3A45; }
+  .spot p { margin: 0; font-size: 14.5px; line-height: 1.55; color: #5F6B76; }
+  .feat { display: flex; align-items: center; gap: 12px; padding: 14px 16px; }
+  .feat span { font-size: 15px; font-weight: 600; color: #2F3A45; }
+  .foot a { font-size: 14px; color: #5F6B76; }
+</style>
+</helmet>
+<div class="page">
+    <header style="height:80px;border-bottom:1px solid #E4E7E2;background:#FFFFFF;">
+      <div class="wrap" style="height:80px;display:flex;align-items:center;justify-content:space-between;">
+        
+  <div style="display:flex;align-items:center;gap:10px;">
+    <svg width="38" height="40" viewBox="-14 0 134 140" fill="none" xmlns="http://www.w3.org/2000/svg" >
+    <path d="M22 8h56l30 30v90a12 12 0 0 1-12 12H22a12 12 0 0 1-12-12V20A12 12 0 0 1 22 8z" fill="#FFFFFF" stroke="#2F3A45" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M78 8v20a10 10 0 0 0 10 10h20z" fill="#9ED8C3" stroke="#2F3A45" stroke-width="7" stroke-linejoin="round"/>
+    <circle cx="40" cy="60" r="5" fill="#2F3A45"/><circle cx="72" cy="60" r="5" fill="#2F3A45"/>
+    <path d="M43 76q13 12 26 0" stroke="#2F3A45" stroke-width="6" stroke-linecap="round"/>
+    <circle cx="29" cy="72" r="6" fill="#F6B89E"/><circle cx="83" cy="72" r="6" fill="#F6B89E"/>
+    <path d="M30 100h50M30 115h30" stroke="#9ED8C3" stroke-width="7" stroke-linecap="round"/>
+    <path d="M3 118l-10 8M2 106l-12 1" stroke="#2F3A45" stroke-width="5" stroke-linecap="round"/>
+  </svg>
+    <div style="display:flex;flex-direction:column;gap:2px;">
+      <span class="wm" style="font-size:24px;">חשבונית ידידותית</span>
+      <span style="font-size:12px;color:#5F6B76;font-weight:500;letter-spacing:0.02em;">התנהלות פשוטה לעסק מצליח</span>
+    </div>
+  </div>
+        <nav class="nav" style="display:flex;align-items:center;gap:28px;">
+          <a>מדריך</a><a>השוואות</a><a>מחירים</a><a>מאמרים</a>
+        </nav>
+        <div style="display:flex;align-items:center;gap:14px;">
+          <a style="font-size:15px;font-weight:600;">כניסה</a>
+          <span class="btn btn-primary">התחילו בחינם</span>
+        </div>
+      </div>
+    </header>
+
+    <section style="padding:88px 0 48px;position:relative;overflow:hidden;">
+      <div style="position:absolute;inset:auto -120px -260px auto;width:520px;height:520px;border-radius:50%;background:#E6F5EE;opacity:0.9;"></div>
+      <div style="position:absolute;inset:40px auto auto -160px;width:420px;height:420px;border-radius:50%;background:#FDEEE6;opacity:0.9;"></div>
+      <div class="wrap" style="position:relative;display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:48px;align-items:center;">
+        <div style="display:flex;flex-direction:column;gap:26px;">
+          <span class="chip" style="background:#FFFFFF;border:1px solid #E4E7E2;color:#2F3A45;align-self:flex-start;height:32px;">תוכנת חשבוניות ידידותית לעסקים עצמאיים בישראל</span>
+          <h1 class="h hero-h1">להוציא חשבונית הפך<br><span class="hi">לחלק הכי קל</span> ביום העבודה שלכם</h1>
+          <p class="lede">עומדים בכל הדרישות החדשות של רשות המסים, בלי להתאמץ: מספר ההקצאה מתקבל אוטומטית, בלחיצה אחת, ישירות מתוך המסמך.</p>
+          <div style="display:flex;align-items:center;gap:18px;">
+            <span class="btn btn-primary" style="height:54px;padding:0 30px;font-size:17px;border-radius:14px;">התחילו בחינם</span>
+            <span style="font-size:14.5px;color:#5F6B76;">חינם בתקופת ההשקה, בלי כרטיס אשראי</span>
+          </div>
+          <ul class="trust" style="list-style:none;margin:0;padding:0;display:flex;gap:26px;">
+            <li><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>הקמה תוך 5 דקות</li><li><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>תמיכה בעברית</li><li><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>אפשר לבטל בכל רגע</li>
+          </ul>
+        </div>
+        <div style="display:flex;justify-content:center;"><svg width="250" height="261" viewBox="-14 0 134 140" fill="none" xmlns="http://www.w3.org/2000/svg" >
+    <path d="M22 8h56l30 30v90a12 12 0 0 1-12 12H22a12 12 0 0 1-12-12V20A12 12 0 0 1 22 8z" fill="#FFFFFF" stroke="#2F3A45" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M78 8v20a10 10 0 0 0 10 10h20z" fill="#9ED8C3" stroke="#2F3A45" stroke-width="7" stroke-linejoin="round"/>
+    <circle cx="40" cy="60" r="5" fill="#2F3A45"/><circle cx="72" cy="60" r="5" fill="#2F3A45"/>
+    <path d="M43 76q13 12 26 0" stroke="#2F3A45" stroke-width="6" stroke-linecap="round"/>
+    <circle cx="29" cy="72" r="6" fill="#F6B89E"/><circle cx="83" cy="72" r="6" fill="#F6B89E"/>
+    <path d="M30 100h50M30 115h30" stroke="#9ED8C3" stroke-width="7" stroke-linecap="round"/>
+    <path d="M3 118l-10 8M2 106l-12 1" stroke="#2F3A45" stroke-width="5" stroke-linecap="round"/>
+  </svg></div>
+      </div>
+    </section>
+
+    <section style="padding:8px 0 64px;">
+      <div class="wrap" style="display:grid;grid-template-columns:repeat(4, minmax(0,1fr));gap:18px;">
+        
+  <div class="card spot">
+    <div class="tile" style="background:#E6F5EE;color:#2A7A62;"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg></div>
+    <h3>מספר הקצאה בלחיצה אחת</h3>
+    <p>מספר ההקצאה מרשות המסים מתקבל אוטומטית מתוך המסמך. בלי טפסים, בלי אתרים נוספים.</p>
+  </div>
+        
+  <div class="card spot">
+    <div class="tile" style="background:#FDEEE6;color:#B85A32;"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/></svg></div>
+    <h3>חשבונית מהוואטסאפ</h3>
+    <p>כותבים לעוזר הודעה קצרה, הוא מכין את הקבלה. מתאים למי שעובד מהטלפון.</p>
+  </div>
+        
+  <div class="card spot">
+    <div class="tile" style="background:#F7F7F2;color:#2F3A45;"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></div>
+    <h3>סריקת הוצאות בצילום</h3>
+    <p>מצלמים קבלה והפרטים נקלטים לבד. ההוצאות מסודרות לרואה החשבון בלי עבודה ידנית.</p>
+  </div>
+        
+  <div class="card spot">
+    <div class="tile" style="background:#E6F5EE;color:#2A7A62;"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg></div>
+    <h3>אבטחה ושקיפות</h3>
+    <p>כל מסמך שהופק נעול, כל שינוי מתועד, וגיבוי לילי מחוץ לפלטפורמה.</p>
+  </div>
+      </div>
+    </section>
+
+    <section style="padding:0 0 72px;">
+      <div class="wrap" style="display:flex;flex-direction:column;gap:22px;">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;">
+          <h2 class="h" style="font-size:30px;margin:0;">כל מה שצריך, בלי סיבוכים</h2>
+          <span style="font-size:14.5px;color:#5F6B76;">כל היכולות כלולות בכל תוכנית</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4, minmax(0,1fr));gap:12px;">
+          
+  <div class="card feat">
+    <div class="tile" style="width:38px;height:38px;border-radius:10px;background:#E6F5EE;color:#2A7A62;"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg></div>
+    <span>חשבוניות וקבלות</span>
+  </div>
+  <div class="card feat">
+    <div class="tile" style="width:38px;height:38px;border-radius:10px;background:#FDEEE6;color:#B85A32;"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></div>
+    <span>חיובים חוזרים</span>
+  </div>
+  <div class="card feat">
+    <div class="tile" style="width:38px;height:38px;border-radius:10px;background:#F7F7F2;color:#2F3A45;"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.5"/><path d="M15.5 14.5a5 5 0 0 1 6 5"/></svg></div>
+    <span>ניהול לקוחות</span>
+  </div>
+  <div class="card feat">
+    <div class="tile" style="width:38px;height:38px;border-radius:10px;background:#E6F5EE;color:#2A7A62;"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 20h16"/><path d="M7 16v-5M12 16V6M17 16v-8"/></svg></div>
+    <span>דוחות לרואה חשבון</span>
+  </div>
+          
+  <div class="card feat">
+    <div class="tile" style="width:38px;height:38px;border-radius:10px;background:#FDEEE6;color:#B85A32;"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h14v18l-2.5-1.5L14 21l-2-1.5L10 21l-2.5-1.5L5 21z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg></div>
+    <span>מעקב הוצאות</span>
+  </div>
+  <div class="card feat">
+    <div class="tile" style="width:38px;height:38px;border-radius:10px;background:#F7F7F2;color:#2F3A45;"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10 21a2 2 0 0 0 4 0"/></svg></div>
+    <span>תזכורות תשלום</span>
+  </div>
+  <div class="card feat">
+    <div class="tile" style="width:38px;height:38px;border-radius:10px;background:#E6F5EE;color:#2A7A62;"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2 5 5 2-5 2-2 5-2-5-5-2 5-2z"/><path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg></div>
+    <span>עוזר AI בעברית</span>
+  </div>
+  <div class="card feat">
+    <div class="tile" style="width:38px;height:38px;border-radius:10px;background:#FDEEE6;color:#B85A32;"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3l7 7-9 9H5v-7z"/><path d="M12 5l7 7"/></svg></div>
+    <span>עיצוב מסמך אישי</span>
+  </div>
+        </div>
+      </div>
+    </section>
+
+    <section style="padding:64px 0 80px;background:#FFFFFF;border-top:1px solid #E4E7E2;border-bottom:1px solid #E4E7E2;">
+      <div class="wrap" style="display:flex;flex-direction:column;align-items:center;gap:30px;">
+        <div style="text-align:center;display:flex;flex-direction:column;gap:10px;">
+          <h2 class="h" style="font-size:30px;margin:0;">כך זה נראה בפנים</h2>
+          <p style="margin:0;font-size:17px;color:#5F6B76;">מה שמבטיחים בדף הזה הוא בדיוק מה שמקבלים אחרי הכניסה.</p>
+        </div>
+        
+  <div style="width:940px;background:#FFFFFF;border:1px solid #E4E7E2;border-radius:18px;overflow:hidden;display:grid;grid-template-columns:200px minmax(0,1fr);box-shadow:0 30px 60px -30px rgba(47,58,69,0.35);">
+    <div style="background:#FFFFFF;border-left:1px solid #E4E7E2;padding:18px 14px;display:flex;flex-direction:column;gap:6px;">
+      <div style="display:flex;align-items:center;gap:8px;padding:0 6px 14px;"><svg width="26" height="27" viewBox="-14 0 134 140" fill="none" xmlns="http://www.w3.org/2000/svg" >
+    <path d="M22 8h56l30 30v90a12 12 0 0 1-12 12H22a12 12 0 0 1-12-12V20A12 12 0 0 1 22 8z" fill="#FFFFFF" stroke="#2F3A45" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M78 8v20a10 10 0 0 0 10 10h20z" fill="#9ED8C3" stroke="#2F3A45" stroke-width="7" stroke-linejoin="round"/>
+    <circle cx="40" cy="60" r="5" fill="#2F3A45"/><circle cx="72" cy="60" r="5" fill="#2F3A45"/>
+    <path d="M43 76q13 12 26 0" stroke="#2F3A45" stroke-width="6" stroke-linecap="round"/>
+    <circle cx="29" cy="72" r="6" fill="#F6B89E"/><circle cx="83" cy="72" r="6" fill="#F6B89E"/>
+    <path d="M30 100h50M30 115h30" stroke="#9ED8C3" stroke-width="7" stroke-linecap="round"/>
+    <path d="M3 118l-10 8M2 106l-12 1" stroke="#2F3A45" stroke-width="5" stroke-linecap="round"/>
+  </svg><span class="wm" style="font-size:15px;">חשבונית ידידותית</span></div>
+      <div style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;background:#E6F5EE;color:#2F3A45;font-weight:700;font-size:13.5px;"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg>דשבורד</div>
+      <div style="display:flex;align-items:center;gap:10px;padding:9px 10px;color:#5F6B76;font-size:13.5px;"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg>מסמכים</div>
+      <div style="display:flex;align-items:center;gap:10px;padding:9px 10px;color:#5F6B76;font-size:13.5px;"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.5"/><path d="M15.5 14.5a5 5 0 0 1 6 5"/></svg>לקוחות</div>
+      <div style="display:flex;align-items:center;gap:10px;padding:9px 10px;color:#5F6B76;font-size:13.5px;"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 20h16"/><path d="M7 16v-5M12 16V6M17 16v-8"/></svg>דוחות</div>
+      <div style="display:flex;align-items:center;gap:10px;padding:9px 10px;color:#5F6B76;font-size:13.5px;"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>הגדרות</div>
+    </div>
+    <div style="padding:22px 24px;background:#F7F7F2;display:flex;flex-direction:column;gap:16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div><div class="h" style="font-size:22px;">שלום, כיף לראות אותך!</div><div style="font-size:13px;color:#5F6B76;margin-top:2px;">כאן ניהול העסק פשוט יותר.</div></div>
+        <span class="btn btn-primary btn-sm"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>הפקת חשבונית</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3, minmax(0,1fr));gap:12px;">
+        <div class="card" style="padding:14px 16px;"><div style="font-size:12px;color:#5F6B76;">חשבוניות החודש</div><div class="h num" style="font-size:24px;margin-top:4px;">12</div></div>
+        <div class="card" style="padding:14px 16px;"><div style="font-size:12px;color:#5F6B76;">סה"כ הכנסות</div><div class="h num" style="font-size:24px;margin-top:4px;">₪8,450</div></div>
+        <div class="card" style="padding:14px 16px;"><div style="font-size:12px;color:#5F6B76;">לקוחות פעילים</div><div class="h num" style="font-size:24px;margin-top:4px;">5</div></div>
+      </div>
+      <div class="card" style="padding:6px 0;">
+        <div style="padding:8px 16px 10px;font-size:13px;font-weight:700;color:#2F3A45;">חשבוניות אחרונות</div>
+        <div style="display:grid;grid-template-columns:56px minmax(0,1fr) 90px 80px;align-items:center;gap:10px;padding:9px 16px;border-top:1px solid #E4E7E2;font-size:13px;"><span class="num" style="color:#5F6B76;">1001</span><span style="font-weight:600;">סטודיו ורד</span><span class="num" style="font-weight:700;">₪1,250</span><span class="chip chip-paid" style="height:24px;font-size:12px;justify-self:end;"><span class="dot" style="background:currentColor;"></span>שולם</span></div><div style="display:grid;grid-template-columns:56px minmax(0,1fr) 90px 80px;align-items:center;gap:10px;padding:9px 16px;border-top:1px solid #E4E7E2;font-size:13px;"><span class="num" style="color:#5F6B76;">1000</span><span style="font-weight:600;">לקוח לדוגמה</span><span class="num" style="font-weight:700;">₪980</span><span class="chip chip-wait" style="height:24px;font-size:12px;justify-self:end;"><span class="dot" style="background:currentColor;"></span>ממתין</span></div><div style="display:grid;grid-template-columns:56px minmax(0,1fr) 90px 80px;align-items:center;gap:10px;padding:9px 16px;border-top:1px solid #E4E7E2;font-size:13px;"><span class="num" style="color:#5F6B76;">0999</span><span style="font-weight:600;">גינון ירוק</span><span class="num" style="font-weight:700;">₪2,100</span><span class="chip chip-paid" style="height:24px;font-size:12px;justify-self:end;"><span class="dot" style="background:currentColor;"></span>שולם</span></div>
+      </div>
+    </div>
+  </div>
+      </div>
+    </section>
+
+    <section style="padding:72px 0;background:#FDEEE6;">
+      <div class="wrap" style="display:flex;align-items:center;justify-content:space-between;">
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <h2 class="h" style="font-size:38px;margin:0;">חשבוניות בקלות. בדרך שלך.</h2>
+          <p style="margin:0;font-size:17px;color:#5F6B76;">חינם בתקופת ההשקה. בלי כרטיס אשראי, בלי התחייבות.</p>
+          <div><span class="btn btn-primary" style="height:52px;padding:0 28px;font-size:16px;">התחילו בחינם</span></div>
+        </div>
+        
+  <div style="display:flex;align-items:center;gap:10px;">
+    <svg width="56" height="59" viewBox="-14 0 134 140" fill="none" xmlns="http://www.w3.org/2000/svg" >
+    <path d="M22 8h56l30 30v90a12 12 0 0 1-12 12H22a12 12 0 0 1-12-12V20A12 12 0 0 1 22 8z" fill="#FFFFFF" stroke="#2F3A45" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M78 8v20a10 10 0 0 0 10 10h20z" fill="#9ED8C3" stroke="#2F3A45" stroke-width="7" stroke-linejoin="round"/>
+    <circle cx="40" cy="60" r="5" fill="#2F3A45"/><circle cx="72" cy="60" r="5" fill="#2F3A45"/>
+    <path d="M43 76q13 12 26 0" stroke="#2F3A45" stroke-width="6" stroke-linecap="round"/>
+    <circle cx="29" cy="72" r="6" fill="#F6B89E"/><circle cx="83" cy="72" r="6" fill="#F6B89E"/>
+    <path d="M30 100h50M30 115h30" stroke="#9ED8C3" stroke-width="7" stroke-linecap="round"/>
+    <path d="M3 118l-10 8M2 106l-12 1" stroke="#2F3A45" stroke-width="5" stroke-linecap="round"/>
+  </svg>
+    <div style="display:flex;flex-direction:column;gap:2px;">
+      <span class="wm" style="font-size:35px;">חשבונית ידידותית</span>
+      <span style="font-size:18px;color:#5F6B76;font-weight:500;letter-spacing:0.02em;">התנהלות פשוטה לעסק מצליח</span>
+    </div>
+  </div>
+      </div>
+    </section>
+
+    <footer class="foot" style="padding:34px 0;">
+      <div class="wrap" style="display:flex;align-items:center;justify-content:space-between;">
+        <div style="display:flex;align-items:center;gap:8px;"><svg width="22" height="23" viewBox="-14 0 134 140" fill="none" xmlns="http://www.w3.org/2000/svg" >
+    <path d="M22 8h56l30 30v90a12 12 0 0 1-12 12H22a12 12 0 0 1-12-12V20A12 12 0 0 1 22 8z" fill="#FFFFFF" stroke="#2F3A45" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M78 8v20a10 10 0 0 0 10 10h20z" fill="#9ED8C3" stroke="#2F3A45" stroke-width="7" stroke-linejoin="round"/>
+    <circle cx="40" cy="60" r="5" fill="#2F3A45"/><circle cx="72" cy="60" r="5" fill="#2F3A45"/>
+    <path d="M43 76q13 12 26 0" stroke="#2F3A45" stroke-width="6" stroke-linecap="round"/>
+    <circle cx="29" cy="72" r="6" fill="#F6B89E"/><circle cx="83" cy="72" r="6" fill="#F6B89E"/>
+    <path d="M30 100h50M30 115h30" stroke="#9ED8C3" stroke-width="7" stroke-linecap="round"/>
+    <path d="M3 118l-10 8M2 106l-12 1" stroke="#2F3A45" stroke-width="5" stroke-linecap="round"/>
+  </svg><span class="wm" style="font-size:15px;">חשבונית ידידותית</span><span style="font-size:12px;color:#2A7A62;letter-spacing:0.28em;font-weight:600;margin-right:10px;">FRIENDLYINVOICE</span></div>
+        <div style="display:flex;gap:22px;"><a>מחירים</a><a>מאמרים</a><a>אבטחה</a><a>נגישות</a><a>תנאי שימוש</a><a>פרטיות</a></div>
+      </div>
+    </footer>
+  </div>
+</x-dc>
+
+</body>
+</html>

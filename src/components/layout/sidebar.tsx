@@ -41,6 +41,7 @@ import { signOut } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin";
 import { supabase } from "@/lib/supabase";
 import { AccountSettingsModal } from "@/components/account-settings-modal";
+import { BRAND, BrandLockup } from "@/components/brand-mark";
 import { CANONICAL_ORIGIN } from "@/lib/public-url";
 import type { FeatureTone } from "@/lib/feature-tones";
 
@@ -135,7 +136,21 @@ export function Sidebar() {
   const sidebarContent = (
     <>
       <div className="px-6 py-6 border-b border-orange-100/60">
-        <div className="flex items-center gap-3">
+        {/* The PRODUCT lockup (2026-09-06 rebrand): one source for the mark and
+            the wordmark, so the sidebar, the marketing header and the emails
+            cannot drift apart. It sits ABOVE the business block on purpose -
+            the logo below is the CUSTOMER's, and the two must never be
+            confused for one another. Tagline off: the sidebar is 256px wide
+            and the second line only crowds it. */}
+        <Link
+          href="/dashboard"
+          onClick={() => setMobileOpen(false)}
+          aria-label={BRAND.name}
+          className="flex items-center"
+        >
+          <BrandLockup size={30} tagline={false} />
+        </Link>
+        <div className="flex items-center gap-3 mt-4 pt-4 border-t border-orange-100/60">
           {business.logoUrl ? (
             <div className="w-11 h-11 rounded-2xl bg-white shadow-lg shadow-orange-200/50 overflow-hidden flex items-center justify-center border border-orange-100">
               <img
@@ -145,13 +160,16 @@ export function Sidebar() {
               />
             </div>
           ) : (
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-orange-400 to-rose-400 flex items-center justify-center shadow-lg shadow-orange-200/50 btn-glow">
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-700 flex items-center justify-center shadow-lg shadow-orange-200/50 btn-glow">
               <Sparkles className="w-5 h-5 text-white" />
             </div>
           )}
+          {/* The signed-in business, not the product. The product name moved
+              up into the lockup above, so this block is now only "whose books
+              am I looking at" - which is what a user with two businesses
+              needs to read here. */}
           <div className="min-w-0">
-            <h1 className="text-sm font-bold text-stone-900 leading-tight">MyFriendly<br/>InvoiceApp</h1>
-            <p className="text-xs text-stone-600 truncate">{business.name}</p>
+            <p className="text-sm font-bold text-stone-900 leading-tight truncate">{business.name}</p>
           </div>
         </div>
       </div>
@@ -191,24 +209,29 @@ export function Sidebar() {
                   : "text-stone-900 hover:bg-orange-50/80 dark:hover:bg-orange-900/25 hover:text-orange-700 hover:translate-x-[-2px]"
               }`}
             >
+              {/* The ACTIVE row keeps its feature-tone tile (2026-09-06). It
+                  used to swap to a filled brand tile, which said "brand" twice
+                  in the same row now that the row itself is a mint slab, and
+                  cost the tone that tells the eye which section it is. */}
               <div
                 className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200 ${
-                  isActive
-                    ? "bg-gradient-to-br from-orange-400 to-rose-400 shadow-sm"
-                    : tone
+                  tone
                     ? `ftile ftile-${tone}`
                     : "bg-stone-100 dark:bg-stone-800 group-hover:bg-gradient-to-br group-hover:from-orange-300 group-hover:to-rose-300 dark:group-hover:from-orange-800/70 dark:group-hover:to-rose-800/60"
                 }`}
               >
                 <Icon
                   className={`w-4 h-4 transition-colors duration-200 ${
-                    isActive ? "text-white" : tone ? "" : "text-stone-500 group-hover:text-white"
+                    tone ? "" : "text-stone-500 group-hover:text-white"
                   }`}
                 />
               </div>
               <span>{item.label}</span>
               {isActive && (
-                <div className="mr-auto w-1.5 h-1.5 rounded-full bg-orange-400" />
+                <div
+                  className="mr-auto w-1.5 h-1.5 rounded-full"
+                  style={{ background: BRAND.mintInk }}
+                />
               )}
             </Link>
           );
@@ -226,7 +249,7 @@ export function Sidebar() {
           href={(() => {
             const PHONE = "972549000684"; // +972 549000684 (international format)
             const where = typeof window !== "undefined" ? window.location.href : "";
-            const text = `היי אסף, מצאתי משהו ב-MyFriendlyInvoiceApp:\n\n[תאר כאן את הבעיה]\n\nבעמוד: ${where}`;
+            const text = `היי אסף, מצאתי משהו ב-חשבונית ידידותית:\n\n[תאר כאן את הבעיה]\n\nבעמוד: ${where}`;
             return `https://wa.me/${PHONE}?text=${encodeURIComponent(text)}`;
           })()}
           target="_blank"
@@ -242,7 +265,7 @@ export function Sidebar() {
             send it to from their own WhatsApp contacts. */}
         <a
           href={(() => {
-            const text = `היי! אני משתמש באפליקציה MyFriendlyInvoiceApp להוצאת חשבוניות - פשוטה, מהירה וחינמית לעוסק פטור. נראה לי שיכול להתאים לך:\n${CANONICAL_ORIGIN}`;
+            const text = `היי! אני משתמש באפליקציה חשבונית ידידותית להוצאת חשבוניות - פשוטה, מהירה וחינמית לעוסק פטור. נראה לי שיכול להתאים לך:\n${CANONICAL_ORIGIN}`;
             return `https://wa.me/?text=${encodeURIComponent(text)}`;
           })()}
           target="_blank"

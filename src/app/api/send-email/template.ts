@@ -55,12 +55,13 @@ function docWording(
   return { attached: `${type === "proforma" ? "מצורף" : "מצורפת"} ${label}`, noun: label };
 }
 
-// The email's default look - the same orange→rose gradient the app's
-// marketing chrome has always used. Kept as named constants (not inlined at
-// each call site) so the "no document design chosen" fallback is visibly
-// the exact pre-feature value, never a value that drifted.
-const DEFAULT_ACCENT_GRAD = "linear-gradient(135deg, #f97316, #e11d48)";
-const DEFAULT_ACCENT_SOLID = "#ea580c";
+// The email's default look - the brand's graphite band (2026-09-06 rebrand),
+// the same pair ACCENT_HEX.gold emits, so a business with no chosen document
+// design gets an email that matches its documents. Kept as named constants
+// (not inlined at each call site) so the "no document design chosen"
+// fallback is one visible value, never a value that drifted.
+const DEFAULT_ACCENT_GRAD = "linear-gradient(135deg, #2f3a45, #263039)";
+const DEFAULT_ACCENT_SOLID = "#2f3a45";
 
 export function buildHtml(args: {
   businessName: string;
@@ -86,7 +87,7 @@ export function buildHtml(args: {
    * values by the caller via `ACCENT_HEX[normalizeDocumentDesign(...).accent]`
    * - never a raw string read off the DB. `grad` themes the header band,
    * `solid` themes the CTA button and inline link colors. Omit (or pass
-   * undefined) to keep the original orange/rose look - the behaviour for
+   * undefined) to keep the brand graphite look - the behaviour for
    * every business that hasn't chosen a document design.
    */
   accent?: { grad: string; solid: string };
@@ -150,48 +151,48 @@ export function buildHtml(args: {
   <meta name="x-apple-disable-message-reformatting" />
   <title>${escapeHtml(businessName)}</title>
 </head>
-<body style="margin:0; padding:0; background:#f5f5f4; font-family: Arial, sans-serif;">
+<body style="margin:0; padding:0; background:#f7f7f2; font-family: Arial, sans-serif;">
   <div dir="${isEnglish ? "ltr" : "rtl"}" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-    <div style="background: ${accentGrad}; padding: 24px; border-radius: 16px; color: white; text-align: center; margin-bottom: 24px;">
+    <div style="background: ${accentSolid}; background-image: ${accentGrad}; padding: 24px; border-radius: 16px; color: #ffffff; text-align: center; margin-bottom: 24px;">
       ${logoUrl ? `<img src="${escapeHtml(logoUrl)}" alt="${escapeHtml(businessName)}" style="max-height: 60px; max-width: 200px; margin-bottom: 12px; background: white; padding: 8px; border-radius: 8px;" />` : ""}
       <h1 style="margin: 0; font-size: 24px;">${escapeHtml(businessName)}</h1>
     </div>
 
-    <div style="background: #fffaf5; border: 1px solid #fed7aa; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
-      <p style="margin: 0 0 12px 0; font-size: 16px; color: #44403c;">
+    <div style="background: #ffffff; border: 1px solid #e4e7e2; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+      <p style="margin: 0 0 12px 0; font-size: 16px; color: #1f252b;">
         ${greeting}
       </p>
-      <p style="margin: 0 0 16px 0; font-size: 16px; color: #44403c;">
+      <p style="margin: 0 0 16px 0; font-size: 16px; color: #1f252b;">
         ${introLine}
       </p>
-      <p style="margin: 0; font-size: 14px; color: #78716c;">
+      <p style="margin: 0; font-size: 14px; color: #5f6b76;">
         ${ctaLine}
       </p>
     </div>
 
     <div style="text-align: center; margin-bottom: 24px;">
-      <a href="${escapeHtml(viewUrl)}" style="display: inline-block; background: ${accentGrad}; color: white; text-decoration: none; padding: 14px 32px; border-radius: 12px; font-size: 16px; font-weight: bold;">
+      <a href="${escapeHtml(viewUrl)}" style="display: inline-block; background: ${accentSolid}; background-image: ${accentGrad}; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 12px; font-size: 16px; font-weight: bold;">
         ${ctaButton}
       </a>
     </div>
 
     <div style="text-align: center; margin-bottom: 16px;">
-      <p style="font-size: 13px; color: #57534e; margin: 0 0 6px 0;">
+      <p style="font-size: 13px; color: #5f6b76; margin: 0 0 6px 0;">
         ${fallbackLine}
       </p>
-      <p style="font-size: 12px; color: #78716c; margin: 0; word-break: break-all;">
+      <p style="font-size: 12px; color: #8b95a0; margin: 0; word-break: break-all;">
         <a href="${escapeHtml(viewUrl)}" style="color: ${accentSolid};">${escapeHtml(viewUrl)}</a>
       </p>
     </div>
 
     <div style="text-align: center; margin-bottom: 24px;">
-      <p style="font-size: 13px; color: #a8a29e;">
+      <p style="font-size: 13px; color: #8b95a0;">
         ${sentByLine}
       </p>
       ${
         showBranding
-          ? `<p style="font-size: 11px; color: #c4c0ba; margin: 6px 0 0 0;">
-        ${isEnglish ? "Sent with" : "נשלח באמצעות"} <a href="${escapeHtml(BRAND_URL_EMAIL)}" style="color: #c4c0ba; text-decoration: underline;">MyFriendlyInvoiceApp</a> · ${isEnglish ? "free invoicing for Israeli freelancers" : "חשבוניות לעצמאים בחינם"}
+          ? `<p style="font-size: 11px; color: #8b95a0; margin: 6px 0 0 0;">
+        ${isEnglish ? "Sent with" : "נשלח באמצעות"} <a href="${escapeHtml(BRAND_URL_EMAIL)}" style="color: #8b95a0; text-decoration: underline;">${isEnglish ? "FriendlyInvoice" : "חשבונית ידידותית"}</a> · ${isEnglish ? "simple admin for a thriving business" : "התנהלות פשוטה לעסק מצליח"}
       </p>`
           : ""
       }
@@ -242,7 +243,7 @@ To view the full document, print it or download it as a PDF, open this link:
 ${viewUrl}
 
 ${isReminder ? "Automatic reminder" : "Document sent automatically"} from ${businessName}
-${showBranding ? `\nSent with MyFriendlyInvoiceApp · free invoicing for Israeli freelancers\n${BRAND_URL_EMAIL}\n` : ""}`;
+${showBranding ? `\nSent with FriendlyInvoice · simple admin for a thriving business\n${BRAND_URL_EMAIL}\n` : ""}`;
   }
   const intro = isReminder
     ? `תזכורת קלה לגבי ${noun} מספר #${receiptNumber} על סך ${totalFormatted}${
@@ -257,5 +258,5 @@ ${intro}
 ${viewUrl}
 
 ${isReminder ? "תזכורת אוטומטית" : "מסמך נשלח אוטומטית"} מ${businessName}
-${showBranding ? `\nנשלח באמצעות MyFriendlyInvoiceApp · חשבוניות לעצמאים בחינם\n${BRAND_URL_EMAIL}\n` : ""}`;
+${showBranding ? `\nנשלח באמצעות חשבונית ידידותית · התנהלות פשוטה לעסק מצליח\n${BRAND_URL_EMAIL}\n` : ""}`;
 }

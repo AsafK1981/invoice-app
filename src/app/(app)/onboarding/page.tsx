@@ -230,7 +230,7 @@ export default function OnboardingPage() {
           </div>
           <div className="h-2 bg-orange-100 rounded-full overflow-hidden">
             <div
-              className="h-full bg-gradient-to-l from-orange-500 to-rose-500 rounded-full transition-all duration-500"
+              className="h-full bg-gradient-to-l from-orange-500 to-orange-700 rounded-full transition-all duration-500"
               style={{ width: `${progressPercent}%` }}
             />
           </div>
@@ -245,9 +245,9 @@ export default function OnboardingPage() {
                 <div
                   className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${
                     idx < stepIndex
-                      ? "bg-gradient-to-br from-orange-500 to-rose-500 text-white"
+                      ? "bg-gradient-to-br from-orange-500 to-orange-700 text-white"
                       : idx === stepIndex
-                      ? "bg-gradient-to-br from-orange-500 to-rose-500 text-white ring-4 ring-orange-200"
+                      ? "bg-gradient-to-br from-orange-500 to-orange-700 text-white ring-4 ring-orange-200"
                       : "bg-orange-100 text-stone-500"
                   }`}
                 >
@@ -262,7 +262,7 @@ export default function OnboardingPage() {
         <div className="card-soft p-8 sm:p-10 animate-fade-in-up">
           {step === "welcome" && (
             <div className="text-center">
-              <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center mx-auto shadow-xl shadow-orange-200/50 btn-glow mb-6">
+              <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-orange-500 to-orange-700 flex items-center justify-center mx-auto shadow-xl shadow-orange-200/50 btn-glow mb-6">
                 <Sparkles className="w-10 h-10 text-white" />
               </div>
               <h1 className="text-3xl font-bold text-stone-900">ברוכים הבאים! 👋</h1>
@@ -276,7 +276,7 @@ export default function OnboardingPage() {
               <div className="flex flex-col items-center gap-4 mt-8">
                 <button
                   onClick={() => setStep("business")}
-                  className="btn-glow inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-6 py-3.5 rounded-2xl text-base font-semibold cursor-pointer hover:shadow-lg hover:shadow-orange-200/60 hover:-translate-y-0.5 active:translate-y-0 active:shadow-md transition-all duration-200"
+                  className="btn-glow inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-orange-700 text-white px-6 py-3.5 rounded-2xl text-base font-semibold cursor-pointer hover:shadow-lg hover:shadow-orange-200/60 hover:-translate-y-0.5 active:translate-y-0 active:shadow-md transition-all duration-200"
                 >
                   בוא נתחיל
                   <ArrowLeft className="w-4 h-4" />
@@ -439,7 +439,7 @@ export default function OnboardingPage() {
                 <button
                   onClick={saveBusinessAndAdvance}
                   disabled={!bizForm.name.trim() || saving}
-                  className="btn-glow inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:shadow-md hover:shadow-orange-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                  className="btn-glow inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-orange-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:shadow-md hover:shadow-orange-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
                   {saving ? "שומר..." : "המשך"}
                   <ArrowLeft className="w-4 h-4" />
@@ -499,7 +499,7 @@ export default function OnboardingPage() {
                   <button
                     onClick={applyDesignSuggestion}
                     disabled={saving}
-                    className="btn-glow inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:shadow-md hover:shadow-orange-200 disabled:opacity-50 transition-all"
+                    className="btn-glow inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-orange-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:shadow-md hover:shadow-orange-200 disabled:opacity-50 transition-all"
                   >
                     {saving ? "שומר..." : "השתמשו בעיצוב הזה"}
                     <ArrowLeft className="w-4 h-4" />
@@ -603,7 +603,7 @@ export default function OnboardingPage() {
                   <button
                     onClick={saveClientAndAdvance}
                     disabled={saving}
-                    className="btn-glow inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:shadow-md hover:shadow-orange-200 disabled:opacity-50 transition-all"
+                    className="btn-glow inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-orange-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:shadow-md hover:shadow-orange-200 disabled:opacity-50 transition-all"
                   >
                     {saving ? "שומר..." : "המשך"}
                     <ArrowLeft className="w-4 h-4" />
@@ -625,7 +625,7 @@ export default function OnboardingPage() {
               <div className="flex flex-col sm:flex-row items-center justify-center gap-2 mt-8">
                 <button
                   onClick={() => finish("new-doc")}
-                  className="btn-glow inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-6 py-3.5 rounded-2xl text-base font-semibold hover:shadow-lg hover:shadow-orange-200/60 hover:-translate-y-0.5 transition-all"
+                  className="btn-glow inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-orange-700 text-white px-6 py-3.5 rounded-2xl text-base font-semibold hover:shadow-lg hover:shadow-orange-200/60 hover:-translate-y-0.5 transition-all"
                 >
                   צור מסמך ראשון
                   <ArrowRight className="w-4 h-4 rotate-180" />

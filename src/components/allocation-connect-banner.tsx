@@ -158,7 +158,7 @@ export function AllocationConnectBanner({
   return (
     <div className="rounded-2xl border border-orange-200 bg-gradient-to-l from-orange-50/80 to-amber-50/50 px-4 py-3.5">
       <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center flex-shrink-0 shadow-sm">
+        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-700 flex items-center justify-center flex-shrink-0 shadow-sm">
           <Landmark className="w-5 h-5" />
         </div>
         <div className="flex-1 min-w-0">

@@ -448,7 +448,7 @@ export default function CustomReportPage() {
           <div className="p-5 overflow-x-auto">
             <table className="gk-rtable w-full text-sm border-separate border-spacing-0 rounded-xl overflow-hidden shadow-sm">
               <thead>
-                <tr className="bg-gradient-to-l from-orange-500 to-rose-500 text-white">
+                <tr className="bg-gradient-to-l from-orange-500 to-orange-700 text-white">
                   <th className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">תאריך</th>
                   <th className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">מספר</th>
                   <th className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">סוג</th>

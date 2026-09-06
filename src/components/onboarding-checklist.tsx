@@ -100,7 +100,7 @@ export function OnboardingChecklist({ business, clients, products, documents }: 
   const nextStep = steps.find((s) => !s.done);
 
   return (
-    <div className="card-soft p-5 bg-gradient-to-br from-orange-50 via-amber-50 to-rose-50 border-orange-200 relative">
+    <div className="card-soft p-5 bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200 relative">
       <button
         onClick={dismiss}
         className="absolute top-3 left-3 text-stone-400 hover:text-stone-700 p-1 rounded-lg hover:bg-white/60 transition-colors"
@@ -111,7 +111,7 @@ export function OnboardingChecklist({ business, clients, products, documents }: 
       </button>
 
       <div className="flex items-start gap-3 mb-4">
-        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center shadow-md shadow-orange-200/50 flex-shrink-0">
+        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-700 flex items-center justify-center shadow-md shadow-orange-200/50 flex-shrink-0">
           <Sparkles className="w-5 h-5 text-white" />
         </div>
         <div>

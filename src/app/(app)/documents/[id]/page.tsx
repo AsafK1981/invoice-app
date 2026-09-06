@@ -155,7 +155,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
         <p className="text-sm text-stone-700 mb-5">ייתכן שהמסמך נמחק או שהקישור אינו תקין</p>
         <Link
           href="/documents"
-          className="inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-5 py-2.5 rounded-2xl text-sm font-semibold hover:shadow-md"
+          className="inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-orange-700 text-white px-5 py-2.5 rounded-2xl text-sm font-semibold hover:shadow-md"
         >
           <ArrowRight className="w-4 h-4" />
           חזרה למסמכים
@@ -927,7 +927,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                 {allocationTrack && (
                   <span
                     aria-hidden
-                    className="me-1.5 inline-flex h-6 w-6 -translate-y-0.5 items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-rose-500 align-middle text-[13px] font-bold"
+                    className="me-1.5 inline-flex h-6 w-6 -translate-y-0.5 items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-orange-700 align-middle text-[13px] font-bold"
                   >
                     3
                   </span>
@@ -1292,7 +1292,7 @@ function NextStepTile({
       disabled={disabled}
       className={`flex items-center gap-3.5 text-right rounded-2xl px-4 py-3.5 min-h-[72px] border-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${
         primary
-          ? "bg-gradient-to-l from-orange-500 to-rose-500 border-transparent text-white hover:shadow-lg hover:shadow-orange-200"
+          ? "bg-gradient-to-l from-orange-500 to-orange-700 border-transparent text-white hover:shadow-lg hover:shadow-orange-200"
           : "bg-white border-stone-200 text-stone-900 hover:border-[color:var(--goldline)] hover:bg-[color:var(--goldtint)]"
       }`}
     >

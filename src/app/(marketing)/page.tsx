@@ -307,6 +307,14 @@ export default function MarketingLanding() {
                   <CheckIcon /> אפשר לבטל בכל רגע
                 </li>
               </ul>
+              {/* USP strip (Asaf, 2026-09-06 rebrand): one sentence that
+                  names the three things the product does, right under the
+                  hero so it is above the fold on desktop. */}
+              <p className="ml-hero-usp">
+                חשבונית ידידותית מאפשרת לקבל מספר הקצאה מרשות המסים ישירות
+                מתוך החשבונית, להפיק מסמכים דרך WhatsApp ולנהל הכנסות והוצאות
+                במקום אחד
+              </p>
             </div>
           </section>
 
@@ -919,7 +927,7 @@ export default function MarketingLanding() {
                   <div className="ml-sh-foot">
                     <div className="ml-sh-sig">מסמך זה הופק אלקטרונית</div>
                     <div className="ml-sh-brand">
-                      הופק באמצעות <Ltr>MyFriendlyInvoiceApp</Ltr>
+                      הופק באמצעות חשבונית ידידותית
                     </div>
                   </div>
                 </article>
@@ -965,6 +973,12 @@ export default function MarketingLanding() {
                 <p>
                   לא עוד טבלה אפורה. מסך ראשי אחד שמראה כמה נכנס, כמה יצא
                   וכמה נשאר - בלי לחפש ובלי להוריד קובץ.
+                </p>
+                {/* "About" line (Asaf, 2026-09-06 rebrand). */}
+                <p className="ml-about">
+                  חשבונית ידידותית היא תוכנה להפקת חשבוניות, קבלות וניהול
+                  הכנסות והוצאות לעצמאים, עוסקים פטורים ועוסקים מורשים
+                  שנולדה מתוך צורך אמיתי של עצמאיים
                 </p>
               </div>
 
@@ -1104,6 +1118,7 @@ export default function MarketingLanding() {
               loud one. */}
           <section className="ml-midcta">
             <div className="ml-wrap ml-midcta-in">
+              <p className="ml-midcta-slogan">חשבוניות בקלות. בדרך שלך.</p>
               <p className="ml-midcta-t">משוכנעים? ההרשמה לוקחת פחות מדקה.</p>
               <SignupLink
                 className="ml-btn ml-btn-primary ml-btn-sm"

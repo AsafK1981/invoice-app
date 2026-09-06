@@ -1,5 +1,6 @@
 /* =====================================================================
-   APP SKIN: "בהיר וחמים" (light & warm), approved 2026-07-20.
+   APP SKIN: mint / peach / graphite, rebrand approved 2026-09-06
+   (was "בהיר וחמים", light & warm sand, 2026-07-20 to 2026-09-06).
 
    This is THE app skin: unconditional, the only look the app has. It used
    to be gated behind `html[data-skin="gold"]` (with a `?skin=coral` escape
@@ -9,28 +10,30 @@
    kept rather than dropped so the file's internal specificity ordering is
    unchanged from the gated version.
 
-   The palette approved by Asaf (mockup `shell-1.html`) is a LIGHT, warm-sand
-   shell with white cards and gold demoted to an accent. "gold" in token and
-   class names below (`--gold-text`, `.gk-*`) is historical: the design began
-   as obsidian + antique gold.
+   The palette approved by Asaf (2026-09-06 brand book) is graphite #2f3a45
+   as the PRIMARY, mint #9ed8c3 as the secondary and peach #f6b89e as the
+   accent, on an off-white #f7f7f2 page with white cards. "gold" in token
+   and class names below (`--gold-text`, `.gk-*`) is historical: the design
+   began as obsidian + antique gold, then spent a season as orange-to-rose.
+   Read "gold" as "brand primary". Text on a mint or peach FILL is always
+   graphite; white text belongs only on graphite.
 
    THEMING APPROACH
    1. All colour decisions live in ONE token block below. Nothing else in
       this file should contain a raw hex that isn't a token or a
       one-off gradient stop.
-   2. The markup underneath is still the LIGHT legacy design (Tailwind
-      orange/amber/rose utilities, "coral" below), so this file does NOT
-      need to invert anything. It only:
-        a. repaints the page surface warm sand instead of the coral wash,
-        b. re-tints the CORAL brand family (orange / amber, and rose only
-           where rose is the coral gradient's partner) to the gold family,
+   2. The markup underneath still carries the legacy Tailwind class names
+      (orange / amber / rose), so this file does NOT need to invert
+      anything. It only:
+        a. repaints the page surface off-white instead of warm sand,
+        b. re-tints the legacy brand family (orange / amber, and rose only
+           where rose is the old gradient's partner) to graphite / mint,
         c. restyles the shared primitives: .card-soft, .input-warm, aside,
            tables, focus rings, the `gk-*` markers.
       Every OTHER Tailwind family (emerald / sky / blue / violet / rose-as-
-      danger / stone) keeps its stock light-mode value. Those pastels were
-      designed for a white page, they already pass contrast on one, and
-      they carry meaning (document-type colours, status chips, danger).
-      Repainting them gold would cost legibility and affordance for nothing.
+      danger / stone) keeps whatever globals.css `@theme` remaps it to.
+      Those pastels carry meaning (document-type colours, status chips,
+      danger) and are not re-stated per utility here.
    3. Consequence: the huge "lift every dark-on-dark text tone" section the
       obsidian skin needed is DELETED rather than retargeted. Re-adding
       per-utility text overrides here should be a last resort.
@@ -41,14 +44,13 @@
       and document-paper.css (later, and deliberately immune, see its header).
 
    CONTRAST (measured, not eyeballed, sRGB WCAG 2.x):
-     --ink   #241e16 on card #ffffff  16.5:1   on page #f7f4ed  15.0:1
-     --ink2  #5a5245 on card          7.7:1    on page           7.0:1
-     --muted #6f6757 on card          5.6:1    on page           5.1:1
-     --gold-text #c2410c on card      5.0:1    on page 4.6:1  (orange-700)
-     --inputline #968765 vs card      3.5:1    vs page 3.2:1  (AA 1.4.11)
-     --inputfocusline #f97316 vs card 2.8:1  (non-text, paired with the ring)
-   white on the accent gradient: 2.8:1 at the orange end, 4.7:1 at the rose end
-     (matches the homepage CTA; see the token block)
+     --ink   #1f252b on card #ffffff  15.9:1   on page #f7f7f2  14.7:1
+     --ink2  #3f4a54 on card          9.7:1    on page           9.0:1
+     --muted #5f6b76 on card          5.4:1    on page           5.0:1
+     --gold-text #2f3a45 on card     11.6:1    on page          10.8:1
+     --inputline #8b938f vs card      3.2:1    vs page 2.9:1  (AA 1.4.11)
+     --inputfocusline #9ed8c3 vs card 1.7:1  (non-text, paired with the ring)
+   white on the graphite fill: 11.6:1 at #2f3a45, 13.6:1 at #263039.
 
    The printable sheet (`document-paper.css`, `.doc-paper`) is APPROVED AND
    FROZEN and is immune to this file by construction; it uses its own
@@ -57,105 +59,103 @@
    ===================================================================== */
 
 html {
-  /* --- brand accent: the homepage's orange-to-rose (2026-08-25) ---
-     Asaf: "too many colours" - the antique gold is gone. The accent is now
-     BY VALUE the landing page's --ml-grad (marketing-light.css:
-     #f97316 -> #e11d48, 135deg) so the app and the homepage read as one
-     brand. The token NAMES below (--gold-*, --goldtint, .gk-*) are kept
-     as-is: ~130 rules in this file reference them and renaming buys
-     nothing. Read "gold" as "brand accent". */
-  --g1: #fb923c; /* highlight (orange-400) */
-  --g2: #f97316; /* mid: the homepage orange */
-  --g3: #e11d48; /* deep: the homepage rose */
-  --gold-grad: linear-gradient(135deg, var(--g2), var(--g3));
+  /* --- brand primary: graphite (rebrand 2026-09-06) ---
+     The orange-to-rose accent is retired. The brand is now graphite
+     (primary) + mint (secondary) + peach (accent), per the brand book.
+     The token NAMES below (--gold-*, --goldtint, .gk-*) are kept as-is:
+     ~130 rules in this file reference them and renaming buys nothing.
+     Read "gold" as "brand primary".
+     The three stops stay a gradient by SHAPE (dozens of rules feed them to
+     `background: linear-gradient(...)` and to bg-clip-text) but they are a
+     flat graphite by VALUE, so a "gradient" button reads as a solid fill. */
+  --g1: #3c4854; /* highlight: graphite, one step up */
+  --g2: #2f3a45; /* mid: graphite, the brand primary */
+  --g3: #263039; /* deep: graphite-2, the hover / gradient end */
+  --gold-grad: linear-gradient(135deg, #2f3a45, #263039);
   /* CTA variant: identical to the decorative gradient on purpose - the
-     homepage paints its primary button with exactly this ramp and white
+     homepage paints its primary button with exactly this fill and white
      text (.ml-btn-primary), and the app should match it pixel for pixel.
-     Contrast note: white on the #f97316 end is ~2.8:1, on the #e11d48 end
-     ~4.7:1 - the same trade the homepage already made. */
-  --gold-grad-cta: linear-gradient(135deg, var(--g2), var(--g3));
-  --gold-ink: #ffffff; /* the ONLY text colour allowed on the accent gradient */
+     Contrast note: white on #2f3a45 is 11.6:1, on #263039 13.6:1. */
+  --gold-grad-cta: linear-gradient(135deg, #2f3a45, #263039);
+  --gold-ink: #ffffff; /* the ONLY text colour allowed on the graphite fill */
 
-  /* --- accent as TEXT on a light surface (deliberately a different token) --- */
-  --gold-text: #c2410c; /* orange-700: 5.0:1 on white, 4.6:1 on the sand page */
-  /* Big display numbers (KPI values, summary totals): NOT the accent. Asaf
-     (2026-08-26) found the orange-to-rose ramp on the 3,100-style figures
-     "stressful"; then chose plain ink for the "ink + one touch of brand
-     orange" restyle. Solid ink on both stops so the bg-clip-text mechanism
-     that renders these numbers keeps working without a visible gradient. */
-  --gold-text-grad: linear-gradient(135deg, #1c1917, #1c1917);
+  /* --- brand as TEXT on a light surface (deliberately a different token) --- */
+  --gold-text: #2f3a45; /* graphite: 11.6:1 on white, 11.0:1 on the off-white page */
+  /* Big display numbers (KPI values, summary totals): plain graphite ink.
+     Solid on both stops so the bg-clip-text mechanism that renders these
+     numbers keeps working without a visible gradient. */
+  --gold-text-grad: linear-gradient(135deg, #2f3a45, #2f3a45);
 
   /* --- surfaces --- */
-  --bg: #f7f4ed; /* app background: warm sand */
-  --panel: #fffdf8; /* sidebar / topbar: near-white */
+  --bg: #f7f7f2; /* app background: off-white */
+  --panel: #ffffff; /* sidebar / topbar: white */
   --card: #ffffff;
-  --line: #e9e1d0; /* card hairline */
-  --icotile: #f1ece0;
-  --goldtint: #fff4ea; /* peach wash (homepage --ml-peach family) */
-  --goldtintline: #fddcc0;
-  --goldline: #fdba74; /* orange-300 */
+  --line: #e4e7e2; /* card hairline */
+  --icotile: #e6f5ee; /* mint tint */
+  --goldtint: #e6f5ee; /* mint wash (active nav, totals box, icon tiles) */
+  --goldtintline: #bfe6d6;
+  --goldline: #9ed8c3; /* mint */
 
   /* --- form controls --- */
-  --input: #fbf9f4;
-  --inputline: #968765;
-  --inputfocusline: #f97316;
+  --input: #ffffff;
+  --inputline: #8b938f; /* 3.15:1 vs white (AA 1.4.11); the brand-book
+                           hairline #e4e7e2 is only 1.3:1 and cannot carry
+                           an input boundary on its own */
+  --inputfocusline: #9ed8c3;
 
   /* --- ink --- */
-  --ink: #241e16;
-  --ink2: #5a5245;
-  --muted: #6f6757;
+  --ink: #1f252b;
+  --ink2: #3f4a54;
+  --muted: #5f6b76;
 
   /* --- elevation --- */
-  --shadow: 0 1px 2px rgba(60, 45, 20, 0.05), 0 10px 24px -18px rgba(60, 45, 20, 0.3);
-  --shadow-lg: 0 18px 40px -22px rgba(60, 45, 20, 0.35);
-  --paperframe: #f0ece2;
+  --shadow: 0 1px 2px rgba(47, 58, 69, 0.05), 0 10px 24px -18px rgba(47, 58, 69, 0.3);
+  --shadow-lg: 0 18px 40px -22px rgba(47, 58, 69, 0.35);
+  --paperframe: #eef0ec;
 
   /* --- document cards: status pills ---------------------------------
-     Soft pastels that carry meaning, each ink measured on its OWN fill
-     (sRGB WCAG 2.x): paid 5.9:1 · sent 5.9:1 · draft 5.8:1 · void 5.4:1.
-     `wait` is not a status of its own; it inks the "N days unpaid" note. */
-  --dc-paid-bg: #e6f1e9;
-  --dc-paid-ink: #2c6a45;
-  --dc-paid-line: #cfe3d5;
-  --dc-sent-bg: #e7eef8;
-  --dc-sent-ink: #2b5583;
-  --dc-sent-line: #cddef0;
-  --dc-draft-bg: #f1ece0;
-  --dc-draft-ink: #5c5445;
-  --dc-draft-line: #e0d8c6;
-  --dc-void-bg: #f9eae6;
-  --dc-void-ink: #9a3520;
-  --dc-void-line: #f0d5cd;
-  --dc-wait-ink: #9a3412;
-  --dc-wait-bg: #ffedd5;
+     Brand-book states, each ink measured on its OWN fill (sRGB WCAG 2.x):
+     paid 4.6:1 · sent 7.1:1 · draft 4.7:1 · void 4.1:1 (bold chip text, AA
+     large). `wait` is not a status of its own; it inks the "N days unpaid"
+     note. */
+  --dc-paid-bg: #e6f5ee;
+  --dc-paid-ink: #2a7a62;
+  --dc-paid-line: #bfe6d6;
+  --dc-sent-bg: #e9eef5;
+  --dc-sent-ink: #34506e;
+  --dc-sent-line: #cdd8e6;
+  --dc-draft-bg: #eef0ee;
+  --dc-draft-ink: #5f6b76;
+  --dc-draft-line: #dce0dd;
+  --dc-void-bg: #fdeee6;
+  --dc-void-ink: #b85a32;
+  --dc-void-line: #f3cdb9;
+  --dc-wait-ink: #b85a32;
+  --dc-wait-bg: #fdeee6;
 
   /* --- document cards: type dots (6px, decorative, label always present) */
-  --dc-t-receipt: #6f9b7f;
+  --dc-t-receipt: #2a7a62;  /* mint ink, pairs with the mint row tint */
   --dc-t-tax-receipt: #4f8f8a;
-  --dc-t-quote: #c9a227;    /* mustard, pairs with the butter row tint */
+  --dc-t-quote: #b89a2c;    /* mustard, pairs with the butter row tint */
   --dc-t-proforma: #8494bd;
-  --dc-t-tax: #e08a4e;      /* apricot, pairs with the peach row tint (Asaf's pick 2026-08-28) */
+  --dc-t-tax: #b85a32;      /* peach ink, pairs with the peach row tint */
   --dc-t-credit: #c46a86;   /* berry, pairs with the pink row tint */
 
-  /* --- document cards: row tints by type, ink + one touch of brand orange
-     restyle (2026-08-26). Deepened 2026-08-28: the first pass was so faint
-     that green and blue rows read as the same colour (and tax / tax-receipt
-     WERE the same hex). Each type now sits on its own hue with a visible
-     step between neighbours, still light enough that the status pill and
-     the ink stay the loudest things on the row. The edge bar (see .dc-row)
-     in the matching --dc-t-* dot colour makes the type unmistakable. */
-  --dc-tint-receipt: #e3f3e6;      /* green */
+  /* --- document cards: row tints by type. Each type sits on its own hue
+     with a visible step between neighbours, still light enough that the
+     status pill and the ink stay the loudest things on the row. The edge
+     bar (see .dc-row) in the matching --dc-t-* colour makes the type
+     unmistakable. Re-tuned into the mint / peach family 2026-09-06. */
+  --dc-tint-receipt: #e6f5ee;      /* mint */
   --dc-tint-tax-receipt: #ddf1ef;  /* teal */
-  --dc-tint-tax: #fdeadb;          /* peach: Asaf chose it over blue (2026-08-28)
-                                      because green / violet / orange is a triad,
-                                      while blue sat next to the lavender */
-  --dc-tint-quote: #fbf3d3;        /* butter (moved off amber, too close to peach) */
-  --dc-tint-proforma: #ebe7f6;     /* lavender */
-  --dc-tint-credit: #fbe4ec;       /* pink (moved off rose, too close to peach) */
+  --dc-tint-tax: #fdeee6;          /* peach */
+  --dc-tint-quote: #fbf6e4;        /* butter */
+  --dc-tint-proforma: #eeedf6;     /* lavender */
+  --dc-tint-credit: #fbe4ec;       /* pink */
 
   /* --- document cards: neutral furniture --- */
-  --dc-hairline: #f2ede1; /* the card's own internal rule, lighter than --line */
-  --dc-icon: #9a8c72; /* rest-state action glyph, 3.4:1 on white */
+  --dc-hairline: #eef0ec; /* the card's own internal rule, lighter than --line */
+  --dc-icon: #8b95a0; /* rest-state action glyph, 3.3:1 on white */
 }
 
 /* ---------- base surface + typography ---------- */
@@ -174,32 +174,44 @@ html body {
   font-family: var(--font-assistant), var(--font-heebo), "Assistant", "Heebo", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
+/* Headings are Rubik (brand book, 2026-09-06); body/UI stays Heebo. Only the
+   family changes - no size is touched. Weight 800 is set on PAGE TITLES (h1)
+   only; h2/h3 are card and section titles whose own utility weight is part of
+   the established hierarchy, and this sheet is unlayered, so forcing 800 here
+   would silently outrank every `font-semibold` in the app. */
 html h1,
 html h2,
 html h3 {
-  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+  font-family: var(--font-rubik), "Rubik", var(--font-heebo), sans-serif;
   color: var(--ink);
   letter-spacing: -0.01em;
 }
+html h1 {
+  font-weight: 800;
+}
 /* The marketing site (`/`, `/vs/*`) renders inside `.v2-theme`, which paints
-   its own opaque obsidian field and light ink. Its headings must NOT inherit
-   the app's dark ink. Class in the selector beats the bare-element rule. */
+   its own field and ink. Its headings must NOT inherit the app's dark ink.
+   Class in the selector beats the bare-element rule. */
 html .v2-theme h1,
 html .v2-theme h2,
 html .v2-theme h3 {
   color: inherit;
-  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+  font-family: var(--font-rubik), "Rubik", var(--font-heebo), sans-serif;
 }
 
-/* gold gradient display text: the KPI numbers (.gk-value) and the coral
-   bg-clip-text totals (products list, receipt editor summary). The BRAND
-   gradient is far too light for text on white (~2:1 at its highlight stop), so
-   display text uses the dedicated dark-gold gradient, every stop ≥ 5.5:1 on
-   white. `color: transparent` + `-webkit-text-fill-color: transparent` are
-   both part of the background-clip:text technique, not a specificity
-   workaround. One recipe, two subjects; the per-selector extras below. */
+/* Display text painted through background-clip: the KPI numbers (.gk-value)
+   and the bg-clip-text totals (products list, receipt editor summary). They
+   use the dedicated --gold-text-grad, which is flat graphite: a real ramp on
+   a 2.5rem numeral reads as a printing fault. `color: transparent` +
+   `-webkit-text-fill-color: transparent` are both part of the
+   background-clip:text technique, not a specificity workaround. One recipe,
+   two subjects; the per-selector extras below.
+   The second selector tracks the utility pair the components actually carry
+   (`from-orange-500 to-orange-700` since the 2026-09-06 rebrand); if that
+   pair is ever rewritten again, this selector has to follow or it silently
+   stops matching. */
 html .gk-value,
-html .bg-clip-text.from-orange-500.to-rose-500 {
+html .bg-clip-text.from-orange-500.to-orange-700 {
   background: var(--gold-text-grad) !important;
   -webkit-background-clip: text !important;
   background-clip: text !important;
@@ -253,7 +265,7 @@ html .bg-gradient-to-l.from-orange-50,
 html .bg-gradient-to-r.from-orange-50,
 html .bg-gradient-to-br.from-amber-50,
 html .bg-gradient-to-l.from-amber-50 {
-  background: linear-gradient(160deg, #fff4ea, #fffaf6) !important;
+  background: linear-gradient(160deg, #e6f5ee, #f4fbf8) !important;
   border-color: var(--goldtintline) !important;
 }
 /* opacity-variant coral washes (sticky summary card, per-row total cell) */
@@ -264,9 +276,9 @@ html .from-orange-50\/80,
 html .to-amber-50\/50,
 html .to-amber-50\/60,
 html .to-amber-50\/70 {
-  --tw-gradient-from: #fff4ea !important;
-  --tw-gradient-to: #fffaf6 !important;
-  background: linear-gradient(160deg, #fff4ea, #fffaf6) !important;
+  --tw-gradient-from: #e6f5ee !important;
+  --tw-gradient-to: #f4fbf8 !important;
+  background: linear-gradient(160deg, #e6f5ee, #f4fbf8) !important;
 }
 
 /* ---------- flat coral tints → warm gold tints ---------- */
@@ -285,11 +297,11 @@ html .bg-amber-50\/80 { background-color: var(--goldtint) !important; }
 html .bg-orange-100,
 html .bg-amber-100,
 html .bg-yellow-100,
-html .bg-amber-200 { background-color: #ffe4cc !important; }
+html .bg-amber-200 { background-color: #d4efe3 !important; }
 /* stone greys are cool against warm sand; warm them a notch */
-html .bg-stone-50 { background-color: #faf8f2 !important; }
+html .bg-stone-50 { background-color: #f6f7f4 !important; }
 html .bg-stone-100 { background-color: var(--icotile) !important; }
-html .bg-stone-200 { background-color: #e5dfd2 !important; }
+html .bg-stone-200 { background-color: #dde1dc !important; }
 
 /* ---------- borders / rings ---------- */
 html .border-stone-100,
@@ -314,11 +326,11 @@ html .ring-orange-200,
 html .ring-amber-200,
 html .ring-orange-300\/40,
 html .ring-orange-400\/60,
-html .ring-orange-500 { --tw-ring-color: rgba(249, 115, 22, 0.4) !important; }
+html .ring-orange-500 { --tw-ring-color: rgba(158, 216, 195, 0.65) !important; }
 /* peach drop-shadow tint under CTAs → gold */
 html [class*="shadow-orange-"],
 html [class*="shadow-rose-"] {
-  --tw-shadow-color: rgba(249, 115, 22, 0.28) !important;
+  --tw-shadow-color: rgba(47, 58, 69, 0.28) !important;
 }
 
 /* ---------- primary CTA (the coral gradient) → brand gold gradient ----------
@@ -329,8 +341,8 @@ html .from-orange-500.to-rose-500 {
   background: var(--gold-grad-cta) !important;
   color: var(--gold-ink) !important;
   box-shadow:
-    0 10px 22px -12px rgba(225, 29, 72, 0.45),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+    0 10px 22px -12px rgba(47, 58, 69, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
 }
 html .from-orange-500.to-rose-500 *:not([class*="bg-"]) {
   color: var(--gold-ink) !important;
@@ -398,7 +410,7 @@ html .from-orange-200.to-rose-200,
 html .from-amber-100.to-orange-200,
 html .from-amber-100.to-orange-100,
 html .from-violet-100.to-purple-100 {
-  background: linear-gradient(160deg, #f6ecd4, #fdf7e9) !important;
+  background: linear-gradient(160deg, #e6f5ee, #f4fbf8) !important;
   border: 1px solid var(--goldtintline) !important;
 }
 html .from-orange-200.to-rose-200 svg,
@@ -417,7 +429,7 @@ html .input-warm:hover:not(:focus) { border-color: var(--g3) !important; }
 html .input-warm:focus {
   background: var(--card) !important;
   border-color: var(--inputfocusline) !important;
-  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.28) !important;
+  box-shadow: 0 0 0 3px var(--goldtint) !important;
   transform: none !important;
 }
 html select.input-warm option {
@@ -426,7 +438,7 @@ html select.input-warm option {
 }
 html .accent-orange-500 { accent-color: var(--g3); }
 
-/* focus ring recolour (globals uses coral #f97316) */
+/* focus ring recolour (globals uses the legacy coral) */
 html a[href]:focus-visible,
 html button:focus-visible,
 html [role="button"]:focus-visible,
@@ -463,10 +475,10 @@ html .hover\:bg-amber-50\/60:hover { background-color: var(--goldtint) !importan
 html .hover\:bg-orange-100:hover,
 html .hover\:bg-amber-100:hover,
 html .hover\:bg-amber-100\/70:hover,
-html .hover\:bg-amber-200:hover { background-color: #ffe4cc !important; }
-html .hover\:bg-stone-50:hover { background-color: #f7f4ec !important; }
+html .hover\:bg-amber-200:hover { background-color: #d4efe3 !important; }
+html .hover\:bg-stone-50:hover { background-color: #f2f4f0 !important; }
 html .hover\:bg-stone-100:hover { background-color: var(--icotile) !important; }
-html .hover\:bg-stone-200:hover { background-color: #e5dfd2 !important; }
+html .hover\:bg-stone-200:hover { background-color: #dde1dc !important; }
 
 /* ---------- sidebar ---------- */
 html aside {
@@ -475,7 +487,9 @@ html aside {
 }
 /* active nav pill */
 html .from-orange-100.to-amber-50 {
-  background: linear-gradient(90deg, #f7eed8, var(--panel)) !important;
+  background: var(--goldtint) !important;
+  color: var(--gold-text) !important;
+  font-weight: 800 !important;
   box-shadow: inset 0 0 0 1px var(--goldtintline) !important;
 }
 /* rest-state nav icon tile */
@@ -505,16 +519,22 @@ html .ftile {
   border: 1px solid var(--ft-line) !important;
 }
 html .ftile svg { color: var(--ft-ink) !important; }
-html .ftile-amber   { --ft-bg:#fef3c7; --ft-line:#fde68a80; --ft-ink:#d97706; }
-html .ftile-indigo  { --ft-bg:#e0e7ff; --ft-line:#c7d2fe80; --ft-ink:#4f46e5; }
-html .ftile-teal    { --ft-bg:#ccfbf1; --ft-line:#99f6e480; --ft-ink:#0d9488; }
-html .ftile-violet  { --ft-bg:#ede9fe; --ft-line:#ddd6fe80; --ft-ink:#7c3aed; }
-html .ftile-pink    { --ft-bg:#fce7f3; --ft-line:#fbcfe880; --ft-ink:#db2777; }
-html .ftile-sky     { --ft-bg:#e0f2fe; --ft-line:#bae6fd80; --ft-ink:#0284c7; }
-html .ftile-orange  { --ft-bg:#ffedd5; --ft-line:#fed7aa80; --ft-ink:#ea580c; }
-html .ftile-emerald { --ft-bg:#d1fae5; --ft-line:#a7f3d080; --ft-ink:#059669; }
-html .ftile-slate   { --ft-bg:#e2e8f0; --ft-line:#cbd5e180; --ft-ink:#475569; }
-html .ftile-rose    { --ft-bg:#ffe4e6; --ft-line:#fecdd380; --ft-ink:#e11d48; }
+/* Rebrand 2026-09-06: the ten hues collapse onto the three brand tones
+   (peach / graphite / mint) in a fixed rotation, so a screen full of tiles
+   still has rhythm without reintroducing a rainbow. The tone NAMES stay
+   (src/lib/feature-tones.ts maps features to them); only the values move.
+   Every ink clears 3:1 on its own tint (glyphs are non-text graphics,
+   WCAG 1.4.11): peach 4.1:1 · graphite 10.9:1 · mint 4.4:1. */
+html .ftile-amber   { --ft-bg:#fdeee6; --ft-line:#f3cdb980; --ft-ink:#b85a32; }
+html .ftile-orange  { --ft-bg:#fdeee6; --ft-line:#f3cdb980; --ft-ink:#b85a32; }
+html .ftile-rose    { --ft-bg:#fdeee6; --ft-line:#f3cdb980; --ft-ink:#b85a32; }
+html .ftile-pink    { --ft-bg:#fdeee6; --ft-line:#f3cdb980; --ft-ink:#b85a32; }
+html .ftile-indigo  { --ft-bg:#e9ecef; --ft-line:#d5dae080; --ft-ink:#2f3a45; }
+html .ftile-violet  { --ft-bg:#e9ecef; --ft-line:#d5dae080; --ft-ink:#2f3a45; }
+html .ftile-sky     { --ft-bg:#e9ecef; --ft-line:#d5dae080; --ft-ink:#2f3a45; }
+html .ftile-slate   { --ft-bg:#e9ecef; --ft-line:#d5dae080; --ft-ink:#2f3a45; }
+html .ftile-teal    { --ft-bg:#e6f5ee; --ft-line:#bfe6d680; --ft-ink:#2a7a62; }
+html .ftile-emerald { --ft-bg:#e6f5ee; --ft-line:#bfe6d680; --ft-ink:#2a7a62; }
 /* nav rest-state hover: toned tiles deepen slightly instead of turning gold
    (the gold hover above is scoped :not(.ftile), so it no longer fires here) */
 html aside a:hover .ftile { filter: saturate(1.15) brightness(0.97); }
@@ -529,14 +549,18 @@ html aside a:hover .ftile { filter: saturate(1.15) brightness(0.97); }
    greeting, חשבונית ישראל, migrate, and admin. */
 html .fgrad { color: #fff !important; }
 html .fgrad svg { color: #fff !important; }
-html .fgrad-indigo  { background: linear-gradient(135deg, #818cf8, #4f46e5) !important; }
-html .fgrad-teal    { background: linear-gradient(135deg, #2dd4bf, #0d9488) !important; }
-html .fgrad-violet  { background: linear-gradient(135deg, #a78bfa, #7c3aed) !important; }
-html .fgrad-pink    { background: linear-gradient(135deg, #f472b6, #db2777) !important; }
-html .fgrad-sky     { background: linear-gradient(135deg, #38bdf8, #0284c7) !important; }
-html .fgrad-orange  { background: linear-gradient(135deg, #fb923c, #ea580c) !important; }
-html .fgrad-emerald { background: linear-gradient(135deg, #34d399, #059669) !important; }
-html .fgrad-slate   { background: linear-gradient(135deg, #94a3b8, #475569) !important; }
+/* Same three-tone rotation as .ftile-*, as a filled tile. These carry WHITE
+   glyphs, so the fill has to be the DARK end of each tone (peach ink, not
+   peach): white on #b85a32 is 4.9:1, on #2f3a45 11.6:1, on #2a7a62 5.4:1.
+   The pale mint / peach themselves would leave the glyph invisible. */
+html .fgrad-indigo  { background: linear-gradient(135deg, #2f3a45, #263039) !important; }
+html .fgrad-violet  { background: linear-gradient(135deg, #2f3a45, #263039) !important; }
+html .fgrad-sky     { background: linear-gradient(135deg, #2f3a45, #263039) !important; }
+html .fgrad-slate   { background: linear-gradient(135deg, #2f3a45, #263039) !important; }
+html .fgrad-teal    { background: linear-gradient(135deg, #2a7a62, #236653) !important; }
+html .fgrad-emerald { background: linear-gradient(135deg, #2a7a62, #236653) !important; }
+html .fgrad-pink    { background: linear-gradient(135deg, #b85a32, #8e4223) !important; }
+html .fgrad-orange  { background: linear-gradient(135deg, #b85a32, #8e4223) !important; }
 
 /* ---------- KPI markers (dashboard) ---------- */
 html .gk-label {
@@ -727,7 +751,7 @@ html .pgbtn-quiet {
   background: var(--card);
   border-color: var(--goldline);
   color: var(--ink);
-  box-shadow: 0 1px 2px rgba(60, 45, 20, 0.05);
+  box-shadow: 0 1px 2px rgba(47, 58, 69, 0.05);
 }
 html .pgbtn-quiet svg {
   color: var(--gold-text);
@@ -763,7 +787,7 @@ html .pgbtn-primary {
   color: var(--gold-ink);
   border-color: transparent;
   box-shadow:
-    0 10px 22px -12px rgba(225, 29, 72, 0.45),
+    0 10px 22px -12px rgba(47, 58, 69, 0.45),
     inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 html .pgbtn-primary svg {
@@ -784,7 +808,7 @@ html .pgbtn-primary:not(.pgbtn) {
 html .pgbtn-primary:hover:not(:disabled) {
   filter: brightness(1.05);
   box-shadow:
-    0 14px 26px -12px rgba(225, 29, 72, 0.5),
+    0 14px 26px -12px rgba(47, 58, 69, 0.5),
     inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
@@ -883,7 +907,7 @@ html .rp-period-group {
   /* 2026-08-26 colour diet: white panel, neutral hairline. The accent
      lives on the one CTA above it, not on this enclosure. */
   background: #ffffff;
-  border: 1px solid #e9e4d8;
+  border: 1px solid #e4e7e2;
   border-radius: 20px;
   padding: 16px 16px 18px;
 }
@@ -901,14 +925,14 @@ html .rp-period-label {
   gap: 7px;
   font-size: 12.5px;
   font-weight: 700;
-  color: #57534e;
+  color: #5f6b76;
 }
 html .rp-period-label::before {
   content: "";
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #1c1917;
+  background: #1f252b;
   flex-shrink: 0;
 }
 /* The dashboard's segmented period picker (חודש / חודשיים / חצי שנה / שנה),
@@ -923,7 +947,7 @@ html .dash-range {
   background: var(--card);
   border: 1px solid var(--goldline);
   border-radius: 14px;
-  box-shadow: 0 1px 2px rgba(60, 45, 20, 0.05);
+  box-shadow: 0 1px 2px rgba(47, 58, 69, 0.05);
 }
 
 @media (max-width: 639.98px) {
@@ -993,7 +1017,7 @@ html .rpt-stepper {
   background: var(--card);
   border: 1px solid var(--goldline);
   border-radius: 14px;
-  box-shadow: 0 1px 2px rgba(60, 45, 20, 0.05);
+  box-shadow: 0 1px 2px rgba(47, 58, 69, 0.05);
 }
 html .rpt-stepper b {
   min-width: 5.2rem;
@@ -1185,10 +1209,10 @@ html .rpt-legend {
 html .rpt-legend span { display: inline-flex; align-items: center; gap: 0.4rem; }
 html .rpt-chart-dot { width: 0.7rem; height: 0.7rem; border-radius: 3px; display: inline-block; flex: none; }
 html .rpt-chart-dot-income { background: var(--gold-grad); }
-html .rpt-chart-dot-expense { background: #d9d0bf; }
+html .rpt-chart-dot-expense { background: #f6b89e; }
 html .rpt-chart { position: relative; }
 html .rpt-chart svg { display: block; width: 100%; height: 236px; direction: ltr; overflow: visible; }
-html .rpt-chart-grid { stroke: #ece6d8; stroke-width: 1; }
+html .rpt-chart-grid { stroke: #e4e7e2; stroke-width: 1; }
 html .rpt-chart-tick { font-size: 11px; font-weight: 600; fill: var(--muted); font-family: inherit; }
 html .rpt-chart-label { font-size: 11.5px; font-weight: 600; fill: var(--ink2); font-family: inherit; }
 /* Bar face fills are set inline per-face (3D top/side/front need different
@@ -1285,7 +1309,7 @@ html .rpt-table th {
 }
 html .rpt-table td {
   padding: 0.62rem 1.1rem;
-  border-bottom: 1px solid #f2ede1;
+  border-bottom: 1px solid #eef0ec;
   color: var(--ink);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -1344,7 +1368,7 @@ html .rpt-rc:hover {
 html .rpt-rc:focus-visible { outline: 2px solid var(--g3); outline-offset: 2px; }
 html .rpt-rc-featured {
   border-color: var(--goldline) !important;
-  background: linear-gradient(170deg, var(--goldtint), #fffef9) !important;
+  background: linear-gradient(170deg, var(--goldtint), #f9fdfb) !important;
 }
 html .rpt-rc-title { font-size: 0.95rem; font-weight: 700; }
 html .rpt-rc-desc { font-size: 0.78rem; line-height: 1.45; color: var(--muted); flex: 1; }
@@ -1532,9 +1556,9 @@ html {
 
   /* SHADOW - three named roles, one definition each. */
   --dc-sh-band: 0 1px 0 0 var(--goldline);
-  --dc-sh-lift: 0 10px 24px -18px rgba(60, 45, 20, 0.55);
-  --dc-sh-focus: 0 0 0 3px rgba(249, 115, 22, 0.28);
-  --dc-sh-pop: 0 18px 40px -20px rgba(60, 45, 20, 0.55), 0 2px 8px -4px rgba(60, 45, 20, 0.3);
+  --dc-sh-lift: 0 10px 24px -18px rgba(47, 58, 69, 0.55);
+  --dc-sh-focus: 0 0 0 3px rgba(158, 216, 195, 0.35);
+  --dc-sh-pop: 0 18px 40px -20px rgba(47, 58, 69, 0.55), 0 2px 8px -4px rgba(47, 58, 69, 0.3);
 }
 
 /* =====================================================================
@@ -1707,7 +1731,7 @@ html .dcbar-clear {
 }
 html .dcbar-clear:hover {
   color: var(--ink);
-  background: #ffe4cc;
+  background: #d4efe3;
 }
 /* Its own ring rather than the global one: this button sits INSIDE a field, and
    the global 2px offset would draw the ring on top of the input's own border. */
@@ -1743,7 +1767,7 @@ html .dcbar-reset {
   color: var(--gold-text);
 }
 html .dcbar-reset:hover {
-  background: #ffe4cc;
+  background: #d4efe3;
 }
 
 /* The date-range row, shown under the grid only while the month select says
@@ -1842,7 +1866,7 @@ html .dc-head {
   margin-bottom: var(--dc-sp-1);
   border-radius: var(--dc-r-2);
   border-color: var(--goldtintline);
-  background: linear-gradient(180deg, #fdfaf2 0%, #f6efdc 100%);
+  background: linear-gradient(180deg, #f6fcf9 0%, #e6f5ee 100%);
   box-shadow: var(--dc-sh-band);
 }
 html .dc-head .dc-cell {
@@ -2021,7 +2045,7 @@ html .dc-chip {
   border-radius: var(--dc-r-1);
   border: 1px solid transparent;
   background: transparent;
-  color: #1c1917;
+  color: #1f252b;
   font-size: var(--dc-fs-3);
   font-weight: 600;
   line-height: 1;
@@ -2154,7 +2178,7 @@ html .dc-num {
   unicode-bidi: isolate;
   text-align: end;
   font-weight: 700;
-  color: #1c1917;
+  color: #1f252b;
 }
 /* The placeholder for a document with no allocation number, in a list where
    some other document has one. */
@@ -2175,7 +2199,7 @@ html .dc-mail {
   color: var(--muted);
   white-space: nowrap;
 }
-html .dc-mail[data-sent] { color: #57534e; }
+html .dc-mail[data-sent] { color: #5f6b76; }
 html .dc-mailicon {
   width: 0.95rem;
   height: 0.95rem;
@@ -2461,12 +2485,12 @@ html .dc-head .dc-filter {
 }
 html .dc-head .dc-sort:hover,
 html .dc-head .dc-filter:hover {
-  background: rgba(249, 115, 22, 0.16);
+  background: rgba(158, 216, 195, 0.35);
   color: var(--gold-text);
 }
 html .dc-head .dc-sort:focus-visible,
 html .dc-head .dc-filter:focus-visible {
-  background: rgba(249, 115, 22, 0.16);
+  background: rgba(158, 216, 195, 0.35);
   color: var(--gold-text);
   outline: 2px solid var(--g3);
   outline-offset: -2px;
@@ -2475,7 +2499,7 @@ html .dc-head .dc-filter:focus-visible {
    bottom rule, in gold and twice as thick: the classic table-header tell,
    and it cannot shift a column because it is an inset shadow. */
 html .dc-head .dc-sort[data-active] {
-  background: rgba(249, 115, 22, 0.2);
+  background: rgba(158, 216, 195, 0.5);
   box-shadow: inset 0 -2px 0 0 var(--g3);
   color: var(--gold-text);
 }
@@ -2510,11 +2534,11 @@ html .dc-sort[data-active] .dc-sorticon { opacity: 1; }
    filled funnel at full opacity. The two states cannot be confused - no column
    is both sortable and filterable. */
 html .dc-head .dc-filter[data-open] {
-  background: rgba(249, 115, 22, 0.16);
+  background: rgba(158, 216, 195, 0.35);
   color: var(--gold-text);
 }
 html .dc-head .dc-filter[data-active] {
-  background: rgba(249, 115, 22, 0.2);
+  background: rgba(158, 216, 195, 0.5);
   box-shadow: inset 0 -2px 0 0 var(--g3);
   color: var(--gold-text);
 }
@@ -2942,7 +2966,7 @@ html .dc-empty {
     border: 0;
     border-bottom: 1px solid var(--goldtintline);
     border-radius: 0;
-    background: linear-gradient(180deg, #fdfaf2 0%, #f6efdc 100%);
+    background: linear-gradient(180deg, #f6fcf9 0%, #e6f5ee 100%);
     box-shadow: none;
   }
   html .dc-head .dc-cell { display: none; }
@@ -3101,13 +3125,13 @@ html .dc-empty {
 html .gk-plan-featured.card-soft {
   border-color: var(--goldtintline) !important;
   background: linear-gradient(180deg, var(--goldtint), var(--card) 45%) !important;
-  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.28), var(--shadow-lg) !important;
+  box-shadow: 0 0 0 1px rgba(158, 216, 195, 0.6), var(--shadow-lg) !important;
 }
 html .gk-danger.card-soft {
-  border-color: #e3b3a8 !important;
+  border-color: #f3cdb9 !important;
   border-right-width: 3px !important;
-  border-right-color: #a63c28 !important;
-  background: linear-gradient(160deg, #fdf6f4, var(--card) 60%) !important;
+  border-right-color: #b85a32 !important;
+  background: linear-gradient(160deg, #fdf6f2, var(--card) 60%) !important;
 }
 
 /* ---------- segmented control track ---------- */
@@ -3147,9 +3171,9 @@ html .gk-paper {
 
 /* ---------- scrollbar ---------- */
 /* Same visibility bump as globals.css (2026-08-25), in the app's gold. */
-html ::-webkit-scrollbar-thumb { background: rgba(143, 111, 42, 0.6); background-clip: padding-box; }
-html ::-webkit-scrollbar-thumb:hover { background: rgba(143, 111, 42, 0.85); background-clip: padding-box; }
-html { scrollbar-color: rgba(143, 111, 42, 0.6) rgba(120, 90, 40, 0.1); }
+html ::-webkit-scrollbar-thumb { background: rgba(95, 107, 118, 0.55); background-clip: padding-box; }
+html ::-webkit-scrollbar-thumb:hover { background: rgba(95, 107, 118, 0.8); background-clip: padding-box; }
+html { scrollbar-color: rgba(95, 107, 118, 0.55) rgba(47, 58, 69, 0.08); }
 
 /* ---------- PRINT / PDF ----------
    The server PDF route drives headless Chrome to /view and prints with
@@ -3160,7 +3184,7 @@ html { scrollbar-color: rgba(143, 111, 42, 0.6) rgba(120, 90, 40, 0.1); }
   html body {
     background: #ffffff !important;
     background-color: #ffffff !important;
-    color: #1c1917 !important;
+    color: #1f252b !important;
   }
 }
 
@@ -3176,14 +3200,14 @@ html { scrollbar-color: rgba(143, 111, 42, 0.6) rgba(120, 90, 40, 0.1); }
 
 /* Disabled primary CTA. (WCAG exempts disabled controls, but a label you
    cannot read at all reads as "broken" rather than "not yet available".
-   #665f4e on #eae5d8 is 5.0:1: muted, still readable.) */
+   #5a6570 on #e6e9e5 is 5.0:1: muted, still readable.) */
 html button:disabled.from-orange-500,
 html button:disabled.bg-orange-500 {
-  background: #eae5d8 !important;
-  color: #665f4e !important;
+  background: #e6e9e5 !important;
+  color: #5a6570 !important;
   box-shadow: none !important;
 }
-html button:disabled.from-orange-500 * { color: #665f4e !important; }
+html button:disabled.from-orange-500 * { color: #5a6570 !important; }
 
 /* =====================================================================
    DASHBOARD SCALE-UP: desktop only (layout/size only, no colour)
@@ -3227,7 +3251,7 @@ html button:disabled.from-orange-500 * { color: #665f4e !important; }
   html .gk-dashboard .gk-kpi .gk-label {
     flex: 0 0 auto;
     font-size: 0.8rem;
-    color: #57534e;
+    color: #5f6b76;
   }
   html .gk-dashboard .gk-kpi .gk-value {
     flex: 1 1 auto;
@@ -3254,6 +3278,8 @@ html button:disabled.from-orange-500 * { color: #665f4e !important; }
 
 @media (min-width: 1024px) {
   html .gk-dashboard h1 {
+    font-family: var(--font-rubik), "Rubik", var(--font-heebo), sans-serif;
+    font-weight: 800;
     font-size: 2.35rem;
     line-height: 1.15;
   }
@@ -3511,8 +3537,8 @@ html .text-\[13px\] { font-size: 14px; }
    above, so marketing, /login and the public document pages are untouched,
    and print (px-based sheet) is immune.
    ===================================================================== */
-html:has([data-app-sidebar]) { --muted: #544c3e; --ink2: #463f34; }
-html:has([data-app-sidebar]) .input-warm::placeholder { color: #6f6757 !important; }
+html:has([data-app-sidebar]) { --muted: #4f5a64; --ink2: #333d46; }
+html:has([data-app-sidebar]) .input-warm::placeholder { color: #5f6b76 !important; }
 
 @media screen and (min-width: 64rem) {
   html:has([data-app-sidebar]) .text-xs { font-size: 0.82rem; line-height: 1.35; }
@@ -3554,10 +3580,11 @@ html[data-text-size="large"]:has([data-app-sidebar]) { font-size: 19px; }
   position: absolute;
   inset: 0;
   border-radius: 9999px;
-  /* Gold, not the coral the Tailwind classes suggest: the skin repaints the
-     pill with --gold-grad, so the ring must match what is actually on screen. */
-  border: 2px solid var(--g2, #f97316);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--g2, #f97316) 40%, transparent);
+  /* MINT, not the pill's own graphite: the launcher is a solid graphite pill
+     since the 2026-09-06 rebrand, and a graphite ring blooming out of a
+     graphite pill is invisible - which is the whole point of the nudge. */
+  border: 2px solid #9ed8c3;
+  box-shadow: 0 0 0 4px color-mix(in srgb, #9ed8c3 45%, transparent);
   opacity: 0;
   pointer-events: none;
   animation: assistant-launcher-ring 30s ease-out infinite;
@@ -3571,35 +3598,35 @@ html[data-text-size="large"]:has([data-app-sidebar]) { font-size: 19px; }
 
 /* ===== דוח הפקה - מבנה אחיד (components/uniform-structure-report.tsx) ===== */
 html .usr-overlay { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; padding: 1rem; }
-html .usr-backdrop { position: absolute; inset: 0; background: rgba(28, 25, 23, 0.45); backdrop-filter: blur(2px); }
+html .usr-backdrop { position: absolute; inset: 0; background: rgba(31, 37, 43, 0.45); backdrop-filter: blur(2px); }
 html .usr-panel {
   position: relative; width: 100%; max-width: 52rem; max-height: calc(100vh - 2rem);
   display: flex; flex-direction: column; background: #fff; border-radius: 1.25rem;
-  box-shadow: 0 24px 60px rgba(28, 25, 23, 0.25); overflow: hidden;
+  box-shadow: 0 24px 60px rgba(31, 37, 43, 0.25); overflow: hidden;
 }
-html .usr-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; padding: 1.25rem 1.5rem 1rem; border-bottom: 1px solid #e7e5e4; }
-html .usr-title { font-size: 1.25rem; font-weight: 700; color: #1c1917; margin: 0; }
-html .usr-sub { font-size: 0.85rem; color: #57534e; margin: 0.25rem 0 0; }
+html .usr-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; padding: 1.25rem 1.5rem 1rem; border-bottom: 1px solid #e4e7e2; }
+html .usr-title { font-size: 1.25rem; font-weight: 700; color: #1f252b; margin: 0; }
+html .usr-sub { font-size: 0.85rem; color: #5f6b76; margin: 0.25rem 0 0; }
 html .usr-actions { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
-html .usr-close { width: 2.25rem; height: 2.25rem; border-radius: 9999px; display: inline-flex; align-items: center; justify-content: center; color: #57534e; background: transparent; border: 0; cursor: pointer; }
-html .usr-close:hover { background: #f5f5f4; color: #1c1917; }
+html .usr-close { width: 2.25rem; height: 2.25rem; border-radius: 9999px; display: inline-flex; align-items: center; justify-content: center; color: #5f6b76; background: transparent; border: 0; cursor: pointer; }
+html .usr-close:hover { background: #f2f4f0; color: #1f252b; }
 html .usr-close svg { width: 1.1rem; height: 1.1rem; }
 html .usr-scroll { overflow: auto; padding: 1.25rem 1.5rem 1.5rem; }
-html .usr-body { color: #1c1917; font-size: 0.9rem; line-height: 1.6; }
-html .usr-block + .usr-block { margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px dashed #d6d3d1; }
-html .usr-h2 { font-size: 1rem; font-weight: 700; margin: 0 0 0.6rem; color: #1c1917; }
+html .usr-body { color: #1f252b; font-size: 0.9rem; line-height: 1.6; }
+html .usr-block + .usr-block { margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px dashed #dce0dd; }
+html .usr-h2 { font-size: 1rem; font-weight: 700; margin: 0 0 0.6rem; color: #1f252b; }
 html .usr-dl { display: grid; grid-template-columns: max-content 1fr; gap: 0.3rem 1rem; margin: 0; }
-html .usr-dl dt { color: #57534e; }
+html .usr-dl dt { color: #5f6b76; }
 html .usr-dl dd { margin: 0; font-weight: 500; overflow-wrap: anywhere; }
 html .usr-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.85em; }
-html .usr-note { margin: 0.6rem 0 0; font-size: 0.8rem; color: #57534e; }
-html .usr-warn { margin: 1.25rem 0 0; padding: 0.6rem 0.9rem; border-radius: 0.75rem; background: #fff7ed; color: #9a3412; font-size: 0.85rem; }
+html .usr-note { margin: 0.6rem 0 0; font-size: 0.8rem; color: #5f6b76; }
+html .usr-warn { margin: 1.25rem 0 0; padding: 0.6rem 0.9rem; border-radius: 0.75rem; background: #fdeee6; color: #b85a32; font-size: 0.85rem; }
 html .usr-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-html .usr-table th, html .usr-table td { padding: 0.4rem 0.6rem; border-bottom: 1px solid #e7e5e4; text-align: right; }
-html .usr-table th { font-weight: 700; color: #44403c; background: #fafaf9; }
-html .usr-table tfoot td { font-weight: 700; border-top: 2px solid #d6d3d1; border-bottom: 0; }
+html .usr-table th, html .usr-table td { padding: 0.4rem 0.6rem; border-bottom: 1px solid #e4e7e2; text-align: right; }
+html .usr-table th { font-weight: 700; color: #3f4a54; background: #f7f7f2; }
+html .usr-table tfoot td { font-weight: 700; border-top: 2px solid #dce0dd; border-bottom: 0; }
 html .usr-table .usr-num { text-align: left; font-variant-numeric: tabular-nums; }
-html .usr-table .usr-zero td { color: #a8a29e; }
+html .usr-table .usr-zero td { color: #8b95a0; }
 html .usr-print-head { margin-bottom: 1rem; }
 html .usr-print-biz { font-weight: 700; }
 html .usr-print-title { font-size: 1.2rem; font-weight: 700; margin: 0.15rem 0 0; }

@@ -76,40 +76,40 @@ function buildHtml(businessName: string, summary: MonthlyReminderSummary): strin
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
   <title>${escapeHtml(businessName)}</title>
 </head>
-<body style="margin:0;padding:0;background:#f5f5f4;font-family:Arial,sans-serif;">
+<body style="margin:0;padding:0;background:#f7f7f2;font-family:Arial,sans-serif;">
   <div dir="rtl" style="max-width:600px;margin:0 auto;padding:20px;">
-    <div style="background:linear-gradient(135deg,#f97316,#e11d48);padding:24px;border-radius:16px;color:white;text-align:center;margin-bottom:24px;">
+    <div style="background:#2f3a45;background-image:linear-gradient(135deg,#2f3a45,#263039);padding:24px;border-radius:16px;color:#ffffff;text-align:center;margin-bottom:24px;">
       <h1 style="margin:0;font-size:22px;">${escapeHtml(businessName)}</h1>
       <p style="margin:8px 0 0 0;font-size:14px;opacity:0.9;">תזכורת חודשית - ${escapeHtml(summary.periodLabel)}</p>
     </div>
-    <div style="background:#fffaf5;border:1px solid #fed7aa;border-radius:12px;padding:24px;margin-bottom:24px;">
-      <p style="margin:0 0 16px 0;font-size:15px;color:#44403c;line-height:1.6;">
+    <div style="background:#ffffff;border:1px solid #e4e7e2;border-radius:12px;padding:24px;margin-bottom:24px;">
+      <p style="margin:0 0 16px 0;font-size:15px;color:#1f252b;line-height:1.6;">
         החודש הוצאתם ${summary.documentsThisMonthCount} מסמכים. הנה מה שכדאי לבדוק:
       </p>
       ${
         summary.openItems.length
-          ? `<p style="margin:0 0 6px 0;font-size:14px;font-weight:bold;color:#44403c;">מסמכים פתוחים שטרם הפכו לחשבונית:</p>
-             <ul style="margin:0 0 16px 0;padding-inline-start:20px;font-size:14px;color:#44403c;">${openRows}</ul>`
+          ? `<p style="margin:0 0 6px 0;font-size:14px;font-weight:bold;color:#1f252b;">מסמכים פתוחים שטרם הפכו לחשבונית:</p>
+             <ul style="margin:0 0 16px 0;padding-inline-start:20px;font-size:14px;color:#1f252b;">${openRows}</ul>`
           : ""
       }
       ${
         summary.missingRetainerClients.length
-          ? `<p style="margin:0 0 6px 0;font-size:14px;font-weight:bold;color:#44403c;">לקוחות שקיבלו מסמך חודש שעבר אך לא החודש:</p>
-             <ul style="margin:0 0 16px 0;padding-inline-start:20px;font-size:14px;color:#44403c;">${retainerRows}</ul>`
+          ? `<p style="margin:0 0 6px 0;font-size:14px;font-weight:bold;color:#1f252b;">לקוחות שקיבלו מסמך חודש שעבר אך לא החודש:</p>
+             <ul style="margin:0 0 16px 0;padding-inline-start:20px;font-size:14px;color:#1f252b;">${retainerRows}</ul>`
           : ""
       }
       ${
         summary.unpaidCount > 0
-          ? `<p style="margin:0 0 16px 0;font-size:14px;color:#44403c;">יש ${summary.unpaidCount} מסמכים שטרם שולמו.</p>`
+          ? `<p style="margin:0 0 16px 0;font-size:14px;color:#1f252b;">יש ${summary.unpaidCount} מסמכים שטרם שולמו.</p>`
           : ""
       }
     </div>
     <div style="text-align:center;margin-bottom:24px;">
-      <a href="${escapeHtml(APP_URL)}/documents" style="display:inline-block;background:linear-gradient(135deg,#f97316,#e11d48);color:white;text-decoration:none;padding:14px 32px;border-radius:12px;font-size:16px;font-weight:bold;">
+      <a href="${escapeHtml(APP_URL)}/documents" style="display:inline-block;background:#2f3a45;background-image:linear-gradient(135deg,#2f3a45,#263039);color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:12px;font-size:16px;font-weight:bold;">
         לצפייה במסמכים ←
       </a>
     </div>
-    <p style="font-size:11px;color:#a8a29e;text-align:center;">תזכורת חודשית אוטומטית. ניתן לכבות בהגדרות החשבון.</p>
+    <p style="font-size:11px;color:#8b95a0;text-align:center;">תזכורת חודשית אוטומטית. ניתן לכבות בהגדרות החשבון.</p>
   </div>
 </body>
 </html>`;

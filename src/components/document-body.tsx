@@ -198,11 +198,13 @@ export function DocumentBody({
       <div className="doc-card doc-head">
         <div className="doc-biz">
           {/* Business logo is OPTIONAL. Without one, the app's own mark takes
-              the slot (Asaf, 2026-08-31) - never a monogram or initials. */}
+              the slot (Asaf, 2026-08-31) - never a monogram or initials.
+              logo-v2 is the BARE mark (no mint app tile): on the paper it has
+              to read as a quiet stamp, not as a coloured app icon. */}
           {business.logoUrl ? (
             <img src={business.logoUrl} alt={business.name} className="doc-logo" />
           ) : (
-            <img src="/logo.svg" alt="" aria-hidden="true" className="doc-logo is-app" />
+            <img src="/logo-v2.svg" alt="" aria-hidden="true" className="doc-logo is-app" />
           )}
           <div>
             <h1 className="doc-name doc-serif">{businessName}</h1>
@@ -473,7 +475,7 @@ export function DocumentBody({
               target="_blank"
               rel="noopener noreferrer"
             >
-              <Ltr>MyFriendlyInvoiceApp · {CANONICAL_HOST}</Ltr>
+              חשבונית ידידותית · <Ltr>{CANONICAL_HOST}</Ltr>
             </a>
           </div>
         )}

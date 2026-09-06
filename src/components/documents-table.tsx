@@ -563,7 +563,7 @@ export function DocumentsTable({ documents, limit, exportSlot, onPrintingChange 
             ) : (
               <Link
                 href="/documents/new"
-                className="btn-glow inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-5 py-2.5 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200/60 hover:-translate-y-0.5 transition-all mt-4"
+                className="btn-glow inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-orange-700 text-white px-5 py-2.5 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200/60 hover:-translate-y-0.5 transition-all mt-4"
               >
                 <FilePlus2 className="w-4 h-4" />
                 צור מסמך ראשון

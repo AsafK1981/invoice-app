@@ -195,7 +195,7 @@ export function AccountSettingsModal({ open, onClose }: Props) {
             <button
               onClick={handleChangePassword}
               disabled={saving || !password}
-              className="px-4 py-2 rounded-xl text-sm font-semibold bg-gradient-to-l from-orange-500 to-rose-500 text-white hover:shadow-md hover:shadow-orange-200 disabled:opacity-50"
+              className="px-4 py-2 rounded-xl text-sm font-semibold bg-gradient-to-l from-orange-500 to-orange-700 text-white hover:shadow-md hover:shadow-orange-200 disabled:opacity-50"
             >
               {saving ? "שומר..." : "עדכן סיסמה"}
             </button>

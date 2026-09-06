@@ -489,7 +489,7 @@ export function BulkImportZone() {
           className="hidden"
         />
         <div
-          className={`w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center shadow-md mx-auto mb-4 transition-transform ${
+          className={`w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-700 flex items-center justify-center shadow-md mx-auto mb-4 transition-transform ${
             dragging ? "scale-110" : ""
           }`}
         >
@@ -506,7 +506,7 @@ export function BulkImportZone() {
             e.stopPropagation();
             inputRef.current?.click();
           }}
-          className="mt-2 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-l from-orange-500 to-rose-500 text-white shadow-md hover:shadow-lg hover:shadow-orange-200 transition-shadow disabled:opacity-60"
+          className="mt-2 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-l from-orange-500 to-orange-700 text-white shadow-md hover:shadow-lg hover:shadow-orange-200 transition-shadow disabled:opacity-60"
         >
           <FolderOpen className="w-4 h-4" />
           בחר קבצים מהמחשב
@@ -608,7 +608,7 @@ export function BulkImportZone() {
             <button
               onClick={handleImportAll}
               disabled={importing}
-              className="w-full btn-glow inline-flex items-center justify-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white py-3 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200/60 disabled:opacity-50"
+              className="w-full btn-glow inline-flex items-center justify-center gap-2 bg-gradient-to-l from-orange-500 to-orange-700 text-white py-3 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200/60 disabled:opacity-50"
             >
               <Upload className="w-4 h-4" />
               {importing

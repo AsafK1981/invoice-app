@@ -1,0 +1,192 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800;900&family=Rubik:wght@500;700;800;900&display=swap">
+  <style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Heebo", "Segoe UI", Arial, sans-serif; color: #1F252B; background: #F7F7F2; -webkit-font-smoothing: antialiased; }
+  a { color: #2F3A45; text-decoration: none; } a:hover { color: #2A7A62; }
+  .wm { font-family: "Rubik", "Heebo", Arial, sans-serif; font-weight: 900; letter-spacing: -0.01em; color: #2F3A45; line-height: 1; }
+  .h { font-family: "Rubik", "Heebo", Arial, sans-serif; font-weight: 800; color: #2F3A45; letter-spacing: -0.01em; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 46px; padding: 0 22px; border-radius: 12px; font-weight: 700; font-size: 15px; border: 1px solid transparent; white-space: nowrap; }
+  .btn-primary { background: #2F3A45; color: #FFFFFF; }
+  .btn-secondary { background: #FFFFFF; color: #2F3A45; border-color: #E4E7E2; }
+  .btn-mint { background: #9ED8C3; color: #2F3A45; }
+  .btn-sm { height: 38px; padding: 0 16px; font-size: 14px; border-radius: 10px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 12px; border-radius: 999px; font-size: 13px; font-weight: 600; }
+  .chip-paid { background: #E6F5EE; color: #2A7A62; }
+  .chip-wait { background: #FDEEE6; color: #B85A32; }
+  .chip-draft { background: #EEF0EE; color: #5F6B76; }
+  .chip-sent { background: #E9EEF5; color: #34506E; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .card { background: #FFFFFF; border: 1px solid #E4E7E2; border-radius: 16px; }
+  .ico { width: 20px; height: 20px; }
+  .tile { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+  .num { font-variant-numeric: tabular-nums; }
+.page { width: 1200px; height: 760px; background: #F7F7F2; direction: rtl; padding: 32px; display:grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto auto; gap: 20px; }
+   .sec { padding: 22px 24px; display:flex; flex-direction:column; gap: 16px; }
+   .sec h3 { margin:0; font-size: 14px; font-weight: 700; color: #8B95A0; letter-spacing: 0.04em; }
+   .field { height:44px; border:1px solid #E4E7E2; border-radius:12px; background:#FFFFFF; display:flex; align-items:center; padding:0 14px; font-size:14px; color:#8B95A0; gap:10px; }
+   .field.focus { border-color:#9ED8C3; box-shadow:0 0 0 3px #E6F5EE; color:#1F252B; }</style>
+</helmet>
+<div class="page">
+    <div class="card sec" style="grid-row: span 2;">
+      <h3>הלוגו</h3>
+      <div style="display:flex;align-items:center;gap:28px;">
+        <svg width="150" height="157" viewBox="-14 0 134 140" fill="none" xmlns="http://www.w3.org/2000/svg" >
+    <path d="M22 8h56l30 30v90a12 12 0 0 1-12 12H22a12 12 0 0 1-12-12V20A12 12 0 0 1 22 8z" fill="#FFFFFF" stroke="#2F3A45" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M78 8v20a10 10 0 0 0 10 10h20z" fill="#9ED8C3" stroke="#2F3A45" stroke-width="7" stroke-linejoin="round"/>
+    <circle cx="40" cy="60" r="5" fill="#2F3A45"/><circle cx="72" cy="60" r="5" fill="#2F3A45"/>
+    <path d="M43 76q13 12 26 0" stroke="#2F3A45" stroke-width="6" stroke-linecap="round"/>
+    <circle cx="29" cy="72" r="6" fill="#F6B89E"/><circle cx="83" cy="72" r="6" fill="#F6B89E"/>
+    <path d="M30 100h50M30 115h30" stroke="#9ED8C3" stroke-width="7" stroke-linecap="round"/>
+    <path d="M3 118l-10 8M2 106l-12 1" stroke="#2F3A45" stroke-width="5" stroke-linecap="round"/>
+  </svg>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <span class="wm" style="font-size:44px;">חשבונית ידידותית</span>
+          <span style="font-size:22px;color:#5F6B76;font-weight:500;">התנהלות פשוטה לעסק מצליח</span>
+          <span style="font-size:14px;color:#2A7A62;letter-spacing:0.32em;font-weight:600;">FRIENDLYINVOICE</span>
+          <span style="width:64px;height:5px;border-radius:999px;background:#F6B89E;margin-top:4px;"></span>
+        </div>
+      </div>
+      <div style="height:1px;background:#E4E7E2;"></div>
+      <div style="display:flex;align-items:center;gap:26px;flex-wrap:wrap;">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;"><div style="width:96px;height:96px;border-radius:24px;background:#9ED8C3;display:flex;align-items:center;justify-content:center;"><svg width="58" height="61" viewBox="-14 0 134 140" fill="none" xmlns="http://www.w3.org/2000/svg" >
+    <path d="M22 8h56l30 30v90a12 12 0 0 1-12 12H22a12 12 0 0 1-12-12V20A12 12 0 0 1 22 8z" fill="#FFFFFF" stroke="#2F3A45" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M78 8v20a10 10 0 0 0 10 10h20z" fill="#9ED8C3" stroke="#2F3A45" stroke-width="7" stroke-linejoin="round"/>
+    <circle cx="40" cy="60" r="5" fill="#2F3A45"/><circle cx="72" cy="60" r="5" fill="#2F3A45"/>
+    <path d="M43 76q13 12 26 0" stroke="#2F3A45" stroke-width="6" stroke-linecap="round"/>
+    <circle cx="29" cy="72" r="6" fill="#F6B89E"/><circle cx="83" cy="72" r="6" fill="#F6B89E"/>
+    <path d="M30 100h50M30 115h30" stroke="#9ED8C3" stroke-width="7" stroke-linecap="round"/>
+    <path d="M3 118l-10 8M2 106l-12 1" stroke="#2F3A45" stroke-width="5" stroke-linecap="round"/>
+  </svg></div><span style="font-size:12px;color:#5F6B76;">אייקון אפליקציה</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;"><div style="width:96px;height:96px;border-radius:24px;background:#2F3A45;display:flex;align-items:center;justify-content:center;"><svg width="58" height="61" viewBox="-14 0 134 140" fill="none" xmlns="http://www.w3.org/2000/svg" >
+    <path d="M22 8h56l30 30v90a12 12 0 0 1-12 12H22a12 12 0 0 1-12-12V20A12 12 0 0 1 22 8z" fill="#FFFFFF" stroke="#2F3A45" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M78 8v20a10 10 0 0 0 10 10h20z" fill="#9ED8C3" stroke="#2F3A45" stroke-width="7" stroke-linejoin="round"/>
+    <circle cx="40" cy="60" r="5" fill="#2F3A45"/><circle cx="72" cy="60" r="5" fill="#2F3A45"/>
+    <path d="M43 76q13 12 26 0" stroke="#2F3A45" stroke-width="6" stroke-linecap="round"/>
+    <circle cx="29" cy="72" r="6" fill="#F6B89E"/><circle cx="83" cy="72" r="6" fill="#F6B89E"/>
+    <path d="M30 100h50M30 115h30" stroke="#9ED8C3" stroke-width="7" stroke-linecap="round"/>
+    <path d="M3 118l-10 8M2 106l-12 1" stroke="#2F3A45" stroke-width="5" stroke-linecap="round"/>
+  </svg></div><span style="font-size:12px;color:#5F6B76;">גרסה כהה</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;"><div style="width:96px;height:96px;border-radius:24px;background:#FFFFFF;border:1px solid #E4E7E2;display:flex;align-items:center;justify-content:center;"><svg width="58" height="61" viewBox="-14 0 134 140" fill="none" xmlns="http://www.w3.org/2000/svg" >
+    <path d="M22 8h56l30 30v90a12 12 0 0 1-12 12H22a12 12 0 0 1-12-12V20A12 12 0 0 1 22 8z" fill="#FFFFFF" stroke="#2F3A45" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M78 8v20a10 10 0 0 0 10 10h20z" fill="#9ED8C3" stroke="#2F3A45" stroke-width="7" stroke-linejoin="round"/>
+    <circle cx="40" cy="60" r="5" fill="#2F3A45"/><circle cx="72" cy="60" r="5" fill="#2F3A45"/>
+    <path d="M43 76q13 12 26 0" stroke="#2F3A45" stroke-width="6" stroke-linecap="round"/>
+    <circle cx="29" cy="72" r="6" fill="#F6B89E"/><circle cx="83" cy="72" r="6" fill="#F6B89E"/>
+    <path d="M30 100h50M30 115h30" stroke="#9ED8C3" stroke-width="7" stroke-linecap="round"/>
+    <path d="M3 118l-10 8M2 106l-12 1" stroke="#2F3A45" stroke-width="5" stroke-linecap="round"/>
+  </svg></div><span style="font-size:12px;color:#5F6B76;">על לבן</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;"><div style="width:96px;height:96px;display:flex;align-items:center;justify-content:center;gap:10px;"><svg width="32" height="33" viewBox="-14 0 134 140" fill="none" xmlns="http://www.w3.org/2000/svg" >
+    <path d="M22 8h56l30 30v90a12 12 0 0 1-12 12H22a12 12 0 0 1-12-12V20A12 12 0 0 1 22 8z" fill="#FFFFFF" stroke="#2F3A45" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M78 8v20a10 10 0 0 0 10 10h20z" fill="#9ED8C3" stroke="#2F3A45" stroke-width="7" stroke-linejoin="round"/>
+    <circle cx="40" cy="60" r="5" fill="#2F3A45"/><circle cx="72" cy="60" r="5" fill="#2F3A45"/>
+    <path d="M43 76q13 12 26 0" stroke="#2F3A45" stroke-width="6" stroke-linecap="round"/>
+    <circle cx="29" cy="72" r="6" fill="#F6B89E"/><circle cx="83" cy="72" r="6" fill="#F6B89E"/>
+    <path d="M30 100h50M30 115h30" stroke="#9ED8C3" stroke-width="7" stroke-linecap="round"/>
+    <path d="M3 118l-10 8M2 106l-12 1" stroke="#2F3A45" stroke-width="5" stroke-linecap="round"/>
+  </svg><svg width="20" height="21" viewBox="-14 0 134 140" fill="none" xmlns="http://www.w3.org/2000/svg" >
+    <path d="M22 8h56l30 30v90a12 12 0 0 1-12 12H22a12 12 0 0 1-12-12V20A12 12 0 0 1 22 8z" fill="#FFFFFF" stroke="#2F3A45" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M78 8v20a10 10 0 0 0 10 10h20z" fill="#9ED8C3" stroke="#2F3A45" stroke-width="7" stroke-linejoin="round"/>
+    <circle cx="40" cy="60" r="5" fill="#2F3A45"/><circle cx="72" cy="60" r="5" fill="#2F3A45"/>
+    <path d="M43 76q13 12 26 0" stroke="#2F3A45" stroke-width="6" stroke-linecap="round"/>
+    <circle cx="29" cy="72" r="6" fill="#F6B89E"/><circle cx="83" cy="72" r="6" fill="#F6B89E"/>
+    <path d="M30 100h50M30 115h30" stroke="#9ED8C3" stroke-width="7" stroke-linecap="round"/>
+    <path d="M3 118l-10 8M2 106l-12 1" stroke="#2F3A45" stroke-width="5" stroke-linecap="round"/>
+  </svg></div><span style="font-size:12px;color:#5F6B76;">favicon 32 / 20</span></div>
+      </div>
+      <div style="height:1px;background:#E4E7E2;"></div>
+      <div style="display:flex;align-items:center;gap:10px;background:#FFFFFF;border:1px solid #E4E7E2;border-radius:12px;padding:12px 14px;"><svg width="28" height="29" viewBox="-14 0 134 140" fill="none" xmlns="http://www.w3.org/2000/svg" >
+    <path d="M22 8h56l30 30v90a12 12 0 0 1-12 12H22a12 12 0 0 1-12-12V20A12 12 0 0 1 22 8z" fill="#FFFFFF" stroke="#2F3A45" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M78 8v20a10 10 0 0 0 10 10h20z" fill="#9ED8C3" stroke="#2F3A45" stroke-width="7" stroke-linejoin="round"/>
+    <circle cx="40" cy="60" r="5" fill="#2F3A45"/><circle cx="72" cy="60" r="5" fill="#2F3A45"/>
+    <path d="M43 76q13 12 26 0" stroke="#2F3A45" stroke-width="6" stroke-linecap="round"/>
+    <circle cx="29" cy="72" r="6" fill="#F6B89E"/><circle cx="83" cy="72" r="6" fill="#F6B89E"/>
+    <path d="M30 100h50M30 115h30" stroke="#9ED8C3" stroke-width="7" stroke-linecap="round"/>
+    <path d="M3 118l-10 8M2 106l-12 1" stroke="#2F3A45" stroke-width="5" stroke-linecap="round"/>
+  </svg><span class="wm" style="font-size:18px;">חשבונית ידידותית</span><span style="font-size:12px;color:#5F6B76;margin-right:auto;">לוקאפ אופקי לכותרת האתר והאפליקציה</span></div>
+    </div>
+
+    <div class="card sec">
+      <h3>פלטת הצבעים</h3>
+      <div style="display:grid;grid-template-columns:repeat(5, minmax(0,1fr));gap:14px;">
+        
+  <div style="display:flex;flex-direction:column;gap:8px;">
+    <div style="height:64px;border-radius:12px;background:#2F3A45;border:1px solid #E4E7E2;"></div>
+    <div style="font-size:13px;font-weight:700;color:#2F3A45;">Graphite</div>
+    <div class="num" style="font-size:12px;color:#5F6B76;direction:ltr;text-align:right;">#2F3A45</div>
+    <div style="font-size:11.5px;color:#8B95A0;">צבע ראשי, כפתורים, כותרות</div>
+  </div>
+        
+  <div style="display:flex;flex-direction:column;gap:8px;">
+    <div style="height:64px;border-radius:12px;background:#9ED8C3;border:1px solid #E4E7E2;"></div>
+    <div style="font-size:13px;font-weight:700;color:#2F3A45;">Mint</div>
+    <div class="num" style="font-size:12px;color:#5F6B76;direction:ltr;text-align:right;">#9ED8C3</div>
+    <div style="font-size:11.5px;color:#8B95A0;">צבע משני, הדגשות, שולם</div>
+  </div>
+        
+  <div style="display:flex;flex-direction:column;gap:8px;">
+    <div style="height:64px;border-radius:12px;background:#F6B89E;border:1px solid #E4E7E2;"></div>
+    <div style="font-size:13px;font-weight:700;color:#2F3A45;">Peach</div>
+    <div class="num" style="font-size:12px;color:#5F6B76;direction:ltr;text-align:right;">#F6B89E</div>
+    <div style="font-size:11.5px;color:#8B95A0;">הדגשה חמה, ממתין</div>
+  </div>
+        
+  <div style="display:flex;flex-direction:column;gap:8px;">
+    <div style="height:64px;border-radius:12px;background:#F7F7F2;border:1px solid #E4E7E2;"></div>
+    <div style="font-size:13px;font-weight:700;color:#2F3A45;">Off-white</div>
+    <div class="num" style="font-size:12px;color:#5F6B76;direction:ltr;text-align:right;">#F7F7F2</div>
+    <div style="font-size:11.5px;color:#8B95A0;">רקע האפליקציה</div>
+  </div>
+        
+  <div style="display:flex;flex-direction:column;gap:8px;">
+    <div style="height:64px;border-radius:12px;background:#E4E7E2;border:1px solid #E4E7E2;"></div>
+    <div style="font-size:13px;font-weight:700;color:#2F3A45;">Border</div>
+    <div class="num" style="font-size:12px;color:#5F6B76;direction:ltr;text-align:right;">#E4E7E2</div>
+    <div style="font-size:11.5px;color:#8B95A0;">גבולות ותמיכה</div>
+  </div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <span class="chip" style="background:#E6F5EE;color:#2A7A62;">Mint tint #E6F5EE</span>
+        <span class="chip" style="background:#FDEEE6;color:#B85A32;">Peach tint #FDEEE6</span>
+        <span class="chip" style="background:#FFFFFF;border:1px solid #E4E7E2;color:#1F252B;">Dark text #1F252B</span>
+        <span style="font-size:12px;color:#8B95A0;align-self:center;">טקסט על mint או peach תמיד ב-Graphite. Mint כטקסט על לבן מוכהה ל-#2A7A62.</span>
+      </div>
+    </div>
+
+    <div class="card sec">
+      <h3>רכיבי ממשק</h3>
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <span class="btn btn-primary"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>הפקת חשבונית</span>
+        <span class="btn btn-secondary">ייצוא לדוח</span>
+        <span class="btn btn-mint">שלח ללקוח</span>
+        <span class="btn btn-secondary btn-sm" style="color:#B85A32;border-color:#F3CDB9;">מחק</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="field"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.5"/><path d="M15.5 14.5a5 5 0 0 1 6 5"/></svg>שם הלקוח</div>
+        <div class="field focus"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>חיפוש מסמך, לקוח...</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <span class="chip chip-paid"><span class="dot" style="background:currentColor;"></span>שולם</span>
+        <span class="chip chip-wait"><span class="dot" style="background:currentColor;"></span>ממתין לתשלום</span>
+        <span class="chip chip-sent"><span class="dot" style="background:currentColor;"></span>נשלח</span>
+        <span class="chip chip-draft"><span class="dot" style="background:currentColor;"></span>טיוטה</span>
+        <span style="font-size:12px;color:#8B95A0;">תגי סטטוס</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:16px;">
+        <span style="font-family:Rubik, Heebo, Arial;font-weight:800;font-size:22px;color:#2F3A45;">כותרת ראשית Rubik</span>
+        <span style="font-size:15px;color:#1F252B;">טקסט גוף Heebo, נעים לקריאה, ברור ומזמין.</span>
+      </div>
+    </div>
+  </div>
+</x-dc>
+
+</body>
+</html>

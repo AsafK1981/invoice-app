@@ -46,7 +46,7 @@ interface Props {
  *
  * PALETTE. The app is one warm black-and-gold system, so this is written in the
  * coral utility vocabulary (`orange`/`amber`/`rose`) that app-skin.css re-tints
- * to the gold ramp - the active badge's `from-orange-500 to-rose-500` resolves
+ * to the gold ramp - the active badge's `from-orange-500 to-orange-700` resolves
  * to --gold-grad-cta with --gold-ink on the numeral, exactly like the app's
  * other filled controls. The ONLY colour that is not gold here is the emerald
  * check on a finished step, which means "done" and is kept for that reason.
@@ -75,7 +75,7 @@ export function AllocationSteps({ current, className = "", size = "md" }: Props)
                 done
                   ? "bg-emerald-100 text-emerald-700"
                   : active
-                    ? "bg-gradient-to-br from-orange-500 to-rose-500"
+                    ? "bg-gradient-to-br from-orange-500 to-orange-700"
                     : "bg-stone-100 text-stone-500"
               }`}
             >

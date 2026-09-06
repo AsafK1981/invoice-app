@@ -309,7 +309,7 @@ export function CsvImportModal({ open, onClose, entityType }: Props) {
           <button
             onClick={handleImport}
             disabled={preview.length === 0 || importing}
-            className="px-5 py-2 rounded-xl text-sm font-semibold bg-gradient-to-l from-orange-500 to-rose-500 text-white hover:shadow-md hover:shadow-orange-200 disabled:from-stone-300 disabled:to-stone-300 disabled:shadow-none"
+            className="px-5 py-2 rounded-xl text-sm font-semibold bg-gradient-to-l from-orange-500 to-orange-700 text-white hover:shadow-md hover:shadow-orange-200 disabled:from-stone-300 disabled:to-stone-300 disabled:shadow-none"
           >
             {importing ? "מייבא..." : `ייבא ${preview.length} רשומות`}
           </button>

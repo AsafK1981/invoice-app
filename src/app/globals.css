@@ -12,6 +12,113 @@
    rendered outside the root layout still resolves sensibly. */
 @theme inline {
   --font-sans: var(--font-heebo), "Heebo", system-ui, sans-serif;
+  --font-display: var(--font-rubik), "Rubik", var(--font-heebo), "Heebo", system-ui, sans-serif;
+}
+
+/* =====================================================================
+   BRAND REMAP (2026-09-06 rebrand: graphite / mint / peach)
+   The codebase carries ~1,600 Tailwind colour utilities on the orange,
+   rose, amber, emerald, green and teal ramps. Their MEANING is fixed:
+   orange = the brand accent, rose/amber = warm state (pending, warning,
+   destructive), emerald/green/teal = positive money state. The rebrand
+   changes the colour behind each meaning, not the meaning, so the ramps
+   are re-valued here once instead of rewriting every class.
+     orange  -> graphite chrome (solid 500+) over a mint wash (50-400)
+     rose    -> the peach family (peach ink #B85A32 at 500)
+     amber   -> the peach family
+     emerald -> the mint family (mint ink #2A7A62 at 600)
+     green   -> the mint family
+     teal    -> the mint family
+   Gradient class pairs that used to run orange -> rose were rewritten to
+   orange-500 -> orange-700 in the same change, so they render as a quiet
+   graphite gradient rather than graphite -> peach.
+   ===================================================================== */
+@theme {
+  --color-orange-50: #E6F5EE;
+  --color-orange-100: #D4EFE3;
+  --color-orange-200: #BFE6D6;
+  --color-orange-300: #9ED8C3;
+  --color-orange-400: #7CC4AB;
+  --color-orange-500: #2F3A45;
+  --color-orange-600: #263039;
+  --color-orange-700: #1F252B;
+  --color-orange-800: #1A2026;
+  --color-orange-900: #14191E;
+  --color-orange-950: #0F1317;
+
+  --color-rose-50: #FDEEE6;
+  --color-rose-100: #FBE1D4;
+  --color-rose-200: #F3CDB9;
+  --color-rose-300: #F6B89E;
+  --color-rose-400: #E9997A;
+  --color-rose-500: #B85A32;
+  --color-rose-600: #A64E2A;
+  --color-rose-700: #8E4223;
+  --color-rose-800: #74361C;
+  --color-rose-900: #5C2B16;
+  --color-rose-950: #3F1D0F;
+
+  --color-amber-50: #FDEEE6;
+  --color-amber-100: #FBE1D4;
+  --color-amber-200: #F3CDB9;
+  --color-amber-300: #F6B89E;
+  --color-amber-400: #E9997A;
+  --color-amber-500: #B85A32;
+  --color-amber-600: #A64E2A;
+  --color-amber-700: #8E4223;
+  --color-amber-800: #74361C;
+  --color-amber-900: #5C2B16;
+  --color-amber-950: #3F1D0F;
+
+  --color-emerald-50: #E6F5EE;
+  --color-emerald-100: #D4EFE3;
+  --color-emerald-200: #BFE6D6;
+  --color-emerald-300: #9ED8C3;
+  --color-emerald-400: #6FC0A3;
+  --color-emerald-500: #3E9A7B;
+  --color-emerald-600: #2A7A62;
+  --color-emerald-700: #236653;
+  --color-emerald-800: #1C5243;
+  --color-emerald-900: #163F34;
+  --color-emerald-950: #0F2A23;
+
+  --color-green-50: #E6F5EE;
+  --color-green-100: #D4EFE3;
+  --color-green-200: #BFE6D6;
+  --color-green-300: #9ED8C3;
+  --color-green-400: #6FC0A3;
+  --color-green-500: #3E9A7B;
+  --color-green-600: #2A7A62;
+  --color-green-700: #236653;
+  --color-green-800: #1C5243;
+  --color-green-900: #163F34;
+  --color-green-950: #0F2A23;
+
+  --color-teal-50: #E6F5EE;
+  --color-teal-100: #D4EFE3;
+  --color-teal-200: #BFE6D6;
+  --color-teal-300: #9ED8C3;
+  --color-teal-400: #6FC0A3;
+  --color-teal-500: #3E9A7B;
+  --color-teal-600: #2A7A62;
+  --color-teal-700: #236653;
+  --color-teal-800: #1C5243;
+  --color-teal-900: #163F34;
+  --color-teal-950: #0F2A23;
+}
+
+/* Brand lockup text (see src/components/brand-mark.tsx). */
+.brand-wordmark {
+  font-family: var(--font-rubik), "Rubik", var(--font-heebo), sans-serif;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+.brand-tagline {
+  font-family: var(--font-heebo), "Heebo", sans-serif;
+  font-weight: 500;
+  color: #5F6B76;
+  line-height: 1.2;
 }
 
 html {
@@ -274,15 +381,15 @@ tr {
 /* Tailwind's -600 accents are calibrated for chips, not for money figures
    on a white card. Each drops one step to its -700 value. Measured on #fff:
    emerald 3.65 → 5.48 · rose 4.12 → 6.29 · sky 4.16 → 5.74 · teal 3.74 → 5.47 */
-[class~="text-emerald-600"] { color: #047857 !important; }
-[class~="text-rose-600"] { color: #be123c !important; }
+[class~="text-emerald-600"] { color: #236653 !important; }
+[class~="text-rose-600"] { color: #8E4223 !important; }
 [class~="text-sky-600"] { color: #0369a1 !important; }
-[class~="text-teal-600"] { color: #0f766e !important; }
+[class~="text-teal-600"] { color: #236653 !important; }
 /* em-dash "no value" placeholders in the custom report: 1.49:1 → 4.6:1,
    still clearly de-emphasised against the real figures beside them. */
 [class~="text-stone-300"] { color: #776e5d !important; }
 /* notification-count badge: white on rose-500 was 3.75:1 at 11px. */
-[class~="bg-rose-500"][class~="text-white"] { background-color: #be123c !important; }
+[class~="bg-rose-500"][class~="text-white"] { background-color: #A64E2A !important; }
 
 /* Secondary CTA gradients that carry WHITE labels (export-to-Excel, enable
    2FA, beta invites, the Pro plan CTA). White measured 1.94-4.12:1 on the
@@ -292,7 +399,7 @@ tr {
 [class~="from-emerald-400"][class~="to-teal-500"],
 [class~="from-emerald-500"][class~="to-teal-500"],
 [class~="from-teal-400"][class~="to-emerald-500"] {
-  background-image: linear-gradient(to left, #047857, #0f766e) !important;
+  background-image: linear-gradient(to left, #2A7A62, #236653) !important;
 }
 [class~="from-violet-500"][class~="to-purple-500"],
 [class~="from-violet-400"][class~="to-purple-500"],
@@ -303,14 +410,14 @@ tr {
 [class~="from-rose-400"][class~="to-pink-500"],
 [class~="from-rose-500"][class~="to-pink-500"],
 [class~="from-rose-500"][class~="to-red-500"] {
-  background-image: linear-gradient(to left, #be123c, #9f1239) !important;
+  background-image: linear-gradient(to left, #B85A32, #8E4223) !important;
 }
 [class~="from-sky-400"][class~="to-blue-500"],
 [class~="from-blue-400"][class~="to-indigo-500"],
 [class~="from-blue-500"][class~="to-indigo-500"] {
   background-image: linear-gradient(to left, #0369a1, #1d4ed8) !important;
 }
-[class~="bg-emerald-500"] { background-color: #047857 !important; }
+[class~="bg-emerald-500"] { background-color: #2A7A62 !important; }
 
 /* ========== PRINT ========== */
 
@@ -400,5 +507,5 @@ tr {
 
 /* Upward shadow shared by the save bars (desktop sticky bar, mobile dock). */
 .dock-shadow {
-  box-shadow: 0 -8px 28px rgba(120, 53, 15, 0.12);
+  box-shadow: 0 -8px 28px rgba(47, 58, 69, 0.12);
 }

@@ -46,22 +46,22 @@
   transform-origin: top left;
 }
 .ml-app-barpair i.is-inc {
-  background: linear-gradient(180deg, #34d399, #059669);
+  background: linear-gradient(180deg, #9ed8c3, #2a7a62);
 }
 .ml-app-barpair i.is-inc::before {
-  background: #6ee7b7;
+  background: #bfe6d6;
 }
 .ml-app-barpair i.is-inc::after {
-  background: #047857;
+  background: #236653;
 }
 .ml-app-barpair i.is-exp {
-  background: linear-gradient(180deg, #fb7185, #e11d48);
+  background: linear-gradient(180deg, #f6b89e, #b85a32);
 }
 .ml-app-barpair i.is-exp::before {
-  background: #fda4af;
+  background: #f3cdb9;
 }
 .ml-app-barpair i.is-exp::after {
-  background: #9f1239;
+  background: #8e4223;
 }/* ============================================================
    HOMEPAGE-ONLY "warm friendly" theme (design approved 2026-08-10).
 
@@ -85,35 +85,56 @@
    ============================================================ */
 
 .ml-theme {
-  /* warm palette, copied by value from the approved mockup
-     (c-warm-friendly.html) so the two cannot drift silently */
-  --ml-cream: #faf7f2;
+  /* Palette re-valued 2026-09-06 for the graphite / mint / peach rebrand
+     (docs/design-snapshots/2026-09-06-mint-mockup). Token NAMES are kept
+     verbatim - ~130 rules reference `--ml-gold-*`, `--ml-orange`,
+     `--ml-rose` as "the accent" - so only the VALUES moved. Read them as
+     roles, not as hues: `--ml-gold-*` is the soft mint tint pair,
+     `--ml-orange`/`--ml-rose` are graphite and graphite-2, and
+     `--ml-peach` is the real peach tint of the brand book. */
+  --ml-cream: #f7f7f2;
   --ml-card: #ffffff;
-  --ml-ink: #241e16;
-  --ml-ink-2: #5a5245;
-  --ml-muted: #6f6757;
-  --ml-line: #ece3d3;
-  --ml-line-soft: #f2ebdd;
-  --ml-gold-tint: #fff4ea;
-  --ml-gold-tint-line: #fddcc0;
-  --ml-gold-ink: #c2410c;
-  --ml-orange: #f97316;
-  --ml-rose: #e11d48;
+  --ml-ink: #1f252b;
+  /* Secondary + tertiary text are the brand book's `muted` and `faint`.
+     ink-2 and muted deliberately share one value: the book defines three
+     text steps (dark / muted / faint), not four, and inventing a fourth
+     would drift from the mockup. */
+  --ml-ink-2: #5f6b76;
+  --ml-muted: #5f6b76;
+  --ml-faint: #8b95a0;
+  /* Headings sit one step off body ink, per the brand book: body #1F252B,
+     headings #2F3A45 (the primary graphite). */
+  --ml-ink-head: #2f3a45;
+  --ml-line: #e4e7e2;
+  --ml-line-soft: #eef0ec;
+  /* "gold tint" is now the soft MINT tint + mint hairline. */
+  --ml-gold-tint: #e6f5ee;
+  --ml-gold-tint-line: #bfe6d6;
+  /* "gold ink" is now graphite: nav text, headings, accent labels. */
+  --ml-gold-ink: #2f3a45;
+  --ml-orange: #2f3a45;
+  --ml-rose: #263039;
+  /* Every gradient on the page therefore becomes a quiet graphite ramp
+     instead of orange->rose. No token had to be renamed for that. */
   --ml-grad: linear-gradient(135deg, var(--ml-orange), var(--ml-rose));
-  --ml-peach: #fbe7d4;
-  --ml-peach-line: #f2d2a8;
-  --ml-shadow-sm: 0 1px 2px rgba(120, 65, 20, 0.05), 0 6px 18px -12px rgba(120, 65, 20, 0.18);
-  --ml-shadow-md: 0 26px 50px -24px rgba(120, 65, 20, 0.28);
-  /* Deeper still, same warm rgba(120,65,20,*) hue and downward light
+  --ml-peach: #fdeee6;
+  --ml-peach-line: #f3cdb9;
+  /* Mint and peach as TEXT on white. Never #9ed8c3 text on white. */
+  --ml-mint-ink: #2a7a62;
+  --ml-peach-ink: #b85a32;
+  --ml-shadow-sm: 0 1px 2px rgba(47, 58, 69, 0.05), 0 6px 18px -12px rgba(47, 58, 69, 0.18);
+  --ml-shadow-md: 0 26px 50px -24px rgba(47, 58, 69, 0.28);
+  /* Deeper still, same graphite rgba(47,58,69,*) hue and downward light
      direction as -sm/-md above - the shared "pop" shadow for hovered
      cards (2026-08-10 "more interesting" pass). */
-  --ml-shadow-lift: 0 30px 56px -20px rgba(120, 65, 20, 0.34), 0 12px 24px -10px rgba(120, 65, 20, 0.2);
-  /* Page-field texture tokens, same pass. The washes reuse the brand
-     orange/rose and the amber icon hue already on this page rather than
-     inventing new one-off colors - see `.ml-theme::before` below. */
-  --ml-wash-peach: rgba(249, 115, 22, 0.09);
-  --ml-wash-amber: rgba(217, 119, 6, 0.07);
-  --ml-wash-rose: rgba(225, 29, 72, 0.06);
+  --ml-shadow-lift: 0 30px 56px -20px rgba(47, 58, 69, 0.34), 0 12px 24px -10px rgba(47, 58, 69, 0.2);
+  /* Page-field texture tokens, same pass. The washes carry the two brand
+     accents (peach top-left behind the hero, mint mid-right behind the
+     advantage grid) plus one graphite whisper low on the page, matching
+     the approved mockup - see `.ml-theme::before` below. */
+  --ml-wash-peach: rgba(246, 184, 158, 0.22);
+  --ml-wash-amber: rgba(158, 216, 195, 0.24);
+  --ml-wash-rose: rgba(47, 58, 69, 0.05);
 
   position: relative;
   z-index: 1;
@@ -143,9 +164,14 @@
 /* ---------- page-field texture ----------
    Owner 2026-08-10, round 2: the dot grid was rejected ("הנקודות לא יפות,
    משעממות") and he picked flowing topographic contour lines from a 3-way
-   background face-off. The lines live in /marketing-topo.svg - a 1200x780
-   tile whose paths start and end on the same Y (seamless X repeat) with a
-   130px rhythm that survives the Y seam. Under them, the same three soft
+   background face-off. The lines are a 1200x780 tile whose paths start and
+   end on the same Y (seamless X repeat) with a 130px rhythm that survives
+   the Y seam. INLINED as a data URI on 2026-09-06: the tile used to be
+   /marketing-topo.svg, whose strokes are hard-coded warm gold/orange and
+   which lives in public/ (owned by another pass). Inlining is how the
+   contours got tinted to low-alpha graphite for the rebrand without a
+   second source of truth; public/marketing-topo.svg is no longer read by
+   this stylesheet. Under them, the same three soft
    asymmetric color washes as before - top-left behind the hero, mid-right
    behind the advantage grid, bottom-left just past the pricing band (NOT
    centered on it - `.ml-pricing` paints its own opaque peach fill, so a
@@ -171,7 +197,7 @@
   z-index: -1;
   pointer-events: none;
   background-image:
-    url("/marketing-topo.svg"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='780' viewBox='0 0 1200 780' fill='none'%3E%3Cg stroke='%232f3a45' stroke-width='1.5'%3E%3Cpath d='M0,65 C280,13 640,117 1200,65' opacity='.09'/%3E%3Cpath d='M0,195 C420,145 760,247 1200,195' opacity='.07'/%3E%3Cpath d='M0,325 C240,381 700,269 1200,325' opacity='.08'/%3E%3Cpath d='M0,455 C380,403 820,509 1200,455' opacity='.06'/%3E%3Cpath d='M0,585 C300,641 660,531 1200,585' opacity='.075'/%3E%3Cpath d='M0,715 C440,663 800,769 1200,715' opacity='.07'/%3E%3C/g%3E%3C/svg%3E"),
     radial-gradient(min(640px, 70vw) circle at 14% 7%, var(--ml-wash-peach), transparent 70%),
     radial-gradient(min(700px, 78vw) circle at 86% 27%, var(--ml-wash-amber), transparent 70%),
     radial-gradient(min(660px, 72vw) circle at 12% 81%, var(--ml-wash-rose), transparent 70%);
@@ -196,7 +222,12 @@
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  border-radius: 999px;
+  /* 12px, not the old 999px pill: the rebrand's primary control is a
+     rounded rectangle (brand book "Buttons and controls", and every CTA in
+     the approved mockup). Pills survive elsewhere on the page - the
+     eyebrow, the competitor chips, the status badges - where the shape is
+     carrying "label", not "button". */
+  border-radius: 12px;
   white-space: nowrap;
   border: none;
   cursor: pointer;
@@ -205,12 +236,14 @@
 .ml-btn-primary {
   background: var(--ml-grad);
   color: #fff;
-  box-shadow: 0 12px 26px -12px rgba(225, 29, 72, 0.4), 0 4px 10px -4px rgba(249, 115, 22, 0.32);
+  box-shadow: 0 12px 26px -12px rgba(47, 58, 69, 0.4), 0 4px 10px -4px rgba(47, 58, 69, 0.24);
 }
 .ml-btn-primary:hover {
   transform: translateY(-2px) scale(1.015);
-  filter: brightness(1.04);
-  box-shadow: 0 20px 38px -14px rgba(225, 29, 72, 0.5), 0 8px 18px -6px rgba(249, 115, 22, 0.36);
+  /* Darkens toward graphite-2, the brand book's stated hover of a graphite
+     button. A brightness > 1 would wash the fill toward the page field. */
+  filter: brightness(0.9);
+  box-shadow: 0 20px 38px -14px rgba(47, 58, 69, 0.45), 0 8px 18px -6px rgba(47, 58, 69, 0.3);
 }
 .ml-btn-sm {
   padding: 10px 22px;
@@ -226,7 +259,7 @@
   position: sticky;
   top: 0;
   z-index: 50;
-  background: rgba(250, 247, 242, 0.9);
+  background: rgba(247, 247, 242, 0.9);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--ml-line);
@@ -337,7 +370,7 @@
   margin-bottom: 22px;
 }
 h1.ml-hero-h1 {
-  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+  font-family: var(--font-rubik), "Rubik", var(--font-heebo), sans-serif;
   /* 46px cap (was 52px): the Hormozi-round headline (2026-08-10) is a
      longer sentence than the old compliance line; at 52px its second line
      overflowed the 740px hero column and orphaned "שלכם" on line 3. */
@@ -345,13 +378,30 @@ h1.ml-hero-h1 {
   line-height: 1.16;
   font-weight: 800;
   letter-spacing: -0.01em;
-  color: var(--ml-ink);
+  color: var(--ml-ink-head);
 }
+/* The highlighted headline word. Was an orange->rose gradient clipped to
+   the glyphs; since the 2026-09-06 rebrand it is a MINT MARKER stripe
+   behind ordinary graphite text (see shot-Main.png). A gradient-clip
+   would have to be graphite-on-graphite now, i.e. invisible, so the
+   emphasis moved from the ink to the field behind it.
+   The stops are percentages of the line box, tuned so the stripe sits on
+   the baseline band of Hebrew letters and clears the descenders: it starts
+   at 62% and ends at 92%. `-webkit-text-fill-color: initial` is required
+   to undo the clipped-text state on any browser that cached the old rule
+   within the same document. */
 .ml-hero-h1 .ml-grad-text {
-  background: var(--ml-grad);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  background: linear-gradient(
+    transparent 62%,
+    #9ed8c3 62%,
+    #9ed8c3 92%,
+    transparent 92%
+  );
+  padding: 0 4px;
+  color: inherit;
+  -webkit-text-fill-color: initial;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
 }
 .ml-lede {
   margin: 22px auto 0;
@@ -390,7 +440,10 @@ h1.ml-hero-h1 {
 .ml-trust-row svg {
   width: 15px;
   height: 15px;
-  color: var(--ml-gold-ink);
+  /* Mint ink, the one place a check may leave the graphite family: these
+     three ticks are the page's only "yes, included" signal above the fold
+     (see shot-Main.png). #9ED8C3 itself is never text on white. */
+  color: var(--ml-mint-ink);
   flex: none;
 }
 
@@ -421,11 +474,11 @@ h1.ml-hero-h1 {
 }
 .ml-adv-head h2 {
   margin-top: 10px;
-  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+  font-family: var(--font-rubik), "Rubik", var(--font-heebo), sans-serif;
   font-size: clamp(25px, 3.6vw, 35px);
   font-weight: 800;
   line-height: 1.2;
-  color: var(--ml-ink);
+  color: var(--ml-ink-head);
 }
 .ml-adv-head p {
   margin-top: 12px;
@@ -466,7 +519,10 @@ h1.ml-hero-h1 {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--ml-gold-tint);
+  /* Base tile for a card with no `tone`; the rotation classes below
+     override it. Off-white keeps an untoned card quiet rather than
+     borrowing the mint slot. */
+  background: var(--ml-cream);
   color: var(--ml-gold-ink);
   margin-bottom: 16px;
   transition: transform 180ms ease-out;
@@ -476,77 +532,76 @@ h1.ml-hero-h1 {
   height: 22px;
 }
 /* The flagship card (allocation numbers) keeps the strongest treatment:
-   the full brand gradient tile with a white glyph, same idea as the
-   mockup's `.is-flagship` and the old dark page's tax-band icon. */
+   a solid graphite tile with a white glyph. White on graphite is the one
+   white-text pairing the brand book allows. */
 .ml-adv-card.is-flagship .ml-adv-icon {
   background: var(--ml-grad);
   color: #fff;
-  box-shadow: 0 12px 22px -10px rgba(225, 29, 72, 0.45);
+  box-shadow: 0 12px 22px -10px rgba(47, 58, 69, 0.45);
 }
-/* Every other card gets its OWN soft-tinted tile + saturated icon hue
-   (Asaf 2026-08-10: the mockup shipped with 8 of 9 tiles dull/washed-out;
-   this is the fix - each card now reads as a distinct, deliberately
-   colored category instead of a wall of near-identical gold squares).
-   Tint = Tailwind `*-100`, icon stroke = Tailwind `*-600`, so every pair
-   is a proven, harmonious, accessible-contrast combination rather than a
-   hand-picked one-off. */
-.ml-adv-icon--violet {
-  background: #ede9fe;
-  color: #7c3aed;
-}
+/* Every other card gets a soft-tinted tile with ink from the SAME family.
+   Re-tinted 2026-09-06: the fourteen `tone` names are content (they live
+   in advantages.tsx and also drive /pricing), so they are kept, but the
+   old fourteen-hue Tailwind rainbow collapsed into the brand's three
+   tints - mint / peach / off-white - rotating in the order the cards
+   actually appear in the grid, so neighbours never repeat a tint. Ink is
+   always the tint's own dark counterpart (mintInk / peachInk / graphite),
+   never the pale fill as text. */
 .ml-adv-icon--amber {
-  background: #fef3c7;
-  color: #d97706;
-}
-.ml-adv-icon--green {
-  background: #dcfce7;
-  color: #16a34a;
-}
-.ml-adv-icon--pink {
-  background: #fce7f3;
-  color: #db2777;
-}
-.ml-adv-icon--teal {
-  background: #ccfbf1;
-  color: #0d9488;
-}
-.ml-adv-icon--indigo {
-  background: #e0e7ff;
-  color: #4f46e5;
-}
-.ml-adv-icon--sky {
-  background: #e0f2fe;
-  color: #0284c7;
-}
-.ml-adv-icon--orange {
-  background: #ffedd5;
-  color: #ea580c;
+  background: #e6f5ee;
+  color: #2a7a62;
 }
 .ml-adv-icon--cyan {
-  background: #cffafe;
-  color: #0891b2;
+  background: #fdeee6;
+  color: #b85a32;
 }
-.ml-adv-icon--lime {
-  background: #ecfccb;
-  color: #65a30d;
+.ml-adv-icon--pink {
+  background: #f7f7f2;
+  color: #2f3a45;
 }
-.ml-adv-icon--fuchsia {
-  background: #fae8ff;
-  color: #c026d3;
+.ml-adv-icon--teal {
+  background: #e6f5ee;
+  color: #2a7a62;
 }
-/* 2026-09-02: two more tones for the a11y + "paper receipt book" cards,
-   same *-100 tile / *-600 glyph formula as the rest. */
+.ml-adv-icon--indigo {
+  background: #fdeee6;
+  color: #b85a32;
+}
 .ml-adv-icon--rose {
-  background: #ffe4e6;
-  color: #e11d48;
+  background: #f7f7f2;
+  color: #2f3a45;
 }
 .ml-adv-icon--yellow {
-  background: #fef9c3;
-  color: #ca8a04;
+  background: #e6f5ee;
+  color: #2a7a62;
+}
+.ml-adv-icon--lime {
+  background: #fdeee6;
+  color: #b85a32;
+}
+.ml-adv-icon--fuchsia {
+  background: #f7f7f2;
+  color: #2f3a45;
 }
 .ml-adv-icon--blue {
-  background: #dbeafe;
-  color: #2563eb;
+  background: #e6f5ee;
+  color: #2a7a62;
+}
+.ml-adv-icon--sky {
+  background: #fdeee6;
+  color: #b85a32;
+}
+.ml-adv-icon--orange {
+  background: #f7f7f2;
+  color: #2f3a45;
+}
+.ml-adv-icon--violet {
+  background: #f7f7f2;
+  color: #2f3a45;
+}
+.ml-adv-icon--green {
+  background: #e6f5ee;
+  color: #2a7a62;
 }
 
 /* Hover "pop" (owner 2026-08-10: "יש יותר מדי שטח מת... צריך שהוא יבלוט,
@@ -573,64 +628,64 @@ h1.ml-hero-h1 {
     transform: scale(1.06);
   }
   .ml-adv-card.is-flagship:hover {
-    background: #fff7ed;
-    border-color: #fed7aa;
-  }
-  .ml-adv-card--violet:hover {
-    background: #f5f3ff;
-    border-color: #ddd6fe;
+    background: #f2faf6;
+    border-color: #bfe6d6;
   }
   .ml-adv-card--amber:hover {
-    background: #fffbeb;
-    border-color: #fde68a;
-  }
-  .ml-adv-card--green:hover {
-    background: #f0fdf4;
-    border-color: #bbf7d0;
-  }
-  .ml-adv-card--pink:hover {
-    background: #fdf2f8;
-    border-color: #fbcfe8;
-  }
-  .ml-adv-card--teal:hover {
-    background: #f0fdfa;
-    border-color: #99f6e4;
-  }
-  .ml-adv-card--indigo:hover {
-    background: #eef2ff;
-    border-color: #c7d2fe;
-  }
-  .ml-adv-card--sky:hover {
-    background: #f0f9ff;
-    border-color: #bae6fd;
-  }
-  .ml-adv-card--orange:hover {
-    background: #fff7ed;
-    border-color: #fed7aa;
+    background: #f2faf6;
+    border-color: #bfe6d6;
   }
   .ml-adv-card--cyan:hover {
-    background: #ecfeff;
-    border-color: #a5f3fc;
+    background: #fef6f1;
+    border-color: #f3cdb9;
   }
-  .ml-adv-card--lime:hover {
-    background: #f7fee7;
-    border-color: #d9f99d;
+  .ml-adv-card--pink:hover {
+    background: #fbfbf8;
+    border-color: #e4e7e2;
   }
-  .ml-adv-card--fuchsia:hover {
-    background: #fdf4ff;
-    border-color: #f5d0fe;
+  .ml-adv-card--teal:hover {
+    background: #f2faf6;
+    border-color: #bfe6d6;
+  }
+  .ml-adv-card--indigo:hover {
+    background: #fef6f1;
+    border-color: #f3cdb9;
   }
   .ml-adv-card--rose:hover {
-    background: #fff1f2;
-    border-color: #fecdd3;
+    background: #fbfbf8;
+    border-color: #e4e7e2;
   }
   .ml-adv-card--yellow:hover {
-    background: #fefce8;
-    border-color: #fef08a;
+    background: #f2faf6;
+    border-color: #bfe6d6;
+  }
+  .ml-adv-card--lime:hover {
+    background: #fef6f1;
+    border-color: #f3cdb9;
+  }
+  .ml-adv-card--fuchsia:hover {
+    background: #fbfbf8;
+    border-color: #e4e7e2;
   }
   .ml-adv-card--blue:hover {
-    background: #eff6ff;
-    border-color: #bfdbfe;
+    background: #f2faf6;
+    border-color: #bfe6d6;
+  }
+  .ml-adv-card--sky:hover {
+    background: #fef6f1;
+    border-color: #f3cdb9;
+  }
+  .ml-adv-card--orange:hover {
+    background: #fbfbf8;
+    border-color: #e4e7e2;
+  }
+  .ml-adv-card--violet:hover {
+    background: #fbfbf8;
+    border-color: #e4e7e2;
+  }
+  .ml-adv-card--green:hover {
+    background: #f2faf6;
+    border-color: #bfe6d6;
   }
 }
 
@@ -669,11 +724,11 @@ h1.ml-hero-h1 {
   }
 }
 .ml-adv-card h3 {
-  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+  font-family: var(--font-rubik), "Rubik", var(--font-heebo), sans-serif;
   font-size: 16.5px;
-  font-weight: 700;
+  font-weight: 800;
   line-height: 1.35;
-  color: var(--ml-ink);
+  color: var(--ml-ink-head);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -710,10 +765,10 @@ h1.ml-hero-h1 {
   }
 }
 .ml-compare-in h3 {
-  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+  font-family: var(--font-rubik), "Rubik", var(--font-heebo), sans-serif;
   font-size: 19px;
   font-weight: 800;
-  color: var(--ml-ink);
+  color: var(--ml-ink-head);
 }
 .ml-compare-in .sub {
   margin-top: 8px;
@@ -813,43 +868,53 @@ h1.ml-hero-h1 {
   border: 1px solid var(--trust-line);
   border-radius: 16px;
   padding: 20px;
+  /* The cards are white on a cream field since the rebrand, so they need
+     the same soft graphite lift every other white card on the page has;
+     the old saturated fields separated themselves by hue alone. */
+  box-shadow: var(--ml-shadow-sm);
   transition: transform 180ms ease-out, box-shadow 180ms ease-out,
     background-color 180ms ease-out, border-color 180ms ease-out;
 }
-/* One custom-property set per hue keeps the four states (field, border,
-   tile, glyph, hover field, hover border) in a single line per card
-   instead of 6 rules x 4 hues. */
+/* One custom-property set per card keeps the six states (field, border,
+   tile, glyph, hover field, hover border) in a single block per card
+   instead of 6 rules x 4 cards.
+   Re-tinted 2026-09-06 (see shot-Main.png / shot-LandingMobile.png): the
+   cards are WHITE now, not four saturated *-50 fields. What carries the
+   colour is the icon tile, rotating mint -> peach -> off-white -> mint
+   across the four, so the strip reads as one family instead of a rainbow.
+   The `--green/--amber/--sky/--violet` class names are markup, kept so
+   page.tsx does not have to change; read them as slot 1..4. */
 .ml-trust-card--green {
-  --trust-bg: #f0fdf4;
-  --trust-line: #bbf7d0;
-  --trust-tile: #dcfce7;
-  --trust-glyph: #16a34a;
-  --trust-bg-hov: #dcfce7;
-  --trust-line-hov: #86efac;
+  --trust-bg: #ffffff;
+  --trust-line: #e4e7e2;
+  --trust-tile: #e6f5ee;
+  --trust-glyph: #2a7a62;
+  --trust-bg-hov: #f2faf6;
+  --trust-line-hov: #bfe6d6;
 }
 .ml-trust-card--amber {
-  --trust-bg: #fffbeb;
-  --trust-line: #fde68a;
-  --trust-tile: #fef3c7;
-  --trust-glyph: #d97706;
-  --trust-bg-hov: #fef3c7;
-  --trust-line-hov: #fcd34d;
+  --trust-bg: #ffffff;
+  --trust-line: #e4e7e2;
+  --trust-tile: #fdeee6;
+  --trust-glyph: #b85a32;
+  --trust-bg-hov: #fef6f1;
+  --trust-line-hov: #f3cdb9;
 }
 .ml-trust-card--sky {
-  --trust-bg: #f0f9ff;
-  --trust-line: #bae6fd;
-  --trust-tile: #e0f2fe;
-  --trust-glyph: #0284c7;
-  --trust-bg-hov: #e0f2fe;
-  --trust-line-hov: #7dd3fc;
+  --trust-bg: #ffffff;
+  --trust-line: #e4e7e2;
+  --trust-tile: #f7f7f2;
+  --trust-glyph: #2f3a45;
+  --trust-bg-hov: #fbfbf8;
+  --trust-line-hov: #d9ded9;
 }
 .ml-trust-card--violet {
-  --trust-bg: #f5f3ff;
-  --trust-line: #ddd6fe;
-  --trust-tile: #ede9fe;
-  --trust-glyph: #7c3aed;
-  --trust-bg-hov: #ede9fe;
-  --trust-line-hov: #c4b5fd;
+  --trust-bg: #ffffff;
+  --trust-line: #e4e7e2;
+  --trust-tile: #e6f5ee;
+  --trust-glyph: #2a7a62;
+  --trust-bg-hov: #f2faf6;
+  --trust-line-hov: #bfe6d6;
 }
 .ml-trust-icon {
   width: 44px;
@@ -869,11 +934,11 @@ h1.ml-hero-h1 {
 }
 .ml-trust-k {
   display: block;
-  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+  font-family: var(--font-rubik), "Rubik", var(--font-heebo), sans-serif;
   font-size: 16px;
-  font-weight: 700;
+  font-weight: 800;
   line-height: 1.35;
-  color: var(--ml-ink);
+  color: var(--ml-ink-head);
   margin-bottom: 7px;
 }
 .ml-trust-card p {
@@ -932,11 +997,11 @@ h1.ml-hero-h1 {
   margin: 0 auto 38px;
 }
 .ml-show-head h2 {
-  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+  font-family: var(--font-rubik), "Rubik", var(--font-heebo), sans-serif;
   font-size: clamp(25px, 3.4vw, 33px);
   font-weight: 800;
   line-height: 1.22;
-  color: var(--ml-ink);
+  color: var(--ml-ink-head);
 }
 .ml-show-head p {
   margin-top: 12px;
@@ -1117,7 +1182,7 @@ h3 > .ml-badge-soon {
   background: var(--ml-card);
   border: 1px solid var(--ml-line);
   border-radius: 14px;
-  box-shadow: 0 1px 2px rgba(40, 30, 10, 0.03);
+  box-shadow: 0 1px 2px rgba(47, 58, 69, 0.03);
 }
 .ml-sh-glabel {
   display: flex;
@@ -1366,7 +1431,7 @@ h3 > .ml-badge-soon {
   padding: 14px 18px;
   border: 1px solid var(--ml-gold-tint-line);
   border-radius: 14px;
-  background: linear-gradient(160deg, #fffaf6, var(--ml-gold-tint));
+  background: linear-gradient(160deg, #ffffff, var(--ml-gold-tint));
   font-size: 13.5px;
   line-height: 1.6;
   color: var(--ml-ink-2);
@@ -1535,7 +1600,7 @@ h3 > .ml-badge-soon {
   margin-top: 7px;
   padding: 8px 10px;
   background: var(--wa-inset);
-  border-inline-start: 3px solid #d1a54d;
+  border-inline-start: 3px solid #9ed8c3;
   border-radius: 8px;
   display: flex;
   flex-direction: column;
@@ -1681,6 +1746,39 @@ h3 > .ml-badge-soon {
   border-block: 1px solid var(--ml-line);
   padding-block: 22px;
 }
+.ml-midcta-slogan {
+  font-family: var(--font-rubik), "Rubik", var(--font-heebo), sans-serif;
+  font-weight: 800;
+  font-size: 26px;
+  line-height: 1.2;
+  color: #2F3A45;
+  margin: 0 0 6px;
+}
+@media (min-width: 760px) {
+  .ml-midcta-slogan {
+    font-size: 32px;
+  }
+}
+.ml-hero-usp {
+  margin: 22px auto 0;
+  max-width: 720px;
+  padding: 12px 18px;
+  border-radius: 14px;
+  background: #ffffff;
+  border: 1px solid #E4E7E2;
+  border-inline-start: 4px solid #9ED8C3;
+  font-size: 15px;
+  line-height: 1.6;
+  color: #2F3A45;
+  text-wrap: pretty;
+}
+.ml-about {
+  margin-top: 10px;
+  font-size: 15px;
+  line-height: 1.65;
+  color: #5F6B76;
+  text-wrap: pretty;
+}
 .ml-midcta-t {
   font-size: 16px;
   font-weight: 700;
@@ -1715,7 +1813,7 @@ h3 > .ml-badge-soon {
   border-radius: 16px;
   overflow: hidden;
   border: 1px solid var(--ml-line);
-  background: #fdfbf7;
+  background: #fbfbf9;
   box-shadow: var(--ml-shadow-md);
 }
 .ml-browser-bar {
@@ -1723,7 +1821,7 @@ h3 > .ml-badge-soon {
   align-items: center;
   gap: 12px;
   padding: 10px 14px;
-  background: #f4efe6;
+  background: #f2f2ee;
   border-bottom: 1px solid var(--ml-line);
 }
 .ml-browser-dots {
@@ -1735,14 +1833,14 @@ h3 > .ml-badge-soon {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: #ddd2bf;
+  background: #d5dad3;
 }
 .ml-browser-url {
   flex: 1;
   text-align: center;
   font-size: 11.5px;
   color: var(--ml-muted);
-  background: #fffdf9;
+  background: #fefefd;
   border: 1px solid var(--ml-line);
   border-radius: 999px;
   padding: 4px 14px;
@@ -1772,10 +1870,10 @@ h3 > .ml-badge-soon {
   gap: 3px;
 }
 .ml-app-h1 {
-  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+  font-family: var(--font-rubik), "Rubik", var(--font-heebo), sans-serif;
   font-size: 21px;
   font-weight: 800;
-  color: var(--ml-ink);
+  color: var(--ml-ink-head);
   line-height: 1.1;
 }
 .ml-app-sub {
@@ -1818,7 +1916,7 @@ h3 > .ml-badge-soon {
   padding: 9px 16px;
   border-radius: 13px;
   white-space: nowrap;
-  box-shadow: 0 10px 20px -10px rgba(225, 29, 72, 0.45);
+  box-shadow: 0 10px 20px -10px rgba(47, 58, 69, 0.45);
 }
 .ml-app-stats {
   display: grid;
@@ -1861,33 +1959,36 @@ h3 > .ml-badge-soon {
   flex-wrap: wrap;
 }
 .ml-app-stat-s .is-up {
-  color: #059669;
+  color: #2a7a62;
   font-weight: 700;
 }
-/* Same four tones, same order, as the real dashboard's `cards` array. */
+/* Same four tones, same order, as the real dashboard's `cards` array.
+   Re-tinted 2026-09-06 with the rebrand's money colours: income reads
+   mint, spending reads peach, and the two neutral tiles (profit, average)
+   read graphite on off-white. Class names are the dashboard's, kept. */
 .ml-app-stat.is-emerald {
-  background: linear-gradient(135deg, #ecfdf5, #f0fdfa);
+  background: linear-gradient(135deg, #e6f5ee, #f2faf6);
 }
 .ml-app-stat.is-emerald .ml-app-stat-v {
-  color: #047857;
+  color: #2a7a62;
 }
 .ml-app-stat.is-rose {
-  background: linear-gradient(135deg, #fff1f2, #fdf2f8);
+  background: linear-gradient(135deg, #fdeee6, #fef6f1);
 }
 .ml-app-stat.is-rose .ml-app-stat-v {
-  color: #be123c;
+  color: #b85a32;
 }
 .ml-app-stat.is-amber {
-  background: linear-gradient(135deg, #fff7ed, #fffbeb);
+  background: linear-gradient(135deg, #f7f7f2, #fbfbf8);
 }
 .ml-app-stat.is-amber .ml-app-stat-v {
-  color: #b45309;
+  color: #2f3a45;
 }
 .ml-app-stat.is-violet {
-  background: linear-gradient(135deg, #f5f3ff, #faf5ff);
+  background: linear-gradient(135deg, #f7f7f2, #fbfbf8);
 }
 .ml-app-stat.is-violet .ml-app-stat-v {
-  color: #6d28d9;
+  color: #2f3a45;
 }
 .ml-app-chart {
   background: var(--ml-card);
@@ -1925,10 +2026,10 @@ h3 > .ml-badge-soon {
   border-radius: 5px 5px 0 0;
 }
 .ml-app-barpair i.is-inc {
-  background: linear-gradient(180deg, #34d399, #059669);
+  background: linear-gradient(180deg, #9ed8c3, #2a7a62);
 }
 .ml-app-barpair i.is-exp {
-  background: linear-gradient(180deg, #fda4af, #e11d48);
+  background: linear-gradient(180deg, #f6b89e, #b85a32);
 }
 .ml-app-legend {
   display: flex;
@@ -1949,10 +2050,10 @@ h3 > .ml-badge-soon {
   border-radius: 3px;
 }
 .ml-app-legend i.is-inc {
-  background: #059669;
+  background: #2a7a62;
 }
 .ml-app-legend i.is-exp {
-  background: #e11d48;
+  background: #b85a32;
 }
 
 /* ---------- pricing band ---------- */
@@ -1972,10 +2073,10 @@ h3 > .ml-badge-soon {
   }
 }
 .ml-pricing h2 {
-  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+  font-family: var(--font-rubik), "Rubik", var(--font-heebo), sans-serif;
   font-size: clamp(25px, 3.6vw, 35px);
   font-weight: 800;
-  color: var(--ml-ink);
+  color: var(--ml-ink-head);
 }
 .ml-pricing p {
   margin: 12px auto 0;
@@ -2005,7 +2106,7 @@ h3 > .ml-badge-soon {
 .ml-price-frees svg {
   width: 15px;
   height: 15px;
-  color: var(--ml-gold-ink);
+  color: var(--ml-mint-ink);
   flex: none;
 }
 .ml-pricing .ml-price-later {
@@ -2063,10 +2164,10 @@ h3 > .ml-badge-soon {
 }
 .ml-faq-title {
   text-align: center;
-  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+  font-family: var(--font-rubik), "Rubik", var(--font-heebo), sans-serif;
   font-size: clamp(25px, 3.6vw, 35px);
   font-weight: 800;
-  color: var(--ml-ink);
+  color: var(--ml-ink-head);
   margin-bottom: 32px;
 }
 .ml-faq-item {
@@ -2180,7 +2281,7 @@ h3 > .ml-badge-soon {
   position: relative;
   margin-top: calc(-1 * var(--ml-band-overlap));
   padding-block: calc(var(--ml-band-overlap) + 36px) 28px;
-  background: linear-gradient(180deg, #f8e9d6 0%, var(--ml-peach) 100%);
+  background: linear-gradient(180deg, #fef6f1 0%, var(--ml-peach) 100%);
   border-top: 1px solid var(--ml-peach-line);
   border-bottom: 1px solid var(--ml-peach-line);
   /* The spotlight cards start their entry offset sideways (see
@@ -2204,11 +2305,11 @@ h3 > .ml-badge-soon {
   margin: 0 auto 34px;
 }
 .ml-spot-head h2 {
-  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+  font-family: var(--font-rubik), "Rubik", var(--font-heebo), sans-serif;
   font-size: clamp(26px, 3.6vw, 36px);
   font-weight: 800;
   line-height: 1.2;
-  color: var(--ml-ink);
+  color: var(--ml-ink-head);
   margin-top: 10px;
 }
 .ml-spot-list {
@@ -2227,7 +2328,7 @@ h3 > .ml-badge-soon {
   background: #fff;
   border: 1px solid var(--ml-line, #efe4d6);
   /* One consistent light source for every raised surface on this page. */
-  box-shadow: 0 10px 28px -18px rgba(70, 48, 28, 0.4);
+  box-shadow: 0 10px 28px -18px rgba(47, 58, 69, 0.4);
   transition:
     transform 0.28s cubic-bezier(0.2, 0.8, 0.3, 1.2),
     box-shadow 0.28s ease,
@@ -2243,8 +2344,8 @@ h3 > .ml-badge-soon {
    (DESIGN-TASTE 2026-08-10). Lift + deepen, no colour flash. */
 .ml-spot-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 20px 44px -20px rgba(70, 48, 28, 0.5);
-  border-color: var(--ml-line-strong, #e6d5c1);
+  box-shadow: 0 20px 44px -20px rgba(47, 58, 69, 0.5);
+  border-color: var(--ml-line-strong, #d9ded9);
 }
 .ml-spot-icon {
   display: grid;
@@ -2256,30 +2357,34 @@ h3 > .ml-badge-soon {
   /* No colour here on purpose - each card paints its own tile below. An
      earlier version set a cream background and ink glyph here, which silently
      overrode the tone classes and made all three tiles identical. */
-  background: var(--ml-cream-100, #fdf6ec);
-  color: var(--ml-ink, #2b2622);
+  background: var(--ml-cream, #f7f7f2);
+  color: var(--ml-ink-head, #2f3a45);
 }
 
-/* Spotlight tiles get the strongest treatment on the page: a solid/graded tile
-   with a white glyph, rather than the grid's pale-tile + saturated-glyph
-   formula. DESIGN-TASTE carves icon tiles out of the colour-restraint rule
-   explicitly, and these three are the page's headline claims.
-   WhatsApp uses its own brand green (#25D366) so the tile is recognisable at a
-   glance - Asaf asked for "ירוק כמו הוואטסאפ", not merely a green. */
+/* Spotlight tiles, re-tinted 2026-09-06. They used to be three saturated
+   gradient slabs (WhatsApp green, gold, violet) with white glyphs; the
+   rebrand keeps them as the page's strongest tiles but inside the brand's
+   own three tints, ink from the same family, no third-party hue. The
+   WhatsApp card no longer borrows #25D366 - the mark beside it is already
+   the recognisable part, and a brand green here fought the mint.
+   The flagship (allocation) is the one card that also tints its FIELD, so
+   it still leads the ladder - a mint-tint card, not a dark slab. */
 .ml-spot-card--green .ml-spot-icon {
-  background: linear-gradient(160deg, #25d366, #12a150);
-  color: #fff;
-  box-shadow: 0 12px 24px -12px rgba(18, 161, 80, 0.6);
+  background: #e6f5ee;
+  color: #2a7a62;
+}
+.ml-spot-card.is-flagship {
+  background: #e6f5ee;
+  border-color: #bfe6d6;
 }
 .ml-spot-card.is-flagship .ml-spot-icon {
-  background: linear-gradient(160deg, #f3c14b, #c9922b);
+  background: var(--ml-grad);
   color: #fff;
-  box-shadow: 0 12px 24px -12px rgba(201, 146, 43, 0.6);
+  box-shadow: 0 12px 24px -12px rgba(47, 58, 69, 0.45);
 }
 .ml-spot-card--violet .ml-spot-icon {
-  background: linear-gradient(160deg, #a78bfa, #7c3aed);
-  color: #fff;
-  box-shadow: 0 12px 24px -12px rgba(124, 58, 237, 0.55);
+  background: #fdeee6;
+  color: #b85a32;
 }
 .ml-spot-icon svg {
   width: 30px;
@@ -2302,7 +2407,7 @@ h3 > .ml-badge-soon {
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.02em;
-  color: var(--ml-accent, #e4622a);
+  color: var(--ml-mint-ink, #2a7a62);
   margin-bottom: 5px;
 }
 .ml-spot-copy h3 {
@@ -2310,11 +2415,11 @@ h3 > .ml-badge-soon {
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+  font-family: var(--font-rubik), "Rubik", var(--font-heebo), sans-serif;
   font-size: clamp(19px, 2.4vw, 24px);
   font-weight: 800;
   line-height: 1.3;
-  color: var(--ml-ink);
+  color: var(--ml-ink-head);
 }
 .ml-spot-copy p {
   margin-top: 8px;
@@ -2597,8 +2702,8 @@ h3 > .ml-badge-soon {
       rgba(255, 255, 255, 0) 45%,
       rgba(0, 0, 0, 0.2) 100%
     ),
-    linear-gradient(180deg, #34d399, #047857);
-  box-shadow: 0 5px 12px -6px rgba(4, 120, 87, 0.7);
+    linear-gradient(180deg, #9ed8c3, #236653);
+  box-shadow: 0 5px 12px -6px rgba(35, 102, 83, 0.7);
 }
 .ml-app-barpair i.is-exp {
   background:
@@ -2608,8 +2713,8 @@ h3 > .ml-badge-soon {
       rgba(255, 255, 255, 0) 45%,
       rgba(0, 0, 0, 0.2) 100%
     ),
-    linear-gradient(180deg, #fb7185, #be123c);
-  box-shadow: 0 5px 12px -6px rgba(190, 18, 60, 0.6);
+    linear-gradient(180deg, #f6b89e, #8e4223);
+  box-shadow: 0 5px 12px -6px rgba(142, 66, 35, 0.6);
 }
 
 @media (prefers-reduced-motion: no-preference) {

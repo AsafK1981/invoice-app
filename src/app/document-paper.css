@@ -21,23 +21,25 @@
    ===================================================================== */
 
 .doc-paper {
-  /* palette: warm near-black ink, thin antique-gold accents (the DEFAULT -
+  /* palette (2026-09-06 rebrand): graphite ink, mint accents (the DEFAULT -
      these are also the exact fallback values a business with no chosen
      document_design renders, and what an explicit "general" template
      resolves to; see src/lib/document-themes.ts). A themed business gets
      every one of these vars overridden via an inline style on this element
-     (designToCssVars()) - nothing here needs to change for that to work. */
-  --d-ink: #211c15;
-  --d-ink2: #514a3d;
-  --d-soft: #6f6857;
-  --d-gold: #8a6d26;
-  --d-gold-line: #c9ab63;
-  --d-gold-faint: #e7dcbf;
-  --d-gold-deep: #6a5320;
+     (designToCssVars()) - nothing here needs to change for that to work.
+     The var NAMES still say "gold" on purpose: renaming them would churn
+     ~130 rules here plus designToCssVars() for zero visual gain. */
+  --d-ink: #1f252b;
+  --d-ink2: #5f6b76;
+  --d-soft: #8b95a0;
+  --d-gold: #2f3a45;
+  --d-gold-line: #9ed8c3;
+  --d-gold-faint: #e6f5ee;
+  --d-gold-deep: #263039;
   --d-card: #ffffff;
-  --d-cardline: #e8e1d0;
-  --d-canvas: #efece4;
-  --d-grad: linear-gradient(177deg, #d8be77 0%, #be9e4e 42%, #8f6f2a 78%, #cbb061 100%);
+  --d-cardline: #e4e7e2;
+  --d-canvas: #f7f7f2;
+  --d-grad: linear-gradient(135deg, #2f3a45, #263039);
   /* Shape/weight knobs added for profession templates (corner + border
      enums in document-themes.ts). Defaults below are the pre-feature
      hard-coded values, so a null design renders byte-for-byte the same. */
@@ -46,8 +48,13 @@
   --d-borderw: 1px;
   --d-borderw-hdr: 1.5px;
   --d-borderw-grand: 2px;
-  --d-card-shadow: 0 1px 2px rgba(40, 30, 10, 0.03);
+  --d-card-shadow: 0 1px 2px rgba(47, 58, 69, 0.05);
   --d-font: var(--font-heebo), "Heebo", system-ui, sans-serif;
+  /* Headings on the sheet (business name, document number, client name) are
+     Rubik since the 2026-09-06 rebrand; the brand book pairs Rubik headings
+     with a Heebo body. A themed business overrides this var. The stack is
+     byte-for-byte FONT_OPTIONS.rubik.family so an explicit {template:general}
+     resolves to exactly this string (tests/document-themes.test.ts pins it). */
   --d-font-serif: var(--font-frank), "Frank Ruhl Libre", Georgia, serif;
   --d-topbar-h: 4px;
   --d-topbar-bg: var(--d-grad);
@@ -68,7 +75,7 @@
   -webkit-font-smoothing: antialiased;
 }
 
-/* top edge of the sheet: a 4px gold gradient by default, or a 1px solid
+/* top edge of the sheet: a 4px graphite gradient by default, or a 1px solid
    accent-line hairline for templates that set `hairlineTop` (photographer) */
 .doc-paper::before {
   content: "";
@@ -112,7 +119,7 @@
   break-inside: avoid;
 }
 
-/* gold micro-label with a fading rule, used as every zone's caption */
+/* accent micro-label with a fading rule, used as every zone's caption */
 .doc-paper .doc-glabel {
   display: flex;
   align-items: center;
@@ -204,10 +211,10 @@
   font-size: 13.5px;
   white-space: nowrap;
 }
-/* a זיכוי stays visually distinct from an invoice: same language, rose ink */
+/* a זיכוי stays visually distinct from an invoice: same language, peach ink */
 .doc-paper .doc-badge.is-credit {
-  border-color: #d0a49a;
-  color: #94402f;
+  border-color: #f3cdb9;
+  color: #b85a32;
 }
 .doc-paper .doc-num {
   font-size: calc(30px * var(--d-name-scale));
@@ -360,7 +367,7 @@
   font-size: 14px;
   color: var(--d-ink) !important;
   border: 0 !important;
-  border-bottom: 1px solid #f2eee4 !important;
+  border-bottom: 1px solid #eef0ee !important;
   vertical-align: top;
 }
 .doc-paper .doc-table tbody tr:last-child td {
@@ -436,7 +443,7 @@
   font-weight: 600;
 }
 .doc-paper .doc-brow.is-discount > span:last-child {
-  color: #3f6f56;
+  color: #2a7a62;
 }
 .doc-paper .doc-note-line {
   font-size: 12px;
@@ -453,7 +460,8 @@
   justify-content: center;
   border: var(--d-borderw) solid var(--d-gold-line);
   border-radius: var(--d-radius);
-  background: linear-gradient(160deg, #fdfaf1, #faf4e6);
+  /* mint tint by default; a themed business gets its own accent tint */
+  background: var(--d-gold-faint);
   break-inside: avoid;
 }
 .doc-paper .doc-paid-top {
@@ -518,7 +526,7 @@
 }
 .doc-paper .doc-foot-brand {
   font-size: 10px;
-  color: #6b6353;
+  color: #8b95a0;
   margin-top: 5px;
 }
 /* The credit is a real link (growth loop), but this is a tax document: it must
@@ -582,8 +590,8 @@
 }
 .doc-paper[data-doc-layout="banner"] .doc-badge.is-credit {
   background: #ffffff;
-  border-color: #d0a49a;
-  color: #94402f;
+  border-color: #f3cdb9;
+  color: #b85a32;
 }
 .doc-paper[data-doc-layout="banner"] .doc-mini,
 .doc-paper[data-doc-layout="banner"] .doc-info,
@@ -872,8 +880,8 @@
 }
 .doc-paper[data-doc-layout="stage"] .doc-badge.is-credit {
   background: #ffffff;
-  border-color: #d0a49a;
-  color: #94402f;
+  border-color: #f3cdb9;
+  color: #b85a32;
 }
 .doc-paper[data-doc-layout="stage"] .doc-num {
   color: var(--d-ink);
@@ -963,8 +971,9 @@
   }
   .doc-paper[data-doc-layout="banner"] .doc-head,
   .doc-paper[data-doc-layout="stage"] .doc-head,
-  .doc-paper[data-doc-layout="banner"] .doc-paid,
-  .doc-paper[data-doc-layout="stage"] .doc-paid,
+  /* the paid block carries the mint tint on every layout since the
+     2026-09-06 rebrand, so it needs the exact-colour hint everywhere */
+  .doc-paper .doc-paid,
   .doc-paper[data-doc-layout="ledger"] .doc-table th,
   .doc-paper[data-doc-layout="ledger"] .doc-brow.is-grand {
     -webkit-print-color-adjust: exact;
@@ -1102,7 +1111,7 @@
    sheet keeps the mockup's ≈18mm optical margin. This file is imported after
    globals.css, so the later rule wins the !important tie. */
 @media print {
-  /* Kill every page-chrome surface around the sheet. The gold skin paints the
+  /* Kill every page-chrome surface around the sheet. The app skin paints the
      /view wrapper (and html/body) obsidian, and the PDF route prints with
      printBackground:true; without this the PDF came out with a black frame
      around the paper. Re-asserted here (last stylesheet) so it beats the skin's

@@ -475,20 +475,20 @@ async function sendFailureEmail(
   const html = `<!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head><meta charset="UTF-8" /></head>
-<body style="margin:0;padding:0;background:#f5f5f4;font-family:Arial,sans-serif;">
+<body style="margin:0;padding:0;background:#f7f7f2;font-family:Arial,sans-serif;">
   <div dir="rtl" style="max-width:600px;margin:0 auto;padding:20px;">
-    <div style="background:linear-gradient(135deg,#f97316,#e11d48);padding:24px;border-radius:16px;color:white;text-align:center;margin-bottom:24px;">
+    <div style="background:#2f3a45;background-image:linear-gradient(135deg,#2f3a45,#263039);padding:24px;border-radius:16px;color:#ffffff;text-align:center;margin-bottom:24px;">
       <h1 style="margin:0;font-size:22px;">My Friendly Invoice App</h1>
     </div>
-    <div style="background:#fffaf5;border:1px solid #fed7aa;border-radius:12px;padding:24px;margin-bottom:24px;">
-      <p style="margin:0 0 12px 0;font-size:16px;color:#44403c;">שלום,</p>
-      <p style="margin:0 0 16px 0;font-size:15px;color:#44403c;line-height:1.6;">ניסינו לחייב את הכרטיס עבור מנוי ${planName} (₪${amount}) מספר פעמים ולא הצלחנו. המנוי הושהה כרגע.</p>
-      <p style="margin:0 0 12px 0;font-size:14px;color:#44403c;line-height:1.6;">כדי לחדש את הגישה המלאה, אפשר להתחבר ולהזין אמצעי תשלום מעודכן.</p>
+    <div style="background:#ffffff;border:1px solid #e4e7e2;border-radius:12px;padding:24px;margin-bottom:24px;">
+      <p style="margin:0 0 12px 0;font-size:16px;color:#1f252b;">שלום,</p>
+      <p style="margin:0 0 16px 0;font-size:15px;color:#1f252b;line-height:1.6;">ניסינו לחייב את הכרטיס עבור מנוי ${planName} (₪${amount}) מספר פעמים ולא הצלחנו. המנוי הושהה כרגע.</p>
+      <p style="margin:0 0 12px 0;font-size:14px;color:#1f252b;line-height:1.6;">כדי לחדש את הגישה המלאה, אפשר להתחבר ולהזין אמצעי תשלום מעודכן.</p>
     </div>
     <div style="text-align:center;margin-bottom:24px;">
-      <a href="${billingUrl}" style="display:inline-block;background:linear-gradient(135deg,#f97316,#e11d48);color:white;text-decoration:none;padding:14px 32px;border-radius:12px;font-size:16px;font-weight:bold;">חידוש המנוי ←</a>
+      <a href="${billingUrl}" style="display:inline-block;background:#2f3a45;background-image:linear-gradient(135deg,#2f3a45,#263039);color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:12px;font-size:16px;font-weight:bold;">חידוש המנוי ←</a>
     </div>
-    <p style="font-size:11px;color:#a8a29e;text-align:center;">הודעה אוטומטית. אם כבר טיפלת בזה, אפשר להתעלם.</p>
+    <p style="font-size:11px;color:#8b95a0;text-align:center;">הודעה אוטומטית. אם כבר טיפלת בזה, אפשר להתעלם.</p>
   </div>
 </body>
 </html>`;

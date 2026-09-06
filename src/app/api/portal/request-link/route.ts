@@ -75,32 +75,32 @@ export async function POST(req: NextRequest) {
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
   <title>קישור כניסה לפורטל הלקוחות</title>
 </head>
-<body style="margin:0;padding:0;background:#f5f5f4;font-family:Arial,sans-serif;">
+<body style="margin:0;padding:0;background:#f7f7f2;font-family:Arial,sans-serif;">
   <div dir="rtl" style="max-width:600px;margin:0 auto;padding:24px;">
-    <div style="background:linear-gradient(135deg,#f97316,#e11d48);padding:24px;border-radius:16px;color:white;text-align:center;margin-bottom:24px;">
+    <div style="background:#2f3a45;background-image:linear-gradient(135deg,#2f3a45,#263039);padding:24px;border-radius:16px;color:#ffffff;text-align:center;margin-bottom:24px;">
       <h1 style="margin:0;font-size:22px;">פורטל הלקוחות</h1>
     </div>
-    <div style="background:#fffaf5;border:1px solid #fed7aa;border-radius:12px;padding:24px;margin-bottom:24px;">
-      <p style="margin:0 0 12px 0;font-size:16px;color:#44403c;">שלום,</p>
-      <p style="margin:0 0 12px 0;font-size:14px;color:#44403c;">
+    <div style="background:#ffffff;border:1px solid #e4e7e2;border-radius:12px;padding:24px;margin-bottom:24px;">
+      <p style="margin:0 0 12px 0;font-size:16px;color:#1f252b;">שלום,</p>
+      <p style="margin:0 0 12px 0;font-size:14px;color:#1f252b;">
         ביקשתם קישור כניסה לצפייה בכל החשבוניות שלכם.
       </p>
-      <p style="margin:0;font-size:14px;color:#44403c;">
+      <p style="margin:0;font-size:14px;color:#1f252b;">
         הקישור תקף ל-24 שעות ומשמש לכניסה חד-פעמית לסשן של 7 ימים.
       </p>
     </div>
     <div style="text-align:center;margin-bottom:24px;">
-      <a href="${link}" style="display:inline-block;background:linear-gradient(135deg,#f97316,#e11d48);color:white;text-decoration:none;padding:14px 32px;border-radius:12px;font-size:16px;font-weight:bold;">
+      <a href="${link}" style="display:inline-block;background:#2f3a45;background-image:linear-gradient(135deg,#2f3a45,#263039);color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:12px;font-size:16px;font-weight:bold;">
         כניסה לפורטל ←
       </a>
     </div>
     <div style="text-align:center;margin-bottom:16px;">
-      <p style="font-size:13px;color:#57534e;margin:0 0 6px 0;">אם הכפתור לא נפתח, העתיקו את הקישור:</p>
-      <p style="font-size:12px;color:#78716c;margin:0;word-break:break-all;">
-        <a href="${link}" style="color:#ea580c;">${link}</a>
+      <p style="font-size:13px;color:#5f6b76;margin:0 0 6px 0;">אם הכפתור לא נפתח, העתיקו את הקישור:</p>
+      <p style="font-size:12px;color:#5f6b76;margin:0;word-break:break-all;">
+        <a href="${link}" style="color:#2f3a45;">${link}</a>
       </p>
     </div>
-    <p style="font-size:12px;color:#a8a29e;text-align:center;">
+    <p style="font-size:12px;color:#8b95a0;text-align:center;">
       אם לא ביקשתם קישור, אפשר להתעלם מהמייל.
     </p>
   </div>

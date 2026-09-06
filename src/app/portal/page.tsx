@@ -40,7 +40,7 @@ function PortalLoginInner() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl shadow-lg p-8 max-w-md w-full">
-        <div className="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center mb-4">
+        <div className="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-br from-orange-500 to-orange-700 flex items-center justify-center mb-4">
           <Mail className="w-6 h-6 text-white" />
         </div>
         <h1 className="text-2xl font-bold text-stone-900 text-center mb-2">
@@ -80,7 +80,7 @@ function PortalLoginInner() {
             <button
               type="submit"
               disabled={sending || !email}
-              className="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-5 py-3 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-l from-orange-500 to-orange-700 text-white px-5 py-3 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {sending ? "שולח..." : "שלחו לי קישור"}
             </button>

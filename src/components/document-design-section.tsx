@@ -461,7 +461,7 @@ export function DocumentDesignSection() {
           className={`px-5 py-2 rounded-xl text-sm font-semibold text-white disabled:shadow-none ${
             justSaved
               ? "bg-emerald-600"
-              : "bg-gradient-to-l from-orange-500 to-rose-500 hover:shadow-md hover:shadow-orange-200 disabled:opacity-60"
+              : "bg-gradient-to-l from-orange-500 to-orange-700 hover:shadow-md hover:shadow-orange-200 disabled:opacity-60"
           }`}
         >
           {justSaved ? "נשמר ✓" : saving ? "שומר..." : "שמור עיצוב"}

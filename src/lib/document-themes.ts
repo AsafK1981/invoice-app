@@ -81,7 +81,7 @@ export type AccentKey =
   | "lime";
 
 interface AccentFamily {
-  /** hex, e.g. "#8a6d26" - text/badge/glabel/totals color */
+  /** hex, e.g. "#2f3a45" - text/badge/glabel/totals color */
   accent: string;
   /** hex - thin rule/border color (table header underline, card border on the "paid" block) */
   line: string;
@@ -188,12 +188,18 @@ function tw(accent: string, line: string, faint: string, deep: string): AccentFa
  *  `normalizeDocumentDesign` checks membership here, `designToCssVars` only
  *  ever reads from here. */
 export const ACCENT_HEX: Record<AccentKey, AccentFamily> = {
+  // 2026-09-06 rebrand: the DEFAULT family (the "general" template, and the
+  // fallback a null design renders) is the brand's graphite + mint, not the
+  // old antique gold. The key stays `gold` because it is persisted in
+  // businesses.document_design for every business that ever picked it -
+  // renaming it would orphan those rows. Values here must stay byte-for-byte
+  // identical to the --d-* defaults in src/app/document-paper.css.
   gold: {
-    accent: "#8a6d26",
-    line: "#c9ab63",
-    faint: "#e7dcbf",
-    deep: "#6a5320",
-    grad: "linear-gradient(177deg, #d8be77 0%, #be9e4e 42%, #8f6f2a 78%, #cbb061 100%)",
+    accent: "#2f3a45",
+    line: "#9ed8c3",
+    faint: "#e6f5ee",
+    deep: "#263039",
+    grad: "linear-gradient(135deg, #2f3a45, #263039)",
   },
   amberDeep: {
     accent: "#8a5f07",
@@ -494,12 +500,12 @@ export interface DocumentTemplate {
 }
 
 const GENERAL_PALETTE: Palette = {
-  ink: "#211c15",
-  ink2: "#514a3d",
-  soft: "#6f6857",
+  ink: "#1f252b",
+  ink2: "#5f6b76",
+  soft: "#8b95a0",
   card: "#ffffff",
-  cardline: "#e8e1d0",
-  canvas: "#efece4",
+  cardline: "#e4e7e2",
+  canvas: "#f7f7f2",
 };
 
 export const DOCUMENT_TEMPLATES: DocumentTemplate[] = [
@@ -508,11 +514,12 @@ export const DOCUMENT_TEMPLATES: DocumentTemplate[] = [
     label: "כללי / ברירת מחדל",
     accent: "gold",
     font: "heebo",
-    // Business name / doc number stay Frank Ruhl Libre, matching the legacy
-    // (null-design) look exactly. Without this, an explicit {template:general}
-    // (what the "reset to original" button persists) would silently fall the
-    // .doc-serif elements back to Heebo - a visible font change vs. null.
-    nameFont: "frank",
+    // Business name / doc number are Rubik (brand book: Rubik headings over a
+    // Heebo body), matching the null-design fallback in document-paper.css
+    // exactly. Without this, an explicit {template:general} (what the "reset
+    // to original" button persists) would silently fall the .doc-serif
+    // elements back to Heebo - a visible font change vs. null.
+    nameFont: "rubik",
     layout: "cards",
     corner: "normal",
     border: "normal",

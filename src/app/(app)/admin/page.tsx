@@ -305,8 +305,8 @@ export default function AdminPage() {
               value={String(stats.documents.total)}
               sub={`+${stats.documents.last7d} השבוע`}
               icon={FileText}
-              gradient="from-orange-400 to-rose-500"
-              bg="from-orange-50 to-rose-50"
+              gradient="from-orange-500 to-orange-700"
+              bg="from-orange-50 to-orange-100"
             />
             <StatCard
               label="הכנסות באפליקציה"
@@ -442,7 +442,7 @@ function FunnelBars({
 }) {
   const max = Math.max(onboarding.signedUp, 1);
   const stages: Array<{ label: string; count: number; gradient: string }> = [
-    { label: "נרשמו", count: onboarding.signedUp, gradient: "from-orange-400 to-rose-500" },
+    { label: "נרשמו", count: onboarding.signedUp, gradient: "from-orange-500 to-orange-700" },
     {
       label: "השלימו פרטי עסק",
       count: onboarding.createdBusiness,
@@ -513,7 +513,7 @@ function DocTypeCounts({
           </div>
           <div className="h-2 rounded-full bg-stone-100 overflow-hidden">
             <div
-              className="h-full bg-gradient-to-l from-orange-400 to-rose-500"
+              className="h-full bg-gradient-to-l from-orange-500 to-orange-700"
               style={{ width: `${Math.round((r.count / max) * 100)}%` }}
             />
           </div>

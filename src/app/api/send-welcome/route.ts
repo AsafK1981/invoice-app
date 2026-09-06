@@ -14,20 +14,20 @@ const APP_URL = CANONICAL_ORIGIN;
 
 function buildWelcomeHtml(): string {
   return `
-    <div dir="rtl" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Heebo, Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; color: #1c1917; background: #fff7ed; border-radius: 16px;">
+    <div dir="rtl" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Heebo, Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; color: #1f252b; background: #fdeee6; border-radius: 16px;">
       <div style="text-align: center; margin-bottom: 24px;">
-        <div style="display:inline-block;background:linear-gradient(135deg,#fb923c,#f43f5e);color:#fff;padding:14px 22px;border-radius:18px;font-weight:700;font-size:16px;">
+        <div style="display:inline-block;background:#2f3a45;color:#ffffff;padding:14px 22px;border-radius:18px;font-weight:700;font-size:16px;">
           חשבונית ידידותית
         </div>
       </div>
-      <h1 style="color:#1c1917;font-size:22px;margin:0 0 12px;">ברוך/ה הבא/ה! 🎉</h1>
-      <p style="color:#44403c;font-size:15px;line-height:1.6;margin:0 0 16px;">
+      <h1 style="color:#1f252b;font-size:22px;margin:0 0 12px;">ברוך/ה הבא/ה! 🎉</h1>
+      <p style="color:#1f252b;font-size:15px;line-height:1.6;margin:0 0 16px;">
         תודה שנרשמת לחשבונית ידידותית, אפליקציה אישית להפקת חשבוניות וקבלות לעצמאיים בישראל.
       </p>
-      <p style="color:#44403c;font-size:15px;line-height:1.6;margin:0 0 16px;">
+      <p style="color:#1f252b;font-size:15px;line-height:1.6;margin:0 0 16px;">
         מה אפשר לעשות מכאן:
       </p>
-      <ul style="color:#44403c;font-size:15px;line-height:1.8;margin:0 0 20px;padding-right:20px;">
+      <ul style="color:#1f252b;font-size:15px;line-height:1.8;margin:0 0 20px;padding-right:20px;">
         <li>למלא את פרטי העסק, כדי שיופיעו אוטומטית על כל מסמך</li>
         <li>להוסיף לקוחות ומוצרים פעם אחת, והפקה הופכת לשנייה</li>
         <li>להפיק קבלות, חשבונות עסקה, חשבוניות מס</li>
@@ -36,14 +36,14 @@ function buildWelcomeHtml(): string {
         <li>לעקוב אחרי הכנסות, הוצאות, ומסמכים פתוחים</li>
       </ul>
       <div style="text-align:center;margin:28px 0;">
-        <a href="${APP_URL}/dashboard" style="display:inline-block;background:linear-gradient(135deg,#fb923c,#f43f5e);color:#fff;text-decoration:none;padding:14px 32px;border-radius:14px;font-weight:600;font-size:15px;">
+        <a href="${APP_URL}/dashboard" style="display:inline-block;background:#2f3a45;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:14px;font-weight:600;font-size:15px;">
           למסך הראשי שלי
         </a>
       </div>
-      <p style="color:#78716c;font-size:13px;line-height:1.5;margin:0 0 8px;">
+      <p style="color:#5f6b76;font-size:13px;line-height:1.5;margin:0 0 8px;">
         טיפ: במסך הראשי תמצא צ'ק-ליסט קצר עם 5 צעדים להפקת המסמך הראשון.
       </p>
-      <p style="color:#78716c;font-size:13px;line-height:1.5;margin:0;">
+      <p style="color:#5f6b76;font-size:13px;line-height:1.5;margin:0;">
         יש שאלה? פשוט תענה למייל הזה, מגיע אליי ישר.
       </p>
     </div>

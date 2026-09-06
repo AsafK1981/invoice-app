@@ -519,7 +519,7 @@ export function VatPeriodReport({ headless = false, business, documents, expense
                 type="button"
                 onClick={downloadPcn}
                 disabled={pcnProblems.length > 0}
-                className="no-print inline-flex items-center justify-center gap-2 min-h-[44px] px-4 rounded-xl text-sm font-semibold text-white bg-gradient-to-l from-orange-500 to-rose-500 hover:shadow-md hover:shadow-orange-200 disabled:from-stone-300 disabled:to-stone-300 disabled:shadow-none"
+                className="no-print inline-flex items-center justify-center gap-2 min-h-[44px] px-4 rounded-xl text-sm font-semibold text-white bg-gradient-to-l from-orange-500 to-orange-700 hover:shadow-md hover:shadow-orange-200 disabled:from-stone-300 disabled:to-stone-300 disabled:shadow-none"
               >
                 <FileDown className="w-4 h-4" aria-hidden="true" />
                 {pcn.warnings.some((w) => w.level === "error") ? "הורד בכל זאת" : "הורד קובץ PCN874"}
@@ -603,7 +603,7 @@ export function VatPeriodReport({ headless = false, business, documents, expense
           <div className="hidden sm:block print:block overflow-x-auto">
             <table className="gk-rtable w-full text-sm border-separate border-spacing-0 rounded-xl overflow-hidden shadow-sm">
               <thead>
-                <tr className="bg-gradient-to-l from-orange-500 to-rose-500 text-white">
+                <tr className="bg-gradient-to-l from-orange-500 to-orange-700 text-white">
                   <th className="px-4 py-3 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">תאריך</th>
                   <th className="px-4 py-3 text-xs font-extrabold tracking-wide text-right whitespace-nowrap border-l border-white/20">ספק</th>
                   <th className="px-4 py-3 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">קטגוריה</th>

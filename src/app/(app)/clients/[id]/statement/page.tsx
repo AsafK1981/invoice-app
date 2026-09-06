@@ -117,7 +117,7 @@ export default function ClientStatementPage({
                 document.title = original;
               }
             }}
-            className="inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-5 py-2.5 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200 transition-all"
+            className="inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-orange-700 text-white px-5 py-2.5 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200 transition-all"
           >
             <Printer className="w-4 h-4" />
             הדפס
@@ -247,7 +247,7 @@ export default function ClientStatementPage({
         </section>
 
         <footer className="text-xs text-stone-500 text-center mt-6 pt-4 border-t border-stone-200">
-          הופק ממערכת MyFriendlyInvoiceApp · {formatDate(today)}
+          הופק ממערכת חשבונית ידידותית · {formatDate(today)}
         </footer>
       </div>
     </div>

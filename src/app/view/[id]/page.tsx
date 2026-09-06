@@ -316,7 +316,7 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
         <button
           onClick={handleDownloadPdf}
           disabled={downloadingPdf}
-          className="inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-5 py-2.5 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+          className="inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-orange-700 text-white px-5 py-2.5 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
           title={t.downloadPdfTitle}
         >
           <Download className="w-4 h-4" />
@@ -443,7 +443,7 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
             </p>
             <a
               href="/?utm_source=document&utm_medium=view_cta&utm_campaign=growth_loop"
-              className="mt-3 inline-flex items-center gap-2 rounded-2xl bg-gradient-to-l from-orange-500 to-rose-500 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:shadow-lg hover:shadow-orange-200"
+              className="mt-3 inline-flex items-center gap-2 rounded-2xl bg-gradient-to-l from-orange-500 to-orange-700 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:shadow-lg hover:shadow-orange-200"
             >
               התחילו בחינם ←
             </a>

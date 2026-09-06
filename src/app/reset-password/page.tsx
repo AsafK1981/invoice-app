@@ -67,7 +67,7 @@ export default function ResetPasswordPage() {
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-orange-50 to-amber-50">
       <div className="w-full max-w-md">
         <div className="text-center mb-8 animate-fade-in-up">
-          <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center mx-auto shadow-xl shadow-orange-200/50 btn-glow">
+          <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-orange-500 to-orange-700 flex items-center justify-center mx-auto shadow-xl shadow-orange-200/50 btn-glow">
             <Sparkles className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-xl font-bold text-stone-900 mt-4">איפוס סיסמה</h1>
@@ -140,7 +140,7 @@ export default function ResetPasswordPage() {
               <button
                 type="submit"
                 disabled={loading || !sessionReady || !!error}
-                className="w-full btn-glow inline-flex items-center justify-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white py-3 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200/60 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                className="w-full btn-glow inline-flex items-center justify-center gap-2 bg-gradient-to-l from-orange-500 to-orange-700 text-white py-3 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200/60 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
                 {loading ? "שומר..." : "עדכן סיסמה"}
               </button>

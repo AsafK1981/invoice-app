@@ -1,17 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="64" height="64" role="img" aria-label="חשבונית">
-  <defs>
-    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#FB923C"/>
-      <stop offset="0.5" stop-color="#F97316"/>
-      <stop offset="1" stop-color="#E11D48"/>
-    </linearGradient>
-  </defs>
-  <rect x="4" y="4" width="92" height="92" rx="22" fill="#1c1917" stroke="url(#gold)" stroke-width="3"/>
-  <g stroke="url(#gold)" stroke-width="4.4" fill="none" stroke-linejoin="round" stroke-linecap="round">
-    <path d="M35 28h20l10 10v34H35z"/>
-    <path d="M55 28v10h10"/>
-  </g>
-  <g stroke="url(#gold)" stroke-width="4" stroke-linecap="round">
-    <path d="M43 50h14M43 60h14"/>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-14 0 134 140" width="134" height="140" fill="none" role="img" aria-label="חשבונית ידידותית">
+  <title>חשבונית ידידותית</title>
+  <path d="M22 8h56l30 30v90a12 12 0 0 1-12 12H22a12 12 0 0 1-12-12V20A12 12 0 0 1 22 8z" fill="#FFFFFF" stroke="#2F3A45" stroke-width="7" stroke-linejoin="round"/>
+  <path d="M78 8v20a10 10 0 0 0 10 10h20z" fill="#9ED8C3" stroke="#2F3A45" stroke-width="7" stroke-linejoin="round"/>
+  <circle cx="40" cy="60" r="5" fill="#2F3A45"/>
+  <circle cx="72" cy="60" r="5" fill="#2F3A45"/>
+  <path d="M43 76q13 12 26 0" stroke="#2F3A45" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="29" cy="72" r="6" fill="#F6B89E"/>
+  <circle cx="83" cy="72" r="6" fill="#F6B89E"/>
+  <path d="M30 100h50M30 115h30" stroke="#9ED8C3" stroke-width="7" stroke-linecap="round"/>
+  <path d="M3 118l-10 8M2 106l-12 1" stroke="#2F3A45" stroke-width="5" stroke-linecap="round"/>
 </svg>

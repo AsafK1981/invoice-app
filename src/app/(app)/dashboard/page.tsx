@@ -316,8 +316,10 @@ export default function DashboardPage() {
     <div className="gk-dashboard space-y-8">
       <div className="animate-fade-in-up">
         <div>
+          {/* Rebrand greeting (2026-09-06). The markup carries no user name to
+              keep, so the line stands on its own. */}
           <h1 className="text-3xl font-bold text-stone-900 flex items-center gap-2">
-            שלום
+            שלום, כיף לראות אותך!
           </h1>
           <p className="text-sm text-stone-700 mt-1">סקירה מהירה של הפעילות שלך</p>
         </div>
@@ -352,8 +354,8 @@ export default function DashboardPage() {
           "create your first" CTA. Auto-disappears the moment they
           create their first doc. */}
       {ready && documents.length === 0 && (
-        <div className="card-soft p-8 bg-gradient-to-br from-orange-50 to-rose-50 border-orange-200 text-center">
-          <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-orange-400 to-rose-400 flex items-center justify-center shadow-lg shadow-orange-200/50 mx-auto mb-4">
+        <div className="card-soft p-8 bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200 text-center">
+          <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-orange-500 to-orange-700 flex items-center justify-center shadow-lg shadow-orange-200/50 mx-auto mb-4">
             <Sparkles className="w-7 h-7 text-white" />
           </div>
           <h2 className="text-xl font-bold text-stone-900 mb-2">בואו נתחיל</h2>
@@ -362,7 +364,7 @@ export default function DashboardPage() {
           </p>
           <Link
             href="/documents/new"
-            className="inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-6 py-3 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200 transition-all"
+            className="inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-orange-700 text-white px-6 py-3 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200 transition-all"
           >
             <Plus className="w-4 h-4" />
             צור מסמך ראשון
@@ -452,7 +454,7 @@ export default function DashboardPage() {
               // `gk-kpi*` are hooks for the PHONE rule in app-skin.css, which
               // folds this card into one line (Asaf 2026-08-27); the Tailwind
               // classes describe the desktop card.
-              className={`gk-kpi card-soft p-5 bg-white border-[#e9e4d8] hover:shadow-lg hover:-translate-y-1 animate-fade-in-up stagger-${idx + 1} block group cursor-pointer relative`}
+              className={`gk-kpi card-soft p-5 bg-white border-[#e4e7e2] hover:shadow-lg hover:-translate-y-1 animate-fade-in-up stagger-${idx + 1} block group cursor-pointer relative`}
             >
               <div className="gk-kpi-row flex items-start justify-between">
                 <div className="gk-kpi-body min-w-0 flex-1">
@@ -489,7 +491,7 @@ export default function DashboardPage() {
             <Link
               key={s.label}
               href={s.href}
-              className="rounded-2xl border p-4 hover:shadow-md hover:-translate-y-0.5 transition-all block group cursor-pointer bg-white border-[#e9e4d8]"
+              className="rounded-2xl border p-4 hover:shadow-md hover:-translate-y-0.5 transition-all block group cursor-pointer bg-white border-[#e4e7e2]"
             >
               <div className="flex items-center gap-3">
                 <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ftile ftile-${s.tone}`}>
@@ -544,14 +546,14 @@ export default function DashboardPage() {
       </div>
 
       <div className="card-soft overflow-hidden animate-fade-in-up">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#e9e4d8]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#e4e7e2]">
           <h2 className="font-semibold text-stone-900 flex items-center gap-2">
             <ClipboardList className="w-5 h-5 text-stone-500" />
             מסמכים אחרונים
           </h2>
           <Link
             href="/documents"
-            className="inline-flex items-center gap-1 text-sm text-orange-600 hover:text-orange-700 font-medium group"
+            className="inline-flex items-center gap-1 text-sm text-emerald-600 hover:text-emerald-700 font-medium group"
           >
             לכל המסמכים
             <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-1" />
@@ -592,7 +594,7 @@ function DeltaBadge({
   if (delta.mode === "new") {
     return (
       <span
-        className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-orange-700 bg-orange-50 px-1.5 py-0.5 rounded-md"
+        className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-md"
         title={`חדש לעומת ${prevLabel}`}
       >
         חדש
@@ -603,9 +605,11 @@ function DeltaBadge({
 
   const isPositive = delta.mode === "up";
   const isGood = higherIsBetter ? isPositive : !isPositive;
+  // Rebrand 2026-09-06: a delta is mint when it went the good way and peach
+  // when it did not, so the direction is readable without parsing the arrow.
   const colorClass = isGood
-    ? "text-orange-700 bg-orange-50"
-    : "text-stone-600 bg-stone-100";
+    ? "text-emerald-700 bg-emerald-50"
+    : "text-rose-700 bg-rose-50";
   const arrow = isPositive ? "↑" : "↓";
   const pctText = `${Math.abs(delta.pct).toFixed(0)}%`;
 

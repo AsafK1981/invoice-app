@@ -22,7 +22,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Sparkles, X, Send, FileText, Paperclip, Table2, MessageCircle, Mic, ChevronLeft, Check, Trash2, Pencil, Brain, Maximize2, Minimize2 } from "lucide-react";
+import { Sparkles, X, Send, FileText, Paperclip, Table2, Mic, ChevronLeft, Check, Trash2, Pencil, Brain, Maximize2, Minimize2 } from "lucide-react";
+import { BrandMark } from "@/components/brand-mark";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { formatMoney } from "@/lib/currencies";
 import { supabase } from "@/lib/supabase";
@@ -739,13 +740,17 @@ export function AssistantWidget() {
       <button
         onClick={() => setOpen(true)}
         aria-label="פתח את העוזר החכם"
-        className={`assistant-launcher no-print fixed left-4 right-auto z-40 ${side} h-12 pl-4 pr-3 lg:h-16 lg:pl-6 lg:pr-5 lg:gap-3 rounded-full bg-gradient-to-br from-orange-400 to-rose-500 text-white shadow-lg shadow-orange-300/60 flex items-center gap-2 hover:scale-105 active:scale-95 transition-transform print:hidden`}
+        className={`assistant-launcher no-print fixed left-4 right-auto z-40 ${side} h-12 pl-4 pr-3 lg:h-16 lg:pl-6 lg:pr-5 lg:gap-3 rounded-full bg-gradient-to-br from-orange-500 to-orange-700 text-white shadow-lg shadow-orange-300/60 flex items-center gap-2 hover:scale-105 active:scale-95 transition-transform print:hidden`}
       >
         {/* Attention ring: expands and fades once per nudge cycle (see
             .assistant-launcher::after in app-skin.css). Decorative only. */}
         <span aria-hidden="true" className="assistant-launcher-ring" />
+        {/* The brand mark, not a generic chat bubble (2026-09-06 rebrand): the
+            pill is solid graphite, and the mark's white page + mint lines are
+            the one thing on it that reads as this product. */}
         <span className="relative flex items-center justify-center">
-          <MessageCircle className="w-5 h-5 lg:w-7 lg:h-7" />
+          <BrandMark size={22} className="lg:hidden" />
+          <BrandMark size={28} className="hidden lg:block" />
           <Sparkles className="w-3 h-3 lg:w-4 lg:h-4 absolute -top-1 -left-1.5 lg:-top-1.5 lg:-left-2" />
         </span>
         <span className="text-sm lg:text-lg font-semibold whitespace-nowrap">עוזר חכם</span>
@@ -787,7 +792,7 @@ export function AssistantWidget() {
           />
         )}
         <div className="flex items-center gap-2 px-4 py-3 border-b border-stone-200 flex-shrink-0">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-orange-500 to-orange-700 flex items-center justify-center">
             <Sparkles className="w-4 h-4 text-white" />
           </div>
           <div className="flex-1 min-w-0">
@@ -840,7 +845,7 @@ export function AssistantWidget() {
               <div
                 className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap break-words ${
                   m.role === "user"
-                    ? "bg-gradient-to-br from-orange-400 to-rose-500 text-white"
+                    ? "bg-gradient-to-br from-orange-500 to-orange-700 text-white"
                     : "bg-stone-100 text-stone-800"
                 }`}
               >
@@ -1172,7 +1177,7 @@ export function AssistantWidget() {
               onClick={() => send(input)}
               disabled={busy || parsingFile || (!input.trim() && !attachment)}
               aria-label="שלח"
-              className="ms-auto h-10 px-4 flex-shrink-0 rounded-xl bg-gradient-to-br from-orange-400 to-rose-500 text-white flex items-center justify-center gap-1.5 text-sm font-semibold disabled:opacity-40 transition-opacity"
+              className="ms-auto h-10 px-4 flex-shrink-0 rounded-xl bg-gradient-to-br from-orange-500 to-orange-700 text-white flex items-center justify-center gap-1.5 text-sm font-semibold disabled:opacity-40 transition-opacity"
             >
               <span>שלח</span>
               <Send className="w-4 h-4" />

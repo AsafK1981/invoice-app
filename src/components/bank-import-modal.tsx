@@ -305,7 +305,7 @@ export function BankImportModal({ open, onClose, unpaidDocuments, onPaid }: Prop
               />
               <label
                 htmlFor="bank-csv-upload"
-                className="inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-6 py-3 rounded-2xl text-sm font-semibold cursor-pointer hover:shadow-lg hover:shadow-orange-200 transition-all"
+                className="inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-orange-700 text-white px-6 py-3 rounded-2xl text-sm font-semibold cursor-pointer hover:shadow-lg hover:shadow-orange-200 transition-all"
               >
                 <Upload className="w-4 h-4" />
                 בחרו קובץ CSV
@@ -441,7 +441,7 @@ export function BankImportModal({ open, onClose, unpaidDocuments, onPaid }: Prop
                 type="button"
                 onClick={handleImport}
                 disabled={importing || stats.auto === 0}
-                className="inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-5 py-2.5 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-orange-700 text-white px-5 py-2.5 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <ArrowRightLeft className="w-4 h-4" />
                 {importing ? "מסמן..." : `סמן ${stats.auto} חשבוניות כשולמו`}

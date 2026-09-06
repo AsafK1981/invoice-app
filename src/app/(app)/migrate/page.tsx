@@ -349,7 +349,7 @@ const EXPORT_GUIDES: Record<Exclude<Vendor, null>, ExportStep[]> = {
 const VENDOR_META: Record<Exclude<Vendor, null>, { name: string; color: string; tagline: string }> = {
   // Card order in the picker: the tools people switch from most often first.
   // The list is mirrored word-for-word in the marketing FAQ (src/app/(marketing)/page.tsx).
-  invoice4u: { name: "Invoice4U", color: "from-rose-400 to-orange-500", tagline: "מדריך ספציפי, 5 דקות" },
+  invoice4u: { name: "Invoice4U", color: "from-orange-500 to-orange-700", tagline: "מדריך ספציפי, 5 דקות" },
   morning: { name: "Morning (חשבונית ירוקה)", color: "from-emerald-400 to-teal-500", tagline: "מדריך ספציפי, 5 דקות" },
   icount: { name: "iCount", color: "from-blue-400 to-indigo-500", tagline: "מדריך כללי, 5-10 דקות" },
   ezcount: { name: "EZcount", color: "from-orange-400 to-red-500", tagline: "מדריך ספציפי, 5 דקות" },
@@ -382,7 +382,7 @@ export default function MigratePage() {
 
   function whatsappConciergeLink(): string {
     const PHONE = "972549000684";
-    const text = `היי אסף, רציתי לעבור מ-${vendor ? VENDOR_META[vendor].name : "תוכנה אחרת"} ל-MyFriendlyInvoiceApp. אני שולח את הקבצים שיצאתי, ואשמח אם תעזור לי לייבא אותם.`;
+    const text = `היי אסף, רציתי לעבור מ-${vendor ? VENDOR_META[vendor].name : "תוכנה אחרת"} ל-חשבונית ידידותית. אני שולח את הקבצים שיצאתי, ואשמח אם תעזור לי לייבא אותם.`;
     return `https://wa.me/${PHONE}?text=${encodeURIComponent(text)}`;
   }
 
@@ -390,7 +390,7 @@ export default function MigratePage() {
     <div className="space-y-6 max-w-4xl">
       <div>
         <h1 className="text-3xl font-bold text-stone-900 flex items-center gap-3">
-          <span className="w-11 h-11 rounded-2xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center shadow-sm">
+          <span className="w-11 h-11 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-700 flex items-center justify-center shadow-sm">
             <Sparkles className="w-5 h-5 text-white" />
           </span>
           מעבר מתוכנה אחרת
@@ -428,7 +428,7 @@ export default function MigratePage() {
             const Icon = step.icon;
             return (
               <li key={step.title} className="card-soft p-4 flex items-start gap-3">
-                <span className="w-9 h-9 rounded-2xl bg-gradient-to-br from-orange-400 to-rose-400 text-white flex items-center justify-center shadow-sm flex-shrink-0 text-sm font-bold">
+                <span className="w-9 h-9 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-700 text-white flex items-center justify-center shadow-sm flex-shrink-0 text-sm font-bold">
                   {i + 1}
                 </span>
                 <div className="min-w-0">
@@ -454,7 +454,7 @@ export default function MigratePage() {
       {!vendor && (
         <section className="card-soft p-5 sm:p-6 border-2 border-orange-200 bg-white">
           <div className="flex items-start gap-3 mb-4">
-            <span className="w-10 h-10 rounded-2xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center shadow-sm flex-shrink-0">
+            <span className="w-10 h-10 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-700 flex items-center justify-center shadow-sm flex-shrink-0">
               <Upload className="w-5 h-5 text-white" aria-hidden="true" />
             </span>
             <div>
@@ -608,7 +608,7 @@ export default function MigratePage() {
               {/* One-click bulk import: preferred path */}
               <li className="rounded-2xl border-2 border-orange-200 bg-gradient-to-br from-orange-50/80 to-amber-50/60 px-4 py-4">
                 <div className="flex items-start gap-3 mb-3">
-                  <span className="w-7 h-7 rounded-full bg-gradient-to-br from-orange-400 to-rose-500 text-white flex items-center justify-center text-xs font-bold flex-shrink-0 shadow-sm">
+                  <span className="w-7 h-7 rounded-full bg-gradient-to-br from-orange-500 to-orange-700 text-white flex items-center justify-center text-xs font-bold flex-shrink-0 shadow-sm">
                     {guides.length + 1}
                   </span>
                   <div className="flex-1">
@@ -698,7 +698,7 @@ export default function MigratePage() {
                     </p>
                     <Link
                       href="/dashboard"
-                      className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-gradient-to-l from-orange-500 to-rose-500 text-white hover:shadow-md hover:shadow-orange-200"
+                      className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-gradient-to-l from-orange-500 to-orange-700 text-white hover:shadow-md hover:shadow-orange-200"
                     >
                       <Sparkles className="w-4 h-4" />
                       קח אותי למסך הראשי

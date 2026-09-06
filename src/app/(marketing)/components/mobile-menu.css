@@ -50,15 +50,15 @@
 }
 
 .mm-root {
-  --mm-cream: #faf7f2;
+  --mm-cream: #F7F7F2;
   --mm-card: #ffffff;
-  --mm-ink: #241e16;
-  --mm-gold-ink: #c2410c;
-  --mm-gold-tint: #fff4ea;
-  --mm-gold-tint-line: #fddcc0;
-  --mm-line: #ece3d3;
-  --mm-line-soft: #f2ebdd;
-  --mm-grad: linear-gradient(135deg, #f97316, #e11d48);
+  --mm-ink: #1F252B;
+  --mm-gold-ink: #2F3A45;
+  --mm-gold-tint: #E6F5EE;
+  --mm-gold-tint-line: #BFE6D6;
+  --mm-line: #E4E7E2;
+  --mm-line-soft: #EEF0EC;
+  --mm-grad: linear-gradient(135deg, #2F3A45, #263039);
   position: fixed;
   inset: 0;
   z-index: 100;

@@ -92,7 +92,7 @@ export function DraftsList() {
             </div>
             <Link
               href={`/documents/new/${DOC_TYPE_ROUTE[d.docType]}?draft=${d.id}`}
-              className="inline-flex items-center gap-1.5 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-3.5 py-2 rounded-xl text-xs font-semibold hover:shadow-md hover:shadow-orange-200 transition-all flex-shrink-0"
+              className="inline-flex items-center gap-1.5 bg-gradient-to-l from-orange-500 to-orange-700 text-white px-3.5 py-2 rounded-xl text-xs font-semibold hover:shadow-md hover:shadow-orange-200 transition-all flex-shrink-0"
             >
               המשך
               <ArrowLeft className="w-3.5 h-3.5" />

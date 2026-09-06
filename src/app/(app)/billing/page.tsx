@@ -337,7 +337,7 @@ export default function BillingPage() {
             onClick={() => setInterval("month")}
             className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-all ${
               interval === "month"
-                ? "bg-gradient-to-l from-orange-500 to-rose-500 text-white shadow-sm"
+                ? "bg-gradient-to-l from-orange-500 to-orange-700 text-white shadow-sm"
                 : "text-stone-600 hover:text-stone-900"
             }`}
           >
@@ -347,7 +347,7 @@ export default function BillingPage() {
             onClick={() => setInterval("year")}
             className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-all flex items-center gap-1.5 ${
               interval === "year"
-                ? "bg-gradient-to-l from-orange-500 to-rose-500 text-white shadow-sm"
+                ? "bg-gradient-to-l from-orange-500 to-orange-700 text-white shadow-sm"
                 : "text-stone-600 hover:text-stone-900"
             }`}
           >
@@ -426,7 +426,7 @@ export default function BillingPage() {
                   className={`w-full mt-6 btn-glow inline-flex items-center justify-center gap-2 text-white py-3 rounded-2xl text-sm font-semibold disabled:opacity-50 transition-all ${
                     isProCard
                       ? "bg-gradient-to-l from-violet-500 to-purple-500 hover:shadow-lg hover:shadow-violet-200/60"
-                      : "bg-gradient-to-l from-orange-500 to-rose-500 hover:shadow-lg hover:shadow-orange-200/60"
+                      : "bg-gradient-to-l from-orange-500 to-orange-700 hover:shadow-lg hover:shadow-orange-200/60"
                   }`}
                 >
                   <Sparkles className="w-4 h-4" />
@@ -481,7 +481,7 @@ export default function BillingPage() {
             <button
               onClick={() => confirmingTier && actuallySubscribe(confirmingTier)}
               disabled={actionLoading !== null}
-              className="flex-1 btn-glow inline-flex items-center justify-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white py-2.5 rounded-xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200/60 disabled:opacity-50 transition-all"
+              className="flex-1 btn-glow inline-flex items-center justify-center gap-2 bg-gradient-to-l from-orange-500 to-orange-700 text-white py-2.5 rounded-xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200/60 disabled:opacity-50 transition-all"
             >
               <Sparkles className="w-4 h-4" />
               {actionLoading !== null ? "מעביר לתשלום..." : "המשך לתשלום"}

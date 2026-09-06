@@ -62,7 +62,7 @@ export function EmptyState({
         className={`w-20 h-20 rounded-3xl flex items-center justify-center shadow-xl mx-auto mb-5 ${
           tone
             ? `ftile ftile-${tone}`
-            : "bg-gradient-to-br from-orange-400 to-rose-500 shadow-orange-200/60"
+            : "bg-gradient-to-br from-orange-500 to-orange-700 shadow-orange-200/60"
         }`}
       >
         <Icon className={`w-9 h-9 ${tone ? "" : "text-white"}`} />
@@ -76,7 +76,7 @@ export function EmptyState({
         {primaryAction.href ? (
           <Link
             href={primaryAction.href}
-            className="btn-glow inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-6 py-3 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200/60 hover:-translate-y-0.5 transition-all"
+            className="btn-glow inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-orange-700 text-white px-6 py-3 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200/60 hover:-translate-y-0.5 transition-all"
           >
             <PrimaryIcon className="w-4 h-4" />
             {primaryAction.label}
@@ -84,7 +84,7 @@ export function EmptyState({
         ) : (
           <button
             onClick={primaryAction.onClick}
-            className="btn-glow inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-6 py-3 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200/60 hover:-translate-y-0.5 transition-all"
+            className="btn-glow inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-orange-700 text-white px-6 py-3 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200/60 hover:-translate-y-0.5 transition-all"
           >
             <PrimaryIcon className="w-4 h-4" />
             {primaryAction.label}

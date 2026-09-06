@@ -228,7 +228,7 @@ export function TaxAuthoritySection() {
         {/* Medallion: layered gradient + inset highlight + soft halo ring */}
         <div className="relative flex-shrink-0">
           <div className="absolute inset-0 rounded-2xl bg-[color:var(--g2)]/30 blur-md" aria-hidden />
-          <div className="relative w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center shadow-lg shadow-orange-400/40 ring-1 ring-inset ring-white/25">
+          <div className="relative w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-700 flex items-center justify-center shadow-lg shadow-orange-400/40 ring-1 ring-inset ring-white/25">
             <Landmark className="w-[22px] h-[22px]" />
           </div>
         </div>
@@ -308,7 +308,7 @@ export function TaxAuthoritySection() {
                 {CONNECT_STEPS.map((step, i) => (
                   <li key={i}>
                     <div className="flex items-start gap-3 rounded-2xl border border-orange-100 bg-white/80 p-3.5 shadow-sm shadow-orange-100/60">
-                      <span className="flex-shrink-0 w-7 h-7 rounded-full bg-gradient-to-br from-orange-500 to-rose-500 text-xs font-bold flex items-center justify-center ring-2 ring-white">
+                      <span className="flex-shrink-0 w-7 h-7 rounded-full bg-gradient-to-br from-orange-500 to-orange-700 text-xs font-bold flex items-center justify-center ring-2 ring-white">
                         {i + 1}
                       </span>
                       <span className="text-sm text-stone-700 leading-relaxed pt-0.5">{step}</span>

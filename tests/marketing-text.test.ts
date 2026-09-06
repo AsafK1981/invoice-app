@@ -245,7 +245,10 @@ describe("marketing pages: brand wordmark", () => {
   it("the logo wordmark joins to 'חשבונית ידידותית', not 'חשבוניתידידותית'", async () => {
     const { default: LogoV2 } = await import("../src/app/(marketing)/components/LogoV2");
     const full = toText(renderToStaticMarkup(createElement(LogoV2))).trim();
-    expect(full).toBe(APP_NAME);
+    // Since the 2026-09-06 rebrand the full lockup also carries the tagline
+    // after the name; the contract is that the NAME itself stays two words.
+    expect(full.startsWith(APP_NAME)).toBe(true);
+    expect(full).not.toContain("חשבוניתידידותית");
 
     const mark = toText(
       renderToStaticMarkup(createElement(LogoV2, { variant: "mark" as const })),

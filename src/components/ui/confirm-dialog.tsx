@@ -117,7 +117,7 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
                   className={`inline-flex items-center justify-center min-h-[40px] px-5 rounded-xl text-sm font-semibold text-white ${
                     isDanger
                       ? "bg-gradient-to-l from-rose-500 to-pink-500 hover:shadow-md hover:shadow-rose-200"
-                      : "bg-gradient-to-l from-orange-500 to-rose-500 hover:shadow-md hover:shadow-orange-200"
+                      : "bg-gradient-to-l from-orange-500 to-orange-700 hover:shadow-md hover:shadow-orange-200"
                   }`}
                 >
                   {state.confirmLabel || "אישור"}

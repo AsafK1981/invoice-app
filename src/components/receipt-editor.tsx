@@ -1878,7 +1878,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                     )}
                   </span>
                   <span
-                    className={`shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-l from-orange-500 to-rose-500 text-white shadow-sm transition-transform ${
+                    className={`shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-l from-orange-500 to-orange-700 text-white shadow-sm transition-transform ${
                       clientPickerExpanded ? "rotate-180" : ""
                     }`}
                     aria-hidden="true"
@@ -2215,7 +2215,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                   onClick={() => setVatMode("exclusive")}
                   className={`inline-flex items-center justify-center min-h-[36px] px-3.5 rounded-lg transition-colors ${
                     vatMode === "exclusive"
-                      ? "bg-gradient-to-l from-orange-500 to-rose-500 text-white shadow-sm"
+                      ? "bg-gradient-to-l from-orange-500 to-orange-700 text-white shadow-sm"
                       : "text-stone-700 hover:text-stone-900"
                   }`}
                 >
@@ -2226,7 +2226,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                   onClick={() => setVatMode("inclusive")}
                   className={`inline-flex items-center justify-center min-h-[36px] px-3.5 rounded-lg transition-colors ${
                     vatMode === "inclusive"
-                      ? "bg-gradient-to-l from-orange-500 to-rose-500 text-white shadow-sm"
+                      ? "bg-gradient-to-l from-orange-500 to-orange-700 text-white shadow-sm"
                       : "text-stone-700 hover:text-stone-900"
                   }`}
                 >
@@ -2429,7 +2429,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                         onClick={() => setDiscountMode("amount")}
                         className={`inline-flex items-center justify-center min-h-[36px] px-3 rounded-lg transition-colors ${
                           discountMode === "amount"
-                            ? "bg-gradient-to-l from-orange-500 to-rose-500 text-white shadow-sm"
+                            ? "bg-gradient-to-l from-orange-500 to-orange-700 text-white shadow-sm"
                             : "text-stone-700 hover:text-stone-900"
                         }`}
                       >
@@ -2440,7 +2440,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                         onClick={() => setDiscountMode("percent")}
                         className={`inline-flex items-center justify-center min-h-[36px] px-3 rounded-lg transition-colors ${
                           discountMode === "percent"
-                            ? "bg-gradient-to-l from-orange-500 to-rose-500 text-white shadow-sm"
+                            ? "bg-gradient-to-l from-orange-500 to-orange-700 text-white shadow-sm"
                             : "text-stone-700 hover:text-stone-900"
                         }`}
                       >
@@ -2950,7 +2950,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                 <span className="text-stone-800 font-semibold">
                   {isQuote ? "סה״כ הצעה" : isCreditNote ? "סה״כ זיכוי" : "סה״כ לתשלום"}
                 </span>
-                <span className="text-2xl font-bold bg-gradient-to-l from-orange-500 to-rose-500 bg-clip-text text-transparent">
+                <span className="text-2xl font-bold bg-gradient-to-l from-orange-500 to-orange-700 bg-clip-text text-transparent">
                   {formatCurrency(total)}
                 </span>
               </div>
@@ -3078,7 +3078,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
           <button
             onClick={() => handleSave({ send: canSend })}
             disabled={saveDisabled}
-            className="flex-1 inline-flex items-center justify-center gap-2 min-h-[48px] px-3 bg-gradient-to-l from-orange-500 to-rose-500 text-white rounded-2xl text-sm font-bold text-center leading-tight hover:shadow-lg hover:shadow-orange-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:from-stone-300 disabled:to-stone-300 disabled:cursor-not-allowed disabled:shadow-none transition-all"
+            className="flex-1 inline-flex items-center justify-center gap-2 min-h-[48px] px-3 bg-gradient-to-l from-orange-500 to-orange-700 text-white rounded-2xl text-sm font-bold text-center leading-tight hover:shadow-lg hover:shadow-orange-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:from-stone-300 disabled:to-stone-300 disabled:cursor-not-allowed disabled:shadow-none transition-all"
           >
             {!saving && !rateLoading && (
               canSend ? (
@@ -3153,7 +3153,7 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
 type ToastState = { kind: "success" | "error"; text: string };
 
 const ISSUE_BTN_PRIMARY =
-  "inline-flex items-center justify-center gap-2 min-h-[48px] px-4 bg-gradient-to-l from-orange-500 to-rose-500 text-white rounded-2xl text-sm font-bold hover:shadow-lg hover:shadow-orange-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:from-stone-300 disabled:to-stone-300 disabled:cursor-not-allowed disabled:shadow-none transition-all";
+  "inline-flex items-center justify-center gap-2 min-h-[48px] px-4 bg-gradient-to-l from-orange-500 to-orange-700 text-white rounded-2xl text-sm font-bold hover:shadow-lg hover:shadow-orange-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:from-stone-300 disabled:to-stone-300 disabled:cursor-not-allowed disabled:shadow-none transition-all";
 const ISSUE_BTN_SECONDARY =
   "inline-flex items-center justify-center gap-2 min-h-[48px] px-4 bg-white text-stone-800 border-2 border-[color:var(--goldline)] rounded-2xl text-sm font-bold hover:bg-[color:var(--goldtint)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all";
 
@@ -3314,7 +3314,7 @@ function ClientTaxIdNag({
               type="button"
               onClick={onSave}
               disabled={!draft.trim() || saving}
-              className="shrink-0 inline-flex items-center justify-center min-h-[40px] px-3 rounded-xl bg-gradient-to-l from-orange-500 to-rose-500 text-white text-xs font-semibold disabled:from-stone-300 disabled:to-stone-300 disabled:cursor-not-allowed"
+              className="shrink-0 inline-flex items-center justify-center min-h-[40px] px-3 rounded-xl bg-gradient-to-l from-orange-500 to-orange-700 text-white text-xs font-semibold disabled:from-stone-300 disabled:to-stone-300 disabled:cursor-not-allowed"
             >
               {saving ? "שומר…" : "שמור ללקוח"}
             </button>

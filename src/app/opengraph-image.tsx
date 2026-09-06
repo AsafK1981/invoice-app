@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
 export const alt =
-  "חשבונית ידידותית - מספר הקצאה מרשות המסים, בלחיצה אחת";
+  "חשבונית ידידותית - התנהלות פשוטה לעסק מצליח";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 // This card's content is fully static (no per-request data), but without a
@@ -74,29 +74,19 @@ function visualRtl(s: string): string {
 }
 
 export default async function OpengraphImage() {
-  // Retagged 2026-08-11 alongside the page metadata: the old
-  // "חשבוניות וקבלות בלי כאב ראש" described a generic invoicing app. The
-  // card now carries the one differentiator, matching the landing page's
-  // lede. The Latin wordmark below stays deliberately (it matches the
-  // domain and the pre-rename search association - see jsonld.ts).
-  //
-  // Re-ranked 2026-08-23. The content was right but the hierarchy was
-  // inverted: "MyFriendlyInvoiceApp" was set at 76px and the differentiator
-  // at 44px, so the single largest thing on the card was a Latin wordmark a
-  // Hebrew reader has never searched for and which appears nowhere else on
-  // the page (og:title and og:site_name both say "חשבונית ידידותית").
-  // Caught when the card was previewed inside a real Facebook composer
-  // before a group post. The wordmark still stays - the reason above holds -
-  // but it drops to an identity line under the headline, next to the Hebrew
-  // name it is missing today, and the differentiator takes the top slot.
+  // Rebrand 2026-09-06 (graphite / mint / peach, the smiling-document mark).
+  // The differentiator keeps the top slot (2026-08-23 ranking); the identity
+  // line under it now carries the tagline and the Latin name FriendlyInvoice
+  // (the domain), not the old MyFriendlyInvoiceApp wordmark.
   //
   // The headline is split across two lines rather than shrunk: at one line
   // it needs ~1150px of the 1040px usable width at a size worth reading.
-  // The comma is dropped with the line break - it was doing the break's job,
-  // and punctuation is the one thing visualRtl below cannot place safely.
+  // Punctuation is the one thing visualRtl below cannot place safely, so
+  // there is none.
   const headlineTop = visualRtl("מספר הקצאה מרשות המסים");
   const headlineBottom = visualRtl("בלחיצה אחת");
   const brandHebrew = visualRtl("חשבונית ידידותית");
+  const tagline = visualRtl("התנהלות פשוטה לעסק מצליח");
 
   const heeboBold = await loadHeeboBold();
 
@@ -110,58 +100,48 @@ export default async function OpengraphImage() {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          // Warm cream field, matching the "warm friendly" homepage redesign
-          // (2026-08-10) - flat, not a gradient: the approved mockup's page
-          // background is flat cream, same value as `--ml-cream` in
-          // marketing-light.css.
-          backgroundColor: "#faf7f2",
+          // Off-white field, the app's page background.
+          backgroundColor: "#F7F7F2",
           padding: 80,
           textAlign: "center",
         }}
       >
-        {/* Brand mark: the same shield-check glyph the homepage used for its
-            allocation-number differentiator, not an emoji - a thumbnail
-            borrows the site's one real icon instead of inventing a
-            decoration of its own. Tile now carries the orange->rose brand
-            gradient (`--ml-grad`) with a white glyph, same treatment as the
-            homepage's flagship advantage card. */}
-        <div
-          style={{
-            width: 96,
-            height: 96,
-            borderRadius: 24,
-            background: "linear-gradient(135deg, #f97316 0%, #e11d48 100%)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            marginBottom: 34,
-            boxShadow:
-              "0 20px 50px -10px rgba(225, 29, 72, 0.35), 0 8px 20px -8px rgba(249, 115, 22, 0.3)",
-          }}
+        {/* The brand mark (same drawing as src/components/brand-mark.tsx;
+            satori renders basic svg paths and circles). */}
+        <svg
+          width={128}
+          height={134}
+          viewBox="-14 0 134 140"
+          fill="none"
+          style={{ marginBottom: 28 }}
         >
-          <svg
-            width={52}
-            height={52}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="#ffffff"
-            strokeWidth="1.8"
-            strokeLinecap="round"
+          <path
+            d="M22 8h56l30 30v90a12 12 0 0 1-12 12H22a12 12 0 0 1-12-12V20A12 12 0 0 1 22 8z"
+            fill="#FFFFFF"
+            stroke="#2F3A45"
+            strokeWidth="7"
             strokeLinejoin="round"
-          >
-            <path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z" />
-            <path d="M9 12l2 2 4-4" />
-          </svg>
-        </div>
-        {/* The differentiator, now the largest thing on the card. Warm ink
-            (`--ml-ink`) on the setup line, brand gradient on the payoff -
-            so the two words a scroller actually retains ("בלחיצה אחת") are
-            the ones carrying colour. */}
+          />
+          <path
+            d="M78 8v20a10 10 0 0 0 10 10h20z"
+            fill="#9ED8C3"
+            stroke="#2F3A45"
+            strokeWidth="7"
+            strokeLinejoin="round"
+          />
+          <circle cx="40" cy="60" r="5" fill="#2F3A45" />
+          <circle cx="72" cy="60" r="5" fill="#2F3A45" />
+          <path d="M43 76q13 12 26 0" stroke="#2F3A45" strokeWidth="6" strokeLinecap="round" />
+          <circle cx="29" cy="72" r="6" fill="#F6B89E" />
+          <circle cx="83" cy="72" r="6" fill="#F6B89E" />
+          <path d="M30 100h50M30 115h30" stroke="#9ED8C3" strokeWidth="7" strokeLinecap="round" />
+          <path d="M3 118l-10 8M2 106l-12 1" stroke="#2F3A45" strokeWidth="5" strokeLinecap="round" />
+        </svg>
         <div
           style={{
-            fontSize: 72,
+            fontSize: 68,
             fontWeight: 800,
-            color: "#292524",
+            color: "#2F3A45",
             letterSpacing: -1,
             lineHeight: 1.15,
             display: "flex",
@@ -169,47 +149,44 @@ export default async function OpengraphImage() {
         >
           {headlineTop}
         </div>
+        {/* The payoff line sits on a mint marker, the same highlight the
+            homepage headline uses. */}
         <div
           style={{
-            fontSize: 72,
+            fontSize: 68,
             fontWeight: 800,
-            // Orange->rose gradient clip (background-clip: text - satori
-            // supports it, verified against this exact bundled version: it
-            // builds a real SVG clip-path from the glyph outlines rather
-            // than silently ignoring the property). Moved here from the
-            // wordmark, where it was decorating the least useful words.
-            backgroundImage: "linear-gradient(90deg, #f97316 0%, #e11d48 100%)",
-            backgroundClip: "text",
-            WebkitBackgroundClip: "text",
-            color: "transparent",
+            color: "#2F3A45",
             letterSpacing: -1,
             lineHeight: 1.15,
             display: "flex",
+            padding: "0 14px",
+            backgroundImage: "linear-gradient(transparent 62%, #9ED8C3 62%, #9ED8C3 92%, transparent 92%)",
           }}
         >
           {headlineBottom}
         </div>
         {/* Identity line. Hebrew and Latin are separate elements, never one
             string: visualRtl reverses code points, so a mixed string would
-            come out with the Latin wordmark spelled backwards. In a row
-            satori emits children left to right, so the Latin name is first
-            (lands left) and the Hebrew name last (lands right, where a
-            Hebrew reader starts). */}
+            come out with the Latin name spelled backwards. In a row satori
+            emits children left to right, so the Latin name is first (lands
+            left) and the Hebrew name last (lands right, where a Hebrew
+            reader starts). */}
         <div
           style={{
             display: "flex",
             alignItems: "center",
             gap: 16,
-            marginTop: 44,
-            fontSize: 32,
+            marginTop: 40,
+            fontSize: 30,
             fontWeight: 800,
-            // Warm stone, matching `--ml-ink-2` on the redesigned homepage.
-            color: "#78716c",
+            color: "#5F6B76",
           }}
         >
-          <div style={{ display: "flex" }}>MyFriendlyInvoiceApp</div>
-          <div style={{ display: "flex", color: "#d6d3d1" }}>·</div>
-          <div style={{ display: "flex", color: "#57534e" }}>{brandHebrew}</div>
+          <div style={{ display: "flex", color: "#2A7A62", letterSpacing: 4 }}>FriendlyInvoice</div>
+          <div style={{ display: "flex", color: "#BFC5CB" }}>·</div>
+          <div style={{ display: "flex", color: "#5F6B76" }}>{tagline}</div>
+          <div style={{ display: "flex", color: "#BFC5CB" }}>·</div>
+          <div style={{ display: "flex", color: "#2F3A45" }}>{brandHebrew}</div>
         </div>
       </div>
     ),

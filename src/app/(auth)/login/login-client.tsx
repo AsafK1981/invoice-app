@@ -1,8 +1,9 @@
 "use client";
 
+import { BrandMark } from "@/components/brand-mark";
 import { Suspense, useEffect, useId, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Sparkles, Mail, LogIn, UserPlus, Eye, EyeOff, ArrowRight, Check } from "lucide-react";
+import { Mail, LogIn, UserPlus, Eye, EyeOff, ArrowRight, Check } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { track } from "@vercel/analytics";
 import { readAttribution } from "@/lib/attribution";
@@ -288,8 +289,8 @@ function LoginForm() {
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-orange-50 to-amber-50">
       <div className="w-full max-w-md">
         <div className="text-center mb-8 animate-fade-in-up">
-          <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center mx-auto shadow-xl shadow-orange-200/50 btn-glow">
-            <Sparkles className="w-8 h-8 text-white" />
+          <div className="flex items-center justify-center mx-auto">
+            <BrandMark size={64} />
           </div>
           {/* Hebrew brand, 2026-08-11. This page is the last step of the
               marketing funnel, and it used to greet arrivals with the Latin
@@ -421,7 +422,7 @@ function LoginForm() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full btn-glow inline-flex items-center justify-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white py-3 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200/60 hover:-translate-y-0.5 active:translate-y-0 active:shadow-md cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none transition-all duration-200"
+              className="w-full btn-glow inline-flex items-center justify-center gap-2 bg-gradient-to-l from-orange-500 to-orange-700 text-white py-3 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200/60 hover:-translate-y-0.5 active:translate-y-0 active:shadow-md cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none transition-all duration-200"
             >
               {loading ? (
                 "..."

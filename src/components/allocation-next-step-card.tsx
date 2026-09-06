@@ -69,7 +69,7 @@ export function AllocationNextStepCard({
   return (
     <div className="rounded-2xl border border-orange-200 bg-gradient-to-l from-orange-50/80 to-amber-50/50 px-4 py-3.5 sm:px-5 sm:py-4">
       <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center flex-shrink-0 shadow-sm">
+        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-700 flex items-center justify-center flex-shrink-0 shadow-sm">
           <Landmark className="w-5 h-5" />
         </div>
         <div className="flex-1 min-w-0">
@@ -101,7 +101,7 @@ export function AllocationNextStepCard({
           type="button"
           onClick={onSave}
           disabled={saveDisabled}
-          className="w-full inline-flex items-center justify-center gap-2 min-h-[52px] px-4 bg-gradient-to-l from-orange-500 to-rose-500 text-white rounded-2xl text-[15px] font-bold text-center leading-tight shadow-md shadow-orange-200/70 hover:shadow-lg hover:shadow-orange-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:from-stone-300 disabled:to-stone-300 disabled:cursor-not-allowed disabled:shadow-none transition-all"
+          className="w-full inline-flex items-center justify-center gap-2 min-h-[52px] px-4 bg-gradient-to-l from-orange-500 to-orange-700 text-white rounded-2xl text-[15px] font-bold text-center leading-tight shadow-md shadow-orange-200/70 hover:shadow-lg hover:shadow-orange-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:from-stone-300 disabled:to-stone-300 disabled:cursor-not-allowed disabled:shadow-none transition-all"
         >
           <span
             aria-hidden

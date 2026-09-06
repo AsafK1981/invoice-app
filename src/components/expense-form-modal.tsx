@@ -388,7 +388,7 @@ export function ExpenseFormModal({
             className={`px-5 py-2 rounded-xl text-sm font-semibold text-white disabled:shadow-none ${
               justSaved
                 ? "bg-emerald-600"
-                : "bg-gradient-to-l from-orange-500 to-rose-500 hover:shadow-md hover:shadow-orange-200 disabled:from-stone-300 disabled:to-stone-300"
+                : "bg-gradient-to-l from-orange-500 to-orange-700 hover:shadow-md hover:shadow-orange-200 disabled:from-stone-300 disabled:to-stone-300"
             }`}
           >
             {justSaved
@@ -485,7 +485,7 @@ export function ExpenseFormModal({
                   onClick={() => changeMode(m.value)}
                   className={`inline-flex items-center justify-center min-h-[40px] px-2 rounded-lg transition-colors ${
                     mode === m.value
-                      ? "bg-gradient-to-l from-orange-500 to-rose-500 text-white shadow-sm"
+                      ? "bg-gradient-to-l from-orange-500 to-orange-700 text-white shadow-sm"
                       : "text-stone-700 hover:text-stone-900 hover:bg-orange-50"
                   }`}
                 >

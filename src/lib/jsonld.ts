@@ -35,6 +35,7 @@ export function organization(): JsonLdNode {
     alternateName: [APP_NAME, LEGACY_APP_NAME_HE, LEGACY_APP_NAME],
     url: CANONICAL_ORIGIN,
     logo: { "@type": "ImageObject", url: absoluteUrl("/logo-v2.svg") },
+    slogan: "התנהלות פשוטה לעסק מצליח",
   };
 }
 

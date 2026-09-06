@@ -91,7 +91,7 @@ export function Modal({ open, onClose, title, subtitle, icon: Icon, children, fo
         <div className="flex items-center justify-between px-6 py-4 border-b border-orange-100 bg-gradient-to-l from-orange-50 to-amber-50">
           <div className="flex items-center gap-3">
             {Icon && (
-              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center shadow-sm">
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-700 flex items-center justify-center shadow-sm">
                 <Icon className="w-5 h-5 text-white" />
               </div>
             )}

@@ -25,7 +25,7 @@ export default function NewTaxInvoiceReceiptPage() {
         </p>
         <Link
           href="/settings"
-          className="inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-5 py-2.5 rounded-2xl text-sm font-semibold hover:shadow-md"
+          className="inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-orange-700 text-white px-5 py-2.5 rounded-2xl text-sm font-semibold hover:shadow-md"
         >
           לעמוד ההגדרות
         </Link>

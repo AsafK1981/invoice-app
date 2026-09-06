@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { BrandLockup } from "@/components/brand-mark";
 import { usePathname } from "next/navigation";
 import { useOptionalUser } from "@/lib/auth";
 import MobileMenu, { type MenuSection } from "./MobileMenu";
@@ -67,9 +68,8 @@ export default function HeaderLight() {
       <div className="ml-wrap ml-header-in">
         <div className="ml-header-start">
           <MobileMenu sections={isHome ? PAGE_SECTIONS : undefined} signedIn={!!user} />
-          <Link href={homeHref} className="ml-logo">
-            חשבונית{" "}
-            <span className="ml-logo-soft">ידידותית</span>
+          <Link href={homeHref} className="ml-logo" aria-label="חשבונית ידידותית, לדף הבית">
+            <BrandLockup size={36} />
           </Link>
         </div>
         <nav className="ml-nav">

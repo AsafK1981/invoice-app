@@ -62,7 +62,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
         <p className="text-sm text-stone-700 mb-5">ייתכן שהלקוח נמחק או שהקישור אינו תקין</p>
         <Link
           href="/clients"
-          className="inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-5 py-2.5 rounded-2xl text-sm font-semibold hover:shadow-md"
+          className="inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-orange-700 text-white px-5 py-2.5 rounded-2xl text-sm font-semibold hover:shadow-md"
         >
           <ArrowRight className="w-4 h-4" />
           חזרה ללקוחות
@@ -99,7 +99,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
           </Link>
           <Link
             href={`/documents/new?clientId=${client.id}`}
-            className="inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:shadow-md hover:shadow-orange-200"
+            className="inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-orange-700 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:shadow-md hover:shadow-orange-200"
           >
             <Plus className="w-4 h-4" />
             מסמך חדש
@@ -109,7 +109,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
 
       <div className="card-soft p-6">
         <div className="flex items-start gap-4">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-200 to-rose-200 dark:from-orange-300 dark:to-rose-300 flex items-center justify-center flex-shrink-0 ring-1 ring-orange-300/40 dark:ring-orange-400/60">
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-100 to-orange-200 dark:from-orange-300 dark:to-rose-300 flex items-center justify-center flex-shrink-0 ring-1 ring-orange-300/40 dark:ring-orange-400/60">
             <Building2 className="w-7 h-7 text-orange-900" strokeWidth={2.5} />
           </div>
           <div className="min-w-0 flex-1">
@@ -216,7 +216,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
             <p className="text-sm text-stone-700 mb-4">צור את המסמך הראשון</p>
             <Link
               href={`/documents/new?clientId=${client.id}`}
-              className="inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-rose-500 text-white px-5 py-2.5 rounded-2xl text-sm font-semibold hover:shadow-md"
+              className="inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-orange-700 text-white px-5 py-2.5 rounded-2xl text-sm font-semibold hover:shadow-md"
             >
               <Plus className="w-4 h-4" />
               מסמך חדש

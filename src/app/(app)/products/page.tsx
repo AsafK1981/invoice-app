@@ -224,7 +224,7 @@ export default function ProductsPage() {
               </div>
               <div className="mt-auto flex items-baseline justify-between pt-4 border-t border-orange-100">
                 <span className="text-sm font-semibold text-stone-800">מחיר ל{p.unit}</span>
-                <span className="text-xl font-bold bg-gradient-to-l from-orange-500 to-rose-500 bg-clip-text text-transparent">
+                <span className="text-xl font-bold bg-gradient-to-l from-orange-500 to-orange-700 bg-clip-text text-transparent">
                   {formatCurrency(p.price)}
                 </span>
               </div>

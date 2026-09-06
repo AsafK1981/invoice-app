@@ -1,0 +1,89 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800;900&family=Rubik:wght@500;700;800;900&display=swap">
+  <style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Heebo", "Segoe UI", Arial, sans-serif; color: #1F252B; background: #F7F7F2; -webkit-font-smoothing: antialiased; }
+  a { color: #2F3A45; text-decoration: none; } a:hover { color: #2A7A62; }
+  .wm { font-family: "Rubik", "Heebo", Arial, sans-serif; font-weight: 900; letter-spacing: -0.01em; color: #2F3A45; line-height: 1; }
+  .h { font-family: "Rubik", "Heebo", Arial, sans-serif; font-weight: 800; color: #2F3A45; letter-spacing: -0.01em; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 46px; padding: 0 22px; border-radius: 12px; font-weight: 700; font-size: 15px; border: 1px solid transparent; white-space: nowrap; }
+  .btn-primary { background: #2F3A45; color: #FFFFFF; }
+  .btn-secondary { background: #FFFFFF; color: #2F3A45; border-color: #E4E7E2; }
+  .btn-mint { background: #9ED8C3; color: #2F3A45; }
+  .btn-sm { height: 38px; padding: 0 16px; font-size: 14px; border-radius: 10px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 12px; border-radius: 999px; font-size: 13px; font-weight: 600; }
+  .chip-paid { background: #E6F5EE; color: #2A7A62; }
+  .chip-wait { background: #FDEEE6; color: #B85A32; }
+  .chip-draft { background: #EEF0EE; color: #5F6B76; }
+  .chip-sent { background: #E9EEF5; color: #34506E; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .card { background: #FFFFFF; border: 1px solid #E4E7E2; border-radius: 16px; }
+  .ico { width: 20px; height: 20px; }
+  .tile { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+  .num { font-variant-numeric: tabular-nums; }
+.page { width: 700px; height: 940px; background: #F7F7F2; direction: rtl; padding: 18px; }
+   .sheet { width: 664px; height: 904px; background: #FFFFFF; border: 1px solid #E4E7E2; border-radius: 6px; padding: 44px 48px; display:flex; flex-direction:column; gap: 26px; box-shadow: 0 20px 40px -30px rgba(47,58,69,0.35); }
+   .lbl { font-size: 11px; font-weight: 700; color: #8B95A0; letter-spacing: 0.04em; }
+   .cell { font-size: 13.5px; }
+   .thead { display:grid; grid-template-columns: minmax(0,1fr) 70px 90px 100px; gap: 12px; padding: 8px 0; border-bottom: 2px solid #9ED8C3; font-size: 12px; font-weight: 700; color: #2F3A45; }
+   .trow { display:grid; grid-template-columns: minmax(0,1fr) 70px 90px 100px; gap: 12px; padding: 11px 0; border-bottom: 1px solid #E4E7E2; font-size: 13.5px; }</style>
+</helmet>
+<div class="page"><div class="sheet">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;">
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        <div class="h" style="font-size:22px;">סטודיו לדוגמה</div>
+        <div style="font-size:12.5px;color:#5F6B76;">עוסק פטור 000000000 · רחוב הדוגמה 1, תל אביב · 050-0000000</div>
+      </div>
+      <div style="text-align:left;display:flex;flex-direction:column;gap:4px;">
+        <div class="h" style="font-size:20px;">קבלה <span class="num">1001</span></div>
+        <div style="font-size:12.5px;color:#5F6B76;">מקור · <span class="num">02.09.2026</span></div>
+      </div>
+    </div>
+    <div style="height:1px;background:#E4E7E2;"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+      <div style="display:flex;flex-direction:column;gap:4px;"><span class="lbl">לכבוד</span><span class="cell" style="font-weight:700;">סטודיו ורד</span><span class="cell" style="color:#5F6B76;">ע.מ. 000000000</span></div>
+      <div style="display:flex;flex-direction:column;gap:4px;"><span class="lbl">בעבור</span><span class="cell" style="font-weight:700;">שכר דירה - ספטמבר 2026</span></div>
+    </div>
+    <div>
+      <div class="thead"><span>תיאור</span><span>כמות</span><span>מחיר</span><span style="text-align:left;">סה"כ</span></div>
+      <div class="trow"><span>שכר דירה לחודש ספטמבר</span><span class="num">1</span><span class="num">₪4,500</span><span class="num" style="text-align:left;font-weight:600;">₪4,500</span></div>
+      <div class="trow" style="border-bottom:0;"><span style="color:#5F6B76;">דמי ניהול</span><span class="num">1</span><span class="num">₪0</span><span class="num" style="text-align:left;">₪0</span></div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;">
+      <div style="width:260px;display:flex;flex-direction:column;gap:8px;">
+        <div style="display:flex;justify-content:space-between;font-size:13px;color:#5F6B76;"><span>סכום</span><span class="num">₪4,500</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;color:#5F6B76;"><span>מע"מ</span><span>פטור</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-radius:12px;background:#E6F5EE;border:1px solid #BFE6D6;"><span style="font-weight:700;color:#2F3A45;">סה"כ לתשלום</span><span class="h num" style="font-size:20px;">₪4,500</span></div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <span class="lbl">אמצעי תשלום</span>
+      <span class="cell">העברה בנקאית · בנק 00 · סניף 000 · חשבון 000000</span>
+      <span class="chip chip-paid" style="align-self:flex-start;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg> התקבל תשלום מלא</span>
+    </div>
+    <div style="flex:1;"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding-top:14px;border-top:1px solid #E4E7E2;">
+      <span style="font-size:11.5px;color:#8B95A0;">מסמך ממוחשב. הופק כדין.</span>
+      <span style="display:flex;align-items:center;gap:6px;font-size:11.5px;color:#8B95A0;">הופק באמצעות <svg width="16" height="17" viewBox="-14 0 134 140" fill="none" xmlns="http://www.w3.org/2000/svg" >
+    <path d="M22 8h56l30 30v90a12 12 0 0 1-12 12H22a12 12 0 0 1-12-12V20A12 12 0 0 1 22 8z" fill="#FFFFFF" stroke="#2F3A45" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M78 8v20a10 10 0 0 0 10 10h20z" fill="#9ED8C3" stroke="#2F3A45" stroke-width="7" stroke-linejoin="round"/>
+    <circle cx="40" cy="60" r="5" fill="#2F3A45"/><circle cx="72" cy="60" r="5" fill="#2F3A45"/>
+    <path d="M43 76q13 12 26 0" stroke="#2F3A45" stroke-width="6" stroke-linecap="round"/>
+    <circle cx="29" cy="72" r="6" fill="#F6B89E"/><circle cx="83" cy="72" r="6" fill="#F6B89E"/>
+    <path d="M30 100h50M30 115h30" stroke="#9ED8C3" stroke-width="7" stroke-linecap="round"/>
+    <path d="M3 118l-10 8M2 106l-12 1" stroke="#2F3A45" stroke-width="5" stroke-linecap="round"/>
+  </svg> חשבונית ידידותית</span>
+    </div>
+  </div></div>
+</x-dc>
+
+</body>
+</html>

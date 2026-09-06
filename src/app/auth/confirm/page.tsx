@@ -123,16 +123,16 @@ function ConfirmInner() {
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-orange-50 to-amber-50">
       <div className="w-full max-w-md">
         <div className="text-center mb-8 animate-fade-in-up">
-          <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center mx-auto shadow-xl shadow-orange-200/50 btn-glow">
+          <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-orange-500 to-orange-700 flex items-center justify-center mx-auto shadow-xl shadow-orange-200/50 btn-glow">
             <Sparkles className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-xl font-bold text-stone-900 mt-4">MyFriendlyInvoiceApp</h1>
+          <h1 className="text-xl font-bold text-stone-900 mt-4">חשבונית ידידותית</h1>
         </div>
 
         <div className="card-soft p-8 animate-fade-in-up stagger-2 text-center">
           {status === "checking" && (
             <>
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center mx-auto shadow-md mb-4">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-700 flex items-center justify-center mx-auto shadow-md mb-4">
                 <Sparkles className="w-7 h-7 text-white animate-pulse" />
               </div>
               <h2 className="font-bold text-stone-900 text-lg">מאמת את הקישור...</h2>
@@ -159,7 +159,7 @@ function ConfirmInner() {
               <p className="text-sm text-stone-600 mt-2">{errorMsg}</p>
               <Link
                 href="/login"
-                className="mt-5 inline-flex items-center justify-center w-full bg-gradient-to-l from-orange-500 to-rose-500 text-white py-3 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200/60 transition-all"
+                className="mt-5 inline-flex items-center justify-center w-full bg-gradient-to-l from-orange-500 to-orange-700 text-white py-3 rounded-2xl text-sm font-semibold hover:shadow-lg hover:shadow-orange-200/60 transition-all"
               >
                 לעמוד ההתחברות
               </Link>

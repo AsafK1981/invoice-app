@@ -36,7 +36,7 @@ export default function AppErrorPage({
         <div className="flex flex-col sm:flex-row gap-2 justify-center">
           <button
             onClick={reset}
-            className="inline-flex items-center justify-center gap-2 min-h-[40px] px-5 rounded-xl text-sm font-semibold bg-gradient-to-l from-orange-500 to-rose-500 text-white hover:shadow-md hover:shadow-orange-200"
+            className="inline-flex items-center justify-center gap-2 min-h-[40px] px-5 rounded-xl text-sm font-semibold bg-gradient-to-l from-orange-500 to-orange-700 text-white hover:shadow-md hover:shadow-orange-200"
           >
             <RotateCcw className="w-4 h-4" />
             נסה שוב

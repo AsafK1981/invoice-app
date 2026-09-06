@@ -92,30 +92,30 @@ function buildHtml(args: {
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
   <title>${escapeHtml(fromName)}</title>
 </head>
-<body style="margin:0;padding:0;background:#f5f5f4;font-family:Arial,sans-serif;">
+<body style="margin:0;padding:0;background:#f7f7f2;font-family:Arial,sans-serif;">
   <div dir="rtl" style="max-width:600px;margin:0 auto;padding:20px;">
-    <div style="background:linear-gradient(135deg,#f97316,#e11d48);padding:24px;border-radius:16px;color:white;text-align:center;margin-bottom:24px;">
+    <div style="background:#2f3a45;background-image:linear-gradient(135deg,#2f3a45,#263039);padding:24px;border-radius:16px;color:#ffffff;text-align:center;margin-bottom:24px;">
       <h1 style="margin:0;font-size:22px;">${escapeHtml(fromName)}</h1>
     </div>
-    <div style="background:#fffaf5;border:1px solid #fed7aa;border-radius:12px;padding:24px;margin-bottom:24px;">
-      <p style="margin:0 0 12px 0;font-size:16px;color:#44403c;">שלום ${escapeHtml(clientName)},</p>
-      <p style="margin:0 0 16px 0;font-size:15px;color:#44403c;line-height:1.6;">${escapeHtml(fillDunningVars(tone.intro, vars))}</p>
-      <p style="margin:0 0 12px 0;font-size:14px;color:#44403c;line-height:1.6;">${escapeHtml(fillDunningVars(tone.cta, vars))}</p>
+    <div style="background:#ffffff;border:1px solid #e4e7e2;border-radius:12px;padding:24px;margin-bottom:24px;">
+      <p style="margin:0 0 12px 0;font-size:16px;color:#1f252b;">שלום ${escapeHtml(clientName)},</p>
+      <p style="margin:0 0 16px 0;font-size:15px;color:#1f252b;line-height:1.6;">${escapeHtml(fillDunningVars(tone.intro, vars))}</p>
+      <p style="margin:0 0 12px 0;font-size:14px;color:#1f252b;line-height:1.6;">${escapeHtml(fillDunningVars(tone.cta, vars))}</p>
     </div>
     <div style="text-align:center;margin-bottom:24px;">
-      <a href="${escapeHtml(viewUrl)}" style="display:inline-block;background:linear-gradient(135deg,#f97316,#e11d48);color:white;text-decoration:none;padding:14px 32px;border-radius:12px;font-size:16px;font-weight:bold;">
+      <a href="${escapeHtml(viewUrl)}" style="display:inline-block;background:#2f3a45;background-image:linear-gradient(135deg,#2f3a45,#263039);color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:12px;font-size:16px;font-weight:bold;">
         צפו במסמך ←
       </a>
     </div>
     <div style="text-align:center;margin-bottom:16px;">
-      <p style="font-size:13px;color:#57534e;margin:0 0 6px 0;">אם הכפתור לא עובד, העתיקו את הקישור:</p>
-      <p style="font-size:12px;color:#78716c;margin:0;word-break:break-all;">
-        <a href="${escapeHtml(viewUrl)}" style="color:#ea580c;">${escapeHtml(viewUrl)}</a>
+      <p style="font-size:13px;color:#5f6b76;margin:0 0 6px 0;">אם הכפתור לא עובד, העתיקו את הקישור:</p>
+      <p style="font-size:12px;color:#5f6b76;margin:0;word-break:break-all;">
+        <a href="${escapeHtml(viewUrl)}" style="color:#2f3a45;">${escapeHtml(viewUrl)}</a>
       </p>
     </div>
-    <p style="font-size:13px;color:#78716c;text-align:center;margin-bottom:8px;">${escapeHtml(tone.signoff)}</p>
-    <p style="font-size:14px;color:#44403c;text-align:center;font-weight:600;margin:0 0 16px 0;">${escapeHtml(fromName)}</p>
-    <p style="font-size:11px;color:#a8a29e;text-align:center;">תזכורת אוטומטית. אם התשלום כבר בוצע ולא הגיע, נשמח לשמוע.</p>
+    <p style="font-size:13px;color:#5f6b76;text-align:center;margin-bottom:8px;">${escapeHtml(tone.signoff)}</p>
+    <p style="font-size:14px;color:#1f252b;text-align:center;font-weight:600;margin:0 0 16px 0;">${escapeHtml(fromName)}</p>
+    <p style="font-size:11px;color:#8b95a0;text-align:center;">תזכורת אוטומטית. אם התשלום כבר בוצע ולא הגיע, נשמח לשמוע.</p>
   </div>
 </body>
 </html>`;

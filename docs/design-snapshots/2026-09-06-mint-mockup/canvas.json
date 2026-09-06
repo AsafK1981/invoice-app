@@ -1,0 +1,64 @@
+{
+  "artboards": [
+    {
+      "file": "Brand.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 1200,
+      "h": 760,
+      "title": "מותג + רכיבים"
+    },
+    {
+      "file": "Document.dc.html",
+      "x": 1300,
+      "y": 0,
+      "w": 700,
+      "h": 940,
+      "title": "מסמך (קבלה)"
+    },
+    {
+      "file": "Main.dc.html",
+      "x": 0,
+      "y": 1100,
+      "w": 1440,
+      "h": 2290,
+      "title": "דף נחיתה - דסקטופ"
+    },
+    {
+      "file": "LandingMobile.dc.html",
+      "x": 1560,
+      "y": 1100,
+      "w": 390,
+      "h": 844,
+      "title": "דף נחיתה - מובייל"
+    },
+    {
+      "file": "Dashboard.dc.html",
+      "x": 0,
+      "y": 3540,
+      "w": 1440,
+      "h": 1000,
+      "title": "דשבורד - דסקטופ"
+    },
+    {
+      "file": "DashboardMobile.dc.html",
+      "x": 1560,
+      "y": 3540,
+      "w": 390,
+      "h": 844,
+      "title": "דשבורד - מובייל"
+    }
+  ],
+  "annotations": [
+    {
+      "id": "intro",
+      "x": 1300,
+      "y": -180,
+      "w": 620,
+      "text": "מוקאפ הרענון: Graphite כצבע ראשי, Mint כמשני, Peach להדגשה. Rubik לכותרות, Heebo לגוף. הלוגו: מסמך מחייך. התוכן לא השתנה, רק העיצוב."
+    }
+  ],
+  "launch": {
+    "view": "canvas"
+  }
+}
