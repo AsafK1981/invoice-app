@@ -9,7 +9,8 @@ const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 /**
  * Destructive: wipes ALL business data (documents, items, expenses, clients,
  * products, counters, attachments + storage files, dunning log, notifications,
- * recurring templates in auth metadata). Audit log is kept and gets a
+ * the email inbox queue + its stored receipts, recurring templates in auth
+ * metadata). Audit log is kept and gets a
  * `data.cleared` row appended; business profile + tax-authority OAuth +
  * the Auth user itself stay.
  *
@@ -217,6 +218,28 @@ export async function POST(req: NextRequest) {
     deleted.expenses = res.count || 0;
   });
 
+  // 7b) The email inbox queue. Its rows hang off businesses (not expenses), so
+  //     nothing above touches them, and a pending item still points at a file
+  //     in the same expense-receipts bucket. Both go here - otherwise "delete
+  //     everything" would leave yesterday's forwarded invoices sitting on
+  //     /expenses waiting to be approved into the freshly emptied books.
+  await step("email_inbox_items", async () => {
+    const scan = await admin
+      .from("email_inbox_items")
+      .select("receipt_path")
+      .eq("business_id", businessId);
+    assertOk(scan, "scan email inbox items");
+    receiptPaths.push(
+      ...(scan.data || []).map((r) => r.receipt_path as string).filter(Boolean),
+    );
+    const res = await admin
+      .from("email_inbox_items")
+      .delete({ count: "exact" })
+      .eq("business_id", businessId);
+    assertOk(res, "delete email_inbox_items");
+    deleted.email_inbox_items = res.count || 0;
+  });
+
   // 8-10) Clients, products, counters.
   await step("clients", async () => {
     const res = await admin
@@ -261,13 +284,16 @@ export async function POST(req: NextRequest) {
   });
 
   await step("storage_expense_receipts", async () => {
-    if (receiptPaths.length === 0) {
+    // An approved inbox item and its expense point at the SAME object, so the
+    // two scans above overlap; de-duplicate before asking storage to remove.
+    const paths = [...new Set(receiptPaths)];
+    if (paths.length === 0) {
       deleted.storage_expense_receipts = 0;
       return;
     }
     let removed = 0;
-    for (let i = 0; i < receiptPaths.length; i += 100) {
-      const chunk = receiptPaths.slice(i, i + 100);
+    for (let i = 0; i < paths.length; i += 100) {
+      const chunk = paths.slice(i, i + 100);
       const { data, error } = await admin.storage.from("expense-receipts").remove(chunk);
       if (error) throw new Error(`expense-receipts remove failed: ${error.message}`);
       removed += data?.length || 0;

@@ -36,9 +36,22 @@ interface Props {
   /** The user's existing expenses (newest first). Powers supplier
    *  autocomplete and "same as last time" autofill for a NEW expense. */
   history?: Expense[];
+  /**
+   * Replaces the default `expenseStore.save`. The email inbox uses it so
+   * "ערוך" on a forwarded invoice opens THIS form and still saves through
+   * `/api/email-inbox/items/<id>` (approve), which is what marks the queue
+   * item resolved and stamps source/source_ref for dedupe. A plain insert
+   * would create the expense and leave the card sitting there.
+   *
+   * Throwing rejects the save: the message is shown in the form and the
+   * modal stays open with the user's values intact.
+   */
+  onSave?: (expense: Expense) => Promise<void>;
+  /** Overrides the primary button's label (default: "הוסף הוצאה"). */
+  submitLabel?: string;
 }
 
-const COMMON_CATEGORIES = [
+export const COMMON_CATEGORIES = [
   "תוכנה",
   "ציוד",
   "שיווק",
@@ -106,7 +119,15 @@ const normalizeName = (s: string) => s.trim().toLowerCase();
 
 const NO_HISTORY: Expense[] = [];
 
-export function ExpenseFormModal({ open, onClose, expense, prefill, history = NO_HISTORY }: Props) {
+export function ExpenseFormModal({
+  open,
+  onClose,
+  expense,
+  prefill,
+  history = NO_HISTORY,
+  onSave,
+  submitLabel,
+}: Props) {
   const today = todayInIsrael();
   const { business } = useBusiness();
   const supplierListId = useId();
@@ -137,6 +158,7 @@ export function ExpenseFormModal({ open, onClose, expense, prefill, history = NO
   const [vatOverride, setVatOverride] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   // Supplier-based autofill bookkeeping (new expenses only)
   const [categoryTouched, setCategoryTouched] = useState(false);
   const [autofilledFrom, setAutofilledFrom] = useState<Expense | null>(null);
@@ -145,6 +167,7 @@ export function ExpenseFormModal({ open, onClose, expense, prefill, history = NO
     if (!open) return;
     setSaving(false);
     setJustSaved(false);
+    setSaveError(null);
     setCategoryTouched(false);
     setAutofilledFrom(null);
     if (expense) {
@@ -311,7 +334,15 @@ export function ExpenseFormModal({ open, onClose, expense, prefill, history = NO
       allocationNumber: vatDetails.allocationNumber.trim() || undefined,
     };
     setSaving(true);
-    await expenseStore.save(record);
+    setSaveError(null);
+    try {
+      if (onSave) await onSave(record);
+      else await expenseStore.save(record);
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "השמירה נכשלה.");
+      setSaving(false);
+      return;
+    }
     rememberCategory(record.category);
     if (showVatField) rememberMode(mode);
     setSaving(false);
@@ -360,12 +391,26 @@ export function ExpenseFormModal({ open, onClose, expense, prefill, history = NO
                 : "bg-gradient-to-l from-orange-500 to-rose-500 hover:shadow-md hover:shadow-orange-200 disabled:from-stone-300 disabled:to-stone-300"
             }`}
           >
-            {justSaved ? "נשמר ✓" : saving ? "שומר..." : expense ? "שמור שינויים" : "הוסף הוצאה"}
+            {justSaved
+              ? "נשמר ✓"
+              : saving
+                ? "שומר..."
+                : expense
+                  ? "שמור שינויים"
+                  : submitLabel || "הוסף הוצאה"}
           </button>
         </>
       }
     >
       <div className="space-y-4">
+        {saveError && (
+          <p
+            role="alert"
+            className="text-sm text-rose-800 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2.5"
+          >
+            {saveError}
+          </p>
+        )}
         <div className="grid grid-cols-2 gap-4">
           <FormField label="תאריך" required>
             <input

@@ -10,10 +10,13 @@ const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
  * Account deletion: irreversible. Wipes:
  *   - Storage logos (business-logos bucket)
  *   - Document attachments (rows + storage files)
+ *   - Scanned receipts (expense-receipts bucket), from expenses AND from the
+ *     email inbox queue; the queue's ROWS need no delete of their own, they
+ *     cascade with businesses, but nothing cascades a storage object
  *   - audit_log rows for the user's businesses
  *   - documents + document_items
  *   - expenses, clients, products, document_counters
- *   - businesses
+ *   - businesses (and, by cascade, email_inbox_items)
  *   - the auth user record itself
  *
  * Rate limited so an attacker who somehow obtains a token can't
@@ -90,6 +93,26 @@ export async function POST(req: NextRequest) {
         attachmentPaths = (atts || []).map((a) => a.file_path as string).filter(Boolean);
       }
 
+      // Scanned receipts, from BOTH tables that point into the bucket: the
+      // expenses themselves and the email inbox queue (whose rows cascade away
+      // with the business, but whose files would otherwise be left behind
+      // forever - and they are the user's own documents).
+      const { data: expenseReceipts } = await admin
+        .from("expenses")
+        .select("receipt_path")
+        .in("business_id", businessIds);
+      const { data: inboxReceipts } = await admin
+        .from("email_inbox_items")
+        .select("receipt_path")
+        .in("business_id", businessIds);
+      const receiptPaths = [
+        ...new Set(
+          [...(expenseReceipts || []), ...(inboxReceipts || [])]
+            .map((r) => r.receipt_path as string)
+            .filter(Boolean),
+        ),
+      ];
+
       // Storage cleanup: best effort. If a delete fails we still
       // proceed with the rest of the wipe (orphaned storage files
       // can be cleaned up by the bucket lifecycle later).
@@ -101,6 +124,12 @@ export async function POST(req: NextRequest) {
       }
       if (attachmentPaths.length > 0) {
         await admin.storage.from("document-attachments").remove(attachmentPaths).catch(() => {});
+      }
+      for (let i = 0; i < receiptPaths.length; i += 100) {
+        await admin.storage
+          .from("expense-receipts")
+          .remove(receiptPaths.slice(i, i + 100))
+          .catch(() => {});
       }
 
       // DB cleanup.

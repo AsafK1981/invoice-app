@@ -61,6 +61,8 @@ export function useBusiness() {
               data.income_tax_advance_rate == null ? undefined : Number(data.income_tax_advance_rate),
             textSize: data.text_size === "large" ? "large" : "normal",
             documentDesign: data.document_design ?? null,
+            inboxToken: data.inbox_token ?? undefined,
+            inboxEnabled: data.inbox_enabled ?? false,
           }
         : defaultBusiness
     );
@@ -139,6 +141,11 @@ export async function saveBusiness(business: Business): Promise<void> {
       // `null`, not as `{template:"general",...}` - see the doc comment on
       // normalizeDocumentDesign for why that distinction matters.
       document_design: normalizeDocumentDesign(business.documentDesign),
+      // inbox_token / inbox_enabled are deliberately absent. They are owned by
+      // /api/email-inbox, and this whole-row UPDATE writes a snapshot the form
+      // was opened with - so including them would let a settings save made in
+      // one tab silently revert an address rotation made in another, pointing
+      // the owner's forwarding rule at a dead address.
     })
     .eq("id", business.id)
     .select();

@@ -25,8 +25,13 @@ function mapRow(row: Record<string, unknown>): Expense {
     reference: (row.reference as string) || undefined,
     isEquipment: Boolean(row.is_equipment),
     allocationNumber: (row.allocation_number as string) || undefined,
+    source: (row.source as string) || "manual",
+    sourceRef: (row.source_ref as string) || undefined,
   };
 }
+
+/** The channels allowed in expenses.source (mirrors the DB CHECK constraint). */
+const EXPENSE_SOURCES = ["manual", "scan", "whatsapp", "email"] as const;
 
 /** The VAT-filing columns, shared by insert and update so they can never drift apart. */
 function filingColumns(expense: Expense) {
@@ -104,6 +109,15 @@ export const expenseStore = {
         vat_amount: expense.vatAmount ?? 0,
         receipt_path: expense.receiptPath || null,
         ...filingColumns(expense),
+        // Provenance is set once, at insert. The UPDATE branch above
+        // deliberately leaves source / source_ref alone: editing an expense
+        // that arrived by email must not rewrite where it came from, and must
+        // not drop the source_ref that stops the same mail being booked twice.
+        // An unknown value would fail the DB CHECK, so it falls back to manual.
+        source: (EXPENSE_SOURCES as readonly string[]).includes(expense.source || "")
+          ? expense.source
+          : "manual",
+        source_ref: expense.sourceRef || null,
       });
     }
     window.dispatchEvent(new Event(CHANGE_EVENT));

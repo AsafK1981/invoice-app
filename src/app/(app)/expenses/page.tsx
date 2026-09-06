@@ -14,6 +14,7 @@ import { Pagination } from "@/components/ui/pagination";
 import { PrintSheet, usePrintSheet } from "@/components/print-sheet";
 import { DownloadPdfButton } from "@/components/download-pdf-button";
 import { PeriodPicker } from "@/components/period-picker";
+import { EmailInboxQueue, EmailInboxLink } from "@/components/email-inbox-queue";
 import { type Period, periodMatches, periodLabel } from "@/lib/report-period";
 import { supabase } from "@/lib/supabase";
 import type { Expense } from "@/lib/types";
@@ -335,6 +336,7 @@ export default function ExpensesPage() {
               </>
             )}
           </p>
+          <EmailInboxLink />
         </div>
         {expenses.length > 0 && (
           <div className="rpt-controls">
@@ -403,6 +405,10 @@ export default function ExpensesPage() {
           </button>
         </div>
       </div>
+
+      {/* Invoices that arrived by mail, waiting for one click. Renders
+          nothing when the queue is empty, which is most days. */}
+      <EmailInboxQueue history={expenses} />
 
       {scanError && (
         <div className="flex items-start gap-3 bg-rose-50 border border-rose-200 text-rose-800 px-4 py-3 rounded-2xl text-sm">

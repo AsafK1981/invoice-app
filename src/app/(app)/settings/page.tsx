@@ -31,6 +31,7 @@ import { AuditLogSection } from "@/components/audit-log-section";
 import { TaxAuthoritySection } from "@/components/tax-authority-section";
 import { TwoFactorSection } from "@/components/two-factor-section";
 import { WhatsAppSection } from "@/components/whatsapp-section";
+import { EmailInboxSection } from "@/components/email-inbox-section";
 import { ALLOCATION_THRESHOLD_SCHEDULE, formatThreshold } from "@/lib/tax-authority";
 import { DangerZoneSection } from "@/components/danger-zone-section";
 import { BUSINESS_TYPE_LABELS } from "@/lib/types";
@@ -318,6 +319,8 @@ export default function SettingsPage() {
           חבר את חשבון ה-Gmail שלך כדי שמסמכים יישלחו ישירות ממך ולא מכתובת ניטרלית של המערכת.
         </p>
       </div>
+
+      <EmailInboxSection />
 
       <WhatsAppSection />
 

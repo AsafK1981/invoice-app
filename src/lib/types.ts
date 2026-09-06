@@ -97,6 +97,17 @@ export interface Business {
    * design unchanged.
    */
   documentDesign?: unknown;
+  /**
+   * The local part of this business's personal forwarding address for
+   * "הוצאות מהמייל" (`<inboxToken>@friendlyinvoice.co.il`). Undefined until
+   * the owner switches the channel on. This value is a SECRET - anyone
+   * holding it can drop a receipt into the owner's pending queue - so it is
+   * never rendered anywhere except that owner's own settings screen, and it
+   * is written only by /api/email-inbox, never by saveBusiness().
+   */
+  inboxToken?: string;
+  /** Whether inbound mail to that address is accepted. Defaults to false. */
+  inboxEnabled?: boolean;
 }
 
 export interface Client {
@@ -301,6 +312,21 @@ export interface Expense {
    * number is reported; it goes into the allocation field of the T record.
    */
   allocationNumber?: string;
+  /**
+   * Which channel created this row: "manual" (typed in), "scan" (the receipt
+   * scanner), "whatsapp" (the bot), "email" (approved from the forwarding
+   * inbox). Defaults to "manual" in the DB, so every pre-2026-09 row reads as
+   * manual. Display/audit only - nothing in the books depends on it.
+   */
+  source?: string;
+  /**
+   * The channel's own identifier for the evidence behind this row - for email
+   * the forwarded message's Message-ID. A partial UNIQUE index on
+   * (business_id, source_ref) makes it the dedupe key: the same receipt
+   * cannot be booked twice no matter how many times it is forwarded or how
+   * many times a webhook is replayed.
+   */
+  sourceRef?: string;
 }
 
 export interface DocumentAttachment {
