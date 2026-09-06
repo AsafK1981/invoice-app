@@ -288,9 +288,6 @@ export default function ReportsPage() {
         onClose={() => setUniformReport(null)}
         businessName={business.name}
         taxId={business.taxId}
-        softwareName="MySuperFriendlyInvoiceApp"
-        softwareVersion="1.0"
-        registrationNumber=""
       />
       {/* ---------- header: title + one period control that scopes the whole page ---------- */}
       <div className="rpt-head">

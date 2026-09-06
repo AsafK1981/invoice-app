@@ -28,6 +28,8 @@ export interface UniformReportData {
   toDate: string;
   taxYear: number;
   sample: boolean;
+  /** What A000 fields 1006-1008 say, so the printout matches the file. */
+  software: { name: string; version: string; registrationNumber: string };
   counts: { total: number; c100: number; d110: number; d120: number; b100: number; b110: number; m100: number };
   /** [code, count, total] per נספח 1 type, in the appendix's order. */
   docTypes: [string, number, number][];
@@ -38,7 +40,7 @@ export function parseUniformReport(header: string | null): UniformReportData | n
   if (!header) return null;
   try {
     const r = JSON.parse(header) as UniformReportData;
-    if (!r || !r.counts || !Array.isArray(r.docTypes)) return null;
+    if (!r || !r.counts || !r.software || !Array.isArray(r.docTypes)) return null;
     return r;
   } catch {
     return null;
@@ -67,17 +69,12 @@ function ReportBody({
   report,
   businessName,
   taxId,
-  softwareName,
-  softwareVersion,
-  registrationNumber,
 }: {
   report: UniformReportData;
   businessName: string;
   taxId: string;
-  softwareName: string;
-  softwareVersion: string;
-  registrationNumber: string;
 }) {
+  const { name: softwareName, version: softwareVersion, registrationNumber } = report.software;
   const labelByCode = new Map(APPENDIX_1_DOC_TYPES.map((t) => [t.code, t.label]));
   const recordRows = RECORD_LABELS.map((r) => ({
     ...r,
@@ -159,17 +156,11 @@ export function UniformStructureReport({
   onClose,
   businessName,
   taxId,
-  softwareName,
-  softwareVersion,
-  registrationNumber,
 }: {
   report: UniformReportData | null;
   onClose: () => void;
   businessName: string;
   taxId: string;
-  softwareName: string;
-  softwareVersion: string;
-  registrationNumber: string;
 }) {
   useEffect(() => {
     if (!report) return;
@@ -187,14 +178,7 @@ export function UniformStructureReport({
   if (!report || typeof document === "undefined") return null;
 
   const body = (
-    <ReportBody
-      report={report}
-      businessName={businessName}
-      taxId={taxId}
-      softwareName={softwareName}
-      softwareVersion={softwareVersion}
-      registrationNumber={registrationNumber}
-    />
+    <ReportBody report={report} businessName={businessName} taxId={taxId} />
   );
 
   return createPortal(

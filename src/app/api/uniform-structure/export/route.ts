@@ -177,6 +177,14 @@ export async function GET(req: NextRequest) {
     }));
   }
 
+  // Registered name at רשות המסים - not the display brand. See builder.ts.
+  // The printed 5.4 report quotes these too, so they travel in the header
+  // rather than being retyped on the client.
+  const software = {
+    name: "MySuperFriendlyInvoiceApp",
+    version: "1.0",
+    registrationNumber: "", // assigned after misim.gov.il approval
+  };
   const result = buildUniformStructure({
     business,
     documents,
@@ -185,12 +193,11 @@ export async function GET(req: NextRequest) {
     taxYear,
     fromDate,
     toDate,
-    // Registered name at רשות המסים - not the display brand. See builder.ts.
-    softwareName: "MySuperFriendlyInvoiceApp",
-    softwareVersion: "1.0",
+    softwareName: software.name,
+    softwareVersion: software.version,
     softwareVendorName: "Asaf Kotler",
     softwareVendorTaxId: "049040686",
-    softwareRegistrationNumber: "", // assigned after misim.gov.il approval
+    softwareRegistrationNumber: software.registrationNumber,
   });
 
   // Section 2.2 of the spec fixes the folder the files live in:
@@ -213,6 +220,7 @@ export async function GET(req: NextRequest) {
     toDate,
     taxYear,
     sample: useSampleData,
+    software,
     counts: result.counts,
     docTypes: result.docTypeSummary.map((r) => [r.code, r.count, r.total]),
   };
