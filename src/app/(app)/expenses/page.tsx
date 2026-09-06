@@ -15,6 +15,7 @@ import { PrintSheet, usePrintSheet } from "@/components/print-sheet";
 import { DownloadPdfButton } from "@/components/download-pdf-button";
 import { PeriodPicker } from "@/components/period-picker";
 import { EmailInboxQueue, EmailInboxLink } from "@/components/email-inbox-queue";
+import { EmailInboxSection } from "@/components/email-inbox-section";
 import { type Period, periodMatches, periodLabel } from "@/lib/report-period";
 import { supabase } from "@/lib/supabase";
 import type { Expense } from "@/lib/types";
@@ -605,6 +606,11 @@ export default function ExpensesPage() {
           <Pagination page={page} pageCount={pageCount} onPageChange={setPage} />
         </div>
       )}
+
+      {/* The same setup card as in Settings, here too so the feature is
+          discovered where expenses are managed (Asaf, 2026-09-06). The
+          header link above jumps to it. */}
+      <EmailInboxSection onExpensesPage />
 
       <ExpenseFormModal
         open={modalOpen}

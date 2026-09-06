@@ -151,15 +151,18 @@ export function EmailInboxQueue({ history }: { history?: Expense[] }) {
  */
 export function EmailInboxLink() {
   const { enabled, ready, available } = useEmailInbox();
-  if (!ready || !available || !enabled) return null;
+  if (!ready || !available) return null;
+  // The setup card sits at the bottom of this same page (since 2026-09-06),
+  // so the link is an in-page jump, and it shows even before the feature is
+  // switched on: that is exactly when someone needs to find it.
   return (
-    <Link
-      href="/settings#email-inbox"
+    <a
+      href="#email-inbox"
       className="inline-flex items-center gap-1.5 mt-1 mr-14 text-xs font-semibold text-stone-500 hover:text-pink-800"
     >
       <Inbox className="w-3.5 h-3.5" />
-      הוצאות מהמייל
-    </Link>
+      {enabled ? "הוצאות מהמייל" : "הוצאות מהמייל - הפעלה"}
+    </a>
   );
 }
 

@@ -31,7 +31,13 @@ import { useEmailInbox, setEmailInboxState } from "@/lib/email-inbox-client";
  * Hides itself entirely when `/api/email-inbox` is not answering, rather than
  * offering a switch that cannot be flipped.
  */
-export function EmailInboxSection() {
+/**
+ * The setup card lives in Settings and, since 2026-09-06 at Asaf's request,
+ * also at the bottom of /expenses so the feature is found where it is used.
+ * `onExpensesPage` drops the two "go to /expenses" links, which would point
+ * at the page the reader is already on.
+ */
+export function EmailInboxSection({ onExpensesPage = false }: { onExpensesPage?: boolean } = {}) {
   const { enabled, address, ready, available } = useEmailInbox();
   const confirm = useConfirm();
   const [busy, setBusy] = useState<"toggle" | "rotate" | null>(null);
@@ -166,9 +172,13 @@ export function EmailInboxSection() {
               <Step n={1}>
                 ב-Gmail: <b>הגדרות</b> ← <b>העברה ו-POP/IMAP</b> ← <b>הוסף כתובת העברה</b>.
                 הדביקו את הכתובת ואשרו. Gmail שולח קוד אימות לכתובת החדשה -{" "}
-                <Link href="/expenses" className="font-semibold text-pink-800 hover:underline">
-                  קוד האימות יופיע בעמוד ההוצאות
-                </Link>
+                {onExpensesPage ? (
+                  <b>קוד האימות יופיע כאן, בראש עמוד ההוצאות</b>
+                ) : (
+                  <Link href="/expenses" className="font-semibold text-pink-800 hover:underline">
+                    קוד האימות יופיע בעמוד ההוצאות
+                  </Link>
+                )}
                 .
               </Step>
               <Step n={2}>
@@ -206,13 +216,15 @@ export function EmailInboxSection() {
               )}
               צור כתובת חדשה
             </button>
-            <Link
-              href="/expenses"
-              className="group inline-flex items-center gap-1.5 min-h-[40px] text-xs font-semibold text-pink-800 hover:text-pink-900 mr-auto"
-            >
-              לחשבוניות שהגיעו במייל
-              <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-1" />
-            </Link>
+            {!onExpensesPage && (
+              <Link
+                href="/expenses"
+                className="group inline-flex items-center gap-1.5 min-h-[40px] text-xs font-semibold text-pink-800 hover:text-pink-900 mr-auto"
+              >
+                לחשבוניות שהגיעו במייל
+                <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-1" />
+              </Link>
+            )}
           </div>
         </>
       )}
