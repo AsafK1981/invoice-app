@@ -19,6 +19,7 @@ import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/ui/toast";
 import { friendlyError } from "@/lib/error-message";
 import { DownloadPdfButton } from "@/components/download-pdf-button";
+import { UniformStructureReport, parseUniformReport, type UniformReportData } from "@/components/uniform-structure-report";
 import { computeAging, AGING_BUCKET_LABELS } from "@/lib/aging";
 import {
   type Period, HEBREW_MONTHS_SHORT,
@@ -64,6 +65,8 @@ export default function ReportsPage() {
   const { business } = useBusiness();
   const showToast = useToast();
   const [period, setPeriod] = useState<Period>(() => String(new Date().getFullYear()));
+  /** The 2.6 + 5.4 printouts of the last מבנה אחיד export, shown right after the ZIP lands. */
+  const [uniformReport, setUniformReport] = useState<UniformReportData | null>(null);
 
   const year = periodYear(period);
   /** File-name tag for the exports: "2026-08", or "2026-01-05_2026-03-10" for a range. */
@@ -207,6 +210,10 @@ export default function ReportsPage() {
     a.download = `OPENFRMT-${business.taxId}-${exportYear}${sample ? "-SAMPLE" : ""}.zip`;
     a.click();
     URL.revokeObjectURL(url);
+    // The spec (sections 2.6 and 5.4) wants a printed summary next to the
+    // files; the route sends its figures in a header so we never build the
+    // file twice.
+    setUniformReport(parseUniformReport(res.headers.get("X-Uniform-Report")));
   }
 
   /* ---------- the report cards ---------- */
@@ -275,7 +282,16 @@ export default function ReportsPage() {
   const topDebtors = aging.rows.slice(0, 3);
 
   return (
-    <div className="space-y-6 rpt">
+    <div className="space-y-6 rpt" data-print-hidden={uniformReport ? "true" : undefined}>
+      <UniformStructureReport
+        report={uniformReport}
+        onClose={() => setUniformReport(null)}
+        businessName={business.name}
+        taxId={business.taxId}
+        softwareName="MySuperFriendlyInvoiceApp"
+        softwareVersion="1.0"
+        registrationNumber=""
+      />
       {/* ---------- header: title + one period control that scopes the whole page ---------- */}
       <div className="rpt-head">
         <div>

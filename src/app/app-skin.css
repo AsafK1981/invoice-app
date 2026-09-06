@@ -3568,3 +3568,52 @@ html[data-text-size="large"]:has([data-app-sidebar]) { font-size: 19px; }
     animation: none;
   }
 }
+
+/* ===== דוח הפקה - מבנה אחיד (components/uniform-structure-report.tsx) ===== */
+html .usr-overlay { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+html .usr-backdrop { position: absolute; inset: 0; background: rgba(28, 25, 23, 0.45); backdrop-filter: blur(2px); }
+html .usr-panel {
+  position: relative; width: 100%; max-width: 52rem; max-height: calc(100vh - 2rem);
+  display: flex; flex-direction: column; background: #fff; border-radius: 1.25rem;
+  box-shadow: 0 24px 60px rgba(28, 25, 23, 0.25); overflow: hidden;
+}
+html .usr-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; padding: 1.25rem 1.5rem 1rem; border-bottom: 1px solid #e7e5e4; }
+html .usr-title { font-size: 1.25rem; font-weight: 700; color: #1c1917; margin: 0; }
+html .usr-sub { font-size: 0.85rem; color: #57534e; margin: 0.25rem 0 0; }
+html .usr-actions { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
+html .usr-close { width: 2.25rem; height: 2.25rem; border-radius: 9999px; display: inline-flex; align-items: center; justify-content: center; color: #57534e; background: transparent; border: 0; cursor: pointer; }
+html .usr-close:hover { background: #f5f5f4; color: #1c1917; }
+html .usr-close svg { width: 1.1rem; height: 1.1rem; }
+html .usr-scroll { overflow: auto; padding: 1.25rem 1.5rem 1.5rem; }
+html .usr-body { color: #1c1917; font-size: 0.9rem; line-height: 1.6; }
+html .usr-block + .usr-block { margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px dashed #d6d3d1; }
+html .usr-h2 { font-size: 1rem; font-weight: 700; margin: 0 0 0.6rem; color: #1c1917; }
+html .usr-dl { display: grid; grid-template-columns: max-content 1fr; gap: 0.3rem 1rem; margin: 0; }
+html .usr-dl dt { color: #57534e; }
+html .usr-dl dd { margin: 0; font-weight: 500; overflow-wrap: anywhere; }
+html .usr-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.85em; }
+html .usr-note { margin: 0.6rem 0 0; font-size: 0.8rem; color: #57534e; }
+html .usr-warn { margin: 1.25rem 0 0; padding: 0.6rem 0.9rem; border-radius: 0.75rem; background: #fff7ed; color: #9a3412; font-size: 0.85rem; }
+html .usr-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+html .usr-table th, html .usr-table td { padding: 0.4rem 0.6rem; border-bottom: 1px solid #e7e5e4; text-align: right; }
+html .usr-table th { font-weight: 700; color: #44403c; background: #fafaf9; }
+html .usr-table tfoot td { font-weight: 700; border-top: 2px solid #d6d3d1; border-bottom: 0; }
+html .usr-table .usr-num { text-align: left; font-variant-numeric: tabular-nums; }
+html .usr-table .usr-zero td { color: #a8a29e; }
+html .usr-print-head { margin-bottom: 1rem; }
+html .usr-print-biz { font-weight: 700; }
+html .usr-print-title { font-size: 1.2rem; font-weight: 700; margin: 0.15rem 0 0; }
+@media (max-width: 640px) {
+  html .usr-overlay { padding: 0; align-items: stretch; }
+  html .usr-panel { max-width: none; max-height: 100vh; border-radius: 0; }
+  html .usr-head { flex-direction: column; }
+  html .usr-dl { grid-template-columns: 1fr; gap: 0.1rem 0; }
+  html .usr-dl dt { margin-top: 0.4rem; }
+}
+@media print {
+  html .usr-overlay { display: none !important; }
+  html .usr-print { display: block !important; }
+  html .usr-table { font-size: 11px; }
+  html .usr-block { break-inside: avoid; }
+  html .usr-table tr { break-inside: avoid; }
+}

@@ -31,7 +31,10 @@ export const DOC_TYPE_CODE: Record<InvoiceDocument["type"], string> = {
   // price quotes (הצעת מחיר) and proforma invoices (חשבון עסקה) are pre-tax
   // commercial documents with no dedicated code, so both map to 100.
   quote: "100",
-  proforma: "100",
+  // חשבון עסקה IS the "חשבונית עסקה" of code 300. Mapping it to 100 as well
+  // made a quote and a proforma with the same number collide as one document
+  // in the simulator (duplicate reference, orphaned D110 rows).
+  proforma: "300",
   tax_invoice: "305",
   tax_invoice_receipt: "320",
   credit_note: "330",
@@ -86,7 +89,10 @@ export function buildA000(meta: FileMeta, counts: RecordCounts): string {
     padStr(meta.business.taxId, 9), // 1003: VAT (9), pos 25-33
     primaryIdFor(meta.business), // 1004: primary identifier (15), pos 34-48
     "&OF1.31&", // 1005: system constant (8), pos 49-56
-    padStr(meta.softwareRegistrationNumber, 8), // 1006: software reg # (8), pos 57-64
+    // Numeric 9(8). Zeros until רשות המסים issues the certificate number:
+    // blanks fail the simulator's INI check, and the registration run itself
+    // happens before a number exists.
+    padNum(meta.softwareRegistrationNumber || 0, 8), // 1006: software reg # (8), pos 57-64
     padStr(meta.softwareName, 20), // 1007: software name (20), pos 65-84
     padStr(meta.softwareVersion, 20), // 1008: software version (20), pos 85-104
     padStr(meta.softwareVendorTaxId, 9), // 1009: vendor VAT (9), pos 105-113
@@ -166,13 +172,12 @@ export function buildC100(args: {
   meta: FileMeta;
   doc: InvoiceDocument;
   client: Client | null;
+  /** Unique per document across the whole file (see `docLinkId`). */
+  linkField: number;
 }): string {
-  const { recordNum, meta, doc, client } = args;
+  const { recordNum, meta, doc, client, linkField } = args;
   const docType = DOC_TYPE_CODE[doc.type];
   const cancelled = doc.status === "cancelled" ? "1" : "";
-  // The "row link field" 1234 links D110/D120 rows to the C100 header.
-  // We use the document's numeric sequence number for this purpose.
-  const linkField = doc.number % 10_000_000;
 
   return buildLine([
     "C100", // 1200 (4), pos 1-4
@@ -225,9 +230,12 @@ export function buildD110(args: {
   doc: InvoiceDocument;
   item: DocumentItem;
   lineNumber: number;
+  linkField: number;
+  /** The M100 internal SKU this line refers to; the simulator's integrity
+   *  check wants every D110 1259 to resolve to an M100 1455. */
+  itemCode: string;
 }): string {
-  const { recordNum, meta, doc, item, lineNumber } = args;
-  const linkField = doc.number % 10_000_000;
+  const { recordNum, meta, doc, item, lineNumber, linkField, itemCode } = args;
 
   return buildLine([
     "D110", // 1250, pos 1-4
@@ -239,7 +247,7 @@ export function buildD110(args: {
     padStr("", 3), // 1256: base doc type, pos 50-52
     padStr("", 20), // 1257: base doc number, pos 53-72
     padStr("1", 1), // 1258: transaction type: 1=service, 2=goods, 3=mixed, pos 73
-    padStr(item.productId?.slice(0, 20) || "", 20), // 1259: internal SKU, pos 74-93
+    padStr(itemCode.slice(0, 20), 20), // 1259: internal SKU, pos 74-93
     padStr(item.description.slice(0, 30), 30), // 1260: item description, pos 94-123
     padStr("", 50), // 1261: manufacturer name, pos 124-173
     padStr("", 30), // 1262: serial number, pos 174-203
@@ -266,10 +274,10 @@ export function buildD120(args: {
   meta: FileMeta;
   doc: InvoiceDocument;
   lineNumber: number;
+  linkField: number;
 }): string {
-  const { recordNum, meta, doc, lineNumber } = args;
+  const { recordNum, meta, doc, lineNumber, linkField } = args;
   const payCode = doc.paymentMethod ? PAYMENT_TYPE_CODE[doc.paymentMethod] : "9";
-  const linkField = doc.number % 10_000_000;
   // For a check payment, carry the structured detail (bank/branch/account/check
   // number + due date) into the numeric D120 fields. padNum strips non-digits,
   // so a numeric code lands correctly and a free-text bank name degrades to 0.

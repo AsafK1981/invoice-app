@@ -24,6 +24,45 @@ function makeRng(seed: number) {
   };
 }
 
+/**
+ * Israeli identity / company number check digit (the ת.ז. weighting: 1,2,1,2...
+ * over the first 8 digits, digit-sum products, complement to 10). The
+ * simulator rejects any customer VAT number (field 1215) that fails it.
+ */
+function withCheckDigit(first8: string): string {
+  let sum = 0;
+  for (let i = 0; i < 8; i++) {
+    let v = Number(first8[i]) * (i % 2 === 0 ? 1 : 2);
+    if (v > 9) v -= 9;
+    sum += v;
+  }
+  return first8 + String((10 - (sum % 10)) % 10);
+}
+
+/** Local-time YYYY-MM-DD. `toISOString()` would shift midnight back a day
+ *  (and, for Jan 1st, into the previous tax year) east of Greenwich. */
+function isoLocal(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+/**
+ * Random day of `year` that is not in the future: the simulator rejects
+ * every document, payment and journal date after today (fields 1272, 1322,
+ * 1375, "התאריך לא יכול להיות עתידי").
+ */
+function pastDayOfYear(rng: () => number, year: number): number {
+  const today = new Date();
+  let maxDay = 360;
+  if (year === today.getFullYear()) {
+    const jan1 = new Date(year, 0, 1);
+    maxDay = Math.max(1, Math.floor((today.getTime() - jan1.getTime()) / 86_400_000));
+  } else if (year > today.getFullYear()) {
+    maxDay = 1;
+  }
+  return Math.floor(rng() * maxDay) + 1;
+}
+
 const FIRST_NAMES = [
   "אסף", "דנה", "רון", "ליאת", "תומר", "מיכל", "יואב", "שרה", "אבי", "טל",
   "נועה", "עומר", "ענת", "גיל", "רחל", "אורי", "דוד", "מאיה", "אריאל", "יעל",
@@ -91,7 +130,7 @@ export interface SampleDataset {
  */
 export function generateSampleDataset(input: SampleInput): SampleDataset {
   const rng = makeRng(20260520);
-  const targetRecords = input.targetRecords ?? 2500;
+  const targetRecords = input.targetRecords ?? 2800;
   const year = input.taxYear;
 
   // We aim slightly above the 2000 target. Rough record budget:
@@ -115,8 +154,8 @@ export function generateSampleDataset(input: SampleInput): SampleDataset {
       ? `${ln} ${BUSINESS_SUFFIXES[Math.floor(rng() * BUSINESS_SUFFIXES.length)]}`
       : `${fn} ${ln}`;
     const taxId = isBusiness
-      ? String(510000000 + Math.floor(rng() * 89999999)).padStart(9, "0")
-      : String(100000000 + Math.floor(rng() * 899999999)).padStart(9, "0");
+      ? withCheckDigit(String(51000000 + Math.floor(rng() * 8999999)))
+      : withCheckDigit(String(10000000 + Math.floor(rng() * 89999999)));
     clients.push({
       id: `sample-client-${i.toString().padStart(4, "0")}`,
       name,
@@ -144,9 +183,8 @@ export function generateSampleDataset(input: SampleInput): SampleDataset {
       ? DOC_TYPES[i]
       : DOC_TYPES[Math.floor(rng() * DOC_TYPES.length)];
     const client = clients[Math.floor(rng() * clients.length)];
-    // Spread across the year
-    const dayOfYear = Math.floor(rng() * 360) + 1;
-    const date = new Date(year, 0, dayOfYear).toISOString().slice(0, 10);
+    // Spread across the year, never past today
+    const date = isoLocal(new Date(year, 0, pastDayOfYear(rng, year)));
 
     const numItems = 1 + Math.floor(rng() * 3);
     const items: DocumentItem[] = [];
@@ -191,13 +229,23 @@ export function generateSampleDataset(input: SampleInput): SampleDataset {
       vat,
       total,
       paymentMethod,
+      // A check payment must carry bank / branch / account / check number
+      // (D120 fields 1307-1310 are mandatory for payment type 2).
+      paymentDetails: paymentMethod === "check"
+        ? {
+            checkBank: String(10 + Math.floor(rng() * 20)),
+            checkBranch: String(100 + Math.floor(rng() * 900)),
+            checkAccount: String(100000 + Math.floor(rng() * 900000)),
+            checkNumber: String(1000 + Math.floor(rng() * 9000)),
+            checkDueDate: date,
+          }
+        : undefined,
     });
   }
 
   const expenses: Expense[] = [];
   for (let i = 0; i < numExpenses; i++) {
-    const dayOfYear = Math.floor(rng() * 360) + 1;
-    const date = new Date(year, 0, dayOfYear).toISOString().slice(0, 10);
+    const date = isoLocal(new Date(year, 0, pastDayOfYear(rng, year)));
     expenses.push({
       id: `sample-exp-${i.toString().padStart(4, "0")}`,
       date,

@@ -37,9 +37,9 @@ describe("parseBkmvdataText", () => {
     const d = doc({});
     const text =
       "A100" + " ".repeat(90) + "\r\n" +
-      buildC100({ recordNum: 2, meta, doc: d, client }) +
-      buildD110({ recordNum: 3, meta, doc: d, item: { id: "i1", description: "הופעה - אוגוסט", quantity: 1, unitPrice: 1000, total: 1000 } as never, lineNumber: 1 }) +
-      buildD110({ recordNum: 4, meta, doc: d, item: { id: "i2", description: "הופעה - אוגוסט", quantity: 1, unitPrice: 0, total: 0 } as never, lineNumber: 2 }) +
+      buildC100({ recordNum: 2, meta, doc: d, client, linkField: 1 }) +
+      buildD110({ recordNum: 3, meta, doc: d, item: { id: "i1", description: "הופעה - אוגוסט", quantity: 1, unitPrice: 1000, total: 1000 } as never, lineNumber: 1, linkField: 1, itemCode: "ITM-000001" }) +
+      buildD110({ recordNum: 4, meta, doc: d, item: { id: "i2", description: "הופעה - אוגוסט", quantity: 1, unitPrice: 0, total: 0 } as never, lineNumber: 2, linkField: 1, itemCode: "ITM-000001" }) +
       "Z900" + " ".repeat(40) + "\r\n";
 
     const out = parseBkmvdataText(text);
@@ -62,7 +62,7 @@ describe("parseBkmvdataText", () => {
   it("flags cancelled documents and hands credit notes over as magnitudes", () => {
     const cancelled = doc({ number: 7, status: "cancelled", type: "receipt" });
     const credit = doc({ number: 8, type: "credit_note", subtotal: -500, vat: -90, total: -590 });
-    const text = buildC100({ recordNum: 2, meta, doc: cancelled, client: null }) + buildC100({ recordNum: 3, meta, doc: credit, client: null });
+    const text = buildC100({ recordNum: 2, meta, doc: cancelled, client: null, linkField: 1 }) + buildC100({ recordNum: 3, meta, doc: credit, client: null, linkField: 1 });
     const out = parseBkmvdataText(text);
     expect(out.docCount).toBe(2);
     expect(out.cancelledCount).toBe(1);
@@ -78,8 +78,8 @@ describe("parseBkmvdataText", () => {
     const d = doc({ number: 55, type: "tax_invoice" });
     const text =
       "B110" + " ".repeat(60) + "\n" +
-      buildD110({ recordNum: 2, meta, doc: d, item: { id: "i1", description: "ייעוץ", quantity: 2, unitPrice: 300, total: 600 } as never, lineNumber: 1 }).replace("\r\n", "\n") +
-      buildC100({ recordNum: 3, meta, doc: d, client: null }).replace("\r\n", "\n");
+      buildD110({ recordNum: 2, meta, doc: d, item: { id: "i1", description: "ייעוץ", quantity: 2, unitPrice: 300, total: 600 } as never, lineNumber: 1, linkField: 1, itemCode: "ITM-000001" }).replace("\r\n", "\n") +
+      buildC100({ recordNum: 3, meta, doc: d, client: null, linkField: 1 }).replace("\r\n", "\n");
     const out = parseBkmvdataText(text);
     expect(out.docCount).toBe(1);
     expect(out.rows[0]["תיאור"]).toBe("ייעוץ");

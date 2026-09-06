@@ -21,6 +21,15 @@ const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
  *
  * Auth: Bearer token; resolves to user → business owned by that user.
  */
+/** `OPENFRMT/<8-digit dealer number>.<YY>/<MMDDhhmm>`, per section 2.2. */
+function uniformFolderPath(taxId: string, at: Date): string {
+  const dealer = taxId.replace(/\D/g, "").slice(0, 8).padStart(8, "0");
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const yy = String(at.getFullYear()).slice(-2);
+  const stamp = `${pad(at.getMonth() + 1)}${pad(at.getDate())}${pad(at.getHours())}${pad(at.getMinutes())}`;
+  return `OPENFRMT/${dealer}.${yy}/${stamp}`;
+}
+
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
   if (!authHeader?.startsWith("Bearer ")) {
@@ -184,10 +193,29 @@ export async function GET(req: NextRequest) {
     softwareRegistrationNumber: "", // assigned after misim.gov.il approval
   });
 
+  // Section 2.2 of the spec fixes the folder the files live in:
+  //   OPENFRMT\<dealer number without check digit>.<YY>\<MMDDhhmm>
+  // so the ZIP mirrors it. Unzipping gives the auditor the exact tree the
+  // desktop products produce, and the printed 5.4 report names the same path.
+  const openfrmtPath = uniformFolderPath(business.taxId, result.generatedAt);
   const zip = new JSZip();
-  zip.file("INI.txt", result.ini);
-  zip.file("BKMVDATA.txt", result.bkmvdata);
+  zip.file(`${openfrmtPath}/INI.TXT`, result.ini);
+  zip.file(`${openfrmtPath}/BKMVDATA.TXT`, result.bkmvdata);
   const blob = await zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE" });
+
+  // Everything the on-screen "דוח הפקה" (sections 2.6 + 5.4) needs, as one
+  // ASCII-only header - labels are added client-side, header values cannot
+  // carry Hebrew.
+  const report = {
+    generatedAt: result.generatedAt.toISOString(),
+    path: openfrmtPath,
+    fromDate,
+    toDate,
+    taxYear,
+    sample: useSampleData,
+    counts: result.counts,
+    docTypes: result.docTypeSummary.map((r) => [r.code, r.count, r.total]),
+  };
 
   const filename = `OPENFRMT-${business.taxId}-${taxYear}${useSampleData ? "-SAMPLE" : ""}.zip`;
   return new NextResponse(blob as unknown as BodyInit, {
@@ -196,6 +224,7 @@ export async function GET(req: NextRequest) {
       "Content-Disposition": `attachment; filename="${filename}"`,
       "X-Record-Count": String(result.counts.total),
       "X-Doc-Count": String(result.counts.c100),
+      "X-Uniform-Report": JSON.stringify(report),
     },
   });
 }

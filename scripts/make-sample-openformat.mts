@@ -35,8 +35,9 @@ for (const r of rows) {
     id: `d-${r.number}`, type: r.type, number: r.number, date: r.date, clientName: clients[r.client].name,
     subtotal: r.subtotal, vat: r.vat, total: r.subtotal + r.vat, status: r.status ?? "sent", items: [],
   } as unknown as InvoiceDocument;
-  text += buildC100({ recordNum: ++rec, meta, doc, client: clients[r.client] });
-  text += buildD110({ recordNum: ++rec, meta, doc, item: { id: "i", description: r.desc, quantity: 1, unitPrice: r.subtotal, total: r.subtotal } as never, lineNumber: 1 });
+  const linkField = rows.indexOf(r) + 1;
+  text += buildC100({ recordNum: ++rec, meta, doc, client: clients[r.client], linkField });
+  text += buildD110({ recordNum: ++rec, meta, doc, item: { id: "i", description: r.desc, quantity: 1, unitPrice: r.subtotal, total: r.subtotal } as never, lineNumber: 1, linkField, itemCode: "ITM-000001" });
 }
 text += "Z900" + " ".repeat(40) + "\r\n";
 

@@ -46,7 +46,54 @@ export interface UniformOutput {
   iniText: string;
   bkmvdataText: string;
   counts: RecordCounts;
+  /** Section 2.6 of the spec: count + money total per נספח 1 document type. */
+  docTypeSummary: DocTypeSummaryRow[];
+  generatedAt: Date;
 }
+
+export interface DocTypeSummaryRow {
+  /** נספח 1 document code ("305", "400", ...). */
+  code: string;
+  label: string;
+  count: number;
+  /** Money total in shekels (`totalIls ?? total`), 0 for unmanaged types. */
+  total: number;
+}
+
+/**
+ * נספח 1 of the spec, in its order. Section 2.6 wants a row for EVERY type
+ * listed there, with zeros for the ones the software does not manage, so
+ * the auditor sees "not managed" rather than "forgot to report".
+ */
+export const APPENDIX_1_DOC_TYPES: ReadonlyArray<{ code: string; label: string }> = [
+  { code: "100", label: "הזמנה" },
+  { code: "200", label: "תעודת משלוח" },
+  { code: "205", label: "תעודת משלוח סוכן" },
+  { code: "210", label: "תעודת החזרה" },
+  { code: "300", label: "חשבונית / חשבונית עסקה" },
+  { code: "305", label: "חשבונית מס" },
+  { code: "310", label: "חשבונית ריכוז" },
+  { code: "320", label: "חשבונית מס / קבלה" },
+  { code: "330", label: "חשבונית מס זיכוי" },
+  { code: "340", label: "חשבונית שריון" },
+  { code: "345", label: "חשבונית סוכן" },
+  { code: "400", label: "קבלה" },
+  { code: "405", label: "קבלה על תרומות" },
+  { code: "410", label: "יציאה מקופה" },
+  { code: "420", label: "הפקדת בנק" },
+  { code: "500", label: "הזמנת רכש" },
+  { code: "600", label: "תעודת משלוח רכש" },
+  { code: "610", label: "החזרת רכש" },
+  { code: "700", label: "חשבונית מס רכש" },
+  { code: "710", label: "זיכוי רכש" },
+  { code: "800", label: "יתרת פתיחה" },
+  { code: "810", label: "כניסה כללית למלאי" },
+  { code: "820", label: "יציאה כללית מהמלאי" },
+  { code: "830", label: "העברה בין מחסנים" },
+  { code: "840", label: "עדכון בעקבות ספירה" },
+  { code: "900", label: "כניסה - דוח ייצור" },
+  { code: "910", label: "יציאה - דוח ייצור" },
+];
 
 /**
  * Minimal synthetic chart of accounts. Each account becomes a B110
@@ -59,6 +106,11 @@ const STANDARD_ACCOUNTS = [
   { code: "CASH", name: "מזומן", tbCode: "ASSETS", tbDesc: "מזומנים ושווי מזומנים" },
   { code: "BANK", name: "בנק", tbCode: "ASSETS", tbDesc: "מזומנים ושווי מזומנים" },
 ];
+
+/** B110 account key for an expense category; 15 chars max (field 1403). */
+function expenseAccountKey(category: string): string {
+  return `EXP-${category}`.slice(0, 15);
+}
 
 export function buildUniformStructure(input: UniformInput): UniformOutput {
   const meta: FileMeta = {
@@ -90,6 +142,13 @@ export function buildUniformStructure(input: UniformInput): UniformOutput {
   });
 
   const clientById = new Map(input.clients.map((c) => [c.id, c]));
+
+  // Fields 1234 / 1273 / 1323 tie D110 and D120 rows to their C100 header.
+  // The document NUMBER is not unique across types (receipt 1001 and quote
+  // 1001 coexist), so every document gets its own sequential link id.
+  const docLinkId = new Map<string, number>();
+  docs.forEach((d, i) => docLinkId.set(d.id, i + 1));
+  const linkOf = (d: InvoiceDocument) => docLinkId.get(d.id) ?? 0;
 
   // Collect unique items across all docs for M100 master records.
   const uniqueItems = new Map<string, { code: string; description: string }>();
@@ -135,6 +194,26 @@ export function buildUniformStructure(input: UniformInput): UniformOutput {
       }),
     );
   }
+  // One expense account per category. Every B100 account key (field 1364)
+  // must resolve to a B110 row, and the expense journal below posts to
+  // `EXP-<category>`.
+  const expenseAccounts = new Map<string, string>();
+  for (const e of expenses) {
+    const key = expenseAccountKey(e.category);
+    if (!expenseAccounts.has(key)) expenseAccounts.set(key, e.category);
+  }
+  for (const [key, category] of expenseAccounts) {
+    b110Lines.push(
+      buildB110({
+        recordNum: recordNum++,
+        meta,
+        accountKey: key,
+        accountName: `הוצאות ${category}`.slice(0, 50),
+        trialBalanceCode: "EXPENSES",
+        trialBalanceDesc: "הוצאות",
+      }),
+    );
+  }
   const b110Count = b110Lines.length;
 
   // ── M100 inventory items ───────────────────────────────────────────
@@ -153,15 +232,34 @@ export function buildUniformStructure(input: UniformInput): UniformOutput {
 
   // ── C100 document headers ──────────────────────────────────────────
   const c100Lines: string[] = [];
+  // Section 2.6 printout: one row per נספח 1 type, over the SAME documents
+  // that became C100 records, so the printed totals reconcile with the file.
+  const perType = new Map<string, { count: number; total: number }>();
   for (const doc of docs) {
     const client = doc.clientId ? clientById.get(doc.clientId) || null : null;
-    c100Lines.push(buildC100({ recordNum: recordNum++, meta, doc, client }));
+    c100Lines.push(buildC100({ recordNum: recordNum++, meta, doc, client, linkField: linkOf(doc) }));
+    const code = DOC_TYPE_CODE[doc.type];
+    const row = perType.get(code) ?? { count: 0, total: 0 };
+    row.count += 1;
+    row.total += doc.totalIls ?? doc.total;
+    perType.set(code, row);
   }
   const c100Count = c100Lines.length;
+  const docTypeSummary: DocTypeSummaryRow[] = APPENDIX_1_DOC_TYPES.map((t) => ({
+    code: t.code,
+    label: t.label,
+    count: perType.get(t.code)?.count ?? 0,
+    total: Math.round((perType.get(t.code)?.total ?? 0) * 100) / 100,
+  }));
 
   // ── D110 document line items ───────────────────────────────────────
   const d110Lines: string[] = [];
   for (const doc of docs) {
+    // A plain receipt (400) records money received, not goods or services
+    // sold, so its detail rows are D120 payment lines only. The simulator
+    // treats a D110 under a 400 header as an orphan ("לא נמצאה רשומת
+    // כותרת מסמך"). A tax-invoice-receipt (320) keeps both kinds of rows.
+    if (doc.type === "receipt") continue;
     doc.items.forEach((item, idx) => {
       d110Lines.push(
         buildD110({
@@ -170,6 +268,8 @@ export function buildUniformStructure(input: UniformInput): UniformOutput {
           doc,
           item,
           lineNumber: idx + 1,
+          linkField: linkOf(doc),
+          itemCode: uniqueItems.get(item.description.trim())?.code ?? "",
         }),
       );
     });
@@ -180,7 +280,7 @@ export function buildUniformStructure(input: UniformInput): UniformOutput {
   const d120Lines: string[] = [];
   for (const doc of docs) {
     if (doc.type === "receipt" || doc.type === "tax_invoice_receipt") {
-      d120Lines.push(buildD120({ recordNum: recordNum++, meta, doc, lineNumber: 1 }));
+      d120Lines.push(buildD120({ recordNum: recordNum++, meta, doc, lineNumber: 1, linkField: linkOf(doc) }));
     }
   }
   const d120Count = d120Lines.length;
@@ -276,7 +376,7 @@ export function buildUniformStructure(input: UniformInput): UniformOutput {
         docTypeRef: "800",
         date: e.date,
         valueDate: e.date,
-        accountKey: `EXP-${e.category}`.slice(0, 15),
+        accountKey: expenseAccountKey(e.category),
         counterAccountKey: "CASH",
         details: `${e.supplier} ${e.description ?? ""}`.slice(0, 50),
         amount: e.amount,
@@ -294,7 +394,7 @@ export function buildUniformStructure(input: UniformInput): UniformOutput {
         date: e.date,
         valueDate: e.date,
         accountKey: "CASH",
-        counterAccountKey: `EXP-${e.category}`.slice(0, 15),
+        counterAccountKey: expenseAccountKey(e.category),
         details: `${e.supplier} ${e.description ?? ""}`.slice(0, 50),
         amount: e.amount,
         side: "2",
@@ -350,5 +450,7 @@ export function buildUniformStructure(input: UniformInput): UniformOutput {
     ini: toWindows1255(iniText),
     bkmvdata: toWindows1255(bkmvdataText),
     counts,
+    docTypeSummary,
+    generatedAt: meta.generatedAt,
   };
 }
