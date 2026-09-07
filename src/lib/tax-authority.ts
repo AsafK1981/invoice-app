@@ -90,6 +90,20 @@ function viaProxy(
   return { url, headers };
 }
 
+/**
+ * Public wrapper over `viaProxy`, for callers outside this module that also
+ * have to reach gov.il - currently the מבנה אחיד transmission in
+ * lib/uniform-structure/transmit.ts. Same rule applies there: gov.il hosts
+ * are rewritten through the Israeli proxy, everything else (notably the
+ * Google Cloud Storage upload URLs) is returned untouched.
+ */
+export function govFetchTarget(
+  url: string,
+  headers: Record<string, string>,
+): { url: string; headers: Record<string, string> } {
+  return viaProxy(url, headers);
+}
+
 export function isTaxAuthorityConfigured(): boolean {
   return !!(CLIENT_ID && CLIENT_SECRET && SOFTWARE_NUMBER);
 }
