@@ -3198,3 +3198,15 @@ h3 > .ml-badge-soon {
     gap: 6px 18px;
   }
 }
+
+/* Phone header (Asaf, 2026-09-07): the logo sits at the LEFT edge of the
+   screen and the hamburger at the right. The cluster is the bar's only
+   visible child below 760px (the CTA is hidden there), so it spans the bar
+   and pushes its two ends apart; in RTL the burger (first child) lands on
+   the right and the lockup on the left. */
+@media (max-width: 759.98px) {
+  .ml-header-start {
+    flex: 1 1 auto;
+    justify-content: space-between;
+  }
+}
