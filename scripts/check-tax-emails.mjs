@@ -54,9 +54,23 @@ async function pushWhatsApp(text) {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ text, source: SOURCE }),
+    // urgent: skip the 20:30 daily digest. Fleet sources are bundled into
+    // one evening message on purpose, but a letter from רשות המסים is not
+    // fleet noise - it can carry a deadline. The 2026-08-17 registry
+    // cancellation was detected here 8 minutes after it landed, pushed
+    // fine (status 200), and then sat in the digest queue until the
+    // evening, where it was missed among the other agents' updates. The
+    // application died on that timer. These are rare (a few a month), so
+    // sending them immediately costs nothing and is the whole point.
+    body: JSON.stringify({ text, source: SOURCE, urgent: true }),
   });
-  console.log(`push status: ${res.status}`);
+  // Log the body, not just the status: a queued push also returns 200, so
+  // the status alone cannot tell "delivered" from "parked until 20:30".
+  const body = await res.text().catch(() => "");
+  console.log(`push status: ${res.status} body: ${body.slice(0, 200)}`);
+  if (body.includes('"queued":true') || body.includes('"queued": true')) {
+    console.warn("WARNING: push was queued for the daily digest, not delivered now");
+  }
   return res.ok;
 }
 
