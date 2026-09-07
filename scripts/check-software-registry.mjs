@@ -16,8 +16,31 @@
 // Zero-noise: pushes only when the software is found, and only once
 // (dedup is server-side via Gaya /watch-claim, same as the email watcher).
 //
-// Env: GAYA_PUSH_TOKEN
-// Runs in GitHub Actions: software-registry-watch.yml
+// Runs LOCALLY (Windows task "invoice-app-registry-watch", weekly), not in
+// GitHub Actions: gov.il geo-blocks non-Israeli source IPs, so a runner in a
+// GitHub datacentre gets a bare "fetch failed" (verified 2026-09-07, run
+// 34150308900). The app works around the same block for allocation numbers
+// with an Israeli-egress proxy, but Asaf's own machine is already in Israel,
+// so a local task needs no proxy and no extra secret.
+//
+// Env: GAYA_PUSH_TOKEN, from the environment or from .env.local.
+
+import { readFileSync } from "node:fs";
+
+// Local runs read the token from .env.local (gitignored). Missing file is
+// not fatal - the environment is tried first either way.
+let fileEnv = {};
+try {
+  fileEnv = readFileSync(new URL(".env.local", new URL("..", import.meta.url)), "utf8")
+    .split(/\r?\n/)
+    .filter((l) => l && !l.startsWith("#"))
+    .reduce((a, l) => {
+      const [k, ...r] = l.split("=");
+      if (k) a[k.trim()] = r.join("=").trim();
+      return a;
+    }, {});
+} catch {}
+const GAYA_TOKEN = process.env.GAYA_PUSH_TOKEN || fileEnv.GAYA_PUSH_TOKEN;
 
 const REGISTRY_API =
   "https://secapp.taxes.gov.il/MmFindTochnaApi/api/Tochnot/getAllTochnotBetokef";
@@ -34,7 +57,7 @@ const ENTITY = process.env.REGISTRY_WATCH_ENTITY || "049040686";
 const normalise = (v) => String(v ?? "").replace(/\D/g, "").replace(/^0+/, "");
 
 async function claimFirstTime(id) {
-  const token = process.env.GAYA_PUSH_TOKEN;
+  const token = GAYA_TOKEN;
   if (!token) {
     console.error("GAYA_PUSH_TOKEN missing; failing CLOSED (no push)");
     return false;
@@ -57,7 +80,7 @@ async function claimFirstTime(id) {
 }
 
 async function pushWhatsApp(text) {
-  const token = process.env.GAYA_PUSH_TOKEN;
+  const token = GAYA_TOKEN;
   if (!token) return false;
   const res = await fetch(`${GAYA_BASE}/push`, {
     method: "POST",
