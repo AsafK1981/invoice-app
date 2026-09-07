@@ -19,6 +19,11 @@ paths = [
   '''\.githooks/''',
 ]
 regexes = [
+  # Fixture signing keys in unit tests, named "test-<something>-key". The
+  # existing test[_-]?key alternative below only catches "test-key" itself, so
+  # tests/gmail-connect.test.ts ("test-column-key-0123456789abcdef") tripped
+  # generic-api-key and blocked every push in the repo until this was added.
+  '''(?i)test[_-][a-z0-9_-]*key''',
   # Common placeholder tokens used across docs/fixtures.
   '''(?i)(your[_-]?|example[_-]?|placeholder|changeme|dummy|test[_-]?key|xxxx+)''',
   # Supabase publishable anon key is designed to be public (ships to the browser).
