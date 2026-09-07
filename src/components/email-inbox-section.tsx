@@ -431,7 +431,7 @@ function GmailBlock({
       {!gmail.connected ? (
         <>
           <p className="mt-2 text-sm text-stone-700 leading-relaxed">
-            האפליקציה תמצא לבד חשבוניות וקבלות בתיבה שלכם, כולל ישנות, ותבדוק כל שעה אם הגיעו חדשות.
+            האפליקציה תמצא לבד חשבוניות וקבלות בתיבה שלכם, כולל ישנות, ותבדוק כל יום אם הגיעו חדשות.
             בלי פילטרים ובלי העברות. ההרשאה היא לקריאה בלבד.
           </p>
           <button
@@ -457,8 +457,8 @@ function GmailBlock({
           )}
           <p className="mt-2 text-xs text-stone-600">
             {gmail.lastSyncAt
-              ? `בדיקה אחרונה: ${formatSince(gmail.lastSyncAt)}. מיילים חדשים נבדקים כל שעה.`
-              : "מיילים חדשים ייבדקו כל שעה. לחשבוניות שכבר קיבלתם, סרקו תקופה:"}
+              ? `בדיקה אחרונה: ${formatSince(gmail.lastSyncAt)}. מיילים חדשים נבדקים פעם ביום.`
+              : "מיילים חדשים ייבדקו פעם ביום. לחשבוניות שכבר קיבלתם, סרקו תקופה:"}
           </p>
 
           <div className="mt-3 flex items-center gap-2 flex-wrap">

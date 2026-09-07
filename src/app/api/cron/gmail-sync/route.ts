@@ -8,7 +8,9 @@ import {
 } from "@/lib/gmail-connect";
 
 /**
- * Hourly: pull new invoice mail for every connected Gmail account.
+ * Daily (Vercel's Hobby plan allows cron jobs no more often than once a
+ * day; see vercel.json): pull new invoice mail for every connected Gmail
+ * account.
  *
  * This is what makes the Gmail filter unnecessary. Each account gets one
  * bounded batch of mail newer than its watermark (two days back on the very
@@ -26,7 +28,7 @@ export const maxDuration = 300;
 const TOTAL_BUDGET_MS = 240_000;
 const PER_ACCOUNT_BUDGET_MS = 40_000;
 const MESSAGES_PER_ACCOUNT = 20;
-const QUOTA_BACKOFF_MS = 24 * 60 * 60_000;
+const QUOTA_BACKOFF_MS = 7 * 24 * 60 * 60_000;
 
 export async function GET(req: Request) {
   const unauthorized = cronAuthError(req);
@@ -66,7 +68,7 @@ export async function GET(req: Request) {
     const owner = Array.isArray(account.businesses) ? account.businesses[0] : account.businesses;
     if (!owner?.user_id) continue;
     // A month's scans spent: nothing will succeed until the cap resets, so
-    // leave that account alone for a day instead of failing it every hour.
+    // leave that account alone for a week instead of failing it every day.
     if (account.last_error === "quota" && account.updated_at && Date.now() - new Date(account.updated_at).getTime() < QUOTA_BACKOFF_MS) {
       continue;
     }

@@ -4,7 +4,8 @@
 // owner to build a Gmail filter by hand and can only ever see NEW mail. This
 // module lets the owner authorise the app on Google once (OAuth, scope
 // gmail.readonly) and then pulls invoice attachments straight from Gmail:
-// a one-time backfill of past months, and an hourly incremental sync.
+// a one-time backfill of past months, and a daily incremental sync (the
+// project's Vercel plan allows cron jobs no more often than once a day).
 //
 // Everything AFTER the bytes are in hand is shared with the webhook path
 // (`scanStoreAndQueue`): size caps, sha256 twin, same-mail same-charge twin,
