@@ -132,11 +132,11 @@ export default function SettingsPage() {
                 <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ftile ftile-${f.tone}`}>
                   <Icon className="w-4 h-4" />
                 </div>
-                <span className="text-sm font-medium text-stone-700 w-40">{f.label}</span>
+                <span className="text-sm font-medium text-stone-700 w-28 sm:w-40 shrink-0">{f.label}</span>
                 {f.placeholder ? (
                   <span className="text-sm italic text-stone-400 flex-1">לא הוגדר</span>
                 ) : (
-                  <span className="text-sm font-semibold text-stone-900 flex-1">{f.value}</span>
+                  <span className="text-sm font-semibold text-stone-900 flex-1 min-w-0 [overflow-wrap:anywhere]">{f.value}</span>
                 )}
               </div>
             );
@@ -215,7 +215,7 @@ export default function SettingsPage() {
                 <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ftile ftile-${f.tone}`}>
                   <Icon className="w-4 h-4" />
                 </div>
-                <span className="text-sm font-medium text-stone-700 w-40">{f.label}</span>
+                <span className="text-sm font-medium text-stone-700 w-28 sm:w-40 shrink-0">{f.label}</span>
                 <span className={`text-sm flex-1 ${isEmpty ? "text-stone-400 italic" : "font-semibold text-stone-900"}`}>
                   {f.value}
                 </span>

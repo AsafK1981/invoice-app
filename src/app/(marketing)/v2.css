@@ -3029,3 +3029,17 @@
     grid-template-columns: minmax(0, 0.86fr) minmax(0, 1.14fr);
   }
 }
+
+/* Phone pass (Asaf, 2026-09-07): the header CTA leaves the logo row on a
+   phone (the drawer carries sign-up); the wordmark link now wraps the brand
+   lockup, so it must not impose the old text styling. */
+@media (max-width: 759.98px) {
+  .v2-theme .v2-header-nav {
+    display: none;
+  }
+}
+.v2-theme .v2-wordmark {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}

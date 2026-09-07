@@ -1148,3 +1148,12 @@
     break-inside: avoid;
   }
 }
+
+/* Phone pass (2026-09-07): a long business e-mail in the header block used
+   to run out of the card on a 390px screen. Let contact strings break
+   anywhere rather than overflow; the print sheet is wide enough that this
+   never triggers on paper. */
+.doc-biz {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}

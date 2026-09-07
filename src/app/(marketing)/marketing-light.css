@@ -3171,3 +3171,30 @@ h3 > .ml-badge-soon {
     }
   }
 }
+
+/* ---- Phone pass (Asaf, 2026-09-07) ------------------------------------
+   The header CTA duplicates the hero button one screen below and crowds
+   the logo row on a phone; it comes back at the tablet breakpoint where
+   the nav lives. The mid-page CTA and the footer stack and centre on a
+   phone instead of wrapping into a left/right split. */
+@media (max-width: 759.98px) {
+  .ml-header-actions {
+    display: none;
+  }
+}
+@media (max-width: 639.98px) {
+  .ml-midcta-in {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .ml-footer-in {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 18px;
+  }
+  .ml-footer-links {
+    justify-content: center;
+    gap: 6px 18px;
+  }
+}

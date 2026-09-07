@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useOptionalUser } from "@/lib/auth";
 import MobileMenu from "./MobileMenu";
+import { BrandLockup } from "@/components/brand-mark";
 
 /**
  * HeaderV2, sticky nav for /vs, /blog, /terms, /privacy, /status,
@@ -58,9 +59,8 @@ export default function HeaderV2() {
       <div className="v2-header-in">
         <div className="v2-header-start">
           <MobileMenu signedIn={!!user} />
-          <Link href={user ? "/product" : "/"} className="v2-wordmark">
-            חשבונית{" "}
-            <span className="v2-wordmark-soft">ידידותית</span>
+          <Link href={user ? "/product" : "/"} className="v2-wordmark" aria-label="חשבונית ידידותית, לדף הבית">
+            <BrandLockup size={30} />
           </Link>
         </div>
         <nav className="v2-header-nav">
