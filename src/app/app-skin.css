@@ -121,25 +121,25 @@ html {
   --dc-paid-bg: #e6f5ee;
   --dc-paid-ink: #2a7a62;
   --dc-paid-line: #bfe6d6;
-  --dc-sent-bg: #e9eef5;
-  --dc-sent-ink: #34506e;
-  --dc-sent-line: #cdd8e6;
+  --dc-sent-bg: #E9ECEF;
+  --dc-sent-ink: #3F4A54;
+  --dc-sent-line: #D5DAE0;
   --dc-draft-bg: #eef0ee;
   --dc-draft-ink: #5f6b76;
   --dc-draft-line: #dce0dd;
   --dc-void-bg: #fdeee6;
-  --dc-void-ink: #b85a32;
+  --dc-void-ink: #A64E2A;
   --dc-void-line: #f3cdb9;
-  --dc-wait-ink: #b85a32;
+  --dc-wait-ink: #A64E2A;
   --dc-wait-bg: #fdeee6;
 
   /* --- document cards: type dots (6px, decorative, label always present) */
   --dc-t-receipt: #2a7a62;  /* mint ink, pairs with the mint row tint */
-  --dc-t-tax-receipt: #4f8f8a;
-  --dc-t-quote: #b89a2c;    /* mustard, pairs with the butter row tint */
-  --dc-t-proforma: #8494bd;
-  --dc-t-tax: #b85a32;      /* peach ink, pairs with the peach row tint */
-  --dc-t-credit: #c46a86;   /* berry, pairs with the pink row tint */
+  --dc-t-tax-receipt: #236653;
+  --dc-t-quote: #7D7259;    /* mustard, pairs with the butter row tint */
+  --dc-t-proforma: #4A5866;
+  --dc-t-tax: #A64E2A;      /* peach ink, pairs with the peach row tint */
+  --dc-t-credit: #8E4223;   /* berry, pairs with the pink row tint */
 
   /* --- document cards: row tints by type. Each type sits on its own hue
      with a visible step between neighbours, still light enough that the
@@ -147,15 +147,15 @@ html {
      bar (see .dc-row) in the matching --dc-t-* colour makes the type
      unmistakable. Re-tuned into the mint / peach family 2026-09-06. */
   --dc-tint-receipt: #e6f5ee;      /* mint */
-  --dc-tint-tax-receipt: #ddf1ef;  /* teal */
+  --dc-tint-tax-receipt: #E0F2EC;  /* teal */
   --dc-tint-tax: #fdeee6;          /* peach */
-  --dc-tint-quote: #fbf6e4;        /* butter */
-  --dc-tint-proforma: #eeedf6;     /* lavender */
-  --dc-tint-credit: #fbe4ec;       /* pink */
+  --dc-tint-quote: #F1EFE6;        /* butter */
+  --dc-tint-proforma: #EAEDF0;     /* lavender */
+  --dc-tint-credit: #F9E1D6;       /* pink */
 
   /* --- document cards: neutral furniture --- */
   --dc-hairline: #eef0ec; /* the card's own internal rule, lighter than --line */
-  --dc-icon: #8b95a0; /* rest-state action glyph, 3.3:1 on white */
+  --dc-icon: #66727D; /* rest-state action glyph, 3.3:1 on white */
 }
 
 /* ---------- base surface + typography ---------- */
@@ -171,10 +171,11 @@ html body {
   background: var(--bg) !important;
   background-attachment: scroll !important;
   color: var(--ink) !important;
-  font-family: var(--font-assistant), var(--font-heebo), "Assistant", "Heebo", system-ui, sans-serif;
+  font-family: var(--font-inter), var(--font-heebo), "Heebo", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
-/* Headings are Rubik (brand book, 2026-09-06); body/UI stays Heebo. Only the
+/* Headings are Heebo (brand pass 2026-09-07; Rubik was tried for a day and
+   dropped - one Hebrew family, Inter for Latin runs). Only the
    family changes - no size is touched. Weight 800 is set on PAGE TITLES (h1)
    only; h2/h3 are card and section titles whose own utility weight is part of
    the established hierarchy, and this sheet is unlayered, so forcing 800 here
@@ -182,7 +183,7 @@ html body {
 html h1,
 html h2,
 html h3 {
-  font-family: var(--font-rubik), "Rubik", var(--font-heebo), sans-serif;
+  font-family: var(--font-inter), var(--font-heebo), "Heebo", sans-serif;
   color: var(--ink);
   letter-spacing: -0.01em;
 }
@@ -196,7 +197,7 @@ html .v2-theme h1,
 html .v2-theme h2,
 html .v2-theme h3 {
   color: inherit;
-  font-family: var(--font-rubik), "Rubik", var(--font-heebo), sans-serif;
+  font-family: var(--font-inter), var(--font-heebo), "Heebo", sans-serif;
 }
 
 /* Display text painted through background-clip: the KPI numbers (.gk-value)
@@ -219,7 +220,7 @@ html .bg-clip-text.from-orange-500.to-orange-700 {
   -webkit-text-fill-color: transparent !important;
 }
 html .gk-value {
-  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+  font-family: var(--font-inter), var(--font-heebo), "Heebo", system-ui, sans-serif;
 }
 /* the coral totals sit on a `.from-orange-500.to-rose-500` CTA ramp rule that
    also paints a drop shadow; text has no business carrying one */
@@ -525,10 +526,10 @@ html .ftile svg { color: var(--ft-ink) !important; }
    (src/lib/feature-tones.ts maps features to them); only the values move.
    Every ink clears 3:1 on its own tint (glyphs are non-text graphics,
    WCAG 1.4.11): peach 4.1:1 · graphite 10.9:1 · mint 4.4:1. */
-html .ftile-amber   { --ft-bg:#fdeee6; --ft-line:#f3cdb980; --ft-ink:#b85a32; }
-html .ftile-orange  { --ft-bg:#fdeee6; --ft-line:#f3cdb980; --ft-ink:#b85a32; }
-html .ftile-rose    { --ft-bg:#fdeee6; --ft-line:#f3cdb980; --ft-ink:#b85a32; }
-html .ftile-pink    { --ft-bg:#fdeee6; --ft-line:#f3cdb980; --ft-ink:#b85a32; }
+html .ftile-amber   { --ft-bg:#fdeee6; --ft-line:#f3cdb980; --ft-ink:#A64E2A; }
+html .ftile-orange  { --ft-bg:#fdeee6; --ft-line:#f3cdb980; --ft-ink:#A64E2A; }
+html .ftile-rose    { --ft-bg:#fdeee6; --ft-line:#f3cdb980; --ft-ink:#A64E2A; }
+html .ftile-pink    { --ft-bg:#fdeee6; --ft-line:#f3cdb980; --ft-ink:#A64E2A; }
 html .ftile-indigo  { --ft-bg:#e9ecef; --ft-line:#d5dae080; --ft-ink:#2f3a45; }
 html .ftile-violet  { --ft-bg:#e9ecef; --ft-line:#d5dae080; --ft-ink:#2f3a45; }
 html .ftile-sky     { --ft-bg:#e9ecef; --ft-line:#d5dae080; --ft-ink:#2f3a45; }
@@ -551,7 +552,7 @@ html .fgrad { color: #fff !important; }
 html .fgrad svg { color: #fff !important; }
 /* Same three-tone rotation as .ftile-*, as a filled tile. These carry WHITE
    glyphs, so the fill has to be the DARK end of each tone (peach ink, not
-   peach): white on #b85a32 is 4.9:1, on #2f3a45 11.6:1, on #2a7a62 5.4:1.
+   peach): white on #A64E2A is 4.9:1, on #2f3a45 11.6:1, on #2a7a62 5.4:1.
    The pale mint / peach themselves would leave the glyph invisible. */
 html .fgrad-indigo  { background: linear-gradient(135deg, #2f3a45, #263039) !important; }
 html .fgrad-violet  { background: linear-gradient(135deg, #2f3a45, #263039) !important; }
@@ -559,8 +560,8 @@ html .fgrad-sky     { background: linear-gradient(135deg, #2f3a45, #263039) !imp
 html .fgrad-slate   { background: linear-gradient(135deg, #2f3a45, #263039) !important; }
 html .fgrad-teal    { background: linear-gradient(135deg, #2a7a62, #236653) !important; }
 html .fgrad-emerald { background: linear-gradient(135deg, #2a7a62, #236653) !important; }
-html .fgrad-pink    { background: linear-gradient(135deg, #b85a32, #8e4223) !important; }
-html .fgrad-orange  { background: linear-gradient(135deg, #b85a32, #8e4223) !important; }
+html .fgrad-pink    { background: linear-gradient(135deg, #A64E2A, #8e4223) !important; }
+html .fgrad-orange  { background: linear-gradient(135deg, #A64E2A, #8e4223) !important; }
 
 /* ---------- KPI markers (dashboard) ---------- */
 html .gk-label {
@@ -2081,7 +2082,7 @@ html .dc-tdot[data-type="credit_note"] { background: var(--dc-t-credit); }
    `max-width` is what caps the (content-sized) client track: without it one
    very long company name would take the width the subject needs. */
 html .dc-name {
-  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+  font-family: var(--font-inter), var(--font-heebo), "Heebo", system-ui, sans-serif;
   font-weight: 700;
   font-size: var(--dc-fs-3);
   color: var(--ink);
@@ -2308,7 +2309,7 @@ html .dc-tail {
    exactly the same x: "1,550 ₪" and "12,000 ₪" share one edge and the column
    is scannable, which naive centring would have destroyed. */
 html .dc-row .dc-cell[data-col="amount"] {
-  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+  font-family: var(--font-inter), var(--font-heebo), "Heebo", system-ui, sans-serif;
   font-weight: 700;
   font-size: var(--dc-fs-4);
   letter-spacing: -0.01em;
@@ -3130,7 +3131,7 @@ html .gk-plan-featured.card-soft {
 html .gk-danger.card-soft {
   border-color: #f3cdb9 !important;
   border-right-width: 3px !important;
-  border-right-color: #b85a32 !important;
+  border-right-color: #A64E2A !important;
   background: linear-gradient(160deg, #fdf6f2, var(--card) 60%) !important;
 }
 
@@ -3278,7 +3279,7 @@ html button:disabled.from-orange-500 * { color: #5a6570 !important; }
 
 @media (min-width: 1024px) {
   html .gk-dashboard h1 {
-    font-family: var(--font-rubik), "Rubik", var(--font-heebo), sans-serif;
+    font-family: var(--font-inter), var(--font-heebo), "Heebo", sans-serif;
     font-weight: 800;
     font-size: 2.35rem;
     line-height: 1.15;
@@ -3620,13 +3621,13 @@ html .usr-dl dt { color: #5f6b76; }
 html .usr-dl dd { margin: 0; font-weight: 500; overflow-wrap: anywhere; }
 html .usr-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.85em; }
 html .usr-note { margin: 0.6rem 0 0; font-size: 0.8rem; color: #5f6b76; }
-html .usr-warn { margin: 1.25rem 0 0; padding: 0.6rem 0.9rem; border-radius: 0.75rem; background: #fdeee6; color: #b85a32; font-size: 0.85rem; }
+html .usr-warn { margin: 1.25rem 0 0; padding: 0.6rem 0.9rem; border-radius: 0.75rem; background: #fdeee6; color: #A64E2A; font-size: 0.85rem; }
 html .usr-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
 html .usr-table th, html .usr-table td { padding: 0.4rem 0.6rem; border-bottom: 1px solid #e4e7e2; text-align: right; }
 html .usr-table th { font-weight: 700; color: #3f4a54; background: #f7f7f2; }
 html .usr-table tfoot td { font-weight: 700; border-top: 2px solid #dce0dd; border-bottom: 0; }
 html .usr-table .usr-num { text-align: left; font-variant-numeric: tabular-nums; }
-html .usr-table .usr-zero td { color: #8b95a0; }
+html .usr-table .usr-zero td { color: #66727D; }
 html .usr-print-head { margin-bottom: 1rem; }
 html .usr-print-biz { font-weight: 700; }
 html .usr-print-title { font-size: 1.2rem; font-weight: 700; margin: 0.15rem 0 0; }

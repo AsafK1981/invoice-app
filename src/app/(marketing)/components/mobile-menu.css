@@ -25,10 +25,10 @@
   transition: background-color 160ms ease-out;
 }
 .mm-burger:active {
-  background: #fff4ea;
+  background: #E6F5EE;
 }
 .mm-burger:focus-visible {
-  outline: 2px solid #e11d48;
+  outline: 2px solid #2F3A45;
   outline-offset: 2px;
 }
 /* Below 760px the headers hide their link rows and this takes over. */
@@ -63,13 +63,13 @@
   inset: 0;
   z-index: 100;
   color: var(--mm-ink);
-  font-family: "Assistant", var(--font-assistant), system-ui, sans-serif;
+  font-family: var(--font-inter), var(--font-heebo), "Heebo", system-ui, sans-serif;
   line-height: 1.5;
   text-align: right;
 }
 .mm-root a[href]:focus-visible,
 .mm-root button:focus-visible {
-  outline: 2px solid #e11d48;
+  outline: 2px solid #2F3A45;
   outline-offset: 2px;
 }
 .mm-backdrop {

@@ -37,7 +37,7 @@
   --v2-ink: #1F252B;
   /* Secondary text. Was #c2b9a8, brightened 2026-08-04 for readability on
      the near-black field; the same requirement on cream points the other
-     way, so this now matches `--ml-muted` (~5.3:1 on #faf7f2). */
+     way, so this now matches `--ml-muted` (~5.3:1 on #F7F7F2). */
   --v2-muted: #5F6B76;
   --v2-card: #ffffff;
   /* Name kept deliberately: ~90 rules reference `--v2-obsidian` as "the
@@ -183,15 +183,15 @@
      component (that sheet is a legal artefact and is frozen), so the colours
      are duplicated here on purpose. If document-paper.css ever repalettes,
      these are the nine values to bring across. */
-  --v2-paper: #efece4;
+  --v2-paper: #F7F7F2;
   --v2-paper-card: #ffffff;
   --v2-paper-line: #e8e1d0;
   --v2-paper-ink: #211c15;
   --v2-paper-ink2: #514a3d;
   --v2-paper-soft: #6f6857;
   --v2-paper-gold: #2F3A45;
-  --v2-paper-goldline: #fdba74;
-  --v2-paper-goldfaint: #fddcc0;
+  --v2-paper-goldline: #BFE6D6;
+  --v2-paper-goldfaint: #BFE6D6;
 
   /* ---- CTA gradient (chrome-bridging pass, 2026-08-14) ----
      Copied BY VALUE from marketing-light.css's `--ml-orange` / `--ml-rose`
@@ -213,8 +213,8 @@
      `--v2-gold-grad` itself is left defined (still read by the unused
      /v2/login auth styles further down) but nothing rendered reads it after
      this pass. */
-  --v2-gold-tint: #fff4ea;
-  --v2-gold-tint-line: #fddcc0;
+  --v2-gold-tint: #E6F5EE;
+  --v2-gold-tint-line: #BFE6D6;
 
   position: relative;
   /* Column flex, so a SHORT page still puts its footer on the bottom edge
@@ -235,7 +235,7 @@
      radial vignette that gave the obsidian design its depth only reads on
      a dark field. */
   background: var(--v2-obsidian);
-  font-family: "Assistant", var(--font-assistant), system-ui, sans-serif;
+  font-family: var(--font-inter), var(--font-heebo), "Heebo", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   /* `clip`, NOT `hidden`. `overflow-x: hidden` forces overflow-y to compute to
      `auto`, which turns this element into the nearest scrollport, and that
@@ -357,7 +357,7 @@
   font-size: var(--v2-fs-body);
   font-weight: 600;
   letter-spacing: 0.02em;
-  color: #3f382c;
+  color: #2F3A45;
   transition: color 0.2s ease;
 }
 .v2-theme .v2-navlink:hover { color: var(--v2-g1); }
@@ -374,15 +374,15 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-family: "Assistant", var(--font-assistant), system-ui, sans-serif;
+  font-family: var(--font-inter), var(--font-heebo), "Heebo", system-ui, sans-serif;
   font-weight: 700;
   font-size: var(--v2-fs-body);
   color: #ffffff;
   min-height: 40px;
   padding: 9px 22px;
-  border-radius: var(--v2-r-pill);
+  border-radius: 12px;
   background: var(--v2-cta-grad);
-  box-shadow: 0 12px 26px -12px rgba(225, 29, 72, 0.4), 0 4px 10px -4px rgba(249, 115, 22, 0.32);
+  box-shadow: 0 12px 26px -12px rgba(47, 58, 69, 0.4), 0 4px 10px -4px rgba(47, 58, 69, 0.24);
   /* nowrap: at 320px a tight row previously squeezed this pill until its own
      label broke onto two lines, turning the rounded pill into an oval
      lozenge. The label must always read as one word; the row around it wraps
@@ -394,7 +394,7 @@
 .v2-theme .v2-btn-gold:hover {
   transform: translateY(-2px) scale(1.015);
   filter: brightness(1.04);
-  box-shadow: 0 20px 38px -14px rgba(225, 29, 72, 0.5), 0 8px 18px -6px rgba(249, 115, 22, 0.36);
+  box-shadow: 0 20px 38px -14px rgba(47, 58, 69, 0.5), 0 8px 18px -6px rgba(47, 58, 69, 0.36);
 }
 
 /* ---------- header/footer wordmark (chrome-bridging pass, 2026-08-14) ----------
@@ -463,7 +463,7 @@
   line-height: 1;
 }
 .v2-theme .v2-logo-word {
-  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+  font-family: var(--font-inter), var(--font-heebo), system-ui, sans-serif;
   font-weight: 700;
   font-size: 22px;
   /* Was +0.01em, which opened up Frank Ruhl's tighter serif fit. Heebo already
@@ -475,7 +475,7 @@
    "ידידותית" broke onto two lines, turning the two-line logo into three
    and growing the header. The kicker must always be one line. */
 .v2-theme .v2-logo-sub {
-  font-family: "Assistant", var(--font-assistant), system-ui, sans-serif;
+  font-family: var(--font-inter), var(--font-heebo), "Heebo", system-ui, sans-serif;
   font-weight: 600;
   font-size: 9.5px;
   letter-spacing: 0.28em;
@@ -554,8 +554,8 @@
    (61.6px at 1100, 76px from 1357 up), so the hero finally responds to a
    wider window instead of being pinned flat from 886px onward. */
 .v2-theme h1.v2-h1 {
-  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
-  font-weight: 900;
+  font-family: var(--font-inter), var(--font-heebo), system-ui, sans-serif;
+  font-weight: 800;
   font-size: clamp(36px, 5.6vw, 76px);
   line-height: 1.04;
   /* -0.02em, not the -0.01em this carried under Frank Ruhl: Heebo 900 sets
@@ -721,7 +721,7 @@
    Libre; this is a deliberate, scoped divergence between mock and product,
    not a re-sync. Same reasoning for `.v2-sh-num` and `.v2-sh-grand` below. */
 .v2-theme .v2-sh-name {
-  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+  font-family: var(--font-inter), var(--font-heebo), system-ui, sans-serif;
   font-size: 1.78em;
   font-weight: 700;
   letter-spacing: -0.01em;
@@ -757,7 +757,7 @@
 .v2-theme .v2-sh-num {
   margin-top: 0.27em;
   /* Heebo: see `.v2-sh-name` above */
-  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+  font-family: var(--font-inter), var(--font-heebo), system-ui, sans-serif;
   font-size: 2.14em;
   font-weight: 700;
   line-height: 1;
@@ -842,7 +842,7 @@
 }
 .v2-theme .v2-sh-table td {
   padding: 0.93em 0.14em;
-  border-bottom: 1px solid #f2eee4;
+  border-bottom: 1px solid #E4E7E2;
   vertical-align: top;
 }
 .v2-theme .v2-sh-table tbody tr:last-child td {
@@ -900,7 +900,7 @@
 }
 .v2-theme .v2-sh-grand {
   /* Heebo: see `.v2-sh-name` above */
-  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+  font-family: var(--font-inter), var(--font-heebo), system-ui, sans-serif;
   font-size: 1.56em;
 }
 
@@ -913,7 +913,7 @@
   padding: 1em 1.43em;
   border: 1px solid var(--v2-paper-goldline);
   border-radius: 1.14em;
-  background: linear-gradient(160deg, #fdfaf1, #faf4e6);
+  background: linear-gradient(160deg, #F7F7F2, #EEF0EC);
   font-size: 0.96em;
   line-height: 1.6;
   color: var(--v2-paper-ink2);
@@ -978,7 +978,7 @@
 .v2-theme .v2-ft b {
   font-size: var(--v2-fs-body);
   font-weight: 600;
-  color: #241e16;
+  color: #1F252B;
 }
 
 /* ---------- launch-offer band ----------
@@ -994,7 +994,7 @@
   border-bottom: 1px solid var(--v2-line-soft);
 }
 .v2-theme .v2-band-now {
-  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+  font-family: var(--font-inter), var(--font-heebo), system-ui, sans-serif;
   font-size: var(--v2-fs-h2);
   font-weight: 700;
   line-height: 1.3;
@@ -1043,7 +1043,7 @@
 }
 .v2-theme .v2-tax-band-icon svg { width: 22px; height: 22px; }
 .v2-theme .v2-tax-band h2 {
-  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+  font-family: var(--font-inter), var(--font-heebo), system-ui, sans-serif;
   font-size: var(--v2-fs-h2);
   font-weight: 700;
   color: var(--v2-ink);
@@ -1073,7 +1073,7 @@
   margin-bottom: var(--v2-sp-4);
 }
 .v2-theme .v2-adv-title {
-  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+  font-family: var(--font-inter), var(--font-heebo), system-ui, sans-serif;
   font-weight: 700;
   font-size: var(--v2-fs-h2);
   color: var(--v2-ink);
@@ -1117,20 +1117,20 @@
    marketing-light.css is deliberately homepage-scoped and its `--ml-*` vars
    only exist under `.ml-theme`.
    Formula, unchanged: tile background = Tailwind `*-100`, glyph = `*-600`. */
-.v2-theme .v2-adv-icon--violet { background: #ede9fe; color: #7c3aed; box-shadow: none; }
-.v2-theme .v2-adv-icon--amber { background: #fef3c7; color: #d97706; box-shadow: none; }
-.v2-theme .v2-adv-icon--green { background: #dcfce7; color: #16a34a; box-shadow: none; }
-.v2-theme .v2-adv-icon--pink { background: #fce7f3; color: #db2777; box-shadow: none; }
-.v2-theme .v2-adv-icon--teal { background: #ccfbf1; color: #0d9488; box-shadow: none; }
-.v2-theme .v2-adv-icon--indigo { background: #e0e7ff; color: #4f46e5; box-shadow: none; }
-.v2-theme .v2-adv-icon--sky { background: #e0f2fe; color: #0284c7; box-shadow: none; }
-.v2-theme .v2-adv-icon--orange { background: #ffedd5; color: #ea580c; box-shadow: none; }
-.v2-theme .v2-adv-icon--cyan { background: #cffafe; color: #0891b2; box-shadow: none; }
-.v2-theme .v2-adv-icon--lime { background: #ecfccb; color: #65a30d; box-shadow: none; }
-.v2-theme .v2-adv-icon--fuchsia { background: #fae8ff; color: #c026d3; box-shadow: none; }
-.v2-theme .v2-adv-icon--rose { background: #FDEEE6; color: #B85A32; box-shadow: none; }
-.v2-theme .v2-adv-icon--yellow { background: #fef9c3; color: #ca8a04; box-shadow: none; }
-.v2-theme .v2-adv-icon--blue { background: #dbeafe; color: #2563eb; box-shadow: none; }
+.v2-theme .v2-adv-icon--violet { background: #E9ECEF; color: #2F3A45; box-shadow: none; }
+.v2-theme .v2-adv-icon--amber { background: #FDEEE6; color: #A64E2A; box-shadow: none; }
+.v2-theme .v2-adv-icon--green { background: #E6F5EE; color: #2A7A62; box-shadow: none; }
+.v2-theme .v2-adv-icon--pink { background: #FDEEE6; color: #A64E2A; box-shadow: none; }
+.v2-theme .v2-adv-icon--teal { background: #E6F5EE; color: #2A7A62; box-shadow: none; }
+.v2-theme .v2-adv-icon--indigo { background: #E9ECEF; color: #2F3A45; box-shadow: none; }
+.v2-theme .v2-adv-icon--sky { background: #E9ECEF; color: #2F3A45; box-shadow: none; }
+.v2-theme .v2-adv-icon--orange { background: #FDEEE6; color: #A64E2A; box-shadow: none; }
+.v2-theme .v2-adv-icon--cyan { background: #E9ECEF; color: #2F3A45; box-shadow: none; }
+.v2-theme .v2-adv-icon--lime { background: #E6F5EE; color: #2A7A62; box-shadow: none; }
+.v2-theme .v2-adv-icon--fuchsia { background: #FDEEE6; color: #A64E2A; box-shadow: none; }
+.v2-theme .v2-adv-icon--rose { background: #FDEEE6; color: #A64E2A; box-shadow: none; }
+.v2-theme .v2-adv-icon--yellow { background: #FDEEE6; color: #A64E2A; box-shadow: none; }
+.v2-theme .v2-adv-icon--blue { background: #E9ECEF; color: #2F3A45; box-shadow: none; }
 
 /* The one flagship card (allocation numbers) keeps the strongest treatment
    here too: the brand orange->rose gradient with a white glyph, exactly like
@@ -1139,7 +1139,7 @@
 .v2-theme .v2-adv-card.is-flagship .v2-adv-icon {
   background: var(--v2-cta-grad);
   color: #ffffff;
-  box-shadow: 0 12px 22px -10px rgba(225, 29, 72, 0.45);
+  box-shadow: 0 12px 22px -10px rgba(47, 58, 69, 0.45);
 }
 
 /* Hover: the whole card drifts to its own hue's `*-50`, same "pop" the
@@ -1157,21 +1157,21 @@
     box-shadow: 0 30px 56px -20px rgba(47, 58, 69, 0.34),
       0 12px 24px -10px rgba(47, 58, 69, 0.2), var(--v2-sh-inset);
   }
-  .v2-theme .v2-adv-card--violet:hover { background: #f5f3ff; border-color: #ddd6fe; }
-  .v2-theme .v2-adv-card--amber:hover { background: #fffbeb; border-color: #fde68a; }
-  .v2-theme .v2-adv-card--green:hover { background: #f0fdf4; border-color: #bbf7d0; }
-  .v2-theme .v2-adv-card--pink:hover { background: #fdf2f8; border-color: #fbcfe8; }
-  .v2-theme .v2-adv-card--teal:hover { background: #f0fdfa; border-color: #99f6e4; }
-  .v2-theme .v2-adv-card--indigo:hover { background: #eef2ff; border-color: #c7d2fe; }
-  .v2-theme .v2-adv-card--sky:hover { background: #f0f9ff; border-color: #bae6fd; }
-  .v2-theme .v2-adv-card--orange:hover { background: #fff7ed; border-color: #fed7aa; }
-  .v2-theme .v2-adv-card--cyan:hover { background: #ecfeff; border-color: #a5f3fc; }
-  .v2-theme .v2-adv-card--lime:hover { background: #f7fee7; border-color: #d9f99d; }
-  .v2-theme .v2-adv-card--fuchsia:hover { background: #fdf4ff; border-color: #f5d0fe; }
-  .v2-theme .v2-adv-card--rose:hover { background: #fff1f2; border-color: #fecdd3; }
-  .v2-theme .v2-adv-card--yellow:hover { background: #fefce8; border-color: #fef08a; }
-  .v2-theme .v2-adv-card--blue:hover { background: #eff6ff; border-color: #bfdbfe; }
-  .v2-theme .v2-adv-card.is-flagship:hover { background: #fff7ed; border-color: #fed7aa; }
+  .v2-theme .v2-adv-card--violet:hover { background: #F2F4F5; border-color: #D5DAE0; }
+  .v2-theme .v2-adv-card--amber:hover { background: #FDEEE6; border-color: #F3CDB9; }
+  .v2-theme .v2-adv-card--green:hover { background: #E6F5EE; border-color: #BFE6D6; }
+  .v2-theme .v2-adv-card--pink:hover { background: #FDEEE6; border-color: #F3CDB9; }
+  .v2-theme .v2-adv-card--teal:hover { background: #E6F5EE; border-color: #BFE6D6; }
+  .v2-theme .v2-adv-card--indigo:hover { background: #F2F4F5; border-color: #D5DAE0; }
+  .v2-theme .v2-adv-card--sky:hover { background: #F2F4F5; border-color: #D5DAE0; }
+  .v2-theme .v2-adv-card--orange:hover { background: #FDEEE6; border-color: #F3CDB9; }
+  .v2-theme .v2-adv-card--cyan:hover { background: #F2F4F5; border-color: #D5DAE0; }
+  .v2-theme .v2-adv-card--lime:hover { background: #E6F5EE; border-color: #BFE6D6; }
+  .v2-theme .v2-adv-card--fuchsia:hover { background: #FDEEE6; border-color: #F3CDB9; }
+  .v2-theme .v2-adv-card--rose:hover { background: #FDEEE6; border-color: #F3CDB9; }
+  .v2-theme .v2-adv-card--yellow:hover { background: #FDEEE6; border-color: #F3CDB9; }
+  .v2-theme .v2-adv-card--blue:hover { background: #F2F4F5; border-color: #D5DAE0; }
+  .v2-theme .v2-adv-card.is-flagship:hover { background: #E6F5EE; border-color: #BFE6D6; }
 }
 @media (prefers-reduced-motion: reduce) {
   .v2-theme .v2-adv-card:hover { transform: none; }
@@ -1187,10 +1187,10 @@
   margin-inline-start: 6px;
   padding: 2px 9px;
   border-radius: var(--v2-r-pill);
-  background: #fffbeb;
-  border: 1px solid #fde68a;
-  color: #78350f;
-  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+  background: #FDEEE6;
+  border: 1px solid #F3CDB9;
+  color: #8E4223;
+  font-family: var(--font-inter), var(--font-heebo), system-ui, sans-serif;
   font-size: 11px;
   font-weight: 700;
   line-height: 1.6;
@@ -1200,7 +1200,7 @@
 }
 
 .v2-theme .v2-adv-card h3 {
-  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+  font-family: var(--font-inter), var(--font-heebo), system-ui, sans-serif;
   font-weight: 700;
   font-size: var(--v2-fs-h3);
   color: var(--v2-ink);
@@ -1219,7 +1219,7 @@
   margin-top: var(--v2-sp-5);
 }
 .v2-theme .v2-faq-title {
-  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+  font-family: var(--font-inter), var(--font-heebo), system-ui, sans-serif;
   font-size: var(--v2-fs-h2);
   font-weight: 700;
   color: var(--v2-ink);
@@ -1258,13 +1258,13 @@
   padding: 15px 42px;
   border-radius: var(--v2-r-pill);
   background: var(--v2-cta-grad);
-  box-shadow: 0 12px 26px -12px rgba(225, 29, 72, 0.4), 0 4px 10px -4px rgba(249, 115, 22, 0.32);
+  box-shadow: 0 12px 26px -12px rgba(47, 58, 69, 0.4), 0 4px 10px -4px rgba(47, 58, 69, 0.32);
   transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s ease;
 }
 .v2-theme .v2-cta:hover {
   transform: translateY(-2px) scale(1.015);
   filter: brightness(1.04);
-  box-shadow: 0 20px 38px -14px rgba(225, 29, 72, 0.5), 0 8px 18px -6px rgba(249, 115, 22, 0.36);
+  box-shadow: 0 20px 38px -14px rgba(47, 58, 69, 0.5), 0 8px 18px -6px rgba(47, 58, 69, 0.36);
 }
 .v2-theme .v2-fine {
   margin-top: 12px;
@@ -1367,7 +1367,7 @@
   font-size: 13.5px;
   font-weight: 600;
   /* = --ml-ink-2 on the homepage; there is no --v2-ink-2 token. */
-  color: #5a5245;
+  color: #5F6B76;
   transition: color 0.2s ease;
 }
 .v2-theme .v2-footer-links a:hover { color: var(--v2-g1); }
@@ -1421,8 +1421,8 @@
   margin-bottom: 12px;
 }
 .v2-theme h1.v2-doc-title {
-  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
-  font-weight: 900;
+  font-family: var(--font-inter), var(--font-heebo), system-ui, sans-serif;
+  font-weight: 800;
   font-size: clamp(30px, 4.4vw, 60px);
   line-height: 1.08;
   letter-spacing: -0.02em;
@@ -1440,7 +1440,7 @@
   margin-top: 12px;
   max-width: var(--v2-measure);
   font-size: var(--v2-fs-lede);
-  color: #3f382c;
+  color: #2F3A45;
   line-height: 1.65;
 }
 
@@ -1459,7 +1459,7 @@
    `##` headings, so one edit re-aligns both. The small gold hairline below
    stays: it is a tag-sized accent, not the heading's own color. */
 .v2-theme .v2-prose h2 {
-  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+  font-family: var(--font-inter), var(--font-heebo), system-ui, sans-serif;
   font-weight: 700;
   font-size: var(--v2-fs-h3);
   color: var(--v2-ink);
@@ -1482,7 +1482,7 @@
 .v2-theme .v2-prose p {
   font-size: var(--v2-fs-lede);
   line-height: 1.75;
-  color: #3f382c;
+  color: #2F3A45;
 }
 .v2-theme .v2-prose a {
   color: var(--v2-g1);
@@ -1514,13 +1514,13 @@
 }
 .v2-theme .v2-status-badge svg { width: 24px; height: 24px; }
 .v2-theme .v2-status-badge.is-ok { color: var(--v2-g2); }
-.v2-theme .v2-status-badge.is-down { color: #b45309; }
+.v2-theme .v2-status-badge.is-down { color: #A64E2A; }
 .v2-theme .v2-status-badge.is-loading { color: var(--v2-muted); }
 .v2-theme .v2-status-badge .spin { animation: v2-spin 1s linear infinite; }
 .v2-theme .v2-status-badge .pulse { animation: v2-pulse 1.4s ease-in-out infinite; }
 .v2-theme h1.v2-status-title {
-  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
-  font-weight: 900;
+  font-family: var(--font-inter), var(--font-heebo), system-ui, sans-serif;
+  font-weight: 800;
   font-size: clamp(26px, 3.4vw, 46px);
   line-height: 1.1;
   letter-spacing: -0.02em;
@@ -1543,7 +1543,7 @@
   border-radius: var(--v2-r-md);
   padding: 16px;
   font-size: var(--v2-fs-body);
-  color: #b45309;
+  color: #A64E2A;
   margin-bottom: 24px;
 }
 
@@ -1570,20 +1570,20 @@
   gap: 10px;
   font-weight: 600;
   font-size: var(--v2-fs-body);
-  color: #241e16;
+  color: #1F252B;
 }
 .v2-theme .v2-status-row .name svg { width: 18px; height: 18px; }
 .v2-theme .v2-status-row.is-ok .name svg { color: var(--v2-g2); }
-.v2-theme .v2-status-row.is-down .name svg { color: #b45309; }
+.v2-theme .v2-status-row.is-down .name svg { color: #A64E2A; }
 .v2-theme .v2-status-row .val {
   font-size: var(--v2-fs-meta);
   font-variant-numeric: tabular-nums;
 }
 .v2-theme .v2-status-row.is-ok .val {
   color: var(--v2-g1);
-  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+  font-family: var(--font-inter), var(--font-heebo), system-ui, sans-serif;
 }
-.v2-theme .v2-status-row.is-down .val { color: #b45309; }
+.v2-theme .v2-status-row.is-down .val { color: #A64E2A; }
 
 .v2-theme .v2-status-meta {
   display: flex;
@@ -1653,7 +1653,7 @@
   text-align: center;
 }
 .v2-theme .v2-auth-title {
-  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+  font-family: var(--font-inter), var(--font-heebo), system-ui, sans-serif;
   font-weight: 700;
   font-size: clamp(24px, 2.4vw, 34px);
   line-height: 1.1;
@@ -1705,14 +1705,14 @@
   font-size: var(--v2-fs-meta);
   font-weight: 600;
   letter-spacing: 0.04em;
-  color: #3f382c;
+  color: #2F3A45;
 }
 .v2-theme .v2-input-wrap {
   position: relative;
 }
 .v2-theme .v2-input {
   width: 100%;
-  font-family: "Assistant", var(--font-assistant), system-ui, sans-serif;
+  font-family: var(--font-inter), var(--font-heebo), "Heebo", system-ui, sans-serif;
   font-size: var(--v2-fs-body);
   color: var(--v2-ink);
   background: rgba(250, 247, 242, 0.85);
@@ -1736,7 +1736,7 @@
   transform: translateY(-50%);
   width: 16px;
   height: 16px;
-  color: #6f6757;
+  color: #5F6B76;
   pointer-events: none;
 }
 .v2-theme .v2-input-toggle {
@@ -1745,7 +1745,7 @@
   top: 50%;
   transform: translateY(-50%);
   display: inline-flex;
-  color: #6f6757;
+  color: #5F6B76;
   background: none;
   border: none;
   cursor: pointer;
@@ -1771,7 +1771,7 @@
   justify-content: center;
   gap: 8px;
   width: 100%;
-  font-family: "Assistant", var(--font-assistant), system-ui, sans-serif;
+  font-family: var(--font-inter), var(--font-heebo), "Heebo", system-ui, sans-serif;
   font-weight: 700;
   font-size: var(--v2-fs-lede);
   color: #ffffff;
@@ -1800,7 +1800,7 @@
   padding: 12px;
 }
 .v2-theme .v2-alert.err {
-  color: #f4b7a8;
+  color: #F6B89E;
   background: rgba(120, 40, 30, 0.22);
   border: 1px solid rgba(200, 90, 70, 0.4);
 }
@@ -1854,7 +1854,7 @@
   justify-content: center;
   gap: 10px;
   width: 100%;
-  font-family: "Assistant", var(--font-assistant), system-ui, sans-serif;
+  font-family: var(--font-inter), var(--font-heebo), "Heebo", system-ui, sans-serif;
   font-weight: 600;
   font-size: var(--v2-fs-body);
   color: var(--v2-ink);
@@ -1942,8 +1942,8 @@
 /* ---------- comparison hero ---------- */
 .v2-theme .v2-cmp-hero { text-align: center; margin-bottom: clamp(28px, 3.4vw, 48px); }
 .v2-theme .v2-cmp-hero h1 {
-  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
-  font-weight: 900;
+  font-family: var(--font-inter), var(--font-heebo), system-ui, sans-serif;
+  font-weight: 800;
   font-size: clamp(30px, 4.4vw, 62px);
   line-height: 1.1;
   letter-spacing: -0.02em;
@@ -1957,7 +1957,7 @@
      7px lands the total at 16.8px / 13.1px against the old flat 14px: the
      closest single value that stays near parity at both ends of the clamp. */
   margin: 0 7px;
-  font-family: "Assistant", var(--font-assistant), system-ui, sans-serif;
+  font-family: var(--font-inter), var(--font-heebo), "Heebo", system-ui, sans-serif;
   font-weight: 400;
   font-size: 0.62em;
   color: var(--v2-muted);
@@ -1969,7 +1969,7 @@
   max-width: var(--v2-measure);
   font-size: var(--v2-fs-lede);
   line-height: 1.7;
-  color: #3f382c;
+  color: #2F3A45;
 }
 .v2-theme .v2-cmp-hero .src {
   margin-top: 12px;
@@ -1987,7 +1987,7 @@
   margin-bottom: var(--v2-sp-2);
 }
 .v2-theme .v2-cmp-h h2 {
-  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+  font-family: var(--font-inter), var(--font-heebo), system-ui, sans-serif;
   font-weight: 700;
   font-size: clamp(20px, 2.4vw, 34px);
   white-space: nowrap;
@@ -2061,7 +2061,7 @@
 /* One token, matching .v2-str h3 and .v2-note-panel h3; the three panel
    headings used to be 17/17/18. */
 .v2-theme .v2-price-card h3 {
-  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+  font-family: var(--font-inter), var(--font-heebo), system-ui, sans-serif;
   font-weight: 700;
   font-size: var(--v2-fs-h3);
   margin-bottom: var(--v2-sp-2);
@@ -2077,7 +2077,7 @@
 .v2-theme .v2-price-card li .plan { color: var(--v2-muted); }
 .v2-theme .v2-price-card li .val {
   font-weight: 700;
-  color: #241e16;
+  color: #1F252B;
   font-variant-numeric: tabular-nums;
   text-align: left;
 }
@@ -2096,7 +2096,7 @@
   max-width: calc(var(--v2-measure) + 34px);
   font-size: var(--v2-fs-body);
   line-height: 1.7;
-  color: #3f382c;
+  color: #2F3A45;
   border: 1px solid var(--v2-line-soft);
   border-radius: var(--v2-r-md);
   padding: var(--v2-sp-2);
@@ -2154,8 +2154,8 @@
      scrolled rows paint over a sticky cell that has no stacking context
      of its own. 10 keeps it under the site header's 20. */
   z-index: 10;
-  background: #f7f2e7;
-  color: #3f382c;
+  background: #EEF0EC;
+  color: #2F3A45;
   font-weight: 700;
   padding: 14px 18px;
   border-bottom: 1px solid var(--v2-line);
@@ -2175,12 +2175,12 @@
 /* section grouping row */
 .v2-theme table.v2-table tr.grp td {
   padding: 14px 18px 8px;
-  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+  font-family: var(--font-inter), var(--font-heebo), system-ui, sans-serif;
   font-weight: 700;
   font-size: var(--v2-fs-body);
   letter-spacing: 0.02em;
   color: var(--v2-g2);
-  background: #faf5ea;
+  background: #F7F7F2;
   border-bottom: 1px solid var(--v2-line-soft);
 }
 .v2-theme table.v2-table tbody td {
@@ -2193,7 +2193,7 @@
   background: rgba(190, 158, 78, 0.03);
 }
 .v2-theme table.v2-table tr.row:hover { background: rgba(190, 158, 78, 0.06); }
-.v2-theme table.v2-table td.feat { color: #241e16; }
+.v2-theme table.v2-table td.feat { color: #1F252B; }
 .v2-theme table.v2-table td.feat .note {
   margin-top: 3px;
   font-size: var(--v2-fs-meta);
@@ -2238,7 +2238,7 @@
   gap: var(--v2-sp-3);
 }
 .v2-theme .v2-str h3 {
-  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+  font-family: var(--font-inter), var(--font-heebo), system-ui, sans-serif;
   font-weight: 700;
   font-size: var(--v2-fs-h3);
   margin-bottom: var(--v2-sp-2);
@@ -2252,7 +2252,7 @@
   gap: 9px;
   font-size: var(--v2-fs-body);
   line-height: 1.5;
-  color: #241e16;
+  color: #1F252B;
 }
 .v2-theme .v2-str li svg { width: 17px; height: 17px; margin-top: 3px; flex: none; }
 .v2-theme .v2-str.them li svg { color: var(--v2-muted); }
@@ -2269,7 +2269,7 @@
 .v2-theme .v2-faq-item:first-child { padding-top: 0; }
 .v2-theme .v2-faq-item:last-child { padding-bottom: 0; }
 .v2-theme .v2-faq-item h3 {
-  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+  font-family: var(--font-inter), var(--font-heebo), system-ui, sans-serif;
   font-weight: 700;
   font-size: var(--v2-fs-h3);
   color: var(--v2-g1);
@@ -2278,7 +2278,7 @@
 .v2-theme .v2-faq-item p {
   font-size: var(--v2-fs-body);
   line-height: 1.6;
-  color: #241e16;
+  color: #1F252B;
   max-width: var(--v2-measure);
 }
 
@@ -2291,7 +2291,7 @@
   text-align: center;
 }
 .v2-theme .v2-launch h3 {
-  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+  font-family: var(--font-inter), var(--font-heebo), system-ui, sans-serif;
   font-weight: 700;
   font-size: var(--v2-fs-h3);
   color: var(--v2-g1);
@@ -2309,7 +2309,7 @@
   gap: 7px;
   font-size: 15px;
   font-weight: 600;
-  color: #5a5245;
+  color: #5F6B76;
 }
 .v2-theme .v2-launch li svg {
   width: 15px;
@@ -2345,7 +2345,7 @@
 .v2-theme .v2-note-panel .ic svg { width: 24px; height: 24px; }
 .v2-theme .v2-note-panel > div:last-child { flex: 1; min-width: 0; }
 .v2-theme .v2-note-panel h3 {
-  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+  font-family: var(--font-inter), var(--font-heebo), system-ui, sans-serif;
   font-weight: 700;
   font-size: var(--v2-fs-h3);
 }
@@ -2354,14 +2354,14 @@
   max-width: var(--v2-measure);
   font-size: var(--v2-fs-body);
   line-height: 1.7;
-  color: #3f382c;
+  color: #2F3A45;
 }
 
 /* ---------- comparison CTA ---------- */
 .v2-theme .v2-cmp-cta { text-align: center; padding: 8px 0 20px; }
 .v2-theme .v2-cmp-cta h2 {
-  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
-  font-weight: 900;
+  font-family: var(--font-inter), var(--font-heebo), system-ui, sans-serif;
+  font-weight: 800;
   font-size: clamp(24px, 3.2vw, 46px);
   letter-spacing: -0.02em;
 }
@@ -2434,7 +2434,7 @@
   box-shadow: var(--v2-sh-hover), var(--v2-sh-edge);
 }
 .v2-theme .v2-vs-card h2 {
-  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+  font-family: var(--font-inter), var(--font-heebo), system-ui, sans-serif;
   font-weight: 700;
   font-size: var(--v2-fs-h2);
   line-height: 1.2;
@@ -2443,7 +2443,7 @@
   margin-top: var(--v2-sp-2);
   font-size: var(--v2-fs-body);
   line-height: 1.65;
-  color: #3f382c;
+  color: #2F3A45;
 }
 /* `margin-top: auto` pins the link to the bottom of the card, so in the
    two-up grid the six cards' "read the full comparison" links line up across
@@ -2532,7 +2532,7 @@
    above already inherited ink with no color rule of its own, so this only
    brings the blog card into line with its sibling. */
 .v2-theme .v2-blog-card h2 {
-  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+  font-family: var(--font-inter), var(--font-heebo), system-ui, sans-serif;
   font-weight: 700;
   font-size: var(--v2-fs-h2);
   line-height: 1.2;
@@ -2542,7 +2542,7 @@
 .v2-theme .v2-blog-card p {
   font-size: var(--v2-fs-body);
   line-height: 1.65;
-  color: #3f382c;
+  color: #2F3A45;
 }
 /* `margin-top: auto`: see the note on .v2-vs-card .more. */
 .v2-theme .v2-blog-card .more {
@@ -2594,8 +2594,8 @@
 
 /* ---------- article body (extends .v2-prose for markdown) ---------- */
 .v2-theme .v2-prose h1 {
-  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
-  font-weight: 900;
+  font-family: var(--font-inter), var(--font-heebo), system-ui, sans-serif;
+  font-weight: 800;
   font-size: clamp(26px, 3.4vw, 46px);
   line-height: 1.15;
   letter-spacing: -0.02em;
@@ -2606,7 +2606,7 @@
 /* Plain ink (body-bridging pass, 2026-08-14) - see .v2-prose h2 above;
    hierarchy comes from size/weight, matching the homepage's approach. */
 .v2-theme .v2-prose h3 {
-  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+  font-family: var(--font-inter), var(--font-heebo), system-ui, sans-serif;
   font-weight: 700;
   font-size: var(--v2-fs-lede);
   color: var(--v2-ink);
@@ -2617,7 +2617,7 @@
 .v2-theme .v2-prose ol {
   margin: 0 0 var(--v2-sp-2);
   padding-inline-start: 22px;
-  color: #3f382c;
+  color: #2F3A45;
   font-size: var(--v2-fs-lede);
   line-height: 1.75;
 }
@@ -2628,7 +2628,7 @@
   margin: 16px 0;
   padding: 4px 16px;
   border-inline-start: 2px solid var(--v2-g2);
-  color: #3f382c;
+  color: #2F3A45;
   font-style: italic;
 }
 .v2-theme .v2-prose hr {
@@ -2647,14 +2647,14 @@
   border: 1px solid var(--v2-line);
   padding: 9px 12px;
   text-align: right;
-  color: #3f382c;
+  color: #2F3A45;
 }
 .v2-theme .v2-prose th {
   color: var(--v2-g1);
   font-weight: 700;
   background: rgba(214, 178, 108, 0.05);
 }
-.v2-theme .v2-prose em { color: #3f382c; }
+.v2-theme .v2-prose em { color: #2F3A45; }
 
 /* ============================================================
    RESPONSIVE OVERRIDES: the ONLY place `@media` may appear.

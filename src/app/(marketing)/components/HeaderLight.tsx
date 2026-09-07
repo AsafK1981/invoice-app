@@ -69,7 +69,7 @@ export default function HeaderLight() {
         <div className="ml-header-start">
           <MobileMenu sections={isHome ? PAGE_SECTIONS : undefined} signedIn={!!user} />
           <Link href={homeHref} className="ml-logo" aria-label="חשבונית ידידותית, לדף הבית">
-            <BrandLockup size={36} />
+            <BrandLockup size={30} tagline={false} />
           </Link>
         </div>
         <nav className="ml-nav">

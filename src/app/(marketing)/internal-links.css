@@ -11,7 +11,7 @@
 
    Card markup deliberately REUSES .v2-blog-list / .v2-blog-card /
    .v2-card-link from the index, so there is no second card primitive
-   here to drift from the first — only the surrounding block.
+   here to drift from the first - only the surrounding block.
    ============================================================ */
 
 /* ---------- "כדאי לקרוא גם" ---------- */
@@ -41,7 +41,7 @@
    down in size because this is a secondary block under an article, not the
    page's main content. */
 .v2-theme .v2-related .v2-blog-card h3 {
-  font-family: "Heebo", var(--font-heebo), system-ui, sans-serif;
+  font-family: var(--font-inter), var(--font-heebo), "Heebo", system-ui, sans-serif;
   font-weight: 700;
   font-size: 1.05rem;
   line-height: 1.3;

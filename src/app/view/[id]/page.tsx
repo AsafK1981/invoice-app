@@ -284,7 +284,7 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-amber-50">
+      <div className="min-h-screen flex items-center justify-center bg-stone-50">
         <p className="text-stone-600 font-medium">{t.loading}</p>
       </div>
     );
@@ -292,7 +292,7 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
 
   if (error || !doc || !business) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-amber-50">
+      <div className="min-h-screen flex items-center justify-center bg-stone-50">
         <div className="bg-white rounded-3xl shadow-lg p-10 text-center max-w-md">
           <div className="text-4xl mb-3">🔍</div>
           <h2 className="font-bold text-stone-900 text-lg mb-2">{t.notFound}</h2>
@@ -308,7 +308,7 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
     // frame around the sheet (BLACK, under the gold skin). document-paper.css
     // flattens anything carrying this marker to white, zero-padding, in print.
     <div
-      className="doc-print-host min-h-screen bg-gradient-to-br from-orange-50 to-amber-50 py-8 px-4"
+      className="doc-print-host min-h-screen bg-stone-50 py-8 px-4"
       dir={docDir(language)}
       lang={language}
     >
@@ -433,7 +433,7 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
           already shouts. */}
       {showBranding && (
         <div className="no-print max-w-[210mm] mx-auto mt-4 mb-2" dir="rtl" lang="he">
-          <div className="rounded-2xl border border-orange-200 bg-gradient-to-l from-orange-50 to-amber-50 p-5 text-center">
+          <div className="rounded-2xl border border-orange-200 bg-orange-50 p-5 text-center">
             <p className="text-sm font-semibold text-stone-800">
               גם אתם מוציאים חשבוניות?
             </p>

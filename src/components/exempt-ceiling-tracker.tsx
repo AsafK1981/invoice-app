@@ -52,7 +52,7 @@ export function ExemptCeilingTracker({ business, documents }: Props) {
   // ceiling nears, and only a real breach paints rose. No teal, no gradients.
   const themes = {
     ok: {
-      border: "border-[#e9e4d8]",
+      border: "border-[#E4E7E2]",
       bar: "bg-stone-900",
       icon: ShieldCheck,
       iconColor: "text-stone-600",
@@ -60,7 +60,7 @@ export function ExemptCeilingTracker({ business, documents }: Props) {
       title: "מחזור שנתי תקין",
     },
     warning: {
-      border: "border-[#e9e4d8]",
+      border: "border-[#E4E7E2]",
       bar: "bg-orange-500",
       icon: TrendingUp,
       iconColor: "text-orange-700",

@@ -49,7 +49,7 @@
   --d-borderw-hdr: 1.5px;
   --d-borderw-grand: 2px;
   --d-card-shadow: 0 1px 2px rgba(47, 58, 69, 0.05);
-  --d-font: var(--font-heebo), "Heebo", system-ui, sans-serif;
+  --d-font: var(--font-inter), var(--font-heebo), "Heebo", system-ui, sans-serif;
   /* Headings on the sheet (business name, document number, client name) are
      Rubik since the 2026-09-06 rebrand; the brand book pairs Rubik headings
      with a Heebo body. A themed business overrides this var. The stack is
@@ -214,7 +214,7 @@
 /* a זיכוי stays visually distinct from an invoice: same language, peach ink */
 .doc-paper .doc-badge.is-credit {
   border-color: #f3cdb9;
-  color: #b85a32;
+  color: #A64E2A;
 }
 .doc-paper .doc-num {
   font-size: calc(30px * var(--d-name-scale));
@@ -591,7 +591,7 @@
 .doc-paper[data-doc-layout="banner"] .doc-badge.is-credit {
   background: #ffffff;
   border-color: #f3cdb9;
-  color: #b85a32;
+  color: #A64E2A;
 }
 .doc-paper[data-doc-layout="banner"] .doc-mini,
 .doc-paper[data-doc-layout="banner"] .doc-info,
@@ -881,7 +881,7 @@
 .doc-paper[data-doc-layout="stage"] .doc-badge.is-credit {
   background: #ffffff;
   border-color: #f3cdb9;
-  color: #b85a32;
+  color: #A64E2A;
 }
 .doc-paper[data-doc-layout="stage"] .doc-num {
   color: var(--d-ink);

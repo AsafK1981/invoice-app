@@ -11,8 +11,8 @@
    variables on <html>. The literal names are kept as a fallback so anything
    rendered outside the root layout still resolves sensibly. */
 @theme inline {
-  --font-sans: var(--font-heebo), "Heebo", system-ui, sans-serif;
-  --font-display: var(--font-rubik), "Rubik", var(--font-heebo), "Heebo", system-ui, sans-serif;
+  --font-sans: var(--font-inter), var(--font-heebo), "Heebo", system-ui, sans-serif;
+  --font-display: var(--font-inter), var(--font-heebo), "Heebo", system-ui, sans-serif;
 }
 
 /* =====================================================================
@@ -24,7 +24,7 @@
    changes the colour behind each meaning, not the meaning, so the ramps
    are re-valued here once instead of rewriting every class.
      orange  -> graphite chrome (solid 500+) over a mint wash (50-400)
-     rose    -> the peach family (peach ink #B85A32 at 500)
+     rose    -> the peach family (peach ink #A64E2A at 500)
      amber   -> the peach family
      emerald -> the mint family (mint ink #2A7A62 at 600)
      green   -> the mint family
@@ -51,11 +51,11 @@
   --color-rose-200: #F3CDB9;
   --color-rose-300: #F6B89E;
   --color-rose-400: #E9997A;
-  --color-rose-500: #B85A32;
-  --color-rose-600: #A64E2A;
-  --color-rose-700: #8E4223;
-  --color-rose-800: #74361C;
-  --color-rose-900: #5C2B16;
+  --color-rose-500: #A64E2A;
+  --color-rose-600: #8E4223;
+  --color-rose-700: #74361C;
+  --color-rose-800: #5C2B16;
+  --color-rose-900: #4A2312;
   --color-rose-950: #3F1D0F;
 
   --color-amber-50: #FDEEE6;
@@ -63,11 +63,11 @@
   --color-amber-200: #F3CDB9;
   --color-amber-300: #F6B89E;
   --color-amber-400: #E9997A;
-  --color-amber-500: #B85A32;
-  --color-amber-600: #A64E2A;
-  --color-amber-700: #8E4223;
-  --color-amber-800: #74361C;
-  --color-amber-900: #5C2B16;
+  --color-amber-500: #A64E2A;
+  --color-amber-600: #8E4223;
+  --color-amber-700: #74361C;
+  --color-amber-800: #5C2B16;
+  --color-amber-900: #4A2312;
   --color-amber-950: #3F1D0F;
 
   --color-emerald-50: #E6F5EE;
@@ -105,24 +105,172 @@
   --color-teal-800: #1C5243;
   --color-teal-900: #163F34;
   --color-teal-950: #0F2A23;
+
+  /* 2026-09-07 brand pass: cool hues collapse onto graphite greys, warm
+     hues onto the peach family, and stone becomes the brand's own neutral
+     ramp, so no purple / blue / yellow / red survives anywhere. */
+
+  --color-blue-50: #F2F4F5;
+  --color-blue-100: #E9ECEF;
+  --color-blue-200: #D5DAE0;
+  --color-blue-300: #B8C0C8;
+  --color-blue-400: #8B95A0;
+  --color-blue-500: #5F6B76;
+  --color-blue-600: #4A5866;
+  --color-blue-700: #3F4A54;
+  --color-blue-800: #2F3A45;
+  --color-blue-900: #263039;
+  --color-blue-950: #1F252B;
+
+  --color-sky-50: #F2F4F5;
+  --color-sky-100: #E9ECEF;
+  --color-sky-200: #D5DAE0;
+  --color-sky-300: #B8C0C8;
+  --color-sky-400: #8B95A0;
+  --color-sky-500: #5F6B76;
+  --color-sky-600: #4A5866;
+  --color-sky-700: #3F4A54;
+  --color-sky-800: #2F3A45;
+  --color-sky-900: #263039;
+  --color-sky-950: #1F252B;
+
+  --color-indigo-50: #F2F4F5;
+  --color-indigo-100: #E9ECEF;
+  --color-indigo-200: #D5DAE0;
+  --color-indigo-300: #B8C0C8;
+  --color-indigo-400: #8B95A0;
+  --color-indigo-500: #5F6B76;
+  --color-indigo-600: #4A5866;
+  --color-indigo-700: #3F4A54;
+  --color-indigo-800: #2F3A45;
+  --color-indigo-900: #263039;
+  --color-indigo-950: #1F252B;
+
+  --color-cyan-50: #F2F4F5;
+  --color-cyan-100: #E9ECEF;
+  --color-cyan-200: #D5DAE0;
+  --color-cyan-300: #B8C0C8;
+  --color-cyan-400: #8B95A0;
+  --color-cyan-500: #5F6B76;
+  --color-cyan-600: #4A5866;
+  --color-cyan-700: #3F4A54;
+  --color-cyan-800: #2F3A45;
+  --color-cyan-900: #263039;
+  --color-cyan-950: #1F252B;
+
+  --color-violet-50: #F2F4F5;
+  --color-violet-100: #E9ECEF;
+  --color-violet-200: #D5DAE0;
+  --color-violet-300: #B8C0C8;
+  --color-violet-400: #8B95A0;
+  --color-violet-500: #5F6B76;
+  --color-violet-600: #4A5866;
+  --color-violet-700: #3F4A54;
+  --color-violet-800: #2F3A45;
+  --color-violet-900: #263039;
+  --color-violet-950: #1F252B;
+
+  --color-purple-50: #F2F4F5;
+  --color-purple-100: #E9ECEF;
+  --color-purple-200: #D5DAE0;
+  --color-purple-300: #B8C0C8;
+  --color-purple-400: #8B95A0;
+  --color-purple-500: #5F6B76;
+  --color-purple-600: #4A5866;
+  --color-purple-700: #3F4A54;
+  --color-purple-800: #2F3A45;
+  --color-purple-900: #263039;
+  --color-purple-950: #1F252B;
+
+  --color-fuchsia-50: #F2F4F5;
+  --color-fuchsia-100: #E9ECEF;
+  --color-fuchsia-200: #D5DAE0;
+  --color-fuchsia-300: #B8C0C8;
+  --color-fuchsia-400: #8B95A0;
+  --color-fuchsia-500: #5F6B76;
+  --color-fuchsia-600: #4A5866;
+  --color-fuchsia-700: #3F4A54;
+  --color-fuchsia-800: #2F3A45;
+  --color-fuchsia-900: #263039;
+  --color-fuchsia-950: #1F252B;
+
+  --color-pink-50: #FDEEE6;
+  --color-pink-100: #FBE1D4;
+  --color-pink-200: #F3CDB9;
+  --color-pink-300: #F6B89E;
+  --color-pink-400: #E9997A;
+  --color-pink-500: #A64E2A;
+  --color-pink-600: #8E4223;
+  --color-pink-700: #74361C;
+  --color-pink-800: #5C2B16;
+  --color-pink-900: #4A2312;
+  --color-pink-950: #3F1D0F;
+
+  --color-yellow-50: #FDEEE6;
+  --color-yellow-100: #FBE1D4;
+  --color-yellow-200: #F3CDB9;
+  --color-yellow-300: #F6B89E;
+  --color-yellow-400: #E9997A;
+  --color-yellow-500: #A64E2A;
+  --color-yellow-600: #8E4223;
+  --color-yellow-700: #74361C;
+  --color-yellow-800: #5C2B16;
+  --color-yellow-900: #4A2312;
+  --color-yellow-950: #3F1D0F;
+
+  --color-lime-50: #FDEEE6;
+  --color-lime-100: #FBE1D4;
+  --color-lime-200: #F3CDB9;
+  --color-lime-300: #F6B89E;
+  --color-lime-400: #E9997A;
+  --color-lime-500: #A64E2A;
+  --color-lime-600: #8E4223;
+  --color-lime-700: #74361C;
+  --color-lime-800: #5C2B16;
+  --color-lime-900: #4A2312;
+  --color-lime-950: #3F1D0F;
+
+  --color-red-50: #FDEEE6;
+  --color-red-100: #FBE1D4;
+  --color-red-200: #F3CDB9;
+  --color-red-300: #F6B89E;
+  --color-red-400: #E9997A;
+  --color-red-500: #A64E2A;
+  --color-red-600: #8E4223;
+  --color-red-700: #74361C;
+  --color-red-800: #5C2B16;
+  --color-red-900: #4A2312;
+  --color-red-950: #3F1D0F;
+
+  --color-stone-50: #F7F7F2;
+  --color-stone-100: #EEF0EC;
+  --color-stone-200: #E4E7E2;
+  --color-stone-300: #C9CFCC;
+  --color-stone-400: #8B95A0;
+  --color-stone-500: #66727D;
+  --color-stone-600: #5F6B76;
+  --color-stone-700: #3F4A54;
+  --color-stone-800: #2F3A45;
+  --color-stone-900: #1F252B;
+  --color-stone-950: #161B20;
 }
 
 /* Brand lockup text (see src/components/brand-mark.tsx). */
 .brand-wordmark {
-  font-family: var(--font-rubik), "Rubik", var(--font-heebo), sans-serif;
-  font-weight: 900;
+  font-family: var(--font-inter), var(--font-heebo), "Heebo", sans-serif;
+  font-weight: 800;
   letter-spacing: -0.01em;
   line-height: 1;
 }
 .brand-tagline {
-  font-family: var(--font-heebo), "Heebo", sans-serif;
+  font-family: var(--font-inter), var(--font-heebo), "Heebo", sans-serif;
   font-weight: 500;
   color: #5F6B76;
   line-height: 1.2;
 }
 
 html {
-  font-family: var(--font-heebo), "Heebo", system-ui, sans-serif;
+  font-family: var(--font-inter), var(--font-heebo), "Heebo", system-ui, sans-serif;
   scroll-behavior: smooth;
   /* Site-wide horizontal-overflow guard. `.v2-theme` already does this on
      itself (see v2.css) for a documented reason: `overflow-x: hidden` would
@@ -170,7 +318,7 @@ select:focus-visible,
 textarea:focus-visible,
 input:not(.input-warm):focus-visible,
 [tabindex]:focus-visible {
-  outline: 2px solid #f97316;
+  outline: 2px solid #2F3A45;
   outline-offset: 2px;
 }
 .input-warm:focus-visible {
@@ -198,7 +346,7 @@ input:not(.input-warm):focus-visible,
   box-shadow:
     0 1px 2px rgba(120, 65, 20, 0.04),
     0 4px 20px rgba(194, 110, 40, 0.06);
-  border: 1px solid #e9e4d8;
+  border: 1px solid #E4E7E2;
   transition: box-shadow 0.3s ease, transform 0.3s ease;
 }
 
@@ -207,7 +355,7 @@ input:not(.input-warm):focus-visible,
 .input-warm {
   width: 100%;
   background: #fffdf9;
-  border: 1.5px solid #fde4c9;
+  border: 1.5px solid #F3CDB9;
   border-radius: 0.9rem;
   padding: 0.55rem 0.85rem;
   font-size: 0.9rem;
@@ -215,13 +363,13 @@ input:not(.input-warm):focus-visible,
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .input-warm:focus {
-  border-color: #f97316;
+  border-color: #9ED8C3;
   background: #ffffff;
   box-shadow: 0 0 0 3px rgba(251, 146, 60, 0.15);
   transform: translateY(-1px);
 }
 .input-warm:hover:not(:focus) {
-  border-color: #fdba74;
+  border-color: #BFE6D6;
 }
 
 /* ========== ANIMATIONS ========== */
@@ -383,13 +531,13 @@ tr {
    emerald 3.65 → 5.48 · rose 4.12 → 6.29 · sky 4.16 → 5.74 · teal 3.74 → 5.47 */
 [class~="text-emerald-600"] { color: #236653 !important; }
 [class~="text-rose-600"] { color: #8E4223 !important; }
-[class~="text-sky-600"] { color: #0369a1 !important; }
+[class~="text-sky-600"] { color: #3F4A54 !important; }
 [class~="text-teal-600"] { color: #236653 !important; }
 /* em-dash "no value" placeholders in the custom report: 1.49:1 → 4.6:1,
    still clearly de-emphasised against the real figures beside them. */
-[class~="text-stone-300"] { color: #776e5d !important; }
+[class~="text-stone-300"] { color: #66727D !important; }
 /* notification-count badge: white on rose-500 was 3.75:1 at 11px. */
-[class~="bg-rose-500"][class~="text-white"] { background-color: #A64E2A !important; }
+[class~="bg-rose-500"][class~="text-white"] { background-color: #8E4223 !important; }
 
 /* Secondary CTA gradients that carry WHITE labels (export-to-Excel, enable
    2FA, beta invites, the Pro plan CTA). White measured 1.94-4.12:1 on the
@@ -410,12 +558,12 @@ tr {
 [class~="from-rose-400"][class~="to-pink-500"],
 [class~="from-rose-500"][class~="to-pink-500"],
 [class~="from-rose-500"][class~="to-red-500"] {
-  background-image: linear-gradient(to left, #B85A32, #8E4223) !important;
+  background-image: linear-gradient(to left, #A64E2A, #74361C) !important;
 }
 [class~="from-sky-400"][class~="to-blue-500"],
 [class~="from-blue-400"][class~="to-indigo-500"],
 [class~="from-blue-500"][class~="to-indigo-500"] {
-  background-image: linear-gradient(to left, #0369a1, #1d4ed8) !important;
+  background-image: linear-gradient(to left, #4A5866, #3F4A54) !important;
 }
 [class~="bg-emerald-500"] { background-color: #2A7A62 !important; }
 

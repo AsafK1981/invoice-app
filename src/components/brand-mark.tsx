@@ -16,7 +16,7 @@ export const BRAND = {
   mintInk: "#2A7A62",
   peach: "#F6B89E",
   peachTint: "#FDEEE6",
-  peachInk: "#B85A32",
+  peachInk: "#A64E2A",
   offWhite: "#F7F7F2",
   border: "#E4E7E2",
   text: "#1F252B",
@@ -83,7 +83,7 @@ type BrandLockupProps = {
 
 /**
  * Mark + wordmark, the horizontal lockup used in the marketing header,
- * the app sidebar and the footer. The wordmark is Rubik 900 (brand book),
+ * the app sidebar and the footer. The wordmark is Heebo 800 (brand pass 2026-09-07),
  * the tagline Heebo. Sizes are derived from `size` so every lockup in the
  * product keeps the same proportions.
  */
@@ -91,13 +91,13 @@ export function BrandLockup({ size = 34, tagline = true, className }: BrandLocku
   return (
     <span
       className={className}
-      style={{ display: "inline-flex", alignItems: "center", gap: Math.round(size * 0.28) }}
+      style={{ display: "inline-flex", alignItems: "center", gap: Math.round(size * 0.3) }}
     >
       <BrandMark size={size} />
       <span style={{ display: "inline-flex", flexDirection: "column", gap: 2, lineHeight: 1 }}>
         <span
           className="brand-wordmark"
-          style={{ fontSize: Math.round(size * 0.62), color: BRAND.graphite }}
+          style={{ fontSize: Math.round(size * 0.7), color: BRAND.graphite }}
         >
           {BRAND.name}
         </span>
