@@ -11,7 +11,7 @@ export default function NotFound() {
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-50 flex items-center justify-center px-6">
       <div className="card-soft p-8 sm:p-12 max-w-md w-full text-center space-y-5">
         <div className="flex items-center justify-center mx-auto">
-          <BrandMark size={64} />
+          <BrandMark size={72} />
         </div>
         <div>
           <h1 className="text-3xl font-bold text-stone-900">404</h1>

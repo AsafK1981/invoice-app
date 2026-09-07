@@ -290,7 +290,7 @@ function LoginForm() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8 animate-fade-in-up">
           <div className="flex items-center justify-center mx-auto">
-            <BrandMark size={64} />
+            <BrandMark size={72} />
           </div>
           {/* Hebrew brand, 2026-08-11. This page is the last step of the
               marketing funnel, and it used to greet arrivals with the Latin

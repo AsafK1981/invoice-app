@@ -148,7 +148,7 @@ export function Sidebar() {
           aria-label={BRAND.name}
           className="flex items-center"
         >
-          <BrandLockup size={30} tagline={false} />
+          <BrandLockup size={32} />
         </Link>
         <div className="flex items-center gap-3 mt-4 pt-4 border-t border-orange-100/60">
           {business.logoUrl ? (

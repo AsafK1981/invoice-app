@@ -108,34 +108,16 @@ export default async function OpengraphImage() {
       >
         {/* The brand mark (same drawing as src/components/brand-mark.tsx;
             satori renders basic svg paths and circles). */}
-        <svg
-          width={128}
-          height={134}
-          viewBox="-14 0 134 140"
-          fill="none"
-          style={{ marginBottom: 28 }}
-        >
-          <path
-            d="M22 8h56l30 30v90a12 12 0 0 1-12 12H22a12 12 0 0 1-12-12V20A12 12 0 0 1 22 8z"
-            fill="#FFFFFF"
-            stroke="#2F3A45"
-            strokeWidth="7"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M78 8v20a10 10 0 0 0 10 10h20z"
-            fill="#9ED8C3"
-            stroke="#2F3A45"
-            strokeWidth="7"
-            strokeLinejoin="round"
-          />
-          <circle cx="40" cy="60" r="5" fill="#2F3A45" />
-          <circle cx="72" cy="60" r="5" fill="#2F3A45" />
-          <path d="M43 76q13 12 26 0" stroke="#2F3A45" strokeWidth="6" strokeLinecap="round" />
-          <circle cx="29" cy="72" r="6" fill="#F6B89E" />
-          <circle cx="83" cy="72" r="6" fill="#F6B89E" />
-          <path d="M30 100h50M30 115h30" stroke="#9ED8C3" strokeWidth="7" strokeLinecap="round" />
-          <path d="M3 118l-10 8M2 106l-12 1" stroke="#2F3A45" strokeWidth="5" strokeLinecap="round" />
+        <svg width={124} height={143} viewBox="0 0 130 150" fill="none" style={{ marginBottom: 26 }}>
+          <path d="M24 6h52l36 36v90a14 14 0 0 1-14 14H24a14 14 0 0 1-14-14V20A14 14 0 0 1 24 6z" fill="#FFFFFF" stroke="#2F3A45" strokeWidth="8" strokeLinejoin="round" />
+          <path d="M76 6v22a14 14 0 0 0 14 14h22z" fill="#F6B89E" stroke="#2F3A45" strokeWidth="8" strokeLinejoin="round" />
+          <path d="M32 58q10-12 20 0M70 58q10-12 20 0" stroke="#2F3A45" strokeWidth="7" strokeLinecap="round" />
+          <path d="M46 74q15 14 30 0" stroke="#2F3A45" strokeWidth="7" strokeLinecap="round" />
+          <circle cx="28" cy="72" r="6.5" fill="#F6B89E" />
+          <circle cx="94" cy="72" r="6.5" fill="#F6B89E" />
+          <path d="M30 100h60M30 114h46M30 128h32" stroke="#9ED8C3" strokeWidth="8" strokeLinecap="round" />
+          <circle cx="100" cy="122" r="17" fill="#9ED8C3" stroke="#FFFFFF" strokeWidth="5" />
+          <path d="M91 122l6 6 12-13" stroke="#2F3A45" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
         <div
           style={{
@@ -182,7 +164,7 @@ export default async function OpengraphImage() {
             color: "#5F6B76",
           }}
         >
-          <div style={{ display: "flex", color: "#2A7A62", letterSpacing: 4 }}>FriendlyInvoice</div>
+          <div style={{ display: "flex" }}><span style={{ color: "#2F3A45" }}>Friendly</span><span style={{ color: "#9ED8C3" }}>Invoice</span></div>
           <div style={{ display: "flex", color: "#BFC5CB" }}>·</div>
           <div style={{ display: "flex", color: "#5F6B76" }}>{tagline}</div>
           <div style={{ display: "flex", color: "#BFC5CB" }}>·</div>

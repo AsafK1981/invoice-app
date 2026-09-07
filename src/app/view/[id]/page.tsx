@@ -324,7 +324,7 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
         </button>
         <button
           onClick={() => window.print()}
-          className="inline-flex items-center gap-2 bg-white border border-orange-200 text-stone-800 px-4 py-2.5 rounded-2xl text-sm font-semibold hover:bg-orange-50"
+          className="inline-flex items-center gap-2 bg-white border-[1.5px] border-orange-500 text-orange-500 px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-stone-50"
           title={t.printTitle}
         >
           <Printer className="w-4 h-4" />

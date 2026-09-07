@@ -256,11 +256,19 @@
 }
 
 /* Brand lockup text (see src/components/brand-mark.tsx). */
-.brand-wordmark {
-  font-family: var(--font-inter), var(--font-heebo), "Heebo", sans-serif;
-  font-weight: 800;
-  letter-spacing: -0.01em;
+.brand-latin {
+  font-family: var(--font-inter), "Inter", system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.02em;
   line-height: 1;
+  white-space: nowrap;
+}
+.brand-wordmark {
+  font-family: var(--font-heebo), "Heebo", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1;
+  white-space: nowrap;
 }
 .brand-tagline {
   font-family: var(--font-inter), var(--font-heebo), "Heebo", sans-serif;

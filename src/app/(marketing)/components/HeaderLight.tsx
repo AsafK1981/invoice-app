@@ -69,7 +69,7 @@ export default function HeaderLight() {
         <div className="ml-header-start">
           <MobileMenu sections={isHome ? PAGE_SECTIONS : undefined} signedIn={!!user} />
           <Link href={homeHref} className="ml-logo" aria-label="חשבונית ידידותית, לדף הבית">
-            <BrandLockup size={30} tagline={false} />
+            <BrandLockup size={34} />
           </Link>
         </div>
         <nav className="ml-nav">
@@ -83,7 +83,7 @@ export default function HeaderLight() {
             מחירים
           </Link>
           {!user && (
-            <Link href="/login" className="ml-navlink">
+            <Link href="/login" className="ml-btn ml-btn-outline ml-btn-sm">
               התחברות
             </Link>
           )}

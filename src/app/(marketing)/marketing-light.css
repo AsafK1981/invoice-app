@@ -250,6 +250,29 @@
   filter: brightness(0.9);
   box-shadow: 0 20px 38px -14px rgba(47, 58, 69, 0.45), 0 8px 18px -6px rgba(47, 58, 69, 0.3);
 }
+/* Brand book v1.0 button set. Primary = graphite/white (above), secondary =
+   peach with dark text, tertiary = white with a 1.5px graphite outline. */
+.ml-theme .ml-btn-peach,
+.v2-theme .ml-btn-peach,
+.ml-btn-peach {
+  background: #F6B89E;
+  color: #1F252B;
+}
+.ml-btn-peach:hover {
+  transform: translateY(-2px);
+  filter: brightness(0.97);
+  box-shadow: 0 12px 26px -12px rgba(47, 58, 69, 0.3);
+}
+.ml-theme .ml-btn-outline,
+.v2-theme .ml-btn-outline,
+.ml-btn-outline {
+  background: #FFFFFF;
+  color: #2F3A45;
+  border: 1.5px solid #2F3A45;
+}
+.ml-btn-outline:hover {
+  background: #F7F7F2;
+}
 .ml-btn-sm {
   padding: 10px 22px;
   font-size: 14.5px;
@@ -379,7 +402,8 @@ h1.ml-hero-h1 {
   /* 46px cap (was 52px): the Hormozi-round headline (2026-08-10) is a
      longer sentence than the old compliance line; at 52px its second line
      overflowed the 740px hero column and orphaned "שלכם" on line 3. */
-  font-size: clamp(29px, 6vw, 46px);
+  font-size: clamp(32px, 4.6vw, 56px);
+  line-height: 1.1;
   line-height: 1.16;
   font-weight: 800;
   letter-spacing: -0.01em;
@@ -480,7 +504,8 @@ h1.ml-hero-h1 {
 .ml-adv-head h2 {
   margin-top: 10px;
   font-family: var(--font-inter), var(--font-heebo), "Heebo", sans-serif;
-  font-size: clamp(25px, 3.6vw, 35px);
+  font-size: clamp(28px, 3.2vw, 38px);
+  line-height: 1.2;
   font-weight: 700;
   line-height: 1.2;
   color: var(--ml-ink-head);
@@ -1003,7 +1028,8 @@ h1.ml-hero-h1 {
 }
 .ml-show-head h2 {
   font-family: var(--font-inter), var(--font-heebo), "Heebo", sans-serif;
-  font-size: clamp(25px, 3.4vw, 33px);
+  font-size: clamp(28px, 3.2vw, 38px);
+  line-height: 1.2;
   font-weight: 700;
   line-height: 1.22;
   color: var(--ml-ink-head);
@@ -2079,7 +2105,8 @@ h3 > .ml-badge-soon {
 }
 .ml-pricing h2 {
   font-family: var(--font-inter), var(--font-heebo), "Heebo", sans-serif;
-  font-size: clamp(25px, 3.6vw, 35px);
+  font-size: clamp(28px, 3.2vw, 38px);
+  line-height: 1.2;
   font-weight: 700;
   color: var(--ml-ink-head);
 }
@@ -2170,7 +2197,8 @@ h3 > .ml-badge-soon {
 .ml-faq-title {
   text-align: center;
   font-family: var(--font-inter), var(--font-heebo), "Heebo", sans-serif;
-  font-size: clamp(25px, 3.6vw, 35px);
+  font-size: clamp(28px, 3.2vw, 38px);
+  line-height: 1.2;
   font-weight: 700;
   color: var(--ml-ink-head);
   margin-bottom: 32px;
@@ -2233,9 +2261,8 @@ h3 > .ml-badge-soon {
   gap: 16px;
 }
 .ml-footer-logo {
-  font-size: 14.5px;
-  font-weight: 800;
-  color: var(--ml-ink);
+  display: inline-flex;
+  align-items: center;
 }
 .ml-footer-links {
   display: flex;
@@ -2311,7 +2338,8 @@ h3 > .ml-badge-soon {
 }
 .ml-spot-head h2 {
   font-family: var(--font-inter), var(--font-heebo), "Heebo", sans-serif;
-  font-size: clamp(26px, 3.6vw, 36px);
+  font-size: clamp(28px, 3.2vw, 38px);
+  line-height: 1.2;
   font-weight: 700;
   line-height: 1.2;
   color: var(--ml-ink-head);

@@ -245,9 +245,10 @@ describe("marketing pages: brand wordmark", () => {
   it("the logo wordmark joins to 'חשבונית ידידותית', not 'חשבוניתידידותית'", async () => {
     const { default: LogoV2 } = await import("../src/app/(marketing)/components/LogoV2");
     const full = toText(renderToStaticMarkup(createElement(LogoV2))).trim();
-    // Since the 2026-09-06 rebrand the full lockup also carries the tagline
-    // after the name; the contract is that the NAME itself stays two words.
-    expect(full.startsWith(APP_NAME)).toBe(true);
+    // Since the brand book (2026-09-07) the full lockup reads
+    // "FriendlyInvoice" + the Hebrew name; the contract is that the Hebrew
+    // NAME itself stays two words.
+    expect(full).toContain(APP_NAME);
     expect(full).not.toContain("חשבוניתידידותית");
 
     const mark = toText(

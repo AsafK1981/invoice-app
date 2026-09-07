@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BrandMark } from "@/components/brand-mark";
+import { BrandLockup } from "@/components/brand-mark";
 
 /**
  * FooterLight, the warm/cream footer for the homepage only.
@@ -17,9 +17,7 @@ export default function FooterLight() {
     <footer className="ml-footer">
       <div className="ml-wrap ml-footer-in">
         <Link href="/" className="ml-footer-logo" aria-label="חשבונית ידידותית, לדף הבית">
-          <BrandMark size={22} />
-          <span className="brand-wordmark" style={{ fontSize: 15 }}>חשבונית ידידותית</span>
-          <span className="ml-footer-latin">FRIENDLYINVOICE</span>
+          <BrandLockup size={30} tagline />
         </Link>
         <nav className="ml-footer-links">
           <Link href="/blog">מגזין</Link>
