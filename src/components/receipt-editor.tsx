@@ -66,6 +66,7 @@ import {
 } from "@/lib/types";
 import { DocumentPreview, type PreviewClient } from "./document-preview";
 import { FormField } from "./ui/form-field";
+import { BankSelect } from "./ui/bank-select";
 import { NumberInput } from "./number-input";
 import {
   loadDraft,
@@ -2516,7 +2517,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                   </FormField>
                 )}
                 {paymentMethod === "check" && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 items-start">
                     <input
                       type="text"
                       value={payDetails.checkNumber || ""}
@@ -2525,12 +2526,9 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                       className="input-warm"
                       dir="ltr"
                     />
-                    <input
-                      type="text"
+                    <BankSelect
                       value={payDetails.checkBank || ""}
-                      onChange={(e) => updatePayDetails({ checkBank: e.target.value })}
-                      placeholder="בנק"
-                      className="input-warm"
+                      onChange={(v) => updatePayDetails({ checkBank: v })}
                     />
                     <input
                       type="text"

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Building2, Upload, X, Image as ImageIcon, Landmark } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 import { FormField } from "@/components/ui/form-field";
+import { BankSelect } from "@/components/ui/bank-select";
 import { BusinessTypeHint } from "@/components/business-type-hint";
 import { saveBusiness } from "@/lib/business-store";
 import { isPlaceholderBusinessName, isPlaceholderBusinessTaxId } from "@/lib/business-init";
@@ -321,14 +322,11 @@ export function BusinessFormModal({ open, onClose, business }: Props) {
           <p className="text-xs text-stone-600 mb-3">
             יוצגו על מסמכים שמשולמים בהעברה בנקאית, כדי שהלקוח יידע לאן לשלוח את הכסף. כל השדות אופציונליים.
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
             <FormField label="בנק">
-              <input
-                type="text"
+              <BankSelect
                 value={form.bankName || ""}
-                onChange={(e) => update("bankName", e.target.value)}
-                placeholder="הפועלים"
-                className="input-warm"
+                onChange={(v) => update("bankName", v)}
               />
             </FormField>
             <FormField label="סניף">
