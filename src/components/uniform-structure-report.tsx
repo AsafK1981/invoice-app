@@ -90,10 +90,10 @@ export function ReportBody({
       <section className="usr-block">
         <h2 className="usr-h2">הפקת קבצים במבנה אחיד עבור:</h2>
         <dl className="usr-dl">
-          <dt>מספר עוסק מורשה:</dt><dd dir="ltr">{taxId}</dd>
+          <dt>מספר עוסק מורשה:</dt><dd><bdi dir="ltr">{taxId}</bdi></dd>
           <dt>שם בית העסק:</dt><dd>{businessName}</dd>
           <dt>מלל קבוע:</dt><dd>ביצוע ממשק פתוח הסתיים בהצלחה.</dd>
-          <dt>הנתונים נשמרו בנתיב הבא:</dt><dd dir="ltr" className="usr-mono">{winPath}</dd>
+          <dt>הנתונים נשמרו בנתיב הבא:</dt><dd><bdi dir="ltr" className="usr-mono">{winPath}</bdi></dd>
           <dt>טווח תאריכים:</dt>
           <dd>מתאריך {formatDate(report.fromDate)} ועד תאריך {formatDate(report.toDate)} (שנת המס {report.taxYear})</dd>
         </dl>
