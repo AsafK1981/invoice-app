@@ -1,3 +1,4 @@
+import { shekel } from "@/lib/format";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type Anthropic from "@anthropic-ai/sdk";
 import { randomUUID } from "node:crypto";
@@ -346,7 +347,7 @@ function heDate(iso: unknown): string {
 }
 
 function money(n: number): string {
-  return `₪${n.toLocaleString("he-IL", { maximumFractionDigits: 2 })}`;
+  return shekel(n.toLocaleString("he-IL", { maximumFractionDigits: 2 }));
 }
 
 /**

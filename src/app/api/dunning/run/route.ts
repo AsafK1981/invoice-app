@@ -1,3 +1,4 @@
+import { formatCurrency } from "@/lib/format";
 import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 import { createClient } from "@supabase/supabase-js";
@@ -81,7 +82,7 @@ function buildHtml(args: {
   const tone = DUNNING_TONES[bucket];
   const vars = {
     n: String(number),
-    total: total.toLocaleString("he-IL"),
+    total: formatCurrency(total),
     date,
     days: String(days),
   };
@@ -135,7 +136,7 @@ function buildText(args: {
   const tone = DUNNING_TONES[bucket];
   const vars = {
     n: String(number),
-    total: total.toLocaleString("he-IL"),
+    total: formatCurrency(total),
     date,
     days: String(days),
   };
@@ -354,7 +355,7 @@ export async function POST(req: NextRequest) {
           businessId: biz.id,
           kind: "dunning_sent",
           title: `נשלחה תזכורת ל-${doc.client_name}`,
-          body: `מסמך #${doc.number} (₪${Number(doc.total).toLocaleString("he-IL")}): תזכורת יום ${bucket}.`,
+          body: `מסמך #${doc.number} (${formatCurrency(Number(doc.total))}): תזכורת יום ${bucket}.`,
           href: `/documents/${doc.id}`,
           documentId: doc.id,
         });

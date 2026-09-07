@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { Wallet, Printer, Download, ExternalLink, Info, Circle } from "lucide-react";
 import { DownloadPdfButton } from "@/components/download-pdf-button";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { formatCurrency, formatDate, shekel } from "@/lib/format";
 import { todayInIsrael } from "@/lib/date";
 import { DOCUMENT_TYPE_LABELS, isCountableRevenue, type InvoiceDocument, type Expense } from "@/lib/types";
 import { computeOpenReceivables } from "@/lib/capital-declaration";
@@ -39,7 +39,7 @@ const NOT_COVERED_CATEGORIES = [
   "נדל״ן: דירות, קרקעות, נכסים מסחריים",
   "ניירות ערך וקרנות נאמנות, לפי עלות מקורית (לא שווי שוק)",
   "רכבים וכלי תחבורה אחרים",
-  "חפצים בעלי ערך מעל ₪1,000 (תכשיטים, אמנות, שעונים וכו׳)",
+  `חפצים בעלי ערך מעל ${shekel("1,000")} (תכשיטים, אמנות, שעונים וכו׳)`,
   "הלוואות והתחייבויות שאתם חייבים לאחרים",
   "נכסים דיגיטליים - מטבעות קריפטוגרפיים וכיו״ב (נוסף לטופס בעדכון 2025)",
 ];
@@ -188,7 +188,7 @@ export function CapitalDeclarationReport({ headless = false, documents, expenses
           <li>נדל״ן</li>
           <li>ניירות ערך וקרנות, לפי עלות מקורית</li>
           <li>רכבים וכלי תחבורה</li>
-          <li>חפצי ערך מעל ₪1,000</li>
+          <li>חפצי ערך מעל {shekel("1,000")}</li>
           <li>הלוואות והתחייבויות</li>
           <li>חייבים - כספים שמגיעים לכם</li>
           <li>נכסים דיגיטליים (נוסף לטופס בעדכון 2025)</li>

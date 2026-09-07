@@ -15,7 +15,7 @@ describe("currencies", () => {
   });
   it("formats an amount with its symbol and 2 decimals", () => {
     expect(formatMoney(1234.5, "USD")).toBe("$1,234.50");
-    expect(formatMoney(1234.5, "ILS")).toBe("₪1,234.50");
+    expect(formatMoney(1234.5, "ILS")).toBe("\u2066₪\u202F1,234.50\u2069");
   });
   it("validates supported currencies", () => {
     expect(isSupportedCurrency("USD")).toBe(true);

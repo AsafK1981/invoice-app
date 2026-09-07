@@ -1,3 +1,4 @@
+import { formatCurrency } from "@/lib/format";
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { createNotificationForBusiness } from "@/lib/notifications-server";
@@ -96,7 +97,7 @@ export async function POST(
       businessId: doc.business_id,
       kind: "quote_approved",
       title: `${doc.client_name} אישר/ה את הצעת המחיר`,
-      body: `הצעת מחיר #${doc.number} על סך ₪${Number(doc.total).toLocaleString("he-IL")} אושרה על-ידי ${signature}.`,
+      body: `הצעת מחיר #${doc.number} על סך ${formatCurrency(Number(doc.total))} אושרה על-ידי ${signature}.`,
       href: `/documents/${id}`,
       documentId: id,
     });

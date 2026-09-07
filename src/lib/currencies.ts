@@ -1,3 +1,5 @@
+import { shekel } from "./format";
+
 export interface Currency {
   code: string;
   symbol: string;
@@ -25,8 +27,12 @@ export function currencySymbol(code: string): string {
 }
 
 export function formatMoney(amount: number, code: string): string {
-  return `${currencySymbol(code)}${amount.toLocaleString("en-US", {
+  const digits = amount.toLocaleString("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  })}`;
+  });
+  // Shekel: sign, small gap, digits, bidi-isolated (see shekel()). Foreign
+  // currencies keep their own convention ("$1,234.50", no gap).
+  if (code === "ILS") return shekel(digits);
+  return `${currencySymbol(code)}${digits}`;
 }

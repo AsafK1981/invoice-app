@@ -1,3 +1,4 @@
+import { formatCurrency } from "@/lib/format";
 import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 import { createClient } from "@supabase/supabase-js";
@@ -61,7 +62,7 @@ function buildHtml(businessName: string, summary: MonthlyReminderSummary): strin
   const openRows = summary.openItems
     .map(
       (item) =>
-        `<li style="margin-bottom:6px;">${escapeHtml(DOCUMENT_TYPE_LABELS[item.type])} #${item.number} - ${escapeHtml(item.clientName)} (₪${item.amount.toLocaleString("he-IL")})</li>`,
+        `<li style="margin-bottom:6px;">${escapeHtml(DOCUMENT_TYPE_LABELS[item.type])} #${item.number} - ${escapeHtml(item.clientName)} (${formatCurrency(item.amount)})</li>`,
     )
     .join("");
 
@@ -120,7 +121,7 @@ function buildText(businessName: string, summary: MonthlyReminderSummary): strin
   if (summary.openItems.length) {
     lines.push("", "מסמכים פתוחים שטרם הפכו לחשבונית:");
     for (const item of summary.openItems) {
-      lines.push(`- ${DOCUMENT_TYPE_LABELS[item.type]} #${item.number} - ${item.clientName} (₪${item.amount.toLocaleString("he-IL")})`);
+      lines.push(`- ${DOCUMENT_TYPE_LABELS[item.type]} #${item.number} - ${item.clientName} (${formatCurrency(item.amount)})`);
     }
   }
   if (summary.missingRetainerClients.length) {

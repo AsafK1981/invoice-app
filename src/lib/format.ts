@@ -10,26 +10,51 @@ const NUM_CENTS = new Intl.NumberFormat("en-US", {
 });
 
 /**
- * ILS amount for display: "₪1,234.50" / "₪1,234" - the shekel sign ALWAYS to
- * the left of the digits, in every context.
+ * Shekel sign + a small gap + already-formatted digits: "₪ 1,234".
+ *
+ * The sign ALWAYS sits to the left of the digits, in every context, and the
+ * gap is a NARROW NO-BREAK SPACE (U+202F): a little visible air between the
+ * sign and the number (Asaf, 2026-09-07: never glued together), narrower than
+ * a word space, and unbreakable so the sign is never orphaned at a line end.
+ * HarfBuzz synthesises it from the regular space glyph when a document font
+ * lacks it, so it renders on the PDF fonts too.
  *
  * Why not the he-IL currency formatter: it emits "1,234 ₪" (sign after), and
  * the sign's visual side then depends on the surrounding direction - a Hebrew
- * RTL paragraph flips it to the left, but any dir="ltr" cell (report tables,
- * KPI tiles, tabular numbers) shows it on the right. "₪1,234" with no space is
- * bidi-stable on its own: a currency sign directly followed by digits is
- * treated as part of the number by the bidi algorithm.
+ * RTL paragraph shows it on the left, but any dir="ltr" cell (report tables,
+ * KPI tiles, tabular numbers) shows it on the right.
  *
- * A negative amount is wrapped in an LTR isolate (U+2066 / U+2069) so the
- * leading minus stays on the left inside Hebrew text too ("-₪1,234", never
- * "₪1,234-"). Positive amounts carry no invisible marks, so the common output
- * is plain text safe for CSV, subjects, and stored labels.
+ * Why the bidi isolate (U+2066 ... U+2069): "₪1,234" with no space was
+ * bidi-stable on its own (a currency sign directly followed by digits is
+ * treated as part of the number), but a space in between is a neutral that
+ * the bidi algorithm resolves against its NEIGHBOURS, so inside a Hebrew
+ * sentence the sign would jump to the far side and read "1,234 ₪". The
+ * isolate turns the whole token into an LTR island, so the sign stays on the
+ * left in Hebrew prose and in LTR cells alike. A leading minus goes INSIDE
+ * the isolate for the same reason ("-₪ 1,234", never "₪ 1,234-").
+ *
+ * Every shekel amount a user can see is built through this helper
+ * (formatCurrency, formatMoney for ILS, the tax-authority threshold, chart
+ * ticks, WhatsApp/e-mail bodies, hard-coded marketing figures), so the
+ * sign-side and gap convention lives in one place.
+ */
+export function shekel(digits: string, negative = false): string {
+  return `\u2066${negative ? "-" : ""}₪\u202F${digits}\u2069`;
+}
+
+/**
+ * ILS amount for display: "₪ 1,234.50" / "₪ 1,234" - see {@link shekel} for
+ * the sign side, the gap and the bidi isolate. Whole amounts drop the cents.
+ *
+ * The output carries the invisible isolate marks. They render as nothing in
+ * subjects, CSV cells, notification bodies and stored labels, but this is
+ * display text: never parse it back into a number.
  */
 export function formatCurrency(amount: number): string {
   const abs = Math.abs(amount);
   const digits = (abs % 1 === 0 ? NUM_WHOLE : NUM_CENTS).format(abs);
   const isNegative = amount < 0 && /[1-9]/.test(digits);
-  return isNegative ? `\u2066-₪${digits}\u2069` : `₪${digits}`;
+  return shekel(digits, isNegative);
 }
 
 /**

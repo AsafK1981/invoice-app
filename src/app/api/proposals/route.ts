@@ -1,3 +1,4 @@
+import { formatCurrency } from "@/lib/format";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { createNotificationForBusiness } from "@/lib/notifications-server";
@@ -331,7 +332,7 @@ export async function POST(req: NextRequest) {
       businessId,
       kind: "proposal_ready",
       title: "חשבונית מוכנה לאישור",
-      body: `${subject} · ₪${parsed.total.toLocaleString("he-IL")}`,
+      body: `${subject} · ${formatCurrency(parsed.total)}`,
       href: "/dashboard",
     });
   } catch {

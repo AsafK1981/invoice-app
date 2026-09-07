@@ -28,6 +28,7 @@
  *      authorize us to act on their VAT-number-scoped behalf
  */
 
+import { shekel } from "./format";
 import type { InvoiceDocument } from "./types";
 import { logToAxiom } from "./axiom-logger";
 
@@ -155,13 +156,12 @@ export function allocationRequiredThreshold(date: Date = new Date()): number {
 export const ALLOCATION_THRESHOLD_NIS = getAllocationThresholdForYear(new Date().getFullYear());
 
 /**
- * ₪ amount for UI copy ("₪5,000"), wrapped in a bidi isolate so it keeps its
- * LTR shape when it sits inside a Hebrew sentence (without it the shekel sign
- * flips to the far side and reads "5,000₪").
+ * ₪ amount for UI copy ("₪ 5,000"): sign, small gap, digits, wrapped in a
+ * bidi isolate so it keeps its LTR shape inside a Hebrew sentence (see
+ * shekel() in format.ts).
  */
 export function formatThreshold(amount: number): string {
-  // Wrapped in U+2066 LEFT-TO-RIGHT ISOLATE / U+2069 POP DIRECTIONAL ISOLATE.
-  return `⁦₪${amount.toLocaleString("en-US")}⁩`;
+  return shekel(amount.toLocaleString("en-US"));
 }
 
 /**

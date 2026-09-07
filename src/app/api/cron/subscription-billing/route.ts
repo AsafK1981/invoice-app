@@ -1,3 +1,4 @@
+import { formatCurrency } from "@/lib/format";
 import { NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 import { cronAuthError, cronAdminClient } from "@/lib/cron";
@@ -482,7 +483,7 @@ async function sendFailureEmail(
     </div>
     <div style="background:#ffffff;border:1px solid #e8ddd0;border-radius:12px;padding:24px;margin-bottom:24px;">
       <p style="margin:0 0 12px 0;font-size:16px;color:#1f232b;">שלום,</p>
-      <p style="margin:0 0 16px 0;font-size:15px;color:#1f232b;line-height:1.6;">ניסינו לחייב את הכרטיס עבור מנוי ${planName} (₪${amount}) מספר פעמים ולא הצלחנו. המנוי הושהה כרגע.</p>
+      <p style="margin:0 0 16px 0;font-size:15px;color:#1f232b;line-height:1.6;">ניסינו לחייב את הכרטיס עבור מנוי ${planName} (${formatCurrency(amount)}) מספר פעמים ולא הצלחנו. המנוי הושהה כרגע.</p>
       <p style="margin:0 0 12px 0;font-size:14px;color:#1f232b;line-height:1.6;">כדי לחדש את הגישה המלאה, אפשר להתחבר ולהזין אמצעי תשלום מעודכן.</p>
     </div>
     <div style="text-align:center;margin-bottom:24px;">
@@ -495,7 +496,7 @@ async function sendFailureEmail(
 
   const text = `שלום,
 
-ניסינו לחייב את הכרטיס עבור מנוי ${planName} (₪${amount}) מספר פעמים ולא הצלחנו. המנוי הושהה.
+ניסינו לחייב את הכרטיס עבור מנוי ${planName} (${formatCurrency(amount)}) מספר פעמים ולא הצלחנו. המנוי הושהה.
 
 לחידוש המנוי:
 ${billingUrl}

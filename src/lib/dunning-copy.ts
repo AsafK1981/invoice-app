@@ -1,3 +1,5 @@
+import { formatCurrency } from "@/lib/format";
+
 // One source of truth for the collection-reminder wording, shared by the two
 // channels that use it:
 //
@@ -23,17 +25,17 @@ export const DUNNING_SUBJECTS: Record<DunningStage, string> = {
 
 export const DUNNING_TONES: Record<DunningStage, { intro: string; cta: string; signoff: string }> = {
   3: {
-    intro: "מקווה שהמסמך הגיע בסדר. רק רציתי לוודא שראיתם את חשבונית מס מספר {n} על סך ₪{total} ששלחנו ב-{date}.",
+    intro: "מקווה שהמסמך הגיע בסדר. רק רציתי לוודא שראיתם את חשבונית מס מספר {n} על סך {total} ששלחנו ב-{date}.",
     cta: "אם נוח לכם, אשמח לסגור את התשלום. כל פרטי התשלום נמצאים בחשבונית.",
     signoff: "תודה רבה,",
   },
   14: {
-    intro: "אנחנו עוקבים אחרי חשבונית מספר {n} על סך ₪{total} ששלחנו ב-{date}. חלפו כבר {days} ימים ולא ראינו את התשלום.",
+    intro: "אנחנו עוקבים אחרי חשבונית מספר {n} על סך {total} ששלחנו ב-{date}. חלפו כבר {days} ימים ולא ראינו את התשלום.",
     cta: "אשמח לקבל עדכון: האם התשלום בוצע ולא הגיע, או שעדיין מתעכב?",
     signoff: "תודה,",
   },
   30: {
-    intro: "חשבונית מספר {n} על סך ₪{total} מ-{date} עדיין לא שולמה. חלפו {days} ימים.",
+    intro: "חשבונית מספר {n} על סך {total} מ-{date} עדיין לא שולמה. חלפו {days} ימים.",
     cta: "אנא תאמו אתנו תאריך תשלום בהקדם. אם יש בעיה או שאלה, נשמח לסייע.",
     signoff: "בכבוד רב,",
   },
@@ -73,7 +75,7 @@ export function dunningStageFor(days: number): DunningStage | null {
  * tone on them there would sound like chasing someone who is not late.
  */
 export const PRE_STAGE_TONE = {
-  intro: "שלחתי לך את החשבונית מספר {n} על סך ₪{total} מ-{date}, אשמח לתשלום.",
+  intro: "שלחתי לך את החשבונית מספר {n} על סך {total} מ-{date}, אשמח לתשלום.",
   cta: "כל פרטי התשלום נמצאים במסמך. אם כבר שילמת, אפשר להתעלם מההודעה.",
   signoff: "תודה,",
 };
@@ -106,7 +108,7 @@ export function whatsappReminderText(args: ReminderTextArgs): string {
   const tone = toneForStage(args.stage);
   const vars = {
     n: String(args.number),
-    total: args.total.toLocaleString("he-IL"),
+    total: formatCurrency(args.total),
     date: args.date,
     days: String(args.days),
   };

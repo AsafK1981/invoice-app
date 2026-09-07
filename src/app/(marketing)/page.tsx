@@ -1,3 +1,4 @@
+import { shekel } from "@/lib/format";
 import type { Metadata } from "next";
 import type { CSSProperties } from "react";
 import Link from "next/link";
@@ -528,10 +529,10 @@ export default function MarketingLanding() {
               <p className="ml-price-later">בהמשך, אלה יהיו המסלולים:</p>
               <div className="ml-price-plans">
                 <span className="ml-price-plan">
-                  מסלול בסיסי · <b>₪15 לחודש</b>
+                  מסלול בסיסי · <b>{shekel("15")} לחודש</b>
                 </span>
                 <span className="ml-price-plan">
-                  <Ltr>Pro</Ltr> ללא הגבלה · <b>₪25 לחודש</b>
+                  <Ltr>Pro</Ltr> ללא הגבלה · <b>{shekel("25")} לחודש</b>
                 </span>
               </div>
               <p className="ml-price-later">למצטרפים בהשקה - חודש ראשון חינם</p>
@@ -698,7 +699,7 @@ export default function MarketingLanding() {
                         </div>
                         <div>
                           <dt>סכום</dt>
-                          <dd>₪1,200.00</dd>
+                          <dd>{shekel("1,200.00")}</dd>
                         </div>
                         <div>
                           <dt>תשלום</dt>
@@ -762,11 +763,11 @@ export default function MarketingLanding() {
                         </div>
                         <div>
                           <dt>סכום</dt>
-                          <dd>₪312.40</dd>
+                          <dd>{shekel("312.40")}</dd>
                         </div>
                         <div>
                           <dt>מע״מ</dt>
-                          <dd>₪47.65</dd>
+                          <dd>{shekel("47.65")}</dd>
                         </div>
                         <div>
                           <dt>קטגוריה</dt>
@@ -852,17 +853,17 @@ export default function MarketingLanding() {
                         <tr>
                           <td className="c-desc">עיצוב לוגו ומיתוג</td>
                           <td className="c-qty">1</td>
-                          <td className="c-total">₪3,200</td>
+                          <td className="c-total">{shekel("3,200")}</td>
                         </tr>
                         <tr>
                           <td className="c-desc">דף נחיתה</td>
                           <td className="c-qty">1</td>
-                          <td className="c-total">₪1,450</td>
+                          <td className="c-total">{shekel("1,450")}</td>
                         </tr>
                         <tr>
                           <td className="c-desc">ייעוץ חזותי</td>
                           <td className="c-qty">1</td>
-                          <td className="c-total">₪600</td>
+                          <td className="c-total">{shekel("600")}</td>
                         </tr>
                       </tbody>
                     </table>
@@ -872,17 +873,17 @@ export default function MarketingLanding() {
                     <div className="ml-sh-card ml-sh-breakdown">
                       <div className="ml-sh-brow">
                         <span>סכום ביניים</span>
-                        <span>₪5,250</span>
+                        <span>{shekel("5,250")}</span>
                       </div>
                       <div className="ml-sh-brow">
                         <span>
                           מע״מ <Ltr>18%</Ltr>
                         </span>
-                        <span>₪945</span>
+                        <span>{shekel("945")}</span>
                       </div>
                       <div className="ml-sh-brow is-grand">
                         <span>סה״כ לתשלום</span>
-                        <span className="ml-sh-grand">₪6,195</span>
+                        <span className="ml-sh-grand">{shekel("6,195")}</span>
                       </div>
                     </div>
                   </div>
@@ -1020,24 +1021,24 @@ export default function MarketingLanding() {
                     <div className="ml-app-stats">
                       <div className="ml-app-stat is-emerald">
                         <span className="ml-app-stat-l">הכנסות</span>
-                        <span className="ml-app-stat-v">₪24,180</span>
+                        <span className="ml-app-stat-v">{shekel("24,180")}</span>
                         <span className="ml-app-stat-s">
                           6 מסמכים שולמו <b className="is-up">▲ 18%</b>
                         </span>
                       </div>
                       <div className="ml-app-stat is-rose">
                         <span className="ml-app-stat-l">הוצאות</span>
-                        <span className="ml-app-stat-v">₪5,940</span>
+                        <span className="ml-app-stat-v">{shekel("5,940")}</span>
                         <span className="ml-app-stat-s">11 פעולות</span>
                       </div>
                       <div className="ml-app-stat is-amber">
                         <span className="ml-app-stat-l">רווח</span>
-                        <span className="ml-app-stat-v">₪18,240</span>
+                        <span className="ml-app-stat-v">{shekel("18,240")}</span>
                         <span className="ml-app-stat-s">75% מההכנסות</span>
                       </div>
                       <div className="ml-app-stat is-violet">
                         <span className="ml-app-stat-l">ממוצע למסמך</span>
-                        <span className="ml-app-stat-v">₪4,030</span>
+                        <span className="ml-app-stat-v">{shekel("4,030")}</span>
                         <span className="ml-app-stat-s">
                           לפי מסמכים שולמו
                         </span>
@@ -1061,7 +1062,7 @@ export default function MarketingLanding() {
                       <div className="ml-app-plot">
                         <div className="ml-app-yaxis" aria-hidden="true">
                           {CHART_TICKS.map((t) => (
-                            <span key={t}>{`₪${t / 1000}K`}</span>
+                            <span key={t}>{shekel(`${t / 1000}K`)}</span>
                           ))}
                         </div>
                         <div className="ml-app-bars" aria-hidden="true">

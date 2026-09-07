@@ -1,3 +1,4 @@
+import { shekel } from "@/lib/format";
 import Link from "next/link";
 import { ArrowRight, ArrowLeft, Check } from "lucide-react";
 import { Ltr, LtrText } from "@/components/ui/ltr";
@@ -18,10 +19,10 @@ import { PRICING_ADVANTAGES } from "../advantages";
 
 export const metadata = pageMetadata({
   path: "/pricing",
-  title: "מחירים - חינם בהשקה, אחר כך ₪15-25 לחודש",
+  title: `מחירים - חינם בהשקה, אחר כך ${shekel("15-25")} לחודש`,
   ogTitle: "מחירים | חשבונית ידידותית",
   description:
-    "בתקופת ההשקה הכול חינם, בלי כרטיס אשראי. בהמשך: מסלול בסיסי ב-₪15 לחודש (עד 30 מסמכים) או Pro ב-₪25 לחודש (ללא הגבלה), עם חודש ראשון חינם למצטרפים בהשקה.",
+    `בתקופת ההשקה הכול חינם, בלי כרטיס אשראי. בהמשך: מסלול בסיסי ב-${shekel("15")} לחודש (עד 30 מסמכים) או Pro ב-${shekel("25")} לחודש (ללא הגבלה), עם חודש ראשון חינם למצטרפים בהשקה.`,
   keywords: [
     "מחיר תוכנת חשבוניות",
     "כמה עולה תוכנת חשבוניות",
@@ -165,7 +166,7 @@ export default function PricingPage() {
               <ul>
                 <li>
                   <span className="plan">מחיר</span>
-                  <span className="val">₪15 לחודש</span>
+                  <span className="val">{shekel("15")} לחודש</span>
                 </li>
                 <li>
                   <span className="plan">מסמכים</span>
@@ -190,7 +191,7 @@ export default function PricingPage() {
               <ul>
                 <li>
                   <span className="plan">מחיר</span>
-                  <span className="val">₪25 לחודש</span>
+                  <span className="val">{shekel("25")} לחודש</span>
                 </li>
                 {/* Same three rows as בסיסי above, in the same order, so the
                     two cards read as one table and the only difference the eye

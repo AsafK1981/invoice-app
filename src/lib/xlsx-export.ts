@@ -125,7 +125,7 @@ const FONT = "Arial";
 
 const NUM_FMT: Record<CellKind, string | undefined> = {
   text: undefined,
-  money: '"₪"#,##0.00;-"₪"#,##0.00',
+  money: '"₪ "#,##0.00;-"₪ "#,##0.00',
   int: "#,##0",
   percent: '0"%"',
   date: "dd.mm.yyyy",

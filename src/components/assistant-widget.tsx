@@ -244,7 +244,7 @@ function ReplyText({ text, onNavigate }: { text: string; onNavigate: () => void 
 
 const SUGGESTIONS = [
   "כמה הכנסתי החודש?",
-  "תוסיף הוצאה: ₪120 בסופר-פארם",
+  "תוסיף הוצאה: 120 ₪ בסופר-פארם",
   "מי הלקוח שהכי הכניס לי השנה?",
 ];
 

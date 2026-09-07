@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { isCountableRevenue, type InvoiceDocument, type Expense } from "@/lib/types";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, shekel } from "@/lib/format";
 
 interface Props {
   documents: InvoiceDocument[];
@@ -146,8 +146,8 @@ function kLabel(v: unknown): string {
   const n = typeof v === "number" ? v : Number(v);
   if (!n || Number.isNaN(n)) return "";
   // Daily buckets are often under ₪1000 - "₪0k" would be nonsense there.
-  if (n < 1000) return `₪${Math.round(n)}`;
-  return `₪${Math.round(n / 1000)}k`;
+  if (n < 1000) return shekel(String(Math.round(n)));
+  return shekel(`${Math.round(n / 1000)}k`);
 }
 
 
@@ -236,10 +236,10 @@ function niceScale(maxVal: number): { yMax: number; ticks: number[] } {
 
 /** ₪ tick label for the right-side y-axis. */
 function tickLabel(v: number): string {
-  if (v === 0) return "₪0";
-  if (v < 1000) return `₪${v}`;
+  if (v === 0) return shekel("0");
+  if (v < 1000) return shekel(String(v));
   const k = v / 1000;
-  return Number.isInteger(k) ? `₪${k}k` : `₪${k.toFixed(1)}k`;
+  return shekel(Number.isInteger(k) ? `${k}k` : `${k.toFixed(1)}k`);
 }
 
 /**

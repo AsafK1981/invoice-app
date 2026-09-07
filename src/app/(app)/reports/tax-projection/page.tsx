@@ -15,7 +15,7 @@ import { useDocuments } from "@/lib/document-store";
 import { isCountableRevenue } from "@/lib/types";
 import { useExpenses } from "@/lib/expense-store";
 import { useBusiness } from "@/lib/business-store";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, shekel } from "@/lib/format";
 import { NumberInput } from "@/components/number-input";
 import {
   projectAnnualTax,
@@ -172,7 +172,7 @@ export default function TaxProjectionPage() {
           />
           <Bar
             label="ביטוח לאומי + דמי בריאות"
-            description="7.7% עד ~₪7,700 לחודש, 18% מעל זה."
+            description={`7.7% עד ~${shekel("7,700")} לחודש, 18% מעל זה.`}
             value={projection.bituachLeumi}
             total={projection.totalTax}
             color="from-violet-400 to-violet-500"

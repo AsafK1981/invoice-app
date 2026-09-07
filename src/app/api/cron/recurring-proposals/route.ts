@@ -1,3 +1,4 @@
+import { formatCurrency } from "@/lib/format";
 import { NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -484,7 +485,7 @@ async function proposePattern(
       businessId: biz.id,
       kind: "proposal_ready",
       title: "מסמך חוזר מוכן לאישור",
-      body: `${subject} · ₪${parsed.total.toLocaleString("he-IL")}`,
+      body: `${subject} · ${formatCurrency(parsed.total)}`,
       href: "/dashboard",
     });
   } catch {
@@ -582,7 +583,7 @@ async function sendPatternEmail(
   if (!to) return;
 
   const typeLabel = DOCUMENT_TYPE_LABELS[proposal.documentType] || "מסמך";
-  const amount = `₪${proposal.total.toLocaleString("he-IL")}`;
+  const amount = formatCurrency(proposal.total);
   // For a VAT-liable business the proposed lines are pre-VAT, so the number
   // in the mail is not the number on the finished document. Say so rather
   // than let the mail and the card disagree.

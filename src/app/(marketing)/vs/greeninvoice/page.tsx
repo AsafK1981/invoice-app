@@ -1,6 +1,7 @@
 import { ComparisonViewV2 } from "../../components/ComparisonViewV2";
 import { COMPETITORS } from "@/lib/comparison-data";
 import { vsMetadata } from "../vs-metadata";
+import { shekel } from "@/lib/format";
 
 const competitor = COMPETITORS.greeninvoice;
 
@@ -11,7 +12,7 @@ export const metadata = vsMetadata({
   // 2026-08-23). Lead with the price question, then the free alternative.
   title: "חשבונית ירוקה מחיר 2026: כל המסלולים, ומה החלופה החינמית",
   description:
-    "כמה עולה חשבונית ירוקה? Basic ₪29, Best ₪54, Extra ₪89, Prime ₪155 לחודש (נבדק 8/2026). האם היא מומלצת, ואיפה מקבלים את אותם פיצ׳רים בחינם: השוואה הוגנת מול חשבונית ידידותית.",
+    `כמה עולה חשבונית ירוקה? Basic ${shekel("29")}, Best ${shekel("54")}, Extra ${shekel("89")}, Prime ${shekel("155")} לחודש (נבדק 8/2026). האם היא מומלצת, ואיפה מקבלים את אותם פיצ׳רים בחינם: השוואה הוגנת מול חשבונית ידידותית.`,
   keywords: [
     "חשבונית ירוקה מחיר",
     "חשבונית ירוקה עלות",

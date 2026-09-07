@@ -95,7 +95,7 @@ describe("whatsappReminderText", () => {
     const text = whatsappReminderText({ ...BASE, days: 1, stage: null });
     expect(text).toContain("שלחתי לך את החשבונית מספר 137");
     expect(text).toContain("אשמח לתשלום");
-    expect(text).toContain("על סך ₪2,340");
+    expect(text).toContain("על סך \u2066₪\u202F2,340\u2069");
     expect(text).not.toContain("{");
     expect(text).not.toContain("חלפו");
     expect(text).toContain(BASE.viewUrl);

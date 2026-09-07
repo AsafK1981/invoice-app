@@ -251,7 +251,7 @@ export function BankImportModal({ open, onClose, unpaidDocuments, onPaid }: Prop
               userId,
               kind: "payment_matched",
               title: `תשלום זוהה: ${matchedDoc.clientName}`,
-              body: `מסמך #${matchedDoc.number} (₪${matchedDoc.total.toLocaleString("he-IL")}) סומן כשולם לפי תנועה בבנק ב-${formatDate(m.tx.date)}.`,
+              body: `מסמך #${matchedDoc.number} (${formatCurrency(matchedDoc.total)}) סומן כשולם לפי תנועה בבנק ב-${formatDate(m.tx.date)}.`,
               href: `/documents/${m.selectedDocId}`,
               documentId: m.selectedDocId!,
             });

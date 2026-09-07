@@ -10,6 +10,7 @@
 // immutable once issued and can only be undone with a credit note, so "the model
 // was 95% sure" is not a good enough standard to write one.
 
+import { shekel } from "@/lib/format";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { randomUUID } from "node:crypto";
 import { todayInIsrael } from "@/lib/date";
@@ -703,7 +704,7 @@ async function advanceDraft(db: SupabaseClient, phone: string, draft: OpenDraft)
   }
   if (q === "vat") {
     if (!(await saveDraft(db, draft.id, { ...p, stage: "collecting", pendingQuestion: "vat" }, phone))) return;
-    await sendButtons(phone, `הסכום ₪${fmt(p.amount)} - כולל מע״מ או לפני מע״מ?`, [
+    await sendButtons(phone, `הסכום ${ils(p.amount)} - כולל מע״מ או לפני מע״מ?`, [
       { id: `vat_incl:${draft.id}`, title: "כולל מע״מ" },
       { id: `vat_excl:${draft.id}`, title: "לפני מע״מ" },
     ]);
@@ -729,10 +730,10 @@ async function advanceDraft(db: SupabaseClient, phone: string, draft: OpenDraft)
     `עבור: ${p.description}`,
   ];
   if (p.vat > 0) {
-    lines.push(`לפני מע״מ: ₪${fmt(p.subtotal)}`);
-    lines.push(`מע״מ: ₪${fmt(p.vat)}`);
+    lines.push(`לפני מע״מ: ${ils(p.subtotal)}`);
+    lines.push(`מע״מ: ${ils(p.vat)}`);
   }
-  lines.push(`סכום: ₪${fmt(p.total)}`);
+  lines.push(`סכום: ${ils(p.total)}`);
   if (p.paymentMethod) lines.push(`תשלום: ${p.paymentMethod}`);
   lines.push(`תאריך: ${formatDateHe(p.date)}`);
   lines.push("", "לא מדויק? לחץ ״לשנות״ או פשוט כתוב מה לתקן.");
@@ -775,7 +776,7 @@ async function applyAnswer(
         await advanceDraft(db, phone, { id: draft.id, payload: { ...p, amountIncludesVat: true } });
         return;
       }
-      await sendButtons(phone, `לא הבנתי. הסכום ₪${fmt(p.amount)} - כולל מע״מ או לפני מע״מ?`, [
+      await sendButtons(phone, `לא הבנתי. הסכום ${ils(p.amount)} - כולל מע״מ או לפני מע״מ?`, [
         { id: `vat_incl:${draft.id}`, title: "כולל מע״מ" },
         { id: `vat_excl:${draft.id}`, title: "לפני מע״מ" },
       ]);
@@ -898,6 +899,11 @@ export function computeMoney(
 
 function fmt(n: number): string {
   return n.toLocaleString("he-IL", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+/** "₪ 1,234.00" - sign, small gap, two decimals, bidi-isolated (see shekel()). */
+function ils(n: number): string {
+  return shekel(fmt(n));
 }
 
 function formatDateHe(iso: string): string {
@@ -1105,7 +1111,7 @@ async function issueDocument(
   // message under חוק התקשורת סעיף 30א. Instead the USER forwards it from their
   // own WhatsApp, which is free, arrives from a number the customer already has
   // saved, and carries no consent problem.
-  const shareText = `היי ${p.clientName}, מצורפת ${label} על ₪${fmt(p.total)}. תודה!\n${viewUrl}`;
+  const shareText = `היי ${p.clientName}, מצורפת ${label} על ${ils(p.total)}. תודה!\n${viewUrl}`;
   const target = p.clientPhone ? normalizePhone(p.clientPhone) : "";
   const waLink = `https://wa.me/${target}?text=${encodeURIComponent(shareText)}`;
 
@@ -1232,8 +1238,8 @@ async function sendExpenseCard(
   const complete = !!p.vendor && p.amount != null;
   const lines = [complete ? "קראתי את הקבלה:" : "קראתי את הקבלה, אבל לא הכל:", ""];
   lines.push(`ספק: ${p.vendor ?? "לא זוהה ⚠️"}`);
-  lines.push(`סכום: ${p.amount != null ? `₪${fmt(p.amount)}` : "לא זוהה ⚠️"}`);
-  if (p.vatAmount) lines.push(`מע״מ: ₪${fmt(p.vatAmount)}`);
+  lines.push(`סכום: ${p.amount != null ? `${ils(p.amount)}` : "לא זוהה ⚠️"}`);
+  if (p.vatAmount) lines.push(`מע״מ: ${ils(p.vatAmount)}`);
   lines.push(`קטגוריה: ${p.category}`);
   lines.push(
     p.dateAssumed
@@ -1427,5 +1433,5 @@ async function saveExpense(
     await sendText(phone, "שמירת ההוצאה נכשלה. נסה שוב.");
     return;
   }
-  await sendText(phone, `נשמר. ✅ ההוצאה מ${p.vendor} על ₪${fmt(p.amount!)} נרשמה.`);
+  await sendText(phone, `נשמר. ✅ ההוצאה מ${p.vendor} על ${ils(p.amount!)} נרשמה.`);
 }

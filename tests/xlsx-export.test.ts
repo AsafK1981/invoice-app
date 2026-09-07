@@ -95,7 +95,7 @@ describe("styled xlsx export", () => {
     expect(first.getCell(1).numFmt).toBe("dd.mm.yyyy");
     expect(first.getCell(5).value).toBe(99);
     expect(first.getCell(7).value).toBe(117);
-    expect(first.getCell(7).numFmt.startsWith('"₪"')).toBe(true);
+    expect(first.getCell(7).numFmt.startsWith('"₪ "')).toBe(true);
     expect(first.getCell(7).border?.bottom?.style).toBe("thin");
 
     // total row 10: label, live SUM with cached result, bold on a peach wash

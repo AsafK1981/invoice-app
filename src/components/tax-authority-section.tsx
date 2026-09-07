@@ -14,7 +14,7 @@ import {
   ArrowDown,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { formatDate } from "@/lib/format";
+import { formatDate, shekel } from "@/lib/format";
 import { canIssueTaxInvoicesByType } from "@/lib/vat";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
@@ -248,7 +248,7 @@ export function TaxAuthoritySection() {
           <span className="inline-flex items-center gap-1 mt-2.5 px-2.5 py-1 rounded-full bg-stone-100/80 border border-stone-200/70 text-[11px] font-semibold text-stone-600">
             סף נוכחי
             <span className="font-mono text-stone-900">
-              ₪{(status?.threshold ?? 5000).toLocaleString("he-IL")}
+              {shekel((status?.threshold ?? 5000).toLocaleString("en-US"))}
             </span>
           </span>
         </div>
