@@ -22,7 +22,7 @@
     },
     {
       "path": "/api/cron/gmail-sync",
-      "schedule": "20 * * * *"
+      "schedule": "20 8 * * *"
     }
   ]
 }
