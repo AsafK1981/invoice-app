@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Inbox,
@@ -11,10 +11,19 @@ import {
   AlertCircle,
   ArrowLeft,
   ExternalLink,
+  Mail,
+  Unplug,
 } from "lucide-react";
 import { Expander } from "@/components/expander";
 import { useConfirm } from "@/components/ui/confirm-dialog";
-import { useEmailInbox, setEmailInboxState } from "@/lib/email-inbox-client";
+import {
+  useEmailInbox,
+  setEmailInboxState,
+  startGmailConnect,
+  disconnectGmail,
+  runGmailSync,
+  type GmailSyncProgress,
+} from "@/lib/email-inbox-client";
 
 /**
  * Settings card for "הוצאות מהמייל".
@@ -38,7 +47,7 @@ import { useEmailInbox, setEmailInboxState } from "@/lib/email-inbox-client";
  * the page the reader is already on.
  */
 export function EmailInboxSection({ onExpensesPage = false }: { onExpensesPage?: boolean } = {}) {
-  const { enabled, address, ready, available } = useEmailInbox();
+  const { enabled, address, ready, available, gmail } = useEmailInbox();
   const confirm = useConfirm();
   const [busy, setBusy] = useState<"toggle" | "rotate" | null>(null);
   const [copied, setCopied] = useState(false);
@@ -113,9 +122,19 @@ export function EmailInboxSection({ onExpensesPage = false }: { onExpensesPage?:
       </div>
 
       <p className="text-sm text-stone-700 leading-relaxed">
-        העבירו חשבוניות שקיבלתם במייל לכתובת האישית שלכם, ואנחנו נקרא אותן ונציע
-        להוסיף אותן להוצאות. כלום לא נכנס לדוח בלי אישור שלכם.
+        חשבוניות שמגיעות אליכם במייל נקראות אוטומטית ומחכות לאישור שלכם בדף ההוצאות.
+        כלום לא נכנס לדוח בלי לחיצה שלכם.
+        {gmail.available ? " שתי דרכים לחבר: Gmail ישירות, או כתובת העברה שעובדת עם כל תיבת מייל." : ""}
       </p>
+
+      {gmail.available && (
+        <>
+          <GmailBlock gmail={gmail} onExpensesPage={onExpensesPage} />
+          <p className="mt-5 pt-4 border-t border-orange-100 text-xs font-semibold text-stone-500">
+            {gmail.connected ? "חלופה: כתובת העברה (לתיבה שאינה Gmail)" : "או: כתובת העברה אישית"}
+          </p>
+        </>
+      )}
 
       {!enabled ? (
         <button
@@ -164,7 +183,13 @@ export function EmailInboxSection({ onExpensesPage = false }: { onExpensesPage?:
           </div>
 
           <Expander
-            label={guideOpen ? "הסתר את המדריך" : "איך מגדירים העברה אוטומטית מ-Gmail (פעם אחת, במחשב)"}
+            label={
+              guideOpen
+                ? "הסתר את המדריך"
+                : gmail.connected
+                  ? "מדריך העברה ידנית (לא נדרש כש-Gmail מחובר)"
+                  : "איך מגדירים העברה אוטומטית מ-Gmail (פעם אחת, במחשב)"
+            }
             open={guideOpen}
             onToggle={() => setGuideOpen((o) => !o)}
           >
@@ -279,6 +304,227 @@ export function EmailInboxSection({ onExpensesPage = false }: { onExpensesPage?:
           <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
           <span>{error}</span>
         </div>
+      )}
+    </div>
+  );
+}
+
+type Period = "ytd" | "3m" | "12m";
+
+function periodStart(period: Period, now: Date = new Date()): string {
+  if (period === "ytd") return `${now.getFullYear()}-01-01`;
+  const d = new Date(now);
+  d.setMonth(d.getMonth() - (period === "3m" ? 3 : 12));
+  return d.toISOString().slice(0, 10);
+}
+
+function formatSince(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleString("he-IL", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+}
+
+/**
+ * The direct Gmail connection: connect, scan a period, see it run, disconnect.
+ *
+ * The consent screen is Google's, and because the app is in "testing" status
+ * it shows an "unverified app" warning first; the copy here tells the user
+ * the two clicks that get past it, in Google's own words, because a scary
+ * screen with no explanation is where people give up.
+ */
+function GmailBlock({
+  gmail,
+  onExpensesPage,
+}: {
+  gmail: { connected: boolean; email?: string; lastSyncAt?: string | null; needsReconnect?: boolean };
+  onExpensesPage: boolean;
+}) {
+  const confirm = useConfirm();
+  const [busy, setBusy] = useState<"connect" | "disconnect" | "sync" | null>(null);
+  const [period, setPeriod] = useState<Period>("ytd");
+  const [progress, setProgress] = useState<GmailSyncProgress | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  // Google brings the user back to /expenses?gmail=connected|error. Read it
+  // once, say what happened, and clean the address bar so a reload does not
+  // repeat the message.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    const flag = url.searchParams.get("gmail");
+    if (!flag) return;
+    if (flag === "connected") setNotice("Gmail מחובר. בחרו תקופה ולחצו \"סרוק עכשיו\" כדי לייבא חשבוניות שכבר קיבלתם.");
+    else setError("החיבור ל-Gmail לא הושלם. נסו שוב, ובמסך של גוגל אשרו את ההרשאה לקריאת המייל.");
+    url.searchParams.delete("gmail");
+    window.history.replaceState(null, "", url.pathname + url.search + url.hash);
+  }, []);
+
+  async function connect() {
+    setBusy("connect");
+    setError(null);
+    try {
+      await startGmailConnect();
+      // The page is navigating away; nothing more to do here.
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "החיבור נכשל.");
+      setBusy(null);
+    }
+  }
+
+  async function disconnect() {
+    const ok = await confirm({
+      title: "לנתק את Gmail?",
+      message: "הייבוא האוטומטי ייפסק. חשבוניות שכבר יובאו נשארות בהוצאות.",
+      tone: "danger",
+      confirmLabel: "נתק",
+    });
+    if (!ok) return;
+    setBusy("disconnect");
+    setError(null);
+    try {
+      await disconnectGmail();
+      setProgress(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "הניתוק נכשל.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function scan() {
+    setBusy("sync");
+    setError(null);
+    setNotice(null);
+    setProgress({ messages: 0, queued: 0, failed: 0, skipped: 0, quotaHit: false, authError: false, throttled: false });
+    try {
+      const totals = await runGmailSync({ mode: "backfill", after: periodStart(period) }, setProgress);
+      if (totals.authError) setError("גוגל ביטלה את ההרשאה. לחצו \"חבר את Gmail\" מחדש.");
+      else if (totals.quotaHit) setError("נגמרה מכסת הסריקות החודשית. הסריקה תימשך בחודש הבא.");
+      else if (totals.throttled) setError("Gmail ביקש הפסקה. נסו שוב בעוד כמה דקות; מה שכבר נסרק נשמר.");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "הסריקה נכשלה.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  const syncing = busy === "sync";
+
+  return (
+    <div className="mt-4 rounded-xl border border-pink-200 bg-pink-50/60 p-4">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <p className="font-semibold text-stone-900 flex items-center gap-2">
+          <Mail className="w-4 h-4 text-pink-700" />
+          {gmail.connected ? "Gmail מחובר" : "חיבור ישיר ל-Gmail"}
+        </p>
+        {gmail.connected && gmail.email && (
+          <code dir="ltr" className="text-xs text-stone-700 bg-white border border-pink-200 rounded-md px-2 py-0.5">
+            {gmail.email}
+          </code>
+        )}
+      </div>
+
+      {notice && <p className="mt-2 text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">{notice}</p>}
+
+      {!gmail.connected ? (
+        <>
+          <p className="mt-2 text-sm text-stone-700 leading-relaxed">
+            האפליקציה תמצא לבד חשבוניות וקבלות בתיבה שלכם, כולל ישנות, ותבדוק כל שעה אם הגיעו חדשות.
+            בלי פילטרים ובלי העברות. ההרשאה היא לקריאה בלבד.
+          </p>
+          <button
+            type="button"
+            onClick={connect}
+            disabled={busy !== null}
+            className="mt-3 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-gradient-to-l from-orange-500 to-orange-700 hover:shadow-md hover:shadow-orange-200 disabled:from-stone-300 disabled:to-stone-300 disabled:shadow-none transition-all"
+          >
+            {busy === "connect" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+            חבר את Gmail
+          </button>
+          <p className="mt-3 text-xs text-amber-900 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 leading-relaxed">
+            גוגל תציג מסך &quot;Google hasn&apos;t verified this app&quot; (האפליקציה עוד לא עברה את האימות
+            הרשמי של גוגל). לוחצים <b>Advanced</b> (מתקדם) ואז <b>Go to friendlyinvoice.co.il</b>, ומאשרים.
+          </p>
+        </>
+      ) : (
+        <>
+          {gmail.needsReconnect && (
+            <p className="mt-2 text-sm text-amber-900 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+              גוגל ביטלה את ההרשאה (למשל אחרי שינוי סיסמה). לחצו &quot;חבר את Gmail&quot; מחדש.
+            </p>
+          )}
+          <p className="mt-2 text-xs text-stone-600">
+            {gmail.lastSyncAt
+              ? `בדיקה אחרונה: ${formatSince(gmail.lastSyncAt)}. מיילים חדשים נבדקים כל שעה.`
+              : "מיילים חדשים ייבדקו כל שעה. לחשבוניות שכבר קיבלתם, סרקו תקופה:"}
+          </p>
+
+          <div className="mt-3 flex items-center gap-2 flex-wrap">
+            <label className="text-xs font-semibold text-stone-700" htmlFor="gmail-period">
+              תקופה
+            </label>
+            <select
+              id="gmail-period"
+              value={period}
+              onChange={(e) => setPeriod(e.target.value as Period)}
+              disabled={syncing}
+              className="min-h-[36px] rounded-lg border border-pink-300 bg-white px-2 text-sm text-stone-900"
+            >
+              <option value="ytd">מתחילת השנה</option>
+              <option value="3m">3 חודשים אחרונים</option>
+              <option value="12m">12 חודשים אחרונים</option>
+            </select>
+            {gmail.needsReconnect ? (
+              <button
+                type="button"
+                onClick={connect}
+                disabled={busy !== null}
+                className="inline-flex items-center gap-1.5 min-h-[36px] px-3 rounded-lg text-sm font-semibold text-white bg-gradient-to-l from-orange-500 to-orange-700 disabled:from-stone-300 disabled:to-stone-300"
+              >
+                {busy === "connect" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+                חבר את Gmail מחדש
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={scan}
+                disabled={busy !== null}
+                className="inline-flex items-center gap-1.5 min-h-[36px] px-3 rounded-lg text-sm font-semibold text-white bg-gradient-to-l from-orange-500 to-orange-700 disabled:from-stone-300 disabled:to-stone-300"
+              >
+                {syncing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                {syncing ? "סורק..." : "סרוק עכשיו"}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={disconnect}
+              disabled={busy !== null}
+              className="inline-flex items-center gap-1.5 min-h-[36px] px-2.5 text-xs font-semibold text-stone-600 hover:text-rose-800 mr-auto"
+            >
+              {busy === "disconnect" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Unplug className="w-3.5 h-3.5" />}
+              נתק
+            </button>
+          </div>
+
+          {progress && (
+            <p className="mt-3 text-sm text-stone-800" aria-live="polite">
+              {syncing ? "סורק את המייל... " : "הסריקה הסתיימה. "}
+              נבדקו {progress.messages} מיילים, {progress.queued} חשבוניות{" "}
+              {onExpensesPage ? "ממתינות למעלה לאישור" : "ממתינות לאישור בדף ההוצאות"}
+              {progress.failed > 0 ? `, ${progress.failed} קבצים לא נקראו` : ""}
+              {progress.skipped > 0 ? `, ${progress.skipped} כבר היו קיימים או ללא קובץ מתאים` : ""}.
+            </p>
+          )}
+        </>
+      )}
+
+      {error && (
+        <p className="mt-3 flex items-start gap-2 text-sm text-rose-800">
+          <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+          <span>{error}</span>
+        </p>
       )}
     </div>
   );

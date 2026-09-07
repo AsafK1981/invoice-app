@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revokeGmailGrantsFor } from "@/lib/gmail-connect";
 import { createClient } from "@supabase/supabase-js";
 import { checkRate, clientIp } from "@/lib/rate-limit";
 
@@ -166,6 +167,9 @@ export async function POST(req: NextRequest) {
       must("delete products", await admin.from("products").delete().in("business_id", businessIds));
       must("delete document_counters", await admin.from("document_counters").delete().in("business_id", businessIds));
       must("delete audit_log", await admin.from("audit_log").delete().in("business_id", businessIds));
+      // Gmail grants: revoke at Google before the cascade removes our copy of
+      // the token, so the app disappears from the user's third-party access.
+      await revokeGmailGrantsFor(admin, businessIds);
       must("delete businesses", await admin.from("businesses").delete().eq("user_id", user.id));
     }
 

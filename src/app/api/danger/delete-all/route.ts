@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revokeGmailGrantsFor } from "@/lib/gmail-connect";
 import { createClient } from "@supabase/supabase-js";
 import { checkRate, clientIp } from "@/lib/rate-limit";
 
@@ -253,6 +254,20 @@ export async function POST(req: NextRequest) {
       .eq("business_id", businessId);
     assertOk(res, "delete email_inbox_items");
     deleted.email_inbox_items = res.count || 0;
+  });
+
+  // 7c) The connected Gmail account, if any. "Delete everything" must also
+  //     stop the hourly import, or the queue refills itself by tomorrow.
+  await step("email_accounts", async () => {
+    // End the permission at Google first; a deleted row alone would leave the
+    // grant listed in the user's Google account.
+    await revokeGmailGrantsFor(admin, [businessId]);
+    const res = await admin
+      .from("email_accounts")
+      .delete({ count: "exact" })
+      .eq("business_id", businessId);
+    assertOk(res, "delete email_accounts");
+    deleted.email_accounts = res.count || 0;
   });
 
   // 8-11) Clients, products, counters, assistant memory.

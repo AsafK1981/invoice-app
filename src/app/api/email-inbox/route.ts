@@ -15,6 +15,7 @@ import {
   resolveInboxCaller,
   toInboxItemDto,
 } from "@/lib/email-inbox-server";
+import { getGmailAccount } from "@/lib/gmail-connect";
 
 export const runtime = "nodejs";
 
@@ -36,7 +37,7 @@ export async function GET(req: NextRequest) {
   // amount and no supplier in front of the owner, and it may still turn into
   // a failure. 'approved' is already an expense and 'rejected' is already
   // gone; both live in the expenses table or nowhere, not in this queue.
-  const [pendingRes, failedRes] = await Promise.all([
+  const [pendingRes, failedRes, gmailAccount] = await Promise.all([
     admin
       .from("email_inbox_items")
       .select(INBOX_ITEM_COLUMNS)
@@ -52,6 +53,7 @@ export async function GET(req: NextRequest) {
       .gte("created_at", since)
       .order("received_at", { ascending: false })
       .limit(50),
+    getGmailAccount(admin, business.id),
   ]);
 
   if (pendingRes.error || failedRes.error) {
@@ -77,6 +79,22 @@ export async function GET(req: NextRequest) {
     items,
     pending,
     pendingCount: pending.length,
+    // The direct Gmail connection, if any. Never the token, only what the
+    // card shows: which account, when it last synced, whether it needs a
+    // reconnect.
+    // `available` is whether the server can complete a Google connection at
+    // all (client secret present). The card hides the Gmail block otherwise,
+    // so the feature can ship dark and be switched on by adding one env var.
+    gmail: gmailAccount
+      ? {
+          available: true,
+          connected: true,
+          email: gmailAccount.email,
+          lastSyncAt: gmailAccount.last_sync_at,
+          lastBackfillAt: gmailAccount.last_backfill_at,
+          needsReconnect: gmailAccount.last_error === "reconnect",
+        }
+      : { available: Boolean(process.env.GOOGLE_OAUTH_CLIENT_SECRET), connected: false },
   });
 }
 

@@ -416,22 +416,30 @@ function extForMediaType(mt: ScanMediaType): string {
 
 // ── the pipeline ────────────────────────────────────────────────────────────
 
-interface InboxBusiness {
+export interface InboxBusiness {
   id: string;
   user_id: string;
 }
 
-/** The columns that identify an item, shared by every claim attempt. */
-interface ItemIdentity {
+/**
+ * The columns that identify an item, shared by every claim attempt.
+ *
+ * `origin` is optional and left unset by the Resend path on purpose: the
+ * column carries a DEFAULT 'resend', so this module keeps inserting rows on a
+ * database where the Gmail migration has not been applied yet. Only the Gmail
+ * importer sets it.
+ */
+export interface ItemIdentity {
   business_id: string;
   email_id: string;
   message_id: string;
   from_address: string | null;
   subject: string | null;
   received_at: string;
+  origin?: "resend" | "gmail";
 }
 
-type Claim =
+export type Claim =
   /** This run owns the row and must finish it. */
   | { kind: "claimed"; itemId: string }
   /** Another run took it less than RESUME_AFTER_MS ago. Come back later. */
@@ -548,7 +556,7 @@ export async function processInboundEmail(
       break;
     }
 
-    const claim = await claimItem(admin, identity, candidate.index);
+    const claim = await claimInboxItem(admin, identity, candidate.index);
     if (claim.kind === "db_error") {
       dbError = true;
       break;
@@ -584,7 +592,7 @@ export async function processInboundEmail(
  * who wins a race, not a read-then-write. A duplicate key means the row is
  * already there, and only then do we ask whether it is ours to take.
  */
-async function claimItem(
+export async function claimInboxItem(
   admin: SupabaseClient,
   identity: ItemIdentity,
   index: number,
@@ -690,7 +698,7 @@ async function singleFailure(
   reason: InboundFailure,
   detail: string | null = null,
 ): Promise<InboundResult> {
-  const claim = await claimItem(admin, identity, index);
+  const claim = await claimInboxItem(admin, identity, index);
   if (claim.kind === "db_error") return { ok: false, retry: "db_error" };
   if (claim.kind === "busy") return { ok: false, retry: "incomplete" };
   if (claim.kind === "done") return { ok: true, ignored: "duplicate" };
@@ -706,7 +714,7 @@ async function handleGmailConfirmation(
   identity: ItemIdentity,
   emailId: string,
 ): Promise<InboundResult> {
-  const claim = await claimItem(admin, identity, 0);
+  const claim = await claimInboxItem(admin, identity, 0);
   if (claim.kind === "db_error") return { ok: false, retry: "db_error" };
   if (claim.kind === "busy") return { ok: false, retry: "incomplete" };
   if (claim.kind === "done") return { ok: true, ignored: "duplicate" };
@@ -724,13 +732,6 @@ async function handleGmailConfirmation(
   };
 }
 
-/**
- * Download, store, dedupe, charge and scan ONE attachment.
- *
- * Returns null when the claim was lost mid-run (another run took the row over
- * after our three minutes elapsed): the row is not ours to report on, and
- * whatever we uploaded for it is cleaned up on the way out.
- */
 /** The three fields that identify one payment on a scanned document. */
 export interface ChargeKey {
   vendor: string | null;
@@ -753,6 +754,15 @@ export function isSameCharge(a: ChargeKey, b: ChargeKey): boolean {
   return Math.abs(a.amount - b.amount) < 0.005 && a.date === b.date && norm(a.vendor) === norm(b.vendor);
 }
 
+/**
+ * The Resend half of "download, store, dedupe, charge and scan ONE
+ * attachment": fetch the bytes from Resend's Receiving API, then hand them to
+ * the shared tail below.
+ *
+ * Returns null when the claim was lost mid-run (another run took the row over
+ * after our three minutes elapsed): the row is not ours to report on, and
+ * whatever we uploaded for it is cleaned up on the way out.
+ */
 async function runAttachment(
   admin: SupabaseClient,
   biz: InboxBusiness,
@@ -763,48 +773,128 @@ async function runAttachment(
 ): Promise<InboundItemResult | null> {
   const { att, mediaType, index } = candidate;
 
-  const fail = async (
-    reason: InboundFailure,
-    detail: string | null = null,
-    receiptPath: string | null = null,
-  ): Promise<InboundItemResult | null> => {
-    // No expense will ever point at this object - do not leave it behind.
-    if (receiptPath) await removeReceipt(admin, receiptPath);
-    const won = await markFailed(admin, itemId, reason, detail, receiptPath !== null);
-    return won ? { itemId, index, status: "failed", reason } : null;
-  };
-
   const apiKey = process.env.RESEND_API_KEY;
-  const anthropicKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey || !anthropicKey) {
-    console.error("[email-inbox] missing RESEND_API_KEY or ANTHROPIC_API_KEY");
-    return fail("error");
+  if (!apiKey) {
+    console.error("[email-inbox] missing RESEND_API_KEY");
+    return failInboxItem(admin, itemId, index, "error");
   }
 
-  const isPdf = mediaType === "application/pdf";
-  const base64Cap = isPdf ? MAX_BASE64_PDF : MAX_BASE64_IMAGE;
-  const rawCap = Math.floor((base64Cap * 3) / 4);
+  const { raw: rawCap } = sizeCapsFor(mediaType);
+  await recordAttachmentMeta(admin, itemId, att.filename, mediaType);
 
+  const remote = await fetchAttachmentBytes(emailId, att, mediaType, apiKey, rawCap);
+  if (remote === "too_large") return failInboxItem(admin, itemId, index, "too_large");
+  if (!remote) return failInboxItem(admin, itemId, index, "download_failed");
+
+  return scanStoreAndQueue({
+    admin,
+    biz,
+    itemId,
+    messageId,
+    index,
+    mediaType,
+    bytes: remote,
+  });
+}
+
+/** Byte ceilings for one attachment of this media type: the base64 payload
+ *  the model is sent, and the raw-byte cap that bounds the download. */
+export function sizeCapsFor(mediaType: ScanMediaType): { base64: number; raw: number } {
+  const base64 = mediaType === "application/pdf" ? MAX_BASE64_PDF : MAX_BASE64_IMAGE;
+  return { base64, raw: Math.floor((base64 * 3) / 4) };
+}
+
+/**
+ * Write what the attachment IS onto the claimed row, BEFORE its bytes are
+ * fetched, so a download that never completes still leaves the owner a card
+ * with a filename on it instead of an anonymous failure.
+ */
+export async function recordAttachmentMeta(
+  admin: SupabaseClient,
+  itemId: string,
+  filename: string | null | undefined,
+  mediaType: ScanMediaType,
+): Promise<void> {
   await admin
     .from("email_inbox_items")
     .update({
-      attachment_name: trimTo(att.filename, 300),
+      attachment_name: trimTo(filename, 300),
       attachment_type: mediaType,
     })
     .eq("id", itemId)
     .eq("status", "processing");
+}
 
-  const remote = await fetchAttachmentBytes(emailId, att, mediaType, apiKey, rawCap);
-  if (remote === "too_large") return fail("too_large");
-  if (!remote) return fail("download_failed");
+/**
+ * Settle a claimed item as failed and report it, dropping any object this run
+ * uploaded for it. Returns null when the claim was lost mid-run: the row
+ * belongs to another run now and is not ours to report on.
+ */
+export async function failInboxItem(
+  admin: SupabaseClient,
+  itemId: string,
+  index: number,
+  reason: InboundFailure,
+  detail: string | null = null,
+  receiptPath: string | null = null,
+): Promise<InboundItemResult | null> {
+  // No expense will ever point at this object - do not leave it behind.
+  if (receiptPath) await removeReceipt(admin, receiptPath);
+  const won = await markFailed(admin, itemId, reason, detail, receiptPath !== null);
+  return won ? { itemId, index, status: "failed", reason } : null;
+}
 
-  const base64 = remote.toString("base64");
+export interface ScanStoreInput {
+  admin: SupabaseClient;
+  biz: InboxBusiness;
+  /** A row already claimed as 'processing' by this run. */
+  itemId: string;
+  /** The claimed row's message_id; the key of the same-mail sibling guard. */
+  messageId: string;
+  index: number;
+  mediaType: ScanMediaType;
+  bytes: Buffer;
+}
+
+/**
+ * Everything that happens once ONE attachment's bytes are in hand, whichever
+ * channel fetched them: size, store, dedupe, charge, scan, queue.
+ *
+ * Shared by the Resend webhook and the Gmail importer on purpose. Every guard
+ * in here (base64 cap, sha256 re-forward twin, same-mail same-charge twin,
+ * monthly quota, claim-lost cleanup) protects the owner's books and their
+ * scan budget, so a second channel must not get its own slightly different
+ * copy of them.
+ */
+export async function scanStoreAndQueue({
+  admin,
+  biz,
+  itemId,
+  messageId,
+  index,
+  mediaType,
+  bytes,
+}: ScanStoreInput): Promise<InboundItemResult | null> {
+  const fail = (
+    reason: InboundFailure,
+    detail: string | null = null,
+    receiptPath: string | null = null,
+  ) => failInboxItem(admin, itemId, index, reason, detail, receiptPath);
+
+  const anthropicKey = process.env.ANTHROPIC_API_KEY;
+  if (!anthropicKey) {
+    console.error("[email-inbox] missing ANTHROPIC_API_KEY");
+    return fail("error");
+  }
+
+  const { base64: base64Cap } = sizeCapsFor(mediaType);
+  const base64 = bytes.toString("base64");
   if (base64.length > base64Cap) return fail("too_large");
 
   const receiptPath = `${biz.user_id}/${randomUUID()}.${extForMediaType(mediaType)}`;
   const { error: upErr } = await admin.storage
     .from(RECEIPT_BUCKET)
-    .upload(receiptPath, remote, { contentType: mediaType, upsert: false });
+    .upload(receiptPath, bytes, { contentType: mediaType, upsert: false });
   if (upErr) {
     console.error("[email-inbox] storage upload failed:", upErr.message);
     return fail("error");
@@ -812,7 +902,7 @@ async function runAttachment(
 
   // The path is recorded straight away, so a run that dies from here on leaves
   // a row that still knows which object belongs to it.
-  const sha256 = createHash("sha256").update(remote).digest("hex");
+  const sha256 = createHash("sha256").update(bytes).digest("hex");
   const stored = await admin
     .from("email_inbox_items")
     .update({ receipt_path: receiptPath, attachment_sha256: sha256 })

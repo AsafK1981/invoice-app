@@ -7,6 +7,7 @@ import { Mail, LogIn, UserPlus, Eye, EyeOff, ArrowRight, Check } from "lucide-re
 import { supabase } from "@/lib/supabase";
 import { track } from "@vercel/analytics";
 import { readAttribution } from "@/lib/attribution";
+import { GOOGLE_OAUTH_CLIENT_ID } from "@/lib/google-oauth-client-id";
 
 type Mode = "login" | "signup" | "forgot";
 
@@ -26,8 +27,11 @@ type Mode = "login" | "signup" | "forgot";
 // on our origin - no popup, no cross-tab handoff, works everywhere. That
 // login_uri must stay registered under "Authorized redirect URIs" on the
 // GCP OAuth client (project "for my website").
-const GOOGLE_CLIENT_ID =
-  "299738514450-l904155luql8fn7focq4hrlf921u3uvt.apps.googleusercontent.com";
+//
+// The client id itself lives in src/lib/google-oauth-client-id.ts: the Gmail
+// connect flow (expenses from email) uses the same OAuth client, and one
+// literal in two files is one literal that can drift.
+const GOOGLE_CLIENT_ID = GOOGLE_OAUTH_CLIENT_ID;
 
 interface GoogleAccountsId {
   initialize(config: {

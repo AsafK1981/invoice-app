@@ -100,9 +100,22 @@ export type EmailInboxApproval = {
   allocationNumber?: string;
 };
 
+export type EmailInboxGmail = {
+  /** The server is configured for Google connections; false hides the block. */
+  available?: boolean;
+  connected: boolean;
+  email?: string;
+  lastSyncAt?: string | null;
+  lastBackfillAt?: string | null;
+  /** Google refused the stored grant; the owner has to press "חבר" again. */
+  needsReconnect?: boolean;
+};
+
 export type EmailInboxSnapshot = {
   enabled: boolean;
   address: string | null;
+  /** The direct Gmail connection (import without a filter). */
+  gmail: EmailInboxGmail;
   /** Everything the queue shows: pending items plus recent failures. */
   items: EmailInboxItem[];
   /**
@@ -116,6 +129,7 @@ export type EmailInboxSnapshot = {
 const EMPTY: EmailInboxSnapshot = {
   enabled: false,
   address: null,
+  gmail: { connected: false },
   items: [],
   available: false,
 };
@@ -143,6 +157,7 @@ async function fetchInbox(): Promise<EmailInboxSnapshot | undefined> {
       items?: EmailInboxItem[];
       /** pending only. Read as a fallback so an older server still works. */
       pending?: EmailInboxItem[];
+      gmail?: EmailInboxGmail;
     };
     const list = Array.isArray(data.items)
       ? data.items
@@ -152,6 +167,7 @@ async function fetchInbox(): Promise<EmailInboxSnapshot | undefined> {
     return {
       enabled: Boolean(data.enabled),
       address: data.address ?? null,
+      gmail: data.gmail && typeof data.gmail === "object" ? data.gmail : { connected: false },
       items: list,
       available: true,
     };
@@ -210,6 +226,85 @@ export async function setEmailInboxState(
   if (!res.ok) throw new Error(data?.error || "הפעולה נכשלה.");
   await inboxStore.refetch();
   return { enabled: Boolean(data.enabled), address: data.address ?? null };
+}
+
+/**
+ * Ask the server for Google's consent URL and go there. The page navigates
+ * away; Google brings the user back to /expenses?gmail=connected.
+ */
+export async function startGmailConnect(): Promise<void> {
+  const res = await fetch("/api/gmail/connect", { method: "POST", headers: await authHeader() });
+  const data = (await res.json().catch(() => ({}))) as { url?: string; error?: string };
+  if (!res.ok || !data.url) throw new Error(data.error || "החיבור ל-Gmail נכשל.");
+  window.location.assign(data.url);
+}
+
+export async function disconnectGmail(): Promise<void> {
+  const res = await fetch("/api/gmail/connect", { method: "DELETE", headers: await authHeader() });
+  const data = (await res.json().catch(() => ({}))) as { error?: string };
+  if (!res.ok) throw new Error(data.error || "הניתוק נכשל.");
+  await inboxStore.refetch();
+}
+
+export type GmailSyncProgress = {
+  messages: number;
+  queued: number;
+  failed: number;
+  skipped: number;
+  quotaHit: boolean;
+  authError: boolean;
+  throttled: boolean;
+};
+
+/**
+ * Run the import to completion, one bounded server batch at a time, and
+ * report running totals. Stops on quota, a refused token, or a throttle
+ * (the caller shows why). The queue store is refreshed after every batch so
+ * cards appear while the scan is still going.
+ */
+export async function runGmailSync(
+  req: { mode: "backfill" | "incremental"; after?: string | null; before?: string | null },
+  onProgress: (p: GmailSyncProgress) => void,
+): Promise<GmailSyncProgress> {
+  const totals: GmailSyncProgress = {
+    messages: 0,
+    queued: 0,
+    failed: 0,
+    skipped: 0,
+    quotaHit: false,
+    authError: false,
+    throttled: false,
+  };
+  let pageToken: string | null = null;
+  // A hard ceiling on batches keeps a runaway loop finite: 60 batches of 8
+  // messages is far more mail than any period picker offers.
+  for (let i = 0; i < 60; i++) {
+    const res = await fetch("/api/gmail/sync", {
+      method: "POST",
+      headers: { ...(await authHeader()), "Content-Type": "application/json" },
+      body: JSON.stringify({ ...req, pageToken }),
+    });
+    const data = (await res.json().catch(() => ({}))) as Partial<GmailSyncProgress> & {
+      ok?: boolean;
+      done?: boolean;
+      nextPageToken?: string | null;
+      error?: string;
+    };
+    if (!res.ok) throw new Error(data.error || "הסריקה נכשלה.");
+    totals.messages += data.messages ?? 0;
+    totals.queued += data.queued ?? 0;
+    totals.failed += data.failed ?? 0;
+    totals.skipped += data.skipped ?? 0;
+    totals.quotaHit = totals.quotaHit || Boolean(data.quotaHit);
+    totals.authError = totals.authError || Boolean(data.authError);
+    totals.throttled = Boolean(data.throttled);
+    onProgress({ ...totals });
+    void inboxStore.refetch();
+    if (data.done || data.authError || data.throttled) break;
+    pageToken = data.nextPageToken ?? null;
+    if (!pageToken && data.messages === 0) break;
+  }
+  return totals;
 }
 
 export class InboxItemGoneError extends Error {}
