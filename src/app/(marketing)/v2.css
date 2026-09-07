@@ -3043,3 +3043,12 @@
   align-items: center;
   text-decoration: none;
 }
+
+/* Phone header (Asaf, 2026-09-07): logo on the left edge, burger on the
+   right - same rule as .ml-header-start in marketing-light.css. */
+@media (max-width: 759.98px) {
+  .v2-theme .v2-header-start {
+    flex: 1 1 auto;
+    justify-content: space-between;
+  }
+}
