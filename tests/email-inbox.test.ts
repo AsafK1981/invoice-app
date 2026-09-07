@@ -9,6 +9,7 @@ import {
   inboxTokenFromEvent,
   isGmailConfirmUrl,
   isGmailForwardingConfirmation,
+  isSameCharge,
   matchListedAttachment,
   parseInboxToken,
   supportedAttachments,
@@ -494,5 +495,30 @@ describe("the email source_ref contract", () => {
     expect(sql).toContain(
       "GRANT EXECUTE ON FUNCTION public.email_inbox_approve(uuid, uuid, jsonb) TO service_role;",
     );
+  });
+});
+
+
+describe("isSameCharge (invoice + receipt of one payment in the same mail)", () => {
+  const receipt = { vendor: "Anthropic, PBC", amount: 100, date: "2026-08-15" };
+
+  it("matches the invoice copy of the same charge", () => {
+    expect(isSameCharge(receipt, { vendor: "Anthropic PBC", amount: 100, date: "2026-08-15" })).toBe(true);
+  });
+
+  it("tolerates case, whitespace and punctuation in the vendor name", () => {
+    expect(isSameCharge(receipt, { vendor: "  anthropic,  pbc. ", amount: 100.0, date: "2026-08-15" })).toBe(true);
+  });
+
+  it("is a different charge when the amount, date or vendor differs", () => {
+    expect(isSameCharge(receipt, { vendor: "Anthropic, PBC", amount: 5, date: "2026-08-15" })).toBe(false);
+    expect(isSameCharge(receipt, { vendor: "Anthropic, PBC", amount: 100, date: "2026-07-15" })).toBe(false);
+    expect(isSameCharge(receipt, { vendor: "Wispr Flow", amount: 100, date: "2026-08-15" })).toBe(false);
+  });
+
+  it("never treats an unreadable scan as a duplicate", () => {
+    expect(isSameCharge(receipt, { vendor: "Anthropic, PBC", amount: null, date: "2026-08-15" })).toBe(false);
+    expect(isSameCharge(receipt, { vendor: null, amount: 100, date: "2026-08-15" })).toBe(false);
+    expect(isSameCharge(receipt, { vendor: "Anthropic, PBC", amount: 100, date: null })).toBe(false);
   });
 });

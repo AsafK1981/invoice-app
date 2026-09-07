@@ -29,6 +29,7 @@ export type EmailInboxReason =
   | "download_failed"
   | "duplicate"
   | "too_many"
+  | "duplicate_in_mail"
   | "gmail_verification"
   | "error";
 
@@ -44,6 +45,7 @@ export const EMAIL_INBOX_REASON_TEXT: Record<EmailInboxReason, string> = {
   download_failed: "ההורדה מ-Resend נכשלה, נסו להעביר שוב",
   duplicate: "הקובץ הזה כבר נמצא בהוצאות או ממתין לאישור",
   too_many: "יותר מ-5 קבצים במייל אחד, הועברו רק החמישה הראשונים",
+  duplicate_in_mail: "עותק שני של אותה חשבונית באותו מייל",
   gmail_verification: "אימות העברה מ-Gmail",
   error: "שגיאה בעיבוד",
 };

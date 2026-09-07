@@ -313,6 +313,12 @@ export type InboundFailure =
   | "duplicate"
   /** More attachments in one mail than we scan; the first five were taken. */
   | "too_many"
+  /**
+   * A second attachment in the SAME mail that scans to the same charge.
+   * Stripe-style receipts arrive as an invoice PDF plus a receipt PDF for
+   * one payment; the second copy is resolved as rejected, silently.
+   */
+  | "duplicate_in_mail"
   /** Gmail's forwarding confirmation mail - a setup step, not a problem. */
   | "gmail_verification"
   | "error";
@@ -554,7 +560,7 @@ export async function processInboundEmail(
     if (claim.kind === "done") continue;
 
     try {
-      const outcome = await runAttachment(admin, biz, claim.itemId, emailId, candidate);
+      const outcome = await runAttachment(admin, biz, claim.itemId, identity.message_id, emailId, candidate);
       if (outcome) results.push(outcome);
     } catch (err) {
       console.error("[email-inbox] pipeline threw:", err instanceof Error ? err.message : err);
@@ -725,10 +731,33 @@ async function handleGmailConfirmation(
  * after our three minutes elapsed): the row is not ours to report on, and
  * whatever we uploaded for it is cleaned up on the way out.
  */
+/** The three fields that identify one payment on a scanned document. */
+export interface ChargeKey {
+  vendor: string | null;
+  amount: number | null;
+  date: string | null;
+}
+
+/**
+ * Two scans of the same charge: one supplier, one amount, one date. Stripe,
+ * Paddle and friends attach an invoice PDF and a receipt PDF for a single
+ * payment; both scan to the same three fields. Vendor is compared loosely
+ * (case, whitespace, trailing punctuation) because the two documents often
+ * print the name slightly differently. A scan with any of the three missing
+ * is never "the same": an unreadable amount must not hide a real receipt.
+ */
+export function isSameCharge(a: ChargeKey, b: ChargeKey): boolean {
+  if (a.amount == null || b.amount == null || !a.date || !b.date) return false;
+  if (!a.vendor || !b.vendor) return false;
+  const norm = (v: string) => v.toLowerCase().replace(/[\s.,]+/g, " ").trim();
+  return Math.abs(a.amount - b.amount) < 0.005 && a.date === b.date && norm(a.vendor) === norm(b.vendor);
+}
+
 async function runAttachment(
   admin: SupabaseClient,
   biz: InboxBusiness,
   itemId: string,
+  messageId: string,
   emailId: string,
   candidate: PickedAttachment,
 ): Promise<InboundItemResult | null> {
@@ -856,6 +885,49 @@ async function runAttachment(
   }
 
   const f = outcome.fields;
+
+  // Same mail, same charge, different file: an invoice PDF next to its
+  // receipt PDF. The first one through became the pending item; this one is
+  // resolved as rejected without a word, so the owner sees one card per
+  // payment instead of two. Items of OTHER mails are the sha256 guard's job.
+  const siblings = await admin
+    .from("email_inbox_items")
+    .select("id, scan")
+    .eq("business_id", biz.id)
+    .eq("message_id", messageId)
+    .neq("id", itemId)
+    .in("status", ["pending", "approved"]);
+  if (siblings.error) {
+    // Fail open, as with the sha256 guard: a broken read must not hide a receipt.
+    console.error("[email-inbox] sibling check failed:", siblings.error.message);
+  } else {
+    const mine: ChargeKey = { vendor: f.vendor, amount: f.amount, date: f.date };
+    const twin = (siblings.data ?? []).find((row) => {
+      const sc = (row.scan ?? {}) as Partial<ChargeKey>;
+      return isSameCharge(mine, {
+        vendor: typeof sc.vendor === "string" ? sc.vendor : null,
+        amount: typeof sc.amount === "number" ? sc.amount : null,
+        date: typeof sc.date === "string" ? sc.date : null,
+      });
+    });
+    if (twin) {
+      await removeReceipt(admin, receiptPath);
+      await admin
+        .from("email_inbox_items")
+        .update({
+          status: "rejected",
+          reason: "duplicate_in_mail" satisfies InboundFailure,
+          detail: twin.id as string,
+          receipt_path: null,
+          processing_started_at: null,
+          resolved_at: new Date().toISOString(),
+        })
+        .eq("id", itemId)
+        .eq("status", "processing");
+      return null;
+    }
+  }
+
   const { data: finished, error: updateErr } = await admin
     .from("email_inbox_items")
     .update({
