@@ -54,6 +54,7 @@
 //     the allocation field of the T record.
 
 import type { Business, Expense, InvoiceDocument } from "../types";
+import { formatDate } from "../format";
 import {
   allocationRequiredThreshold,
   normalizeCustomerVatNumber,
@@ -276,7 +277,8 @@ function docLabel(d: InvoiceDocument): string {
 }
 
 function expenseLabel(e: Expense): string {
-  return `${e.supplier || "ספק לא ידוע"} · ${e.date}`;
+  // Israeli order (31.08.2026), never the raw ISO the store keeps.
+  return `${e.supplier || "ספק לא ידוע"} · ${formatDate(e.date)}`;
 }
 
 /** Sort key the ITA simulator is indifferent to, but a stable file diff is nicer. */

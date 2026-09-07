@@ -2,6 +2,8 @@
 
 import JSZip from "jszip";
 import Papa from "papaparse";
+import { formatDate } from "./format";
+import { todayInIsrael } from "./date";
 import {
   DOCUMENT_TYPE_LABELS,
   DOCUMENT_STATUS_LABELS,
@@ -44,7 +46,7 @@ const BOM = "﻿";
  */
 export async function downloadFullBackupZip(input: BackupInput): Promise<void> {
   const zip = new JSZip();
-  const date = new Date().toISOString().slice(0, 10);
+  const date = todayInIsrael();
 
   // 1) Business profile snapshot as JSON. Easier than CSV for a
   //    single record with optional fields + nested keys.
@@ -173,7 +175,7 @@ export async function downloadFullBackupZip(input: BackupInput): Promise<void> {
     [
       `גיבוי MyFriendlyInvoiceApp`,
       `עסק: ${input.business.name}`,
-      `יוצא בתאריך: ${date}`,
+      `יוצא בתאריך: ${formatDate(date)}`,
       ``,
       `קבצים:`,
       `  business.json       - פרטי העסק (שם, ע.מ, פרטי בנק)`,
