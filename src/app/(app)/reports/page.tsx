@@ -524,9 +524,9 @@ export default function ReportsPage() {
       </section>
 
       {/* ---------- one card per report, each opens on its own page ---------- */}
-      <section aria-label="דוחות למס ולרואה החשבון">
+      <section aria-label="דוחות לרשויות המס ולרואה החשבון">
         <div className="rpt-sect-head">
-          <h2 className="rpt-h2">דוחות למס ולרואה החשבון</h2>
+          <h2 className="rpt-h2">דוחות לרשויות המס ולרואה החשבון</h2>
           <p className="rpt-hint">הדוחות השנתיים מחושבים לשנת {exportYear}</p>
         </div>
         <div className="rpt-grid">
