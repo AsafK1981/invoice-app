@@ -4,6 +4,7 @@ import JSZip from "jszip";
 import { checkRate, clientIp } from "@/lib/rate-limit";
 import { buildUniformStructure } from "@/lib/uniform-structure/builder";
 import { generateSampleDataset } from "@/lib/uniform-structure/sample-data";
+import { UNIFORM_SOFTWARE } from "@/lib/uniform-structure/software";
 import type { Business, Client, DocumentItem, Expense, InvoiceDocument } from "@/lib/types";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -177,13 +178,12 @@ export async function GET(req: NextRequest) {
     }));
   }
 
-  // Registered name at רשות המסים - not the display brand. See builder.ts.
-  // The printed 5.4 report quotes these too, so they travel in the header
-  // rather than being retyped on the client.
+  // The printed 5.4 report quotes the software identity too, so it travels
+  // in the header rather than being retyped on the client.
   const software = {
-    name: "MySuperFriendlyInvoiceApp",
-    version: "1.0",
-    registrationNumber: "", // assigned after misim.gov.il approval
+    name: UNIFORM_SOFTWARE.name,
+    version: UNIFORM_SOFTWARE.version,
+    registrationNumber: UNIFORM_SOFTWARE.registrationNumber,
   };
   const result = buildUniformStructure({
     business,
@@ -193,11 +193,6 @@ export async function GET(req: NextRequest) {
     taxYear,
     fromDate,
     toDate,
-    softwareName: software.name,
-    softwareVersion: software.version,
-    softwareVendorName: "Asaf Kotler",
-    softwareVendorTaxId: "049040686",
-    softwareRegistrationNumber: software.registrationNumber,
   });
 
   // Section 2.2 of the spec fixes the folder the files live in:

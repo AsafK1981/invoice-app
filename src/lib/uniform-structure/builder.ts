@@ -8,6 +8,7 @@
 // (the official OPENFORMAT 1.31 spec, see docs/uniform-structure/).
 
 import { toWindows1255 } from "./encode";
+import { UNIFORM_SOFTWARE } from "./software";
 import {
   buildA000,
   buildA100,
@@ -117,14 +118,13 @@ export function buildUniformStructure(input: UniformInput): UniformOutput {
     business: input.business,
     taxYear: input.taxYear,
     generatedAt: new Date(),
-    // Registered software name at רשות המסים. Deliberately NOT renamed with
-    // the 2026-07-29 rebrand to "MyFriendlyInvoiceApp" - the מבנה אחיד file
-    // must match the registration. Changing it requires re-registering first.
-    softwareName: input.softwareName ?? "MySuperFriendlyInvoiceApp",
-    softwareVersion: input.softwareVersion ?? "1.0",
-    softwareVendorName: input.softwareVendorName ?? "Asaf Kotler",
-    softwareVendorTaxId: input.softwareVendorTaxId ?? "049040686",
-    softwareRegistrationNumber: input.softwareRegistrationNumber ?? "",
+    // Software identity as registered at רשות המסים - see software.ts for
+    // why the name is not the consumer brand and where the version comes from.
+    softwareName: input.softwareName ?? UNIFORM_SOFTWARE.name,
+    softwareVersion: input.softwareVersion ?? UNIFORM_SOFTWARE.version,
+    softwareVendorName: input.softwareVendorName ?? UNIFORM_SOFTWARE.vendorName,
+    softwareVendorTaxId: input.softwareVendorTaxId ?? UNIFORM_SOFTWARE.vendorTaxId,
+    softwareRegistrationNumber: input.softwareRegistrationNumber ?? UNIFORM_SOFTWARE.registrationNumber,
     fromDate: input.fromDate,
     toDate: input.toDate,
   };

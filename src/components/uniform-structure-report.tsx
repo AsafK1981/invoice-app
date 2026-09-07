@@ -65,7 +65,8 @@ function timeOf(iso: string): string {
   return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-function ReportBody({
+/** Exported so the registration package script can render the same printout to PDF. */
+export function ReportBody({
   report,
   businessName,
   taxId,
