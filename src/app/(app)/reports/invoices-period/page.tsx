@@ -146,12 +146,12 @@ export default function InvoicesPeriodReportPage() {
       </div>
 
       <div className="flex items-end justify-between flex-wrap gap-4">
-        <div>
+        <div className="min-w-0 max-w-full">
           <h1 className="text-3xl font-bold text-stone-900 flex items-center gap-3">
-            <span className="w-11 h-11 rounded-2xl fgrad fgrad-emerald flex items-center justify-center shadow-sm">
+            <span className="w-11 h-11 shrink-0 rounded-2xl fgrad fgrad-emerald flex items-center justify-center shadow-sm">
               <FileSpreadsheet className="w-5 h-5 text-white" />
             </span>
-            דוח חשבוניות תקופתי
+            <span className="min-w-0 break-words">דוח חשבוניות תקופתי</span>
           </h1>
           <p className="text-sm text-stone-600 mt-2 mr-14">
             כל חשבוניות המס בתקופה: ת.ז/ח.פ, מספר, תאריך, סכום לפני ואחרי מע״מ, ומספר הקצאה.

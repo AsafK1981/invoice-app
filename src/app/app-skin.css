@@ -3236,6 +3236,11 @@ html button:disabled.from-orange-500 * { color: #6b6560 !important; }
    and bump type/padding ~12-18%. Carried over unchanged from the previous
    skin; it is orthogonal to the palette.
    ===================================================================== */
+/* Installation is secondary to the currently open menu or dialog. */
+html:has([aria-modal="true"]) .app-install-prompt { display: none; }
+
+html .gk-amount-mobile { display: none; }
+
 /* DASHBOARD KPI CARDS ON A PHONE (Asaf 2026-08-27: "במובייל זה גם צריך להיות
    בשורה אחת פשוט"). Below `sm` the four cards already stack one per row, but
    each was the desktop card at full height - label, a 2xl number, a sub line,
@@ -3245,12 +3250,13 @@ html button:disabled.from-orange-500 * { color: #6b6560 !important; }
    delta badge, wrapping only if the phone is too narrow for all of it. */
 @media (max-width: 639.98px) {
   html .gk-dashboard .gk-kpi {
+    container-type: inline-size;
     padding: 0.7rem 0.9rem;
   }
   html .gk-dashboard .gk-kpi-row {
     flex-direction: row-reverse; /* the icon tile first (start), like the secondary cards */
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.5rem;
   }
   html .gk-dashboard .gk-kpi .gk-icon {
     width: 2.25rem;
@@ -3263,30 +3269,96 @@ html button:disabled.from-orange-500 * { color: #6b6560 !important; }
   }
   /* label at the start, number + delta badge at the end, nothing wraps */
   html .gk-dashboard .gk-kpi-body {
-    display: flex;
+    display: grid;
+    grid-template-columns: 4.5rem minmax(0, 1fr) 3rem;
     align-items: center;
-    gap: 0.6rem;
+    gap: 0.4rem;
   }
   html .gk-dashboard .gk-kpi .gk-label {
-    flex: 0 0 auto;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
+    padding: 4px;
+    text-align: center;
     color: #6b6560;
   }
+  html .gk-dashboard .gk-kpi .gk-label svg { display: none; }
   html .gk-dashboard .gk-kpi .gk-value {
-    flex: 1 1 auto;
+    container-type: inline-size;
     min-width: 0;
     margin-top: 0;
-    font-size: 1.3rem;
+    font-size: 1.05rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
     line-height: 1.3;
     text-align: end;
+    overflow: visible;
+  }
+  /* Keep the original formatted amount accessible and unchanged on desktop. */
+  html .gk-dashboard .gk-kpi .gk-amount-full {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  html .gk-dashboard .gk-kpi .gk-amount-mobile {
+    display: flex;
+    font-size: clamp(0.75rem, 15cqw, 1.05rem);
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 0.15em;
+  }
+  html .gk-dashboard .gk-kpi .gk-currency {
+    flex: 0 0 2em;
+    min-width: 0;
+    font-size: 0.85em;
+    text-align: right;
   }
   html .gk-dashboard .gk-kpi-sub {
     flex: 0 0 auto;
     margin-top: 0;
+    justify-content: flex-end;
   }
   /* The sub text ("1 מסמך שולמו", "0 פעולות") is the one thing the line
      cannot afford; the delta badge stays, it is the signal. */
   html .gk-dashboard .gk-kpi-sub > p { display: none; }
+  html .gk-dashboard .gk-kpi-sub > span {
+    white-space: nowrap;
+    font-size: 0.7rem;
+    padding: 2px 4px;
+  }
+}
+
+@media (max-width: 379.98px) {
+  html .gk-dashboard .gk-kpi { padding-inline: 0.6rem; }
+  html .gk-dashboard .gk-kpi-row { gap: 0.35rem; }
+  html .gk-dashboard .gk-kpi .gk-icon { width: 1.75rem; height: 1.75rem; }
+  html .gk-dashboard .gk-kpi-body {
+    grid-template-columns: 3.6rem minmax(0, 1fr) 2.6rem;
+    gap: 0.3rem;
+  }
+}
+
+/* Long values share a second line across all four cards, so amounts remain
+   readable and aligned even with decimals, losses or large percentage changes. */
+@media (max-width: 639.98px) {
+  html .gk-dashboard .gk-kpi-roomy .gk-kpi-body {
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: 0.5rem;
+  }
+  html .gk-dashboard .gk-kpi-roomy .gk-label { justify-self: start; }
+  html .gk-dashboard .gk-kpi-roomy .gk-kpi-sub { grid-column: 2; grid-row: 1; }
+  html .gk-dashboard .gk-kpi-roomy .gk-value { grid-column: 1 / -1; grid-row: 2; }
+  @container (max-width: 15rem) {
+    html .gk-dashboard .gk-kpi-body {
+      grid-template-columns: minmax(0, 1fr) auto;
+      row-gap: 0.5rem;
+    }
+    html .gk-dashboard .gk-kpi .gk-label { justify-self: start; }
+    html .gk-dashboard .gk-kpi-sub { grid-column: 2; grid-row: 1; }
+    html .gk-dashboard .gk-kpi .gk-value { grid-column: 1 / -1; grid-row: 2; }
+  }
 }
 
 @media (min-width: 1280px) {
@@ -3345,6 +3417,9 @@ html button:disabled.from-orange-500 * { color: #6b6560 !important; }
   }
   html .gk-dashboard .gk-value {
     font-size: clamp(1.45rem, 13cqw, 2.15rem);
+  }
+  html .gk-dashboard .gk-kpi-roomy .gk-value {
+    font-size: clamp(1rem, 11cqw, 1.9rem);
   }
   html .gk-dashboard .gk-value + div .text-xs {
     font-size: 0.82rem;

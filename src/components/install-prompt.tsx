@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { Download, X } from "lucide-react";
 
 interface BeforeInstallPromptEvent extends Event {
@@ -15,6 +16,7 @@ const SESSION_KEY = "invoice-app:install-dismissed-this-session";
 const DISMISS_DAYS = 60; // bumped from 14; popping up every 2 weeks is still annoying
 
 export function InstallPrompt() {
+  const pathname = usePathname();
   // Bottom-right on every route. It used to flip left over the single-document
   // paper, and the assistant launcher mirrored it - which made the assistant
   // change corners between pages. Asaf (2026-08-14): the assistant owns
@@ -89,11 +91,13 @@ export function InstallPrompt() {
     setDeferredPrompt(null);
   }
 
-  if (!visible) return null;
+  // Keep the editor's fixed issue/save controls clear. The install invitation
+  // is still available when the user returns to another app screen.
+  if (!visible || pathname.startsWith("/documents/new/")) return null;
 
   return (
     <div
-      className="fixed bottom-4 inset-x-4 z-50 lg:bottom-6 lg:inset-x-auto lg:right-6 lg:max-w-sm no-print"
+      className="app-install-prompt fixed bottom-4 inset-x-4 z-50 lg:bottom-6 lg:inset-x-auto lg:right-6 lg:max-w-sm no-print"
     >
       <div className="card-soft p-4 bg-white shadow-xl shadow-orange-200/40 border-orange-200 flex items-start gap-3 animate-fade-in-up">
         <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-700 flex items-center justify-center flex-shrink-0">

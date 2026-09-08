@@ -444,7 +444,7 @@ export default function DashboardPage() {
             />
           </div>
         )}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4${cards.some((card) => (card.value.split("₪")[1]?.trim().replace(/\u2069/g, "").length ?? 0) > 7 || Math.abs(card.delta?.pct ?? 0) >= 1000) ? " gk-kpi-roomy" : ""}`}>
         {cards.map((s, idx) => {
           const Icon = s.icon;
           return (
@@ -463,7 +463,11 @@ export default function DashboardPage() {
                     <ArrowLeft className="w-3 h-3 opacity-0 group-hover:opacity-50 -translate-x-1 group-hover:translate-x-0 transition-all" />
                   </p>
                   <p className="gk-value text-2xl font-bold mt-2 truncate">
-                    {ready ? s.value : "..."}
+                    <span className="gk-amount-full">{ready ? s.value : "..."}</span>
+                    <span className="gk-amount-mobile" aria-hidden="true" dir="ltr">
+                      <span className="gk-currency">{ready ? (s.value.includes("-") ? "-₪" : "₪") : ""}</span>
+                      <span>{ready ? s.value.split("₪")[1].replace(/\u2069/g, "").trim() : "..."}</span>
+                    </span>
                   </p>
                   <div className="gk-kpi-sub flex items-baseline gap-2 mt-1 flex-wrap">
                     <p className="text-xs text-stone-600">{s.sub}</p>
