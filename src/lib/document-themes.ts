@@ -506,7 +506,7 @@ export interface DocumentTemplate {
 const GENERAL_PALETTE: Palette = {
   ink: "#1f232b",
   ink2: "#6b6560",
-  soft: "#9a9086",
+  soft: "#70665c",
   card: "#ffffff",
   cardline: "#e8ddd0",
   canvas: "#f7f2eb",

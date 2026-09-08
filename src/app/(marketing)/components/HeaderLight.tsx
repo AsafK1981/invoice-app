@@ -61,7 +61,7 @@ export default function HeaderLight() {
   const pathname = usePathname();
   const { user } = useOptionalUser();
   const homeHref = pathname === "/product" ? "/product" : "/";
-  const isHome = pathname === "/";
+  const isHome = pathname === "/" || pathname === "/product";
 
   return (
     <header className="ml-header">

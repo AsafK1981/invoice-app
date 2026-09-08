@@ -397,9 +397,9 @@ export default function MarketingLanding() {
                 <span className="ml-trust-icon">
                   <ShieldCheck aria-hidden="true" />
                 </span>
-                <span className="ml-trust-k">אבטחת מידע מלאה</span>
+                <span className="ml-trust-k">הגנה על המידע שלכם</span>
                 <p>
-                  כל המידע נשמר בענן מאובטח, עם הפרדה מלאה בין עסקים,
+                  המידע נשמר בענן מאובטח, עם הרשאות גישה נפרדות לכל עסק,
                   גיבוי לילי מוצפן במקום נפרד והצפנה על החיבור לרשות
                   המסים. <Link href="/security">איך בדיוק</Link>
                 </p>

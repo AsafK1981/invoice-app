@@ -3497,15 +3497,15 @@ html .text-\[13px\] { font-size: 14px; }
   html .card-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 
-/* Assistant launcher pill. On phones a screen may pin its own action bar to
-   the bottom edge (the document editor's save bar publishes its height as
-   --mobile-dock-h); the launcher rides above it instead of covering the
-   primary button. Desktop keeps the plain 1.5rem inset. */
+/* Phones reserve a top toolbar for the assistant and navigation. A bottom
+   overlay can cover arbitrary list actions even when an editor dock is absent. */
 .assistant-launcher {
-  bottom: calc(1rem + var(--mobile-dock-h, 0px));
+  top: calc(1rem + env(safe-area-inset-top));
+  bottom: auto;
 }
 @media (min-width: 1024px) {
   .assistant-launcher {
+    top: auto;
     bottom: 1.5rem;
   }
 }
@@ -3607,6 +3607,20 @@ html[data-text-size="large"]:has([data-app-sidebar]) { font-size: 19px; }
   opacity: 0;
   pointer-events: none;
   animation: assistant-launcher-ring 30s ease-out infinite;
+}
+@media (max-width: 1023.98px) {
+  html:has([data-app-sidebar]) {
+    scroll-padding-top: calc(5rem + env(safe-area-inset-top));
+  }
+  .assistant-launcher,
+  .assistant-launcher-ring {
+    animation: none;
+  }
+  .assistant-launcher:hover,
+  .assistant-launcher:active {
+    transform: none;
+    scale: none;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .assistant-launcher,

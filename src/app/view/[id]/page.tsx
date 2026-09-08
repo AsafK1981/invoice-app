@@ -14,11 +14,13 @@ import type { Business, Client, InvoiceDocument, DocumentItem } from "@/lib/type
  * and if their invoice is in English the buttons around it must not be Hebrew.
  * The document itself is rendered by ReceiptView from the same language.
  *
- * Deliberately small: the growth-loop card at the bottom stays Hebrew in both
- * cases, because it markets an Israeli product to Israeli freelancers.
  */
 const VIEW_STRINGS: Record<DocLang, Record<string, string>> = {
   he: {
+    promoTitle: "גם אתם מוציאים חשבוניות?",
+    promoBody: "הפיקו חשבוניות וקבלות בעברית ובאנגלית, ונהלו את מסמכי העסק במקום אחד.",
+    promoButton: "התחילו בחינם",
+    promoHint: "ללא כרטיס אשראי",
     loading: "טוען מסמך...",
     notFound: "המסמך לא נמצא",
     notFoundHint: "הקישור אינו תקין או שהמסמך נמחק",
@@ -41,6 +43,10 @@ const VIEW_STRINGS: Record<DocLang, Record<string, string>> = {
     footerHint: 'לחץ "הורד PDF" כדי לשמור את המסמך, או "הדפס" כדי לפתוח את חלון ההדפסה.',
   },
   en: {
+    promoTitle: "Do you issue invoices too?",
+    promoBody: "Create invoices and receipts in Hebrew and English, and manage your business documents in one place.",
+    promoButton: "Start for free",
+    promoHint: "No credit card required",
     loading: "Loading document...",
     notFound: "Document not found",
     notFoundHint: "The link is invalid, or the document was deleted",
@@ -138,7 +144,7 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
       });
       const data = await res.json();
       if (!data.ok) {
-        setApproveError(data.error || t.approveFailed);
+        setApproveError(t.approveFailed);
         return;
       }
       setDoc((prev) =>
@@ -146,8 +152,8 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
           ? { ...prev, approvedAt: data.approvedAt, approvalSignature: name }
           : prev
       );
-    } catch (err) {
-      setApproveError(err instanceof Error ? err.message : t.networkError);
+    } catch {
+      setApproveError(t.networkError);
     } finally {
       setApproving(false);
     }
@@ -340,14 +346,7 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
         showBranding={showBranding}
       />
 
-      {/* Screen-only cards that are still Hebrew by design (the payment-options
-          helper and the growth-loop CTA, which markets an Israeli product to
-          Israeli freelancers). On an English document the page is LTR, so they
-          get their own dir back or Hebrew punctuation ends up on the wrong
-          side. */}
-      <div dir="rtl" lang="he">
-        <PaymentOptionsCard business={business} document={doc} />
-      </div>
+      <PaymentOptionsCard business={business} document={doc} />
 
       {doc.type === "quote" && (
         <div className="no-print max-w-[210mm] mx-auto mt-6">
@@ -423,32 +422,24 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
         </div>
       </div>
 
-      {/* ── Growth loop: the warmest surface in the product ──────────────────
-          Whoever is reading this just received a professional invoice and is
-          looking at exactly what the app produces. A large share of them are
-          עצמאים who have the same problem. Screen-only (no-print) so it can
-          never appear on the printed/PDF document, and hidden entirely for
-          paying subscribers. Leads with the 2026 allocation-number mandate -
-          the actual pain - rather than with "free", which every competitor
-          already shouts. */}
+      {/* Screen-only recipient promotion, hidden for paying subscribers. */}
       {showBranding && (
-        <div className="no-print max-w-[210mm] mx-auto mt-4 mb-2" dir="rtl" lang="he">
+        <div className="no-print max-w-[210mm] mx-auto mt-4 mb-2">
           <div className="rounded-2xl border border-orange-200 bg-orange-50 p-5 text-center">
             <p className="text-sm font-semibold text-stone-800">
-              גם אתם מוציאים חשבוניות?
+              {t.promoTitle}
             </p>
             <p className="mt-1.5 text-xs leading-relaxed text-stone-600">
-              הפיקו חשבוניות וקבלות בעברית בחינם, עם מספרי הקצאה אוטומטיים
-              מרשות המסים, החובה שחלה על כל עוסק מ-2026.
+              {t.promoBody}
             </p>
             <a
-              href="/?utm_source=document&utm_medium=view_cta&utm_campaign=growth_loop"
+              href="/product?utm_source=document&utm_medium=view_cta&utm_campaign=growth_loop"
               className="mt-3 inline-flex items-center gap-2 rounded-2xl bg-gradient-to-l from-orange-500 to-orange-700 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:shadow-lg hover:shadow-orange-200"
             >
-              התחילו בחינם ←
+              {t.promoButton}
             </a>
             <p className="mt-2 text-[11px] text-stone-500">
-              ללא כרטיס אשראי
+              {t.promoHint}
             </p>
           </div>
         </div>

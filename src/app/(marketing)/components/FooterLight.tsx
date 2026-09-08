@@ -1,4 +1,8 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useOptionalUser } from "@/lib/auth";
 import { BrandLockup } from "@/components/brand-mark";
 
 /**
@@ -13,10 +17,13 @@ import { BrandLockup } from "@/components/brand-mark";
  * already reachable from the header/hero on this page.
  */
 export default function FooterLight() {
+  const pathname = usePathname();
+  const { user } = useOptionalUser();
+  const homeHref = user || pathname === "/product" ? "/product" : "/";
   return (
     <footer className="ml-footer">
       <div className="ml-wrap ml-footer-in">
-        <Link href="/" className="ml-footer-logo" aria-label="חשבונית ידידותית, לדף הבית">
+        <Link href={homeHref} className="ml-footer-logo" aria-label="חשבונית ידידותית, לדף הבית">
           <BrandLockup size={30} tagline tone="dark" />
         </Link>
         <nav className="ml-footer-links">

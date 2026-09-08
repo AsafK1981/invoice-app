@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type MouseEvent } from "react";
 import { createPortal } from "react-dom";
 import "./mobile-menu.css";
+import { BrandLockup } from "@/components/brand-mark";
+import { useDrawerFocus } from "@/lib/use-drawer-focus";
 
 /**
  * MobileMenu: the hamburger button + slide-in drawer shared by EVERY
@@ -61,6 +63,8 @@ export default function MobileMenu({
   const [open, setOpen] = useState(false);
   const burgerRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLElement>(null);
+  useDrawerFocus(open, panelRef, () => setOpen(false), burgerRef);
   const pendingJump = useRef<string | null>(null);
 
   useEffect(() => {
@@ -68,19 +72,14 @@ export default function MobileMenu({
   }, [pathname]);
 
   useEffect(() => {
-    if (open) {
-      const previousOverflow = document.body.style.overflow;
-      document.body.style.overflow = "hidden";
-      closeRef.current?.focus();
-      const onKey = (e: KeyboardEvent) => {
-        if (e.key === "Escape") setOpen(false);
-      };
-      document.addEventListener("keydown", onKey);
-      return () => {
-        document.body.style.overflow = previousOverflow;
-        document.removeEventListener("keydown", onKey);
-      };
-    }
+    const query = window.matchMedia("(min-width: 760px)");
+    const onChange = () => { if (query.matches) setOpen(false); };
+    query.addEventListener("change", onChange);
+    return () => query.removeEventListener("change", onChange);
+  }, []);
+
+  useEffect(() => {
+    if (open) return;
 
     const id = pendingJump.current;
     pendingJump.current = null;
@@ -133,12 +132,10 @@ export default function MobileMenu({
       {open &&
         createPortal(
           <div className="mm-root" id="mm-drawer">
-            <div className="mm-backdrop" onClick={close} aria-hidden="true" />
-            <nav className="mm-drawer" aria-label="תפריט האתר">
+            <div data-drawer-backdrop className="mm-backdrop" onClick={close} aria-hidden="true" />
+            <nav ref={panelRef} role="dialog" aria-modal="true" tabIndex={-1} className="mm-drawer" aria-label="תפריט האתר">
               <div className="mm-head">
-                <span className="mm-logo">
-                  חשבונית <span className="mm-logo-soft">ידידותית</span>
-                </span>
+                <BrandLockup size={30} />
                 <button
                   ref={closeRef}
                   type="button"
@@ -183,9 +180,9 @@ export default function MobileMenu({
                   {SITE_LINKS.map((l) => (
                     <li key={l.href}>
                       <Link
-                        href={l.href}
+                        href={l.href === "/" && (signedIn || pathname === "/product") ? "/product" : l.href}
                         className="mm-link"
-                        aria-current={isCurrent(l.href) ? "page" : undefined}
+                        aria-current={(isCurrent(l.href) || (l.href === "/" && pathname === "/product")) ? "page" : undefined}
                         onClick={close}
                       >
                         {l.label}

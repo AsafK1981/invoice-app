@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useDrawerFocus } from "@/lib/use-drawer-focus";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
@@ -80,6 +81,10 @@ export function Sidebar() {
   const pathname = usePathname();
   const { business } = useBusiness();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const drawerRef = useRef<HTMLElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  useDrawerFocus(mobileOpen, drawerRef, () => setMobileOpen(false), triggerRef);
+  useEffect(() => { setMobileOpen(false); }, [pathname]);
   // Show the "/admin" nav item only when the logged-in user's email
   // appears in the admin allow-list. Computed client-side; the API
   // route enforces the same check server-side.
@@ -113,25 +118,12 @@ export function Sidebar() {
     if (business.id) syncTextSizeFromBusiness(business.textSize);
   }, [business.id, business.textSize]);
 
-  // Escape closes the mobile drawer, matching the existing backdrop-click
-  // handler. While it is open the page behind it must not scroll: on phones a
-  // swipe inside the drawer otherwise moved the PAGE, and the drawer itself
-  // (taller than any phone viewport) could never be scrolled to its bottom
-  // entries (Asaf, 2026-09-03). Restoring the previous value on close keeps
-  // any other component's own lock intact.
   useEffect(() => {
-    if (!mobileOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setMobileOpen(false);
-    };
-    document.addEventListener("keydown", onKey);
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [mobileOpen]);
+    const query = window.matchMedia("(min-width: 1024px)");
+    const onChange = () => { if (query.matches) setMobileOpen(false); };
+    query.addEventListener("change", onChange);
+    return () => query.removeEventListener("change", onChange);
+  }, []);
 
   const sidebarContent = (
     <>
@@ -360,8 +352,11 @@ export function Sidebar() {
           print page out narrower than `lg`, so without it this fixed button
           was printed onto the top-right corner of every document. */}
       <button
+        ref={triggerRef}
+        aria-expanded={mobileOpen}
+        aria-controls="app-mobile-drawer"
         onClick={() => setMobileOpen(true)}
-        className="lg:hidden print:hidden fixed top-4 right-4 z-40 w-10 h-10 rounded-xl bg-white shadow-md border border-orange-100 flex items-center justify-center text-stone-700 hover:bg-orange-50"
+        className="lg:hidden print:hidden fixed top-[calc(1rem+env(safe-area-inset-top))] right-4 z-40 w-11 h-11 rounded-xl bg-white shadow-md border border-orange-100 flex items-center justify-center text-stone-700 hover:bg-orange-50"
         aria-label="תפריט"
       >
         <Menu className="w-5 h-5" />
@@ -370,6 +365,7 @@ export function Sidebar() {
       {/* Mobile overlay */}
       {mobileOpen && (
         <div
+          data-drawer-backdrop
           className="lg:hidden fixed inset-0 z-50 bg-stone-900/40 backdrop-blur-sm animate-fade-in"
           onClick={() => setMobileOpen(false)}
         />
@@ -383,6 +379,12 @@ export function Sidebar() {
           `min-h-0` is what lets a flex child shrink below its content and
           actually scroll instead of overflowing invisibly. */}
       <aside
+        ref={drawerRef}
+        id="app-mobile-drawer"
+        role="dialog"
+        aria-modal={mobileOpen ? true : undefined}
+        aria-label="תפריט האפליקציה"
+        tabIndex={-1}
         aria-hidden={!mobileOpen}
         inert={!mobileOpen}
         className={`lg:hidden fixed inset-y-0 right-0 z-50 w-72 bg-white/95 backdrop-blur-xl flex flex-col shadow-2xl transition-transform duration-300 ${
@@ -391,7 +393,7 @@ export function Sidebar() {
       >
         <button
           onClick={() => setMobileOpen(false)}
-          className="absolute top-4 left-4 z-10 w-8 h-8 rounded-xl bg-stone-100 flex items-center justify-center text-stone-600 hover:bg-stone-200"
+          className="absolute top-4 left-4 z-10 w-11 h-11 rounded-xl bg-stone-100 flex items-center justify-center text-stone-600 hover:bg-stone-200"
           aria-label="סגור"
         >
           <X className="w-4 h-4" />

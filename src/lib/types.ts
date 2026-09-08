@@ -423,10 +423,10 @@ export const DEFAULT_NEXT_NUMBER: Record<DocumentType, number> = {
 };
 
 export const DOC_SUM_LABEL: Record<DocumentType, string> = {
-  receipt: "סה״כ לתשלום",
+  receipt: "סה״כ התקבל",
   quote: "סה״כ הצעה",
   proforma: "סה״כ לתשלום",
   tax_invoice: "סה״כ לתשלום",
-  tax_invoice_receipt: "סה״כ לתשלום",
+  tax_invoice_receipt: "סה״כ התקבל",
   credit_note: "סה״כ זיכוי",
 };

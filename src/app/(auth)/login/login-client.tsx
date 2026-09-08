@@ -1,6 +1,6 @@
 "use client";
 
-import { BrandMark } from "@/components/brand-mark";
+import { BrandLockup } from "@/components/brand-mark";
 import { Suspense, useEffect, useId, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Mail, LogIn, UserPlus, Eye, EyeOff, ArrowRight, Check } from "lucide-react";
@@ -293,19 +293,8 @@ function LoginForm() {
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-orange-50 to-amber-50">
       <div className="w-full max-w-md">
         <div className="text-center mb-8 animate-fade-in-up">
-          <div className="flex items-center justify-center mx-auto">
-            <BrandMark size={72} />
-          </div>
-          {/* Hebrew brand, 2026-08-11. This page is the last step of the
-              marketing funnel, and it used to greet arrivals with the Latin
-              "MyFriendlyInvoiceApp" while every surface they had just read -
-              header, footer, hero, page title - says "חשבונית ידידותית".
-              Same name here or the click feels like it landed somewhere
-              else. (The gold accent is NOT a bug: app-skin.css re-tints the
-              coral family to gold app-wide, an approved decision, and this
-              page is the app's front door.) */}
-          <h1 className="text-xl font-bold text-stone-900 mt-4">חשבונית ידידותית</h1>
-          <p className="text-sm text-stone-600 mt-1">{titles[mode]}</p>
+          <BrandLockup size={44} tagline />
+          <h1 className="text-xl font-bold text-stone-900 mt-4">{titles[mode]}</h1>
         </div>
 
         {/* The launch-period promise, restated at the point of hesitation.
@@ -371,7 +360,8 @@ function LoginForm() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 transition-colors"
+                    aria-pressed={showPassword}
+                    className="absolute right-1 top-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center text-stone-500 hover:text-stone-700 transition-colors"
                     aria-label={showPassword ? "הסתר סיסמה" : "הצג סיסמה"}
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -387,7 +377,7 @@ function LoginForm() {
                     required
                     minLength={6}
                     autoComplete={mode === "signup" ? "new-password" : "current-password"}
-                    className="input-warm pl-3 pr-10"
+                    className="input-warm pl-3 pr-12"
                   />
                 </div>
               </div>

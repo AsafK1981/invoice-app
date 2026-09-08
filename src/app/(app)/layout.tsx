@@ -26,6 +26,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       >
         דלג לתוכן
       </a>
+      <div data-mobile-app-toolbar aria-hidden="true" className="lg:hidden print:hidden fixed inset-x-0 top-0 z-30 h-[calc(5rem+env(safe-area-inset-top))] bg-white border-b border-stone-200" />
       <div className="flex min-h-screen w-full">
         <Sidebar />
         {/* NOTE: `overflow-y-auto` was removed here (2026-07-19). It never did
@@ -37,7 +38,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           {/* Below `pt-16` so it clears the mobile hamburger button (fixed
               top-4 right-4), instead of a full-bleed row above the flex
               layout that it would otherwise overlap. */}
-          <div className="max-w-7xl mx-auto p-4 pt-16 lg:p-8 print:p-0 print:max-w-none">
+          <div className="max-w-7xl mx-auto p-4 pt-[calc(5rem+env(safe-area-inset-top))] lg:p-8 print:p-0 print:max-w-none">
             <EmailVerificationBanner />
             <TwoFactorNudge />
             <div className="no-print flex items-center justify-end gap-2 mb-4 print:hidden">

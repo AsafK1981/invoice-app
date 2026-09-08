@@ -32,7 +32,7 @@
      ~130 rules here plus designToCssVars() for zero visual gain. */
   --d-ink: #1f232b;
   --d-ink2: #6b6560;
-  --d-soft: #9a9086;
+  --d-soft: #70665c;
   --d-gold: #1f232b;
   --d-gold-line: #e38f4f;
   --d-gold-faint: #fbeadb;
@@ -529,7 +529,7 @@
 }
 .doc-paper .doc-foot-brand {
   font-size: 10px;
-  color: #9a9086;
+  color: var(--d-soft);
   margin-top: 5px;
 }
 /* The credit is a real link (growth loop), but this is a tax document: it must

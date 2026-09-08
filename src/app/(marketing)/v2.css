@@ -974,7 +974,7 @@
   width: 20px;
   height: 20px;
   flex: none;
-  color: var(--v2-g2);
+  color: var(--v2-g1);
 }
 .v2-theme .v2-ft b {
   font-size: var(--v2-fs-body);
@@ -1493,7 +1493,7 @@
   border-bottom: 1px solid var(--v2-line);
   transition: border-color 0.2s ease;
 }
-.v2-theme .v2-prose a:hover { border-color: var(--v2-g2); }
+.v2-theme .v2-prose a:hover { border-color: var(--v2-g1); }
 
 /* ---------- status page ---------- */
 .v2-theme .v2-status-head {
@@ -1517,7 +1517,7 @@
   background: var(--v2-card);
 }
 .v2-theme .v2-status-badge svg { width: 24px; height: 24px; }
-.v2-theme .v2-status-badge.is-ok { color: var(--v2-g2); }
+.v2-theme .v2-status-badge.is-ok { color: var(--v2-g1); }
 .v2-theme .v2-status-badge.is-down { color: #A94E16; }
 .v2-theme .v2-status-badge.is-loading { color: var(--v2-muted); }
 .v2-theme .v2-status-badge .spin { animation: v2-spin 1s linear infinite; }
@@ -1577,7 +1577,7 @@
   color: #1F232B;
 }
 .v2-theme .v2-status-row .name svg { width: 18px; height: 18px; }
-.v2-theme .v2-status-row.is-ok .name svg { color: var(--v2-g2); }
+.v2-theme .v2-status-row.is-ok .name svg { color: var(--v2-g1); }
 .v2-theme .v2-status-row.is-down .name svg { color: #A94E16; }
 .v2-theme .v2-status-row .val {
   font-size: var(--v2-fs-meta);
@@ -1730,7 +1730,7 @@
 }
 .v2-theme .v2-input:focus {
   outline: none;
-  border-color: var(--v2-g2);
+  border-color: var(--v2-g1);
   box-shadow: 0 0 0 3px rgba(217, 106, 29, 0.18);
 }
 .v2-theme .v2-input-icon {
@@ -1761,7 +1761,7 @@
 .v2-theme .v2-link {
   font-size: var(--v2-fs-meta);
   font-weight: 600;
-  color: var(--v2-g2);
+  color: var(--v2-g1);
   background: none;
   border: none;
   cursor: pointer;
@@ -1870,7 +1870,7 @@
   transition: border-color 0.2s ease, background 0.2s ease;
 }
 .v2-theme .v2-google-btn:hover {
-  border-color: var(--v2-g2);
+  border-color: var(--v2-g1);
   background: rgba(31, 35, 43, 0.7);
 }
 .v2-theme .v2-google-btn svg { width: 18px; height: 18px; }
@@ -2090,7 +2090,7 @@
   padding-top: 11px;
   border-top: 1px solid var(--v2-line-soft);
 }
-.v2-theme .v2-price-card li.trial .val { color: var(--v2-g2); font-weight: 700; }
+.v2-theme .v2-price-card li.trial .val { color: var(--v2-g1); font-weight: 700; }
 /* The "why it matters" note under the pricing grid. It is a bordered box that
    spans the section, and at the desktop tier it splits into two text columns
    (see the min-width block) so its own width IS its measure and no black
@@ -2183,7 +2183,7 @@
   font-weight: 700;
   font-size: var(--v2-fs-body);
   letter-spacing: 0.02em;
-  color: var(--v2-g2);
+  color: var(--v2-g1);
   background: #F7F2EB;
   border-bottom: 1px solid var(--v2-line-soft);
 }
@@ -2461,7 +2461,7 @@
   gap: 6px;
   font-size: var(--v2-fs-body);
   font-weight: 700;
-  color: var(--v2-g2);
+  color: var(--v2-g1);
 }
 .v2-theme .v2-vs-card .more svg {
   width: 15px;
@@ -2522,7 +2522,7 @@
   transition: transform 0.16s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 .v2-theme .v2-blog-card:hover {
-  border-color: var(--v2-g2);
+  border-color: var(--v2-g1);
   transform: translateY(-2px);
   box-shadow: var(--v2-sh-hover), var(--v2-sh-edge);
 }
@@ -2558,7 +2558,7 @@
   padding-top: var(--v2-sp-2);
   font-size: var(--v2-fs-body);
   font-weight: 700;
-  color: var(--v2-g2);
+  color: var(--v2-g1);
 }
 /* The arrow nudges on card hover, exactly like .v2-vs-card's, the two index
    templates were out of sync (this one had no transition at all). */
@@ -2626,7 +2626,7 @@
   line-height: 1.75;
 }
 .v2-theme .v2-prose li { margin-bottom: 6px; }
-.v2-theme .v2-prose li::marker { color: var(--v2-g2); }
+.v2-theme .v2-prose li::marker { color: var(--v2-g1); }
 .v2-theme .v2-prose strong { color: var(--v2-ink); font-weight: 700; }
 .v2-theme .v2-prose blockquote {
   margin: 16px 0;

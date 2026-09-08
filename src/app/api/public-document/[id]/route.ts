@@ -110,6 +110,7 @@ export async function GET(
           .from("clients")
           .select("id, name, tax_id, address, phone, email")
           .eq("id", doc.client_id)
+          .eq("business_id", doc.business_id)
           .maybeSingle()
       : Promise.resolve({ data: null, error: null }),
   ]);

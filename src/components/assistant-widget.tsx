@@ -323,6 +323,22 @@ export function AssistantWidget() {
   const [open, setOpen] = useState(false);
   const { desktop, size, setSize, maximized, setMaximized, persist } = usePanelSize();
   const panelRef = useRef<HTMLDivElement>(null);
+  const [mobileViewport, setMobileViewport] = useState<{ height: number; bottom: number } | null>(null);
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    if (!open || desktop || !viewport) return;
+    const sync = () => setMobileViewport({
+      height: viewport.height,
+      bottom: Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop),
+    });
+    sync();
+    viewport.addEventListener("resize", sync);
+    viewport.addEventListener("scroll", sync);
+    return () => {
+      viewport.removeEventListener("resize", sync);
+      viewport.removeEventListener("scroll", sync);
+    };
+  }, [open, desktop]);
   // Set while a resize drag is in flight so the panel skips its size
   // transition and follows the pointer 1:1.
   const [resizing, setResizing] = useState(false);
@@ -720,9 +736,9 @@ export function AssistantWidget() {
     panelStyle.height = `${size.h}px`;
   }
 
-  // Always bottom-left, on every route (Asaf, 2026-08-14: the launcher must
-  // never change corners). InstallPrompt keeps bottom-right so they can't
-  // overlap. Both `left` and `right` have to be set in the same breakpoint:
+  // Desktop keeps the bottom-left launcher; mobile reserves a top toolbar.
+  // The open mobile panel stays above the keyboard. Both `left` and `right`
+  // have to be set in the same breakpoint:
   // the mobile rules pin the panel to both edges, so overriding only one of
   // them on lg leaves the other stuck at 0.
   const side = "lg:left-6 lg:right-auto";
@@ -740,7 +756,7 @@ export function AssistantWidget() {
       <button
         onClick={() => setOpen(true)}
         aria-label="פתח את העוזר החכם"
-        className={`assistant-launcher no-print fixed left-4 right-auto z-40 ${side} h-12 pl-4 pr-3 lg:h-16 lg:pl-6 lg:pr-5 lg:gap-3 rounded-full bg-gradient-to-br from-orange-500 to-orange-700 text-white shadow-lg shadow-orange-300/60 flex items-center gap-2 hover:scale-105 active:scale-95 transition-transform print:hidden`}
+        className={`assistant-launcher no-print fixed left-4 right-auto z-40 ${side} h-11 pl-4 pr-3 lg:h-16 lg:pl-6 lg:pr-5 lg:gap-3 rounded-full bg-gradient-to-br from-orange-500 to-orange-700 text-white shadow-lg shadow-orange-300/60 flex items-center gap-2 hover:scale-105 active:scale-95 transition-transform print:hidden`}
       >
         {/* Attention ring: expands and fades once per nudge cycle (see
             .assistant-launcher::after in app-skin.css). Decorative only. */}
@@ -761,14 +777,14 @@ export function AssistantWidget() {
   return (
     <div
       className={`no-print fixed bottom-0 left-0 right-0 z-40 lg:bottom-6 ${side} lg:w-[440px] print:hidden`}
-      style={desktop && panelStyle.width ? { width: panelStyle.width } : undefined}
+      style={desktop ? { width: panelStyle.width } : mobileViewport ? { bottom: mobileViewport.bottom } : undefined}
     >
       <div
         ref={panelRef}
         className={`card-soft relative bg-white flex flex-col h-[70vh] lg:h-[540px] max-h-[100dvh] lg:max-h-[calc(100dvh-3rem)] overflow-hidden rounded-b-none lg:rounded-2xl shadow-2xl shadow-orange-200/40 ${
           resizing ? "" : "transition-[width,height] duration-150"
         }`}
-        style={panelStyle.height ? { height: panelStyle.height } : undefined}
+        style={{ height: panelStyle.height, ...(!desktop && mobileViewport ? { maxHeight: mobileViewport.height } : {}) }}
       >
         {/* Resize handles. Top edge: height. Top-right corner: width + height
             (desktop only - on the phone the sheet is always full-width). The

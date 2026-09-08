@@ -147,7 +147,8 @@ export function EmailSettingsModal({ open, onClose }: Props) {
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700"
+              aria-pressed={showPassword}
+              className="absolute right-1 top-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center text-stone-500 hover:text-stone-700"
               aria-label={showPassword ? "הסתר סיסמה" : "הצג סיסמה"}
             >
               {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -160,7 +161,7 @@ export function EmailSettingsModal({ open, onClose }: Props) {
               onChange={(e) => setGmailAppPassword(e.target.value)}
               placeholder="xxxx xxxx xxxx xxxx"
               autoComplete="off"
-              className="input-warm pr-10"
+              className="input-warm pr-12"
             />
           </div>
         </FormField>

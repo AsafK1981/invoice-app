@@ -166,11 +166,11 @@ const EN: DocStrings = {
   zeroRatedNote: "Zero-rated transaction: export of services",
   rounding: "Rounding",
   sumLabel: {
-    receipt: "Total due",
+    receipt: "Total received",
     quote: "Quote total",
     proforma: "Total due",
     tax_invoice: "Total due",
-    tax_invoice_receipt: "Total due",
+    tax_invoice_receipt: "Total received",
     credit_note: "Total credited",
   },
   totalInIls: "Total in ILS",

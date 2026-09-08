@@ -91,7 +91,8 @@ export default function ResetPasswordPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700"
+                    aria-pressed={showPassword}
+                    className="absolute right-1 top-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center text-stone-500 hover:text-stone-700"
                     aria-label={showPassword ? "הסתר סיסמה" : "הצג סיסמה"}
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -106,7 +107,7 @@ export default function ResetPasswordPage() {
                     required
                     minLength={6}
                     disabled={!sessionReady || !!error}
-                    className="input-warm pl-3 pr-10"
+                    className="input-warm pl-3 pr-12"
                   />
                 </div>
               </div>
@@ -125,7 +126,7 @@ export default function ResetPasswordPage() {
                     required
                     minLength={6}
                     disabled={!sessionReady || !!error}
-                    className="input-warm pr-10"
+                    className="input-warm pr-12"
                   />
                 </div>
               </div>

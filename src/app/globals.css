@@ -7,6 +7,10 @@
    otherwise fire those utilities for anyone whose OS is in dark mode. */
 @custom-variant dark (&:where(.dark, .dark *));
 
+:root {
+  --font-inter: var(--font-inter-currency), var(--font-inter-extended), var(--font-inter-base);
+}
+
 /* Font families come from next/font (self-hosted, see layout.tsx) via CSS
    variables on <html>. The literal names are kept as a fallback so anything
    rendered outside the root layout still resolves sensibly. */

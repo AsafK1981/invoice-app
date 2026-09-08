@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Sparkles } from "lucide-react";
+import { BrandLockup } from "@/components/brand-mark";
 import { useBusinessInit } from "@/lib/business-init";
 import { useRequireAuth } from "@/lib/auth";
 import { ConfirmProvider } from "@/components/ui/confirm-dialog";
@@ -35,11 +35,8 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-amber-50">
         <div className="text-center space-y-5 animate-fade-in">
-          <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-orange-500 to-orange-700 flex items-center justify-center mx-auto shadow-xl shadow-orange-200/50 btn-glow">
-            <Sparkles className="w-9 h-9 text-white animate-pulse" />
-          </div>
-          <div>
-            <p className="text-stone-800 font-bold text-lg">חשבונית ידידותית</p>
+          <BrandLockup size={44} tagline />
+          <div role="status">
             <p className="text-stone-500 text-sm mt-1">טוען את המערכת...</p>
           </div>
         </div>
