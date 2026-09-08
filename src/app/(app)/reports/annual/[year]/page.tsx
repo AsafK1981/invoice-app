@@ -30,6 +30,7 @@ export default function AnnualSummaryPage({ params }: { params: Promise<{ year: 
       <ReportPageHeader
         icon={FileText}
         title={`סיכום שנתי לדיווח · ${year}`}
+        period={`שנת המס ${year}`}
         subtitle="כל המספרים לדוח השנתי במקום אחד: הכנסות לפי סוג מסמך, הוצאות לפי קטגוריה, הלקוחות הגדולים."
         actions={<YearStepper year={year} base="/reports/annual" />}
       />

@@ -161,7 +161,17 @@ export function Sidebar() {
               am I looking at" - which is what a user with two businesses
               needs to read here. */}
           <div className="min-w-0">
-            <p className="text-sm font-bold text-stone-900 leading-tight truncate">{business.name}</p>
+            {/* data-report-business: the one place in the app chrome that knows
+                whose books these are, so src/lib/report-pdf.ts reads the
+                business name off here for the "שם הנישום" line every printed
+                report has to carry (נספח ה' (א)(2)). It is read from the LIVE
+                DOM before the .no-print sidebar is stripped from the snapshot. */}
+            <p
+              className="text-sm font-bold text-stone-900 leading-tight truncate"
+              data-report-business={business.name || ""}
+            >
+              {business.name}
+            </p>
           </div>
         </div>
       </div>

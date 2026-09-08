@@ -9,6 +9,15 @@ interface Props {
   subtitle?: ReactNode;
   /** Optional controls (period pickers, print) rendered at the inline-end. */
   actions?: ReactNode;
+  /**
+   * התקופה שאליה מתייחס הפלט - the period this report covers, in words
+   * ("שנת המס 2026", "ינואר 2026 עד מרץ 2026"). Rendered nowhere on screen:
+   * it is published as `data-report-period` for src/lib/report-pdf.ts, which
+   * puts it in the running header of the PDF, as נספח ה' (א)(2) requires.
+   * A report that covers no period (an all-time list) leaves it out and the
+   * header simply omits that cell.
+   */
+  period?: string;
 }
 
 /**
@@ -17,15 +26,15 @@ interface Props {
  * existing tax-projection / invoices-period pages, extracted so the new
  * sub-pages that grew out of the reports overview do not each re-type it.
  */
-export function ReportPageHeader({ icon: Icon, title, subtitle, actions }: Props) {
+export function ReportPageHeader({ icon: Icon, title, subtitle, actions, period }: Props) {
   return (
-    <div className="flex items-start justify-between flex-wrap gap-3">
+    <div className="flex items-start justify-between flex-wrap gap-3" data-report-period={period}>
       <div>
         <h1 className="text-3xl font-bold text-stone-900 flex items-center gap-3">
           <span className="w-11 h-11 rounded-2xl fgrad fgrad-emerald flex items-center justify-center shadow-sm">
             <Icon className="w-5 h-5 text-white" />
           </span>
-          {title}
+          <span data-report-title={title}>{title}</span>
         </h1>
         {subtitle && <p className="text-sm text-stone-700 mt-2 mr-14">{subtitle}</p>}
       </div>

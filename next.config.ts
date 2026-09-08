@@ -56,6 +56,15 @@ const nextConfig: NextConfig = {
   // in practice and sidesteps picomatch treating "[id]" as a character class.
   outputFileTracingIncludes: {
     "/api/documents/**": ["./node_modules/@sparticuz/chromium/bin/**/*"],
+    // Same bin/ problem for the report PDF route, which launches the very same
+    // browser. Plus the Heebo Hebrew subset: the report header/footer are
+    // rendered by Chrome in their own document, which cannot fetch a webfont,
+    // and the Lambda image has no Hebrew system font - so the route inlines
+    // this file as a data: URI. Neither is reachable by the static tracer.
+    "/api/reports/**": [
+      "./node_modules/@sparticuz/chromium/bin/**/*",
+      "./src/app/fonts/heebo/Heebo-Variable-Hebrew.woff2",
+    ],
   },
   async headers() {
     return [

@@ -64,7 +64,7 @@ export default function SequenceReportPage() {
             <span className="w-11 h-11 shrink-0 rounded-2xl fgrad fgrad-emerald flex items-center justify-center shadow-sm">
               <ListOrdered className="w-5 h-5 text-white" />
             </span>
-            <span className="min-w-0 break-words" data-report-title>
+            <span className="min-w-0 break-words" data-report-title="בדיקת רצף מספור">
               בדיקת רצף מספור
             </span>
           </h1>

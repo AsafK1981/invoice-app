@@ -32,6 +32,7 @@ export default function Form1301Page({ params }: { params: Promise<{ year: strin
       <ReportPageHeader
         icon={ClipboardList}
         title={`עזר למילוי טופס 1301 · ${year}`}
+        period={`שנת המס ${year}`}
         subtitle="הערכים מוכנים להעתקה ישירה לטופס הדוח השנתי באתר רשות המסים, או לרואה החשבון."
         actions={<YearStepper year={year} base="/reports/form-1301" />}
       />

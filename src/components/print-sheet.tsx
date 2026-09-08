@@ -161,7 +161,16 @@ export function PrintSheet<T>({
   const hasFooter = columns.some((c) => c.footer !== undefined);
 
   return (
-    <section className="print-sheet hidden print:block" dir="rtl" aria-hidden="true">
+    <section
+      className="print-sheet hidden print:block"
+      dir="rtl"
+      aria-hidden="true"
+      // התקופה שאליה מתייחס הפלט for the PDF running header (נספח ה' (א)(2)).
+      // A list page's "period" is the filter it is showing, which is exactly
+      // what the subtitle already says ("כל הלקוחות", a search term, a month
+      // range). Published only when it is plain text; see src/lib/report-pdf.ts.
+      data-report-period={typeof subtitle === "string" ? subtitle : undefined}
+    >
       <header className="mb-4">
         {businessName && (
           <div className="text-base font-bold text-stone-900">{businessName}</div>

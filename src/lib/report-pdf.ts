@@ -11,6 +11,12 @@ import { supabase } from "@/lib/supabase";
  * inlined), post it to /api/reports/pdf, and headless Chrome there prints it
  * with the same print CSS. Everything the print rules hide on screen
  * (.no-print, the sidebar, the filter bars) is hidden in the file too.
+ *
+ * The snapshot also carries the four facts נספח ה' (א)(2) requires on every
+ * printed output - שם הנישום, מהות הפלט, התקופה, and a סימן לסיום הפלט - so
+ * the renderer can put them in a running header/footer on every page. See
+ * `reportMeta()` below and the header/footer templates in
+ * src/app/api/reports/pdf/route.ts.
  */
 
 export type ReportPdfOptions = {
@@ -72,9 +78,44 @@ function absolutizeUrls(css: string, base: string): string {
   });
 }
 
+/**
+ * The header/footer facts, read off the LIVE page (before the clone is
+ * stripped), never hardcoded:
+ *
+ *   business - `[data-report-business]`, set once in the sidebar, which knows
+ *              whose books are open. It is `.no-print`, hence "live DOM".
+ *   title    - `[data-report-title]` when a page marks one, else its own <h1>.
+ *              This is מהות הפלט: what the output IS.
+ *   period   - `[data-report-period]`, the range the page is showing. A page
+ *              whose period lives only in a control it renders sets the
+ *              attribute on its root; pages that cover no period leave it off
+ *              and the header simply omits the line.
+ *
+ * Production date is NOT taken from here: the renderer stamps it, in Israel
+ * time, at the moment the file is actually produced.
+ */
+function reportMeta(fallbackTitle?: string): { business: string; title: string; period: string } {
+  const attr = (selector: string, name: string): string => {
+    const el = document.querySelector(selector);
+    const value = el?.getAttribute(name) ?? el?.textContent ?? "";
+    return value.trim().slice(0, 200);
+  };
+  const title =
+    attr("[data-report-title]", "data-report-title") ||
+    document.querySelector("h1")?.textContent?.trim().slice(0, 200) ||
+    fallbackTitle ||
+    document.title;
+  return {
+    business: attr("[data-report-business]", "data-report-business"),
+    title,
+    period: attr("[data-report-period]", "data-report-period"),
+  };
+}
+
 /** A static HTML document of the page as it is right now. */
 export function capturePageHtml(title?: string, opts: { landscape?: boolean } = {}): string {
   const root = document.documentElement;
+  const facts = reportMeta(title);
   const clone = root.cloneNode(true) as HTMLElement;
 
   // cloneNode copies attributes, not live form state. Carry the current value
@@ -124,6 +165,20 @@ export function capturePageHtml(title?: string, opts: { landscape?: boolean } = 
 
   clone.querySelectorAll(STRIP_SELECTOR).forEach((el) => el.remove());
 
+  // סימן לסיום הפלט (נספח ה' (א)(2)): a reader must be able to tell that the
+  // output ends here and no page is missing off the end. Appended to the
+  // snapshot, not to the live page, so it exists only in the file. Inline
+  // styles on purpose: it must not depend on a class the app might rename.
+  const endMark = document.createElement("div");
+  endMark.setAttribute("dir", "rtl");
+  endMark.setAttribute(
+    "style",
+    "margin-top:16px;padding-top:8px;border-top:1px solid #999;text-align:center;" +
+      "font-size:11px;font-weight:700;letter-spacing:0.08em;color:#333;",
+  );
+  endMark.textContent = "סוף הדוח";
+  (clone.querySelector("body") ?? clone).append(endMark);
+
   const { css, links } = collectStyles();
   let head = clone.querySelector("head");
   if (!head) {
@@ -137,6 +192,20 @@ export function capturePageHtml(title?: string, opts: { landscape?: boolean } = 
   const titleEl = document.createElement("title");
   titleEl.textContent = title ?? document.title;
   head.append(titleEl);
+  // Carried as <meta> rather than as a second POST field so BOTH capture
+  // paths (downloadCurrentPageAsPdf and usePrintSheet's capture-then-submit)
+  // get them without either one having to remember to pass them on.
+  for (const [name, content] of [
+    ["report-business", facts.business],
+    ["report-title", facts.title],
+    ["report-period", facts.period],
+  ] as const) {
+    if (!content) continue;
+    const m = document.createElement("meta");
+    m.setAttribute("name", name);
+    m.setAttribute("content", content);
+    head.append(m);
+  }
   for (const href of links) {
     const link = document.createElement("link");
     link.rel = "stylesheet";

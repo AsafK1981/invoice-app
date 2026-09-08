@@ -45,7 +45,7 @@ export default function ProfitLossPage() {
     finally { setBusy(false); }
   }
   return <div className="space-y-6" dir="rtl">
-    <div className="no-print"><ReportPageHeader icon={TrendingUp} title="דוח רווח והפסד" subtitle="ההכנסות, ההוצאות ומה שנשאר בעסק - במקום אחד." /></div>
+    <div className="no-print"><ReportPageHeader icon={TrendingUp} title="דוח רווח והפסד" subtitle="ההכנסות, ההוצאות ומה שנשאר בעסק - במקום אחד." period={periodLabel(period)} /></div>
     <div className="rpt-controls no-print"><PeriodPicker period={period} onChange={setPeriod} /></div>
     {!ready ? <p role="status" className="py-16 text-center text-stone-600">טוען את פרטי העסק...</p>
       : !business.id ? <p role="alert" className="p-6 rounded-2xl bg-amber-50 text-amber-900">לא ניתן לטעון את פרטי העסק. יש לרענן את העמוד ולנסות שוב.</p>

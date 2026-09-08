@@ -52,6 +52,7 @@ export default function CashFlowPage() {
         icon={TrendingUp}
         title="תחזית תזרים"
         subtitle="3 החודשים הקרובים, לפי מה שכבר ידוע"
+        period={periodLabel}
         actions={
           <>
             <button

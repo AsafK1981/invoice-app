@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { CANONICAL_ORIGIN } from "@/lib/public-url";
@@ -17,6 +19,14 @@ import { launchPdfBrowser, safePdfFilename } from "@/lib/pdf-browser";
  * it to headless Chrome, print with the page's own @media print rules, and
  * stream the PDF back. The output is byte-for-byte what the user would get
  * from Chrome's "Save as PDF", minus the dialog.
+ *
+ * Every page of the file carries the running header and footer that
+ * נספח ה' (א)(2) requires on any printed output: the taxpayer's name, what
+ * the output is, the period it covers, when it was produced, and the page
+ * number. The first three travel inside the snapshot as <meta> tags the page
+ * itself filled in (src/lib/report-pdf.ts); the date is stamped here, and the
+ * page numbers come from Chrome. The matching end-of-output mark
+ * ("סוף הדוח") is appended to the snapshot body on the client.
  *
  * Trust boundary: the HTML is user-supplied and rendered in a throwaway
  * headless browser that holds no cookies or credentials. Everything Chrome
@@ -41,6 +51,109 @@ const RATE_MAX = 8;
 const RATE_WINDOW_MS = 60_000;
 
 const ALLOWED_HOSTS = new Set(["fonts.googleapis.com", "fonts.gstatic.com"]);
+
+/**
+ * Chrome renders headerTemplate/footerTemplate in their OWN document: none of
+ * the report's stylesheets reach them, and they cannot fetch a webfont either.
+ * On Vercel the Lambda image ships no Hebrew system font, so a template that
+ * relied on one would print boxes. The page fonts are self-hosted (see
+ * src/app/layout.tsx), so the smallest of them - Heebo's 12KB Hebrew subset -
+ * is inlined as a data: URI. No network, no CORS, nothing to allow-list.
+ *
+ * next.config.ts traces the file into this function (outputFileTracingIncludes).
+ * If it is ever missing we still print, just in whatever face Chrome picks.
+ */
+let headerFontFace: string | null = null;
+function hebrewFontFace(): string {
+  if (headerFontFace !== null) return headerFontFace;
+  try {
+    const file = join(process.cwd(), "src/app/fonts/heebo/Heebo-Variable-Hebrew.woff2");
+    const base64 = readFileSync(file).toString("base64");
+    headerFontFace =
+      "@font-face{font-family:'ReportHeebo';font-style:normal;font-weight:100 900;" +
+      `src:url(data:font/woff2;base64,${base64}) format('woff2');}`;
+  } catch (err) {
+    console.warn("[report-pdf] header font not available, falling back", err);
+    headerFontFace = "";
+  }
+  return headerFontFace;
+}
+
+/** Text going into an HTML template we build by hand. */
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+/** The reverse, for a value read back out of the snapshot's <meta content>. */
+function decodeHtml(value: string): string {
+  return value
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, "&");
+}
+
+/** One <meta name="..."> the page put in the snapshot, or "". */
+function metaFromHtml(html: string, name: string): string {
+  const tag = html.match(new RegExp(`<meta[^>]*name=["']${name}["'][^>]*>`, "i"))?.[0];
+  if (!tag) return "";
+  const content = tag.match(/content=["']([^"']*)["']/i)?.[1] ?? "";
+  return decodeHtml(content).trim().slice(0, 200);
+}
+
+/** The production date, in the only timezone a set of Israeli books is read in. */
+function productionStamp(): string {
+  return new Intl.DateTimeFormat("he-IL", {
+    timeZone: "Asia/Jerusalem",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(new Date());
+}
+
+/**
+ * The running header and footer. dir="rtl" on the template root so the Hebrew
+ * reads right to left and the three columns sit in reading order; the layout
+ * is a plain flex row, since Chrome's template document sees none of our CSS.
+ * Sizes are px at 96dpi, small enough to sit inside the 15mm @page margin
+ * globals.css declares.
+ */
+function headerFooterTemplates(meta: { business: string; title: string; period: string }) {
+  const cell = (text: string, align: string) =>
+    `<span style="flex:1;text-align:${align};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${text}</span>`;
+
+  const shell = (inner: string) =>
+    `<div dir="rtl" style="width:100%;font-family:'ReportHeebo','Noto Sans Hebrew',Arial,sans-serif;` +
+    `font-size:8px;color:#444;padding:0 12mm;box-sizing:border-box;">` +
+    `<style>${hebrewFontFace()}</style>` +
+    `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;">` +
+    `${inner}</div></div>`;
+
+  const headerTemplate = shell(
+    cell(`<b>${escapeHtml(meta.business)}</b>`, "right") +
+      cell(`<b>${escapeHtml(meta.title)}</b>`, "center") +
+      cell(escapeHtml(meta.period), "left"),
+  );
+
+  const footerTemplate = shell(
+    cell(`תאריך הפקה: ${escapeHtml(productionStamp())}`, "right") +
+      cell("", "center") +
+      cell(
+        'עמוד <span class="pageNumber"></span> מתוך <span class="totalPages"></span>',
+        "left",
+      ),
+  );
+
+  return { headerTemplate, footerTemplate };
+}
 
 async function userFromBearer(req: Request) {
   const authHeader = req.headers.get("authorization");
@@ -110,6 +223,15 @@ export async function POST(req: Request) {
   // every relative font / image / asset URL resolves against `base`.
   const doc = html.replace(/<head(\s[^>]*)?>/i, (m) => `${m}<base href="${base}/">`);
 
+  // The page told us who it belongs to, what it is and which period it covers
+  // (src/lib/report-pdf.ts). None of it is trusted: it is length-capped when
+  // read and escaped before it goes into the header template.
+  const meta = {
+    business: metaFromHtml(html, "report-business"),
+    title: metaFromHtml(html, "report-title") || filename.replace(/\.pdf$/i, ""),
+    period: metaFromHtml(html, "report-period"),
+  };
+
   let browser: Awaited<ReturnType<typeof launchPdfBrowser>> | null = null;
   try {
     browser = await launchPdfBrowser();
@@ -168,6 +290,11 @@ export async function POST(req: Request) {
       // Honor the @page rules in globals.css (A4, 15mm margins) so the file
       // matches the browser's own "Save as PDF" verbatim.
       preferCSSPageSize: true,
+      // Every page carries the taxpayer's name, what the output is, the period
+      // it covers, when it was produced and its page number. Chrome renders
+      // these into the @page margin box.
+      displayHeaderFooter: true,
+      ...headerFooterTemplates(meta),
     });
 
     const encoded = encodeURIComponent(filename);
