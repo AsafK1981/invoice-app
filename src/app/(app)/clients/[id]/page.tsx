@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useMemo } from "react";
+import { use, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -14,8 +14,10 @@ import {
   Plus,
   Pencil,
   BookOpen,
+  ShieldCheck,
 } from "lucide-react";
-import { useClients } from "@/lib/client-store";
+import { useClients, recordClientConsent, revokeClientConsent } from "@/lib/client-store";
+import { CONSENT_SOURCE_LABELS, consentStatus } from "@/lib/consent";
 import { documentsForClient } from "@/lib/client-picker";
 import { useDocuments } from "@/lib/document-store";
 import { DocumentsTable } from "@/components/documents-table";
@@ -149,6 +151,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                 <span>{client.notes}</span>
               </p>
             )}
+            <ConsentCard client={client} />
           </div>
         </div>
       </div>
@@ -225,6 +228,88 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
         ) : (
           <DocumentsTable documents={docs} />
         )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * הוראות ניהול ספרים 18ב(ג): where this client stands on receiving
+ * computerized documents, and the owner's way to record a consent given
+ * outside the app (בכתב) or a withdrawal the client communicated.
+ */
+function ConsentCard({ client }: { client: import("@/lib/types").Client }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const status = consentStatus(client);
+
+  async function run(fn: () => Promise<void>) {
+    setBusy(true);
+    setError(null);
+    try {
+      await fn();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "שגיאה בשמירה");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mt-4 rounded-2xl border border-stone-200 bg-stone-50 p-3 text-sm">
+      <div className="flex items-start gap-2">
+        <ShieldCheck className="w-4 h-4 text-stone-500 flex-shrink-0 mt-0.5" />
+        <div className="min-w-0 flex-1">
+          <p className="font-semibold text-stone-900">הסכמה למסמכים ממוחשבים</p>
+          {status === "active" && client.computerizedConsentAt && (
+            <p className="text-xs text-stone-700 mt-0.5">
+              התקבלה ב-{formatDate(client.computerizedConsentAt.slice(0, 10))}
+              {client.computerizedConsentSource
+                ? ` (${CONSENT_SOURCE_LABELS[client.computerizedConsentSource]})`
+                : ""}
+              . חשבוניות וקבלות ללקוח זה נשלחות כמסמכים ממוחשבים.
+            </p>
+          )}
+          {status === "revoked" && client.computerizedConsentRevokedAt && (
+            <p className="text-xs text-stone-700 mt-0.5">
+              בוטלה ב-{formatDate(client.computerizedConsentRevokedAt.slice(0, 10))}. מסמכים
+              חדשים ללקוח זה אינם מסמכים ממוחשבים עד הסכמה חדשה.
+            </p>
+          )}
+          {status === "none" && (
+            <p className="text-xs text-stone-700 mt-0.5">
+              טרם התקבלה. הלקוח מאשר בעצמו בדף המסמך הציבורי (גם הורדת ה-PDF נרשמת
+              כהסכמה), או שתרשום כאן הסכמה שנתן בכתב.
+            </p>
+          )}
+          <div className="mt-2 flex flex-wrap gap-2">
+            {status !== "active" && (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void run(() => recordClientConsent(client.id, "written"))}
+                className="text-xs bg-white border border-stone-300 text-stone-800 px-3 py-1.5 rounded-xl font-semibold hover:bg-stone-100 disabled:opacity-50"
+              >
+                רשום הסכמה שניתנה בכתב
+              </button>
+            )}
+            {status === "active" && (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => {
+                  if (window.confirm("לבטל את ההסכמה של הלקוח לקבלת מסמכים ממוחשבים?")) {
+                    void run(() => revokeClientConsent(client.id));
+                  }
+                }}
+                className="text-xs text-stone-500 underline hover:text-stone-700 disabled:opacity-50"
+              >
+                הלקוח ביקש להפסיק
+              </button>
+            )}
+          </div>
+          {error && <p className="mt-2 text-xs text-rose-700">{error}</p>}
+        </div>
       </div>
     </div>
   );

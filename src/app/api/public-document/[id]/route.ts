@@ -108,7 +108,9 @@ export async function GET(
     doc.client_id
       ? admin
           .from("clients")
-          .select("id, name, tax_id, address, phone, email")
+          // The three consent columns feed the 18ב(ג) block on /view; they are
+          // about this very recipient, so showing them is not a leak.
+          .select("id, name, tax_id, address, phone, email, computerized_consent_at, computerized_consent_source, computerized_consent_revoked_at")
           .eq("id", doc.client_id)
           .eq("business_id", doc.business_id)
           .maybeSingle()
@@ -156,12 +158,24 @@ export async function GET(
     businessOut = { ...rest, document_design: normalizeDocumentDesign(document_design) };
   }
 
+  // 18ב(ג): consent state of THIS recipient, for the consent block on /view.
+  // null client => no row to hold consent (unlinked document).
+  const cliRow = (cliRes.data || null) as Record<string, unknown> | null;
+  const consent = cliRow
+    ? {
+        at: (cliRow.computerized_consent_at as string) || null,
+        source: (cliRow.computerized_consent_source as string) || null,
+        revokedAt: (cliRow.computerized_consent_revoked_at as string) || null,
+      }
+    : null;
+
   return NextResponse.json({
     ok: true,
     document: doc,
     items: itemsRes.data || [],
     business: businessOut,
     client: cliRes.data || null,
+    consent,
     showBranding,
   });
 }

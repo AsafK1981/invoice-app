@@ -60,6 +60,9 @@ export interface Business {
   dunningEnabled?: boolean;
   /** Optional friendly From name on dunning emails (defaults to name). */
   dunningFromName?: string;
+  /** 18ב(ב): when the owner confirmed the registered-mail notice to פקיד
+   *  השומה was sent (required before the first computerized document). */
+  taxOfficerNoticeSentAt?: string;
   /** When true (the default), the same daily run notifies the OWNER that a
    *  WhatsApp reminder is ready for an overdue invoice, at day 3 / 14 / 30.
    *  Nothing reaches the client on this path: the owner sends it from their
@@ -127,6 +130,9 @@ export interface Business {
   pushKinds?: NotificationKind[];
 }
 
+/** How a client's consent to receive computerized documents was given (18ב(ג)). */
+export type ConsentSource = "download" | "button" | "email" | "written" | "manual";
+
 export interface Client {
   id: string;
   name: string;
@@ -136,6 +142,13 @@ export interface Client {
   email?: string;
   notes?: string;
   createdAt: string;
+  /** הוראות ניהול ספרים 18ב(ג): when this client agreed, בכתב או באופן
+   *  ממוחשב, to receive computerized documents from this business. */
+  computerizedConsentAt?: string;
+  computerizedConsentSource?: ConsentSource;
+  /** Set when the client withdrew the consent; documents after this date are
+   *  not computerized documents until a new consent is recorded. */
+  computerizedConsentRevokedAt?: string;
 }
 
 export interface Product {

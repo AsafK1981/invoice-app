@@ -22,9 +22,14 @@ export type AuditAction =
   | "recurring.deleted"
   | "attachment.deleted"
   | "assistant_memory.added"
-  | "assistant_memory.deleted";
+  | "assistant_memory.deleted"
+  // הוראות ניהול ספרים 18ב(ג): consent and its revocation are part of the books.
+  | "client.consent_recorded"
+  | "client.consent_revoked"
+  // 18ב(ב): the owner confirmed the registered-mail notice to פקיד השומה.
+  | "business.tax_officer_notice";
 
-export type AuditTargetType = "document" | "client" | "product" | "expense" | "recurring" | "attachment" | "memory" | "all";
+export type AuditTargetType = "document" | "client" | "product" | "expense" | "recurring" | "attachment" | "memory" | "business" | "all";
 
 export interface AuditEntry {
   id: string;
@@ -113,6 +118,9 @@ export function useAuditLog(limit = 100) {
 
 const ACTION_LABELS: Record<AuditAction, string> = {
   "document.created": "מסמך נוצר",
+  "client.consent_recorded": "לקוח הסכים לקבל מסמכים ממוחשבים",
+  "client.consent_revoked": "לקוח ביטל הסכמה למסמכים ממוחשבים",
+  "business.tax_officer_notice": "הודעה לפקיד השומה על מסמכים ממוחשבים",
   "document.status_changed": "סטטוס מסמך עודכן",
   "document.number_changed": "מספר מסמך שונה",
   "document.deleted": "מסמך נמחק",

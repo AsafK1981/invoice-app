@@ -98,8 +98,14 @@ export function buildHtml(args: {
    * the Hebrew message exactly as it has always been.
    */
   language?: string;
+  /**
+   * הוראות ניהול ספרים 18ב(ג): when the recipient has not yet consented to
+   * computerized documents, one sentence asking for it. Plain text in the
+   * document's language; escaped here, rendered under the link.
+   */
+  consentNote?: string;
 }): string {
-  const { businessName, clientName, receiptNumber, total, viewUrl, logoUrl, kind = "initial", daysSinceSent, documentType, trackingPixelUrl, currency, showBranding = true, accent, language } = args;
+  const { businessName, clientName, receiptNumber, total, viewUrl, logoUrl, kind = "initial", daysSinceSent, documentType, trackingPixelUrl, currency, showBranding = true, accent, language, consentNote } = args;
   const lang = toDocLang(language);
   const isEnglish = lang === "en";
   const isReminder = kind === "reminder";
@@ -185,7 +191,17 @@ export function buildHtml(args: {
         <a href="${escapeHtml(viewUrl)}" style="color: ${accentSolid};">${escapeHtml(viewUrl)}</a>
       </p>
     </div>
-
+${
+  consentNote
+    ? `
+    <div style="background: #fbf6ee; border: 1px solid #e8ddd0; border-radius: 12px; padding: 14px 18px; margin-bottom: 24px;">
+      <p style="margin: 0; font-size: 13px; color: #6b6560; line-height: 1.6;">
+        ${escapeHtml(consentNote)}
+      </p>
+    </div>
+`
+    : ""
+}
     <div style="text-align: center; margin-bottom: 24px;">
       <p style="font-size: 13px; color: #9a9086;">
         ${sentByLine}
@@ -224,12 +240,19 @@ export function buildText(args: {
   showBranding?: boolean;
   /** Language of the document this email carries; mirrors buildHtml. */
   language?: string;
+  /**
+   * הוראות ניהול ספרים 18ב(ג): when the recipient has not yet consented to
+   * computerized documents, one sentence asking for it. Already in the
+   * document's language; rendered verbatim after the link. Mirrors buildHtml.
+   */
+  consentNote?: string;
 }): string {
-  const { businessName, clientName, receiptNumber, total, viewUrl, kind = "initial", daysSinceSent, documentType, currency, showBranding = true, language } = args;
+  const { businessName, clientName, receiptNumber, total, viewUrl, kind = "initial", daysSinceSent, documentType, currency, showBranding = true, language, consentNote } = args;
   const lang = toDocLang(language);
   const isReminder = kind === "reminder";
   const { attached, noun } = docWording(documentType, lang);
   const totalFormatted = formatDocTotal(total, currency);
+  const consentBlock = consentNote ? `\n${consentNote}\n` : "";
   if (lang === "en") {
     const intro = isReminder
       ? `A gentle reminder about ${noun} no. #${receiptNumber} for ${totalFormatted}${
@@ -242,7 +265,7 @@ ${intro}
 
 To view the full document, print it or download it as a PDF, open this link:
 ${viewUrl}
-
+${consentBlock}
 ${isReminder ? "Automatic reminder" : "Document sent automatically"} from ${businessName}
 ${showBranding ? `\nSent with Friendly Invoice · simple admin for a thriving business\n${BRAND_URL_EMAIL}\n` : ""}`;
   }
@@ -257,7 +280,7 @@ ${intro}
 
 לצפייה במסמך המלא והדפסה/הורדה כ-PDF, פתח את הקישור:
 ${viewUrl}
-
+${consentBlock}
 ${isReminder ? "תזכורת אוטומטית" : "מסמך נשלח אוטומטית"} מ${businessName}
 ${showBranding ? `\nנשלח באמצעות חשבונית ידידותית · התנהלות פשוטה לעסק מצליח\n${BRAND_URL_EMAIL}\n` : ""}`;
 }

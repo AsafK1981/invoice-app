@@ -169,6 +169,28 @@ export async function POST(req: NextRequest) {
       customerTaxId = normalizeCustomerVatNumber(clientRow?.tax_id);
     }
 
+    // הוראות ניהול ספרים 18ב(ג): a computerized document may be sent only to a
+    // recipient who consented first. Until this client has an active consent,
+    // the covering email carries one sentence asking for it (the /view page
+    // records the answer). Unlinked documents have no client row to consent.
+    let consentNote: string | undefined;
+    if (docRow.client_id) {
+      const { data: consentRow } = await admin
+        .from("clients")
+        .select("computerized_consent_at, computerized_consent_revoked_at")
+        .eq("id", docRow.client_id as string)
+        .eq("business_id", docRow.business_id as string)
+        .maybeSingle();
+      const active =
+        Boolean(consentRow?.computerized_consent_at) && !consentRow?.computerized_consent_revoked_at;
+      if (!active) {
+        consentNote =
+          docRow.language === "en"
+            ? "This document is sent as a computerized document. Under the Israeli bookkeeping regulations we may keep sending them only with your consent; downloading the PDF, or clicking the consent button on the document page, records it."
+            : "המסמך נשלח כמסמך ממוחשב. לפי הוראות ניהול ספרים נוכל להמשיך לשלוח מסמכים כאלה רק בהסכמתך; הורדת ה-PDF או לחיצה על כפתור ההסכמה בדף המסמך נרשמת כהסכמה.";
+      }
+    }
+
     // Server-side allocation gate (defense in depth, the editor blocks this
     // too, but a crafted request must not bypass it). A tax document from an
     // עוסק מורשה/חברה to a BUSINESS customer that is over the חשבונית ישראל
@@ -273,6 +295,7 @@ export async function POST(req: NextRequest) {
       receiptNumber,
       total,
       viewUrl,
+      consentNote,
       logoUrl,
       kind: isReminder ? "reminder" : "initial",
       daysSinceSent: typeof daysSinceSent === "number" ? daysSinceSent : undefined,
@@ -289,6 +312,7 @@ export async function POST(req: NextRequest) {
       receiptNumber,
       total,
       viewUrl,
+      consentNote,
       kind: isReminder ? "reminder" : "initial",
       daysSinceSent: typeof daysSinceSent === "number" ? daysSinceSent : undefined,
       documentType,

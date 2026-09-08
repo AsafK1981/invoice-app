@@ -41,6 +41,16 @@ const VIEW_STRINGS: Record<DocLang, Record<string, string>> = {
     approveFailed: "שגיאה באישור",
     networkError: "שגיאת רשת",
     footerHint: 'לחץ "הורד PDF" כדי לשמור את המסמך, או "הדפס" כדי לפתוח את חלון ההדפסה.',
+    consentTitle: "מסמכים ממוחשבים",
+    consentBody:
+      "המסמך הזה נשלח אליך כמסמך ממוחשב במקום עותק מודפס. לפי הוראות ניהול ספרים, {business} רשאי לשלוח לך מסמכים כאלה רק בהסכמתך. הורדת ה-PDF או לחיצה על הכפתור נרשמת כהסכמה.",
+    consentButton: "מאשר/ת קבלת מסמכים ממוחשבים",
+    consentBusy: "רושם...",
+    consentDone: "הסכמתך לקבלת מסמכים ממוחשבים נרשמה בתאריך {date}.",
+    consentRevoked: "הסכמתך בוטלה בתאריך {date}. מסמכים חדשים יישלחו להדפסה.",
+    consentRevoke: "להפסיק לקבל מסמכים ממוחשבים",
+    consentRevokeConfirm: "להפסיק לקבל מסמכים ממוחשבים מ{business}? המסמכים הבאים לא ייחשבו מסמכים ממוחשבים.",
+    consentFailed: "לא הצלחנו לרשום את הבחירה. נסו שוב.",
   },
   en: {
     promoTitle: "Do you issue invoices too?",
@@ -67,6 +77,16 @@ const VIEW_STRINGS: Record<DocLang, Record<string, string>> = {
     approveFailed: "Approval failed",
     networkError: "Network error",
     footerHint: 'Use "Download PDF" to save the document, or "Print" to open the print dialog.',
+    consentTitle: "Computerized documents",
+    consentBody:
+      "This document is delivered to you as a computerized document instead of a printed copy. Under the Israeli bookkeeping regulations, {business} may send you such documents only with your consent. Downloading the PDF or clicking the button records that consent.",
+    consentButton: "I agree to receive computerized documents",
+    consentBusy: "Recording...",
+    consentDone: "Your consent to receive computerized documents was recorded on {date}.",
+    consentRevoked: "Your consent was withdrawn on {date}. New documents will be issued for printing.",
+    consentRevoke: "Stop receiving computerized documents",
+    consentRevokeConfirm: "Stop receiving computerized documents from {business}? Future documents will not count as computerized documents.",
+    consentFailed: "We could not record your choice. Please try again.",
   },
 };
 
@@ -85,6 +105,16 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
   const [approving, setApproving] = useState(false);
   const [approveError, setApproveError] = useState<string | null>(null);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
+  // 18ב(ג): this recipient's consent to receive computerized documents from
+  // this sender, as the server knows it. null = the document has no client row
+  // to hold a consent (unlinked), so the block is not shown at all.
+  const [consent, setConsent] = useState<{
+    at: string | null;
+    source: string | null;
+    revokedAt: string | null;
+  } | null>(null);
+  const [consentBusy, setConsentBusy] = useState(false);
+  const [consentError, setConsentError] = useState<string | null>(null);
   // מקור/העתק: the customer link is ALWAYS מקור (VAT rule: the buyer must
   // receive the original). Only when the owner's PDF route explicitly requests
   // ?copy=1 (for the owner's retained reprint) do we render "העתק". Read from
@@ -111,6 +141,10 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
       const res = await fetch(`/api/documents/${id}/pdf`);
       if (!res.ok) throw new Error("PDF generation failed");
       const blob = await res.blob();
+      // 18ב(ג), "באופן ממוחשב": taking the PDF is the recipient accepting the
+      // document in computerized form. Recorded once, best-effort, never blocks
+      // the download the customer asked for.
+      void postConsent("consent", "download");
       const objectUrl = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = objectUrl;
@@ -125,6 +159,33 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
       window.print();
     } finally {
       setDownloadingPdf(false);
+    }
+  }
+
+  // 18ב(ג): record the recipient's consent, or its withdrawal, for THIS sender.
+  // The server is idempotent; the UI only reflects the state it sends back.
+  async function postConsent(action: "consent" | "revoke", source: "download" | "button") {
+    if (!client || consent === null) return;
+    const active = Boolean(consent.at) && !consent.revokedAt;
+    if (action === "consent" && active) return;
+    if (action === "revoke" && !active) return;
+    setConsentBusy(true);
+    setConsentError(null);
+    try {
+      const res = await fetch(`/api/public-document/${id}/consent`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, source }),
+      });
+      const data = await res.json();
+      if (!data.ok) throw new Error("consent failed");
+      setConsent(data.consent ?? null);
+    } catch {
+      // A silent failure on the download path is acceptable (the download
+      // itself succeeded); an explicit click deserves a message.
+      if (source === "button") setConsentError(t.consentFailed);
+    } finally {
+      setConsentBusy(false);
     }
   }
 
@@ -176,6 +237,7 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
         }
 
         setShowBranding(data.showBranding !== false);
+        setConsent(data.consent ?? null);
 
         const docRow = data.document;
         const items = (data.items || []) as Array<{
@@ -413,6 +475,60 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
               )}
             </div>
           )}
+        </div>
+      )}
+
+      {/* הוראות ניהול ספרים 18ב(ג): the recipient's consent to computerized
+          documents, recorded per sender. Shown only when the document is linked
+          to a client row (there is somewhere to keep the consent) and is not a
+          draft. Downloading the PDF above records it too. */}
+      {client && doc && doc.status !== "draft" && consent !== null && (
+        <div className="no-print max-w-[210mm] mx-auto mt-6">
+          <div className="bg-white rounded-2xl shadow-sm border border-orange-100 p-5">
+            <h3 className="font-semibold text-stone-800 text-sm mb-2">{t.consentTitle}</h3>
+            {consent.at && !consent.revokedAt ? (
+              <>
+                <p className="text-xs text-stone-600">
+                  {t.consentDone.replace("{date}", formatDate(consent.at.slice(0, 10), language))}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm(t.consentRevokeConfirm.replace("{business}", business?.name || ""))) {
+                      void postConsent("revoke", "button");
+                    }
+                  }}
+                  disabled={consentBusy}
+                  className="mt-2 text-xs text-stone-500 underline hover:text-stone-700 disabled:opacity-50"
+                >
+                  {t.consentRevoke}
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="text-xs text-stone-600 leading-relaxed">
+                  {consent.revokedAt
+                    ? t.consentRevoked.replace("{date}", formatDate(consent.revokedAt.slice(0, 10), language))
+                    : t.consentBody.replace("{business}", business?.name || "")}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => void postConsent("consent", "button")}
+                  disabled={consentBusy}
+                  className="mt-3 inline-flex items-center justify-center gap-2 bg-white border border-stone-300 text-stone-700 hover:bg-stone-100 px-4 py-2 rounded-xl text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  {consentBusy ? t.consentBusy : t.consentButton}
+                </button>
+              </>
+            )}
+            {consentError && (
+              <div className="mt-3 flex items-start gap-2 text-sm text-rose-700 bg-rose-50 border border-rose-200 p-3 rounded-xl">
+                <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                <span>{consentError}</span>
+              </div>
+            )}
+          </div>
         </div>
       )}
 

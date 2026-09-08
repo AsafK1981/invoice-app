@@ -37,6 +37,7 @@ import { ReceiptView } from "@/components/receipt-view";
 import { canIssueTaxInvoices } from "@/lib/vat";
 import { requiresAllocationNumber, shouldFocusAllocationOnArrival } from "@/lib/tax-authority";
 import { formatCurrency, formatDate } from "@/lib/format";
+import { CONSENT_SOURCE_LABELS } from "@/lib/consent";
 import { DOCUMENT_TYPE_LABELS } from "@/lib/types";
 import { docStrings } from "@/lib/document-strings";
 import { waDigits, whatsappLink } from "@/lib/whatsapp-link";
@@ -1198,6 +1199,26 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
       {(doc.type === "tax_invoice" ||
         doc.type === "tax_invoice_receipt" ||
         doc.type === "credit_note") && <DocumentCustomerTaxEditor doc={doc} />}
+
+      {/* הוראות ניהול ספרים 18ב(ג): a computerized document may go only to a
+          client who consented first. Show where this client stands so the
+          owner knows whether the next send is a computerized document or a
+          print-and-keep one. */}
+      {client && doc.status !== "draft" && (
+        <div className="no-print card-soft p-4 max-w-[210mm] mx-auto text-xs text-stone-700">
+          <span className="font-semibold text-stone-900">הסכמה למסמכים ממוחשבים: </span>
+          {client.computerizedConsentRevokedAt ? (
+            <>בוטלה ב-{formatDate(client.computerizedConsentRevokedAt.slice(0, 10))}. מסמכים חדשים ללקוח זה אינם מסמכים ממוחשבים עד הסכמה חדשה.</>
+          ) : client.computerizedConsentAt ? (
+            <>
+              התקבלה ב-{formatDate(client.computerizedConsentAt.slice(0, 10))}
+              {client.computerizedConsentSource ? ` (${CONSENT_SOURCE_LABELS[client.computerizedConsentSource]})` : ""}.
+            </>
+          ) : (
+            <>טרם התקבלה. הלקוח יכול לאשר בדף המסמך הציבורי (ההורדה נרשמת כהסכמה), או שתרשום הסכמה שניתנה בכתב בכרטיס הלקוח.</>
+          )}
+        </div>
+      )}
 
       <ReceiptView
         business={business}

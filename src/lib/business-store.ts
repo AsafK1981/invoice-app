@@ -46,6 +46,7 @@ export function useBusiness() {
             defaultDocNotes: data.default_doc_notes ?? undefined,
             dunningEnabled: data.dunning_enabled ?? false,
             dunningFromName: data.dunning_from_name ?? undefined,
+            taxOfficerNoticeSentAt: data.tax_officer_notice_sent_at ?? undefined,
             // Opt-out, not opt-in: the assisted pass only notifies the owner,
             // so anything but an explicit false is "on".
             dunningWhatsappEnabled: data.dunning_whatsapp_enabled !== false,
@@ -142,6 +143,25 @@ export async function saveDunningWhatsappEnabled(
   const { error } = await supabase
     .from("businesses")
     .update({ dunning_whatsapp_enabled: enabled })
+    .eq("id", businessId);
+  if (error) throw new Error(error.message);
+  window.dispatchEvent(new Event(CHANGE_EVENT));
+}
+
+/**
+ * הוראות ניהול ספרים 18ב(ב): the owner confirms (or un-confirms) that the
+ * registered-mail notice to פקיד השומה was sent. Owned by this setter and
+ * deliberately absent from saveBusiness() below, for the same reason as
+ * dunning_whatsapp_enabled: a whole-row settings save made from a stale
+ * snapshot must not silently clear a confirmation given in another tab.
+ */
+export async function saveTaxOfficerNoticeSentAt(
+  businessId: string,
+  sentAt: string | null,
+): Promise<void> {
+  const { error } = await supabase
+    .from("businesses")
+    .update({ tax_officer_notice_sent_at: sentAt })
     .eq("id", businessId);
   if (error) throw new Error(error.message);
   window.dispatchEvent(new Event(CHANGE_EVENT));

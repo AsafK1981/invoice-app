@@ -30,6 +30,7 @@ import { DocumentNumberingSettings } from "@/components/document-numbering-setti
 import { AuditLogSection } from "@/components/audit-log-section";
 import { AssistantMemorySection } from "@/components/assistant-memory-section";
 import { TaxAuthoritySection } from "@/components/tax-authority-section";
+import { TaxOfficerNoticeSection } from "@/components/tax-officer-notice-section";
 import { TwoFactorSection } from "@/components/two-factor-section";
 import { WhatsAppSection } from "@/components/whatsapp-section";
 import { EmailInboxSection } from "@/components/email-inbox-section";
@@ -329,6 +330,8 @@ export default function SettingsPage() {
       <div id="tax-authority" className="scroll-mt-6">
         <TaxAuthoritySection />
       </div>
+
+      <TaxOfficerNoticeSection />
 
       <PushSettingsSection />
 

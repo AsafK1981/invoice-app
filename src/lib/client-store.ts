@@ -7,7 +7,7 @@ import { createSharedStore } from "./shared-store";
 import { logAudit } from "./audit-log";
 import { todayInIsrael } from "./date";
 import { searchTerms, ilikeOrClause } from "./ilike-search";
-import type { Client } from "./types";
+import type { Client, ConsentSource } from "./types";
 
 const CHANGE_EVENT = "invoice-app:clients-changed";
 
@@ -31,6 +31,9 @@ function mapRow(row: Record<string, unknown>): Client {
     email: (row.email as string) || undefined,
     notes: (row.notes as string) || undefined,
     createdAt: (row.created_at as string)?.slice(0, 10) || todayInIsrael(),
+    computerizedConsentAt: (row.computerized_consent_at as string) || undefined,
+    computerizedConsentSource: (row.computerized_consent_source as ConsentSource) || undefined,
+    computerizedConsentRevokedAt: (row.computerized_consent_revoked_at as string) || undefined,
   };
 }
 
@@ -118,6 +121,64 @@ export function useClientsPage(opts: { page: number; search: string }) {
   }, [fetch]);
 
   return { items, total, ready, pageSize: CLIENTS_PAGE_SIZE };
+}
+
+/**
+ * הוראות ניהול ספרים 18ב(ג): the owner records a consent the client gave
+ * outside the app ("בכתב"), or confirms one by hand. Never overwrites a
+ * consent that is still in force; a consent given after a revocation
+ * supersedes it (the revocation itself stays in audit_log, as the rule
+ * requires: "ישמור את ההסכמה או את ביטולה").
+ */
+export async function recordClientConsent(id: string, source: "written" | "manual"): Promise<void> {
+  const { data: snap } = await supabase
+    .from("clients")
+    .select("name, computerized_consent_at, computerized_consent_revoked_at")
+    .eq("id", id)
+    .maybeSingle();
+  if (!snap) throw new Error("הלקוח לא נמצא");
+  if (snap.computerized_consent_at && !snap.computerized_consent_revoked_at) return;
+  const { error } = await supabase
+    .from("clients")
+    .update({
+      computerized_consent_at: new Date().toISOString(),
+      computerized_consent_source: source,
+      computerized_consent_revoked_at: null,
+    })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+  logAudit({
+    action: "client.consent_recorded",
+    targetType: "client",
+    targetId: id,
+    targetLabel: snap.name as string,
+    payload: { source, via: "owner" },
+  });
+  window.dispatchEvent(new Event(CHANGE_EVENT));
+}
+
+/** 18ב(ג): the client withdrew consent (told the owner so). No-op without an active consent. */
+export async function revokeClientConsent(id: string): Promise<void> {
+  const { data: snap } = await supabase
+    .from("clients")
+    .select("name, computerized_consent_at, computerized_consent_revoked_at")
+    .eq("id", id)
+    .maybeSingle();
+  if (!snap) throw new Error("הלקוח לא נמצא");
+  if (!snap.computerized_consent_at || snap.computerized_consent_revoked_at) return;
+  const { error } = await supabase
+    .from("clients")
+    .update({ computerized_consent_revoked_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+  logAudit({
+    action: "client.consent_revoked",
+    targetType: "client",
+    targetId: id,
+    targetLabel: snap.name as string,
+    payload: { via: "owner" },
+  });
+  window.dispatchEvent(new Event(CHANGE_EVENT));
 }
 
 export const clientStore = {

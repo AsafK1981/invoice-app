@@ -37,6 +37,7 @@ import { ExemptCeilingTracker } from "@/components/exempt-ceiling-tracker";
 import { RecurringDueAlert } from "@/components/recurring-due-alert";
 import { InvoiceProposalCard } from "@/components/invoice-proposal-card";
 import { BetaBanner } from "@/components/beta-banner";
+import { TaxOfficerNoticeBanner } from "@/components/tax-officer-notice-banner";
 
 const ExpenseCategoriesChart = dynamic(
   () => import("@/components/charts-recharts").then((mod) => mod.ExpenseCategoriesChart),
@@ -337,6 +338,11 @@ export default function DashboardPage() {
       </div>
 
       <BetaBanner />
+
+      {/* הוראות ניהול ספרים 18ב(ב): until the registered-mail notice to פקיד
+          השומה is confirmed, the documents sent as files are not yet
+          computerized documents in the legal sense. */}
+      <TaxOfficerNoticeBanner />
 
       <OnboardingChecklist
         business={business}
