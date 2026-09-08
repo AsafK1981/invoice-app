@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 import { createClient } from "@supabase/supabase-js";
-import { CANONICAL_ORIGIN } from "@/lib/public-url";
+import { buildWelcomeHtml, buildWelcomeText, WELCOME_SUBJECT } from "./template";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -9,46 +9,6 @@ const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 const GMAIL_USER = process.env.GMAIL_USER;
 const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD;
-
-const APP_URL = CANONICAL_ORIGIN;
-
-function buildWelcomeHtml(): string {
-  return `
-    <div dir="rtl" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Heebo, Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; color: #1f232b; background: #fbeadb; border-radius: 16px;">
-      <div style="text-align: center; margin-bottom: 24px;">
-        <div style="display:inline-block;background:#d96a1d;color:#ffffff;padding:14px 22px;border-radius:18px;font-weight:700;font-size:16px;">
-          חשבונית ידידותית
-        </div>
-      </div>
-      <h1 style="color:#1f232b;font-size:22px;margin:0 0 12px;">ברוך/ה הבא/ה! 🎉</h1>
-      <p style="color:#1f232b;font-size:15px;line-height:1.6;margin:0 0 16px;">
-        תודה שנרשמת לחשבונית ידידותית, אפליקציה אישית להפקת חשבוניות וקבלות לעצמאיים בישראל.
-      </p>
-      <p style="color:#1f232b;font-size:15px;line-height:1.6;margin:0 0 16px;">
-        מה אפשר לעשות מכאן:
-      </p>
-      <ul style="color:#1f232b;font-size:15px;line-height:1.8;margin:0 0 20px;padding-right:20px;">
-        <li>למלא את פרטי העסק, כדי שיופיעו אוטומטית על כל מסמך</li>
-        <li>להוסיף לקוחות ומוצרים פעם אחת, והפקה הופכת לשנייה</li>
-        <li>להפיק קבלות, חשבונות עסקה, חשבוניות מס</li>
-        <li>לשלוח ללקוח באימייל / WhatsApp / קישור לשיתוף</li>
-        <li>להוריד PDF מקצועי בלחיצה</li>
-        <li>לעקוב אחרי הכנסות, הוצאות, ומסמכים פתוחים</li>
-      </ul>
-      <div style="text-align:center;margin:28px 0;">
-        <a href="${APP_URL}/dashboard" style="display:inline-block;background:#d96a1d;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:14px;font-weight:600;font-size:15px;">
-          למסך הראשי שלי
-        </a>
-      </div>
-      <p style="color:#6b6560;font-size:13px;line-height:1.5;margin:0 0 8px;">
-        טיפ: במסך הראשי תמצא צ'ק-ליסט קצר עם 5 צעדים להפקת המסמך הראשון.
-      </p>
-      <p style="color:#6b6560;font-size:13px;line-height:1.5;margin:0;">
-        יש שאלה? פשוט תענה למייל הזה, מגיע אליי ישר.
-      </p>
-    </div>
-  `;
-}
 
 export async function POST(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
@@ -88,8 +48,9 @@ export async function POST(req: NextRequest) {
       // provider yet, so this is the most the FROM line can say truthfully.
       from: `"חשבונית ידידותית" <${GMAIL_USER}>`,
       to: user.email,
-      subject: "ברוך הבא לחשבונית ידידותית 🎉",
+      subject: WELCOME_SUBJECT,
       html: buildWelcomeHtml(),
+      text: buildWelcomeText(),
       replyTo: GMAIL_USER,
     });
 
