@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
   TrendingUp, TrendingDown, Wallet, Clock, Download, ChevronDown,
   FileText, ClipboardList, Calculator, BookOpen, FileSpreadsheet, Landmark, FileArchive,
-  SlidersHorizontal, Receipt, ArrowLeft, Minus, Printer, Percent,
+  SlidersHorizontal, Receipt, ArrowLeft, Minus, Printer, Percent, ListOrdered,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useDocuments } from "@/lib/document-store";
@@ -268,6 +268,10 @@ export default function ReportsPage() {
     {
       icon: FileArchive, title: "מבנה אחיד (OPENFORMAT)", action: "הורד", onClick: () => downloadUniformStructure(false),
       desc: `קבצי מבנה אחיד לשנת ${exportYear} לפי דרישת רשות המסים, לביקורת או לרואה החשבון.`,
+    },
+    {
+      icon: ListOrdered, title: "בדיקת רצף מספור", href: "/reports/sequence",
+      desc: "לכל סוג מסמך: המספר הראשון והאחרון, הכמות, ורשימה מפורשת של המספרים החסרים. נדרש לפי הוראות ניהול ספרים.",
     },
     {
       icon: SlidersHorizontal, title: "דוח מותאם", href: "/reports/custom",
