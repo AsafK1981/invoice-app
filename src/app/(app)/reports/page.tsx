@@ -235,9 +235,9 @@ export default function ReportsPage() {
   /** Header block of every Excel export from this page: who, and which period. */
   const exportMeta = { businessName: business.name, subtitle: periodLabel(period) };
   const cards: ReportCardSpec[] = [
-    { icon: TrendingUp, title: "דוח רווח והפסד", href: "/reports/profit-loss", featured: true, desc: "הכנסות, זיכויים והוצאות לפי קטגוריה, עם רווח לפני פחת והתאמות מס. כולל PDF ו-Excel." },
+    { icon: TrendingUp, title: "דוח רווח והפסד", href: "/reports/profit-loss", desc: "הכנסות, זיכויים והוצאות לפי קטגוריה, עם רווח לפני פחת והתאמות מס. כולל PDF ו-Excel." },
     {
-      icon: FileText, title: "סיכום שנתי לדיווח", href: `/reports/annual/${exportYear}`, featured: true,
+      icon: FileText, title: "סיכום שנתי לדיווח", href: `/reports/annual/${exportYear}`,
       desc: "כל המספרים לדוח השנתי במקום אחד: הכנסות לפי סוג מסמך, הוצאות לפי קטגוריה, לקוחות גדולים.",
     },
     {
@@ -609,10 +609,9 @@ interface ReportCardSpec {
   href?: string;
   onClick?: () => void;
   action?: string;
-  featured?: boolean;
 }
 
-function ReportCard({ icon: Icon, title, desc, href, onClick, action = "פתח", featured }: ReportCardSpec) {
+function ReportCard({ icon: Icon, title, desc, href, onClick, action = "פתח" }: ReportCardSpec) {
   const inner = (
     <>
       <span className="rpt-icot"><Icon aria-hidden="true" /></span>
@@ -621,7 +620,7 @@ function ReportCard({ icon: Icon, title, desc, href, onClick, action = "פתח",
       <span className="rpt-rc-go">{action}<ArrowLeft aria-hidden="true" /></span>
     </>
   );
-  const cls = `card-soft rpt-rc${featured ? " rpt-rc-featured" : ""}`;
+  const cls = "card-soft rpt-rc";
   return href ? (
     <Link href={href} className={cls}>{inner}</Link>
   ) : (
