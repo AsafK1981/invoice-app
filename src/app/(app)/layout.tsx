@@ -38,17 +38,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           {/* Below `pt-16` so it clears the mobile hamburger button (fixed
               top-4 right-4), instead of a full-bleed row above the flex
               layout that it would otherwise overlap. */}
-          <div className="max-w-7xl mx-auto p-4 pt-[calc(5rem+env(safe-area-inset-top))] lg:p-8 print:p-0 print:max-w-none">
+          <div className="max-w-7xl mx-auto p-4 pt-[calc(5rem+env(safe-area-inset-top))] pb-[calc(6rem+env(safe-area-inset-bottom))] lg:p-8 lg:pb-28 print:p-0 print:max-w-none">
             <EmailVerificationBanner />
             <TwoFactorNudge />
-            <div className="no-print flex items-center justify-end gap-2 mb-4 lg:min-h-16 print:hidden">
-              <AssistantWidget />
+            <div className="no-print flex items-center justify-end gap-2 mb-4 print:hidden">
               <NotificationsBell />
               <GlobalSearch />
             </div>
             {children}
           </div>
         </main>
+        <AssistantWidget />
         <InstallPrompt />
       </div>
     </AppProviders>

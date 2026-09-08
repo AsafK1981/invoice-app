@@ -3572,20 +3572,21 @@ html .text-\[13px\] { font-size: 14px; }
   html .card-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 
-/* Phones reserve a top toolbar for the assistant and navigation. A bottom
-   overlay can cover arbitrary list actions even when an editor dock is absent. */
+/* Keep the assistant reachable while scrolling. The editor publishes its
+   mobile action-bar height so the launcher always clears the save controls. */
 .assistant-launcher {
-  top: calc(1rem + env(safe-area-inset-top));
-  bottom: auto;
+  top: auto;
+  bottom: calc(16px + max(env(safe-area-inset-bottom, 0px), var(--mobile-dock-h, 0px)));
 }
 @media (min-width: 1024px) {
   .assistant-launcher {
-    position: static;
-    flex-shrink: 0;
-    margin-inline-end: auto;
-    top: auto;
-    bottom: auto;
+    left: 24px;
+    bottom: 24px;
   }
+}
+/* The install invitation temporarily owns the same mobile corner. */
+@media (max-width: 1023.98px) {
+  html:has(.app-install-prompt) .assistant-launcher { visibility: hidden; }
 }
 
 /* Periodic nudge (Asaf, 2026-08-18: "I don't notice it"). Every 30s the pill
