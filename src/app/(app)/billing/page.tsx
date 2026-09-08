@@ -239,6 +239,10 @@ export default function BillingPage() {
   const yearlySavings = (priceMonthly: number, priceYearly: number) =>
     Math.round((1 - priceYearly / (priceMonthly * 12)) * 100);
 
+  const maxYearlySavings = Math.max(...Object.values(PLANS).map((plan) =>
+    yearlySavings(plan.priceMonthly, plan.priceYearly),
+  ));
+
   return (
     <div className="space-y-6 max-w-4xl">
       <div>
@@ -357,7 +361,7 @@ export default function BillingPage() {
                 interval === "year" ? "bg-white/25" : "bg-emerald-100 text-emerald-700"
               }`}
             >
-              -20%
+              חיסכון עד {maxYearlySavings}%
             </span>
           </button>
         </div>
@@ -464,8 +468,8 @@ export default function BillingPage() {
             : "אישור הזמנה"
         }
         subtitle={
-          interval === "year"
-            ? `חיוב שנתי (חיסכון של 20%)`
+          interval === "year" && confirmingTier
+            ? `חיוב שנתי (חיסכון של ${yearlySavings(PLANS[confirmingTier].priceMonthly, PLANS[confirmingTier].priceYearly)}%)`
             : `חיוב חודשי`
         }
         icon={ShieldCheck}

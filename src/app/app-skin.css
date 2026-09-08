@@ -1060,10 +1060,10 @@ html .rpt-stepper a {
 html .rpt-stepper button:hover,
 html .rpt-stepper a:hover { background: var(--goldtint); }
 html .rpt-stepper svg { width: 0.95rem; height: 0.95rem; }
-/* The free-range variant of the stepper: two native date fields where the
+/* The free-range variant of the stepper: two Israeli date fields where the
    label sits. They are borderless inside the pill (the pill is the border),
    ink-weighted like the label they replace, and LTR because a date is. */
-html .rpt-range input[type="date"] {
+html .rpt-range input[data-israeli-date] {
   height: 1.9rem;
   padding: 0 0.4rem;
   border: 0;
@@ -1076,8 +1076,8 @@ html .rpt-range input[type="date"] {
   direction: ltr;
   cursor: pointer;
 }
-html .rpt-range input[type="date"]:hover { background: var(--goldtint); }
-html .rpt-range input[type="date"]:focus-visible { outline: 2px solid var(--inputfocusline); outline-offset: 1px; }
+html .rpt-range input[data-israeli-date]:hover { background: var(--goldtint); }
+html .rpt-range input[data-israeli-date]:focus-visible { outline: 2px solid var(--inputfocusline); outline-offset: 1px; }
 html .rpt-range > span { color: var(--muted); font-weight: 600; }
 /* Export menu */
 html .rpt-menu-wrap { position: relative; }
@@ -1812,7 +1812,7 @@ html .dcbar-range label {
   color: var(--ink2);
   white-space: nowrap;
 }
-html .dcbar-range input[type="date"] {
+html .dcbar-range input[data-israeli-date] {
   flex: 1 1 auto;
   direction: ltr;
 }
@@ -3580,8 +3580,11 @@ html .text-\[13px\] { font-size: 14px; }
 }
 @media (min-width: 1024px) {
   .assistant-launcher {
+    position: static;
+    flex-shrink: 0;
+    margin-inline-end: auto;
     top: auto;
-    bottom: 1.5rem;
+    bottom: auto;
   }
 }
 

@@ -1,5 +1,7 @@
 "use client";
 
+import { IsraeliDateInput, IsraeliMonthInput } from "@/components/israeli-date-input";
+
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, FileSpreadsheet, Download, Printer } from "lucide-react";
@@ -60,8 +62,8 @@ export default function InvoicesPeriodReportPage() {
 
   const [rangeMode, setRangeMode] = useState<"preset" | "custom">("preset");
   const [lengthMonths, setLengthMonths] = useState<number>(2);
-  const [endMonth, setEndMonth] = useState<string>(() => ym(new Date()));
-  const [fromDate, setFromDate] = useState<string>(() => `${ym(new Date())}-01`);
+  const [endMonth, setEndMonth] = useState<string>(() => todayInIsrael().slice(0, 7));
+  const [fromDate, setFromDate] = useState<string>(() => `${todayInIsrael().slice(0, 7)}-01`);
   const [toDate, setToDate] = useState<string>(() => todayInIsrael());
 
   const taxIdByClient = useMemo(() => {
@@ -219,20 +221,17 @@ export default function InvoicesPeriodReportPage() {
           {rangeMode === "preset" ? (
             <label className="flex items-center gap-2 text-sm font-medium text-stone-700">
               חודש סיום:
-              <input
-                type="month"
+              <IsraeliMonthInput
                 value={endMonth}
-                onChange={(e) => setEndMonth(e.target.value || ym(new Date()))}
+                onChange={setEndMonth}
                 className="input-warm py-2 px-3 text-sm w-auto"
-                dir="ltr"
               />
             </label>
           ) : (
             <>
               <label className="flex items-center gap-2 text-sm font-medium text-stone-700">
                 מתאריך:
-                <input
-                  type="date"
+                <IsraeliDateInput
                   value={fromDate}
                   max={toDate || undefined}
                   onChange={(e) => setFromDate(e.target.value)}
@@ -242,8 +241,7 @@ export default function InvoicesPeriodReportPage() {
               </label>
               <label className="flex items-center gap-2 text-sm font-medium text-stone-700">
                 עד תאריך:
-                <input
-                  type="date"
+                <IsraeliDateInput
                   value={toDate}
                   min={fromDate || undefined}
                   onChange={(e) => setToDate(e.target.value)}

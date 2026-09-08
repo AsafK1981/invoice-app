@@ -14,8 +14,19 @@ describe("currencies", () => {
     expect(currencySymbol("XXX")).toBe("XXX");
   });
   it("formats an amount with its symbol and 2 decimals", () => {
-    expect(formatMoney(1234.5, "USD")).toBe("$1,234.50");
+    expect(formatMoney(1234.5, "USD")).toBe("\u2066$1,234.50\u2069");
     expect(formatMoney(1234.5, "ILS")).toBe("\u2066₪\u202F1,234.50\u2069");
+  });
+  it.each([
+    ["ILS", "-₪\u202F12.50"],
+    ["USD", "-$12.50"],
+    ["EUR", "-€12.50"],
+  ])("keeps negative %s amounts together in an LTR isolate", (currency, expected) => {
+    expect(formatMoney(-12.5, currency)).toBe(`\u2066${expected}\u2069`);
+  });
+  it.each(["ILS", "USD", "EUR"])("does not display negative zero for %s", (currency) => {
+    expect(formatMoney(-0, currency)).toBe(formatMoney(0, currency));
+    expect(formatMoney(-0.001, currency)).toBe(formatMoney(0, currency));
   });
   it("validates supported currencies", () => {
     expect(isSupportedCurrency("USD")).toBe(true);

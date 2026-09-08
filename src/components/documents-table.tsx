@@ -1,5 +1,7 @@
 "use client";
 
+import { IsraeliDateInput } from "@/components/israeli-date-input";
+
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
@@ -460,8 +462,7 @@ export function DocumentsTable({ documents, limit, exportSlot, onPrintingChange 
             <div className="dcbar-range" role="group" aria-label="טווח תאריכים">
               <label>
                 <span>מתאריך</span>
-                <input
-                  type="date"
+                <IsraeliDateInput
                   value={range.from}
                   max={range.to || undefined}
                   onChange={(e) => setRange({ from: e.target.value, to: range.to })}
@@ -471,8 +472,7 @@ export function DocumentsTable({ documents, limit, exportSlot, onPrintingChange 
               </label>
               <label>
                 <span>עד תאריך</span>
-                <input
-                  type="date"
+                <IsraeliDateInput
                   value={range.to}
                   min={range.from || undefined}
                   onChange={(e) => setRange({ from: range.from, to: e.target.value })}

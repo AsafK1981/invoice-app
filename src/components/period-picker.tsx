@@ -1,5 +1,7 @@
 "use client";
 
+import { IsraeliDateInput } from "@/components/israeli-date-input";
+
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
   type Period, type PeriodMode, PERIOD_MODE_LABELS,
@@ -44,8 +46,7 @@ export function PeriodPicker({ period, onChange }: { period: Period; onChange: (
           <button type="button" onClick={() => onChange(shiftPeriod(period, -1))} aria-label="טווח קודם באותו אורך">
             <ChevronRight aria-hidden="true" />
           </button>
-          <input
-            type="date"
+          <IsraeliDateInput
             value={bounds.start}
             max={bounds.end}
             aria-label="מתאריך"
@@ -53,8 +54,7 @@ export function PeriodPicker({ period, onChange }: { period: Period; onChange: (
             onChange={(e) => e.target.value && onChange(makeRange(e.target.value, bounds.end))}
           />
           <span aria-hidden="true">-</span>
-          <input
-            type="date"
+          <IsraeliDateInput
             value={bounds.end}
             min={bounds.start}
             aria-label="עד תאריך"

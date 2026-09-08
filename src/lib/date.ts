@@ -21,6 +21,27 @@ export function toIsraelDate(d: Date): string {
   return d.toLocaleDateString("en-CA", { timeZone: "Asia/Jerusalem" });
 }
 
+export const HEBREW_MONTHS = ["ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יוני", "יולי", "אוגוסט", "ספטמבר", "אוקטובר", "נובמבר", "דצמבר"];
+
+/** Strict day-first input parsing. Calendar dates never pass through a timezone. */
+export function parseIsraeliDate(value: string): string | null {
+  const match = /^(\d{1,2})[./](\d{1,2})[./](\d{4})$/.exec(value.trim());
+  if (!match) return null;
+  const [, day, month, year] = match;
+  const d = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)));
+  if (Number(year) < 1000 || d.getUTCFullYear() !== Number(year) || d.getUTCMonth() !== Number(month) - 1 || d.getUTCDate() !== Number(day)) return null;
+  return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+}
+
+/** Exact activity timestamp, with the date and clock in the same Israeli timezone. */
+export function formatIsraelDateTime(value: string): string {
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "";
+  const [year, month, day] = toIsraelDate(d).split("-");
+  const time = d.toLocaleTimeString("he-IL", { timeZone: "Asia/Jerusalem", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+  return `${day}.${month}.${year} · ${time}`;
+}
+
 /**
  * An existing Date's hour-of-day (0-23) in Asia/Jerusalem, DST-safe (never a
  * hardcoded UTC+2/+3 offset - `Intl` resolves the correct offset for the

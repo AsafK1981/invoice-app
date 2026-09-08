@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useId, useMemo, useState } from "react";
+import { IsraeliDateInput, reportInvalidIsraeliDate } from "@/components/israeli-date-input";
+
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { ChevronDown, ChevronLeft, Wallet } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 import { FormField } from "@/components/ui/form-field";
@@ -136,6 +138,7 @@ export function ExpenseFormModal({
   const showVatField = business.businessType === "authorized" || business.businessType === "company";
   const vatRate = getVatRate(business);
 
+  const formContentRef = useRef<HTMLDivElement>(null);
   const [form, setForm] = useState({
     date: today,
     category: getLastUsedCategory(),
@@ -314,6 +317,7 @@ export function ExpenseFormModal({
   }
 
   async function handleSubmit() {
+    if (!formContentRef.current || reportInvalidIsraeliDate(formContentRef.current) || !form.date) return;
     if (!form.supplier.trim() || enteredNum <= 0) return;
 
     const record: Expense = {
@@ -402,7 +406,7 @@ export function ExpenseFormModal({
         </>
       }
     >
-      <div className="space-y-4">
+      <div ref={formContentRef} className="space-y-4">
         {saveError && (
           <p
             role="alert"
@@ -413,9 +417,9 @@ export function ExpenseFormModal({
         )}
         <div className="grid grid-cols-2 gap-4">
           <FormField label="תאריך" required>
-            <input
-              type="date"
-              value={form.date}
+            <IsraeliDateInput
+              required
+                  value={form.date}
               onChange={(e) => update("date", e.target.value)}
               className="input-warm"
             />

@@ -1,5 +1,7 @@
 "use client";
 
+import { IsraeliDateInput } from "@/components/israeli-date-input";
+
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -239,7 +241,7 @@ export default function DashboardPage() {
     {
       label: "הכנסות",
       value: formatCurrency(stats.income),
-      sub: `${stats.paidCount} ${stats.paidCount === 1 ? "מסמך" : "מסמכים"} שולמו`,
+      sub: stats.paidCount === 1 ? "מסמך אחד שולם" : `${stats.paidCount} מסמכים שולמו`,
       icon: TrendingUp,
       href: `/documents?status=paid${monthQs}`,
       delta: stats.hasPrev ? stats.incomeDelta : null,
@@ -250,7 +252,7 @@ export default function DashboardPage() {
     {
       label: "הוצאות",
       value: formatCurrency(stats.expenseTotal),
-      sub: `${stats.expensesInRange.length} פעולות`,
+      sub: stats.expensesInRange.length === 1 ? "פעולה אחת" : `${stats.expensesInRange.length} פעולות`,
       icon: TrendingDown,
       href: "/expenses",
       delta: stats.hasPrev ? stats.expenseDelta : null,
@@ -271,7 +273,7 @@ export default function DashboardPage() {
     {
       label: "ממוצע למסמך",
       value: formatCurrency(stats.avgInvoice),
-      sub: "לפי מסמכים שולמו",
+      sub: "לפי מסמכים ששולמו",
       icon: Receipt,
       href: `/documents?status=paid${monthQs}`,
       delta: stats.hasPrev ? stats.avgDelta : null,
@@ -423,8 +425,7 @@ export default function DashboardPage() {
             {/* Inline width: `.input-warm` sets an unlayered width:100%,
                 which beats any Tailwind width utility - the same trap
                 documented on `.dcbar-input`. */}
-            <input
-              type="date"
+            <IsraeliDateInput
               value={customFrom}
               max={customTo || undefined}
               onChange={(e) => setCustomFrom(e.target.value)}
@@ -433,8 +434,7 @@ export default function DashboardPage() {
               style={{ width: "10.5rem" }}
             />
             <span className="text-xs text-stone-500" aria-hidden="true">-</span>
-            <input
-              type="date"
+            <IsraeliDateInput
               value={customTo}
               min={customFrom || undefined}
               onChange={(e) => setCustomTo(e.target.value)}

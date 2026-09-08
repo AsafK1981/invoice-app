@@ -26,8 +26,7 @@ import {
   type Notification,
   type NotificationKind,
 } from "@/lib/notifications";
-import { formatDate } from "@/lib/format";
-import { toIsraelDate } from "@/lib/date";
+import { formatIsraelDateTime } from "@/lib/date";
 import { getExistingSubscription, isPushSupported } from "@/lib/push-client";
 
 const KIND_STYLE: Record<
@@ -45,12 +44,7 @@ const KIND_STYLE: Record<
   whatsapp_reminder_ready: { icon: MessageCircle, iconColor: "text-emerald-700", bg: "bg-emerald-50 border-emerald-200" },
 };
 
-function fullTime(iso: string): string {
-  const d = new Date(iso);
-  const date = formatDate(toIsraelDate(d));
-  const time = d.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
-  return `${date} · ${time}`;
-}
+
 
 export default function NotificationsPage() {
   const { items, unreadCount, ready } = useNotifications(100);
@@ -148,7 +142,7 @@ function FeedTab({ ready, items }: { ready: boolean; items: Notification[] }) {
         <Bell className="w-10 h-10 mx-auto text-stone-400 mb-3" />
         <p className="text-stone-700 font-medium">אין התראות עדיין</p>
         <p className="text-sm text-stone-500 mt-1">
-          כשלקוח יפתח חשבונית, תשלום יזוהה, או הצעת מחיר תאושר, תקבל פה.
+          כשלקוח יפתח חשבונית, תשלום יזוהה, או הצעת מחיר תאושר, תופיע כאן התראה.
         </p>
       </div>
     );
@@ -188,7 +182,7 @@ function NotificationRow({ notification: n }: { notification: Notification }) {
           {n.title}
         </p>
         {n.body && <p className="text-sm text-stone-600 dark:text-stone-400 mt-1">{n.body}</p>}
-        <p className="text-xs text-stone-500 mt-1.5">{fullTime(n.createdAt)}</p>
+        <p className="text-xs text-stone-500 mt-1.5">{formatIsraelDateTime(n.createdAt)}</p>
       </div>
       {isUnread && <span className="w-2 h-2 rounded-full bg-orange-500 mt-2 flex-shrink-0" />}
     </div>

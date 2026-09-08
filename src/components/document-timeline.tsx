@@ -13,8 +13,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { formatDate } from "@/lib/format";
-import { toIsraelDate } from "@/lib/date";
+import { formatIsraelDateTime } from "@/lib/date";
 import type { InvoiceDocument } from "@/lib/types";
 
 interface Props {
@@ -50,12 +49,7 @@ const COLORS: Record<EventColor, { dot: string; ring: string; iconText: string }
   rose: { dot: "bg-rose-100", ring: "ring-rose-200", iconText: "text-rose-700" },
 };
 
-function fullTime(iso: string): string {
-  const d = new Date(iso);
-  const date = formatDate(toIsraelDate(d));
-  const time = d.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
-  return `${date} · ${time}`;
-}
+
 
 const ACTION_TO_EVENT: Record<
   string,
@@ -218,7 +212,7 @@ export function DocumentTimeline({ document: doc }: Props) {
                 <div className="flex items-baseline justify-between gap-3 flex-wrap">
                   <p className="text-sm font-semibold text-stone-900">{e.title}</p>
                   <p className="text-xs text-stone-500 whitespace-nowrap" dir="ltr">
-                    {fullTime(e.at)}
+                    {formatIsraelDateTime(e.at)}
                   </p>
                 </div>
                 {e.body && <p className="text-xs text-stone-600 mt-0.5">{e.body}</p>}

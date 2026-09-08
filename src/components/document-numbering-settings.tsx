@@ -115,16 +115,19 @@ export function DocumentNumberingSettings() {
     if (!bid) return;
     setSaving(true);
     setError(null);
-    const { error: upsertError } = await supabase
-      .from("document_counters")
-      .upsert(
-        { business_id: bid, doc_type: type, next_number: value },
-        { onConflict: "business_id,doc_type" }
-      );
-    setSaving(false);
-    if (upsertError) {
-      setError(upsertError.message);
+    try {
+      const { error: upsertError } = await supabase
+        .from("document_counters")
+        .upsert(
+          { business_id: bid, doc_type: type, next_number: value },
+          { onConflict: "business_id,doc_type" }
+        );
+      if (upsertError) throw upsertError;
+    } catch {
+      setError("לא הצלחנו לשמור את המספור. בדוק את החיבור לאינטרנט ונסה לשמור שוב.");
       return;
+    } finally {
+      setSaving(false);
     }
     setCounters((c) => ({ ...c, [type]: value }));
     setEditing(null);

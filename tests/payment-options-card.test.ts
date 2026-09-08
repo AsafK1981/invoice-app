@@ -1,6 +1,7 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
+import { DocumentBody } from "@/components/document-body";
 import { PaymentOptionsCard } from "@/components/payment-options-card";
 import { docStrings } from "@/lib/document-strings";
 import { getTemplate } from "@/lib/document-themes";
@@ -22,6 +23,24 @@ describe("recipient payment instructions", () => {
     expect(html).toContain("$1,500");
     expect(html).not.toMatch(/[\u0590-\u05ff]/);
     expect(html).not.toContain("PayBox");
+  });
+  it.each([
+    ["ILS", 1500, "₪\u202F1,500"],
+    ["ILS", 1500.5, "₪\u202F1,500.50"],
+    ["USD", 1500, "$1,500.00"],
+    ["EUR", 1500.5, "€1,500.50"],
+  ] as const)("matches document-body decimals for %s %s", (currency, total, expected) => {
+    const biz = { ...business, paymentNotes: "Pay by agreement" };
+    const card = render(biz, { ...document, currency, total });
+    const body = renderToStaticMarkup(createElement(DocumentBody, {
+      business: biz, client: null, documentType: "proforma", number: 1,
+      date: "2026-09-08", items: [], subtotal: total, vat: 0, vatRate: 0,
+      total, currency, language: "en",
+    }));
+    const isolated = `\u2066${expected}\u2069`;
+    expect(card).toContain(isolated);
+    expect(body).toContain(isolated);
+    if (currency === "ILS" && total === 1500) expect(card).not.toContain("1,500.00");
   });
   it("retains standalone owner-provided instructions without requiring bank data", () => {
     const html = render({ ...business, paymentNotes: "Please use our agreed payment method." });

@@ -25,6 +25,8 @@ import {
 export function CashFlowForecast({ result }: { result: ForecastResult }) {
   const { months, totals, potentialQuotes, assumptions } = result;
 
+  const hasChartValues = months.some((month) => month.inflow !== 0 || month.outflow !== 0);
+
   const chartData: BarDatum[] = months.map((m) => ({
     key: m.period,
     label: HEBREW_MONTHS_SHORT[Number(m.period.slice(5, 7)) - 1],
@@ -48,7 +50,7 @@ export function CashFlowForecast({ result }: { result: ForecastResult }) {
           <span>הוצאות שוטפות, מקדמות ומע״מ</span>
         </Kpi>
         <Kpi icon={Wallet} label="נטו" value={formatCurrency(totals.net)}>
-          <span>{totals.net >= 0 ? "צפי חיובי" : "צפי שלילי - כדאי להיערך"}</span>
+          <span>{totals.net > 0 ? "צפי חיובי" : totals.net < 0 ? "צפי שלילי - כדאי להיערך" : "צפי מאוזן"}</span>
         </Kpi>
       </div>
 
@@ -66,7 +68,13 @@ export function CashFlowForecast({ result }: { result: ForecastResult }) {
           </div>
         </div>
         <div className="rpt-card-body">
-          <ReportsBarChart data={chartData} />
+          {hasChartValues ? (
+            <ReportsBarChart data={chartData} />
+          ) : (
+            <p className="py-6 text-center text-sm text-stone-600">
+              אין עדיין תנועות כספיות צפויות להצגה בתקופה הזו.
+            </p>
+          )}
         </div>
       </section>
 

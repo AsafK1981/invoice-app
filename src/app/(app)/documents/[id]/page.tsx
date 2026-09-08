@@ -1057,7 +1057,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                   ) : (
                     <>נשלח{" "}</>
                   )}
-                  {new Date(doc.emailedAt).toLocaleString("he-IL", {
+                  {new Date(doc.emailedAt).toLocaleString("he-IL", { timeZone: "Asia/Jerusalem",
                     day: "2-digit",
                     month: "2-digit",
                     year: "numeric",
@@ -1067,7 +1067,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                   {doc.emailOpenedAt && (
                     <>
                       {" · נפתח "}
-                      {new Date(doc.emailOpenedAt).toLocaleString("he-IL", {
+                      {new Date(doc.emailOpenedAt).toLocaleString("he-IL", { timeZone: "Asia/Jerusalem",
                         day: "2-digit",
                         month: "2-digit",
                         hour: "2-digit",

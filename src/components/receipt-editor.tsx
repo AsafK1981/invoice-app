@@ -27,6 +27,7 @@ import {
   CreditCard,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
+import { IsraeliDateInput, reportInvalidIsraeliDate } from "@/components/israeli-date-input";
 import { sendReceiptEmail } from "@/lib/email";
 import { EmailVerificationModal } from "@/components/email-verification-modal";
 import { GrowingTextarea } from "@/components/ui/growing-textarea";
@@ -40,7 +41,7 @@ import {
   withholdingRateOnPanelOpen,
 } from "@/lib/withholding";
 import { requiresAllocationNumber } from "@/lib/tax-authority";
-import { CURRENCIES, formatMoney } from "@/lib/currencies";
+import { CURRENCIES, currencySymbol, formatMoney } from "@/lib/currencies";
 import { ilsEquivalents } from "@/lib/exchange-rate";
 import { todayInIsrael } from "@/lib/date";
 import { AllocationConnectBanner } from "@/components/allocation-connect-banner";
@@ -189,7 +190,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   const [roundTotal, setRoundTotal] = useState<boolean>(business.roundTotalDefault ?? false);
 
   // הנחה (document-level discount), collapsed by default. User enters a % or a
-  // ₪ amount; we persist the resolved ₪ amount. Applied BEFORE VAT.
+  // Amount in the selected currency; persisted before VAT.
   const [showDiscount, setShowDiscount] = useState<boolean>(false);
   const [discountMode, setDiscountMode] = useState<"amount" | "percent">("amount");
   const [discountInput, setDiscountInput] = useState<string>("");
@@ -263,6 +264,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   // something current to persist.
   const exitAutosaveRef = useRef<{ payload: DraftPayload; title: string } | null>(null);
   const [currency, setCurrency] = useState("ILS");
+  const money = (amount: number) => currency === "ILS" ? formatCurrency(amount) : formatMoney(amount, currency);
   // The language the DOCUMENT is written in (not the app's). Hebrew unless the
   // customer is foreign; sits next to the currency because it is the same kind
   // of decision and the same audience makes it.
@@ -1235,6 +1237,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   // Save the current (possibly incomplete) state as a server draft to finish
   // later. No invoice number is allocated; that happens only on finalize.
   async function handleSaveDraft() {
+    if (reportInvalidIsraeliDate()) return;
     if (savingDraft) return;
     setSavingDraft(true);
     setToast(null);
@@ -1290,6 +1293,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   }
 
   async function handleSave(opts: { send?: boolean } = {}) {
+    if (reportInvalidIsraeliDate() || !date) return;
     if (!canSave) return;
     const send = opts.send === true && canSend;
     // #11: never persist while the exchange-rate fetch for a non-ILS currency
@@ -1981,8 +1985,8 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
           <div className="space-y-3">
             <div className="flex flex-wrap items-start gap-3">
               <FormField label="תאריך" className="w-[8.75rem] shrink-0">
-                <input
-                  type="date"
+                <IsraeliDateInput
+                  required
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
                   className="input-warm"
@@ -2044,8 +2048,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                         className="input-warm tabular-nums"
                         dir="ltr"
                       />
-                      <input
-                        type="date"
+                      <IsraeliDateInput
                         value={creditRefDate}
                         onChange={(e) => setCreditRefDate(e.target.value)}
                         className="input-warm"
@@ -2063,8 +2066,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
           {isQuote && (
             <div className="mt-3">
               <FormField label="תוקף ההצעה (אופציונלי)">
-                <input
-                  type="date"
+                <IsraeliDateInput
                   value={validUntil}
                   onChange={(e) => setValidUntil(e.target.value)}
                   className="input-warm"
@@ -2169,7 +2171,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                   onChange={(e) => setRoundTotal(e.target.checked)}
                   className="w-4 h-4 accent-orange-500"
                 />
-                <span className="text-stone-700">עגל סכום לתשלום (לשקל שלם)</span>
+                <span className="text-stone-700">עגל סכום לתשלום (למספר שלם)</span>
               </label>
             </div>
           </Expander>
@@ -2344,7 +2346,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                   <div className="col-span-10 sm:w-[6.5rem] sm:shrink-0 relative">
                     {idx === 0 && <label className="text-xs font-semibold text-stone-700 mb-1 block">סה״כ</label>}
                     <div className="input-warm bg-gradient-to-br from-orange-50 to-amber-50 border-orange-200 text-stone-900 font-bold text-left">
-                      {formatCurrency(item.quantity * item.unitPrice)}
+                      {money(item.quantity * item.unitPrice)}
                     </div>
                     {/* The other side of the VAT line, right next to where the
                         price was typed (Asaf 2026-08-27): the preview already
@@ -2358,7 +2360,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                       <p className="absolute top-full left-0 mt-1 text-[11px] leading-tight text-stone-500 tabular-nums text-left whitespace-nowrap">
                         {vatMode === "exclusive" ? "כולל מע״מ" : "לפני מע״מ"}{" "}
                         <span className="font-semibold text-stone-700">
-                          {formatCurrency(
+                          {money(
                             vatMode === "exclusive"
                               ? round2(
                                   round2(item.quantity * round2(item.unitPrice)) *
@@ -2434,7 +2436,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                             : "text-stone-700 hover:text-stone-900"
                         }`}
                       >
-                        ₪
+                        {currencySymbol(currency)}
                       </button>
                       <button
                         type="button"
@@ -2462,7 +2464,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                   </div>
                   {discountEntered && discountValid && discountAmount > 0 && (
                     <p className="text-sm font-semibold text-stone-800">
-                      הנחה: {formatCurrency(discountAmount)}
+                      הנחה: {money(discountAmount)}
                       {discountMode === "percent" && <> ({discountRaw}%)</>}
                     </p>
                   )}
@@ -2550,8 +2552,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                       <label className="text-xs font-semibold text-stone-700 mb-1 block">
                         תאריך פירעון (ז״פ)
                       </label>
-                      <input
-                        type="date"
+                      <IsraeliDateInput
                         value={payDetails.checkDueDate || ""}
                         onChange={(e) => updatePayDetails({ checkDueDate: e.target.value })}
                         className="input-warm"
@@ -2637,7 +2638,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                               setWithholdingTouched(false);
                             }}
                             className="input-warm tabular-nums text-right [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                            style={{ paddingRight: "1.85rem" }}
+                            style={{ paddingRight: "2.75rem" }}
                             dir="ltr"
                             placeholder="35"
                             aria-label="שיעור ניכוי מס במקור, אחוזים"
@@ -2668,14 +2669,14 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                             className="input-warm tabular-nums text-right [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                             style={{ paddingRight: "1.85rem" }}
                             dir="ltr"
-                            aria-label="סכום הניכוי, שקלים"
+                            aria-label={`סכום הניכוי, ${currency}`}
                           />
                           <span
                             className="pointer-events-none absolute inset-y-0 flex items-center text-xs font-medium text-stone-400"
                             style={{ right: "0.85rem" }}
                             aria-hidden="true"
                           >
-                            ₪
+                            {currencySymbol(currency)}
                           </span>
                         </div>
                         {withholdingEntered && (
@@ -2690,12 +2691,12 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                       </div>
                     </div>
                     <p className="text-xs text-stone-600">
-                      מחושב על הסכום כולל מע״מ, כך שהסכום ששולם בפועל יוצא בשקלים שלמים. אפשר לשנות את הסכום ידנית.
+                      מחושב על הסכום כולל מע״מ, כך שהסכום ששולם בפועל מעוגל למספר שלם. אפשר לשנות את הסכום ידנית.
                       סכום המסמך אינו משתנה, זהו פיצול של התשלום.
                     </p>
                     {total > 0 && withholdingEntered && withholdingValid && withholdingAmount > 0 && (
                       <p className="text-sm font-semibold text-stone-800">
-                        שולם בפועל: {formatCurrency(netAfterWithholding(total, withholdingAmount))}
+                        שולם בפועל: {money(netAfterWithholding(total, withholdingAmount))}
                       </p>
                     )}
                     {withholdingEntered && !withholdingValid && (
@@ -2874,18 +2875,18 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                   {isQuote ? "סה״כ הצעה" : isCreditNote ? "סה״כ זיכוי" : "סה״כ לתשלום"}
                 </p>
                 <p className="mt-1.5 text-2xl font-bold text-stone-900 leading-none tabular-nums">
-                  {formatCurrency(total)}
+                  {money(total)}
                 </p>
                 {effectiveVatRate > 0 && (
                   <p className="mt-1 text-[11px] text-stone-600 leading-none">
-                    כולל מע״מ {formatCurrency(vat)}
+                    כולל מע״מ {money(vat)}
                   </p>
                 )}
                 {withholdingEntered && withholdingValid && withholdingAmount > 0 && (
                   <p className="mt-1 text-[11px] text-stone-700 leading-none">
                     שולם בפועל{" "}
                     <span className="font-semibold text-stone-900">
-                      {formatCurrency(netAfterWithholding(total, withholdingAmount))}
+                      {money(netAfterWithholding(total, withholdingAmount))}
                     </span>
                   </p>
                 )}
@@ -2933,30 +2934,30 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
             <div className="space-y-1.5 text-sm">
               {discountAmount > 0 && (
                 <>
-                  <SummaryRow label="סה״כ לפני הנחה" value={formatCurrency(subtotal + discountAmount)} />
-                  <SummaryRow label="הנחה" value={`-${formatCurrency(discountAmount)}`} />
+                  <SummaryRow label="סה״כ לפני הנחה" value={money(subtotal + discountAmount)} />
+                  <SummaryRow label="הנחה" value={money(-discountAmount)} />
                 </>
               )}
               {effectiveVatRate > 0 && (
                 <>
-                  <SummaryRow label="סכום ביניים" value={formatCurrency(subtotal)} />
-                  <SummaryRow label={`מע״מ (${effectiveVatRate}%)`} value={formatCurrency(vat)} />
+                  <SummaryRow label="סכום ביניים" value={money(subtotal)} />
+                  <SummaryRow label={`מע״מ (${effectiveVatRate}%)`} value={money(vat)} />
                 </>
               )}
-              {rounding !== 0 && <SummaryRow label="עיגול" value={formatCurrency(rounding)} />}
+              {rounding !== 0 && <SummaryRow label="עיגול" value={money(rounding)} />}
               <div className="flex justify-between items-baseline pt-2">
                 <span className="text-stone-800 font-semibold">
                   {isQuote ? "סה״כ הצעה" : isCreditNote ? "סה״כ זיכוי" : "סה״כ לתשלום"}
                 </span>
                 <span className="text-2xl font-bold bg-gradient-to-l from-orange-500 to-orange-700 bg-clip-text text-transparent">
-                  {formatCurrency(total)}
+                  {money(total)}
                 </span>
               </div>
               {withholdingEntered && withholdingValid && withholdingAmount > 0 && (
                 <div className="flex justify-between items-baseline pt-2 mt-1 border-t border-orange-100">
                   <span className="text-stone-800 font-semibold">שולם בפועל</span>
                   <span className="text-lg font-bold text-stone-900">
-                    {formatCurrency(netAfterWithholding(total, withholdingAmount))}
+                    {money(netAfterWithholding(total, withholdingAmount))}
                   </span>
                 </div>
               )}
@@ -3070,7 +3071,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
               {isQuote ? "סה״כ הצעה" : isCreditNote ? "סה״כ זיכוי" : "סה״כ לתשלום"}
             </p>
             <p className="mt-1 text-lg font-bold text-stone-900 leading-none tabular-nums">
-              {formatCurrency(total)}
+              {money(total)}
             </p>
           </div>
           <button

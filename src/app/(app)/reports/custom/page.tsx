@@ -1,5 +1,7 @@
 "use client";
 
+import { IsraeliDateInput } from "@/components/israeli-date-input";
+
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, SlidersHorizontal, Download, Printer } from "lucide-react";
@@ -287,8 +289,7 @@ export default function CustomReportPage() {
               <>
                 <label className="flex items-center gap-2 text-sm font-medium text-stone-700">
                   מתאריך:
-                  <input
-                    type="date"
+                  <IsraeliDateInput
                     value={fromDate}
                     max={toDate || undefined}
                     onChange={(e) => setFromDate(e.target.value)}
@@ -298,8 +299,7 @@ export default function CustomReportPage() {
                 </label>
                 <label className="flex items-center gap-2 text-sm font-medium text-stone-700">
                   עד תאריך:
-                  <input
-                    type="date"
+                  <IsraeliDateInput
                     value={toDate}
                     min={fromDate || undefined}
                     onChange={(e) => setToDate(e.target.value)}

@@ -417,7 +417,7 @@ export default function ReportsPage() {
           </div>
           <div className="rpt-card-body rpt-aging-body">
             {aging.rows.length === 0 ? (
-              <p className="text-sm text-stone-600">אין חשבוניות פתוחות. כל הלקוחות שילמו, נכון לעכשיו.</p>
+              <p className="text-sm text-stone-600">אין מסמכים פתוחים לגבייה כרגע.</p>
             ) : (
               <>
                 <div className="rpt-aging-total" dir="ltr">{formatCurrency(aging.totals.grand)}</div>

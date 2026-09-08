@@ -27,12 +27,13 @@ export function currencySymbol(code: string): string {
 }
 
 export function formatMoney(amount: number, code: string): string {
-  const digits = amount.toLocaleString("en-US", {
+  const digits = Math.abs(amount).toLocaleString("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
-  // Shekel: sign, small gap, digits, bidi-isolated (see shekel()). Foreign
-  // currencies keep their own convention ("$1,234.50", no gap).
-  if (code === "ILS") return shekel(digits);
-  return `${currencySymbol(code)}${digits}`;
+  // Keep the minus inside the same LTR token as the symbol and digits.
+  // Rounded zero must not retain a minus sign.
+  const negative = amount < 0 && /[1-9]/.test(digits);
+  if (code === "ILS") return shekel(digits, negative);
+  return `\u2066${negative ? "-" : ""}${currencySymbol(code)}${digits}\u2069`;
 }

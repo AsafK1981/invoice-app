@@ -736,7 +736,7 @@ export function AssistantWidget() {
     panelStyle.height = `${size.h}px`;
   }
 
-  // Desktop keeps the bottom-left launcher; mobile reserves a top toolbar.
+  // Desktop places the launcher in the utility row; mobile reserves a top toolbar.
   // The open mobile panel stays above the keyboard. Both `left` and `right`
   // have to be set in the same breakpoint:
   // the mobile rules pin the panel to both edges, so overriding only one of

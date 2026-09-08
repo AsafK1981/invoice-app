@@ -1,5 +1,7 @@
 "use client";
 
+import { IsraeliDateInput } from "@/components/israeli-date-input";
+
 import { useMemo, useState } from "react";
 import { Wallet, Printer, Download, ExternalLink, Info, Circle } from "lucide-react";
 import { DownloadPdfButton } from "@/components/download-pdf-button";
@@ -333,8 +335,7 @@ export function CapitalDeclarationReport({ headless = false, documents, expenses
           </p>
           <label className="no-print flex items-center gap-2 text-xs">
             <span className="text-stone-500">נכון לתאריך:</span>
-            <input
-              type="date"
+            <IsraeliDateInput
               value={asOfDate}
               onChange={(e) => setAsOfDate(e.target.value)}
               className="input-warm py-1 px-2 text-xs w-auto"

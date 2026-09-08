@@ -41,7 +41,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <div className="max-w-7xl mx-auto p-4 pt-[calc(5rem+env(safe-area-inset-top))] lg:p-8 print:p-0 print:max-w-none">
             <EmailVerificationBanner />
             <TwoFactorNudge />
-            <div className="no-print flex items-center justify-end gap-2 mb-4 print:hidden">
+            <div className="no-print flex items-center justify-end gap-2 mb-4 lg:min-h-16 print:hidden">
+              <AssistantWidget />
               <NotificationsBell />
               <GlobalSearch />
             </div>
@@ -49,7 +50,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
         </main>
         <InstallPrompt />
-        <AssistantWidget />
       </div>
     </AppProviders>
   );

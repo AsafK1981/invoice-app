@@ -5,6 +5,7 @@ import { Copy, Check, Wallet } from "lucide-react";
 import type { Business, InvoiceDocument } from "@/lib/types";
 import { docDir, toDocLang } from "@/lib/document-strings";
 import { formatMoney } from "@/lib/currencies";
+import { formatCurrency } from "@/lib/format";
 
 interface Props {
   business: Business;
@@ -80,7 +81,8 @@ export function PaymentOptionsCard({ business, document: doc }: Props) {
   if (!hasBank && !hasNotes) return null;
 
   // The document's own currency: a $3,600 quote must not read "₪3,600" here.
-  const totalFmt = formatMoney(doc.total, doc.currency || "ILS");
+  const currency = doc.currency || "ILS";
+  const totalFmt = currency === "ILS" ? formatCurrency(doc.total) : formatMoney(doc.total, currency);
 
   return (
     <div className="no-print max-w-[210mm] mx-auto mt-6" dir={docDir(language)} lang={language}>
