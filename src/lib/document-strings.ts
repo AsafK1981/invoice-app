@@ -46,6 +46,15 @@ export interface DocStrings {
    * has not been issued, plus a full-sheet watermark.
    */
   draftMark: string;
+  /**
+   * Replaces "מסמך ממוחשב" on an issued document the app does NOT sign: a
+   * receipt for a payment 18ב(ד) keeps off secured-signature documents. The
+   * customer must get it on paper, and the paper says so.
+   */
+  paperOnly: string;
+  /** Footer line on a signed document, followed by the /verify URL. */
+  signedLine: string;
+  verifyLabel: string;
   /** Placeholder shown in the editor preview before a number is allocated. */
   autoNumber: string;
   /** Customer card caption. */
@@ -101,6 +110,9 @@ const HE: DocStrings = {
   copy: "העתק",
   computerized: "מסמך ממוחשב",
   draftMark: "טיוטה",
+  paperOnly: "להדפסה ולשמירה בנייר",
+  signedLine: "חתום בחתימה אלקטרונית מאובטחת",
+  verifyLabel: "אימות",
   autoNumber: "(אוטומטי)",
   toLabel: "לכבוד",
   clientTaxId: "ח.פ / ת.ז",
@@ -163,6 +175,9 @@ const EN: DocStrings = {
   copy: "COPY",
   computerized: "Computerized document",
   draftMark: "DRAFT",
+  paperOnly: "Print and keep on paper",
+  signedLine: "Signed with a secured electronic signature",
+  verifyLabel: "Verify",
   autoNumber: "(auto)",
   toLabel: "To",
   clientTaxId: "Tax ID",

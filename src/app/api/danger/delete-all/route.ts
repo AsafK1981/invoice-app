@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { listSignedPaths, SIGNED_BUCKET } from "@/lib/signing/store";
 import { revokeGmailGrantsFor } from "@/lib/gmail-connect";
 import { createClient } from "@supabase/supabase-js";
 import { checkRate, clientIp } from "@/lib/rate-limit";
@@ -139,6 +140,13 @@ export async function POST(req: NextRequest) {
       .map((r) => r.file_path as string)
       .filter(Boolean);
     deleted.document_attachments = res.data?.length || 0;
+  });
+  // Signed originals (secured e-signature, document_signatures): the rows
+  // cascade with the documents, the files in the private bucket do not.
+  let signedPaths: string[] = [];
+  await step("document_signatures_scan", async () => {
+    signedPaths = await listSignedPaths(admin, [businessId]);
+    deleted.document_signatures = signedPaths.length;
   });
   await step("document_items_scan", async () => {
     if (docIds.length === 0) {
@@ -325,6 +333,21 @@ export async function POST(req: NextRequest) {
       removed += data?.length || 0;
     }
     deleted.storage_attachments = removed;
+  });
+
+  await step("storage_signed_documents", async () => {
+    if (signedPaths.length === 0) {
+      deleted.storage_signed_documents = 0;
+      return;
+    }
+    let removed = 0;
+    for (let i = 0; i < signedPaths.length; i += 100) {
+      const chunk = signedPaths.slice(i, i + 100);
+      const { data, error } = await admin.storage.from(SIGNED_BUCKET).remove(chunk);
+      if (error) throw new Error(`signed-documents remove failed: ${error.message}`);
+      removed += data?.length || 0;
+    }
+    deleted.storage_signed_documents = removed;
   });
 
   await step("storage_expense_receipts", async () => {

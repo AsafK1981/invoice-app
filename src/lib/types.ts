@@ -443,3 +443,22 @@ export const DOC_SUM_LABEL: Record<DocumentType, string> = {
   tax_invoice_receipt: "סה״כ התקבל",
   credit_note: "סה״כ זיכוי",
 };
+
+/**
+ * The signed PDF the app emitted for an issued document (secured electronic
+ * signature, הוראות ניהול ספרים סעיף 1). Written by the server on the first
+ * signed emission; the owner only reads it. See scripts/migrations/
+ * 20260910-document-signatures.sql.
+ */
+export interface DocumentSignature {
+  id: string;
+  documentId: string;
+  signedAt: string;
+  /** SHA-256 hex of the signed file kept on record. */
+  sha256: string;
+  /** SHA-256 hex over the DER of the signing certificate. */
+  certFingerprint: string;
+  algorithm: string;
+  /** Whether the recorded file carried the מקור label. */
+  isOriginal: boolean;
+}

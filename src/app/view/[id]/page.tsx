@@ -7,6 +7,7 @@ import { PaymentOptionsCard } from "@/components/payment-options-card";
 import { formatDate } from "@/lib/format";
 import { docDir, docStrings, toDocLang, type DocLang } from "@/lib/document-strings";
 import type { Business, Client, InvoiceDocument, DocumentItem } from "@/lib/types";
+import { isComputerizedDocument } from "@/lib/signing/eligibility";
 
 /**
  * The page CHROME around the document (buttons, approval block, hints). It
@@ -51,6 +52,9 @@ const VIEW_STRINGS: Record<DocLang, Record<string, string>> = {
     consentRevoke: "להפסיק לקבל מסמכים ממוחשבים",
     consentRevokeConfirm: "להפסיק לקבל מסמכים ממוחשבים מ{business}? המסמכים הבאים לא ייחשבו מסמכים ממוחשבים.",
     consentFailed: "לא הצלחנו לרשום את הבחירה. נסו שוב.",
+    verifyLink: "אימות החתימה האלקטרונית של המסמך",
+    paperOnlyHint:
+      "מסמך זה אינו מסמך ממוחשב: התשלום נרשם באמצעי שהוראות ניהול הספרים אינן מתירות לחתום עליו אלקטרונית. יש להדפיס אותו ולשמור את הנייר.",
   },
   en: {
     promoTitle: "Do you issue invoices too?",
@@ -87,6 +91,9 @@ const VIEW_STRINGS: Record<DocLang, Record<string, string>> = {
     consentRevoke: "Stop receiving computerized documents",
     consentRevokeConfirm: "Stop receiving computerized documents from {business}? Future documents will not count as computerized documents.",
     consentFailed: "We could not record your choice. Please try again.",
+    verifyLink: "Verify the electronic signature of this document",
+    paperOnlyHint:
+      "This document is not a computerized document: its payment method cannot be signed electronically under the Israeli bookkeeping instructions. Print it and keep the paper.",
   },
 };
 
@@ -533,8 +540,22 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
       )}
 
       <div className="no-print max-w-[210mm] mx-auto mt-6">
-        <div className="bg-white rounded-2xl shadow-sm border border-orange-100 p-4 text-center">
+        <div className="bg-white rounded-2xl shadow-sm border border-orange-100 p-4 text-center space-y-2">
           <p className="text-xs text-stone-500">{t.footerHint}</p>
+          {/* ניהול ספרים סעיף 1 / 18ב(ד): a signed document links to its
+              public signature check; a paper-only one says why it is not
+              a מסמך ממוחשב. Drafts get neither. */}
+          {doc && doc.status !== "draft" && (
+            isComputerizedDocument({ type: doc.type, status: doc.status, paymentMethod: doc.paymentMethod }) ? (
+              <p className="text-xs">
+                <a href={`/verify/${id}`} className="text-orange-700 underline hover:text-orange-800">
+                  {t.verifyLink}
+                </a>
+              </p>
+            ) : (
+              <p className="text-xs text-amber-800">{t.paperOnlyHint}</p>
+            )
+          )}
         </div>
       </div>
 

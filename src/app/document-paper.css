@@ -220,6 +220,12 @@
   letter-spacing: 0.06em;
   color: var(--d-ink);
 }
+/* An issued document the app does not sign (18ב(ד): cash-type payment) says
+   so in the same slot, quieter: it is an instruction, not a statutory mark. */
+.doc-paper .doc-computerized.is-paper {
+  font-weight: 600;
+  color: var(--d-soft);
+}
 /* Full-sheet "טיוטה" watermark. Absolutely positioned against .doc-paper
    (which is position:relative) and pointer-events:none, so it cannot catch a
    click or shift a single line of the layout. print-color-adjust keeps it in
@@ -573,6 +579,12 @@
   color: var(--d-soft);
 }
 .doc-paper .doc-foot-brand {
+  font-size: 10px;
+  color: var(--d-soft);
+  margin-top: 5px;
+}
+/* Secured e-signature line + /verify URL: same footnote weight as the credit. */
+.doc-paper .doc-foot-verify {
   font-size: 10px;
   color: var(--d-soft);
   margin-top: 5px;

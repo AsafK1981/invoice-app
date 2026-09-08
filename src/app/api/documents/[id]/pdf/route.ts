@@ -4,6 +4,7 @@ import { CANONICAL_ORIGIN } from "@/lib/public-url";
 import { docStrings } from "@/lib/document-strings";
 import { clientIp } from "@/lib/rate-limit";
 import { launchPdfBrowser } from "@/lib/pdf-browser";
+import { signRenderedPdf } from "@/lib/signing/sign-document";
 
 // Headless-Chrome cold start + a full page render can take a while; give the
 // serverless function real headroom so a slow cold boot doesn't 504.
@@ -132,6 +133,19 @@ export async function GET(
       preferCSSPageSize: true,
     });
 
+    // ניהול ספרים סעיף 1 ("מסמך ממוחשב" = signed with the taxpayer secured
+    // e-signature): sign the rendered file with the business key, and on the
+    // first signed emission keep it on record. Ineligible documents (drafts,
+    // cash-type receipts per 18ב(ד)) go out unsigned and their paper does not
+    // claim to be computerized. Must run BEFORE the original_issued_at stamp
+    // below, which is how the record knows whether it holds the מקור.
+    const signing = await signRenderedPdf(
+      admin,
+      id,
+      Buffer.from(pdf),
+      `${CANONICAL_ORIGIN}/verify/${id}`,
+    );
+
     // הוראות ניהול ספרים סעיף 18ב, render-then-set ordering: the PDF above was
     // rendered from /view while original_issued_at was still NULL, so THIS first
     // download reads "מקור". Now stamp it (idempotent, only while NULL) so the
@@ -149,12 +163,16 @@ export async function GET(
     const filename = await buildFilename(id);
     const encoded = encodeURIComponent(filename);
 
-    return new NextResponse(Buffer.from(pdf), {
+    return new NextResponse(new Uint8Array(signing.bytes), {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="document-${id.slice(0, 8)}.pdf"; filename*=UTF-8''${encoded}`,
         "Cache-Control": "no-store",
+        // signed | ineligible | failed: visible in devtools / logs, never
+        // shown to the customer. A "failed" here means the file went out
+        // unsigned although it should have been signed; alert-worthy.
+        "X-Document-Signature": signing.state,
       },
     });
   } catch (err) {

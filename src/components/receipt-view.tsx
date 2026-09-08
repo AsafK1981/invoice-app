@@ -10,6 +10,8 @@ import { DocumentBody, type DocumentBodyClient } from "./document-body";
 import { designToCssVars, normalizeDocumentDesign } from "@/lib/document-themes";
 import { attachPrintFit } from "@/lib/print-fit";
 import { docDir, toDocLang } from "@/lib/document-strings";
+import { isComputerizedDocument } from "@/lib/signing/eligibility";
+import { absoluteUrl } from "@/lib/public-url";
 
 interface Props {
   business: Business;
@@ -56,6 +58,13 @@ export function ReceiptView({
   // byte-identical; an English document flips the paper to LTR, which is what
   // the logical text-align rules in document-paper.css key off.
   const language = toDocLang(doc.language);
+  // ניהול ספרים סעיף 1 + 18ב(ד): the paper may say "מסמך ממוחשב" only when
+  // the PDF route will sign it; the same pure rule decides both.
+  const computerized = isComputerizedDocument({
+    type: doc.type,
+    status: doc.status,
+    paymentMethod: doc.paymentMethod,
+  });
 
   // Security boundary: business.documentDesign is untrusted (read straight
   // off the DB / the public API's echo of it). normalizeDocumentDesign()
@@ -120,6 +129,8 @@ export function ReceiptView({
         // view, the browser print, and the server PDF that prints this very
         // page - has to be marked "טיוטה".
         draft={doc.status === "draft"}
+        computerized={computerized}
+        verifyUrl={absoluteUrl(`/verify/${doc.id}`)}
         showBranding={showBranding}
         language={language}
       />

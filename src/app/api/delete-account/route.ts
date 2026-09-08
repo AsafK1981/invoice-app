@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { listSignedPaths, SIGNED_BUCKET } from "@/lib/signing/store";
 import { revokeGmailGrantsFor } from "@/lib/gmail-connect";
 import { createClient } from "@supabase/supabase-js";
 import { checkRate, clientIp } from "@/lib/rate-limit";
@@ -125,6 +126,15 @@ export async function POST(req: NextRequest) {
       }
       if (attachmentPaths.length > 0) {
         await admin.storage.from("document-attachments").remove(attachmentPaths).catch(() => {});
+      }
+      // Signed originals (secured e-signature). The DB rows cascade away with
+      // the documents; the files would not.
+      const signedPaths = await listSignedPaths(admin, businessIds).catch(() => [] as string[]);
+      for (let i = 0; i < signedPaths.length; i += 100) {
+        await admin.storage
+          .from(SIGNED_BUCKET)
+          .remove(signedPaths.slice(i, i + 100))
+          .catch(() => {});
       }
       for (let i = 0; i < receiptPaths.length; i += 100) {
         await admin.storage

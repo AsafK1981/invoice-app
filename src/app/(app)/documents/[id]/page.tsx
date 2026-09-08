@@ -38,7 +38,9 @@ import { canIssueTaxInvoices } from "@/lib/vat";
 import { requiresAllocationNumber, shouldFocusAllocationOnArrival } from "@/lib/tax-authority";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { CONSENT_SOURCE_LABELS } from "@/lib/consent";
-import { DOCUMENT_TYPE_LABELS } from "@/lib/types";
+import { signingEligibility } from "@/lib/signing/eligibility";
+import { useDocumentSignature } from "@/lib/signature-store";
+import { DOCUMENT_TYPE_LABELS, PAYMENT_METHOD_LABELS, type InvoiceDocument } from "@/lib/types";
 import { docStrings } from "@/lib/document-strings";
 import { waDigits, whatsappLink } from "@/lib/whatsapp-link";
 import { daysSinceIssue, dunningStageFor, whatsappReminderText } from "@/lib/dunning-copy";
@@ -1220,6 +1222,8 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
         </div>
       )}
 
+      {doc.status !== "draft" && <SignatureCard doc={doc} />}
+
       <ReceiptView
         business={business}
         client={client}
@@ -1329,5 +1333,49 @@ function NextStepTile({
         </span>
       </span>
     </button>
+  );
+}
+
+/**
+ * ניהול ספרים סעיף 1 + 18ב(ד): where this document stands on the secured
+ * electronic signature. Signed documents show when and with what, and link
+ * to the public check; a document the app keeps on paper (cash-type payment)
+ * says so, so the owner prints it instead of sending a file.
+ */
+function SignatureCard({ doc }: { doc: InvoiceDocument }) {
+  const eligibility = signingEligibility({ type: doc.type, status: doc.status, paymentMethod: doc.paymentMethod });
+  const { signature, ready } = useDocumentSignature(eligibility.eligible ? doc.id : undefined);
+  if (!eligibility.eligible) {
+    const method = doc.paymentMethod ? PAYMENT_METHOD_LABELS[doc.paymentMethod] : null;
+    return (
+      <div className="no-print card-soft p-4 max-w-[210mm] mx-auto text-xs text-stone-700">
+        <span className="font-semibold text-stone-900">מסמך בנייר: </span>
+        {eligibility.reason === "payment_method_missing"
+          ? "לא נרשם אמצעי תשלום, ולכן המסמך אינו נחתם אלקטרונית ואינו מסמך ממוחשב."
+          : `תשלום ב${method ?? "אמצעי זה"} אינו מותר על מסמך חתום אלקטרונית (הוראות ניהול ספרים 18ב(ד)).`}{" "}
+        יש להדפיס את המסמך ולמסור אותו ללקוח בנייר.
+      </div>
+    );
+  }
+  return (
+    <div className="no-print card-soft p-4 max-w-[210mm] mx-auto text-xs text-stone-700">
+      <span className="font-semibold text-stone-900">חתימה אלקטרונית מאובטחת: </span>
+      {!ready ? (
+        "בודק..."
+      ) : signature ? (
+        <>
+          נחתם ב-{formatDate(signature.signedAt.slice(0, 10))}
+          {signature.isOriginal ? " (מקור)" : " (העתק)"}
+          {" · "}
+          <span dir="ltr" className="font-mono">{signature.sha256.slice(0, 16)}</span>
+          {" · "}
+          <a href={`/verify/${doc.id}`} target="_blank" rel="noopener noreferrer" className="text-orange-700 underline">
+            אימות
+          </a>
+        </>
+      ) : (
+        "ייחתם אוטומטית בהפקת ה-PDF הראשונה (הורדה או שליחה ללקוח). עד אז המסמך אינו מסמך ממוחשב."
+      )}
+    </div>
   );
 }

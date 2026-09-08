@@ -118,6 +118,20 @@ interface Props {
    */
   draft?: boolean;
   /**
+   * Whether this issued document IS a מסמך ממוחשב, i.e. the PDF the app emits
+   * for it is signed with the business secured e-signature. Decided by
+   * src/lib/signing/eligibility.ts (a receipt for a payment 18ב(ד) excludes is
+   * not). Defaults to true. When false the paper says "להדפסה ולשמירה בנייר"
+   * where it would have said "מסמך ממוחשב", so the label is never a lie.
+   */
+  computerized?: boolean;
+  /**
+   * Public URL of the signature check for this document (/verify/<id>).
+   * Printed in the footer of a computerized document so the holder of the
+   * file can confirm the signature without the app.
+   */
+  verifyUrl?: string;
+  /**
    * Whether to print the small "הופק באמצעות …" credit in the footer.
    * Defaults to `true` - the growth loop that puts the app in front of every
    * recipient. PAID subscribers get it suppressed (standard SaaS behaviour,
@@ -163,6 +177,8 @@ export function DocumentBody({
   zeroRated = false,
   copy = false,
   draft = false,
+  computerized = true,
+  verifyUrl,
   showBranding = true,
   language = "he",
 }: Props) {
@@ -263,7 +279,11 @@ export function DocumentBody({
           ) : (
             <>
               <div className="doc-orig">{copy ? s.copy : s.original}</div>
-              <div className="doc-computerized">{statutoryMark(language, "computerized")}</div>
+              {computerized ? (
+                <div className="doc-computerized">{statutoryMark(language, "computerized")}</div>
+              ) : (
+                <div className="doc-computerized is-paper">{s.paperOnly}</div>
+              )}
             </>
           )}
           <div
@@ -493,6 +513,14 @@ export function DocumentBody({
           {s.footerIssued}
           {business.name ? ` · ${business.name}` : ""}
         </div>
+        {/* Secured e-signature line (חוק חתימה אלקטרונית; ניהול ספרים סעיף 1):
+            only on a document the PDF route actually signs, with the public
+            check URL so the customer can verify the file they hold. */}
+        {!isDraft && computerized && verifyUrl && (
+          <div className="doc-foot-verify">
+            {s.signedLine} · {s.verifyLabel}: <Ltr>{verifyUrl.replace(/^https?:\/\//, "")}</Ltr>
+          </div>
+        )}
         {showBranding && (
           // Growth loop: every document this app produces is seen by the
           // sender's CLIENT - often an עצמאי who needs invoicing themselves.
