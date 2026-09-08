@@ -77,6 +77,8 @@ const assistant = localFont({
   weight: "300 800",
   variable: "--font-assistant",
   display: "swap",
+  // Only selectable document designs use Assistant; load it on demand.
+  preload: false,
 });
 // Added for the profession-tailored document design feature (2026-08).
 // Same self-hosted next/font/local pattern as the three fonts above - see
@@ -97,6 +99,8 @@ const inter = localFont({
   weight: "100 900",
   variable: "--font-inter-base",
   display: "swap",
+  // Let Hebrew reach Heebo instead of Inter's generated Arial fallback.
+  adjustFontFallback: false,
   declarations: [{ prop: "unicode-range", value: "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD" }],
 });
 // Separate faces let the browser fetch extended Latin only when needed.
