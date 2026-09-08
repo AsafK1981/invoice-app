@@ -129,7 +129,7 @@ const SERIES = {
     heroText: "#4A7536",
     strokeFrom: "#1F232B",
     strokeTo: "#1F232B",
-    areaTop: "rgba(217, 106, 29, 0.14)",
+    areaTop: "rgba(217, 106, 29, 0.24)",
     areaBottom: "rgba(217, 106, 29, 0)",
     valueText: "#1F232B",
   },
