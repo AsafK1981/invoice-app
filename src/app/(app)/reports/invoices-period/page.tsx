@@ -6,8 +6,9 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, FileSpreadsheet, Download, Printer } from "lucide-react";
 import { DownloadPdfButton } from "@/components/download-pdf-button";
-import { useDocuments } from "@/lib/document-store";
-import { useClients } from "@/lib/client-store";
+import { useFilingReportData } from "@/lib/filing-report-data";
+import { invoiceReportPreflight } from "@/lib/invoice-report-preflight";
+import { ReportPreflight } from "@/components/report-preflight";
 import { formatCurrency } from "@/lib/format";
 import { todayInIsrael } from "@/lib/date";
 import { DOCUMENT_TYPE_LABELS, type DocumentType } from "@/lib/types";
@@ -47,6 +48,11 @@ function afterEnd(endYm: string): string {
   return `${ym(d)}-01`;
 }
 
+function endOfRange(endYm: string): string {
+  const date = new Date(`${afterEnd(endYm)}T00:00:00Z`);
+  return Number.isFinite(date.getTime()) ? new Date(date.getTime() - 86400000).toISOString().slice(0, 10) : "";
+}
+
 function rangeLabel(endYm: string, lengthMonths: number): string {
   const [ey, em] = endYm.split("-").map(Number);
   const end = `${MONTH_NAMES[em - 1]} ${ey}`;
@@ -56,21 +62,15 @@ function rangeLabel(endYm: string, lengthMonths: number): string {
 }
 
 export default function InvoicesPeriodReportPage() {
-  const { documents, ready } = useDocuments();
-  const { items: clients } = useClients();
-  const { business } = useBusiness();
+  const { business, ready: businessReady } = useBusiness();
+  const { data, error, retry } = useFilingReportData(business.id, false);
+  const documents = data?.documents;
 
   const [rangeMode, setRangeMode] = useState<"preset" | "custom">("preset");
   const [lengthMonths, setLengthMonths] = useState<number>(2);
   const [endMonth, setEndMonth] = useState<string>(() => todayInIsrael().slice(0, 7));
   const [fromDate, setFromDate] = useState<string>(() => `${todayInIsrael().slice(0, 7)}-01`);
   const [toDate, setToDate] = useState<string>(() => todayInIsrael());
-
-  const taxIdByClient = useMemo(() => {
-    const map: Record<string, string> = {};
-    for (const c of clients) if (c.taxId) map[c.id] = c.taxId;
-    return map;
-  }, [clients]);
 
   const inRange = useMemo(() => {
     if (rangeMode === "custom") {
@@ -84,10 +84,10 @@ export default function InvoicesPeriodReportPage() {
   }, [rangeMode, fromDate, toDate, endMonth, lengthMonths]);
 
   const rows = useMemo(() => {
-    return documents
+    return (documents ?? [])
       .filter(
         (d) =>
-          REPORT_TYPES.includes(d.type) &&
+          REPORT_TYPES.includes(d.type) && d.status !== "draft" && d.status !== "cancelled" &&
           typeof d.date === "string" &&
           inRange(d.date),
       )
@@ -96,7 +96,7 @@ export default function InvoicesPeriodReportPage() {
         type: d.type,
         number: d.number,
         date: d.date,
-        customerTaxId: d.clientTaxId || taxIdByClient[d.clientId] || "",
+        customerTaxId: d.clientTaxId || "",
         clientName: d.clientName,
         net: d.subtotalIls ?? d.subtotal,
         vat: d.vatIls ?? d.vat,
@@ -104,7 +104,12 @@ export default function InvoicesPeriodReportPage() {
         allocation: d.allocationNumber || "",
       }))
       .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.number - b.number));
-  }, [documents, inRange, taxIdByClient]);
+  }, [documents, inRange]);
+
+  const reportStart = rangeMode === "custom" ? fromDate : startOfRange(endMonth, lengthMonths);
+  const reportEnd = rangeMode === "custom" ? toDate : endOfRange(endMonth);
+  const issues = useMemo(() => invoiceReportPreflight(documents ?? [], reportStart, reportEnd), [documents, reportStart, reportEnd]);
+  const blocked = !data || !businessReady || !!error || issues.some((issue) => issue.level === "error");
 
   const currentLabel =
     rangeMode === "custom"
@@ -127,6 +132,7 @@ export default function InvoicesPeriodReportPage() {
 
   // Styled .xlsx with a total row (csv-export.ts).
   function exportCsv() {
+    if (blocked || rows.length === 0) return;
     void exportInvoicesPeriod({
       rows,
       periodLabel: currentLabel,
@@ -134,6 +140,9 @@ export default function InvoicesPeriodReportPage() {
       businessName: business.name,
     });
   }
+
+  if (error) return <div role="alert" className="card-soft p-6 space-y-3"><p>{error}</p><button onClick={retry} className="btn-primary">טען שוב</button></div>;
+  if (!data || !businessReady) return <div className="text-center py-16 text-stone-500">טוען ובודק את נתוני הדוח...</div>;
 
   return (
     <div className="space-y-6">
@@ -159,10 +168,10 @@ export default function InvoicesPeriodReportPage() {
             כל חשבוניות המס בתקופה: ת.ז/ח.פ, מספר, תאריך, סכום לפני ואחרי מע״מ, ומספר הקצאה.
           </p>
         </div>
-        <div className="flex items-center gap-2 no-print">
+        <div className="flex flex-wrap items-center gap-2 no-print">
           <button
             onClick={exportCsv}
-            disabled={rows.length === 0}
+            disabled={blocked || rows.length === 0}
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-white border-2 border-emerald-200 text-stone-800 hover:bg-emerald-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Download className="w-4 h-4 text-emerald-600" />
@@ -171,13 +180,13 @@ export default function InvoicesPeriodReportPage() {
           <DownloadPdfButton
             filename="דוח-חשבוניות-תקופתי"
             landscape
-            disabled={rows.length === 0}
+            disabled={blocked || rows.length === 0}
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-white border-2 border-orange-200 text-stone-800 hover:bg-orange-50 disabled:opacity-50 disabled:cursor-not-allowed"
             iconClassName="w-4 h-4 text-orange-600"
           />
           <button
-            onClick={() => window.print()}
-            disabled={rows.length === 0}
+            onClick={() => { if (!blocked && rows.length) window.print(); }}
+            disabled={blocked || rows.length === 0}
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-white border-2 border-orange-200 text-stone-800 hover:bg-orange-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Printer className="w-4 h-4 text-orange-600" />
@@ -257,13 +266,17 @@ export default function InvoicesPeriodReportPage() {
         </div>
       </div>
 
+      <ReportPreflight issues={issues} description="דוח זה מיועד לעיון ולהעברה לרואה החשבון. קובצי Excel ו-PDF אלה אינם קובץ העלאה לשירות הדיווח המפורט של מע״מ. טיוטות ומסמכים מבוטלים אינם נכללים." />
+      <button type="button" onClick={retry} className="btn-secondary no-print">רענן נתונים ובדוק שוב</button>
+      <p className="text-sm no-print"><Link href="/reports/vat" className="font-semibold text-orange-700 underline inline-flex min-h-[44px] items-center">להכנת דיווח מע״מ וקובץ PCN874</Link></p>
+
       {/* Report */}
       <div className="card-soft overflow-hidden">
         <div className="px-5 py-3.5 border-b border-stone-100 flex items-baseline justify-between">
           <h2 className="font-bold text-stone-900 text-lg">{currentLabel}</h2>
           <span className="text-sm text-stone-500">{rows.length} חשבוניות</span>
         </div>
-        {ready && rows.length === 0 ? (
+        {rows.length === 0 ? (
           <div className="p-12 text-center text-stone-500">
             אין חשבוניות מס בתקופה שנבחרה.
           </div>

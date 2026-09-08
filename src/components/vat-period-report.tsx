@@ -30,9 +30,11 @@ interface Props {
   expenses: Expense[];
   /** On its own /reports/vat page the page header already carries the title; keep only the range line. */
   headless?: boolean;
+  selectedMode?: PeriodMode;
+  onPeriodChange?: (mode: PeriodMode) => void;
 }
 
-type PeriodMode = "this_2m" | "last_2m" | "this_month" | "last_month" | "this_year";
+export type PeriodMode = "this_2m" | "last_2m" | "this_month" | "last_month" | "this_year";
 
 const MODE_LABELS: Record<PeriodMode, string> = {
   this_2m: "תקופה דו-חודשית נוכחית",
@@ -50,10 +52,10 @@ interface CopyRow {
   hint?: string;
 }
 
-export function VatPeriodReport({ headless = false, business, documents, expenses }: Props) {
+export function VatPeriodReport({ headless = false, business, documents, expenses, selectedMode, onPeriodChange }: Props) {
   // ALL hooks must run before any conditional return, same trap as
   // React #310 yesterday. The early return for עוסק פטור comes last.
-  const [mode, setMode] = useState<PeriodMode>("this_2m");
+  const [mode, setMode] = useState<PeriodMode>(selectedMode ?? "this_2m");
   // Stable across renders. Without memo, the next two useMemos invalidate
   // every render because Date instances aren't ===; the report would
   // re-aggregate documents/expenses on every keystroke elsewhere on the
@@ -138,9 +140,10 @@ export function VatPeriodReport({ headless = false, business, documents, expense
   // Whole-file blockers (dealer number, period shape, period still open) come
   // first; the byte-level self-check only matters once those are clear.
   const pcnProblems = useMemo(
-    () => [...pcn.blockers, ...validatePcn874Content(pcn.content)],
+    () => [...new Set([...pcn.blockers, ...validatePcn874Content(pcn.content)])],
     [pcn.blockers, pcn.content],
   );
+  const pcnErrorCount = pcnProblems.length + pcn.warnings.filter((warning) => warning.level === "error").length;
 
   const formRows = useMemo<CopyRow[]>(() => {
     const f = pcn.figures;
@@ -204,6 +207,7 @@ export function VatPeriodReport({ headless = false, business, documents, expense
 
   /** Hand the file over as-is: ASCII, CRLF, the name the ITA expects. */
   function downloadPcn() {
+    if (pcnErrorCount > 0 || pcn.transactions.length === 0) return;
     const blob = new Blob([pcn.content], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -324,7 +328,7 @@ export function VatPeriodReport({ headless = false, business, documents, expense
         <div className="flex items-center gap-2 flex-wrap">
           <select
             value={mode}
-            onChange={(e) => setMode(e.target.value as PeriodMode)}
+            onChange={(e) => { const next = e.target.value as PeriodMode; setMode(next); onPeriodChange?.(next); }}
             className="input-warm py-1.5 px-3 text-sm w-auto max-w-[14rem]"
           >
             {(Object.keys(MODE_LABELS) as PeriodMode[]).map((m) => (
@@ -438,28 +442,14 @@ export function VatPeriodReport({ headless = false, business, documents, expense
       <section className="mb-4 rounded-2xl border border-stone-200 bg-white p-4">
         <h3 className="font-bold text-stone-900">דיווח מפורט (PCN874)</h3>
         <p className="text-sm text-stone-700 mt-1 leading-relaxed">
-          זה הקובץ שמעלים בשירות &quot;דיווח מפורט&quot; באתר רשות המסים יחד עם הדוח התקופתי.
+          קובץ להעלאה בשירות &quot;דיווח מפורט&quot; למי שחייב בדיווח זה. הבדיקה מתעדכנת אוטומטית לפי הנתונים והתקופה שנבחרה.
         </p>
-
-        {pcn.transactions.length === 0 ? (
-          <div className="mt-3 rounded-xl border border-dashed border-stone-200 p-6 text-center text-sm text-stone-600">
-            אין עסקאות או תשומות בתקופה שנבחרה, ולכן אין מה לדווח בדיווח המפורט.
-          </div>
-        ) : (
-          <>
-            <ul className="mt-3 flex flex-wrap gap-2">
-              {pcnCounts.map((c) => (
-                <li
-                  key={c.type}
-                  className="rounded-xl bg-stone-50 border border-stone-200 px-3 py-2 text-xs text-stone-700"
-                >
-                  <b className="font-extrabold text-stone-900">{c.type}</b>
-                  <span className="mx-1.5 text-stone-300">·</span>
-                  {c.summary}
-                  <span className="block text-stone-600 mt-0.5">{c.label}</span>
-                </li>
-              ))}
-            </ul>
+        <p role="status" className="mt-3 text-sm font-semibold">
+          {pcnErrorCount > 0 ? "יש שגיאות לתיקון לפני הורדת הקובץ." : pcn.warnings.length > 0 ? "לא נמצאו שגיאות חוסמות. יש הערות לבדיקה לפני ההורדה." : "בדיקות הנתונים ומבנה הקובץ עברו."}
+        </p>
+        <p className="mt-1 text-xs text-stone-600">הבדיקה אינה אישור קליטה של רשות המסים. הרשאות דיווח, מצב התיק ודיווחים שכבר הוגשו נבדקים באתר הרשות.</p>
+        {pcnErrorCount > 0 && <p className="mt-1 text-xs text-stone-600">סכומים ותאריכים במסמך שכבר הופק אינם ניתנים לעריכה. לתיקון כזה יש לפנות לרואה החשבון או לתמיכה; פרטי זיהוי והקצאה אפשר לבדוק במסך המסמך.</p>}
+        {pcnProblems.length > 0 && pcn.transactions.length === 0 && <ul className="mt-2 text-sm text-rose-800">{pcnProblems.map((problem) => <li key={problem}>{problem}</li>)}</ul>}
 
             {pcn.warnings.length > 0 && (
               <ul className="mt-3 space-y-2">
@@ -497,6 +487,26 @@ export function VatPeriodReport({ headless = false, business, documents, expense
               </ul>
             )}
 
+        {pcn.transactions.length === 0 ? (
+          <div className="mt-3 rounded-xl border border-dashed border-stone-200 p-6 text-center text-sm text-stone-600">
+            אין עסקאות או תשומות בתקופה שנבחרה, ולכן אין מה לדווח בדיווח המפורט.
+          </div>
+        ) : (
+          <>
+            <ul className="mt-3 flex flex-wrap gap-2">
+              {pcnCounts.map((c) => (
+                <li
+                  key={c.type}
+                  className="rounded-xl bg-stone-50 border border-stone-200 px-3 py-2 text-xs text-stone-700"
+                >
+                  <b className="font-extrabold text-stone-900">{c.type}</b>
+                  <span className="mx-1.5 text-stone-300">·</span>
+                  {c.summary}
+                  <span className="block text-stone-600 mt-0.5">{c.label}</span>
+                </li>
+              ))}
+            </ul>
+
             {pcn.refundPeriod && (
               <p className="mt-3 rounded-xl bg-blue-50 border border-blue-200 p-3 text-sm text-blue-900">
                 התקופה מסתיימת בהחזר, ולכן כל תשומה מופיעה בקובץ בנפרד (בלי ריכוז קופה קטנה), כפי שמע״מ דורש בדוח להחזר.
@@ -518,11 +528,11 @@ export function VatPeriodReport({ headless = false, business, documents, expense
               <button
                 type="button"
                 onClick={downloadPcn}
-                disabled={pcnProblems.length > 0}
-                className="no-print inline-flex items-center justify-center gap-2 min-h-[44px] px-4 rounded-xl text-sm font-semibold text-white bg-gradient-to-l from-orange-500 to-orange-700 hover:shadow-md hover:shadow-orange-200 disabled:from-stone-300 disabled:to-stone-300 disabled:shadow-none"
+                disabled={pcnErrorCount > 0}
+                className="no-print inline-flex items-center justify-center gap-2 min-h-[44px] px-4 rounded-xl text-sm font-semibold text-white bg-gradient-to-l from-orange-500 to-orange-700 hover:shadow-md hover:shadow-orange-200 disabled:from-stone-300 disabled:to-stone-300 disabled:shadow-none disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <FileDown className="w-4 h-4" aria-hidden="true" />
-                {pcn.warnings.some((w) => w.level === "error") ? "הורד בכל זאת" : "הורד קובץ PCN874"}
+                {pcnErrorCount > 0 ? "יש לתקן שגיאות לפני ההורדה" : "הורד קובץ PCN874"}
               </button>
               <a
                 href="https://www.gov.il/he/service/detailed-vat-reporting"
@@ -534,11 +544,6 @@ export function VatPeriodReport({ headless = false, business, documents, expense
                 <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
               </a>
             </div>
-            {pcnProblems.length === 0 && pcn.warnings.some((w) => w.level === "error") && (
-              <p className="text-xs text-rose-700 mt-2 font-semibold">
-                יש שגיאות שמע״מ עשוי לדחות, מומלץ לתקן קודם
-              </p>
-            )}
           </>
         )}
       </section>

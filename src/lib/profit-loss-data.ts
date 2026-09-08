@@ -1,36 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { supabase } from "./supabase";
+import { loadReportRows } from "./report-rows";
 import type { ProfitLossDocument, ProfitLossExpense } from "./profit-loss";
 
 const columns = {
   documents: "id,date,type,status,total,vat,currency,exchange_rate,total_ils,vat_ils,converted_to_id",
   expenses: "id,date,category,amount,vat_amount,is_equipment",
 };
-/** Exact counts detect server row caps and changing sets; errors never become empty reports. */
-export async function loadProfitLossRows(table: keyof typeof columns, businessId: string, signal?: AbortSignal) {
-  const rows: Record<string, unknown>[] = [];
-  const ids = new Set<string>();
-  let expected: number | null = null;
-  for (;;) {
-    signal?.throwIfAborted();
-    let query = supabase.from(table).select(columns[table], { count: "exact" })
-      .eq("business_id", businessId).order("id", { ascending: true }).range(rows.length, rows.length + 499);
-    if (signal) query = query.abortSignal(signal);
-    const { data, error, count } = await query;
-    signal?.throwIfAborted();
-    if (error || !data || count === null) throw new Error("טעינת נתוני הדוח נכשלה. נסו שוב.");
-    if (expected !== null && expected !== count) throw new Error("הנתונים השתנו בזמן הטעינה. יש לטעון שוב את הדוח.");
-    expected = count;
-    for (const row of data as unknown as Record<string, unknown>[]) {
-      if (typeof row.id !== "string" || ids.has(row.id)) throw new Error("לא ניתן לאמת את שלמות נתוני הדוח. נסו שוב.");
-      ids.add(row.id);
-      rows.push(row);
-    }
-    if (rows.length === expected) return rows;
-    if (!data.length || rows.length > expected) throw new Error("לא כל הנתונים נטענו. נסו שוב.");
-  }
+export function loadProfitLossRows(table: keyof typeof columns, businessId: string, signal?: AbortSignal) {
+  return loadReportRows(table, columns[table], businessId, signal);
 }
 const number = (value: unknown) => typeof value === "number" ? value : typeof value === "string" && value.trim() ? Number(value) : NaN;
 const optionalNumber = (value: unknown) => value == null ? undefined : number(value);

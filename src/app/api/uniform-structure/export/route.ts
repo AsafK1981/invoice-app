@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import JSZip from "jszip";
+import { validateUniformInput, validateUniformOutput } from "@/lib/uniform-structure/preflight";
+import { loadUniformPages } from "@/lib/uniform-structure/load-pages";
 import { checkRate, clientIp } from "@/lib/rate-limit";
 import { buildUniformStructure } from "@/lib/uniform-structure/builder";
 import { generateSampleDataset } from "@/lib/uniform-structure/sample-data";
@@ -10,6 +12,7 @@ import type { Business, Client, DocumentItem, Expense, InvoiceDocument } from "@
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+type ExportRow = Record<string, unknown> & { id: string };
 
 /**
  * "מבנה אחיד" / OPENFORMAT 1.31 export. Bundles INI.txt + BKMVDATA.txt
@@ -44,8 +47,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
 
+  const { searchParams } = new URL(req.url);
+  const preflight = searchParams.get("preflight") === "true";
   const ip = clientIp(req);
-  const rl = checkRate({ key: `uniform:${user.id}:${ip}`, max: 3, windowMs: 5 * 60_000 });
+  const rl = checkRate({ key: `uniform:${preflight ? "preflight" : "download"}:${user.id}:${ip}`, max: preflight ? 12 : 3, windowMs: 5 * 60_000 });
   if (!rl.ok) {
     return NextResponse.json(
       { ok: false, error: "המתן 5 דקות בין הורדות." },
@@ -53,11 +58,12 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const { searchParams } = new URL(req.url);
   const yearStr = searchParams.get("year");
   const taxYear = yearStr && /^\d{4}$/.test(yearStr)
     ? parseInt(yearStr, 10)
     : new Date().getFullYear();
+  if (yearStr && (!/^\d{4}$/.test(yearStr) || taxYear < 1900)) return NextResponse.json({ ok: false, error: "שנת מס לא תקינה" }, { status: 400 });
+  try {
   const fromDate = `${taxYear}-01-01`;
   const toDate = `${taxYear}-12-31`;
   // sample=true → synthesize 2000+ records for the Tax Authority's
@@ -68,11 +74,12 @@ export async function GET(req: NextRequest) {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  const { data: bizRows } = await sb
+  const { data: bizRows, error: bizError } = await sb
     .from("businesses")
     .select("*")
     .eq("user_id", user.id)
     .limit(1);
+  if (bizError) throw new Error("Business lookup failed");
   const bizRow = bizRows?.[0];
   if (!bizRow) {
     return NextResponse.json({ ok: false, error: "אין עסק פעיל" }, { status: 400 });
@@ -98,24 +105,21 @@ export async function GET(req: NextRequest) {
     documents = sample.documents;
     expenses = sample.expenses;
   } else {
-    const [clientsRes, docsRes, expensesRes] = await Promise.all([
-      sb.from("clients").select("*").eq("business_id", business.id),
-      sb.from("documents")
-        .select("*")
-        .eq("business_id", business.id)
-        .gte("date", fromDate)
-        .lte("date", toDate),
-      sb.from("expenses")
-        .select("*")
-        .eq("business_id", business.id)
-        .gte("date", fromDate)
-        .lte("date", toDate),
+    const [clientRows, docRows, expenseRows] = await Promise.all([
+      loadUniformPages<ExportRow>((from, to) => sb.from("clients").select("*", { count: "exact" }).eq("business_id", business.id).order("id").range(from, to)),
+      loadUniformPages<ExportRow>((from, to) => sb.from("documents").select("*", { count: "exact" }).eq("business_id", business.id).order("id").range(from, to)),
+      loadUniformPages<ExportRow>((from, to) => sb.from("expenses").select("*", { count: "exact" }).eq("business_id", business.id).order("id").range(from, to)),
     ]);
-
-    const docIds = (docsRes.data ?? []).map((d) => d.id);
-    const itemsRes = docIds.length > 0
-      ? await sb.from("document_items").select("*").in("document_id", docIds).order("sort_order")
-      : { data: [] as Record<string, unknown>[] };
+    const docsRes = { data: docRows }, clientsRes = { data: clientRows }, expensesRes = { data: expenseRows };
+    const docIds = docRows.map(d => d.id);
+    const itemRows: Record<string, unknown>[] = [];
+    for (let offset = 0; offset < docIds.length; offset += 100) {
+      const ownedIds = docIds.slice(offset, offset + 100);
+      itemRows.push(...await loadUniformPages<ExportRow>((from, to) => sb.from("document_items").select("*", { count: "exact" }).in("document_id", ownedIds).order("id").range(from, to)));
+    }
+    itemRows.sort((a, b) => Number(a.sort_order) - Number(b.sort_order));
+    const itemsRes = { data: itemRows };
+    const numeric = (value: unknown) => typeof value === "number" ? value : typeof value === "string" && value.trim() ? Number(value) : NaN;
 
     const itemsByDoc = new Map<string, DocumentItem[]>();
     for (const row of itemsRes.data ?? []) {
@@ -125,9 +129,9 @@ export async function GET(req: NextRequest) {
         id: row.id as string,
         productId: (row.product_id as string) || undefined,
         description: row.description as string,
-        quantity: Number(row.quantity) || 0,
-        unitPrice: Number(row.unit_price) || 0,
-        total: Number(row.total) || 0,
+        quantity: numeric(row.quantity),
+        unitPrice: numeric(row.unit_price),
+        total: numeric(row.total),
       });
     }
 
@@ -144,24 +148,26 @@ export async function GET(req: NextRequest) {
     documents = (docsRes.data ?? []).map((row) => ({
       id: row.id as string,
       type: row.type as InvoiceDocument["type"],
-      number: Number(row.number),
+      number: numeric(row.number),
       date: (row.date as string) || "",
       clientId: (row.client_id as string) || "",
       clientName: (row.client_name as string) || "",
       subject: (row.subject as string) || undefined,
       status: (row.status as InvoiceDocument["status"]) || "draft",
       items: itemsByDoc.get(row.id as string) ?? [],
-      subtotal: Number(row.subtotal) || 0,
-      vat: Number(row.vat) || 0,
-      total: Number(row.total) || 0,
-      // The builder reports every amount in shekels (`totalIls ?? total`), so
-      // these have to be carried through or the fallback silently files a
-      // foreign-currency invoice at its face value - $100 filed as 100 ₪.
-      // Null on ILS documents, which is exactly when the fallback is right.
+      subtotal: numeric(row.subtotal),
+      vat: numeric(row.vat),
+      total: numeric(row.total),
+      // Preserve stored ILS snapshots for validation; unsupported FX exports are blocked.
       currency: (row.currency as string) || undefined,
       subtotalIls: row.subtotal_ils == null ? undefined : Number(row.subtotal_ils),
       vatIls: row.vat_ils == null ? undefined : Number(row.vat_ils),
       totalIls: row.total_ils == null ? undefined : Number(row.total_ils),
+      rounding: row.rounding == null ? 0 : numeric(row.rounding),
+      discountAmount: row.discount_amount == null ? undefined : numeric(row.discount_amount),
+      withholdingAmount: row.withholding_amount == null ? undefined : numeric(row.withholding_amount),
+      convertedToId: (row.converted_to_id as string) || undefined,
+      paymentDetails: row.payment_details as InvoiceDocument["paymentDetails"],
       paymentMethod: (row.payment_method as InvoiceDocument["paymentMethod"]) || undefined,
       notes: (row.notes as string) || undefined,
       allocationNumber: (row.allocation_number as string) || undefined,
@@ -172,7 +178,7 @@ export async function GET(req: NextRequest) {
       date: row.date as string,
       category: row.category as string,
       supplier: row.supplier as string,
-      amount: Number(row.amount) || 0,
+      amount: numeric(row.amount),
       description: (row.description as string) || undefined,
       vatAmount: row.vat_amount != null ? Number(row.vat_amount) : 0,
     }));
@@ -185,7 +191,7 @@ export async function GET(req: NextRequest) {
     version: UNIFORM_SOFTWARE.version,
     registrationNumber: UNIFORM_SOFTWARE.registrationNumber,
   };
-  const result = buildUniformStructure({
+  const input = {
     business,
     documents,
     clients,
@@ -193,7 +199,14 @@ export async function GET(req: NextRequest) {
     taxYear,
     fromDate,
     toDate,
-  });
+  };
+  const issues = validateUniformInput(input);
+  if (!useSampleData && !software.registrationNumber) issues.push({ level: "warning", message: "מספר תעודת רישום התוכנה טרם הוזן. הבדיקה המקומית אינה אישור רישום או אישור קבלה מרשות המסים." });
+  if (issues.some(issue => issue.level === "error")) return NextResponse.json({ ok: false, issues, error: "יש לתקן את השגיאות לפני הורדת הקובץ." }, { status: preflight ? 200 : 422 });
+  const result = buildUniformStructure(input);
+  issues.push(...validateUniformOutput(result, useSampleData));
+  const ok = !issues.some(issue => issue.level === "error");
+  if (preflight || !ok) return NextResponse.json({ ok, issues, counts: result.counts, error: ok ? undefined : "יש לתקן את השגיאות לפני הורדת הקובץ." }, { status: preflight ? 200 : 422 });
 
   // Section 2.2 of the spec fixes the folder the files live in:
   //   OPENFRMT\<dealer number without check digit>.<YY>\<MMDDhhmm>
@@ -230,4 +243,7 @@ export async function GET(req: NextRequest) {
       "X-Uniform-Report": JSON.stringify(report),
     },
   });
+  } catch {
+    return NextResponse.json({ ok: false, error: "טעינת נתוני הדוח או בדיקת הקובץ נכשלה. לא הופק קובץ חלקי. נסה שוב.", issues: [{ level: "error", message: "לא ניתן לוודא שכל נתוני הדוח נטענו. נסה שוב לפני הורדה." }] }, { status: 503 });
+  }
 }
