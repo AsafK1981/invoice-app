@@ -156,6 +156,7 @@ export async function POST(req: NextRequest) {
         if (res.error) throw new Error(`${label}: ${res.error.message}`);
       };
       if (docIds.length > 0) {
+        // Since 20260908-documents-no-delete-once-numbered.sql this nulling is no longer what lets the delete through (the service_role carve-out in the trigger is); kept deliberately so this route still works against a database that has not had that migration applied yet.
         must(
           "clear delivery markers",
           await admin.from("documents").update({ emailed_at: null }).in("business_id", businessIds).not("emailed_at", "is", null),

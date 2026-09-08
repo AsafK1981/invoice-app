@@ -15,10 +15,19 @@ const biz = uuid(1), foreignBiz = uuid(2), client = uuid(3), foreignClient = uui
 const doc = uuid(5), owner = uuid(9);
 const count = async (table) => (await db.query(`SELECT count(*)::int AS n FROM ${table}`)).rows[0].n;
 const reject = (sql, code) => assert.rejects(db.exec(sql), (error) => error.code === code);
+// The delete guard in 20260908-documents-no-delete-once-numbered.sql keys off
+// current_user, so these cases have to run under a real role rather than the
+// superuser the suite otherwise uses.
+const asRole = async (role, fn) => {
+  await db.exec(`SET ROLE ${role}`);
+  try { return await fn(); } finally { await db.exec('RESET ROLE'); }
+};
+const rows = async (sql) => (await db.query(sql)).rows;
 try {
   await db.exec(base);
   await db.exec(`
     CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role;
+    GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
     CREATE SCHEMA auth;
     CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS $$ SELECT '${owner}'::uuid $$;
     ALTER TABLE businesses ADD COLUMN user_id uuid;
@@ -34,6 +43,12 @@ try {
   `);
   await db.exec(await read('scripts/migrations/20260906-documents-language.sql'));
   await db.exec(await read('scripts/migrations/20260816-document-items-immutability.sql'));
+  // Applied AFTER 20260906 on purpose: both files CREATE OR REPLACE the same
+  // enforce_document_immutability(), so whichever runs last is the whole
+  // function. This is the real production order, and it is what makes the
+  // "language is still frozen" check below a genuine regression guard against
+  // 20260908 having been rebuilt from a stale base.
+  await db.exec(await read('scripts/migrations/20260908-documents-no-delete-once-numbered.sql'));
   await db.exec(`
     INSERT INTO businesses (id,name,tax_id,user_id) VALUES
       ('${biz}','Synthetic A','000','${owner}'), ('${foreignBiz}','Synthetic B','001','${uuid(10)}');
@@ -77,11 +92,66 @@ try {
     const row = (await db.query(`SELECT business_id,client_id,status FROM documents WHERE id='${doc}'`)).rows[0];
     assert.deepEqual(row, { business_id: biz, client_id: null, status: 'issued' });
   });
-  await check('sent document delete stays blocked; account wipe cascades after clearing emailed_at', async () => {
-    await db.exec(`INSERT INTO clients (id,business_id,name) VALUES ('${client}','${biz}','Synthetic replacement'); UPDATE documents SET client_id='${client}' WHERE id='${uuid(6)}'`);
+  await db.exec(`INSERT INTO clients (id,business_id,name) VALUES ('${client}','${biz}','Synthetic replacement'); UPDATE documents SET client_id='${client}' WHERE id='${uuid(6)}'`);
+
+  // ---- 20260908-documents-no-delete-once-numbered.sql -----------------------
+  // The DELETE gate moved from emailed_at to status, and the message changed.
+  // `doc` here is issued but was NEVER emailed, which is exactly the row the
+  // old rule let through and the numbering sequence could not afford to lose.
+  await check('numbered document delete raises the new message for authenticated', async () => {
+    await asRole('authenticated', () => assert.rejects(
+      db.exec(`DELETE FROM documents WHERE id='${doc}'`),
+      /numbered documents cannot be deleted; cancel via credit note/));
+    assert.equal((await rows(`SELECT 1 FROM documents WHERE id='${doc}'`)).length, 1);
+  });
+  await check('emailed numbered document delete raises the same way', async () => {
     await db.exec(`UPDATE documents SET emailed_at=now() WHERE id='${doc}'`);
-    await assert.rejects(db.exec(`DELETE FROM documents WHERE id='${doc}'`), /delivered documents cannot be deleted/);
-    await db.exec(`UPDATE documents SET emailed_at=NULL WHERE business_id='${biz}'; DELETE FROM businesses WHERE id='${biz}'`);
+    await asRole('authenticated', () => assert.rejects(
+      db.exec(`DELETE FROM documents WHERE id='${doc}'`),
+      /numbered documents cannot be deleted; cancel via credit note/));
+  });
+  await check('draft delete still succeeds and cascades its items', async () => {
+    const draft = uuid(7);
+    await db.exec(`INSERT INTO documents (id,business_id,client_id,type,number,client_name,status)
+        VALUES ('${draft}','${biz}','${client}','receipt',50,'Synthetic draft','draft');
+      INSERT INTO document_items (document_id,description,quantity,unit_price,total)
+        VALUES ('${draft}','Synthetic',1,0,0)`);
+    await asRole('authenticated', () => db.exec(`DELETE FROM documents WHERE id='${draft}'`));
+    assert.equal((await rows(`SELECT 1 FROM documents WHERE id='${draft}'`)).length, 0);
+    assert.equal((await rows(`SELECT 1 FROM document_items WHERE document_id='${draft}'`)).length, 0);
+  });
+  // REGRESSION GUARD. 20260908 rebuilds the whole function body, so a rebuild
+  // from a stale base would silently drop the language guard that
+  // 20260906-documents-language.sql added. If this check ever goes green-to-red
+  // it means someone rebased the function on the wrong file again.
+  await check('language on an issued document is still frozen after the 20260908 rebuild', () =>
+    asRole('authenticated', () => assert.rejects(
+      db.exec(`UPDATE documents SET language='en' WHERE id='${doc}'`),
+      /immutable: field language cannot be changed/)));
+  await check('client_id re-point on an issued document raises', async () => {
+    await db.exec(`INSERT INTO clients (id,business_id,name) VALUES ('${uuid(8)}','${biz}','Synthetic other');
+      INSERT INTO documents (id,business_id,client_id,type,number,client_name,status)
+        VALUES ('${uuid(11)}','${biz}','${client}','receipt',51,'Synthetic','issued')`);
+    await asRole('authenticated', () => assert.rejects(
+      db.exec(`UPDATE documents SET client_id='${uuid(8)}' WHERE id='${uuid(11)}'`),
+      /immutable: field client_id cannot be changed/));
+  });
+  await check('client deletion still nulls client_id on an issued document', async () => {
+    await asRole('authenticated', () => db.exec(`DELETE FROM clients WHERE id='${client}'`));
+    assert.equal((await rows(`SELECT client_id FROM documents WHERE id='${uuid(11)}'`))[0].client_id, null);
+  });
+  // The exemption is service_role ONLY. An FK referential action runs as the
+  // OWNER of the referencing table (postgres here), not as the caller, so a
+  // cascade from businesses is NOT a way around the rule - which is precisely
+  // why 'postgres' is not exempt.
+  await check('businesses cascade cannot delete a numbered document', () => assert.rejects(
+    db.exec(`DELETE FROM businesses WHERE id='${biz}'`),
+    /numbered documents cannot be deleted/));
+  await check('account wipe works: service_role deletes documents explicitly, then the business', async () => {
+    // Mirrors /api/delete-account and /api/danger/delete-all, which delete from
+    // documents EXPLICITLY under service_role before touching businesses.
+    await asRole('service_role', () => db.exec(`DELETE FROM documents WHERE business_id='${biz}'`));
+    await db.exec(`DELETE FROM businesses WHERE id='${biz}'`);
     assert.equal(await count('documents'), 0);
     assert.equal(await count('document_items'), 0);
     assert.equal((await db.query(`SELECT count(*)::int AS n FROM clients WHERE business_id='${biz}'`)).rows[0].n, 0);

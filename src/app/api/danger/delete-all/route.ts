@@ -189,6 +189,7 @@ export async function POST(req: NextRequest) {
   //    failure here can never leave orphaned children.
   await step("documents", async () => {
     if (docIds.length > 0) {
+      // Since 20260908-documents-no-delete-once-numbered.sql this nulling is no longer what lets the delete through (the service_role carve-out in the trigger is); kept deliberately so this route still works against a database that has not had that migration applied yet.
       const cleared = await admin
         .from("documents")
         .update({ emailed_at: null })
