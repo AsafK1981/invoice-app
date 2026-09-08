@@ -240,7 +240,7 @@ export default function PricingPage() {
                 </div>
                 <h3>
                   <LtrText text={f.title} />
-                  {f.soon ? <span className="v2-adv-soon">בבטא סגורה</span> : null}
+                  {f.soon ? <span className="v2-adv-soon">בקרוב</span> : null}
                 </h3>
                 <p>
                   <LtrText text={f.body} />
