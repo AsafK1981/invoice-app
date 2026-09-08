@@ -21,25 +21,26 @@
    ===================================================================== */
 
 .doc-paper {
-  /* palette (2026-09-06 rebrand): graphite ink, mint accents (the DEFAULT -
-     these are also the exact fallback values a business with no chosen
+  /* palette (2026-09-07 brand book): charcoal ink on a warm-cream canvas,
+     with the orange kept to a single accent line (the DEFAULT - these are
+     also the exact fallback values a business with no chosen
      document_design renders, and what an explicit "general" template
      resolves to; see src/lib/document-themes.ts). A themed business gets
      every one of these vars overridden via an inline style on this element
      (designToCssVars()) - nothing here needs to change for that to work.
      The var NAMES still say "gold" on purpose: renaming them would churn
      ~130 rules here plus designToCssVars() for zero visual gain. */
-  --d-ink: #1f252b;
-  --d-ink2: #5f6b76;
-  --d-soft: #8b95a0;
-  --d-gold: #2f3a45;
-  --d-gold-line: #9ed8c3;
-  --d-gold-faint: #e6f5ee;
-  --d-gold-deep: #263039;
+  --d-ink: #1f232b;
+  --d-ink2: #6b6560;
+  --d-soft: #9a9086;
+  --d-gold: #1f232b;
+  --d-gold-line: #e38f4f;
+  --d-gold-faint: #fbeadb;
+  --d-gold-deep: #16191f;
   --d-card: #ffffff;
-  --d-cardline: #e4e7e2;
-  --d-canvas: #f7f7f2;
-  --d-grad: linear-gradient(135deg, #2f3a45, #263039);
+  --d-cardline: #e8ddd0;
+  --d-canvas: #f7f2eb;
+  --d-grad: linear-gradient(135deg, #1f232b, #1f232b);
   /* Shape/weight knobs added for profession templates (corner + border
      enums in document-themes.ts). Defaults below are the pre-feature
      hard-coded values, so a null design renders byte-for-byte the same. */
@@ -48,7 +49,7 @@
   --d-borderw: 1px;
   --d-borderw-hdr: 1.5px;
   --d-borderw-grand: 2px;
-  --d-card-shadow: 0 1px 2px rgba(47, 58, 69, 0.05);
+  --d-card-shadow: 0 1px 2px rgba(31, 35, 43, 0.05);
   --d-font: var(--font-inter), var(--font-heebo), "Heebo", system-ui, sans-serif;
   /* Headings on the sheet (business name, document number, client name) are
      Rubik since the 2026-09-06 rebrand; the brand book pairs Rubik headings
@@ -57,7 +58,9 @@
      resolves to exactly this string (tests/document-themes.test.ts pins it). */
   --d-font-serif: var(--font-frank), "Frank Ruhl Libre", Georgia, serif;
   --d-topbar-h: 4px;
-  --d-topbar-bg: var(--d-grad);
+  /* The 4px top bar is the ONE orange touch on the paper (brand book): the
+     rest of the default sheet is charcoal on cream. */
+  --d-topbar-bg: linear-gradient(90deg, #d96a1d, #a94e16);
   /* optical scale for the name/number face (Amatic SC needs ~1.35 to sit
      at the same visual size as the sans faces); themes emit it. */
   --d-name-scale: 1;
@@ -213,8 +216,8 @@
 }
 /* a זיכוי stays visually distinct from an invoice: same language, peach ink */
 .doc-paper .doc-badge.is-credit {
-  border-color: #f3cdb9;
-  color: #A64E2A;
+  border-color: #f3d2b4;
+  color: #A94E16;
 }
 .doc-paper .doc-num {
   font-size: calc(30px * var(--d-name-scale));
@@ -367,7 +370,7 @@
   font-size: 14px;
   color: var(--d-ink) !important;
   border: 0 !important;
-  border-bottom: 1px solid #eef0ee !important;
+  border-bottom: 1px solid #f1ebe2 !important;
   vertical-align: top;
 }
 .doc-paper .doc-table tbody tr:last-child td {
@@ -443,7 +446,7 @@
   font-weight: 600;
 }
 .doc-paper .doc-brow.is-discount > span:last-child {
-  color: #2a7a62;
+  color: #4a7536;
 }
 .doc-paper .doc-note-line {
   font-size: 12px;
@@ -526,7 +529,7 @@
 }
 .doc-paper .doc-foot-brand {
   font-size: 10px;
-  color: #8b95a0;
+  color: #9a9086;
   margin-top: 5px;
 }
 /* The credit is a real link (growth loop), but this is a tax document: it must
@@ -590,8 +593,8 @@
 }
 .doc-paper[data-doc-layout="banner"] .doc-badge.is-credit {
   background: #ffffff;
-  border-color: #f3cdb9;
-  color: #A64E2A;
+  border-color: #f3d2b4;
+  color: #A94E16;
 }
 .doc-paper[data-doc-layout="banner"] .doc-mini,
 .doc-paper[data-doc-layout="banner"] .doc-info,
@@ -880,8 +883,8 @@
 }
 .doc-paper[data-doc-layout="stage"] .doc-badge.is-credit {
   background: #ffffff;
-  border-color: #f3cdb9;
-  color: #A64E2A;
+  border-color: #f3d2b4;
+  color: #A94E16;
 }
 .doc-paper[data-doc-layout="stage"] .doc-num {
   color: var(--d-ink);

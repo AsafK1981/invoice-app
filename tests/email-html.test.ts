@@ -107,10 +107,10 @@ describe("buildHtml structure", () => {
 });
 
 describe("buildHtml accent theming (Phase 2: document-design consistency)", () => {
-  it("no accent -> keeps the brand graphite gradient (null-fallback parity)", () => {
+  it("no accent -> keeps the brand orange gradient (null-fallback parity)", () => {
     const html = buildHtml(BASE_ARGS);
-    expect(html).toContain("linear-gradient(135deg, #2f3a45, #263039)");
-    expect(html).toContain("#2f3a45");
+    expect(html).toContain("linear-gradient(135deg, #d96a1d, #c45f1a)");
+    expect(html).toContain("#d96a1d");
   });
 
   it("with an accent -> the header band and button use the accent gradient, not the default", () => {
@@ -119,9 +119,9 @@ describe("buildHtml accent theming (Phase 2: document-design consistency)", () =
       accent: { grad: "linear-gradient(177deg, #a9c0a2 0%, #7c9885 42%, #5e7a5b 78%, #9db597 100%)", solid: "#62795f" },
     });
     expect(themed).toContain("linear-gradient(177deg, #a9c0a2 0%, #7c9885 42%, #5e7a5b 78%, #9db597 100%)");
-    expect(themed).not.toContain("linear-gradient(135deg, #2f3a45, #263039)");
+    expect(themed).not.toContain("linear-gradient(135deg, #d96a1d, #c45f1a)");
     expect(themed).toContain("#62795f");
-    expect(themed).not.toContain("#2f3a45");
+    expect(themed).not.toContain("#d96a1d");
   });
 
   it("themed output still passes the same structural invariants (doctype, charset, body)", () => {

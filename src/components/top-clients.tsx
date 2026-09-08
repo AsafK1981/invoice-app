@@ -67,7 +67,7 @@ export function TopClients({ documents, limit = 5 }: Props) {
                 {formatCurrency(client.total)}
               </span>
             </div>
-            <div className="h-[3px] bg-[#f1efe9] rounded-full overflow-hidden">
+            <div className="h-[3px] bg-[#f1ebe2] rounded-full overflow-hidden">
               <div
                 className={`h-full rounded-full transition-all duration-500 ${idx === 0 ? "bg-orange-500" : "bg-stone-900"}`}
                 style={{ width: `${percentage}%` }}

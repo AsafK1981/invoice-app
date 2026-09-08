@@ -80,7 +80,7 @@
 .v2-theme .v2-vs-siblings a:hover {
   border-color: var(--v2-g2);
   color: var(--v2-g1);
-  background: rgba(190, 158, 78, 0.06);
+  background: rgba(217, 106, 29, 0.06);
 }
 .v2-theme .v2-vs-siblings a:focus-visible {
   outline: 2px solid var(--v2-g1);

@@ -46,22 +46,22 @@
   transform-origin: top left;
 }
 .ml-app-barpair i.is-inc {
-  background: linear-gradient(180deg, #9ed8c3, #2a7a62);
+  background: linear-gradient(180deg, #e38f4f, #4a7536);
 }
 .ml-app-barpair i.is-inc::before {
-  background: #bfe6d6;
+  background: #f3d2b4;
 }
 .ml-app-barpair i.is-inc::after {
-  background: #236653;
+  background: #3C5E2C;
 }
 .ml-app-barpair i.is-exp {
-  background: linear-gradient(180deg, #f6b89e, #A64E2A);
+  background: linear-gradient(180deg, #ebb584, #A94E16);
 }
 .ml-app-barpair i.is-exp::before {
-  background: #f3cdb9;
+  background: #f3d2b4;
 }
 .ml-app-barpair i.is-exp::after {
-  background: #8e4223;
+  background: #8a3f12;
 }/* ============================================================
    HOMEPAGE-ONLY "warm friendly" theme (design approved 2026-08-10).
 
@@ -85,56 +85,54 @@
    ============================================================ */
 
 .ml-theme {
-  /* Palette re-valued 2026-09-06 for the graphite / mint / peach rebrand
-     (docs/design-snapshots/2026-09-06-mint-mockup). Token NAMES are kept
-     verbatim - ~130 rules reference `--ml-gold-*`, `--ml-orange`,
-     `--ml-rose` as "the accent" - so only the VALUES moved. Read them as
-     roles, not as hues: `--ml-gold-*` is the soft mint tint pair,
-     `--ml-orange`/`--ml-rose` are graphite and graphite-2, and
-     `--ml-peach` is the real peach tint of the brand book. */
-  --ml-cream: #f7f7f2;
+  /* Palette re-valued 2026-09-07 for the Deep Orange + Charcoal brand book.
+     Token NAMES are kept verbatim - ~130 rules reference `--ml-gold-*`,
+     `--ml-orange`, `--ml-rose` as "the accent" - so only the VALUES moved.
+     Read them as roles, not as hues: `--ml-gold-*` is the soft orange tint
+     pair, `--ml-orange`/`--ml-rose` are Primary Orange and its barely-there
+     depth stop, and `--ml-peach` is the same warm brand tint. */
+  --ml-cream: #f7f2eb;
   --ml-card: #ffffff;
-  --ml-ink: #1f252b;
+  --ml-ink: #1f232b;
   /* Secondary + tertiary text are the brand book's `muted` and `faint`.
      ink-2 and muted deliberately share one value: the book defines three
      text steps (dark / muted / faint), not four, and inventing a fourth
      would drift from the mockup. */
-  --ml-ink-2: #5f6b76;
-  --ml-muted: #5f6b76;
-  --ml-faint: #66727D;
-  /* Headings sit one step off body ink, per the brand book: body #1F252B,
-     headings #2F3A45 (the primary graphite). */
-  --ml-ink-head: #2f3a45;
-  --ml-line: #e4e7e2;
-  --ml-line-soft: #eef0ec;
-  /* "gold tint" is now the soft MINT tint + mint hairline. */
-  --ml-gold-tint: #e6f5ee;
-  --ml-gold-tint-line: #bfe6d6;
-  /* "gold ink" is now graphite: nav text, headings, accent labels. */
-  --ml-gold-ink: #2f3a45;
-  --ml-orange: #2f3a45;
-  --ml-rose: #263039;
-  /* Every gradient on the page therefore becomes a quiet graphite ramp
-     instead of orange->rose. No token had to be renamed for that. */
+  --ml-ink-2: #6b6560;
+  --ml-muted: #6b6560;
+  --ml-faint: #766D66;
+  /* Headings are Charcoal, the book's one heading ink. */
+  --ml-ink-head: #1f232b;
+  --ml-line: #e8ddd0;
+  --ml-line-soft: #f1ebe2;
+  /* "gold tint" is the soft orange tint + its hairline. */
+  --ml-gold-tint: #fbeadb;
+  --ml-gold-tint-line: #f3d2b4;
+  /* "gold ink" is Burnt Orange: nav text, accent labels, link hover. It is
+     the ONLY orange allowed as text on a light surface (5.5:1 on white). */
+  --ml-gold-ink: #A94E16;
+  --ml-orange: #d96a1d;
+  --ml-rose: #c45f1a;
+  /* The gradient is a barely visible depth step, not a colour transition:
+     the brand book forbids heavy gradients. */
   --ml-grad: linear-gradient(135deg, var(--ml-orange), var(--ml-rose));
-  --ml-peach: #fdeee6;
-  --ml-peach-line: #f3cdb9;
-  /* Mint and peach as TEXT on white. Never #9ed8c3 text on white. */
-  --ml-mint-ink: #2a7a62;
-  --ml-peach-ink: #A64E2A;
-  --ml-shadow-sm: 0 1px 2px rgba(47, 58, 69, 0.05), 0 6px 18px -12px rgba(47, 58, 69, 0.18);
-  --ml-shadow-md: 0 26px 50px -24px rgba(47, 58, 69, 0.28);
-  /* Deeper still, same graphite rgba(47,58,69,*) hue and downward light
+  --ml-peach: #fbeadb;
+  --ml-peach-line: #f3d2b4;
+  /* Green and orange as TEXT on white. Never #d96a1d text on white. */
+  --ml-mint-ink: #4a7536;
+  --ml-peach-ink: #A94E16;
+  --ml-shadow-sm: 0 1px 2px rgba(31, 35, 43, 0.05), 0 6px 18px -12px rgba(31, 35, 43, 0.18);
+  --ml-shadow-md: 0 26px 50px -24px rgba(31, 35, 43, 0.28);
+  /* Deeper still, same charcoal rgba(31,35,43,*) hue and downward light
      direction as -sm/-md above - the shared "pop" shadow for hovered
      cards (2026-08-10 "more interesting" pass). */
-  --ml-shadow-lift: 0 30px 56px -20px rgba(47, 58, 69, 0.34), 0 12px 24px -10px rgba(47, 58, 69, 0.2);
-  /* Page-field texture tokens, same pass. The washes carry the two brand
-     accents (peach top-left behind the hero, mint mid-right behind the
-     advantage grid) plus one graphite whisper low on the page, matching
-     the approved mockup - see `.ml-theme::before` below. */
-  --ml-wash-peach: rgba(246, 184, 158, 0.22);
-  --ml-wash-amber: rgba(158, 216, 195, 0.24);
-  --ml-wash-rose: rgba(47, 58, 69, 0.05);
+  --ml-shadow-lift: 0 30px 56px -20px rgba(31, 35, 43, 0.34), 0 12px 24px -10px rgba(31, 35, 43, 0.2);
+  /* Page-field texture tokens, same pass. The washes carry the brand orange
+     (top-left behind the hero, mid-right behind the advantage grid) plus one
+     charcoal whisper low on the page - see `.ml-theme::before` below. */
+  --ml-wash-peach: rgba(217, 106, 29, 0.10);
+  --ml-wash-amber: rgba(242, 163, 60, 0.14);
+  --ml-wash-rose: rgba(31, 35, 43, 0.04);
 
   position: relative;
   z-index: 1;
@@ -197,7 +195,7 @@
   z-index: -1;
   pointer-events: none;
   background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='780' viewBox='0 0 1200 780' fill='none'%3E%3Cg stroke='%232f3a45' stroke-width='1.5'%3E%3Cpath d='M0,65 C280,13 640,117 1200,65' opacity='.09'/%3E%3Cpath d='M0,195 C420,145 760,247 1200,195' opacity='.07'/%3E%3Cpath d='M0,325 C240,381 700,269 1200,325' opacity='.08'/%3E%3Cpath d='M0,455 C380,403 820,509 1200,455' opacity='.06'/%3E%3Cpath d='M0,585 C300,641 660,531 1200,585' opacity='.075'/%3E%3Cpath d='M0,715 C440,663 800,769 1200,715' opacity='.07'/%3E%3C/g%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='780' viewBox='0 0 1200 780' fill='none'%3E%3Cg stroke='%231f232b' stroke-width='1.5'%3E%3Cpath d='M0,65 C280,13 640,117 1200,65' opacity='.09'/%3E%3Cpath d='M0,195 C420,145 760,247 1200,195' opacity='.07'/%3E%3Cpath d='M0,325 C240,381 700,269 1200,325' opacity='.08'/%3E%3Cpath d='M0,455 C380,403 820,509 1200,455' opacity='.06'/%3E%3Cpath d='M0,585 C300,641 660,531 1200,585' opacity='.075'/%3E%3Cpath d='M0,715 C440,663 800,769 1200,715' opacity='.07'/%3E%3C/g%3E%3C/svg%3E"),
     radial-gradient(min(640px, 70vw) circle at 14% 7%, var(--ml-wash-peach), transparent 70%),
     radial-gradient(min(700px, 78vw) circle at 86% 27%, var(--ml-wash-amber), transparent 70%),
     radial-gradient(min(660px, 72vw) circle at 12% 81%, var(--ml-wash-rose), transparent 70%);
@@ -235,43 +233,46 @@
 }
 /* Two class selectors on purpose: `.v2-theme a { color: inherit }` (0,1,1)
    outranked the bare `.ml-btn-primary` (0,1,0) and painted the CTA label
-   dark on the graphite fill (caught 2026-09-07). */
+   dark on the orange fill (caught 2026-09-07). */
 .ml-theme .ml-btn-primary,
 .v2-theme .ml-btn-primary,
 .ml-btn-primary {
   background: var(--ml-grad);
   color: #fff;
-  box-shadow: 0 12px 26px -12px rgba(47, 58, 69, 0.4), 0 4px 10px -4px rgba(47, 58, 69, 0.24);
+  box-shadow: 0 12px 26px -12px rgba(31, 35, 43, 0.4), 0 4px 10px -4px rgba(31, 35, 43, 0.24);
 }
 .ml-btn-primary:hover {
   transform: translateY(-2px) scale(1.015);
-  /* Darkens toward graphite-2, the brand book's stated hover of a graphite
-     button. A brightness > 1 would wash the fill toward the page field. */
-  filter: brightness(0.9);
-  box-shadow: 0 20px 38px -14px rgba(47, 58, 69, 0.45), 0 8px 18px -6px rgba(47, 58, 69, 0.3);
+  /* Solid Burnt Orange, the brand book's stated hover of an orange button.
+     Stated explicitly rather than as a brightness filter so the hover tone
+     is exactly the book's value. */
+  background: #A94E16;
+  box-shadow: 0 20px 38px -14px rgba(31, 35, 43, 0.45), 0 8px 18px -6px rgba(31, 35, 43, 0.3);
 }
-/* Brand book v1.0 button set. Primary = graphite/white (above), secondary =
-   peach with dark text, tertiary = white with a 1.5px graphite outline. */
+/* Brand book button set. Primary = orange fill / white label (above),
+   secondary = transparent with an orange outline and burnt-orange label,
+   tertiary = white with a 1.5px charcoal outline. */
 .ml-theme .ml-btn-peach,
 .v2-theme .ml-btn-peach,
 .ml-btn-peach {
-  background: #F6B89E;
-  color: #1F252B;
+  background: transparent;
+  border: 1.5px solid #D96A1D;
+  color: #A94E16;
 }
 .ml-btn-peach:hover {
   transform: translateY(-2px);
-  filter: brightness(0.97);
-  box-shadow: 0 12px 26px -12px rgba(47, 58, 69, 0.3);
+  background: #FBEADB;
+  box-shadow: 0 12px 26px -12px rgba(31, 35, 43, 0.3);
 }
 .ml-theme .ml-btn-outline,
 .v2-theme .ml-btn-outline,
 .ml-btn-outline {
   background: #FFFFFF;
-  color: #2F3A45;
-  border: 1.5px solid #2F3A45;
+  color: #1F232B;
+  border: 1.5px solid #1F232B;
 }
 .ml-btn-outline:hover {
-  background: #F7F7F2;
+  background: #F1EBE2;
 }
 .ml-btn-sm {
   padding: 10px 22px;
@@ -410,11 +411,11 @@ h1.ml-hero-h1 {
   color: var(--ml-ink-head);
 }
 /* The highlighted headline word. Was an orange->rose gradient clipped to
-   the glyphs; since the 2026-09-06 rebrand it is a MINT MARKER stripe
-   behind ordinary graphite text (see shot-Main.png). A gradient-clip
-   would have to be graphite-on-graphite now, i.e. invisible, so the
-   emphasis moved from the ink to the field behind it.
-   The stops are percentages of the line box, tuned so the stripe sits on
+   the glyphs; since the 2026-09-06 rebrand it is a MARKER band behind
+   ordinary charcoal text (see shot-Main.png). The band is Accent Gold, the
+   one role the brand book gives that tone (a marker highlight), so it stays
+   legible under charcoal ink instead of fighting the orange CTAs.
+   The stops are percentages of the line box, tuned so the band sits on
    the baseline band of Hebrew letters and clears the descenders: it starts
    at 62% and ends at 92%. `-webkit-text-fill-color: initial` is required
    to undo the clipped-text state on any browser that cached the old rule
@@ -422,8 +423,8 @@ h1.ml-hero-h1 {
 .ml-hero-h1 .ml-grad-text {
   background: linear-gradient(
     transparent 62%,
-    #9ed8c3 62%,
-    #9ed8c3 92%,
+    #f5c56f 62%,
+    #f5c56f 92%,
     transparent 92%
   );
   padding: 0 4px;
@@ -471,7 +472,7 @@ h1.ml-hero-h1 {
   height: 15px;
   /* Mint ink, the one place a check may leave the graphite family: these
      three ticks are the page's only "yes, included" signal above the fold
-     (see shot-Main.png). #9ED8C3 itself is never text on white. */
+     (see shot-Main.png). #E38F4F itself is never text on white. */
   color: var(--ml-mint-ink);
   flex: none;
 }
@@ -567,7 +568,7 @@ h1.ml-hero-h1 {
 .ml-adv-card.is-flagship .ml-adv-icon {
   background: var(--ml-grad);
   color: #fff;
-  box-shadow: 0 12px 22px -10px rgba(47, 58, 69, 0.45);
+  box-shadow: 0 12px 22px -10px rgba(31, 35, 43, 0.45);
 }
 /* Every other card gets a soft-tinted tile with ink from the SAME family.
    Re-tinted 2026-09-06: the fourteen `tone` names are content (they live
@@ -578,60 +579,60 @@ h1.ml-hero-h1 {
    always the tint's own dark counterpart (mintInk / peachInk / graphite),
    never the pale fill as text. */
 .ml-adv-icon--amber {
-  background: #e6f5ee;
-  color: #2a7a62;
+  background: #fbeadb;
+  color: #4a7536;
 }
 .ml-adv-icon--cyan {
-  background: #fdeee6;
-  color: #A64E2A;
+  background: #fbeadb;
+  color: #A94E16;
 }
 .ml-adv-icon--pink {
-  background: #f7f7f2;
-  color: #2f3a45;
+  background: #f7f2eb;
+  color: #1f232b;
 }
 .ml-adv-icon--teal {
-  background: #e6f5ee;
-  color: #2a7a62;
+  background: #fbeadb;
+  color: #4a7536;
 }
 .ml-adv-icon--indigo {
-  background: #fdeee6;
-  color: #A64E2A;
+  background: #fbeadb;
+  color: #A94E16;
 }
 .ml-adv-icon--rose {
-  background: #f7f7f2;
-  color: #2f3a45;
+  background: #f7f2eb;
+  color: #1f232b;
 }
 .ml-adv-icon--yellow {
-  background: #e6f5ee;
-  color: #2a7a62;
+  background: #fbeadb;
+  color: #4a7536;
 }
 .ml-adv-icon--lime {
-  background: #fdeee6;
-  color: #A64E2A;
+  background: #fbeadb;
+  color: #A94E16;
 }
 .ml-adv-icon--fuchsia {
-  background: #f7f7f2;
-  color: #2f3a45;
+  background: #f7f2eb;
+  color: #1f232b;
 }
 .ml-adv-icon--blue {
-  background: #e6f5ee;
-  color: #2a7a62;
+  background: #fbeadb;
+  color: #4a7536;
 }
 .ml-adv-icon--sky {
-  background: #fdeee6;
-  color: #A64E2A;
+  background: #fbeadb;
+  color: #A94E16;
 }
 .ml-adv-icon--orange {
-  background: #f7f7f2;
-  color: #2f3a45;
+  background: #f7f2eb;
+  color: #1f232b;
 }
 .ml-adv-icon--violet {
-  background: #f7f7f2;
-  color: #2f3a45;
+  background: #f7f2eb;
+  color: #1f232b;
 }
 .ml-adv-icon--green {
-  background: #e6f5ee;
-  color: #2a7a62;
+  background: #fbeadb;
+  color: #4a7536;
 }
 
 /* Hover "pop" (owner 2026-08-10: "יש יותר מדי שטח מת... צריך שהוא יבלוט,
@@ -658,64 +659,64 @@ h1.ml-hero-h1 {
     transform: scale(1.06);
   }
   .ml-adv-card.is-flagship:hover {
-    background: #f2faf6;
-    border-color: #bfe6d6;
+    background: #fdf4ec;
+    border-color: #f3d2b4;
   }
   .ml-adv-card--amber:hover {
-    background: #f2faf6;
-    border-color: #bfe6d6;
+    background: #fdf4ec;
+    border-color: #f3d2b4;
   }
   .ml-adv-card--cyan:hover {
     background: #fef6f1;
-    border-color: #f3cdb9;
+    border-color: #f3d2b4;
   }
   .ml-adv-card--pink:hover {
     background: #fbfbf8;
-    border-color: #e4e7e2;
+    border-color: #e8ddd0;
   }
   .ml-adv-card--teal:hover {
-    background: #f2faf6;
-    border-color: #bfe6d6;
+    background: #fdf4ec;
+    border-color: #f3d2b4;
   }
   .ml-adv-card--indigo:hover {
     background: #fef6f1;
-    border-color: #f3cdb9;
+    border-color: #f3d2b4;
   }
   .ml-adv-card--rose:hover {
     background: #fbfbf8;
-    border-color: #e4e7e2;
+    border-color: #e8ddd0;
   }
   .ml-adv-card--yellow:hover {
-    background: #f2faf6;
-    border-color: #bfe6d6;
+    background: #fdf4ec;
+    border-color: #f3d2b4;
   }
   .ml-adv-card--lime:hover {
     background: #fef6f1;
-    border-color: #f3cdb9;
+    border-color: #f3d2b4;
   }
   .ml-adv-card--fuchsia:hover {
     background: #fbfbf8;
-    border-color: #e4e7e2;
+    border-color: #e8ddd0;
   }
   .ml-adv-card--blue:hover {
-    background: #f2faf6;
-    border-color: #bfe6d6;
+    background: #fdf4ec;
+    border-color: #f3d2b4;
   }
   .ml-adv-card--sky:hover {
     background: #fef6f1;
-    border-color: #f3cdb9;
+    border-color: #f3d2b4;
   }
   .ml-adv-card--orange:hover {
     background: #fbfbf8;
-    border-color: #e4e7e2;
+    border-color: #e8ddd0;
   }
   .ml-adv-card--violet:hover {
     background: #fbfbf8;
-    border-color: #e4e7e2;
+    border-color: #e8ddd0;
   }
   .ml-adv-card--green:hover {
-    background: #f2faf6;
-    border-color: #bfe6d6;
+    background: #fdf4ec;
+    border-color: #f3d2b4;
   }
 }
 
@@ -916,35 +917,35 @@ h1.ml-hero-h1 {
    page.tsx does not have to change; read them as slot 1..4. */
 .ml-trust-card--green {
   --trust-bg: #ffffff;
-  --trust-line: #e4e7e2;
-  --trust-tile: #e6f5ee;
-  --trust-glyph: #2a7a62;
-  --trust-bg-hov: #f2faf6;
-  --trust-line-hov: #bfe6d6;
+  --trust-line: #e8ddd0;
+  --trust-tile: #fbeadb;
+  --trust-glyph: #4a7536;
+  --trust-bg-hov: #fdf4ec;
+  --trust-line-hov: #f3d2b4;
 }
 .ml-trust-card--amber {
   --trust-bg: #ffffff;
-  --trust-line: #e4e7e2;
-  --trust-tile: #fdeee6;
-  --trust-glyph: #A64E2A;
+  --trust-line: #e8ddd0;
+  --trust-tile: #fbeadb;
+  --trust-glyph: #A94E16;
   --trust-bg-hov: #fef6f1;
-  --trust-line-hov: #f3cdb9;
+  --trust-line-hov: #f3d2b4;
 }
 .ml-trust-card--sky {
   --trust-bg: #ffffff;
-  --trust-line: #e4e7e2;
-  --trust-tile: #f7f7f2;
-  --trust-glyph: #2f3a45;
+  --trust-line: #e8ddd0;
+  --trust-tile: #f7f2eb;
+  --trust-glyph: #1f232b;
   --trust-bg-hov: #fbfbf8;
-  --trust-line-hov: #E4E7E2;
+  --trust-line-hov: #E8DDD0;
 }
 .ml-trust-card--violet {
   --trust-bg: #ffffff;
-  --trust-line: #e4e7e2;
-  --trust-tile: #e6f5ee;
-  --trust-glyph: #2a7a62;
-  --trust-bg-hov: #f2faf6;
-  --trust-line-hov: #bfe6d6;
+  --trust-line: #e8ddd0;
+  --trust-tile: #fbeadb;
+  --trust-glyph: #4a7536;
+  --trust-bg-hov: #fdf4ec;
+  --trust-line-hov: #f3d2b4;
 }
 .ml-trust-icon {
   width: 44px;
@@ -1111,9 +1112,9 @@ h1.ml-hero-h1 {
   flex: none;
   padding: 2px 9px;
   border-radius: 999px;
-  background: #FDEEE6;
-  border: 1px solid #F3CDB9;
-  color: #8E4223;
+  background: #FBEADB;
+  border: 1px solid #F3D2B4;
+  color: #8A3F12;
   font-family: var(--font-inter), var(--font-heebo), "Heebo", system-ui, sans-serif;
   font-size: 11px;
   font-weight: 700;
@@ -1144,16 +1145,16 @@ h3 > .ml-badge-soon {
   margin: 14px auto 0;
   padding: 12px 16px;
   border-radius: 12px;
-  background: #F7F7F2;
-  border: 1px solid #E4E7E2;
-  color: #5F6B76;
+  background: #F7F2EB;
+  border: 1px solid #E8DDD0;
+  color: #6B6560;
   font-size: 14.5px;
   line-height: 1.75;
   text-align: center;
 }
 
 .ml-show-today b {
-  color: var(--ml-ink, #1F252B);
+  color: var(--ml-ink, #1F232B);
   font-weight: 700;
 }
 
@@ -1213,7 +1214,7 @@ h3 > .ml-badge-soon {
   background: var(--ml-card);
   border: 1px solid var(--ml-line);
   border-radius: 14px;
-  box-shadow: 0 1px 2px rgba(47, 58, 69, 0.03);
+  box-shadow: 0 1px 2px rgba(31, 35, 43, 0.03);
 }
 .ml-sh-glabel {
   display: flex;
@@ -1631,7 +1632,7 @@ h3 > .ml-badge-soon {
   margin-top: 7px;
   padding: 8px 10px;
   background: var(--wa-inset);
-  border-inline-start: 3px solid #9ed8c3;
+  border-inline-start: 3px solid #e38f4f;
   border-radius: 8px;
   display: flex;
   flex-direction: column;
@@ -1685,7 +1686,7 @@ h3 > .ml-badge-soon {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #A64E2A;
+  background: #A94E16;
   color: #fff;
   font-size: 9px;
   font-weight: 800;
@@ -1782,7 +1783,7 @@ h3 > .ml-badge-soon {
   font-weight: 700;
   font-size: 26px;
   line-height: 1.2;
-  color: #2F3A45;
+  color: #1F232B;
   margin: 0 0 6px;
 }
 @media (min-width: 760px) {
@@ -1796,18 +1797,18 @@ h3 > .ml-badge-soon {
   padding: 12px 18px;
   border-radius: 14px;
   background: #ffffff;
-  border: 1px solid #E4E7E2;
-  border-inline-start: 4px solid #9ED8C3;
+  border: 1px solid #E8DDD0;
+  border-inline-start: 4px solid #D96A1D;
   font-size: 15px;
   line-height: 1.6;
-  color: #2F3A45;
+  color: #1F232B;
   text-wrap: pretty;
 }
 .ml-about {
   margin-top: 10px;
   font-size: 15px;
   line-height: 1.65;
-  color: #5F6B76;
+  color: #6B6560;
   text-wrap: pretty;
 }
 .ml-midcta-t {
@@ -1864,7 +1865,7 @@ h3 > .ml-badge-soon {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: #E4E7E2;
+  background: #E8DDD0;
 }
 .ml-browser-url {
   flex: 1;
@@ -1947,7 +1948,7 @@ h3 > .ml-badge-soon {
   padding: 9px 16px;
   border-radius: 13px;
   white-space: nowrap;
-  box-shadow: 0 10px 20px -10px rgba(47, 58, 69, 0.45);
+  box-shadow: 0 10px 20px -10px rgba(31, 35, 43, 0.45);
 }
 .ml-app-stats {
   display: grid;
@@ -1990,7 +1991,7 @@ h3 > .ml-badge-soon {
   flex-wrap: wrap;
 }
 .ml-app-stat-s .is-up {
-  color: #2a7a62;
+  color: #4a7536;
   font-weight: 700;
 }
 /* Same four tones, same order, as the real dashboard's `cards` array.
@@ -1998,28 +1999,28 @@ h3 > .ml-badge-soon {
    mint, spending reads peach, and the two neutral tiles (profit, average)
    read graphite on off-white. Class names are the dashboard's, kept. */
 .ml-app-stat.is-emerald {
-  background: linear-gradient(135deg, #e6f5ee, #f2faf6);
+  background: linear-gradient(135deg, #fbeadb, #fdf4ec);
 }
 .ml-app-stat.is-emerald .ml-app-stat-v {
-  color: #2a7a62;
+  color: #4a7536;
 }
 .ml-app-stat.is-rose {
-  background: linear-gradient(135deg, #fdeee6, #fef6f1);
+  background: linear-gradient(135deg, #fbeadb, #fef6f1);
 }
 .ml-app-stat.is-rose .ml-app-stat-v {
-  color: #A64E2A;
+  color: #A94E16;
 }
 .ml-app-stat.is-amber {
-  background: linear-gradient(135deg, #f7f7f2, #fbfbf8);
+  background: linear-gradient(135deg, #f7f2eb, #fbfbf8);
 }
 .ml-app-stat.is-amber .ml-app-stat-v {
-  color: #2f3a45;
+  color: #1f232b;
 }
 .ml-app-stat.is-violet {
-  background: linear-gradient(135deg, #f7f7f2, #fbfbf8);
+  background: linear-gradient(135deg, #f7f2eb, #fbfbf8);
 }
 .ml-app-stat.is-violet .ml-app-stat-v {
-  color: #2f3a45;
+  color: #1f232b;
 }
 .ml-app-chart {
   background: var(--ml-card);
@@ -2057,10 +2058,10 @@ h3 > .ml-badge-soon {
   border-radius: 5px 5px 0 0;
 }
 .ml-app-barpair i.is-inc {
-  background: linear-gradient(180deg, #9ed8c3, #2a7a62);
+  background: linear-gradient(180deg, #e38f4f, #4a7536);
 }
 .ml-app-barpair i.is-exp {
-  background: linear-gradient(180deg, #f6b89e, #A64E2A);
+  background: linear-gradient(180deg, #ebb584, #A94E16);
 }
 .ml-app-legend {
   display: flex;
@@ -2081,10 +2082,10 @@ h3 > .ml-badge-soon {
   border-radius: 3px;
 }
 .ml-app-legend i.is-inc {
-  background: #2a7a62;
+  background: #4a7536;
 }
 .ml-app-legend i.is-exp {
-  background: #A64E2A;
+  background: #A94E16;
 }
 
 /* ---------- pricing band ---------- */
@@ -2248,10 +2249,16 @@ h3 > .ml-badge-soon {
   color: var(--ml-ink-2);
 }
 
-/* ---------- footer ---------- */
+/* ---------- footer ----------
+   Brand book 8: "Charcoal is an anchor" - the footer is a full-bleed
+   charcoal slab, so it needs no top hairline to separate it from the cream
+   page. `.ml-footer` is the full-width <footer>; `.ml-footer-in` is the
+   `.ml-wrap` inside it, so the paint spans the viewport. */
 .ml-footer {
   padding-block: 34px;
-  border-top: 1px solid var(--ml-line);
+  background: #1F232B;
+  color: #F7F2EB;
+  border-top: none;
 }
 .ml-footer-in {
   display: flex;
@@ -2275,14 +2282,14 @@ h3 > .ml-badge-soon {
   min-height: 40px;
   font-size: 13.5px;
   font-weight: 600;
-  color: var(--ml-ink-2);
+  color: rgba(247, 242, 235, 0.78);
 }
 .ml-footer-links a:hover {
-  color: var(--ml-gold-ink);
+  color: #F2A33C;
 }
 .ml-footer-copy {
   font-size: 12px;
-  color: var(--ml-muted);
+  color: rgba(247, 242, 235, 0.55);
 }
 @media (max-width: 639.98px) {
   .ml-footer-in {
@@ -2359,9 +2366,9 @@ h3 > .ml-badge-soon {
   padding: 22px;
   border-radius: 20px;
   background: #fff;
-  border: 1px solid var(--ml-line, #E4E7E2);
+  border: 1px solid var(--ml-line, #E8DDD0);
   /* One consistent light source for every raised surface on this page. */
-  box-shadow: 0 10px 28px -18px rgba(47, 58, 69, 0.4);
+  box-shadow: 0 10px 28px -18px rgba(31, 35, 43, 0.4);
   transition:
     transform 0.28s cubic-bezier(0.2, 0.8, 0.3, 1.2),
     box-shadow 0.28s ease,
@@ -2377,8 +2384,8 @@ h3 > .ml-badge-soon {
    (DESIGN-TASTE 2026-08-10). Lift + deepen, no colour flash. */
 .ml-spot-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 20px 44px -20px rgba(47, 58, 69, 0.5);
-  border-color: var(--ml-line-strong, #C9CFCC);
+  box-shadow: 0 20px 44px -20px rgba(31, 35, 43, 0.5);
+  border-color: var(--ml-line-strong, #D2C6B7);
 }
 .ml-spot-icon {
   display: grid;
@@ -2390,8 +2397,8 @@ h3 > .ml-badge-soon {
   /* No colour here on purpose - each card paints its own tile below. An
      earlier version set a cream background and ink glyph here, which silently
      overrode the tone classes and made all three tiles identical. */
-  background: var(--ml-cream, #f7f7f2);
-  color: var(--ml-ink-head, #2f3a45);
+  background: var(--ml-cream, #f7f2eb);
+  color: var(--ml-ink-head, #1f232b);
 }
 
 /* Spotlight tiles, re-tinted 2026-09-06. They used to be three saturated
@@ -2403,21 +2410,21 @@ h3 > .ml-badge-soon {
    The flagship (allocation) is the one card that also tints its FIELD, so
    it still leads the ladder - a mint-tint card, not a dark slab. */
 .ml-spot-card--green .ml-spot-icon {
-  background: #e6f5ee;
-  color: #2a7a62;
+  background: #fbeadb;
+  color: #4a7536;
 }
 .ml-spot-card.is-flagship {
-  background: #e6f5ee;
-  border-color: #bfe6d6;
+  background: #fbeadb;
+  border-color: #f3d2b4;
 }
 .ml-spot-card.is-flagship .ml-spot-icon {
   background: var(--ml-grad);
   color: #fff;
-  box-shadow: 0 12px 24px -12px rgba(47, 58, 69, 0.45);
+  box-shadow: 0 12px 24px -12px rgba(31, 35, 43, 0.45);
 }
 .ml-spot-card--violet .ml-spot-icon {
-  background: #fdeee6;
-  color: #A64E2A;
+  background: #fbeadb;
+  color: #A94E16;
 }
 .ml-spot-icon svg {
   width: 30px;
@@ -2440,7 +2447,7 @@ h3 > .ml-badge-soon {
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.02em;
-  color: var(--ml-mint-ink, #2a7a62);
+  color: var(--ml-mint-ink, #4a7536);
   margin-bottom: 5px;
 }
 .ml-spot-copy h3 {
@@ -2735,7 +2742,7 @@ h3 > .ml-badge-soon {
       rgba(255, 255, 255, 0) 45%,
       rgba(0, 0, 0, 0.2) 100%
     ),
-    linear-gradient(180deg, #9ed8c3, #236653);
+    linear-gradient(180deg, #e38f4f, #3C5E2C);
   box-shadow: 0 5px 12px -6px rgba(35, 102, 83, 0.7);
 }
 .ml-app-barpair i.is-exp {
@@ -2746,7 +2753,7 @@ h3 > .ml-badge-soon {
       rgba(255, 255, 255, 0) 45%,
       rgba(0, 0, 0, 0.2) 100%
     ),
-    linear-gradient(180deg, #f6b89e, #8e4223);
+    linear-gradient(180deg, #ebb584, #8a3f12);
   box-shadow: 0 5px 12px -6px rgba(142, 66, 35, 0.6);
 }
 
@@ -2805,7 +2812,7 @@ h3 > .ml-badge-soon {
   font-size: 9.5px;
   font-weight: 600;
   line-height: 1;
-  color: var(--ml-ink-3, #66727D);
+  color: var(--ml-ink-3, #766D66);
   /* Each label sits ON its gridline, so nudge the column up by half a line. */
   transform: translateY(-4px);
 }
@@ -2817,7 +2824,7 @@ h3 > .ml-badge-soon {
   position: absolute;
   inset-inline: 0;
   height: 1px;
-  background: var(--ml-line-soft, #EEF0EC);
+  background: var(--ml-line-soft, #F1EBE2);
   pointer-events: none;
 }
 .ml-app-gridline:nth-child(1) {
@@ -2842,7 +2849,7 @@ h3 > .ml-badge-soon {
   margin-top: 7px;
   font-size: 9.5px;
   font-weight: 600;
-  color: var(--ml-ink-3, #66727D);
+  color: var(--ml-ink-3, #766D66);
 }
 .ml-app-xaxis span {
   flex: 1;

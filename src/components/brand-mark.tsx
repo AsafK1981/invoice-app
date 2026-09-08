@@ -1,7 +1,8 @@
 /**
- * The brand mark (brand book v1.0, 2026-09-07): a smiling document with a
- * peach folded corner, closed happy eyes, peach cheeks, three mint text
- * lines and a mint check badge on the lower-left corner. This is the ONE
+ * The brand mark (brand book, 2026-09-07 "Deep Orange + Charcoal"): the
+ * invoice icon with the V sign - a charcoal-outlined document with an orange
+ * folded corner, two content rules and an orange check badge on the lower
+ * right. Aligned and stable: no shadow, no glow, no 3D. This is the ONE
  * source for the mark in React; public/logo.svg and logo-v2.svg carry the
  * same drawing for favicons, the manifest, emails and the social card.
  *
@@ -11,19 +12,10 @@
  */
 
 export const BRAND = {
-  graphite: "#2F3A45",
-  mint: "#9ED8C3",
-  mintTint: "#E6F5EE",
-  mintInk: "#2A7A62",
-  peach: "#F6B89E",
-  peachTint: "#FDEEE6",
-  peachInk: "#A64E2A",
-  offWhite: "#F7F7F2",
-  border: "#E4E7E2",
-  text: "#1F252B",
-  name: "חשבונית ידידותית",
-  latin: "FriendlyInvoice",
-  tagline: "התנהלות פשוטה לעסק מצליח",
+  orange: "#D96A1D", burnt: "#A94E16", gold: "#F2A33C", charcoal: "#1F232B",
+  cream: "#F7F2EB", sand: "#E8DDD0", orangeTint: "#FBEADB", orangeInk: "#A94E16",
+  greenTint: "#EEF4E8", greenInk: "#4A7536", offWhite: "#F7F2EB", border: "#E8DDD0", text: "#1F232B",
+  name: "חשבונית ידידותית", latin: "Friendly Invoice", tagline: "התנהלות פשוטה לעסק מצליח",
 } as const;
 
 type BrandMarkProps = {
@@ -32,7 +24,7 @@ type BrandMarkProps = {
   className?: string;
   /** Present when the mark stands alone (an icon link); omit when text sits beside it. */
   title?: string;
-  /** The mint check badge on the lower-left corner (brand book "02. Icon"). */
+  /** The orange check badge on the lower-right corner (brand book "02. Icon"). */
   badge?: boolean;
 };
 
@@ -55,30 +47,31 @@ export function BrandMark({ size = 32, className, title, badge = true }: BrandMa
       <path
         d="M24 6h52l36 36v90a14 14 0 0 1-14 14H24a14 14 0 0 1-14-14V20A14 14 0 0 1 24 6z"
         fill="#FFFFFF"
-        stroke={BRAND.graphite}
+        stroke="#1F232B"
         strokeWidth="8"
         strokeLinejoin="round"
       />
       {/* folded corner */}
       <path
         d="M76 6v22a14 14 0 0 0 14 14h22z"
-        fill={BRAND.peach}
-        stroke={BRAND.graphite}
+        fill="#D96A1D"
+        stroke="#1F232B"
         strokeWidth="8"
         strokeLinejoin="round"
       />
-      {/* closed happy eyes + smile */}
-      <path d="M32 58q10-12 20 0M70 58q10-12 20 0" stroke={BRAND.graphite} strokeWidth="7" strokeLinecap="round" />
-      <path d="M46 74q15 14 30 0" stroke={BRAND.graphite} strokeWidth="7" strokeLinecap="round" />
-      {/* cheeks */}
-      <circle cx="28" cy="72" r="6.5" fill={BRAND.peach} />
-      <circle cx="94" cy="72" r="6.5" fill={BRAND.peach} />
-      {/* text lines */}
-      <path d="M30 100h60M30 114h46M30 128h32" stroke={BRAND.mint} strokeWidth="8" strokeLinecap="round" />
+      {/* content rules */}
+      <path d="M30 60h44M30 78h30" stroke="#1F232B" strokeWidth="7" strokeLinecap="round" />
+      <path d="M30 112h18" stroke="#1F232B" strokeWidth="7" strokeLinecap="round" />
       {badge ? (
         <>
-          <circle cx="100" cy="122" r="17" fill={BRAND.mint} stroke="#FFFFFF" strokeWidth="5" />
-          <path d="M91 122l6 6 12-13" stroke={BRAND.graphite} strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx="90" cy="112" r="23" fill="#D96A1D" />
+          <path
+            d="M78 112l9 9 16-18"
+            stroke="#FFFFFF"
+            strokeWidth="7"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         </>
       ) : null}
     </svg>
@@ -91,36 +84,54 @@ type BrandLockupProps = {
   /** Show the tagline under the name (footer, sign-in), or not (header, sidebar). */
   tagline?: boolean;
   className?: string;
+  /** "dark" is the charcoal footer slab: cream Hebrew, orange signature. */
+  tone?: "light" | "dark";
 };
 
 /**
- * The primary logo from the brand book: mark on the left, then the Latin
- * wordmark "FriendlyInvoice" (Friendly in graphite, Invoice in mint, Inter
- * 700) with "חשבונית ידידותית" (Heebo 700) under it. The lockup reads
- * LEFT-TO-RIGHT as one unit even on an RTL page, which is why it carries
- * its own `dir`. Sizes derive from `size` so every lockup in the product
- * keeps the same proportions.
+ * The primary logo from the brand book: the mark at the reading START (the
+ * right side on an RTL page), vertically centred against two text lines.
+ * "חשבונית ידידותית" is the PRIMARY name (Heebo 700, charcoal) and
+ * "Friendly Invoice" is the SECONDARY English signature under it (Playfair
+ * Display 500 via `.brand-latin`, in Primary Orange so it lifts off the
+ * charcoal Hebrew above it). Sizes derive from `size` so every lockup in the
+ * product keeps the same proportions, including the clear space between the
+ * mark and the text.
  */
-export function BrandLockup({ size = 32, tagline = false, className }: BrandLockupProps) {
-  const latin = Math.round(size * 0.66);
-  const hebrew = Math.max(11, Math.round(size * 0.36));
+export function BrandLockup({ size = 32, tagline = false, className, tone = "light" }: BrandLockupProps) {
+  const hebrew = Math.round(size * 0.5);
+  const latin = Math.round(size * 0.38);
+  const dark = tone === "dark";
   return (
     <span
       className={className}
-      dir="ltr"
+      dir="rtl"
       style={{ display: "inline-flex", alignItems: "center", gap: Math.round(size * 0.3) }}
     >
       <BrandMark size={size} />
-      <span style={{ display: "inline-flex", flexDirection: "column", gap: Math.round(size * 0.08), lineHeight: 1 }}>
-        <span className="brand-latin" style={{ fontSize: latin }}>
-          <span style={{ color: BRAND.graphite }}>Friendly</span>
-          <span style={{ color: BRAND.mint }}>Invoice</span>
-        </span>
-        <span className="brand-wordmark" dir="rtl" style={{ fontSize: hebrew, color: BRAND.graphite, textAlign: "left" }}>
+      <span
+        style={{
+          display: "inline-flex",
+          flexDirection: "column",
+          gap: Math.round(size * 0.1),
+          lineHeight: 1,
+          textAlign: "right",
+        }}
+      >
+        <span className="brand-wordmark" style={{ fontSize: hebrew, color: dark ? "#FFFFFF" : BRAND.charcoal }}>
           {BRAND.name}
         </span>
+        <span className="brand-latin" dir="ltr" style={{ fontSize: latin, color: BRAND.orange, textAlign: "right" }}>
+          {BRAND.latin}
+        </span>
         {tagline ? (
-          <span className="brand-tagline" dir="rtl" style={{ fontSize: Math.max(11, Math.round(size * 0.3)), textAlign: "left" }}>
+          <span
+            className="brand-tagline"
+            style={{
+              fontSize: Math.max(11, Math.round(size * 0.3)),
+              ...(dark ? { color: "rgba(247, 242, 235, 0.7)" } : null),
+            }}
+          >
             {BRAND.tagline}
           </span>
         ) : null}

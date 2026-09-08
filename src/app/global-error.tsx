@@ -19,7 +19,7 @@ export default function GlobalError({
         style={{
           fontFamily:
             "-apple-system, BlinkMacSystemFont, 'Segoe UI', Heebo, Arial, sans-serif",
-          background: "linear-gradient(135deg, #fff7ed, #fef3c7)",
+          background: "linear-gradient(135deg, #f7f2eb, #fbeadb)",
           minHeight: "100vh",
           display: "flex",
           alignItems: "center",
@@ -44,7 +44,7 @@ export default function GlobalError({
               width: 64,
               height: 64,
               borderRadius: 16,
-              background: "#fee2e2",
+              background: "#fbedeb",
               margin: "0 auto 16px",
               display: "flex",
               alignItems: "center",
@@ -54,21 +54,21 @@ export default function GlobalError({
           >
             ⚠️
           </div>
-          <h1 style={{ fontSize: 20, fontWeight: 700, margin: "0 0 8px", color: "#1c1917" }}>
+          <h1 style={{ fontSize: 20, fontWeight: 700, margin: "0 0 8px", color: "#1f232b" }}>
             תקלה לא צפויה
           </h1>
-          <p style={{ fontSize: 14, color: "#57534e", margin: "0 0 24px" }}>
+          <p style={{ fontSize: 14, color: "#6b6560", margin: "0 0 24px" }}>
             המערכת נתקלה בשגיאה. נסה לרענן את העמוד.
           </p>
           {error.digest && (
-            <p style={{ fontSize: 12, color: "#a8a29e", margin: "0 0 20px", fontFamily: "monospace" }}>
+            <p style={{ fontSize: 12, color: "#9a9086", margin: "0 0 20px", fontFamily: "monospace" }}>
               קוד: {error.digest}
             </p>
           )}
           <button
             onClick={reset}
             style={{
-              background: "linear-gradient(135deg, #2F3A45, #263039)",
+              background: "linear-gradient(135deg, #D96A1D, #C45F1A)",
               color: "white",
               border: "none",
               padding: "12px 24px",

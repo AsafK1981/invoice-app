@@ -74,9 +74,9 @@ function visualRtl(s: string): string {
 }
 
 export default async function OpengraphImage() {
-  // Rebrand 2026-09-06 (graphite / mint / peach, the smiling-document mark).
+  // Brand pass 2026-09-07 (Deep Orange + Charcoal, the invoice-icon mark).
   // The differentiator keeps the top slot (2026-08-23 ranking); the identity
-  // line under it now carries the tagline and the Latin name FriendlyInvoice
+  // line under it carries the tagline and the Latin name Friendly Invoice
   // (the domain), not the old MyFriendlyInvoiceApp wordmark.
   //
   // The headline is split across two lines rather than shrunk: at one line
@@ -100,8 +100,8 @@ export default async function OpengraphImage() {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          // Off-white field, the app's page background.
-          backgroundColor: "#F7F7F2",
+          // Warm cream field, the app's page background.
+          backgroundColor: "#F7F2EB",
           padding: 80,
           textAlign: "center",
         }}
@@ -109,21 +109,18 @@ export default async function OpengraphImage() {
         {/* The brand mark (same drawing as src/components/brand-mark.tsx;
             satori renders basic svg paths and circles). */}
         <svg width={124} height={143} viewBox="0 0 130 150" fill="none" style={{ marginBottom: 26 }}>
-          <path d="M24 6h52l36 36v90a14 14 0 0 1-14 14H24a14 14 0 0 1-14-14V20A14 14 0 0 1 24 6z" fill="#FFFFFF" stroke="#2F3A45" strokeWidth="8" strokeLinejoin="round" />
-          <path d="M76 6v22a14 14 0 0 0 14 14h22z" fill="#F6B89E" stroke="#2F3A45" strokeWidth="8" strokeLinejoin="round" />
-          <path d="M32 58q10-12 20 0M70 58q10-12 20 0" stroke="#2F3A45" strokeWidth="7" strokeLinecap="round" />
-          <path d="M46 74q15 14 30 0" stroke="#2F3A45" strokeWidth="7" strokeLinecap="round" />
-          <circle cx="28" cy="72" r="6.5" fill="#F6B89E" />
-          <circle cx="94" cy="72" r="6.5" fill="#F6B89E" />
-          <path d="M30 100h60M30 114h46M30 128h32" stroke="#9ED8C3" strokeWidth="8" strokeLinecap="round" />
-          <circle cx="100" cy="122" r="17" fill="#9ED8C3" stroke="#FFFFFF" strokeWidth="5" />
-          <path d="M91 122l6 6 12-13" stroke="#2F3A45" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M24 6h52l36 36v90a14 14 0 0 1-14 14H24a14 14 0 0 1-14-14V20A14 14 0 0 1 24 6z" fill="#FFFFFF" stroke="#1F232B" strokeWidth="8" strokeLinejoin="round" />
+          <path d="M76 6v22a14 14 0 0 0 14 14h22z" fill="#D96A1D" stroke="#1F232B" strokeWidth="8" strokeLinejoin="round" />
+          <path d="M30 60h44M30 78h30" stroke="#1F232B" strokeWidth="7" strokeLinecap="round" />
+          <path d="M30 112h18" stroke="#1F232B" strokeWidth="7" strokeLinecap="round" />
+          <circle cx="90" cy="112" r="23" fill="#D96A1D" />
+          <path d="M78 112l9 9 16-18" stroke="#FFFFFF" strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
         <div
           style={{
             fontSize: 68,
             fontWeight: 800,
-            color: "#2F3A45",
+            color: "#1F232B",
             letterSpacing: -1,
             lineHeight: 1.15,
             display: "flex",
@@ -131,18 +128,18 @@ export default async function OpengraphImage() {
         >
           {headlineTop}
         </div>
-        {/* The payoff line sits on a mint marker, the same highlight the
-            homepage headline uses. */}
+        {/* The payoff line sits on an Accent Gold marker, the same highlight
+            the homepage headline uses. */}
         <div
           style={{
             fontSize: 68,
             fontWeight: 800,
-            color: "#2F3A45",
+            color: "#1F232B",
             letterSpacing: -1,
             lineHeight: 1.15,
             display: "flex",
             padding: "0 14px",
-            backgroundImage: "linear-gradient(transparent 62%, #9ED8C3 62%, #9ED8C3 92%, transparent 92%)",
+            backgroundImage: "linear-gradient(transparent 62%, #F5C56F 62%, #F5C56F 92%, transparent 92%)",
           }}
         >
           {headlineBottom}
@@ -161,14 +158,16 @@ export default async function OpengraphImage() {
             marginTop: 40,
             fontSize: 30,
             fontWeight: 800,
-            color: "#5F6B76",
+            color: "#6B6560",
           }}
         >
-          <div style={{ display: "flex" }}><span style={{ color: "#2F3A45" }}>Friendly</span><span style={{ color: "#9ED8C3" }}>Invoice</span></div>
-          <div style={{ display: "flex", color: "#BFC5CB" }}>·</div>
-          <div style={{ display: "flex", color: "#5F6B76" }}>{tagline}</div>
-          <div style={{ display: "flex", color: "#BFC5CB" }}>·</div>
-          <div style={{ display: "flex", color: "#2F3A45" }}>{brandHebrew}</div>
+          {/* satori has no Playfair Display here, so the Latin signature stays
+              Heebo 800; the brand orange still reads it as the signature. */}
+          <div style={{ display: "flex", color: "#D96A1D" }}>Friendly Invoice</div>
+          <div style={{ display: "flex", color: "#D2C6B7" }}>·</div>
+          <div style={{ display: "flex", color: "#6B6560" }}>{tagline}</div>
+          <div style={{ display: "flex", color: "#D2C6B7" }}>·</div>
+          <div style={{ display: "flex", color: "#1F232B" }}>{brandHebrew}</div>
         </div>
       </div>
     ),

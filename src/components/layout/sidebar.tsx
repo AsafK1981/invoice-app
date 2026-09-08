@@ -230,7 +230,7 @@ export function Sidebar() {
               {isActive && (
                 <div
                   className="mr-auto w-1.5 h-1.5 rounded-full"
-                  style={{ background: BRAND.mintInk }}
+                  style={{ background: BRAND.greenInk }}
                 />
               )}
             </Link>

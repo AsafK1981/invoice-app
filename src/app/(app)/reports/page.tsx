@@ -278,7 +278,7 @@ export default function ReportsPage() {
     return <div className="text-center py-16 text-stone-500">טוען...</div>;
   }
 
-  const bucketColors = ["#F3CDB9", "#E9997A", "#A64E2A", "#74361C"];
+  const bucketColors = ["#F8DBA0", "#F2A33C", "#D96A1D", "#8E2E2E"];
   const topDebtors = aging.rows.slice(0, 3);
 
   return (

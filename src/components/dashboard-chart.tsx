@@ -124,19 +124,19 @@ const SERIES = {
     /** points, legend line; the ink line has no gradient family any more,
      * except the hero (most recent) point, which is the one touch of
      * brand orange on the whole chart. */
-    dot: "#2F3A45",
-    heroDot: "#2F3A45",
-    heroText: "#2A7A62",
-    strokeFrom: "#2F3A45",
-    strokeTo: "#2F3A45",
-    areaTop: "rgba(158,216,195,.40)",
-    areaBottom: "rgba(158,216,195,0)",
-    valueText: "#1F252B",
+    dot: "#1F232B",
+    heroDot: "#D96A1D",
+    heroText: "#4A7536",
+    strokeFrom: "#1F232B",
+    strokeTo: "#1F232B",
+    areaTop: "rgba(217, 106, 29, 0.24)",
+    areaBottom: "rgba(217, 106, 29, 0)",
+    valueText: "#1F232B",
   },
   expense: {
     label: "הוצאות",
-    dot: "#E9997A",
-    valueText: "#5F6B76",
+    dot: "#9A9086",
+    valueText: "#6B6560",
   },
 } as const;
 
@@ -393,21 +393,21 @@ function MonthlyLineChart({
                 onClick={() => toggleSolo(key)}
                 className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[13px] font-medium transition-opacity cursor-pointer"
                 style={{
-                  background: "rgba(158,216,195,.22)",
-                  border: "1px solid rgba(158,216,195,.70)",
-                  color: "#5F6B76",
+                  background: "rgba(217, 106, 29, 0.132)",
+                  border: "1px solid rgba(217, 106, 29, 0.42)",
+                  color: "#6B6560",
                   opacity: on ? 1 : 0.4,
                 }}
               >
                 {key === "income" ? (
                   <span
                     className="inline-block"
-                    style={{ width: 14, height: 2, background: "#2F3A45" }}
+                    style={{ width: 14, height: 2, background: "#1F232B" }}
                   />
                 ) : (
                   <span
                     className="inline-block"
-                    style={{ width: 14, height: 0, borderTop: "1.5px dashed #E9997A" }}
+                    style={{ width: 14, height: 0, borderTop: "1.5px dashed #9A9086" }}
                   />
                 )}
                 {s.label}
@@ -420,8 +420,8 @@ function MonthlyLineChart({
           role="tablist"
           aria-label="טווח זמן"
           style={{
-            background: "rgba(158,216,195,.22)",
-            border: "1px solid rgba(158,216,195,.70)",
+            background: "rgba(217, 106, 29, 0.132)",
+            border: "1px solid rgba(217, 106, 29, 0.42)",
           }}
         >
           {RANGES.map((r) => {
@@ -437,11 +437,11 @@ function MonthlyLineChart({
                 style={
                   active
                     ? {
-                        background: "linear-gradient(135deg, #2F3A45, #263039)",
+                        background: "linear-gradient(135deg, #D96A1D, #A94E16)",
                         color: "#ffffff",
-                        boxShadow: "0 1px 4px rgba(47,58,69,.30)",
+                        boxShadow: "0 1px 4px rgba(31, 35, 43, 0.3)",
                       }
-                    : { color: "#5F6B76" }
+                    : { color: "#6B6560" }
                 }
               >
                 {r.label}
@@ -503,14 +503,14 @@ function MonthlyLineChart({
                     y1={y}
                     x2={w - padR}
                     y2={y}
-                    stroke="#E4E7E2"
+                    stroke="#E8DDD0"
                     strokeWidth={1}
                   />
                   {v !== yMax && (
                     <text
                       x={w - padR + 12}
                       y={y + 4}
-                      fill="#8B95A0"
+                      fill="#9A9086"
                       fontSize={12}
                       textAnchor="start"
                     >
@@ -538,7 +538,7 @@ function MonthlyLineChart({
                   y1={yHi + gap}
                   x2={xAt(i)}
                   y2={yLo - gap}
-                  stroke={hot ? "#E4E7E2" : "rgba(0,0,0,0)"}
+                  stroke={hot ? "#E8DDD0" : "rgba(0,0,0,0)"}
                   strokeWidth={1}
                   strokeDasharray="2 4"
                 />
@@ -556,7 +556,7 @@ function MonthlyLineChart({
                 y1={padT - 8}
                 x2={xAt(hover)}
                 y2={baseY}
-                stroke="#E4E7E2"
+                stroke="#E8DDD0"
                 strokeWidth={1}
                 strokeDasharray="3 3"
               />
@@ -595,7 +595,7 @@ function MonthlyLineChart({
                   key={`m${i}`}
                   x={xAt(i)}
                   y={h - 8}
-                  fill="#8B95A0"
+                  fill="#9A9086"
                   fontSize={13}
                   textAnchor="middle"
                 >
@@ -687,15 +687,15 @@ function MonthlyLineChart({
               left: Math.min(Math.max(xAt(hover), 70), w - 70),
               top: 0,
               transform: "translateX(-50%)",
-              background: "#2F3A45",
-              border: "1px solid rgba(158,216,195,0.45)",
-              color: "#F7F7F2",
+              background: "#1F232B",
+              border: "1px solid rgba(217, 106, 29, 0.27)",
+              color: "#F7F2EB",
               direction: "rtl",
               whiteSpace: "nowrap",
               boxShadow: "0 10px 30px -12px rgba(0,0,0,.8)",
             }}
           >
-            <div className="font-semibold mb-1" style={{ color: "#9ED8C3" }}>
+            <div className="font-semibold mb-1" style={{ color: "#F2A33C" }}>
               {months[hover]}
             </div>
             {/* The panel stays dark on purpose (it floats over the plot); only

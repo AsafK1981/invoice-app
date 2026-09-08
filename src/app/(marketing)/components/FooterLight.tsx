@@ -17,7 +17,7 @@ export default function FooterLight() {
     <footer className="ml-footer">
       <div className="ml-wrap ml-footer-in">
         <Link href="/" className="ml-footer-logo" aria-label="חשבונית ידידותית, לדף הבית">
-          <BrandLockup size={30} tagline />
+          <BrandLockup size={30} tagline tone="dark" />
         </Link>
         <nav className="ml-footer-links">
           <Link href="/blog">מגזין</Link>

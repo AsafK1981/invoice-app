@@ -246,7 +246,7 @@ describe("marketing pages: brand wordmark", () => {
     const { default: LogoV2 } = await import("../src/app/(marketing)/components/LogoV2");
     const full = toText(renderToStaticMarkup(createElement(LogoV2))).trim();
     // Since the brand book (2026-09-07) the full lockup reads
-    // "FriendlyInvoice" + the Hebrew name; the contract is that the Hebrew
+    // "Friendly Invoice" + the Hebrew name; the contract is that the Hebrew
     // NAME itself stays two words.
     expect(full).toContain(APP_NAME);
     expect(full).not.toContain("חשבוניתידידותית");

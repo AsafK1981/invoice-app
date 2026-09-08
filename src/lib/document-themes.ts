@@ -81,7 +81,7 @@ export type AccentKey =
   | "lime";
 
 interface AccentFamily {
-  /** hex, e.g. "#2f3a45" - text/badge/glabel/totals color */
+  /** hex, e.g. "#1f232b" - text/badge/glabel/totals color */
   accent: string;
   /** hex - thin rule/border color (table header underline, card border on the "paid" block) */
   line: string;
@@ -188,18 +188,22 @@ function tw(accent: string, line: string, faint: string, deep: string): AccentFa
  *  `normalizeDocumentDesign` checks membership here, `designToCssVars` only
  *  ever reads from here. */
 export const ACCENT_HEX: Record<AccentKey, AccentFamily> = {
-  // 2026-09-06 rebrand: the DEFAULT family (the "general" template, and the
-  // fallback a null design renders) is the brand's graphite + mint, not the
-  // old antique gold. The key stays `gold` because it is persisted in
-  // businesses.document_design for every business that ever picked it -
-  // renaming it would orphan those rows. Values here must stay byte-for-byte
+  // 2026-09-07 brand book: the DEFAULT family (the "general" template, and
+  // the fallback a null design renders) is charcoal ink with a single orange
+  // touch, not the old antique gold. The key stays `gold` because it is
+  // persisted in businesses.document_design for every business that ever
+  // picked it - renaming it would orphan those rows. Values here must stay
   // identical to the --d-* defaults in src/app/document-paper.css.
+  // `grad` is the sheet's 4px TOP BAR (see the field doc on AccentFamily),
+  // so it carries document-paper.css's --d-topbar-bg, not its --d-grad:
+  // that bar is the one orange touch the book allows on the paper, and an
+  // explicit {template:general} has to render it exactly like a null design.
   gold: {
-    accent: "#2f3a45",
-    line: "#9ed8c3",
-    faint: "#e6f5ee",
-    deep: "#263039",
-    grad: "linear-gradient(135deg, #2f3a45, #263039)",
+    accent: "#1f232b",
+    line: "#e38f4f",
+    faint: "#fbeadb",
+    deep: "#16191f",
+    grad: "linear-gradient(90deg, #d96a1d, #a94e16)",
   },
   amberDeep: {
     accent: "#8a5f07",
@@ -232,12 +236,12 @@ export const ACCENT_HEX: Record<AccentKey, AccentFamily> = {
     deep: "#111111",
     grad: "#c9a15a",
   },
-  stone: tw("#57534e", "#d6d3d1", "#f5f5f4", "#292524"),
+  stone: tw("#6b6560", "#d6d3d1", "#f5f5f4", "#292524"),
   // 2026-08-18: the clean set. Same hue system as the app's approved
   // feature tiles (app-skin.css .ftile-*): text/ink at the 600 step,
   // hairline at 300, pastel tint at 100, deep at 800. Replaces the earlier
   // colour-math derived families, which came out muddy ("לא נראים טובים").
-  amber: tw("#d97706", "#fcd34d", "#fef3c7", "#92400e"),
+  amber: tw("#d97706", "#fcd34d", "#fbeadb", "#92400e"),
   orange: tw("#ea580c", "#fdba74", "#ffedd5", "#9a3412"),
   rose: tw("#e11d48", "#fda4af", "#ffe4e6", "#9f1239"),
   pink: tw("#db2777", "#f9a8d4", "#fce7f3", "#9d174d"),
@@ -500,12 +504,12 @@ export interface DocumentTemplate {
 }
 
 const GENERAL_PALETTE: Palette = {
-  ink: "#1f252b",
-  ink2: "#5f6b76",
-  soft: "#8b95a0",
+  ink: "#1f232b",
+  ink2: "#6b6560",
+  soft: "#9a9086",
   card: "#ffffff",
-  cardline: "#e4e7e2",
-  canvas: "#f7f7f2",
+  cardline: "#e8ddd0",
+  canvas: "#f7f2eb",
 };
 
 export const DOCUMENT_TEMPLATES: DocumentTemplate[] = [

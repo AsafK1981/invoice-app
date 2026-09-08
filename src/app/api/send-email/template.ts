@@ -55,13 +55,14 @@ function docWording(
   return { attached: `${type === "proforma" ? "מצורף" : "מצורפת"} ${label}`, noun: label };
 }
 
-// The email's default look - the brand's graphite band (2026-09-06 rebrand),
-// the same pair ACCENT_HEX.gold emits, so a business with no chosen document
-// design gets an email that matches its documents. Kept as named constants
-// (not inlined at each call site) so the "no document design chosen"
-// fallback is one visible value, never a value that drifted.
-const DEFAULT_ACCENT_GRAD = "linear-gradient(135deg, #2f3a45, #263039)";
-const DEFAULT_ACCENT_SOLID = "#2f3a45";
+// The email's default look - the brand's orange band (2026-09-07 brand
+// book), the same Primary Orange the default document sheet carries on its
+// top bar, so a business with no chosen document design gets an email that
+// matches its documents. Kept as named constants (not inlined at each call
+// site) so the "no document design chosen" fallback is one visible value,
+// never a value that drifted.
+const DEFAULT_ACCENT_GRAD = "linear-gradient(135deg, #d96a1d, #c45f1a)";
+const DEFAULT_ACCENT_SOLID = "#d96a1d";
 
 export function buildHtml(args: {
   businessName: string;
@@ -151,21 +152,21 @@ export function buildHtml(args: {
   <meta name="x-apple-disable-message-reformatting" />
   <title>${escapeHtml(businessName)}</title>
 </head>
-<body style="margin:0; padding:0; background:#f7f7f2; font-family: Arial, sans-serif;">
+<body style="margin:0; padding:0; background:#f7f2eb; font-family: Arial, sans-serif;">
   <div dir="${isEnglish ? "ltr" : "rtl"}" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
     <div style="background: ${accentSolid}; background-image: ${accentGrad}; padding: 24px; border-radius: 16px; color: #ffffff; text-align: center; margin-bottom: 24px;">
       ${logoUrl ? `<img src="${escapeHtml(logoUrl)}" alt="${escapeHtml(businessName)}" style="max-height: 60px; max-width: 200px; margin-bottom: 12px; background: white; padding: 8px; border-radius: 8px;" />` : ""}
       <h1 style="margin: 0; font-size: 24px;">${escapeHtml(businessName)}</h1>
     </div>
 
-    <div style="background: #ffffff; border: 1px solid #e4e7e2; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
-      <p style="margin: 0 0 12px 0; font-size: 16px; color: #1f252b;">
+    <div style="background: #ffffff; border: 1px solid #e8ddd0; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+      <p style="margin: 0 0 12px 0; font-size: 16px; color: #1f232b;">
         ${greeting}
       </p>
-      <p style="margin: 0 0 16px 0; font-size: 16px; color: #1f252b;">
+      <p style="margin: 0 0 16px 0; font-size: 16px; color: #1f232b;">
         ${introLine}
       </p>
-      <p style="margin: 0; font-size: 14px; color: #5f6b76;">
+      <p style="margin: 0; font-size: 14px; color: #6b6560;">
         ${ctaLine}
       </p>
     </div>
@@ -177,22 +178,22 @@ export function buildHtml(args: {
     </div>
 
     <div style="text-align: center; margin-bottom: 16px;">
-      <p style="font-size: 13px; color: #5f6b76; margin: 0 0 6px 0;">
+      <p style="font-size: 13px; color: #6b6560; margin: 0 0 6px 0;">
         ${fallbackLine}
       </p>
-      <p style="font-size: 12px; color: #8b95a0; margin: 0; word-break: break-all;">
+      <p style="font-size: 12px; color: #9a9086; margin: 0; word-break: break-all;">
         <a href="${escapeHtml(viewUrl)}" style="color: ${accentSolid};">${escapeHtml(viewUrl)}</a>
       </p>
     </div>
 
     <div style="text-align: center; margin-bottom: 24px;">
-      <p style="font-size: 13px; color: #8b95a0;">
+      <p style="font-size: 13px; color: #9a9086;">
         ${sentByLine}
       </p>
       ${
         showBranding
-          ? `<p style="font-size: 11px; color: #8b95a0; margin: 6px 0 0 0;">
-        ${isEnglish ? "Sent with" : "נשלח באמצעות"} <a href="${escapeHtml(BRAND_URL_EMAIL)}" style="color: #8b95a0; text-decoration: underline;">${isEnglish ? "FriendlyInvoice" : "חשבונית ידידותית"}</a> · ${isEnglish ? "simple admin for a thriving business" : "התנהלות פשוטה לעסק מצליח"}
+          ? `<p style="font-size: 11px; color: #9a9086; margin: 6px 0 0 0;">
+        ${isEnglish ? "Sent with" : "נשלח באמצעות"} <a href="${escapeHtml(BRAND_URL_EMAIL)}" style="color: #9a9086; text-decoration: underline;">${isEnglish ? "Friendly Invoice" : "חשבונית ידידותית"}</a> · ${isEnglish ? "simple admin for a thriving business" : "התנהלות פשוטה לעסק מצליח"}
       </p>`
           : ""
       }
@@ -243,7 +244,7 @@ To view the full document, print it or download it as a PDF, open this link:
 ${viewUrl}
 
 ${isReminder ? "Automatic reminder" : "Document sent automatically"} from ${businessName}
-${showBranding ? `\nSent with FriendlyInvoice · simple admin for a thriving business\n${BRAND_URL_EMAIL}\n` : ""}`;
+${showBranding ? `\nSent with Friendly Invoice · simple admin for a thriving business\n${BRAND_URL_EMAIL}\n` : ""}`;
   }
   const intro = isReminder
     ? `תזכורת קלה לגבי ${noun} מספר #${receiptNumber} על סך ${totalFormatted}${

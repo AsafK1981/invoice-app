@@ -205,11 +205,11 @@ describe("designToCssVars: only ever emits known-safe values", () => {
     // an explicit "general" emits must match, or the "reset to original design"
     // button (which persists {template:general}, not null) would silently
     // change the look. --d-font-serif in particular regressed to Heebo once.
-    // Values are the 2026-09-06 rebrand palette (graphite + mint).
-    expect(explicit["--d-ink"]).toBe("#1f252b");
-    expect(explicit["--d-gold"]).toBe("#2f3a45");
-    expect(explicit["--d-gold-line"]).toBe("#9ed8c3");
-    expect(explicit["--d-gold-faint"]).toBe("#e6f5ee");
+    // Values are the 2026-09-07 brand book palette (charcoal + deep orange).
+    expect(explicit["--d-ink"]).toBe("#1f232b");
+    expect(explicit["--d-gold"]).toBe("#1f232b");
+    expect(explicit["--d-gold-line"]).toBe("#e38f4f");
+    expect(explicit["--d-gold-faint"]).toBe("#fbeadb");
     expect(explicit["--d-radius"]).toBe("16px");
     expect(explicit["--d-borderw-grand"]).toBe("2px");
     expect(explicit["--d-font"]).toBe(FONT_OPTIONS.heebo.family);

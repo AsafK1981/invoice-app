@@ -1,8 +1,8 @@
 /**
  * LogoV2 - the brand lockup for the V2 marketing chrome (HeaderV2 /
- * FooterV2 and the inner marketing pages). Since the 2026-09-06 rebrand it
- * is a thin wrapper over the shared brand mark (src/components/brand-mark.tsx):
- * the smiling document + "חשבונית ידידותית" wordmark + tagline. Two variants:
+ * FooterV2 and the inner marketing pages). It is a thin wrapper over the
+ * shared brand mark (src/components/brand-mark.tsx): the invoice icon +
+ * "חשבונית ידידותית" wordmark + the English signature. Two variants:
  *   - "full" (default): mark + wordmark + tagline
  *   - "mark": just the document mark
  *

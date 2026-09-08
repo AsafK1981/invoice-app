@@ -454,7 +454,7 @@ export default function DashboardPage() {
               // `gk-kpi*` are hooks for the PHONE rule in app-skin.css, which
               // folds this card into one line (Asaf 2026-08-27); the Tailwind
               // classes describe the desktop card.
-              className={`gk-kpi card-soft p-5 bg-white border-[#e4e7e2] hover:shadow-lg hover:-translate-y-1 animate-fade-in-up stagger-${idx + 1} block group cursor-pointer relative`}
+              className={`gk-kpi card-soft p-5 bg-white border-[#e8ddd0] hover:shadow-lg hover:-translate-y-1 animate-fade-in-up stagger-${idx + 1} block group cursor-pointer relative`}
             >
               <div className="gk-kpi-row flex items-start justify-between">
                 <div className="gk-kpi-body min-w-0 flex-1">
@@ -491,7 +491,7 @@ export default function DashboardPage() {
             <Link
               key={s.label}
               href={s.href}
-              className="rounded-2xl border p-4 hover:shadow-md hover:-translate-y-0.5 transition-all block group cursor-pointer bg-white border-[#e4e7e2]"
+              className="rounded-2xl border p-4 hover:shadow-md hover:-translate-y-0.5 transition-all block group cursor-pointer bg-white border-[#e8ddd0]"
             >
               <div className="flex items-center gap-3">
                 <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ftile ftile-${s.tone}`}>
@@ -546,7 +546,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="card-soft overflow-hidden animate-fade-in-up">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#e4e7e2]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#e8ddd0]">
           <h2 className="font-semibold text-stone-900 flex items-center gap-2">
             <ClipboardList className="w-5 h-5 text-stone-500" />
             מסמכים אחרונים

@@ -102,6 +102,21 @@ const inter = localFont({
   display: "swap",
   declarations: [{ prop: "unicode-range", value: "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD, U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF" }],
 });
+// Playfair Display carries ONE string in the whole product: the English
+// signature "Friendly Invoice" under the Hebrew name in the brand lockup
+// (brand book 4). Same self-hosted next/font/local pattern as `inter` above;
+// preload:false because the face is only painted where `.brand-latin` is,
+// which is a handful of lockups, never a full page of body copy.
+const playfair = localFont({
+  src: [
+    { path: "./fonts/playfair-display/PlayfairDisplay-Variable-latin.woff2" },
+    { path: "./fonts/playfair-display/PlayfairDisplay-Variable-latin-ext.woff2" },
+  ],
+  weight: "400 900",
+  variable: "--font-playfair",
+  display: "swap",
+  preload: false,
+});
 const rubik = localFont({
   src: [
     { path: "./fonts/rubik/Rubik-Variable-Hebrew.woff2" },
@@ -289,8 +304,8 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  // Warm sand: matches the light app shell's page background.
-  themeColor: "#f7f4ed",
+  // Warm Cream: matches the light app shell's page background.
+  themeColor: "#F7F2EB",
 };
 
 export default function RootLayout({
@@ -302,7 +317,7 @@ export default function RootLayout({
     <html
       lang="he"
       dir="rtl"
-      className={`h-full antialiased ${heebo.variable} ${inter.variable} ${frankRuhl.variable} ${assistant.variable} ${rubik.variable} ${miriamLibre.variable} ${playpen.variable} ${amatic.variable} ${alef.variable} ${plexHebrew.variable} ${varelaRound.variable}`}
+      className={`h-full antialiased ${heebo.variable} ${inter.variable} ${playfair.variable} ${frankRuhl.variable} ${assistant.variable} ${rubik.variable} ${miriamLibre.variable} ${playpen.variable} ${amatic.variable} ${alef.variable} ${plexHebrew.variable} ${varelaRound.variable}`}
     >
       <body className="min-h-full flex flex-col font-sans text-stone-800">
         {children}

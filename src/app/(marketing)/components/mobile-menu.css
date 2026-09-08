@@ -19,16 +19,16 @@
   border: 0;
   border-radius: 12px;
   background: transparent;
-  color: #241e16;
+  color: #1F232B;
   cursor: pointer;
   place-items: center;
   transition: background-color 160ms ease-out;
 }
 .mm-burger:active {
-  background: #E6F5EE;
+  background: #FBEADB;
 }
 .mm-burger:focus-visible {
-  outline: 2px solid #2F3A45;
+  outline: 2px solid #1F232B;
   outline-offset: 2px;
 }
 /* Below 760px the headers hide their link rows and this takes over. */
@@ -50,15 +50,15 @@
 }
 
 .mm-root {
-  --mm-cream: #F7F7F2;
+  --mm-cream: #F7F2EB;
   --mm-card: #ffffff;
-  --mm-ink: #1F252B;
-  --mm-gold-ink: #2F3A45;
-  --mm-gold-tint: #E6F5EE;
-  --mm-gold-tint-line: #BFE6D6;
-  --mm-line: #E4E7E2;
-  --mm-line-soft: #EEF0EC;
-  --mm-grad: linear-gradient(135deg, #2F3A45, #263039);
+  --mm-ink: #1F232B;
+  --mm-gold-ink: #A94E16;
+  --mm-gold-tint: #FBEADB;
+  --mm-gold-tint-line: #F3D2B4;
+  --mm-line: #E8DDD0;
+  --mm-line-soft: #F1EBE2;
+  --mm-grad: linear-gradient(135deg, #D96A1D, #C45F1A);
   position: fixed;
   inset: 0;
   z-index: 100;
@@ -69,13 +69,13 @@
 }
 .mm-root a[href]:focus-visible,
 .mm-root button:focus-visible {
-  outline: 2px solid #2F3A45;
+  outline: 2px solid #1F232B;
   outline-offset: 2px;
 }
 .mm-backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(36, 30, 22, 0.42);
+  background: rgba(31, 35, 43, 0.42);
   animation: mm-fade 200ms ease-out both;
 }
 .mm-drawer {
@@ -90,7 +90,7 @@
   padding-bottom: max(28px, env(safe-area-inset-bottom));
   overflow-y: auto;
   background: var(--mm-cream);
-  box-shadow: 0 0 0 1px var(--mm-line), -24px 0 60px -30px rgba(36, 30, 22, 0.45);
+  box-shadow: 0 0 0 1px var(--mm-line), -24px 0 60px -30px rgba(31, 35, 43, 0.45);
   animation: mm-slide 280ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
 }
 /* The drawer lives at the reading start (right edge in RTL), so it enters
