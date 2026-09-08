@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { BrandLockup } from "@/components/brand-mark";
 import { usePathname } from "next/navigation";
-import { useOptionalUser } from "@/lib/auth";
+import { useOptionalUser } from "@/lib/public-auth";
 import MobileMenu, { type MenuSection } from "./MobileMenu";
 
 /**

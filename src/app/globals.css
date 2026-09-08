@@ -8,6 +8,7 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
+  --font-heebo: var(--font-heebo-hebrew), var(--font-heebo-latin);
   --font-inter: var(--font-inter-currency), var(--font-inter-extended), var(--font-inter-base);
 }
 

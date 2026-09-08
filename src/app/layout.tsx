@@ -35,13 +35,22 @@ import "./document-paper.css";
 // the families by name - do not rename these variables without updating
 // those stylesheets too. Do not move these back to next/font/google.
 const heebo = localFont({
-  src: [
-    { path: "./fonts/heebo/Heebo-Variable-Hebrew.woff2" },
-    { path: "./fonts/heebo/Heebo-Variable-Latin.woff2" },
-  ],
+  src: "./fonts/heebo/Heebo-Variable-Hebrew.woff2",
   weight: "300 900",
-  variable: "--font-heebo",
+  variable: "--font-heebo-hebrew",
   display: "swap",
+  adjustFontFallback: false,
+  declarations: [{ prop: "unicode-range", value: "U+0020, U+002D, U+00A0, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F" }],
+});
+// Inter renders Latin on ordinary pages. Keep Heebo's Latin face available
+// for document designs without preloading it on every visit.
+const heeboLatin = localFont({
+  src: "./fonts/heebo/Heebo-Variable-Latin.woff2",
+  weight: "300 900",
+  variable: "--font-heebo-latin",
+  display: "swap",
+  preload: false,
+  adjustFontFallback: false,
 });
 // preload: false (2026-08-14 perf fix) - Frank Ruhl is only ever used by
 // document-paper.css's `.doc-serif` rule (the printable document sheet:
@@ -337,7 +346,7 @@ export default function RootLayout({
     <html
       lang="he"
       dir="rtl"
-      className={`h-full antialiased ${heebo.variable} ${inter.variable} ${interExtended.variable} ${interCurrency.variable} ${playfair.variable} ${frankRuhl.variable} ${assistant.variable} ${rubik.variable} ${miriamLibre.variable} ${playpen.variable} ${amatic.variable} ${alef.variable} ${plexHebrew.variable} ${varelaRound.variable}`}
+      className={`h-full antialiased ${heebo.variable} ${heeboLatin.variable} ${inter.variable} ${interExtended.variable} ${interCurrency.variable} ${playfair.variable} ${frankRuhl.variable} ${assistant.variable} ${rubik.variable} ${miriamLibre.variable} ${playpen.variable} ${amatic.variable} ${alef.variable} ${plexHebrew.variable} ${varelaRound.variable}`}
     >
       <body className="min-h-full flex flex-col font-sans text-stone-800">
         {children}

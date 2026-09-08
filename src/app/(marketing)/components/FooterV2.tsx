@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useOptionalUser } from "@/lib/auth";
+import { useOptionalUser } from "@/lib/public-auth";
 
 /**
  * FooterV2, the footer for /pricing, /vs, /blog, /terms, /privacy, /status,

@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { useOptionalUser } from "@/lib/auth";
+import { useOptionalUser } from "@/lib/public-auth";
 
 /**
  * Tiny client-side auth gate for the (server-rendered) marketing landing.

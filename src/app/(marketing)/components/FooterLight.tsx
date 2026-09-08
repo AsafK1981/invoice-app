@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useOptionalUser } from "@/lib/auth";
+import { useOptionalUser } from "@/lib/public-auth";
 import { BrandLockup } from "@/components/brand-mark";
 
 /**

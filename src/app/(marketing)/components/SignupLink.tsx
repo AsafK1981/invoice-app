@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { useOptionalUser } from "@/lib/auth";
+import { useOptionalUser } from "@/lib/public-auth";
 
 /**
  * The "start free" call to action, aware of whether anyone is signed in.

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useOptionalUser } from "@/lib/auth";
+import { useOptionalUser } from "@/lib/public-auth";
 import MobileMenu from "./MobileMenu";
 import { BrandLockup } from "@/components/brand-mark";
 
