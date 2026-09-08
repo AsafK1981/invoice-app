@@ -276,7 +276,12 @@ function LoginForm() {
             : signInError.message
         );
       } else {
-        router.push("/dashboard");
+        // Honour a same-origin `next` path set by useRequireAuth (a deep link
+        // such as /documents/new from the welcome email). Anything that is not
+        // a plain relative path falls back to the dashboard.
+        const next = searchParams.get("next");
+        const safeNext = next && next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard";
+        router.push(safeNext);
         router.refresh();
       }
     }

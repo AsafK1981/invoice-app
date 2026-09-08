@@ -1,10 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  buildWelcomeHtml,
-  buildWelcomeText,
-  WELCOME_STEPS,
-  WELCOME_SUBJECT,
-} from "../src/app/api/send-welcome/template";
+import { buildWelcomeHtml, buildWelcomeText, WELCOME_SUBJECT } from "../src/app/api/send-welcome/template";
 import { CANONICAL_ORIGIN } from "../src/lib/public-url";
 
 /**
@@ -12,7 +7,8 @@ import { CANONICAL_ORIGIN } from "../src/lib/public-url";
  * The welcome email was a bare <div> fragment until 2026-09-08; the same
  * class of bug that blanked a document email in a Microsoft 365 inbox on
  * 2026-06-01 applied to it. Every assertion here is one property a mail
- * filter or a mail client checks before rendering.
+ * filter or a mail client checks before rendering, plus the copy rules
+ * Asaf set the same day (one action, no slashed greeting, no emoji).
  */
 
 const html = buildWelcomeHtml();
@@ -35,8 +31,16 @@ describe("welcome email html", () => {
     expect(html).not.toMatch(/display:\s*(flex|grid)/);
   });
 
-  it("links the CTA and the assets on the canonical origin", () => {
-    expect(html).toContain(`href="${CANONICAL_ORIGIN}/dashboard"`);
+  it("asks for exactly one action: the first document, on the canonical origin", () => {
+    expect(html).toContain(`href="${CANONICAL_ORIGIN}/documents/new"`);
+    // The footer site link is the only other anchor; no dashboard link, no list of tasks.
+    const anchors = html.match(/<a\s/g) ?? [];
+    expect(anchors).toHaveLength(2);
+    expect(html).not.toContain("/dashboard");
+    expect(html).not.toContain("<ul");
+  });
+
+  it("serves the assets from the canonical origin", () => {
     expect(html).toContain(`src="${CANONICAL_ORIGIN}/email/asaf.png"`);
     expect(html).toContain(`src="${CANONICAL_ORIGIN}/logo-192.png"`);
   });
@@ -47,20 +51,20 @@ describe("welcome email html", () => {
     expect(html).toContain("אסף קוטלר, מייסד חשבונית ידידותית");
   });
 
-  it("renders all five steps in order", () => {
-    let cursor = 0;
-    for (const [title] of WELCOME_STEPS) {
-      const at = html.indexOf(title, cursor);
-      expect(at, `step "${title}" missing or out of order`).toBeGreaterThan(-1);
-      cursor = at;
-    }
-  });
-
   it("dropped the slashed gendered greeting and the emoji", () => {
     expect(html).not.toContain("ברוך/ה");
     expect(html).not.toContain("\u{1F389}");
     expect(WELCOME_SUBJECT).not.toContain("\u{1F389}");
-    expect(html).toContain("כיף שהצטרפת.");
+    expect(html).toContain("המסמך הראשון שלך יוצא תוך דקה.");
+  });
+
+  it("makes no claim the product does not back", () => {
+    // Free launch period without a card, and automatic allocation numbers,
+    // are the two facts the email leans on. Nothing numeric beyond "a minute".
+    expect(html).toContain("בלי כרטיס אשראי");
+    expect(html).toContain("מספרי ההקצאה");
+    // The text twin is the copy without markup (no hex colours, no pixel widths).
+    expect(text.replace(/https?:\S+/g, "")).not.toMatch(/\d/);
   });
 
   it("never contains a long dash", () => {
@@ -70,9 +74,8 @@ describe("welcome email html", () => {
 });
 
 describe("welcome email text alternative", () => {
-  it("has the dashboard link, every step and the signature", () => {
-    expect(text).toContain(`${CANONICAL_ORIGIN}/dashboard`);
-    for (const [title] of WELCOME_STEPS) expect(text).toContain(title);
+  it("has the first-document link and the signature, and no markup", () => {
+    expect(text).toContain(`${CANONICAL_ORIGIN}/documents/new`);
     expect(text).toContain("אסף קוטלר, מייסד חשבונית ידידותית");
     expect(text).not.toContain("<");
   });

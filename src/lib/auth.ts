@@ -13,7 +13,14 @@ export function useRequireAuth() {
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) {
-        router.replace("/login");
+        // Keep the deep link (e.g. the welcome email's /documents/new) so the
+        // login page can send the user back there instead of the dashboard.
+        const here = window.location.pathname + window.location.search;
+        router.replace(
+          here && here !== "/" && here !== "/dashboard"
+            ? `/login?next=${encodeURIComponent(here)}`
+            : "/login",
+        );
       } else {
         setUser(user);
         setLoading(false);
