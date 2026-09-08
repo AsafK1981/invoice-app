@@ -877,19 +877,16 @@ function RowActions({ doc }: { doc: InvoiceDocument }) {
   const confirm = useConfirm();
   const showToast = useToast();
 
-  // Delete is offered for any doc that was never emailed to the customer
-  // (drafts AND issued-but-unsent). `deleteDocument` throws for an emailed doc
-  // (must be cancelled via credit note), so the button is hidden for those and
-  // this handler only ever runs on a deletable doc.
-  const isDeletable = !doc.emailedAt;
+  // Delete is offered for DRAFTS only. A document that took a running number
+  // belongs to a קובץ קבוע and can never be deleted (הוראות ניהול ספרים);
+  // `deleteDocument` throws for one, so the button is hidden for those and
+  // this handler only ever runs on a draft.
+  const isDeletable = doc.status === "draft";
   async function handleRowDelete(e: React.MouseEvent) {
     e.stopPropagation();
     const ok = await confirm({
-      title: `למחוק את ${DOCUMENT_TYPE_LABELS[doc.type]} #${doc.number}?`,
-      message:
-        doc.status === "draft"
-          ? "פעולה זו לא ניתנת לביטול."
-          : "המספר לא יוחזר, ייתכן רצף חסר במספור. פעולה זו לא ניתנת לביטול.",
+      title: `למחוק את הטיוטה ${DOCUMENT_TYPE_LABELS[doc.type]} #${doc.number}?`,
+      message: "פעולה זו לא ניתנת לביטול.",
       tone: "danger",
       confirmLabel: "מחק",
     });
@@ -972,9 +969,9 @@ function RowActions({ doc }: { doc: InvoiceDocument }) {
           onClick={handleRowDelete}
           className="dc-act"
           data-tone="danger"
-          aria-label="מחק מסמך"
+          aria-label="מחק טיוטה"
         >
-          <Tooltip label="מחק" side="top">
+          <Tooltip label="מחק טיוטה" side="top">
             <Trash2 className="w-4 h-4" />
           </Tooltip>
         </button>

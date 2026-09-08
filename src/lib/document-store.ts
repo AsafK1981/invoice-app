@@ -269,22 +269,24 @@ export async function deleteDocument(id: string) {
     .eq("id", id)
     .maybeSingle();
 
-  // Deletable iff the document was NEVER emailed to the customer; this covers
-  // drafts AND issued-but-unsent docs (e.g. a mistaken/test issue). A document
-  // that WAS delivered (emailed_at set) is a real record given to the customer
-  // and can only be reversed with a credit note (mirrors the DB immutability
-  // trigger's DELETE rule).
-  if (snap && snap.emailed_at) {
+  // Deletable iff the document is still a DRAFT, i.e. it never took a running
+  // number. הוראות ניהול ספרים define a קובץ קבוע as one in which a record
+  // cannot be deleted and the records are automatically numbered in sequence,
+  // and סעיף 23(ב) allows a correction only through an ADDITIONAL document.
+  // So once a document has left 'draft' it is part of the books forever, sent
+  // or not: reversing it is a credit note, never a delete. (The previous rule
+  // keyed on emailed_at, which let an issued-but-unsent document be removed
+  // and tore a hole in the numbering sequence.)
+  if (snap && snap.status !== "draft") {
     throw new Error(
-      "מסמך שנשלח ללקוח אינו ניתן למחיקה, לביטול הפק חשבונית זיכוי",
+      "מסמך שקיבל מספר אינו ניתן למחיקה, לביטול הפק חשבונית זיכוי",
     );
   }
 
   // Delete the parent only. document_items has ON DELETE CASCADE, and since
   // 2026-08-16 a DB trigger (enforce_document_item_immutability) rejects a
   // direct delete of items under a non-draft document; the cascade path is
-  // the one it lets through. Deleting items first would fail for an
-  // issued-but-unsent document, which this function is allowed to remove.
+  // the one it lets through. Only drafts reach this line anyway.
   // .select() returns the affected rows so a silent 0-row delete (RLS hiding
   // the row, or the DB immutability trigger having been reached through a
   // path we did not anticipate) surfaces as an error instead of a phantom

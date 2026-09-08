@@ -245,6 +245,11 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
   // one it used to wear.
   const emailIsPrimary = !doc.emailedAt;
 
+  // Only a draft can be deleted: a document that took a running number is a
+  // record in a קובץ קבוע and stays in the books forever (הוראות ניהול ספרים,
+  // הגדרת קובץ קבוע + סעיף 23). Cancelling one is a credit note.
+  const isDraft = doc.status === "draft";
+
   // The "what now?" card. Right after issuing, a user (Asaf, 2026-08-27:
   // "a 70-year-old must understand what to do next") landed on a row of ten
   // small icon buttons and had to guess which one delivers the document. For
@@ -516,21 +521,16 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
   async function handleDelete() {
     if (!doc) return;
 
-    // A document is deletable iff it was never emailed to the customer
-    // (drafts AND issued-but-unsent docs). An emailed doc is a real record the
-    // customer holds; it must be reversed with a credit note, not deleted, so
-    // the button isn't rendered for those. Issued-but-unsent docs still leave a
-    // numbering gap when removed, so we warn about it.
-    const message =
-      doc.status === "draft"
-        ? "למחוק את המסמך? פעולה זו אינה הפיכה."
-        : "למחוק את המסמך? המספר לא יוחזר, ייתכן רצף חסר במספור. פעולה זו אינה הפיכה.";
-
+    // Only a DRAFT can be deleted. A document that took a running number is
+    // part of the books (קובץ קבוע) and may never be removed, sent or not; it
+    // is reversed with a credit note. The button is not rendered for those, so
+    // this handler only ever runs on a draft and the confirmation no longer
+    // mentions a numbering gap, a state that can no longer happen.
     const ok = await confirm({
-      title: `למחוק את מסמך #${doc.number}?`,
-      message,
+      title: `למחוק את הטיוטה #${doc.number}?`,
+      message: "למחוק את הטיוטה? פעולה זו אינה הפיכה.",
       tone: "danger",
-      confirmLabel: "מחק מסמך",
+      confirmLabel: "מחק טיוטה",
     });
     if (!ok) return;
     try {
@@ -622,19 +622,19 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
             <Copy className="w-4 h-4" />
             <span className="hidden sm:inline">שכפל</span>
           </button>
-          {/* Delete is offered for any doc that was never emailed to the
-              customer (drafts AND issued-but-unsent). `deleteDocument` throws
-              for an emailed doc (must be cancelled via credit note), so the
-              affordance is hidden for those rather than shown as a dead button. */}
-          {!doc.emailedAt && (
+          {/* Delete is offered for DRAFTS only. A numbered document can never
+              be deleted (הוראות ניהול ספרים, קובץ קבוע); `deleteDocument`
+              throws for one, so the affordance is hidden rather than shown as
+              a dead button, and the credit-note route is offered instead. */}
+          {isDraft && (
             <button
               onClick={handleDelete}
               className="hidden sm:inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-white border border-rose-200 text-rose-700 hover:bg-rose-50"
-              title="מחק מסמך"
-              aria-label="מחק מסמך"
+              title="מחק טיוטה"
+              aria-label="מחק טיוטה"
             >
               <Trash2 className="w-4 h-4" />
-              <span className="hidden sm:inline">מחק מסמך</span>
+              <span className="hidden sm:inline">מחק טיוטה</span>
             </button>
           )}
           <button
@@ -853,7 +853,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                   הדפס
                 </button>
                 )}
-                {!doc.emailedAt && (
+                {isDraft && (
                   <>
                     <div className="border-t border-stone-100 my-0.5" />
                     <button
@@ -865,7 +865,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                       className="inline-flex items-center gap-2 px-3 py-2 min-h-[40px] rounded-xl text-sm font-medium text-rose-700 hover:bg-rose-50 text-right"
                     >
                       <Trash2 className="w-4 h-4" />
-                      מחק מסמך
+                      מחק טיוטה
                     </button>
                   </>
                 )}
@@ -1180,18 +1180,16 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
               {DOCUMENT_TYPE_LABELS[doc.type]} <span dir="ltr">#{doc.number}</span>
             </p>
             <p className="text-xs text-stone-600">
-              {/* The "cannot be deleted / cancel via credit note" line only
-                  applies once the doc was actually delivered to the customer
-                  (emailed). An issued-but-unsent doc is still deletable, so we
-                  show only the number-immutability note for it and avoid a
-                  line that would contradict the delete button. */}
-              {doc.emailedAt &&
-              (doc.type === "receipt" ||
-                doc.type === "tax_invoice" ||
-                doc.type === "tax_invoice_receipt" ||
-                doc.type === "credit_note")
-                ? "מסמך שנשלח ללקוח: מספרו סופי ואינו ניתן למחיקה. לביטול יש להפיק חשבונית זיכוי."
-                : "מסמך שהופק: מספרו סופי ואינו ניתן לשינוי."}
+              {/* A numbered document is never deletable, whether or not it was
+                  emailed: it is part of the books. For the document types that
+                  a credit note can reverse we say so; the rest just carry the
+                  number-is-final note. */}
+              {doc.type === "receipt" ||
+              doc.type === "tax_invoice" ||
+              doc.type === "tax_invoice_receipt" ||
+              doc.type === "credit_note"
+                ? "מסמך שקיבל מספר: מספרו סופי ואינו ניתן למחיקה. לביטול יש להפיק חשבונית זיכוי."
+                : "מסמך שהופק: מספרו סופי ואינו ניתן לשינוי או למחיקה."}
             </p>
           </div>
         </div>
