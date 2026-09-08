@@ -241,8 +241,8 @@
   letter-spacing: 0.12em;
   line-height: 1;
   white-space: nowrap;
-  color: rgba(185, 28, 28, 0.13);
-  border: 6px solid rgba(185, 28, 28, 0.13);
+  color: rgba(185, 28, 28, 0.17);
+  border: 6px solid rgba(185, 28, 28, 0.17);
   border-radius: 18px;
   padding: 10px 44px;
   -webkit-print-color-adjust: exact;
