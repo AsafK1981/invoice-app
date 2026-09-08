@@ -15,10 +15,13 @@
 // launch period is free with no card, and allocation numbers are fetched
 // automatically (see tax-authority-section.tsx).
 //
-// Design: one white "letter" card on the cream ground, one orange CTA,
-// a soft orange-tint "give" box, a hairline, then the founder note with
-// his photo and signature. Email HTML rules: tables for layout, inline
-// styles only, fixed 600px width, no flex/grid, no <style> block.
+// Layout (2026-09-08, fourth round, Asaf's pick): everything centred. An
+// opening band in the brand tint holds the stacked lockup (mark, Hebrew
+// name, "Friendly Invoice" in a serif) and the welcome line, closed by a
+// thin orange rule; the white body carries the headline at 25px, a
+// 440px reading measure, one orange CTA, the "give" box, a hairline and
+// the founder note with his photo. Email HTML rules: tables for layout,
+// inline styles only, fixed 600px width, no flex/grid, no <style> block.
 
 import { CANONICAL_ORIGIN } from "@/lib/public-url";
 
@@ -34,10 +37,11 @@ const CREAM = "#f7f2eb";
 const SAND = "#e8ddd0";
 const HAIRLINE = "#efe6db";
 const TINT = "#fbeadb";
+const TINT_LINE = "#f3d2b4";
 
 export const WELCOME_SUBJECT = "המסמך הראשון שלך יוצא תוך דקה";
 
-const EYEBROW = "ברוכים הבאים לחשבונית ידידותית";
+const WELCOME_LINE = "ברוכים הבאים לחשבונית ידידותית";
 const HEADLINE = "המסמך הראשון שלך יוצא תוך דקה.";
 const BODY =
   "בלי הגדרות ובלי טפסים. פותחים, כותבים למי ועל כמה, והקבלה או החשבונית יוצאת. פרטי העסק, הלוגו והלקוחות אפשר להשלים מתי שנוח, ואת מספרי ההקצאה מרשות המסים המערכת מביאה לבד.";
@@ -62,26 +66,24 @@ export function welcomeUrls() {
 export function buildWelcomeHtml(): string {
   const { firstDocument, avatar, logo, site } = welcomeUrls();
 
-  const lockup = `<table ${TABLE}><tr>
-    <td style="padding-left:12px;"><img src="${logo}" width="40" height="40" alt="" style="display:block;border-radius:10px;"></td>
-    <td style="font-family:${FONT};">
-      <div style="font-size:17px;font-weight:700;color:${INK};line-height:1.1;">חשבונית ידידותית</div>
-      <div dir="ltr" style="font-family:${SERIF};font-size:13px;color:${ORANGE};line-height:1.2;text-align:right;">Friendly Invoice</div>
-    </td>
-  </tr></table>`;
+  const lockup = `<table ${TABLE} align="center">
+    <tr><td align="center" style="padding-bottom:10px;"><img src="${logo}" width="56" height="56" alt="" style="display:block;border-radius:14px;"></td></tr>
+    <tr><td align="center" style="font-family:${FONT};font-size:19px;font-weight:700;color:${INK};line-height:1.1;">חשבונית ידידותית</td></tr>
+    <tr><td align="center" dir="ltr" style="font-family:${SERIF};font-size:14px;color:${ORANGE};line-height:1.3;padding-top:2px;">Friendly Invoice</td></tr>
+  </table>`;
 
   const note = `<table ${TABLE} width="100%"><tr>
-    <td width="72" valign="top" style="padding-left:18px;"><img src="${avatar}" width="72" height="72" alt="אסף" style="display:block;width:72px;height:72px;border-radius:50%;"></td>
-    <td valign="top" style="font-family:${FONT};font-size:15px;line-height:1.65;color:${INK};">
-      <p style="margin:0 0 4px;font-weight:700;font-size:16px;">${NOTE_GREETING}</p>
-      <p style="margin:0 0 10px;">${NOTE_BODY}</p>
+    <td width="64" valign="top" style="padding-left:16px;"><img src="${avatar}" width="64" height="64" alt="אסף" style="display:block;width:64px;height:64px;border-radius:50%;"></td>
+    <td valign="top" style="font-family:${FONT};font-size:15px;line-height:1.65;color:${INK};text-align:right;">
+      <p style="margin:0 0 4px;font-weight:700;font-size:15px;">${NOTE_GREETING}</p>
+      <p style="margin:0 0 8px;">${NOTE_BODY}</p>
       <p style="margin:0;font-size:13px;color:${MUTED};">${NOTE_SIGNATURE}</p>
     </td>
   </tr></table>`;
 
   const footer = `<table ${TABLE} width="100%" style="background:${INK};border-radius:0 0 16px 16px;"><tr>
-    <td style="padding:18px 28px;font-family:${FONT};font-size:12px;color:${CREAM};">חשבונית ידידותית &nbsp;<span dir="ltr" style="font-family:${SERIF};color:${ORANGE};">Friendly Invoice</span></td>
-    <td align="left" style="padding:18px 28px;font-family:${FONT};font-size:12px;"><a href="${site}" style="color:${CREAM};text-decoration:none;">friendlyinvoice.co.il</a></td>
+    <td style="padding:16px 28px;font-family:${FONT};font-size:12px;color:${CREAM};">חשבונית ידידותית &nbsp;<span dir="ltr" style="font-family:${SERIF};color:${ORANGE};">Friendly Invoice</span></td>
+    <td align="left" style="padding:16px 28px;font-family:${FONT};font-size:12px;"><a href="${site}" style="color:${CREAM};text-decoration:none;">friendlyinvoice.co.il</a></td>
   </tr></table>`;
 
   return `<!DOCTYPE html>
@@ -95,21 +97,19 @@ export function buildWelcomeHtml(): string {
 </head>
 <body style="margin:0;padding:0;background:${CREAM};">
   <table ${TABLE} dir="rtl" width="100%" style="background:${CREAM};">
-    <tr><td align="center" style="padding:32px 12px;">
+    <tr><td align="center" style="padding:36px 12px;">
       <table ${TABLE} dir="rtl" width="600" style="width:600px;max-width:100%;">
-        <tr><td style="padding:0 8px 20px;">${lockup}</td></tr>
-        <tr><td style="background:#ffffff;border:1px solid ${SAND};border-bottom:0;border-radius:16px 16px 0 0;padding:36px 40px 32px;">
-          <div style="font-family:${FONT};font-size:13px;font-weight:700;color:${BURNT};margin-bottom:10px;">${EYEBROW}</div>
-          <h1 style="font-family:${FONT};font-size:30px;font-weight:700;color:${INK};line-height:1.2;margin:0 0 14px;">${HEADLINE}</h1>
-          <p style="font-family:${FONT};font-size:16px;color:${INK};line-height:1.65;margin:0 0 18px;">${BODY}</p>
-          <div style="text-align:center;padding:10px 0 12px;">
-            <a href="${firstDocument}" style="display:inline-block;background:${ORANGE};color:#ffffff;text-decoration:none;padding:16px 36px;border-radius:12px;font-family:${FONT};font-weight:700;font-size:17px;">${CTA_LABEL}</a>
-          </div>
-          <p style="font-family:${FONT};font-size:13px;color:${MUTED};line-height:1.65;margin:0 0 22px;text-align:center;">${CTA_SUB}</p>
-          <table ${TABLE} width="100%" style="background:${TINT};border-radius:12px;"><tr>
-            <td style="padding:14px 18px;font-family:${FONT};font-size:14px;color:${BURNT};line-height:1.5;">${GIVE}</td>
-          </tr></table>
-          <div style="border-top:1px solid ${HAIRLINE};margin:26px 0;"></div>
+        <tr><td align="center" style="background:${TINT};border:1px solid ${TINT_LINE};border-bottom:2px solid ${ORANGE};border-radius:16px 16px 0 0;padding:34px 56px 30px;text-align:center;">
+          ${lockup}
+          <div style="font-family:${FONT};font-size:18px;font-weight:600;color:${INK};line-height:1.3;margin-top:22px;">${WELCOME_LINE}</div>
+        </td></tr>
+        <tr><td style="background:#ffffff;border:1px solid ${SAND};border-top:0;border-bottom:0;padding:38px 56px 36px;text-align:center;">
+          <h1 style="font-family:${FONT};font-size:25px;font-weight:700;color:${INK};line-height:1.3;margin:0 0 14px;">${HEADLINE}</h1>
+          <p style="font-family:${FONT};font-size:16px;color:${INK};line-height:1.7;margin:0 auto 26px;max-width:440px;">${BODY}</p>
+          <a href="${firstDocument}" style="display:inline-block;background:${ORANGE};color:#ffffff;text-decoration:none;padding:15px 34px;border-radius:12px;font-family:${FONT};font-weight:700;font-size:16px;">${CTA_LABEL}</a>
+          <p style="font-family:${FONT};font-size:13px;color:${MUTED};margin:12px 0 30px;">${CTA_SUB}</p>
+          <p style="font-family:${FONT};font-size:14px;color:${BURNT};line-height:1.6;margin:0;padding:14px 18px;background:${TINT};border-radius:10px;">${GIVE}</p>
+          <div style="border-top:1px solid ${HAIRLINE};margin:30px 0 26px;"></div>
           ${note}
         </td></tr>
         <tr><td>${footer}</td></tr>
@@ -122,7 +122,7 @@ export function buildWelcomeHtml(): string {
 
 export function buildWelcomeText(): string {
   const { firstDocument } = welcomeUrls();
-  return `${EYEBROW}
+  return `${WELCOME_LINE}
 
 ${HEADLINE}
 ${BODY}
