@@ -95,10 +95,10 @@ const FAQ_ITEMS: { q: string; a: string }[] = [
  * be silently dropped or shown twice - flipping `spotlight` moves it.
  */
 /**
- * Order is explicit, not the ADVANTAGES order: WhatsApp leads because Asaf
- * calls it the product's strongest differentiator and is committed to shipping
- * it (same reason it leads the trust strip). It carries a "בקרוב" pill, so
- * leading with it promises without misleading.
+ * Order is explicit, not the ADVANTAGES order. WhatsApp is the strongest
+ * differentiator but it is not live yet, so since 2026-09-08 (Asaf) it closes
+ * the band instead of opening it, carrying a "בקרוב" pill. Shipped claims
+ * (allocation numbers, the AI assistant) lead.
  */
 /**
  * Dashboard-mock chart data. Real shekel figures, not percentages: the axis
@@ -117,7 +117,7 @@ const CHART_MONTHS = [
   { m: "אוגוסט", inc: 24180, exp: 5940 },
 ];
 
-const SPOTLIGHT_ORDER = ["whatsapp", "allocation", "ai"];
+const SPOTLIGHT_ORDER = ["allocation", "ai", "whatsapp"];
 const SPOTLIGHT = SPOTLIGHT_ORDER.map(
   (k) => ADVANTAGES.find((a) => a.key === k && a.spotlight),
 ).filter((a): a is Advantage => Boolean(a));
@@ -313,8 +313,8 @@ export default function MarketingLanding() {
                   hero so it is above the fold on desktop. */}
               <p className="ml-hero-usp">
                 חשבונית ידידותית מאפשרת לקבל מספר הקצאה מרשות המסים ישירות
-                מתוך החשבונית, להפיק מסמכים דרך WhatsApp ולנהל הכנסות והוצאות
-                במקום אחד
+                מתוך החשבונית ולנהל הכנסות והוצאות במקום אחד. בקרוב גם הפקת
+                מסמכים דרך WhatsApp.
               </p>
             </div>
           </section>
@@ -331,12 +331,13 @@ export default function MarketingLanding() {
               color restraint (DESIGN-TASTE 2026-08-10), promoted to the
               whole card so the strip outshines the white advantage cards.
               Claims stay checked against reality:
-                - WhatsApp: leads the strip, carrying a "בקרוב" pill. The
-                  08-15 edit that declared the channel live and stripped
-                  every בקרוב marker was based on a false premise - the
-                  channel still runs on Meta's test number - so the pills
-                  went back on 08-16. The claim itself is future-tense and
-                  is the one deliberate not-yet-shipped item here.
+                - WhatsApp: closes the strip (moved from first on 2026-09-08),
+                  carrying a "בקרוב" pill. The 08-15 edit that declared the
+                  channel live and stripped every בקרוב marker was based on
+                  a false premise - the channel still runs on Meta's test
+                  number - so the pills went back on 08-16. The claim itself
+                  is future-tense and is the one deliberate not-yet-shipped
+                  item here.
                 - free month: matches the official sitewide offer (launch
                   period fully free, first paid month free later) - keep in
                   sync with the pricing page FAQ if it changes.
@@ -349,29 +350,6 @@ export default function MarketingLanding() {
               links it. */}
           <section className="ml-trust">
             <div className="ml-wrap ml-trust-in">
-              {/* WhatsApp stays FIRST here by Asaf's explicit call (2026-08-16):
-                  it is the product's strongest differentiator against Morning /
-                  SUMIT / iCount, and he is committed to shipping it. I had
-                  swapped it out for the allocation-number fact on the reasoning
-                  that a trust strip should carry only shipped claims; he
-                  overruled that, and the decision is his. The honest compromise
-                  is the "בקרוב" pill - the promise stays in the lead position,
-                  but nobody can read it as available today. Copy is future-tense
-                  for the same reason. Remove the pill only when the channel runs
-                  on a real number - see docs/whatsapp/runbook-go-live.md. */}
-              <div className="ml-trust-card ml-trust-card--green">
-                <span className="ml-trust-icon">
-                  <WhatsappIcon aria-hidden="true" />
-                </span>
-                <span className="ml-trust-k">
-                  חשבונית מהוואטסאפ
-                  <span className="ml-badge-soon">בבטא סגורה</span>
-                </span>
-                <p>
-                  כותבים הודעה אחת בצ&apos;אט - והחשבונית מוכנה ואצל
-                  הלקוח. בלי להיכנס לאפליקציה בכלל.
-                </p>
-              </div>
               <div className="ml-trust-card ml-trust-card--amber">
                 <span className="ml-trust-icon">
                   <Gift aria-hidden="true" />
@@ -402,6 +380,25 @@ export default function MarketingLanding() {
                   המידע נשמר בענן מאובטח, עם הרשאות גישה נפרדות לכל עסק,
                   גיבוי לילי מוצפן במקום נפרד והצפנה על החיבור לרשות
                   המסים. <Link href="/security">איך בדיוק</Link>
+                </p>
+              </div>
+              {/* WhatsApp is LAST here (Asaf, 2026-09-08). It led the strip
+                  from 2026-08-16 as the strongest differentiator, but the
+                  channel still runs on Meta's test number and he asked that
+                  a not-yet-working feature never be the first thing a
+                  visitor reads. The "בקרוב" pill stays until the channel
+                  runs on a real number - see docs/whatsapp/runbook-go-live.md. */}
+              <div className="ml-trust-card ml-trust-card--green">
+                <span className="ml-trust-icon">
+                  <WhatsappIcon aria-hidden="true" />
+                </span>
+                <span className="ml-trust-k">
+                  חשבונית מהוואטסאפ
+                  <span className="ml-badge-soon">בקרוב</span>
+                </span>
+                <p>
+                  כותבים הודעה אחת בצ&apos;אט - והחשבונית מוכנה ואצל
+                  הלקוח. בלי להיכנס לאפליקציה בכלל.
                 </p>
               </div>
             </div>
@@ -452,7 +449,7 @@ export default function MarketingLanding() {
                       <h3>
                         <LtrText text={item.title} />
                         {item.soon ? (
-                          <span className="ml-badge-soon">בבטא סגורה</span>
+                          <span className="ml-badge-soon">בקרוב</span>
                         ) : null}
                       </h3>
                       <p>
@@ -494,7 +491,7 @@ export default function MarketingLanding() {
                     <h3>
                       <LtrText text={item.title} />
                       {item.soon ? (
-                        <span className="ml-badge-soon">בבטא סגורה</span>
+                        <span className="ml-badge-soon">בקרוב</span>
                       ) : null}
                     </h3>
                     <p>
@@ -551,19 +548,20 @@ export default function MarketingLanding() {
               full-width sections (sample invoice, then the WhatsApp phone);
               merged side by side 2026-08-10 at Asaf's request - stacked they
               made the page a full screen too long. Shared centered header,
-              then a two-column grid: the phone mock (right, reading start -
-              Asaf: "מהוואטסאפ שלכם ישירות אל הלקוח", so the story reads
-              WhatsApp first) and the invoice sheet (left), each <figure>
-              carrying its own title, visual, fact list and caption. */}
+              then a two-column grid: the invoice sheet (right, reading start)
+              and the WhatsApp phone mock (left). The phone led until
+              2026-09-08; Asaf moved it behind the shipped document because
+              the channel is not live yet. Each <figure> carries its own
+              title, visual, fact list and caption. */}
           <section className="ml-show" id="demo">
             <div className="ml-wrap">
               <div className="ml-show-head">
                 <span className="ml-eyebrow">כך זה נראה בפועל</span>
-                <h2>מהוואטסאפ שלכם ישירות אל הלקוח</h2>
+                <h2>מסמך מקצועי, ישירות אל הלקוח</h2>
                 <p>
-                  כותבים הודעה אחת בצ&apos;אט - והלקוח מקבל מסמך נקי
-                  ומקצועי, עם כל השדות שרשות המסים דורשת, כולל מספר
-                  ההקצאה.
+                  ממלאים כמה שדות - והלקוח מקבל מסמך נקי ומקצועי, עם כל
+                  השדות שרשות המסים דורשת, כולל מספר ההקצאה. בקרוב גם
+                  בהודעה אחת בוואטסאפ.
                 </p>
                 {/* Honesty aside, restored 2026-08-16. It was removed on 08-15
                     on the belief that Meta approval had closed and the channel
@@ -597,21 +595,21 @@ export default function MarketingLanding() {
                   <input
                     type="radio"
                     name="ml-show-tab"
-                    id="ml-tab-wa"
+                    id="ml-tab-doc"
                     className="ml-show-tab-in"
                     defaultChecked
                   />
-                  <label htmlFor="ml-tab-wa" className="ml-show-tab">
-                    וואטסאפ
+                  <label htmlFor="ml-tab-doc" className="ml-show-tab">
+                    המסמך
                   </label>
                   <input
                     type="radio"
                     name="ml-show-tab"
-                    id="ml-tab-doc"
+                    id="ml-tab-wa"
                     className="ml-show-tab-in"
                   />
-                  <label htmlFor="ml-tab-doc" className="ml-show-tab">
-                    המסמך
+                  <label htmlFor="ml-tab-wa" className="ml-show-tab">
+                    וואטסאפ
                   </label>
                   <input
                     type="radio"
@@ -627,6 +625,156 @@ export default function MarketingLanding() {
             </div>
 
             <div className="ml-wrap ml-show-grid">
+              <figure className="ml-sheet-wrap">
+                <h3 className="ml-show-col-title">המסמך שהלקוח מקבל</h3>
+                <article className="ml-sheet">
+                  <div className="ml-sh-card ml-sh-head">
+                    <div className="ml-sh-biz">
+                      <p className="ml-sh-name">סטודיו נועה</p>
+                      <p className="ml-sh-bizline">
+                        עוסק מורשה <Ltr>003244266</Ltr> · עיצוב גרפי ומיתוג
+                        <br />
+                        הרצל 12, תל אביב · <Ltr>054-1234567</Ltr> ·{" "}
+                        <Ltr>noa@studio-noa.co.il</Ltr>
+                      </p>
+                    </div>
+                    <div className="ml-sh-ident">
+                      <div className="ml-sh-orig">מקור</div>
+                      <div className="ml-sh-badge">חשבונית מס</div>
+                      <div className="ml-sh-num">0042</div>
+                      <div className="ml-sh-date">09.07.2026</div>
+                    </div>
+                  </div>
+
+                  {/* Same DOM order as the real document's `.doc-strip`: the
+                      customer first, so RTL puts "לכבוד" at the reading start
+                      (right) and the allocation number after it (left), and the
+                      customer stays on top when the strip stacks on mobile. */}
+                  <div className="ml-sh-strip">
+                    <div className="ml-sh-card ml-sh-mini">
+                      <div className="ml-sh-glabel">לכבוד</div>
+                      <div className="ml-sh-mini-v">סטודיו אורות בע״מ</div>
+                      <div className="ml-sh-mini-sub">
+                        ח.פ / ת.ז <Ltr>514738293</Ltr>
+                      </div>
+                    </div>
+                    <div className="ml-sh-card ml-sh-mini is-alloc">
+                      <div className="ml-sh-glabel">
+                        מספר הקצאה · חשבונית ישראל
+                      </div>
+                      <div className="ml-sh-mini-v is-gold">403581926</div>
+                    </div>
+                  </div>
+
+                  <div className="ml-sh-card ml-sh-items">
+                    <div className="ml-sh-glabel">פירוט</div>
+                    <table className="ml-sh-table">
+                      <thead>
+                        <tr>
+                          <th className="c-desc">תיאור</th>
+                          <th className="c-qty">כמות</th>
+                          <th className="c-num">סכום</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td className="c-desc">עיצוב לוגו ומיתוג</td>
+                          <td className="c-qty">1</td>
+                          <td className="c-total">{shekel("3,200")}</td>
+                        </tr>
+                        <tr>
+                          <td className="c-desc">דף נחיתה</td>
+                          <td className="c-qty">1</td>
+                          <td className="c-total">{shekel("1,450")}</td>
+                        </tr>
+                        <tr>
+                          <td className="c-desc">ייעוץ חזותי</td>
+                          <td className="c-qty">1</td>
+                          <td className="c-total">{shekel("600")}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="ml-sh-money">
+                    <div className="ml-sh-card ml-sh-breakdown">
+                      <div className="ml-sh-brow">
+                        <span>סכום ביניים</span>
+                        <span>{shekel("5,250")}</span>
+                      </div>
+                      <div className="ml-sh-brow">
+                        <span>
+                          מע״מ <Ltr>18%</Ltr>
+                        </span>
+                        <span>{shekel("945")}</span>
+                      </div>
+                      <div className="ml-sh-brow is-grand">
+                        <span>סה״כ לתשלום</span>
+                        <span className="ml-sh-grand">{shekel("6,195")}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Where to pay (Asaf, 2026-08-25): the real document
+                      prints the business's bank details right under the
+                      totals (document-body.tsx, "פרטי תשלום" in
+                      `.doc-infos`), and a visitor judging "what will my
+                      client get" wants to see that the invoice tells them
+                      where to transfer. Same DOM order as the real sheet.
+                      Fictitious bank / branch / account; the Bit number is
+                      the phone already printed in the header. */}
+                  <div className="ml-sh-infos">
+                    <div className="ml-sh-card ml-sh-pay">
+                      <div className="ml-sh-glabel">פרטי תשלום</div>
+                      <div className="ml-sh-pay-body">
+                        העברה בנקאית
+                        <br />
+                        <span className="ml-sh-pay-line">
+                          בנק לאומי (<Ltr>10</Ltr>) · סניף <Ltr>800</Ltr> · חשבון{" "}
+                          <Ltr>1234567</Ltr>
+                        </span>
+                        <br />
+                        <span className="ml-sh-pay-dim">
+                          אפשר גם ב-<Ltr>Bit</Ltr> למספר <Ltr>054-1234567</Ltr>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* The separator is an explicit {" · "} expression, not two
+                      JSX literals around a bare middot: the transform drops the
+                      space that leads a multi-line text child, which silently
+                      shipped "מספר הקצאה· נדרש". */}
+                  <p className="ml-sh-note">
+                    <b>מספר הקצאה</b>
+                    {" · "}
+                    נדרש בחשבונית מס ללקוח עסקי בסכום של 5,000&nbsp;₪ ומעלה
+                    לפני מע״מ. המערכת מבקשת אותו מרשות המסים אוטומטית.
+                  </p>
+
+                  <div className="ml-sh-foot">
+                    <div className="ml-sh-sig">מסמך זה הופק אלקטרונית</div>
+                    <div className="ml-sh-brand">
+                      הופק באמצעות חשבונית ידידותית
+                    </div>
+                  </div>
+                </article>
+                <ul className="ml-sample-feats">
+                  <li>
+                    <CheckIcon /> מספר הקצאה מוטמע אוטומטית
+                  </li>
+                  <li>
+                    <CheckIcon /> עיצוב מקצועי בברירת מחדל
+                  </li>
+                  <li>
+                    <CheckIcon /> נשלח כקישור, מייל או PDF
+                  </li>
+                </ul>
+                <figcaption className="ml-sheet-cap">
+                  חשבונית לדוגמה שנוצרה במערכת. שם הלקוח והפרטים להמחשה בלבד.
+                </figcaption>
+              </figure>
+
               {/* The phone: a faithful HTML/CSS recreation of the
                   bot-conversation mock Asaf supplied as a screenshot -
                   markup rather than an <img> so it stays sharp on every
@@ -641,7 +789,7 @@ export default function MarketingLanding() {
                   of fake conversation turns. */}
               <figure className="ml-wa-phone-wrap">
                 <h3 className="ml-show-col-title">
-                  ערוץ הוואטסאפ <span className="ml-badge-soon">בבטא סגורה</span>
+                  ערוץ הוואטסאפ <span className="ml-badge-soon">בקרוב</span>
                 </h3>
                 <div
                   className="ml-wa-phone"
@@ -795,156 +943,6 @@ export default function MarketingLanding() {
                 </ul>
                 <figcaption className="ml-sheet-cap">
                   הדמיה של שיחה בערוץ הוואטסאפ. ההודעות להמחשה בלבד.
-                </figcaption>
-              </figure>
-
-              <figure className="ml-sheet-wrap">
-                <h3 className="ml-show-col-title">המסמך שהלקוח מקבל</h3>
-                <article className="ml-sheet">
-                  <div className="ml-sh-card ml-sh-head">
-                    <div className="ml-sh-biz">
-                      <p className="ml-sh-name">סטודיו נועה</p>
-                      <p className="ml-sh-bizline">
-                        עוסק מורשה <Ltr>003244266</Ltr> · עיצוב גרפי ומיתוג
-                        <br />
-                        הרצל 12, תל אביב · <Ltr>054-1234567</Ltr> ·{" "}
-                        <Ltr>noa@studio-noa.co.il</Ltr>
-                      </p>
-                    </div>
-                    <div className="ml-sh-ident">
-                      <div className="ml-sh-orig">מקור</div>
-                      <div className="ml-sh-badge">חשבונית מס</div>
-                      <div className="ml-sh-num">0042</div>
-                      <div className="ml-sh-date">09.07.2026</div>
-                    </div>
-                  </div>
-
-                  {/* Same DOM order as the real document's `.doc-strip`: the
-                      customer first, so RTL puts "לכבוד" at the reading start
-                      (right) and the allocation number after it (left), and the
-                      customer stays on top when the strip stacks on mobile. */}
-                  <div className="ml-sh-strip">
-                    <div className="ml-sh-card ml-sh-mini">
-                      <div className="ml-sh-glabel">לכבוד</div>
-                      <div className="ml-sh-mini-v">סטודיו אורות בע״מ</div>
-                      <div className="ml-sh-mini-sub">
-                        ח.פ / ת.ז <Ltr>514738293</Ltr>
-                      </div>
-                    </div>
-                    <div className="ml-sh-card ml-sh-mini is-alloc">
-                      <div className="ml-sh-glabel">
-                        מספר הקצאה · חשבונית ישראל
-                      </div>
-                      <div className="ml-sh-mini-v is-gold">403581926</div>
-                    </div>
-                  </div>
-
-                  <div className="ml-sh-card ml-sh-items">
-                    <div className="ml-sh-glabel">פירוט</div>
-                    <table className="ml-sh-table">
-                      <thead>
-                        <tr>
-                          <th className="c-desc">תיאור</th>
-                          <th className="c-qty">כמות</th>
-                          <th className="c-num">סכום</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <td className="c-desc">עיצוב לוגו ומיתוג</td>
-                          <td className="c-qty">1</td>
-                          <td className="c-total">{shekel("3,200")}</td>
-                        </tr>
-                        <tr>
-                          <td className="c-desc">דף נחיתה</td>
-                          <td className="c-qty">1</td>
-                          <td className="c-total">{shekel("1,450")}</td>
-                        </tr>
-                        <tr>
-                          <td className="c-desc">ייעוץ חזותי</td>
-                          <td className="c-qty">1</td>
-                          <td className="c-total">{shekel("600")}</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-
-                  <div className="ml-sh-money">
-                    <div className="ml-sh-card ml-sh-breakdown">
-                      <div className="ml-sh-brow">
-                        <span>סכום ביניים</span>
-                        <span>{shekel("5,250")}</span>
-                      </div>
-                      <div className="ml-sh-brow">
-                        <span>
-                          מע״מ <Ltr>18%</Ltr>
-                        </span>
-                        <span>{shekel("945")}</span>
-                      </div>
-                      <div className="ml-sh-brow is-grand">
-                        <span>סה״כ לתשלום</span>
-                        <span className="ml-sh-grand">{shekel("6,195")}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Where to pay (Asaf, 2026-08-25): the real document
-                      prints the business's bank details right under the
-                      totals (document-body.tsx, "פרטי תשלום" in
-                      `.doc-infos`), and a visitor judging "what will my
-                      client get" wants to see that the invoice tells them
-                      where to transfer. Same DOM order as the real sheet.
-                      Fictitious bank / branch / account; the Bit number is
-                      the phone already printed in the header. */}
-                  <div className="ml-sh-infos">
-                    <div className="ml-sh-card ml-sh-pay">
-                      <div className="ml-sh-glabel">פרטי תשלום</div>
-                      <div className="ml-sh-pay-body">
-                        העברה בנקאית
-                        <br />
-                        <span className="ml-sh-pay-line">
-                          בנק לאומי (<Ltr>10</Ltr>) · סניף <Ltr>800</Ltr> · חשבון{" "}
-                          <Ltr>1234567</Ltr>
-                        </span>
-                        <br />
-                        <span className="ml-sh-pay-dim">
-                          אפשר גם ב-<Ltr>Bit</Ltr> למספר <Ltr>054-1234567</Ltr>
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* The separator is an explicit {" · "} expression, not two
-                      JSX literals around a bare middot: the transform drops the
-                      space that leads a multi-line text child, which silently
-                      shipped "מספר הקצאה· נדרש". */}
-                  <p className="ml-sh-note">
-                    <b>מספר הקצאה</b>
-                    {" · "}
-                    נדרש בחשבונית מס ללקוח עסקי בסכום של 5,000&nbsp;₪ ומעלה
-                    לפני מע״מ. המערכת מבקשת אותו מרשות המסים אוטומטית.
-                  </p>
-
-                  <div className="ml-sh-foot">
-                    <div className="ml-sh-sig">מסמך זה הופק אלקטרונית</div>
-                    <div className="ml-sh-brand">
-                      הופק באמצעות חשבונית ידידותית
-                    </div>
-                  </div>
-                </article>
-                <ul className="ml-sample-feats">
-                  <li>
-                    <CheckIcon /> מספר הקצאה מוטמע אוטומטית
-                  </li>
-                  <li>
-                    <CheckIcon /> עיצוב מקצועי בברירת מחדל
-                  </li>
-                  <li>
-                    <CheckIcon /> נשלח כקישור, מייל או PDF
-                  </li>
-                </ul>
-                <figcaption className="ml-sheet-cap">
-                  חשבונית לדוגמה שנוצרה במערכת. שם הלקוח והפרטים להמחשה בלבד.
                 </figcaption>
               </figure>
 

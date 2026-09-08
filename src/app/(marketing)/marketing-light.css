@@ -1051,11 +1051,11 @@ h1.ml-hero-h1 {
 }
 @media (min-width: 980px) {
   .ml-show-grid {
-    /* Phone first in the DOM = first column = inline-start = RIGHT (the
-       headline reads "from your WhatsApp straight to the client", so the
-       phone leads); it is the narrower visual, the sheet gets the wider
-       left column. */
-    grid-template-columns: 1fr 1.45fr;
+    /* Sheet first in the DOM = first column = inline-start = RIGHT (since
+       2026-09-08 the shipped document leads and the not-yet-live WhatsApp
+       phone follows); the sheet is the wider visual, the phone gets the
+       narrower left column. */
+    grid-template-columns: 1.45fr 1fr;
     /* Four shared row tracks - title / visual / checklist / caption - so
        the two columns line up row for row (Asaf, 2026-08-26: the phone ran
        ~100px taller than the sheet, so the checkmark lists sat at different
@@ -1110,13 +1110,13 @@ h1.ml-hero-h1 {
   display: inline-flex;
   align-items: center;
   flex: none;
-  padding: 2px 9px;
+  padding: 3px 10px;
   border-radius: 999px;
   background: #FBEADB;
   border: 1px solid #F3D2B4;
   color: #8A3F12;
   font-family: var(--font-inter), var(--font-heebo), "Heebo", system-ui, sans-serif;
-  font-size: 11px;
+  font-size: 12.5px;
   font-weight: 700;
   line-height: 1.6;
   letter-spacing: 0.01em;
