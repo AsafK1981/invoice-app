@@ -23,6 +23,7 @@ import {
   type Notification,
   type NotificationKind,
 } from "@/lib/notifications";
+import { formatTimeAgo as timeAgo } from "@/lib/format";
 
 const KIND_STYLE: Record<
   NotificationKind,
@@ -74,20 +75,6 @@ const KIND_STYLE: Record<
     bg: "bg-emerald-50 border-emerald-200",
   },
 };
-
-function timeAgo(iso: string): string {
-  const ms = Date.now() - new Date(iso).getTime();
-  const sec = Math.floor(ms / 1000);
-  if (sec < 60) return "עכשיו";
-  const min = Math.floor(sec / 60);
-  if (min < 60) return `לפני ${min} דק'`;
-  const hr = Math.floor(min / 60);
-  if (hr < 24) return `לפני ${hr} שעות`;
-  const days = Math.floor(hr / 24);
-  if (days < 7) return `לפני ${days} ימים`;
-  const wk = Math.floor(days / 7);
-  return `לפני ${wk} שב'`;
-}
 
 export function NotificationsBell() {
   const { items, unreadCount } = useNotifications(20);

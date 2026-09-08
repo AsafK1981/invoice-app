@@ -14,12 +14,20 @@ import {
   TrendingDown,
   Gift,
   Upload,
+  Activity,
+  Mail,
+  Banknote,
+  Receipt,
+  UserPlus,
+  LogIn,
+  FilePlus2,
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { supabase } from "@/lib/supabase";
 import { isAdminEmail } from "@/lib/admin";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { formatCurrency, formatDate, formatTimeAgo } from "@/lib/format";
 import { DOCUMENT_TYPE_LABELS, type DocumentType } from "@/lib/types";
+import { describeAdminActivity, type AdminActivityEvent, type AdminActivityKind } from "@/lib/admin-activity";
 
 const AdminDailyChart = dynamic(
   () => import("@/components/charts-recharts").then((mod) => mod.AdminDailyChart),
@@ -73,6 +81,7 @@ interface Health {
 
 export default function AdminPage() {
   const [stats, setStats] = useState<Stats | null>(null);
+  const [activity, setActivity] = useState<AdminActivityEvent[] | null>(null);
   const [health, setHealth] = useState<Health | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -114,8 +123,15 @@ export default function AdminPage() {
       }
       // Fetch stats and health in parallel; they're independent and the
       // health check shouldn't block stats display if it's slow.
-      const [statsRes, healthRes] = await Promise.all([
+      const [statsRes, activityRes, healthRes] = await Promise.all([
         fetch("/api/admin/stats", { headers: { Authorization: `Bearer ${token}` } }),
+        // The activity feed is its own route so its SELECT lists stay a
+        // separate, reviewable privacy boundary. A failure here must not
+        // blank the whole dashboard, so it degrades to an empty card.
+        fetch("/api/admin/activity?limit=60", {
+          cache: "no-store",
+          headers: { Authorization: `Bearer ${token}` },
+        }).catch(() => null),
         // Pass the admin bearer so /api/health includes the deploy SHA
         // (the public endpoint hides it from anonymous callers).
         fetch("/api/health", {
@@ -129,6 +145,14 @@ export default function AdminPage() {
         return;
       }
       setStats(statsData);
+      if (activityRes) {
+        try {
+          const activityData = await activityRes.json();
+          setActivity(activityData.ok ? activityData.events : []);
+        } catch {
+          setActivity([]);
+        }
+      }
       if (healthRes) {
         try {
           const healthData = await healthRes.json();
@@ -335,6 +359,27 @@ export default function AdminPage() {
             </div>
           </div>
 
+          {/* Live usage: who did what KIND of thing, and when. Metadata by
+              construction (see src/lib/admin-activity.ts): the account, its
+              own business name, the document type and the timestamp. Never a
+              number, a client, or an amount. */}
+          <div className="card-soft overflow-hidden">
+            <div className="px-5 py-3 border-b border-orange-100 flex items-center gap-2 flex-wrap">
+              <Activity className="w-4 h-4 text-orange-500" />
+              <h2 className="font-semibold text-stone-900">פעילות אחרונה</h2>
+              <span className="text-xs text-stone-500 mr-auto">
+                מטא-דאטה בלבד: בלי סכומים, בלי שמות לקוחות
+              </span>
+            </div>
+            {activity === null ? (
+              <p className="p-5 text-sm text-stone-500 italic">טוען פעילות...</p>
+            ) : activity.length === 0 ? (
+              <p className="p-5 text-sm text-stone-500 italic">אין פעילות להצגה</p>
+            ) : (
+              <ActivityFeed events={activity} />
+            )}
+          </div>
+
           {/* Recent signups */}
           <div className="card-soft overflow-hidden">
             <div className="px-5 py-3 border-b border-orange-100 flex items-center gap-2">
@@ -432,6 +477,82 @@ function StatCard({
         </div>
       </div>
     </div>
+  );
+}
+
+const ACTIVITY_STYLE: Record<
+  AdminActivityKind,
+  { icon: typeof Users; iconText: string; bg: string }
+> = {
+  "document.created": { icon: FilePlus2, iconText: "text-orange-700", bg: "bg-orange-100" },
+  "document.emailed": { icon: Mail, iconText: "text-sky-700", bg: "bg-sky-100" },
+  "document.paid": { icon: Banknote, iconText: "text-emerald-700", bg: "bg-emerald-100" },
+  "expense.created": { icon: Receipt, iconText: "text-amber-700", bg: "bg-amber-100" },
+  "client.created": { icon: UserPlus, iconText: "text-violet-700", bg: "bg-violet-100" },
+  "user.signed_in": { icon: LogIn, iconText: "text-stone-600", bg: "bg-stone-100" },
+};
+
+function exactTime(iso: string): string {
+  const d = new Date(iso);
+  return `${d.toLocaleDateString("he-IL", { timeZone: "Asia/Jerusalem" })} ${d.toLocaleTimeString("he-IL", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Asia/Jerusalem",
+  })}`;
+}
+
+function ActivityFeed({ events }: { events: AdminActivityEvent[] }) {
+  return (
+    <ul className="divide-y divide-orange-50 max-h-[32rem] overflow-y-auto">
+      {events.map((e) => {
+        const style = ACTIVITY_STYLE[e.kind] ?? ACTIVITY_STYLE["document.created"];
+        const Icon = style.icon;
+        // Two lines, never one truncating line: an email is LTR inside an RTL
+        // sentence, and on a phone the action was the part that got cut off.
+        // Line 1 is who (the business name they chose, or their email), line 2
+        // is what they did, with the email as a bidi-isolated tail.
+        return (
+          <li key={e.id} className="px-5 py-2.5 flex items-center gap-3 hover:bg-orange-50/40">
+            <span
+              className={`w-8 h-8 rounded-xl ${style.bg} flex items-center justify-center flex-shrink-0`}
+              aria-hidden="true"
+            >
+              <Icon className={`w-4 h-4 ${style.iconText}`} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-stone-900 truncate">
+                {e.businessName ? (
+                  e.businessName
+                ) : e.email ? (
+                  <bdi dir="ltr">{e.email}</bdi>
+                ) : (
+                  "משתמש לא מזוהה"
+                )}
+              </p>
+              <p className="text-xs text-stone-600 truncate">
+                {describeAdminActivity(e, DOCUMENT_TYPE_LABELS)}
+                {/* On a phone the email tail truncated from its START (it is
+                    LTR at the end of an RTL line); the business name above
+                    already identifies the account there. */}
+                {e.businessName && e.email && (
+                  <span className="hidden sm:inline">
+                    <span className="text-stone-400"> · </span>
+                    <bdi dir="ltr">{e.email}</bdi>
+                  </span>
+                )}
+              </p>
+            </div>
+            <time
+              dateTime={e.at}
+              title={exactTime(e.at)}
+              className="text-xs text-stone-500 whitespace-nowrap flex-shrink-0"
+            >
+              {formatTimeAgo(e.at)}
+            </time>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 

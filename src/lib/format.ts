@@ -89,6 +89,24 @@ const MONTHS_EN = [
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
 
+/**
+ * Coarse Hebrew relative time for activity lists ("לפני 5 דק'"). Anything
+ * that needs the exact instant should show it alongside, not instead.
+ */
+export function formatTimeAgo(iso: string, now: number = Date.now()): string {
+  const ms = now - new Date(iso).getTime();
+  const sec = Math.floor(ms / 1000);
+  if (sec < 60) return "עכשיו";
+  const min = Math.floor(sec / 60);
+  if (min < 60) return min === 1 ? "לפני דקה" : `לפני ${min} דק'`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return hr === 1 ? "לפני שעה" : hr === 2 ? "לפני שעתיים" : `לפני ${hr} שעות`;
+  const days = Math.floor(hr / 24);
+  if (days < 7) return days === 1 ? "אתמול" : days === 2 ? "לפני יומיים" : `לפני ${days} ימים`;
+  const wk = Math.floor(days / 7);
+  return wk === 1 ? "לפני שבוע" : wk === 2 ? "לפני שבועיים" : `לפני ${wk} שב'`;
+}
+
 export function formatDate(date: string, lang?: string): string {
   const english = lang === "en";
   const parts = DATE_ONLY.exec(date);
