@@ -203,6 +203,51 @@
   letter-spacing: 0.2em;
   color: var(--d-soft);
 }
+/* "טיוטה" in the identity block: the same slot as מקור/העתק, but it has to
+   read as a state, not as a footnote (נספח ה' (א)(3), "בצורה בולטת"). */
+.doc-paper .doc-orig.is-draft {
+  font-size: 13px;
+  font-weight: 800;
+  color: #b91c1c;
+}
+/* "מסמך ממוחשב" (סעיף 1 / 18ב(א): "בצורה בולטת לעין"). Sits under מקור/העתק,
+   above the document-type badge, in the ink colour rather than the muted one
+   so it cannot be read as fine print. */
+.doc-paper .doc-computerized {
+  margin-top: 3px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--d-ink);
+}
+/* Full-sheet "טיוטה" watermark. Absolutely positioned against .doc-paper
+   (which is position:relative) and pointer-events:none, so it cannot catch a
+   click or shift a single line of the layout. print-color-adjust keeps it in
+   the PDF: headless Chrome prints this same markup. */
+.doc-paper .doc-draft-mark {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 5;
+  overflow: hidden;
+}
+.doc-paper .doc-draft-mark span {
+  transform: rotate(-32deg);
+  font-size: 96px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  line-height: 1;
+  white-space: nowrap;
+  color: rgba(185, 28, 28, 0.13);
+  border: 6px solid rgba(185, 28, 28, 0.13);
+  border-radius: 18px;
+  padding: 10px 44px;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
 .doc-paper .doc-badge {
   display: inline-block;
   margin-top: 6px;

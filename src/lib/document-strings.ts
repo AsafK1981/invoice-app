@@ -34,6 +34,18 @@ export interface DocStrings {
   /** מקור / העתק - the legally required original-vs-copy stamp (ניהול ספרים 18ב). */
   original: string;
   copy: string;
+  /**
+   * "מסמך ממוחשב" - הוראות ניהול ספרים סעיף 1 + 18ב(א) require the words to
+   * appear "בצורה בולטת לעין" on a document delivered as a file. Rendered on
+   * every ISSUED document, next to מקור/העתק.
+   */
+  computerized: string;
+  /**
+   * "טיוטה" - נספח ה' (א)(3): "ציון בצורה בולטת של המלה 'טיוטה' על גבי פלט
+   * חזותי המופק מקובץ זמני". Rendered instead of מקור/העתק on anything that
+   * has not been issued, plus a full-sheet watermark.
+   */
+  draftMark: string;
   /** Placeholder shown in the editor preview before a number is allocated. */
   autoNumber: string;
   /** Customer card caption. */
@@ -87,6 +99,8 @@ export interface DocStrings {
 const HE: DocStrings = {
   original: "מקור",
   copy: "העתק",
+  computerized: "מסמך ממוחשב",
+  draftMark: "טיוטה",
   autoNumber: "(אוטומטי)",
   toLabel: "לכבוד",
   clientTaxId: "ח.פ / ת.ז",
@@ -147,6 +161,8 @@ const EN_DOCUMENT_TYPES: Record<DocumentType, string> = {
 const EN: DocStrings = {
   original: "ORIGINAL",
   copy: "COPY",
+  computerized: "Computerized document",
+  draftMark: "DRAFT",
   autoNumber: "(auto)",
   toLabel: "To",
   clientTaxId: "Tax ID",
@@ -221,6 +237,19 @@ export function docStrings(lang?: string | null): DocStrings {
 /** Narrow an untrusted value to a DocLang, defaulting to Hebrew. */
 export function toDocLang(value?: string | null): DocLang {
   return value === "en" ? "en" : "he";
+}
+
+/**
+ * The two statutory marks, in the form that goes ON the sheet.
+ *
+ * סעיף 1 and נספח ה' (א)(3) require the HEBREW words "מסמך ממוחשב" / "טיוטה"
+ * on the document itself. A document issued in English still has to satisfy
+ * an Israeli inspector, so it carries both: the English wording its recipient
+ * reads, then the Hebrew wording the law names. A Hebrew document is
+ * unchanged - just the one word.
+ */
+export function statutoryMark(lang: DocLang, key: "computerized" | "draftMark"): string {
+  return lang === "he" ? HE[key] : `${EN[key]} · ${HE[key]}`;
 }
 
 /** Writing direction of a document in this language. */

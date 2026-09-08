@@ -115,6 +115,11 @@ export function ReceiptView({
         totalIls={doc.totalIls}
         zeroRated={doc.zeroRated}
         copy={copy}
+        // נספח ה' (א)(3): a document still in status 'draft' has no number and
+        // is output from a קובץ זמני, so every visual output of it - this
+        // view, the browser print, and the server PDF that prints this very
+        // page - has to be marked "טיוטה".
+        draft={doc.status === "draft"}
         showBranding={showBranding}
         language={language}
       />

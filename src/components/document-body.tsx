@@ -5,7 +5,7 @@ import { formatMoney } from "@/lib/currencies";
 import { netAfterWithholding } from "@/lib/withholding";
 import { Ltr } from "@/components/ui/ltr";
 import { CANONICAL_HOST, CANONICAL_ORIGIN } from "@/lib/public-url";
-import { docStrings, type DocLang, type DocStrings } from "@/lib/document-strings";
+import { docStrings, statutoryMark, type DocLang, type DocStrings } from "@/lib/document-strings";
 import {
   type Business,
   type DocumentItem,
@@ -109,6 +109,15 @@ interface Props {
    */
   copy?: boolean;
   /**
+   * Whether this sheet is a DRAFT, i.e. output produced from a קובץ זמני: a
+   * document still in status 'draft', or the editor's live preview of one
+   * being composed. נספח ה' (א)(3) requires the word "טיוטה" to be marked
+   * "בצורה בולטת" on such output, so a draft prints a full-sheet watermark
+   * and carries "טיוטה" where an issued document carries מקור/העתק. It is
+   * NOT a מסמך ממוחשב, so that mark is withheld until it is issued.
+   */
+  draft?: boolean;
+  /**
    * Whether to print the small "הופק באמצעות …" credit in the footer.
    * Defaults to `true` - the growth loop that puts the app in front of every
    * recipient. PAID subscribers get it suppressed (standard SaaS behaviour,
@@ -153,10 +162,16 @@ export function DocumentBody({
   totalIls,
   zeroRated = false,
   copy = false,
+  draft = false,
   showBranding = true,
   language = "he",
 }: Props) {
   const s = docStrings(language);
+  // `placeholders` is the editor's live preview: a sheet rendered from an
+  // unsaved, unnumbered document, which is exactly the קובץ זמני the draft
+  // rule is about. So it marks as a draft too, without every caller having
+  // to remember to pass both flags.
+  const isDraft = draft || placeholders;
   const currency = currencyProp || "ILS";
   const money = (n: number) => (currency === "ILS" ? formatCurrency(n) : formatMoney(n, currency));
 
@@ -194,6 +209,15 @@ export function DocumentBody({
 
   return (
     <>
+      {/* נספח ה' (א)(3): the word "טיוטה" across the sheet, on screen and in
+          the PDF alike (the PDF route prints this very markup). aria-hidden:
+          the same word is already in the identity block above, as text. */}
+      {isDraft && (
+        <div className="doc-draft-mark" aria-hidden="true">
+          <span>{statutoryMark(language, "draftMark")}</span>
+        </div>
+      )}
+
       {/* ── Header: business identity (start side) ↔ document identity ── */}
       <div className="doc-card doc-head">
         <div className="doc-biz">
@@ -231,7 +255,17 @@ export function DocumentBody({
           </div>
         </div>
         <div className="doc-ident">
-          <div className="doc-orig">{copy ? s.copy : s.original}</div>
+          {/* הוראות ניהול ספרים: a draft says so and nothing else; an issued
+              document says מקור/העתק (18ב) AND "מסמך ממוחשב" (סעיף 1), which
+              has to be prominent, so it sits directly above the doc type. */}
+          {isDraft ? (
+            <div className="doc-orig is-draft">{statutoryMark(language, "draftMark")}</div>
+          ) : (
+            <>
+              <div className="doc-orig">{copy ? s.copy : s.original}</div>
+              <div className="doc-computerized">{statutoryMark(language, "computerized")}</div>
+            </>
+          )}
           <div
             className={`doc-badge${documentType === "credit_note" ? " is-credit" : ""}`}
           >

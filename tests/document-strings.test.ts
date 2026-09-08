@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { DOC_STRINGS, docStrings, docDir, toDocLang } from "../src/lib/document-strings";
+import { DOC_STRINGS, docStrings, docDir, statutoryMark, toDocLang } from "../src/lib/document-strings";
 import {
   BUSINESS_TYPE_LABELS,
   DOC_SUM_LABEL,
@@ -60,6 +60,8 @@ describe("DOC_STRINGS", () => {
     const he = DOC_STRINGS.he;
     expect(he.original).toBe("מקור");
     expect(he.copy).toBe("העתק");
+    expect(he.computerized).toBe("מסמך ממוחשב");
+    expect(he.draftMark).toBe("טיוטה");
     expect(he.autoNumber).toBe("(אוטומטי)");
     expect(he.toLabel).toBe("לכבוד");
     expect(he.clientTaxId).toBe("ח.פ / ת.ז");
@@ -91,6 +93,21 @@ describe("DOC_STRINGS", () => {
     expect(he.documentTypes.tax_invoice).toBe("חשבונית מס");
     expect(he.sumLabel.credit_note).toBe("סה״כ זיכוי");
     expect(he.businessTypes.exempt).toBe("עוסק פטור");
+  });
+
+  /**
+   * הוראות ניהול ספרים סעיף 1 / 18ב(א) require the exact words "מסמך ממוחשב"
+   * on a document delivered as a file, and נספח ה' (א)(3) the exact word
+   * "טיוטה" on output from a temporary file. Both are statutory literals: an
+   * English document carries them too, alongside its own wording.
+   */
+  it("puts the statutory Hebrew wording on the sheet in both languages", () => {
+    expect(statutoryMark("he", "computerized")).toBe("מסמך ממוחשב");
+    expect(statutoryMark("he", "draftMark")).toBe("טיוטה");
+    expect(statutoryMark("en", "computerized")).toContain("מסמך ממוחשב");
+    expect(statutoryMark("en", "computerized")).toContain("Computerized document");
+    expect(statutoryMark("en", "draftMark")).toContain("טיוטה");
+    expect(statutoryMark("en", "draftMark")).toContain("DRAFT");
   });
 
   it("composes the same Hebrew payment-detail phrases as before", () => {
