@@ -269,7 +269,7 @@ html .bg-gradient-to-l.from-orange-50,
 html .bg-gradient-to-r.from-orange-50,
 html .bg-gradient-to-br.from-amber-50,
 html .bg-gradient-to-l.from-amber-50 {
-  background: linear-gradient(160deg, #fbeadb, #fdf4ec) !important;
+  background: linear-gradient(160deg, #fdf4ec, #f7f2eb) !important;
   border-color: var(--goldtintline) !important;
 }
 /* opacity-variant coral washes (sticky summary card, per-row total cell) */

@@ -130,8 +130,8 @@
   /* Page-field texture tokens, same pass. The washes carry the brand orange
      (top-left behind the hero, mid-right behind the advantage grid) plus one
      charcoal whisper low on the page - see `.ml-theme::before` below. */
-  --ml-wash-peach: rgba(217, 106, 29, 0.10);
-  --ml-wash-amber: rgba(242, 163, 60, 0.14);
+  --ml-wash-peach: rgba(217, 106, 29, 0.06);
+  --ml-wash-amber: rgba(242, 163, 60, 0.08);
   --ml-wash-rose: rgba(31, 35, 43, 0.04);
 
   position: relative;
