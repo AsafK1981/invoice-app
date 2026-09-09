@@ -52,6 +52,16 @@ export default function NewCreditNotePage() {
         <p className="text-sm text-stone-700 mt-2 mr-14">
           ביטול או החזר על חשבונית מס שהונפקה. הסכום יישמר כשלילי בדו״חות.
         </p>
+        {/* הוראות ניהול ספרים 23א(3): the credit note reduces reported sales and
+            VAT only once the customer confirmed receiving it, in one of four
+            ways. The app cannot collect that confirmation yet, so it tells the
+            owner what to keep. */}
+        <p className="text-xs text-stone-600 mt-2 mr-14 leading-relaxed">
+          לפי הוראות ניהול ספרים (סעיף 23א), הזיכוי מקטין את המכירות ואת המע״מ המדווחים רק
+          אחרי שהלקוח אישר שקיבל אותו: חתימתו על ההעתק שנשאר אצלך, משלוח בדואר רשום עם אישור
+          מסירה (מעל 1,400 ש״ח מע״מ יש לצרף את אישור המסירה להעתק), אישור בפקס, או אישור בחתימה
+          אלקטרונית מאושרת שלו. שמור את האישור יחד עם ההעתק.
+        </p>
       </div>
 
       <ReceiptEditor
