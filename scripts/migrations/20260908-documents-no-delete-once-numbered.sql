@@ -127,9 +127,9 @@
 -- CONSEQUENCE, STATED PLAINLY: deleting a user from the Supabase dashboard
 -- (that connection runs as supabase_auth_admin, not service_role) while that
 -- user still owns numbered documents will now RAISE
--- "numbered documents cannot be deleted; cancel via credit note", and the
--- deletion will fail. That is intended, not a bug. Delete such an account
--- through /api/delete-account instead: it wipes the data as service_role first
+-- "numbered documents cannot be deleted; mark it cancelled or issue a credit
+-- note", and the deletion will fail. That is intended, not a bug. Delete
+-- such an account through /api/delete-account instead: it wipes the data as service_role first
 -- and removes the auth user last.
 --
 -- The emailed_at nulling in those two routes is now redundant - the
