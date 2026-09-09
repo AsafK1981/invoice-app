@@ -27,7 +27,9 @@ export type AuditAction =
   | "client.consent_recorded"
   | "client.consent_revoked"
   // 18ב(ב): the owner confirmed the registered-mail notice to פקיד השומה.
-  | "business.tax_officer_notice";
+  | "business.tax_officer_notice"
+  // 25(ו): the owner downloaded the full backup (written server-side by /api/backup).
+  | "business.backup_exported";
 
 export type AuditTargetType = "document" | "client" | "product" | "expense" | "recurring" | "attachment" | "memory" | "business" | "all";
 
@@ -121,6 +123,7 @@ const ACTION_LABELS: Record<AuditAction, string> = {
   "client.consent_recorded": "לקוח הסכים לקבל מסמכים ממוחשבים",
   "client.consent_revoked": "לקוח ביטל הסכמה למסמכים ממוחשבים",
   "business.tax_officer_notice": "הודעה לפקיד השומה על מסמכים ממוחשבים",
+  "business.backup_exported": "גיבוי מלא הורד",
   "document.status_changed": "סטטוס מסמך עודכן",
   "document.number_changed": "מספר מסמך שונה",
   "document.deleted": "מסמך נמחק",

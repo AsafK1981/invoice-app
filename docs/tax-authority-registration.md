@@ -1,4 +1,4 @@
-# Tax Authority "Israel Invoice" — Software House Registration
+# Tax Authority "Israel Invoice" - Software House Registration
 
 This is the **single source of truth** for the registration process with
 רשות המיסים for our integration with the "חשבונית ישראל" (Israel Invoice)
@@ -14,7 +14,7 @@ Tax Authority sees a coherent application.
 | Field | Value |
 | --- | --- |
 | **Software (English)** | MySuperFriendlyInvoiceApp |
-| **Software (Hebrew)** | MySuperFriendlyInvoiceApp — אפליקציית חשבוניות |
+| **Software (Hebrew)** | MySuperFriendlyInvoiceApp - אפליקציית חשבוניות |
 | **Software type** | Web SaaS (Next.js + Supabase, hosted on Vercel) |
 | **Production URL** | https://mysuperfriendlyinvoiceapp.vercel.app |
 | **OAuth callback URL** | https://mysuperfriendlyinvoiceapp.vercel.app/api/tax-authority/callback |
@@ -26,7 +26,7 @@ Tax Authority sees a coherent application.
 | **Vendor type** | יחיד / עוסק פטור |
 | **Vendor tax ID** | 049040686 |
 | **Vendor address** | התלת"ן 12, עודים |
-| **Vendor postal code** | _<lookup needed — Udim>_ |
+| **Vendor postal code** | _<lookup needed - Udim>_ |
 | **Phone** | +972 54 900 0684 |
 | **Technical contact email** | asafkotlar@gmail.com |
 | **Support contact email** | asafkotlar@gmail.com |
@@ -41,7 +41,7 @@ MySuperFriendlyInvoiceApp היא אפליקציית web לניהול חשבונ�
 הקצאה לחשבוניות מס במסגרת רפורמת "חשבונית ישראל".
 ```
 
-## Server IPs (if asked — Vercel runs from many edges, give a representative)
+## Server IPs (if asked - Vercel runs from many edges, give a representative)
 
 Vercel doesn't pin static IPs for serverless functions. Mention this if
 asked; if the Tax Authority requires whitelisting we will request a
@@ -51,13 +51,13 @@ Vercel "static IP" add-on or move the integration to a fixed-IP egress.
 
 For our integration, request access to:
 
-- **`Invoices`** — POST `/Invoices/v1/Approval` (the allocation-number endpoint)
+- **`Invoices`** - POST `/Invoices/v1/Approval` (the allocation-number endpoint)
 - _Optional later:_ `VATReportApi` (VAT periodic reports)
 - _Optional later:_ `invoice-information` (reverse lookup by allocation number)
 
 ---
 
-## Process — step by step
+## Process - step by step
 
 ### Step 1: Register at the developer portal
 
@@ -77,7 +77,7 @@ Once logged in:
 5. Select APIs: check `Invoices`
 6. Submit
 
-The portal will issue a **`client_id`** and **`client_secret`** — keep
+The portal will issue a **`client_id`** and **`client_secret`** - keep
 these safe.
 
 ### Step 3: Get the `Accounting_Software_Number`
@@ -146,20 +146,24 @@ After 1-2 weeks of stable sandbox use:
 
 ---
 
-## Separate (non-blocking): Software Registry
+## Software Registry (מרשם תוכנות) - CORRECTED 2026-09-08: this is MANDATORY
 
-The "מרשם תוכנות לניהול מערכת חשבונות" registration at
-https://www.gov.il/he/service/registration-software-designed-managing-computerized-accounting-system
-is a separate process that issues an official certificate (תעודת רישום
-תוכנה). It takes up to **90 days** to process and is not required for
-API access — but it lets businesses verify our app at
-misim.gov.il/mm_tocna/.
+The paragraph that used to sit here called the מרשם תוכנות registration
+"not required" and "not on the critical path". That was wrong. Under
+הוראות ניהול ספרים, סעיף 36 + נספח ה', software "המיועדת למכירה, להשכרה או
+לשימושו של אחר" MUST be registered, and the consequence of not registering
+falls on every user: their books "אינה בבחינת מערכת חשבונות... יחשב כמי שלא
+ניהל בשנת המס מערכת חשבונות" (הוראת ביצוע 3/2003, 3.1).
 
-Worth submitting in parallel; not on the critical path.
+It is a separate track from the SHAAM API software-house connection above
+(request 1973). Registration is declaration-only, no fee was found, valid 3
+tax years, and a new version needs a new registration.
 
----
+Do NOT submit it before the app meets the declaration. The full requirement
+list, the current gaps, and the order of work are in
+`docs/compliance-nihul-sfarim-2026-09-08.md`. The identity/contact values in this file are still the ones to use.
 
-## Known issue — Login-P duplicate (2026-05-17, 03:41)
+## Known issue - Login-P duplicate (2026-05-17, 03:41)
 
 After successful Sign-up at the developer portal, attempting to
 Sign in via "Israel Taxes Login-P" returns:
@@ -176,7 +180,7 @@ keyed off `asafkotlar@gmail.com` and refuses to bind them.
 **Action required:** email `apisupport@taxes.gov.il` (see template
 below). Cannot self-resolve from the UI.
 
-### Email template — send to apisupport@taxes.gov.il
+### Email template - send to apisupport@taxes.gov.il
 
 ```
 Subject: בקשה לפתרון כפילות חשבון ב-Developer Portal
@@ -211,7 +215,7 @@ secapp.taxes.gov.il/logon/LogonPoint/tmindex.html עם ת.ז וקוד
 אסף קוטלר
 ```
 
-## Submitted application — 2026-05-18
+## Submitted application - 2026-05-18
 
 | Field | Value |
 | --- | --- |
@@ -223,16 +227,16 @@ secapp.taxes.gov.il/logon/LogonPoint/tmindex.html עם ת.ז וקוד
 | Attached: נספח אבטחת מידע | `Rashot Hamisim/Need to fill out and email them/Filled out/New Scan 2026-05-18 1424.pdf` |
 | Customer/Token count declared | 1 / 1 (stay below 10 to avoid PT requirement) |
 
-After approval (per confirmation screen) — proceed to developer-portal
+After approval (per confirmation screen) - proceed to developer-portal
 procedure, page 4 §1 of "נוהל עבודה בפורטל המפתחים".
 
 **Blocking issue still open:** Login-P duplicate (asafkotlar@gmail.com)
-— must be resolved by apisupport@taxes.gov.il before we can create the
+ - must be resolved by apisupport@taxes.gov.il before we can create the
 app + Client ID in the developer portal.
 
 ## Contact info collected
 
-- API support (tech): `APISupport@taxes.gov.il` · phone 02-5688444 · Sun–Thu 8:00–17:00
+- API support (tech): `APISupport@taxes.gov.il` · phone 02-5688444 · Sun-Thu 8:00-17:00
 - Software-house registration support: `lakohot-bt@taxes.gov.il`
 - General SHAAM contact: https://secapp.taxes.gov.il/sr-pniyot-shaam
 - Developer portal: https://openapi-portal.taxes.gov.il/

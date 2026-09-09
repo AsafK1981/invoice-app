@@ -12,6 +12,7 @@ import {
   ShieldAlert,
   Sparkles,
   MessageCircle,
+  HardDriveDownload,
 } from "lucide-react";
 import {
   useNotifications,
@@ -73,6 +74,11 @@ const KIND_STYLE: Record<
     icon: MessageCircle,
     iconColor: "text-emerald-700",
     bg: "bg-emerald-50 border-emerald-200",
+  },
+  backup_reminder: {
+    icon: HardDriveDownload,
+    iconColor: "text-stone-700",
+    bg: "bg-stone-50 border-stone-200",
   },
 };
 

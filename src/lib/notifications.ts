@@ -12,7 +12,9 @@ export type NotificationKind =
   | "tax_token_expiring"
   | "monthly_reminder_sent"
   | "proposal_ready"
-  | "whatsapp_reminder_ready";
+  | "whatsapp_reminder_ready"
+  // ניהול ספרים 25(ו): first week of a quarter, no backup taken yet.
+  | "backup_reminder";
 
 export interface NotificationRow {
   id: string;
@@ -61,6 +63,7 @@ export const NOTIFICATION_KIND_LABELS: Record<NotificationKind, string> = {
   monthly_reminder_sent: "תזכורת חודשית נשלחה",
   proposal_ready: "חשבונית מוכנה לאישור",
   whatsapp_reminder_ready: "תזכורת בוואטסאפ מוכנה לשליחה",
+  backup_reminder: "תזכורת לגיבוי הרבעוני",
 };
 
 /** Same-origin guard for href values stored in notifications. Never let a

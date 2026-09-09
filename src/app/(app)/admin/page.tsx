@@ -385,6 +385,15 @@ export default function AdminPage() {
             <div className="px-5 py-3 border-b border-orange-100 flex items-center gap-2">
               <Users className="w-4 h-4 text-orange-500" />
               <h2 className="font-semibold text-stone-900">הרשמות אחרונות</h2>
+              {/* נספח ה' (ה): the software house customer book, printable. */}
+              <button
+                type="button"
+                onClick={() => void downloadCustomerBook()}
+                className="mr-auto text-xs text-stone-600 underline hover:text-stone-900"
+                title="ספר לקוחות של בית התוכנה (הוראות ניהול ספרים, נספח ה' (ה))"
+              >
+                ספר לקוחות (CSV)
+              </button>
             </div>
             {stats.users.recentSignups.length === 0 ? (
               <p className="p-5 text-sm text-stone-500 italic">אין הרשמות עדיין</p>
@@ -642,4 +651,28 @@ function DocTypeCounts({
       ))}
     </ul>
   );
+}
+
+/**
+ * Downloads the software-house customer book (נספח ה' (ה)) as CSV through the
+ * admin-only route; the route logs the access.
+ */
+async function downloadCustomerBook() {
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token;
+  if (!token) return;
+  const res = await fetch("/api/admin/customer-book", { headers: { Authorization: `Bearer ${token}` } });
+  if (!res.ok) {
+    window.alert("הורדת ספר הלקוחות נכשלה");
+    return;
+  }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `customer-book-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }

@@ -31,6 +31,8 @@ import { AuditLogSection } from "@/components/audit-log-section";
 import { AssistantMemorySection } from "@/components/assistant-memory-section";
 import { TaxAuthoritySection } from "@/components/tax-authority-section";
 import { TaxOfficerNoticeSection } from "@/components/tax-officer-notice-section";
+import { BackupSection } from "@/components/backup-section";
+import { SoftwareRegistrationSection } from "@/components/software-registration-section";
 import { TwoFactorSection } from "@/components/two-factor-section";
 import { WhatsAppSection } from "@/components/whatsapp-section";
 import { EmailInboxSection } from "@/components/email-inbox-section";
@@ -332,6 +334,10 @@ export default function SettingsPage() {
       </div>
 
       <TaxOfficerNoticeSection />
+
+      <BackupSection />
+
+      <SoftwareRegistrationSection />
 
       <PushSettingsSection />
 
