@@ -157,7 +157,7 @@ export function generateSampleDataset(input: SampleInput): SampleDataset {
       ? withCheckDigit(String(51000000 + Math.floor(rng() * 8999999)))
       : withCheckDigit(String(10000000 + Math.floor(rng() * 89999999)));
     clients.push({
-      id: `sample-client-${i.toString().padStart(4, "0")}`,
+      id: `sc${i.toString().padStart(8, "0")}-sample-client`,
       name,
       taxId,
       address: `רחוב ${LAST_NAMES[Math.floor(rng() * LAST_NAMES.length)]} ${Math.floor(rng() * 99) + 1}, תל אביב`,

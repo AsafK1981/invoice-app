@@ -1378,17 +1378,15 @@ html .rpt-rc {
   color: var(--ink);
   transition: background-color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
 }
-html .rpt-rc:hover {
-  background: var(--goldtint) !important;
-  border-color: var(--goldline) !important;
-  box-shadow: var(--dc-sh-lift) !important;
-  transform: translateY(-1px);
+@media (hover: hover) {
+  html .rpt-rc:hover {
+    background: var(--goldtint) !important;
+    border-color: var(--goldline) !important;
+    box-shadow: var(--dc-sh-lift) !important;
+    transform: translateY(-1px);
+  }
 }
 html .rpt-rc:focus-visible { outline: 2px solid var(--g3); outline-offset: 2px; }
-html .rpt-rc-featured {
-  border-color: var(--goldline) !important;
-  background: linear-gradient(170deg, var(--goldtint), #fdf4ec) !important;
-}
 html .rpt-rc-title { font-size: 0.95rem; font-weight: 700; }
 html .rpt-rc-desc { font-size: 0.78rem; line-height: 1.45; color: var(--muted); flex: 1; }
 html .rpt-rc-go {
@@ -3572,20 +3570,21 @@ html .text-\[13px\] { font-size: 14px; }
   html .card-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 
-/* Phones reserve a top toolbar for the assistant and navigation. A bottom
-   overlay can cover arbitrary list actions even when an editor dock is absent. */
+/* Keep the assistant reachable while scrolling. The editor publishes its
+   mobile action-bar height so the launcher always clears the save controls. */
 .assistant-launcher {
-  top: calc(1rem + env(safe-area-inset-top));
-  bottom: auto;
+  top: auto;
+  bottom: calc(16px + max(env(safe-area-inset-bottom, 0px), var(--mobile-dock-h, 0px)));
 }
 @media (min-width: 1024px) {
   .assistant-launcher {
-    position: static;
-    flex-shrink: 0;
-    margin-inline-end: auto;
-    top: auto;
-    bottom: auto;
+    left: 24px;
+    bottom: 24px;
   }
+}
+/* The install invitation temporarily owns the same mobile corner. */
+@media (max-width: 1023.98px) {
+  html:has(.app-install-prompt) .assistant-launcher { visibility: hidden; }
 }
 
 /* Periodic nudge (Asaf, 2026-08-18: "I don't notice it"). Every 30s the pill

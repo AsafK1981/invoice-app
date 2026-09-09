@@ -1,18 +1,19 @@
 "use client";
 
+import { useState } from "react";
 import { Receipt } from "lucide-react";
-import { useDocuments } from "@/lib/document-store";
-import { useExpenses } from "@/lib/expense-store";
+import { useFilingReportData } from "@/lib/filing-report-data";
 import { useBusiness } from "@/lib/business-store";
-import { VatPeriodReport } from "@/components/vat-period-report";
+import { VatPeriodReport, type PeriodMode } from "@/components/vat-period-report";
 import { ReportPageHeader } from "@/components/report-page-header";
 
 export default function VatReportPage() {
-  const { documents, ready: docsReady } = useDocuments();
-  const { items: expenses, ready: expReady } = useExpenses();
+  const [mode, setMode] = useState<PeriodMode>("this_2m");
   const { business, ready: bizReady } = useBusiness();
+  const { data, error, retry } = useFilingReportData(business.id);
 
-  if (!docsReady || !expReady || !bizReady) {
+  if (error) return <div role="alert" className="card-soft p-6 space-y-3"><p>{error}</p><button onClick={retry} className="btn-primary">טען שוב</button></div>;
+  if (!data || !bizReady) {
     return <div className="text-center py-16 text-stone-500">טוען...</div>;
   }
 
@@ -29,7 +30,8 @@ export default function VatReportPage() {
             : "המחזור השנתי שמדווחים למע״מ פעם בשנה, מוכן להעתקה."
         }
       />
-      <VatPeriodReport headless business={business} documents={documents} expenses={expenses} />
+      <button type="button" onClick={retry} className="btn-secondary no-print">רענן נתונים ובדוק שוב</button>
+      <VatPeriodReport headless selectedMode={mode} onPeriodChange={setMode} business={business} documents={data.documents} expenses={data.expenses} />
     </div>
   );
 }

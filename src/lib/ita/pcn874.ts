@@ -8,7 +8,9 @@
 // Layout (verified 2026-09-03 against the production generator used by the
 // open-source "accounter" bookkeeping stack and against the record
 // vocabulary in the Hashavshevet 2026 and Rivhit PCN874 guides; the ITA's
-// own PDF is not publicly fetchable). A first real upload should still go
+// full layout PDF was not fetched. Error codes 201-206 were rechecked in
+// the indexed ITA error-code document on 2026-09-08; see
+// docs/research/2026-09-08-pcn874-validation.md). A real upload should go
 // through the ITA simulator once - that is the only authoritative check:
 //
 //   Header  "O", 131 chars:
@@ -55,10 +57,10 @@
 
 import type { Business, Expense, InvoiceDocument } from "../types";
 import { formatDate } from "../format";
+import { isValidIsraeliIdNumber } from "../israeli-id";
 import {
   allocationRequiredThreshold,
   normalizeCustomerVatNumber,
-  requiresAllocationNumber,
 } from "../tax-authority";
 
 export type PcnEntryType = "S" | "L" | "M" | "Y" | "I" | "T" | "K" | "R" | "P" | "H" | "C";
@@ -151,7 +153,8 @@ export interface Pcn874Result {
   warnings: PcnWarning[];
   /**
    * Whole-file reasons the file must not be handed over at all (dealer number
-   * invalid, period not a filing period, period still open). Empty = ok.
+   * invalid, period not a filing period, period still open). Export requires
+   * both no blockers and no warnings with level error.
    */
   blockers: string[];
   /** True when the period nets to a refund, so inputs were itemised (no K). */
@@ -221,6 +224,69 @@ export function monthsInRange(range: { start: string; end: string }): number {
   const [sy, sm] = range.start.split("-").map(Number);
   const [ey, em] = range.end.split("-").map(Number);
   return (ey - sy) * 12 + (em - sm) + 1;
+}
+
+/** ITA detailed-report error codes 201-206. Registry status requires an online check. */
+export function validPcnVatId(value: string): boolean {
+  return /^\d{9}$/.test(value) && isValidIsraeliIdNumber(value);
+}
+
+export function validPcnDate(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(`${value}T00:00:00Z`);
+  return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
+}
+
+const validCompactDate = (v: string) => /^\d{8}$/.test(v) && validPcnDate(`${v.slice(0, 4)}-${v.slice(4, 6)}-${v.slice(6, 8)}`);
+const withinField = (n: number, width: number) => Number.isFinite(n) && Math.abs(roundShekel(n)) < 10 ** width;
+const allocationApplies = (date: string, net: number) => date >= "2024-05-05" && net > allocationRequiredThreshold(new Date(`${date}T12:00:00Z`));
+
+/** Inspect original values before filtering dates or lossy numeric formatting. */
+function validateSources(documents: InvoiceDocument[], expenses: Expense[], range: BuildPcn874Args["range"]): PcnWarning[] {
+  const warnings: PcnWarning[] = [];
+  const seen = new Set<string>();
+  const check = (row: InvoiceDocument | Expense, source: PcnWarning["source"]) => {
+    const isDoc = source === "document";
+    const d = row as InvoiceDocument;
+    const e = row as Expense;
+    const add = (message: string, level: PcnWarningLevel = "error") => warnings.push({ level, message, source, sourceId: row.id, sourceLabel: isDoc ? docLabel(d) : expenseLabel(e) });
+    if (!validPcnDate(row.date)) {
+      add("התאריך חסר או אינו תקין. פתח את הרשומה ותקן את התאריך כדי שנוכל לשייך אותה לתקופת הדיווח.");
+      return;
+    }
+    if (row.date < range.start || row.date > range.end) return;
+    const net = isDoc ? (d.subtotalIls ?? d.subtotal) : e.amount - (e.vatAmount ?? 0);
+    const vat = isDoc ? (d.vatIls ?? d.vat) : (e.vatAmount ?? 0);
+    if (!withinField(net, 10) || !withinField(vat, 9) || !Number.isFinite(isDoc ? d.total : e.amount))
+      add("סכום חסר, לא מספרי או גדול מדי לשדות קובץ הדיווח. בדוק את הסכום לפני מע״מ ואת המע״מ ברשומה.");
+    if (!isDoc && (e.amount < 0 || vat < 0 || vat > e.amount))
+      add("סכום ההוצאה או המע״מ אינו תקין: המע״מ חייב להיות בין אפס לסכום ההוצאה. זיכוי ספק דורש טיפול נפרד לפני הייצוא.");
+    if (isDoc && ((net < 0 && vat > 0) || (net > 0 && vat < 0) || (net === 0 && vat !== 0)))
+      add("סימני הסכום והמע״מ אינם תואמים. בדוק את נתוני החשבונית או הזיכוי.");
+    if (isDoc && ((d.type === "credit_note" && (net > 0 || vat > 0)) || (d.type !== "credit_note" && (net < 0 || vat < 0))))
+      add("סימן הסכום אינו תואם את סוג המסמך. זיכוי חייב לכלול סכומים שליליים וחשבונית רגילה סכומים חיוביים.");
+    if (isDoc && d.zeroRated && vat !== 0) add("המסמך סומן בשיעור אפס אך כולל מע״מ. בדוק את הסיווג והסכומים לפני הייצוא.");
+    if (isDoc && d.currency && d.currency !== "ILS" && (!Number.isFinite(d.subtotalIls) || !Number.isFinite(d.vatIls)))
+      add("במסמך במטבע חוץ חסרים סכומי שקל שמורים. השלם את ההמרה לשקלים לפני הדיווח.");
+    if (!isDoc && vat === 0) return;
+    const id = String((isDoc ? d.clientTaxId : e.supplierTaxId) ?? "").trim();
+    if (id && !validPcnVatId(id)) add("מספר העוסק כולל תווים שגויים, אינו בן 9 ספרות או שספרת הביקורת שגויה. בדוק מול החשבונית ותקן את המספר.");
+    const reference = isDoc ? String(d.number) : referenceDigits(e.reference);
+    if ((isDoc || e.reference) && (!/^\d{1,9}$/.test(reference) || Number(reference) === 0))
+      add("מספר החשבונית חייב להיות מספר חיובי של עד 9 ספרות בשדה הדיווח. בדוק את האסמכתא; לא ניתן לקצר אותה אוטומטית.");
+    if (!isDoc && (String(e.reference ?? "").match(/\d+/g)?.length ?? 0) > 1)
+      add("האסמכתא כוללת כמה קבוצות ספרות. ודא שמספר החשבונית לדיווח הוא קבוצת הספרות האחרונה, או תקן את האסמכתא.", "warning");
+    const allocation = String(row.allocationNumber ?? "").trim();
+    if (allocation && (!/^\d{9}$/.test(allocation) || /^0+$/.test(allocation)))
+      add("מספר ההקצאה חייב להיות 9 ספרות ואינו יכול להיות אפסים בלבד. העתק את המספר המקורי ללא קיצור.");
+    // Distinct invoice series/types and suppliers may legitimately reuse numbers.
+    const key = isDoc ? `document:${d.type}:${d.number}:${d.date.slice(0, 4)}` : `expense:${id}:${String(e.reference)}:${e.date}:${e.amount}:${vat}`;
+    if ((isDoc || (id && reference)) && seen.has(key)) add("נמצאה רשומה נוספת עם אותם פרטי חשבונית. בדוק שלא נכלל כאן דיווח כפול.", "warning");
+    seen.add(key);
+  };
+  documents.filter(d => SALES_TYPES.has(d.type) && d.status !== "draft" && d.status !== "cancelled").forEach(d => check(d, "document"));
+  expenses.forEach(e => check(e, "expense"));
+  return warnings;
 }
 
 // ── record builders ─────────────────────────────────────────────────
@@ -349,10 +415,10 @@ function classifyInputs(
     if (
       supplierVat &&
       !allocation &&
-      net >= allocationRequiredThreshold(new Date(`${e.date}T12:00:00`))
+      allocationApplies(e.date, e.amount - (e.vatAmount ?? 0))
     ) {
       warnings.push({
-        level: "warning",
+        level: "error",
         message: "חשבונית ספק מעל סף חשבונית ישראל בלי מספר הקצאה. בלי המספר מע״מ לא יכיר בתשומה.",
         source: "expense",
         sourceId: e.id,
@@ -400,9 +466,19 @@ export function buildPcn874(args: BuildPcn874Args): Pcn874Result {
 
   // ── whole-file blockers ──
   const blockers: string[] = [];
-  if (dealerDigits.length !== 9) {
-    blockers.push("מספר העוסק של העסק בהגדרות חייב להיות 9 ספרות. תקן אותו לפני הדיווח.");
+  if (!validPcnVatId(String(business.taxId).trim())) {
+    blockers.push("מספר העוסק של העסק בהגדרות חייב להיות 9 ספרות עם ספרת ביקורת תקינה. תקן אותו לפני הדיווח.");
   }
+  if (!validPcnDate(range.start) || !validPcnDate(range.end) || range.start > range.end) {
+    blockers.push("תקופת הדיווח אינה תקינה. בחר תאריכי התחלה וסיום תקינים לפי הסדר.");
+  } else {
+    const next = new Date(range.end + "T00:00:00Z");
+    next.setUTCDate(next.getUTCDate() + 1);
+    if (!range.start.endsWith("-01") || next.getUTCDate() !== 1)
+      blockers.push("בחר חודשים מלאים: מהיום הראשון בחודש ועד היום האחרון בחודש הסיום.");
+  }
+  if (!Number.isFinite(generatedOn.getTime())) blockers.push("תאריך הפקת הקובץ אינו תקין.");
+  if (business.businessType === "exempt") blockers.push("עוסק פטור אינו מגיש דוח מע״מ מפורט. בדוק את סוג העסק בהגדרות.");
   const months = monthsInRange(range);
   if (months !== 1 && months !== 2) {
     blockers.push("קובץ PCN874 מוגש לחודש אחד או לחודשיים. בחר תקופת דיווח חודשית או דו-חודשית.");
@@ -412,7 +488,7 @@ export function buildPcn874(args: BuildPcn874Args): Pcn874Result {
   }
 
   const transactions: PcnTransaction[] = [];
-  const warnings: PcnWarning[] = [];
+  const warnings: PcnWarning[] = validateSources(documents, expenses, range);
 
   // ── sales ──
   const sales = documents.filter(
@@ -492,7 +568,7 @@ export function buildPcn874(args: BuildPcn874Args): Pcn874Result {
 
     // Same gate the editor enforces (חשבונית ישראל): tax documents to a
     // business customer at or above the year's threshold.
-    if (!allocation && requiresAllocationNumber(d)) {
+    if (!allocation && customerVat && vat > 0 && allocationApplies(d.date, d.subtotalIls ?? d.subtotal)) {
       warnings.push({
         level: "warning",
         message: "מסמך מס מעל סף חשבונית ישראל בלי מספר הקצאה. קבל מספר הקצאה מעמוד המסמך לפני הדיווח.",
@@ -562,7 +638,17 @@ export function buildPcn874(args: BuildPcn874Args): Pcn874Result {
     totalVat,
   };
 
+  for (const [field, value] of Object.entries(header)) {
+    if (typeof value === "number" && !withinField(value, ["taxableSalesAmount", "zeroOrExemptSales", "totalVat"].includes(field) ? 11 : 9))
+      blockers.push("סכום או מונה חורג מגודל השדה בקובץ: " + field + ". יש לבדוק את נתוני הדוח.");
+  }
+  for (const t of sorted) {
+    if (!withinField(t.invoiceSum, 10) || !withinField(t.totalVat, 9))
+      blockers.push("סכום רשומה חורג מגודל השדה בקובץ. בדוק את הרשומות המרוכזות: " + t.entryType + " " + t.refNumber);
+  }
   const lines = [headerLine(header), ...sorted.map(transactionLine), footerLine(dealerVatId)];
+
+  blockers.push(...validatePcn874Content(lines.join("\r\n") + "\r\n"));
 
   return {
     filename: pcn874Filename(dealerVatId, reportMonth),
@@ -596,6 +682,12 @@ export function validatePcn874Content(content: string): string[] {
   if (lines.length < 2) return ["הקובץ ריק"];
   const [header, ...rest] = lines;
   const footer = rest.pop() ?? "";
+  if (!/^O\d{15}1\d{8}[+-]\d{11}[+-]\d{9}[+-]\d{11}[+-]\d{9}\d{9}[+-]\d{11}[+-]\d{9}[+-]\d{9}\d{9}[+-]\d{11}$/.test(header))
+    problems.push("רשומת הפתיחה כוללת שדה מספרי, סימן או סוג דיווח לא תקין");
+  if (!/^X\d{9}$/.test(footer)) problems.push("רשומת הסיום כוללת תווים לא תקינים");
+  if (!validPcnVatId(header.slice(1, 10))) problems.push("מספר העוסק בפתיחה אינו תקין");
+  if (!validPcnDate(`${header.slice(10, 14)}-${header.slice(14, 16)}-01`) || !validCompactDate(header.slice(17, 25)))
+    problems.push("תקופת הדיווח או תאריך ההפקה בפתיחה אינם תקינים");
   if (header.length !== 131 || header[0] !== "O") problems.push("רשומת הפתיחה אינה באורך 131 תווים");
   if (footer.length !== 10 || footer[0] !== "X") problems.push("רשומת הסיום אינה באורך 10 תווים");
   if (header.slice(1, 10) !== footer.slice(1, 10)) problems.push("מספר העוסק ברשומת הסיום שונה מזה שבפתיחה");
@@ -610,13 +702,19 @@ export function validatePcn874Content(content: string): string[] {
   let inputs = 0;
   let bodySalesVat = 0;
   let bodyInputsVat = 0;
+  let bodySalesAmount = 0;
   rest.forEach((l, i) => {
     if (l.length !== 60) problems.push(`רשומה ${i + 1} אינה באורך 60 תווים`);
+    if (!/^[SLMYITKRPHC]\d{39}[+-]\d{19}$/.test(l)) problems.push(`רשומה ${i + 1} כוללת שדה מספרי או סימן לא תקין`);
+    if (!validCompactDate(l.slice(10, 18))) problems.push(`התאריך ברשומה ${i + 1} אינו תקין`);
+    if ("ST".includes(l[0]) && !validPcnVatId(l.slice(1, 10))) problems.push(`מספר העוסק ברשומה ${i + 1} אינו תקין`);
+    if (Number(l.slice(22, 31)) === 0) problems.push(`מספר החשבונית או מונה החשבוניות ברשומה ${i + 1} הוא אפס`);
     const vat = parseInt(l.slice(31, 40), 10) || 0;
     const sign = l[40] === "-" ? -1 : 1;
     if ("SLMYI".includes(l[0])) {
       sales += 1;
       bodySalesVat += sign * vat;
+      bodySalesAmount += signed(l.slice(40, 51));
     } else if ("TKRPHC".includes(l[0])) {
       inputs += 1;
       bodyInputsVat += sign * vat;
@@ -626,5 +724,9 @@ export function validatePcn874Content(content: string): string[] {
   if (inputs !== inputsCount) problems.push(`מספר רשומות התשומות (${inputs}) שונה ממה שרשום בפתיחה (${inputsCount})`);
   if (bodySalesVat !== headerSalesVat) problems.push(`מס העסקאות בפתיחה (${headerSalesVat}) שונה מסכום הרשומות (${bodySalesVat})`);
   if (bodyInputsVat !== headerInputsVat) problems.push(`מס התשומות בפתיחה (${headerInputsVat}) שונה מסכום הרשומות (${bodyInputsVat})`);
+  if (bodySalesAmount !== signed(header.slice(25, 37)) + signed(header.slice(47, 59)) + signed(header.slice(78, 90)))
+    problems.push("סכום העסקאות בפתיחה שונה מסכום רשומות העסקאות");
+  if (signed(header.slice(119, 131)) !== headerSalesVat + signed(header.slice(59, 69)) - headerInputsVat)
+    problems.push("הסכום לתשלום או להחזר אינו תואם את ההפרש בין מס העסקאות למס התשומות");
   return problems;
 }

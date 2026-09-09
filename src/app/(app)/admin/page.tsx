@@ -398,7 +398,7 @@ export default function AdminPage() {
             {stats.users.recentSignups.length === 0 ? (
               <p className="p-5 text-sm text-stone-500 italic">אין הרשמות עדיין</p>
             ) : (
-              <ul className="divide-y divide-orange-50">
+              <ul className="divide-y divide-orange-50 max-h-[32rem] overflow-y-auto" tabIndex={0} aria-label="הרשמות אחרונות">
                 {stats.users.recentSignups.map((u) => (
                   <li key={u.id} className="px-5 py-3 flex items-center justify-between gap-3 hover:bg-orange-50/40">
                     <div className="min-w-0 flex-1">

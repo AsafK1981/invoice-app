@@ -29,6 +29,8 @@ import {
 } from "@/lib/report-period";
 import { PeriodPicker } from "@/components/period-picker";
 import { ReportsBarChart, type BarDatum } from "@/components/reports-bar-chart";
+import { ReportPreflight } from "@/components/report-preflight";
+import type { ReportIssue } from "@/lib/invoice-report-preflight";
 import type { InvoiceDocument, Expense } from "@/lib/types";
 
 type MonthTotals = { income: number; expenses: number; docs: number };
@@ -67,6 +69,8 @@ export default function ReportsPage() {
   const [period, setPeriod] = useState<Period>(() => String(new Date().getFullYear()));
   /** The 2.6 + 5.4 printouts of the last מבנה אחיד export, shown right after the ZIP lands. */
   const [uniformReport, setUniformReport] = useState<UniformReportData | null>(null);
+  const [uniformCheck, setUniformCheck] = useState<{ year: number; sample: boolean; issues: ReportIssue[] } | null>(null);
+  const [uniformBusy, setUniformBusy] = useState(false);
 
   const year = periodYear(period);
   /** File-name tag for the exports: "2026-08", or "2026-01-05_2026-03-10" for a range. */
@@ -187,33 +191,43 @@ export default function ReportsPage() {
 
   const exportYear = year ?? new Date().getFullYear();
 
-  async function downloadUniformStructure(sample = false) {
+  async function downloadUniformStructure(sample = false, download = false) {
+    if (uniformBusy) return;
     setMenuOpen(false);
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.access_token) {
-      showToast("פג תוקף ההתחברות, התחבר מחדש");
-      return;
+    setUniformBusy(true);
+    const checkedYear = exportYear;
+    if (!download) setUniformCheck(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error("פג תוקף ההתחברות, התחבר מחדש");
+      const qs = `year=${checkedYear}${sample ? "&sample=true" : ""}${download ? "" : "&preflight=true"}`;
+      const res = await fetch(`/api/uniform-structure/export?${qs}`, {
+        headers: { authorization: `Bearer ${session.access_token}` },
+      });
+      if (!res.ok || !download) {
+        const result = await res.json();
+        if (Array.isArray(result.issues)) {
+          const issues: ReportIssue[] = result.issues;
+          if (!res.ok && !issues.some((issue) => issue.level === "error")) issues.push({ level: "error", message: friendlyError(result, "הבדיקה נכשלה. נסו שוב.") });
+          setUniformCheck({ year: checkedYear, sample, issues });
+          if (!download) requestAnimationFrame(() => document.getElementById("uniform-preflight")?.scrollIntoView({ block: "start", behavior: "smooth" }));
+        } else throw new Error(friendlyError(result, "בדיקת הקובץ נכשלה. נסו שוב."));
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `OPENFRMT-${business.taxId}-${checkedYear}${sample ? "-SAMPLE" : ""}.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+      setUniformReport(parseUniformReport(res.headers.get("X-Uniform-Report")));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "הבדיקה נכשלה. נסו שוב.";
+      setUniformCheck({ year: checkedYear, sample, issues: [{ level: "error", message }] });
+    } finally {
+      setUniformBusy(false);
     }
-    const qs = `year=${exportYear}${sample ? "&sample=true" : ""}`;
-    const res = await fetch(`/api/uniform-structure/export?${qs}`, {
-      headers: { authorization: `Bearer ${session.access_token}` },
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: "שגיאה לא ידועה" }));
-      showToast(friendlyError(err, `ייצוא נכשל (${res.status})`));
-      return;
-    }
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `OPENFRMT-${business.taxId}-${exportYear}${sample ? "-SAMPLE" : ""}.zip`;
-    a.click();
-    URL.revokeObjectURL(url);
-    // The spec (sections 2.6 and 5.4) wants a printed summary next to the
-    // files; the route sends its figures in a header so we never build the
-    // file twice.
-    setUniformReport(parseUniformReport(res.headers.get("X-Uniform-Report")));
   }
 
   /* ---------- the report cards ---------- */
@@ -221,9 +235,9 @@ export default function ReportsPage() {
   /** Header block of every Excel export from this page: who, and which period. */
   const exportMeta = { businessName: business.name, subtitle: periodLabel(period) };
   const cards: ReportCardSpec[] = [
-    { icon: TrendingUp, title: "דוח רווח והפסד", href: "/reports/profit-loss", featured: true, desc: "הכנסות, זיכויים והוצאות לפי קטגוריה, עם רווח לפני פחת והתאמות מס. כולל PDF ו-Excel." },
+    { icon: TrendingUp, title: "דוח רווח והפסד", href: "/reports/profit-loss", desc: "הכנסות, זיכויים והוצאות לפי קטגוריה, עם רווח לפני פחת והתאמות מס. כולל PDF ו-Excel." },
     {
-      icon: FileText, title: "סיכום שנתי לדיווח", href: `/reports/annual/${exportYear}`, featured: true,
+      icon: FileText, title: "סיכום שנתי לדיווח", href: `/reports/annual/${exportYear}`,
       desc: "כל המספרים לדוח השנתי במקום אחד: הכנסות לפי סוג מסמך, הוצאות לפי קטגוריה, לקוחות גדולים.",
     },
     {
@@ -266,7 +280,7 @@ export default function ReportsPage() {
       desc: "טיוטה של החלק העסקי בלבד, לצירוף לטופס 1219 או לרואה החשבון.",
     },
     {
-      icon: FileArchive, title: "מבנה אחיד (OPENFORMAT)", action: "הורד", onClick: () => downloadUniformStructure(false),
+      icon: FileArchive, title: "מבנה אחיד (OPENFORMAT)", action: "בדיקה והורדה", onClick: () => downloadUniformStructure(false),
       desc: `קבצי מבנה אחיד לשנת ${exportYear} לפי דרישת רשות המסים, לביקורת או לרואה החשבון.`,
     },
     {
@@ -288,6 +302,16 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-6 rpt" data-print-hidden={uniformReport ? "true" : undefined}>
+      {(uniformBusy || uniformCheck?.year === exportYear) && <div id="uniform-preflight" className="space-y-3 no-print">
+        <h2 className="text-lg font-bold">בדיקה לפני הורדת מבנה אחיד לשנת {exportYear}</h2>
+        {uniformBusy ? <p role="status">טוען את כל הנתונים ובודק את הקובץ...</p> : uniformCheck && <>
+          <ReportPreflight issues={uniformCheck.issues} description={uniformCheck.sample ? "קובץ דוגמה עם נתונים מלאכותיים לבדיקת תוכנה בלבד. אין להגישו כדיווח של העסק." : "קובץ מבנה אחיד מיועד לביקורת או להעברה לפי דרישה. הוא אינו דוח מע״מ תקופתי. הבדיקה המקומית אינה אישור קליטה או אישור רישום תוכנה של רשות המסים."} />
+          <div className="flex flex-wrap gap-3">
+            <button type="button" className="btn-primary disabled:opacity-50" disabled={uniformCheck.issues.some((issue) => issue.level === "error")} onClick={() => downloadUniformStructure(uniformCheck.sample, true)}>הורד קובץ לאחר בדיקה</button>
+            <button type="button" className="btn-secondary" onClick={() => downloadUniformStructure(uniformCheck.sample)}>בדוק שוב</button>
+          </div>
+        </>}
+      </div>}
       <UniformStructureReport
         report={uniformReport}
         onClose={() => setUniformReport(null)}
@@ -589,10 +613,9 @@ interface ReportCardSpec {
   href?: string;
   onClick?: () => void;
   action?: string;
-  featured?: boolean;
 }
 
-function ReportCard({ icon: Icon, title, desc, href, onClick, action = "פתח", featured }: ReportCardSpec) {
+function ReportCard({ icon: Icon, title, desc, href, onClick, action = "פתח" }: ReportCardSpec) {
   const inner = (
     <>
       <span className="rpt-icot"><Icon aria-hidden="true" /></span>
@@ -601,7 +624,7 @@ function ReportCard({ icon: Icon, title, desc, href, onClick, action = "פתח",
       <span className="rpt-rc-go">{action}<ArrowLeft aria-hidden="true" /></span>
     </>
   );
-  const cls = `card-soft rpt-rc${featured ? " rpt-rc-featured" : ""}`;
+  const cls = "card-soft rpt-rc";
   return href ? (
     <Link href={href} className={cls}>{inner}</Link>
   ) : (

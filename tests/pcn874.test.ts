@@ -10,7 +10,7 @@ import {
 } from "@/lib/ita/pcn874";
 import type { Expense, InvoiceDocument } from "@/lib/types";
 
-const business = { taxId: "512345678", businessType: "authorized" as const };
+const business = { taxId: "512345679", businessType: "authorized" as const };
 const range = { start: "2026-01-01", end: "2026-02-28" };
 const generatedOn = new Date("2026-03-10T09:00:00+02:00");
 
@@ -40,7 +40,7 @@ function expense(over: Partial<Expense> = {}): Expense {
     supplier: "ספק",
     amount: 1180,
     vatAmount: 180,
-    supplierTaxId: "513333333",
+    supplierTaxId: "513333336",
     reference: "A-7788",
     ...over,
   };
@@ -60,7 +60,7 @@ describe("PCN874 record layout", () => {
     expect(lines[0]).toHaveLength(131);
     expect(lines[0][0]).toBe("O");
     expect(lines.at(-1)).toHaveLength(10);
-    expect(lines.at(-1)).toBe("X512345678");
+    expect(lines.at(-1)).toBe("X512345679");
     for (const l of lines.slice(1, -1)) expect(l).toHaveLength(60);
     expect(r.content.endsWith("\r\n")).toBe(true);
     expect(validatePcn874Content(r.content)).toEqual([]);
@@ -69,8 +69,8 @@ describe("PCN874 record layout", () => {
   it("writes dealer, period (last month of the range), report type 1 and file date in the header", () => {
     const r = build([], []);
     expect(r.header.reportMonth).toBe("202602");
-    expect(headerLine(r.header).slice(0, 25)).toBe("O" + "512345678" + "202602" + "1" + "20260310");
-    expect(r.filename).toBe("PCN874_512345678_202602.txt");
+    expect(headerLine(r.header).slice(0, 25)).toBe("O" + "512345679" + "202602" + "1" + "20260310");
+    expect(r.filename).toBe("PCN874_512345679_202602.txt");
   });
 
   it("encodes a regular identified sale as S with unsigned VAT and signed sum", () => {
@@ -93,7 +93,7 @@ describe("PCN874 classification", () => {
     const r = build(
       [
         doc({ id: "a", clientTaxId: undefined, subtotal: 1000, vat: 180, total: 1180 }),
-        doc({ id: "b", clientTaxId: "", subtotal: 2000, vat: 360, total: 2360 }),
+        doc({ id: "b", number: 1002, clientTaxId: "", subtotal: 2000, vat: 360, total: 2360 }),
       ],
       [],
     );
@@ -195,7 +195,7 @@ describe("PCN874 classification", () => {
       ],
     );
     const t = r.transactions.find((x) => x.entryType === "T")!;
-    expect(t.vatId).toBe("513333333");
+    expect(t.vatId).toBe("513333336");
     expect(t.refNumber).toBe("000000015");
     expect(t.totalVat).toBe(180);
     expect(t.invoiceSum).toBe(1000);
@@ -207,7 +207,7 @@ describe("PCN874 classification", () => {
     expect(r.header.inputsCount).toBe(2);
     expect(r.header.otherInputsVat).toBe(234);
     expect(r.refundPeriod).toBe(false);
-    expect(r.warnings).toEqual([]);
+    expect(r.warnings.some(w => w.level === "warning" && w.sourceId === "t1")).toBe(true);
   });
 
   it("an input with VAT of 300+ and no supplier details is an error, not petty cash", () => {
@@ -239,7 +239,7 @@ describe("PCN874 classification", () => {
   it("warns about a supplier invoice above the allocation threshold without an allocation number", () => {
     // 2026-01: threshold 10,000 before VAT.
     const r = build([sale()], [expense({ amount: 14160, vatAmount: 2160 })]);
-    expect(r.warnings.some((w) => w.level === "warning" && w.message.includes("הקצאה"))).toBe(true);
+    expect(r.warnings.some((w) => w.level === "error" && w.message.includes("הקצאה"))).toBe(true);
     const ok = build([sale()], [expense({ amount: 14160, vatAmount: 2160, allocationNumber: "111222333" })]);
     expect(ok.warnings).toEqual([]);
     expect(ok.transactions.find((x) => x.entryType === "T")!.allocationNumber).toBe("111222333");
@@ -283,7 +283,7 @@ describe("PCN874 classification", () => {
     expect(r.transactions.some((t) => t.entryType === "K")).toBe(false);
     expect(r.transactions.filter((t) => t.entryType === "T")).toHaveLength(2);
     expect(r.warnings.some((w) => w.level === "error" && w.sourceId === "small" && w.message.includes("להחזר"))).toBe(true);
-    expect(validatePcn874Content(r.content)).toEqual([]);
+    expect(validatePcn874Content(r.content).some(p => p.includes("מספר העוסק"))).toBe(true);
   });
 
   it("blocks the file when the period is still open, spans more than two months, or the dealer number is not 9 digits", () => {
@@ -305,5 +305,54 @@ describe("PCN874 classification", () => {
 
   it("footer is X plus the dealer number", () => {
     expect(footerLine("12345678")).toBe("X012345678");
+  });
+});
+
+
+describe("PCN874 preflight rejects malformed source data", () => {
+  it.each([
+    { subtotal: Number.NaN }, { vat: Number.POSITIVE_INFINITY },
+    { subtotal: 10_000_000_000 }, { number: 1_000_000_000 },
+    { number: 0 }, { date: "2026-02-30" }, { date: "" },
+    { clientTaxId: "515555554" }, { clientTaxId: "ABC515555550" },
+    { allocationNumber: "1234567890" }, { allocationNumber: "000000000" },
+    { zeroRated: true }, { currency: "USD" }, { subtotal: -100, vat: 18 },
+  ])("blocks malformed document %j before normalization", (over) => {
+    const r = build([doc({ ...over, id: "bad" })], []);
+    expect(r.warnings.some(w => w.sourceId === "bad" && w.level === "error")).toBe(true);
+  });
+  it.each([{ vatAmount: NaN }, { vatAmount: -18 }, { amount: 100, vatAmount: 180 }])("blocks bad input %j even when filtered out of the body", (over) => {
+    expect(build([sale()], [expense({ ...over, id: "bad" })]).warnings.some(w => w.sourceId === "bad" && w.level === "error")).toBe(true);
+  });
+  it("ignores invalid drafts and cancelled documents", () => {
+    expect(build([doc({ status: "draft", date: "" }), doc({ status: "cancelled", vat: NaN })], []).warnings).toEqual([]);
+  });
+  it("validates closed whole calendar periods", () => {
+    for (const badRange of [{ start: "2026-02-02", end: "2026-02-28" }, { start: "2026-02-01", end: "2026-02-30" }, { start: "2026-02-01", end: "2026-02-27" }]) {
+      expect(buildPcn874({ business, documents: [], expenses: [], range: badRange, generatedOn }).blockers.length).toBeGreaterThan(0);
+    }
+  });
+  it("requires supplier allocations strictly above threshold on invoice date", () => {
+    const at = build([sale()], [expense({ amount: 11800, vatAmount: 1800 })]);
+    expect(at.warnings.some(w => w.source === "expense" && w.message.includes("הקצאה"))).toBe(false);
+    const above = build([sale()], [expense({ amount: 11800.01, vatAmount: 1800 })]);
+    expect(above.warnings.some(w => w.source === "expense" && w.level === "error" && w.message.includes("הקצאה"))).toBe(true);
+  });
+  it("detects numeric corruption, impossible dates and a wrong payable independently", () => {
+    const r = build([sale()], []);
+    const lines = r.content.trim().split("\r\n");
+    for (const [offset, value] of [[31, "x"], [10, "20260230"], [40, "?"]] as const) {
+      const modified = [...lines];
+      modified[1] = lines[1].slice(0, offset) + value + lines[1].slice(offset + value.length);
+      expect(validatePcn874Content(modified.join("\r\n")).length).toBeGreaterThan(0);
+    }
+    const modified = [...lines];
+    modified[0] = lines[0].slice(0, 119) + "+00000000001";
+    expect(validatePcn874Content(modified.join("\r\n")).some(p => p.includes("לתשלום"))).toBe(true);
+  });
+  it("duplicate suggestions distinguish supplier and document type", () => {
+    const r = build([sale(), doc({ type: "credit_note", subtotal: -100, vat: -18, total: -118 })], [expense(), expense({ supplierTaxId: "512345674" })]);
+    expect(r.warnings.some(w => w.message.includes("דיווח כפול"))).toBe(false);
+    expect(build([sale(), sale()], []).warnings.some(w => w.message.includes("דיווח כפול"))).toBe(true);
   });
 });

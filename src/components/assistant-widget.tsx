@@ -736,7 +736,7 @@ export function AssistantWidget() {
     panelStyle.height = `${size.h}px`;
   }
 
-  // Desktop places the launcher in the utility row; mobile reserves a top toolbar.
+  // The launcher and desktop panel share the bottom-left corner.
   // The open mobile panel stays above the keyboard. Both `left` and `right`
   // have to be set in the same breakpoint:
   // the mobile rules pin the panel to both edges, so overriding only one of
@@ -749,27 +749,24 @@ export function AssistantWidget() {
     // "talk to something", plus the words. The label stays visible at every
     // width - hiding it on mobile would put the ambiguity back exactly where
     // most first-time users are.
-    // Asaf (2026-08-18) still did not notice it in the corner, so it is a
-    // larger on desktop (bumped again 2026-08-27: "still too small") and does a short hop + glow ring every ~30s
-    // (CSS-only, respects prefers-reduced-motion) to catch the eye.
+    // A compact labelled button stays available while scrolling. The existing
+    // occasional nudge respects prefers-reduced-motion.
     return (
       <button
         onClick={() => setOpen(true)}
         aria-label="פתח את העוזר החכם"
-        className={`assistant-launcher no-print fixed left-4 right-auto z-40 ${side} h-11 pl-4 pr-3 lg:h-16 lg:pl-6 lg:pr-5 lg:gap-3 rounded-full bg-gradient-to-br from-orange-500 to-orange-700 text-white shadow-lg shadow-orange-300/60 flex items-center gap-2 hover:scale-105 active:scale-95 transition-transform print:hidden`}
+        className="assistant-launcher no-print fixed left-4 right-auto z-40 h-12 pl-4 pr-3 lg:h-14 lg:pl-5 lg:pr-4 rounded-full bg-gradient-to-br from-orange-500 to-orange-700 text-white shadow-lg shadow-orange-300/60 flex items-center gap-2 hover:shadow-xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-orange-700 transition-shadow print:hidden"
       >
         {/* Attention ring: expands and fades once per nudge cycle (see
             .assistant-launcher::after in app-skin.css). Decorative only. */}
         <span aria-hidden="true" className="assistant-launcher-ring" />
-        {/* The brand mark, not a generic chat bubble (2026-09-06 rebrand): the
-            pill is solid graphite, and the mark's white page + mint lines are
-            the one thing on it that reads as this product. */}
+        {/* Keep the recognizable brand mark beside the visible label. */}
         <span className="relative flex items-center justify-center">
           <BrandMark size={22} className="lg:hidden" />
-          <BrandMark size={28} className="hidden lg:block" />
+          <BrandMark size={24} className="hidden lg:block" />
           <Sparkles className="w-3 h-3 lg:w-4 lg:h-4 absolute -top-1 -left-1.5 lg:-top-1.5 lg:-left-2" />
         </span>
-        <span className="text-sm lg:text-lg font-semibold whitespace-nowrap">עוזר חכם</span>
+        <span className="text-sm lg:text-base font-semibold whitespace-nowrap">עוזר חכם</span>
       </button>
     );
   }

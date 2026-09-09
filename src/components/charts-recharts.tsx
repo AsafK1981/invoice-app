@@ -21,7 +21,7 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from "recharts";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, formatDate } from "@/lib/format";
 import type { Expense } from "@/lib/types";
 
 /* ------------------------------------------------------------------ */
@@ -121,9 +121,9 @@ export function AdminDailyChart({ data }: AdminDailyChartProps) {
     <ResponsiveContainer width="100%" height="100%">
       <LineChart data={data}>
         <CartesianGrid strokeDasharray="3 3" stroke="#e8ddd0" opacity={0.4} />
-        <XAxis dataKey="date" tick={{ fontSize: 10 }} reversed />
+        <XAxis dataKey="date" tick={{ fontSize: 10 }} tickFormatter={(date) => formatDate(String(date))} reversed />
         <YAxis allowDecimals={false} tick={{ fontSize: 10 }} />
-        <Tooltip />
+        <Tooltip labelFormatter={(date) => formatDate(String(date))} />
         <Line type="monotone" dataKey="count" stroke="#1F232B" strokeWidth={2} dot={{ r: 3 }} />
       </LineChart>
     </ResponsiveContainer>
