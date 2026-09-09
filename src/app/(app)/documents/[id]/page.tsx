@@ -266,7 +266,30 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
   const docReadyWord = doc.type === "proforma" ? "מוכן" : "מוכנה";
   const docItWord = doc.type === "proforma" ? "אותו" : "אותה";
 
+  /**
+   * Asaf, 09.09.2026: the one moment the owner should be told what the law
+   * does with this document is right before it leaves the business for the
+   * first time. Shown once per document (only while original_issued_at and
+   * emailed_at are both still NULL), on every action that sends it out: print,
+   * download, email, WhatsApp, copy link. Two sentences, nothing more.
+   */
+  async function confirmFirstEmission(): Promise<boolean> {
+    if (!doc || doc.status === "draft" || doc.status === "cancelled") return true;
+    if (doc.originalIssuedAt || doc.emailedAt) return true;
+    const label = `${DOCUMENT_TYPE_LABELS[doc.type]} #${doc.number}`;
+    const vatDocument =
+      canIssueTaxInvoices(business) && (doc.type === "tax_invoice" || doc.type === "tax_invoice_receipt");
+    return confirm({
+      title: `${label} יוצא ללקוח בפעם הראשונה`,
+      message: vatDocument
+        ? "המסמך כבר רשום בספרים עם מספר רץ, ולפי הוראות ניהול ספרים אי אפשר למחוק אותו. עד שהוא נמסר ללקוח אפשר לסמן אותו כמבוטל; אחרי המסירה מבטלים אותו רק בחשבונית זיכוי."
+        : "המסמך כבר רשום בספרים עם מספר רץ, ולפי הוראות ניהול ספרים אי אפשר למחוק אותו. אם תצטרך לבטל אותו, סמן אותו כמבוטל: הוא יישאר בספרים עם מספרו ולא ייספר בסיכומים.",
+      confirmLabel: "הבנתי, המשך",
+    });
+  }
+
   async function handlePrint() {
+    if (!(await confirmFirstEmission())) return;
     // Render-then-set (18ב): window.print() blocks until the print dialog is
     // dismissed, so the printed sheet reflects the CURRENT flag (מקור while
     // NULL). Only AFTER it returns do we stamp original_issued_at, making this
@@ -282,6 +305,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
 
   async function handleDownloadPdf() {
     if (!doc || downloadingPdf) return;
+    if (!(await confirmFirstEmission())) return;
     // One-click real .pdf download. The server route renders the public
     // /view page with headless Chrome (full print CSS: RTL, colors,
     // page-breaks, allocation number) and streams back a PDF; no more
@@ -376,6 +400,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
       focusAllocationSection();
       return;
     }
+    if (!(await confirmFirstEmission())) return;
     const to = client?.email;
     if (!to) {
       setToast({ kind: "error", text: "אין מייל שמור ללקוח - הוסף בעמוד הלקוחות" });
@@ -429,13 +454,14 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
     }
   }
 
-  function handleWhatsApp() {
+  async function handleWhatsApp() {
     if (!doc) return;
     if (requiresAllocationNumber(doc, customerTaxId) && !doc.allocationNumber) {
       setToast({ kind: "error", text: "יש להוסיף מספר הקצאה לפני שליחה." });
       focusAllocationSection();
       return;
     }
+    if (!(await confirmFirstEmission())) return;
     const docLabel = DOCUMENT_TYPE_LABELS[doc.type];
     const message =
       `שלום ${doc.clientName},\n\n` +
@@ -479,6 +505,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
   }
 
   async function handleCopyLink() {
+    if (!(await confirmFirstEmission())) return;
     try {
       await navigator.clipboard.writeText(publicUrl);
       setToast({ kind: "success", text: "הקישור הועתק ללוח" });
