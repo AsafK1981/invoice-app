@@ -15,13 +15,17 @@ import { Check } from "lucide-react";
  * which button to press and what happens after.
  */
 export const ALLOCATION_STEPS: { title: string; body: string }[] = [
+  // "הכפתור הגדול" is deliberately gone from step 1 (Asaf, 2026-09-09): his
+  // father read exactly that and could not tell which rectangle was meant.
+  // A button is identified here the way a person describes one out loud - by
+  // its colour and by what is written on it.
   {
     title: "שומרים את המסמך",
-    body: "ממלאים את הפרטים ולוחצים על כפתור השמירה הגדול.",
+    body: "ממלאים את הפרטים ולוחצים על הכפתור הכתום שבסוף הטופס.",
   },
   {
     title: "מבקשים מספר הקצאה",
-    body: "בעמוד המסמך לוחצים על כפתור אחד, ורשות המסים שולחת את המספר תוך שניות.",
+    body: "בעמוד המסמך לוחצים על הכפתור הכתום, ורשות המסים שולחת את המספר תוך שניות.",
   },
   {
     title: "שולחים ללקוח",
@@ -37,6 +41,12 @@ interface Props {
    *  (Asaf, 2026-08-31: the A4-width card left dead space on both sides and
    *  read too small); the in-editor banner keeps the default "md". */
   size?: "md" | "lg";
+  /** 3 side by side (the default, for a full-width card) or 1 per row. The
+   *  editor's card lives in the narrow form column, where `sm:grid-cols-3`
+   *  matched the VIEWPORT while the container was ~440px wide and broke each
+   *  step onto one word per line. Stacking is a prop rather than a class
+   *  override because two `grid-cols-*` utilities would race on source order. */
+  columns?: 1 | 3;
 }
 
 /**
@@ -51,10 +61,15 @@ interface Props {
  * other filled controls. The ONLY colour that is not gold here is the emerald
  * check on a finished step, which means "done" and is kept for that reason.
  */
-export function AllocationSteps({ current, className = "", size = "md" }: Props) {
+export function AllocationSteps({
+  current,
+  className = "",
+  size = "md",
+  columns = 3,
+}: Props) {
   const lg = size === "lg";
   return (
-    <ol className={`grid gap-2 sm:grid-cols-3 ${className}`}>
+    <ol className={`grid gap-2 ${columns === 3 ? "sm:grid-cols-3" : ""} ${className}`}>
       {ALLOCATION_STEPS.map((step, i) => {
         const n = i + 1;
         const done = n < current;
@@ -101,7 +116,11 @@ export function AllocationSteps({ current, className = "", size = "md" }: Props)
                 )}
               </span>
               <span
-                className={`block font-bold leading-snug ${lg ? "text-[15px] sm:min-h-10" : "text-[13px] sm:min-h-9"} ${
+                className={`block font-bold leading-snug ${lg ? "text-[15px]" : "text-[13px]"} ${
+                  // The two-line reservation exists so three side-by-side
+                  // titles share one baseline; stacked, it is dead space.
+                  columns === 3 ? (lg ? "sm:min-h-10" : "sm:min-h-9") : ""
+                } ${
                   active ? "text-stone-900" : "text-stone-600"
                 }`}
               >

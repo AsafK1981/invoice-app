@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AlertCircle, ArrowLeft, Landmark } from "lucide-react";
+import { AlertCircle, ArrowDown, Landmark, MousePointerClick } from "lucide-react";
 import { AllocationSteps } from "@/components/allocation-steps";
 import { Expander } from "@/components/expander";
 
@@ -64,6 +64,7 @@ export function AllocationNextStepCard({
   blockReason,
 }: Props) {
   const [manualOpen, setManualOpen] = useState(false);
+  const [howOpen, setHowOpen] = useState(false);
   const hasNumber = allocationNumber.trim().length > 0;
 
   return (
@@ -78,40 +79,47 @@ export function AllocationNextStepCard({
             אחרי השמירה מבקשים מספר הקצאה
           </p>
           <p className="text-xs text-stone-700 mt-1.5 leading-relaxed">
-            סיימת למלא? לוחצים על הכפתור הגדול שכאן למטה. המסמך נשמר, ובעמוד המסמך מבקשים את
-            מספר ההקצאה מרשות המסים בלחיצה אחת. עד שהמספר מתקבל אי אפשר לשלוח את המסמך ללקוח.
+            סיימת למלא? שומרים את המסמך, ובעמוד המסמך מבקשים את מספר ההקצאה מרשות המסים
+            בלחיצה אחת.
           </p>
         </div>
       </div>
-
-      <AllocationSteps current={1} className="mt-3.5" />
 
       {/* The button the card talks about, in the card. Same handler, same
           gating and same label as the aside / mobile-bar buttons, so the
           three never disagree about whether saving is possible right now.
 
-          The "1" medallion ties this button to step 1 of the strip right
-          above it: the strip numbers the steps, and the button that DOES a
-          step carries that step's number (the request button on the document
-          page carries "2" the same way). The circle keeps a bg-* class so the
-          app-skin descendant ink rule leaves the numeral on the button's own
-          ink. */}
-      <div className="mt-3.5">
-        <button
-          type="button"
-          onClick={onSave}
-          disabled={saveDisabled}
-          className="w-full inline-flex items-center justify-center gap-2 min-h-[52px] px-4 bg-gradient-to-l from-orange-500 to-orange-700 text-white rounded-2xl text-[15px] font-bold text-center leading-tight shadow-md shadow-orange-200/70 hover:shadow-lg hover:shadow-orange-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:from-stone-300 disabled:to-stone-300 disabled:cursor-not-allowed disabled:shadow-none transition-all"
-        >
-          <span
-            aria-hidden
-            className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-white/25 text-[13px] font-bold"
+          POINTING AT IT (Asaf, 2026-09-09), the same treatment as the document
+          page's request button, for the same reason: saying "press the big
+          button below" did not tell his father WHICH rectangle that was. An
+          arrow nudges at it, a ring blooms around it, and the 3-step strip -
+          three more rectangles competing with the one that matters - is folded
+          away under "איך זה עובד?". The "1" medallion went with the strip: it
+          pointed at a list that is no longer on screen.
+
+          Arrow and ring appear only while the button actually works; pointing
+          hard at a disabled button would be worse than not pointing. The
+          blockReason line below says why in that case. */}
+      {!saveDisabled && (
+        <div aria-hidden className="mt-4 flex flex-col items-center text-amber-800">
+          <p className="text-center text-[15px] font-extrabold">
+            לוחצים על הכפתור הכתום שלמטה
+          </p>
+          <ArrowDown className="press-here-arrow h-6 w-6" strokeWidth={3} />
+        </div>
+      )}
+      <div className="mt-2">
+        <div className={`rounded-2xl ${saveDisabled || saveBusy ? "" : "press-here"}`}>
+          <button
+            type="button"
+            onClick={onSave}
+            disabled={saveDisabled}
+            className="w-full inline-flex items-center justify-center gap-2.5 min-h-[60px] px-4 bg-gradient-to-l from-orange-500 to-orange-700 text-white rounded-2xl text-base font-extrabold text-center leading-tight shadow-md shadow-orange-200/70 hover:shadow-lg hover:shadow-orange-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:from-stone-300 disabled:to-stone-300 disabled:cursor-not-allowed disabled:shadow-none transition-all"
           >
-            1
-          </span>
-          <span>{saveLabel}</span>
-          {!saveBusy && <ArrowLeft className="w-4 h-4 flex-shrink-0" aria-hidden />}
-        </button>
+            {!saveBusy && <MousePointerClick className="w-5 h-5 flex-shrink-0" aria-hidden />}
+            <span>{saveLabel}</span>
+          </button>
+        </div>
         {blockReason ? (
           <p className="mt-2 flex items-start justify-center gap-1.5 text-[11px] leading-snug text-amber-800">
             <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
@@ -125,6 +133,19 @@ export function AllocationNextStepCard({
           </p>
         )}
       </div>
+
+      {/* What explains, below what acts - and folded, so it is one quiet line
+          rather than three rectangles next to the button. */}
+      <Expander
+        label="איך זה עובד? (3 שלבים)"
+        open={howOpen}
+        onToggle={() => setHowOpen((s) => !s)}
+      >
+        <AllocationSteps current={1} columns={1} />
+        <p className="mt-3 text-xs text-stone-700 leading-relaxed">
+          עד שמספר ההקצאה מתקבל אי אפשר לשלוח את המסמך ללקוח.
+        </p>
+      </Expander>
 
       <Expander
         label="כבר קיבלתי מספר הקצאה, אקליד אותו בעצמי"

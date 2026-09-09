@@ -1,7 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { ShieldCheck, Landmark, ExternalLink, Pencil, X, Loader2, ChevronDown } from "lucide-react";
+import {
+  ShieldCheck,
+  Landmark,
+  ExternalLink,
+  Pencil,
+  X,
+  Loader2,
+  ChevronDown,
+  ArrowDown,
+  MousePointerClick,
+} from "lucide-react";
 import { setAllocationNumber } from "@/lib/document-store";
 import { requiresAllocationNumber, allocationThresholdSentence } from "@/lib/tax-authority";
 import { AllocationSteps } from "@/components/allocation-steps";
@@ -52,6 +62,10 @@ export function AllocationNumberSection({ doc, customerTaxId, onNumberReceived }
   // Same trap that produced the React #310 bug yesterday.
   const [editing, setEditing] = useState(false);
   const [manualOpen, setManualOpen] = useState(false);
+  // The 3-step strip is now folded away by default (see the STATE 2 card): it
+  // explains, it does not act, and next to the one button it was three more
+  // rectangles to sort through.
+  const [howOpen, setHowOpen] = useState(false);
   const [value, setValue] = useState(doc.allocationNumber || "");
   const [saving, setSaving] = useState(false);
   const [fetching, setFetching] = useState(false);
@@ -313,13 +327,11 @@ export function AllocationNumberSection({ doc, customerTaxId, onNumberReceived }
             קבל מספר הקצאה מרשות המסים
           </p>
           <p className="text-sm sm:text-[15px] text-stone-700 mt-2 leading-relaxed max-w-[70ch]">
-            המסמך נשמר. {thresholdSentence} לוחצים על הכפתור, ורשות המסים שולחת את המספר תוך
-            שניות והוא נשמר על המסמך. עד שהמספר מתקבל אי אפשר לשלוח את המסמך ללקוח.
+            המסמך נשמר. נשאר לבקש מרשות המסים את מספר ההקצאה - זה לוקח כמה שניות, והמספר
+            נשמר על המסמך לבד.
           </p>
         </div>
       </div>
-
-      <AllocationSteps current={2} size="lg" className="mt-5" />
 
       {/* One primary action: ask the Tax Authority for the number now. Uses
           /api/tax-authority/request-allocation with the business's stored
@@ -338,35 +350,85 @@ export function AllocationNumberSection({ doc, customerTaxId, onNumberReceived }
           overwrite it, leaving a focus style that is in the markup and not on
           the screen. The app's global gold `:focus-visible` OUTLINE (globals.css
           + app-skin's `outline-color: var(--g3)`) is what rings this button -
-          the same ring מסמך חדש gets, for the same reason. */}
-      <button
-        onClick={handleAutoFetch}
-        disabled={fetching || saving}
-        className="pgbtn-primary mt-5 w-full inline-flex items-center justify-center gap-2.5 min-h-[56px] sm:min-h-[60px] rounded-2xl text-base sm:text-[17px] font-bold hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:hover:translate-y-0"
+          the same ring מסמך חדש gets, for the same reason.
+
+          POINTING AT IT (Asaf, 2026-09-09). His father read "press the big
+          button" here and could not tell which rectangle was the button. So
+          the card no longer merely SAYS it: an arrow sits above the button and
+          nudges toward it, a ring blooms around the button itself, the button
+          names the gesture ("לחץ כאן") and its own colour is named in the line
+          above, and every other rectangle - the 3-step strip - is folded away
+          so there is exactly ONE thing to look at. The "2" medallion went with
+          the strip: it was a cross-reference to a list that is no longer on
+          screen. The arrow line is aria-hidden - it repeats the button's own
+          label, which a screen reader already announces.
+
+          The button is also CAPPED at 26rem and centred instead of spanning
+          the 1100px column: Asaf's father called it "the long rectangle" and
+          did not read it as pressable. Full-bleed reads as a banner; a bounded
+          box with a label centred in it reads as a button. */}
+      <div aria-hidden className="mt-6 flex flex-col items-center text-amber-800">
+        <p className="text-center text-base sm:text-lg font-extrabold">
+          לוחצים על הכפתור הכתום שלמטה
+        </p>
+        {/* ONE arrow, centred over the button and pointing down at it, rather
+            than a pair flanking the sentence: flanking arrows drift to the
+            screen edges the moment the sentence wraps (320px), which is where
+            the pointing is needed most. */}
+        <ArrowDown className="press-here-arrow h-7 w-7 sm:h-8 sm:w-8" strokeWidth={3} />
+      </div>
+
+      {/* The halo is on a WRAPPER, not the button: `.pgbtn-primary` has its own
+          unlayered box-shadow that would overwrite a ring drawn on the button.
+          It goes quiet while the request is in flight - by then the user has
+          already found the button, and a pulsing ring around a spinner reads
+          as an error. */}
+      <div
+        className={`mt-2 mx-auto w-full max-w-[26rem] rounded-2xl ${fetching || saving ? "" : "press-here"}`}
       >
-        {/* The "2" medallion ties this button to step 2 of the strip above it,
-            the same way the editor's save button carries "1": the strip numbers
-            the steps, the button that DOES a step wears that step's number. */}
-        <span
-          aria-hidden
-          className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-white/25 text-[13px] font-bold"
+        <button
+          onClick={handleAutoFetch}
+          disabled={fetching || saving}
+          className="pgbtn-primary w-full inline-flex items-center justify-center gap-3 min-h-[68px] sm:min-h-[76px] px-4 rounded-2xl text-[17px] sm:text-xl font-extrabold leading-tight disabled:opacity-50"
         >
-          2
-        </span>
-        {fetching ? (
-          <>
-            <Loader2 className="w-5 h-5 animate-spin" />
-            מבקש את המספר מרשות המסים...
-          </>
-        ) : (
-          <>
-            <ShieldCheck className="w-5 h-5" />
-            קבל מספר הקצאה מרשות המסים
-          </>
-        )}
-      </button>
+          {fetching ? (
+            <>
+              <Loader2 className="w-6 h-6 flex-shrink-0 animate-spin" />
+              מבקש את המספר מרשות המסים...
+            </>
+          ) : (
+            <>
+              <MousePointerClick className="w-6 h-6 flex-shrink-0" />
+              לחץ כאן לקבלת מספר הקצאה
+            </>
+          )}
+        </button>
+      </div>
 
       {errorNote}
+
+      {/* Everything that EXPLAINS, out of the way of the thing that ACTS. The
+          3-step strip, the threshold rule and the "you cannot send it yet"
+          constraint all live behind one quiet line. */}
+      <div className="mt-4">
+        <button
+          type="button"
+          onClick={() => setHowOpen((s) => !s)}
+          aria-expanded={howOpen}
+          className="inline-flex items-center gap-1.5 min-h-[44px] text-sm font-semibold text-stone-700 hover:text-[color:var(--gold-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--goldline)] rounded-lg"
+        >
+          <ChevronDown className={`w-4 h-4 transition-transform ${howOpen ? "rotate-180" : ""}`} />
+          איך זה עובד? (3 שלבים)
+        </button>
+        {howOpen && (
+          <>
+            <AllocationSteps current={2} size="lg" className="mt-3" />
+            <p className="mt-3 text-sm text-stone-700 leading-relaxed max-w-[70ch]">
+              {thresholdSentence} עד שהמספר מתקבל אי אפשר לשלוח את המסמך ללקוח.
+            </p>
+          </>
+        )}
+      </div>
 
       <div className="mt-4 pt-4 border-t border-orange-100">
         <button

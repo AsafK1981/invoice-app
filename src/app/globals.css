@@ -468,6 +468,59 @@ input:not(.input-warm):focus-visible,
   animation: goldArrivalRing 2.4s ease-out forwards;
 }
 
+/* ===== "לוחצים כאן" - pointing at the one action on the screen =====
+   Asaf, 2026-09-09: his father read "press the big button below" on the
+   allocation-number card and still could not tell WHICH rectangle was the
+   button. Words do not work for someone who does not read interfaces - a
+   thing that MOVES and points does. Two parts here, plus a third in the
+   markup: the card folds everything else away so nothing competes.
+
+   1. `.press-here-arrow` - the arrow above the button, nudging downward.
+   2. `.press-here` - a wrapper hugging the button, whose ::before is a ring
+      that blooms outward on a slow loop. Deliberately NOT a box-shadow on
+      the button itself: `.pgbtn-primary` carries its own unlayered
+      box-shadow and would overwrite it (same trap as the focus ring).
+      The wrapper must carry the button's own border-radius for the ring to
+      trace it - `inherit` reads it off the wrapper.
+
+   Both stop under prefers-reduced-motion; the ring stays as a static
+   outline there, so the pointing still happens without the movement. */
+@keyframes pressHereBounce {
+  0%, 100% { transform: translateY(-3px); }
+  50%      { transform: translateY(4px); }
+}
+/* Breathes between a soft ring and a bright one; it never reaches opacity 0.
+   A ring that blooms out and vanishes is invisible for a third of every cycle,
+   which is exactly the moment a first-time user happens to look. */
+@keyframes pressHereHalo {
+  0%, 100% { opacity: 0.35; transform: scale(1); }
+  50%      { opacity: 0.95; transform: scale(1.035); }
+}
+.press-here {
+  position: relative;
+}
+.press-here::before {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border-radius: inherit;
+  border: 3px solid var(--goldline, #E38F4F);
+  pointer-events: none;
+  animation: pressHereHalo 2.2s ease-out infinite;
+}
+.press-here-arrow {
+  animation: pressHereBounce 1.3s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .press-here-arrow {
+    animation: none;
+  }
+  .press-here::before {
+    animation: none;
+    opacity: 0.7;
+  }
+}
+
 .stagger-1 { animation-delay: 0.05s; }
 .stagger-2 { animation-delay: 0.1s; }
 .stagger-3 { animation-delay: 0.15s; }
