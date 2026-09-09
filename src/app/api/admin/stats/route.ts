@@ -99,7 +99,6 @@ export async function GET(req: NextRequest) {
   const recentSignups = allUsers
     .slice()
     .sort((a, b) => (b.created_at || "").localeCompare(a.created_at || ""))
-    .slice(0, 10)
     .map((u) => ({
       id: u.id,
       email: u.email,
