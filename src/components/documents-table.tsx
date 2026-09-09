@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { deleteDocument, cancelDocument, updateDocumentStatus } from "@/lib/document-store";
+import { cancellationRoute } from "@/lib/document-cancel";
 import { exportDocuments } from "@/lib/csv-export";
 import { matchDocument } from "@/lib/document-search";
 import { useConfirm } from "@/components/ui/confirm-dialog";
@@ -883,21 +884,25 @@ function RowActions({ doc }: { doc: InvoiceDocument }) {
   // `deleteDocument` throws for one, so the button is hidden for those and
   // this handler only ever runs on a draft.
   const isDeletable = doc.status === "draft";
-  // סעיף 23(ב): an issued document is reversed, never removed. The detail page
-  // carries the full explanation (delivered vs not); the row keeps it short.
-  const isCancellable = doc.status !== "draft" && doc.status !== "cancelled";
+  // 23א: the row offers the mark only where 23א(1) allows it. A delivered
+  // VAT-bearing document needs a credit note (23א(2)), which is a decision with
+  // an explanation attached, so the row sends the owner to the document page
+  // rather than trying to hold that conversation in a tooltip.
+  const vatRegistered = canIssueTaxInvoices(business);
+  const cancelRoute = cancellationRoute(doc, { vatRegistered });
+  const isCancellable = cancelRoute.kind === "cancel";
   async function handleRowCancel(e: React.MouseEvent) {
     e.stopPropagation();
     const ok = await confirm({
       title: `לסמן את ${DOCUMENT_TYPE_LABELS[doc.type]} #${doc.number} כמבוטל?`,
       message:
-        "המסמך יישאר בספרים עם מספרו, יסומן 'מבוטל' ולא ייכלל בסיכומים. אם הוא כבר נמסר ללקוח, ייתכן שנדרשת גם חשבונית זיכוי.",
+        "לפי הוראות ניהול ספרים 23א(1) אפשר לבטל בסימון רק כל עוד המקור לא יצא מרשותך וטרם דיווחת עליו. המסמך יישאר בספרים עם מספרו ולא ייכלל בסיכומים.",
       tone: "danger",
-      confirmLabel: "סמן כמבוטל",
+      confirmLabel: "כן, טרם דיווחתי. סמן כמבוטל",
     });
     if (!ok) return;
     try {
-      await cancelDocument(doc.id);
+      await cancelDocument(doc.id, { vatRegistered, affirmedNotReported: true });
     } catch (err) {
       showToast(friendlyError(err, "שגיאה בביטול"));
     }

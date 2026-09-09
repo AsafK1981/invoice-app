@@ -6,6 +6,7 @@ import { getBusinessId, onBusinessReady } from "./business-init";
 import { createSharedStore } from "./shared-store";
 import { DEFAULT_NEXT_NUMBER, DOCUMENT_STATUS_LABELS, DOCUMENT_TYPE_LABELS, type DocumentType, type InvoiceDocument, type DocumentItem } from "./types";
 import { logAudit } from "./audit-log";
+import { cancellationRoute } from "./document-cancel";
 import { track } from "@vercel/analytics";
 
 const CHANGE_EVENT = "invoice-app:documents-changed";
@@ -311,25 +312,30 @@ export async function deleteDocument(id: string) {
 }
 
 /**
- * מבוטל: the way to undo an issued document without deleting it.
+ * מבוטל: הוראות ניהול ספרים סעיף 23א(1), the remedy for a document that never
+ * left the taxpayer's hands. The row keeps its running number and every
+ * amount, the sheet prints "מבוטל" across it (23א(1) asks for the word on the
+ * original AND the copies), the audit log carries the additional record that
+ * 23(ב) requires, and every money total in the app already excludes it.
  *
- * הוראות ניהול ספרים סעיף 23(ב) allows a correction only through an ADDITIONAL
- * record, never by erasing one. Cancelling satisfies that literally: the row
- * keeps its running number and every amount, the sheet prints "מבוטל" across
- * it, the audit log carries the additional record (who cancelled, when, why),
- * and every money total in the app already excludes a cancelled document.
+ * 23א(1) is available only while BOTH conditions hold: the original has not
+ * left the taxpayer's possession, and the period has not been reported. The
+ * second is something only the owner knows, so the UI asks them to affirm it
+ * and `affirmedNotReported` records the answer in the books.
  *
- * When it is NOT enough: once the customer holds the document, they may have
- * deducted its VAT, and only a credit note reverses that on their side too.
- * The app knows which case it is (emailedAt / originalIssuedAt) and the UI
- * says so before asking to confirm - but the decision is the owner's, so this
- * function does not block a cancel on a delivered document. It records the
- * delivery state in the audit payload instead, which is what an auditor would
- * want to see.
+ * When the original HAS left and the document carries VAT, 23א(2) applies
+ * instead and the route is a credit note - which this function refuses to
+ * bypass, because our VAT report and PCN874 export both drop cancelled
+ * documents from their totals, and 23א(3) only lets a credit note reduce the
+ * reported VAT once the customer has confirmed receiving it. See
+ * src/lib/document-cancel.ts for the whole rule.
  *
  * Drafts do not come here: a draft never took a number, so it is deleted.
  */
-export async function cancelDocument(id: string, reason?: string) {
+export async function cancelDocument(
+  id: string,
+  opts: { vatRegistered: boolean; reason?: string; affirmedNotReported?: boolean },
+) {
   const { data: snap } = await supabase
     .from("documents")
     .select("type, number, client_name, client_id, status, emailed_at, original_issued_at")
@@ -340,6 +346,21 @@ export async function cancelDocument(id: string, reason?: string) {
     throw new Error("טיוטה אינה מסמך בספרים. אפשר פשוט למחוק אותה");
   }
   if (snap.status === "cancelled") return;
+
+  const route = cancellationRoute(
+    {
+      type: snap.type as DocumentType,
+      status: snap.status as InvoiceDocument["status"],
+      emailedAt: snap.emailed_at as string | null,
+      originalIssuedAt: snap.original_issued_at as string | null,
+    },
+    { vatRegistered: opts.vatRegistered },
+  );
+  if (route.kind === "credit_note") {
+    throw new Error(
+      "המסמך כבר יצא אליך מהעסק ונושא מע\"מ. לפי הוראות ניהול ספרים 23א(2) מבטלים אותו בחשבונית זיכוי, לא בסימון מבוטל",
+    );
+  }
 
   const { data: updated, error } = await supabase
     .from("documents")
@@ -358,10 +379,11 @@ export async function cancelDocument(id: string, reason?: string) {
     targetLabel: `${DOCUMENT_TYPE_LABELS[snap.type as DocumentType]} #${snap.number} · ${snap.client_name}`,
     payload: {
       from: DOCUMENT_STATUS_LABELS[snap.status as InvoiceDocument["status"]],
-      reason: reason?.trim() || null,
-      // Whether the customer already held it, which is what decides if a
-      // credit note was also required.
+      reason: opts.reason?.trim() || null,
+      // The two facts 23א(1) turns on: whether the original had left, and the
+      // owner's own statement that the period was not yet reported.
       delivered: Boolean(snap.emailed_at || snap.original_issued_at),
+      affirmed_not_reported: opts.affirmedNotReported ?? null,
       clientId: snap.client_id ?? null,
       clientName: snap.client_name,
     },

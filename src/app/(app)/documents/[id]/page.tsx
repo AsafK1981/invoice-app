@@ -40,6 +40,7 @@ import { requiresAllocationNumber, shouldFocusAllocationOnArrival } from "@/lib/
 import { formatCurrency, formatDate } from "@/lib/format";
 import { CONSENT_SOURCE_LABELS } from "@/lib/consent";
 import { signingEligibility } from "@/lib/signing/eligibility";
+import { cancellationRoute } from "@/lib/document-cancel";
 import { useDocumentSignature } from "@/lib/signature-store";
 import { DOCUMENT_TYPE_LABELS, PAYMENT_METHOD_LABELS, type InvoiceDocument } from "@/lib/types";
 import { docStrings } from "@/lib/document-strings";
@@ -534,23 +535,47 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
    * still let the owner cancel: the books have to reflect their decision, and
    * the two actions are not mutually exclusive.
    */
+  /**
+   * הוראות ניהול ספרים 23א decides this, not us. An undelivered document is
+   * cancelled by marking it "מבוטל" (23א(1)) - but only while the period is
+   * also unreported, which only the owner knows, so the dialog asks them to
+   * affirm it and the answer goes into the books. A delivered VAT-bearing
+   * document goes the other way (23א(2)): a credit note, because cancelling it
+   * would pull it out of the VAT report with no customer confirmation.
+   */
   async function handleCancelDocument() {
     if (!doc) return;
     const label = `${DOCUMENT_TYPE_LABELS[doc.type]} #${doc.number}`;
-    const delivered = Boolean(doc.emailedAt || doc.originalIssuedAt);
+    const route = cancellationRoute(doc, { vatRegistered: canIssueTaxInvoices(business) });
+
+    if (route.kind === "credit_note") {
+      const go = await confirm({
+        title: `${label} כבר יצא מהעסק`,
+        message:
+          "לפי הוראות ניהול ספרים 23א(2), מסמך שהמקור שלו כבר יצא מרשותך אינו מבוטל בסימון אלא בחשבונית זיכוי, שגם מזכה את הלקוח במע\"מ שקיזז. אפתח עבורך חשבונית זיכוי מקושרת למסמך הזה.",
+        confirmLabel: "פתח חשבונית זיכוי",
+      });
+      if (go) router.push(`/documents/new/credit-note?from=${doc.id}`);
+      return;
+    }
+    if (route.kind !== "cancel") return;
+
     const ok = await confirm({
       title: `לסמן את ${label} כמבוטל?`,
-      message: delivered
-        ? "המסמך כבר נמסר ללקוח. הוא יישאר בספרים עם מספרו ויסומן 'מבוטל', ולא ייכלל בסיכומים. שים לב: אם הלקוח כבר קיזז מע\"מ, מה שמאפס את החיוב אצלו הוא חשבונית זיכוי, לא הסימון הזה."
-        : "המסמך טרם נמסר ללקוח. הוא יישאר בספרים עם מספרו, יסומן 'מבוטל' על גבי הנייר, ולא ייכלל בסיכומים. לא ניתן לבטל את הפעולה.",
+      message: route.delivered
+        ? "המסמך כבר יצא מהעסק. הוא יישאר בספרים עם מספרו, כל פלט שלו יסומן 'מבוטל', והוא לא ייכלל בסיכומים. אשר רק אם טרם דיווחת עליו."
+        : "לפי הוראות ניהול ספרים 23א(1) אפשר לבטל בסימון 'מבוטל' רק כל עוד המקור לא יצא מרשותך וטרם דיווחת עליו. המסמך יישאר בספרים עם מספרו ולא ייכלל בסיכומים. אשר רק אם שני התנאים מתקיימים.",
       tone: "danger",
-      confirmLabel: "סמן כמבוטל",
+      confirmLabel: "כן, טרם דיווחתי. סמן כמבוטל",
     });
     if (!ok) return;
     setStatusUpdating(true);
     setToast(null);
     try {
-      await cancelDocument(doc.id);
+      await cancelDocument(doc.id, {
+        vatRegistered: canIssueTaxInvoices(business),
+        affirmedNotReported: true,
+      });
       setToast({ kind: "success", text: "המסמך סומן כמבוטל" });
     } catch (err) {
       setToast({ kind: "error", text: err instanceof Error ? err.message : "שגיאה בביטול" });
@@ -831,19 +856,24 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                 // trigger sits near the start of the action row.
                 className="absolute top-full mt-2 right-0 z-30 w-56 bg-white rounded-2xl shadow-lg border border-orange-100 p-1 flex flex-col gap-0.5 animate-fade-in"
               >
-                {doc.status !== "draft" && doc.status !== "cancelled" && (
-                  <button
-                    role="menuitem"
-                    onClick={() => {
-                      setMoreOpen(false);
-                      void handleCancelDocument();
-                    }}
-                    className="inline-flex items-center gap-2 px-3 py-2 min-h-[40px] rounded-xl text-sm font-medium text-rose-700 hover:bg-rose-50 text-right"
-                  >
-                    <Ban className="w-4 h-4" />
-                    סמן כמבוטל
-                  </button>
-                )}
+                {(() => {
+                  // One entry, two destinations, decided by 23א.
+                  const route = cancellationRoute(doc, { vatRegistered: canIssueTaxInvoices(business) });
+                  if (route.kind !== "cancel" && route.kind !== "credit_note") return null;
+                  return (
+                    <button
+                      role="menuitem"
+                      onClick={() => {
+                        setMoreOpen(false);
+                        void handleCancelDocument();
+                      }}
+                      className="inline-flex items-center gap-2 px-3 py-2 min-h-[40px] rounded-xl text-sm font-medium text-rose-700 hover:bg-rose-50 text-right"
+                    >
+                      <Ban className="w-4 h-4" />
+                      {route.kind === "credit_note" ? "בטל בחשבונית זיכוי" : "סמן כמבוטל"}
+                    </button>
+                  );
+                })()}
                 <button
                   role="menuitem"
                   onClick={() => {
