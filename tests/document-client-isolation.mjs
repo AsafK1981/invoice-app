@@ -27,6 +27,8 @@ try {
   await db.exec(base);
   await db.exec(`
     CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role;
+    -- Supabase's service_role bypasses RLS; PGlite's freshly created one must be told so.
+    ALTER ROLE service_role BYPASSRLS;
     GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
     CREATE SCHEMA auth;
     CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS $$ SELECT '${owner}'::uuid $$;
@@ -39,7 +41,7 @@ try {
       ADD COLUMN round_total boolean DEFAULT false, ADD COLUMN withholding_rate numeric,
       ADD COLUMN withholding_amount numeric, ADD COLUMN discount_amount numeric,
       ADD COLUMN payment_details jsonb, ADD COLUMN payment_reference text,
-      ADD COLUMN emailed_at timestamptz;
+      ADD COLUMN emailed_at timestamptz, ADD COLUMN original_issued_at timestamptz;
   `);
   await db.exec(await read('scripts/migrations/20260906-documents-language.sql'));
   await db.exec(await read('scripts/migrations/20260816-document-items-immutability.sql'));
@@ -49,6 +51,16 @@ try {
   // "language is still frozen" check below a genuine regression guard against
   // 20260908 having been rebuilt from a stale base.
   await db.exec(await read('scripts/migrations/20260908-documents-no-delete-once-numbered.sql'));
+  // 20260910 needs Supabase's storage schema for its bucket row; a two-column
+  // stub is enough for the INSERT ... ON CONFLICT it runs. Everything else in
+  // that file is plain Postgres and runs verbatim.
+  await db.exec(`CREATE SCHEMA storage; CREATE TABLE storage.buckets (id text PRIMARY KEY, name text, public boolean)`);
+  await db.exec(await read('scripts/migrations/20260910-document-signatures.sql'));
+  // Supabase grants service_role on every new public table through ALTER
+  // DEFAULT PRIVILEGES; bare PGlite has no such default, so mirror it here.
+  // (The same default also grants anon/authenticated, which is exactly why the
+  // migration REVOKEs those two explicitly - that part runs verbatim above.)
+  await db.exec(`GRANT ALL ON public.document_signatures, public.business_signing_keys TO service_role`);
   await db.exec(`
     INSERT INTO businesses (id,name,tax_id,user_id) VALUES
       ('${biz}','Synthetic A','000','${owner}'), ('${foreignBiz}','Synthetic B','001','${uuid(10)}');
@@ -158,6 +170,50 @@ try {
   await check('businesses cascade cannot delete a numbered document', () => assert.rejects(
     db.exec(`DELETE FROM businesses WHERE id='${biz}'`),
     /numbered documents cannot be deleted/));
+  // ---- 23א guard (20260908, header item 3) ----------------------------------
+  // The browser routes a delivered VAT document to a credit note; the DB must
+  // refuse the shortcut too, or a direct PostgREST update un-reports VAT.
+  await check('23a: delivered VAT document cannot be cancelled by the owner; exempt or undelivered can', async () => {
+    await db.exec(`UPDATE businesses SET business_type='authorized' WHERE id='${biz}';
+      INSERT INTO documents (id,business_id,client_id,type,number,client_name,status,emailed_at)
+        VALUES ('${uuid(12)}','${biz}',NULL,'tax_invoice',60,'Synthetic','issued',now());
+      INSERT INTO documents (id,business_id,client_id,type,number,client_name,status,original_issued_at)
+        VALUES ('${uuid(13)}','${biz}',NULL,'tax_invoice_receipt',61,'Synthetic','issued',now());
+      INSERT INTO documents (id,business_id,client_id,type,number,client_name,status)
+        VALUES ('${uuid(14)}','${biz}',NULL,'tax_invoice',62,'Synthetic','issued')`);
+    for (const id of [uuid(12), uuid(13)]) {
+      await asRole('authenticated', () => assert.rejects(
+        db.exec(`UPDATE documents SET status='cancelled' WHERE id='${id}'`),
+        /reversed by a credit note, not by cancelling it/));
+    }
+    // Never delivered: 23א(1) applies, the mark is allowed.
+    await asRole('authenticated', () => db.exec(`UPDATE documents SET status='cancelled' WHERE id='${uuid(14)}'`));
+    // service_role (support tooling) is not gated.
+    await asRole('service_role', () => db.exec(`UPDATE documents SET status='cancelled' WHERE id='${uuid(13)}'`));
+    // An exempt business has no VAT to reverse: the mark is its whole remedy.
+    await db.exec(`UPDATE businesses SET business_type='exempt' WHERE id='${biz}'`);
+    await asRole('authenticated', () => db.exec(`UPDATE documents SET status='cancelled' WHERE id='${uuid(12)}'`));
+    assert.equal((await rows(`SELECT count(*)::int AS n FROM documents WHERE id IN ('${uuid(12)}','${uuid(13)}','${uuid(14)}') AND status='cancelled'`))[0].n, 3);
+  });
+  // ---- 20260910-document-signatures.sql ---------------------------------------
+  // The signature row is evidence (UPDATE must raise) but it must LEAVE with its
+  // document: the account-wipe routes delete documents and rely on the cascade,
+  // and a cascade runs as the table owner, not as service_role. A DELETE guard
+  // keyed on current_user would break every account wipe (council, 2026-09-09).
+  await check('signature record: UPDATE raises, cascade from documents succeeds', async () => {
+    const sha = 'a'.repeat(64);
+    await asRole('service_role', () => db.exec(`INSERT INTO document_signatures
+        (document_id,business_id,storage_path,sha256,file_size,algorithm,cert_fingerprint)
+      VALUES ('${uuid(11)}','${biz}','${biz}/${uuid(11)}.pdf','${sha}',1234,'RSA-2048/SHA-256','${sha}')`));
+    await asRole('service_role', () => assert.rejects(
+      db.exec(`UPDATE document_signatures SET sha256='${'b'.repeat(64)}' WHERE document_id='${uuid(11)}'`),
+      /document_signatures rows are immutable/));
+    await asRole('authenticated', () => assert.rejects(
+      db.exec(`DELETE FROM document_signatures WHERE document_id='${uuid(11)}'`)));
+    assert.equal((await rows(`SELECT 1 FROM document_signatures WHERE document_id='${uuid(11)}'`)).length, 1);
+    await asRole('service_role', () => db.exec(`DELETE FROM documents WHERE id='${uuid(11)}'`));
+    assert.equal((await rows(`SELECT 1 FROM document_signatures WHERE document_id='${uuid(11)}'`)).length, 0);
+  });
   await check('account wipe works: service_role deletes documents explicitly, then the business', async () => {
     // Mirrors /api/delete-account and /api/danger/delete-all, which delete from
     // documents EXPLICITLY under service_role before touching businesses.

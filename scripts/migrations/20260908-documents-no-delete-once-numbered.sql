@@ -58,10 +58,28 @@
 --      issued-but-never-emailed document could still be deleted - which tore
 --      a hole in a numbering sequence the law requires to be unbroken (and is
 --      exactly what the "בדיקת רצף מספור" report now reports on). The gate is
---      now OLD.status: only a draft, which never took a number, may go.
+--      now OLD.status: only a draft may go. A draft is a קובץ זמני in the
+--      law's terms, but NOTE (council, 2026-09-09): in this schema a draft DOES
+--      consume a running number (create_document_atomic advances the counter
+--      regardless of p_status), so deleting a draft still leaves a gap, which
+--      /reports/sequence will list. Allocating the number only on issue is a
+--      separate follow-up; this migration narrows the deletable set, it does
+--      not make the sequence gap-free.
 --      Reversing an issued document is a STATUS change (to 'cancelled') or a
---      credit note, and this branch deliberately leaves both open: the UPDATE
---      branch below never guards `status` except against a revert to 'draft'.
+--      credit note. The UPDATE branch guards `status` in exactly two ways:
+--      never back to 'draft', and (item 3) never to 'cancelled' on a delivered
+--      VAT document.
+--
+--   3. UPDATE branch, הוראות ניהול ספרים 23א (added 2026-09-09 after the
+--      council found the rule enforced only in browser code): a VAT-bearing
+--      document (tax_invoice / tax_invoice_receipt) whose original has already
+--      left the business (emailed_at or original_issued_at set) may not be set
+--      to 'cancelled' by an ordinary user, because vat-period-report.tsx and
+--      ita/pcn874.ts drop cancelled rows and that would silently un-report VAT
+--      the customer may have deducted. The route for those is a credit note.
+--      Fails closed: only a business that is provably 'exempt' (no VAT to
+--      reverse) is let through; service_role is exempt for support tooling.
+--      The same rule, same facts, as src/lib/document-cancel.ts.
 --
 --   2. UPDATE branch, ONE column added to the 19 already guarded:
 --      * client_id - the identity of the party the document was issued to.
@@ -199,6 +217,15 @@ BEGIN
     -- Added 2026-09-08. NULL-ing client_id is the FK's ON DELETE SET NULL, see header.
     IF NEW.client_id IS DISTINCT FROM OLD.client_id AND NEW.client_id IS NOT NULL THEN
       RAISE EXCEPTION 'issued documents are immutable: field % cannot be changed', 'client_id';
+    END IF;
+    -- Added 2026-09-09, header item 3: 23א, a delivered VAT document is not cancelled.
+    IF NEW.status = 'cancelled' AND OLD.status IS DISTINCT FROM 'cancelled'
+       AND current_user <> 'service_role'
+       AND OLD.type IN ('tax_invoice', 'tax_invoice_receipt')
+       AND (OLD.emailed_at IS NOT NULL OR OLD.original_issued_at IS NOT NULL)
+       AND NOT EXISTS (SELECT 1 FROM public.businesses b
+                        WHERE b.id = OLD.business_id AND b.business_type = 'exempt') THEN
+      RAISE EXCEPTION 'a delivered VAT document is reversed by a credit note, not by cancelling it (23a)';
     END IF;
   END IF;
 

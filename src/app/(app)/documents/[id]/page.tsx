@@ -322,8 +322,16 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
       }
     } catch {
       // Fall back to the browser print dialog if the server render fails,
-      // so the user always has a way to get the document out.
+      // so the user always has a way to get the document out. The sheet that
+      // comes out of it is still the first emission when original_issued_at is
+      // NULL, so stamp it exactly as handlePrint does; otherwise the document
+      // reads as never delivered and 23א would still offer a plain cancel.
       window.print();
+      try {
+        await markDocumentIssued(doc.id);
+      } catch {
+        // Non-fatal, same as handlePrint.
+      }
     } finally {
       setDownloadingPdf(false);
     }

@@ -328,8 +328,11 @@ export async function POST(req: NextRequest) {
     let removed = 0;
     for (let i = 0; i < attachmentPaths.length; i += 100) {
       const chunk = attachmentPaths.slice(i, i + 100);
-      const { data, error } = await admin.storage.from("attachments").remove(chunk);
-      if (error) throw new Error(`attachments remove failed: ${error.message}`);
+      // The bucket is "document-attachments" (src/lib/attachment-store.ts); this
+      // said "attachments" since 84c0c8b, so "delete everything" never purged a
+      // single attachment file and logged a partial failure instead. Council, 09.09.
+      const { data, error } = await admin.storage.from("document-attachments").remove(chunk);
+      if (error) throw new Error(`document-attachments remove failed: ${error.message}`);
       removed += data?.length || 0;
     }
     deleted.storage_attachments = removed;

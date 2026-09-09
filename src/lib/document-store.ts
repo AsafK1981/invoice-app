@@ -330,7 +330,9 @@ export async function deleteDocument(id: string) {
  * reported VAT once the customer has confirmed receiving it. See
  * src/lib/document-cancel.ts for the whole rule.
  *
- * Drafts do not come here: a draft never took a number, so it is deleted.
+ * Drafts do not come here: a draft is a קובץ זמני and is deleted. (It did
+ * consume a running number on insert, so the deletion leaves a gap that
+ * /reports/sequence lists; allocating only on issue is a separate follow-up.)
  */
 export async function cancelDocument(
   id: string,

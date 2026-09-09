@@ -11,7 +11,8 @@
 --                           original lives, its SHA-256, when and with which
 --                           certificate it was signed. Owners can SELECT their
 --                           own rows (the document page shows them); nobody
---                           but the service role writes, and rows never change.
+--                           but the service role writes, rows never change,
+--                           and they leave only by cascade with their document.
 --   signed-documents        private storage bucket for the signed PDFs, path
 --                           <business_id>/<document_id>.pdf. No storage
 --                           policies: served only through our own routes.
@@ -78,21 +79,24 @@ CREATE POLICY "Owners can view own document signatures" ON public.document_signa
   FOR SELECT TO authenticated
   USING (business_id IN (SELECT id FROM public.businesses WHERE user_id = auth.uid()));
 
--- A signature record is evidence: it is never edited. Deleting one is allowed
--- only to the service role (account wipe / "delete everything"), and in
--- practice happens through the ON DELETE CASCADE from documents.
+-- A signature record is evidence: it is never edited, so UPDATE always raises.
+--
+-- Deletion is deliberately NOT guarded here. The only legitimate delete is the
+-- ON DELETE CASCADE from documents during an account wipe, and a cascade does
+-- not run as the role that issued the DELETE: PostgreSQL performs referential
+-- actions as the OWNER of the referencing table (postgres here, since
+-- run-sql-file.mjs creates it), exactly as the header of
+-- 20260908-documents-no-delete-once-numbered.sql spells out. A `current_user
+-- <> 'service_role'` test in a DELETE branch would therefore fire on every
+-- cascade and make /api/delete-account fail forever for any account holding a
+-- signed document (council finding, 2026-09-09). Clients cannot delete rows
+-- anyway: authenticated holds SELECT only and anon nothing (grants above).
 CREATE OR REPLACE FUNCTION public.document_signatures_immutable()
 RETURNS trigger
 LANGUAGE plpgsql
 AS $$
 BEGIN
-  IF TG_OP = 'UPDATE' THEN
-    RAISE EXCEPTION 'document_signatures rows are immutable';
-  END IF;
-  IF TG_OP = 'DELETE' AND current_user <> 'service_role' THEN
-    RAISE EXCEPTION 'document_signatures rows cannot be deleted';
-  END IF;
-  RETURN OLD;
+  RAISE EXCEPTION 'document_signatures rows are immutable';
 END;
 $$;
 
@@ -100,7 +104,7 @@ REVOKE EXECUTE ON FUNCTION public.document_signatures_immutable() FROM PUBLIC, a
 
 DROP TRIGGER IF EXISTS document_signatures_immutable_trg ON public.document_signatures;
 CREATE TRIGGER document_signatures_immutable_trg
-  BEFORE UPDATE OR DELETE ON public.document_signatures
+  BEFORE UPDATE ON public.document_signatures
   FOR EACH ROW EXECUTE FUNCTION public.document_signatures_immutable();
 
 -- ── 3. Private bucket for the signed files ───────────────────────────────────
