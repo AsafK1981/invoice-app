@@ -210,6 +210,14 @@
   font-weight: 800;
   color: #b91c1c;
 }
+/* "מבוטל" sits UNDER מקור/העתק rather than replacing it: a cancelled document
+   keeps its identity, it is just no longer live. Same red as the draft mark. */
+.doc-paper .doc-orig.is-cancelled {
+  margin-top: 2px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #b91c1c;
+}
 /* "מסמך ממוחשב" (סעיף 1 / 18ב(א): "בצורה בולטת לעין"). Sits under מקור/העתק,
    above the document-type badge, in the ink colour rather than the muted one
    so it cannot be read as fine print. */

@@ -279,7 +279,7 @@ export async function deleteDocument(id: string) {
   // and tore a hole in the numbering sequence.)
   if (snap && snap.status !== "draft") {
     throw new Error(
-      "מסמך שקיבל מספר אינו ניתן למחיקה, לביטול הפק חשבונית זיכוי",
+      "מסמך שקיבל מספר אינו ניתן למחיקה. לביטולו סמן אותו כמבוטל, או הפק חשבונית זיכוי אם הוא כבר נמסר ללקוח",
     );
   }
 
@@ -307,6 +307,65 @@ export async function deleteDocument(id: string) {
     });
   }
 
+  window.dispatchEvent(new Event(CHANGE_EVENT));
+}
+
+/**
+ * מבוטל: the way to undo an issued document without deleting it.
+ *
+ * הוראות ניהול ספרים סעיף 23(ב) allows a correction only through an ADDITIONAL
+ * record, never by erasing one. Cancelling satisfies that literally: the row
+ * keeps its running number and every amount, the sheet prints "מבוטל" across
+ * it, the audit log carries the additional record (who cancelled, when, why),
+ * and every money total in the app already excludes a cancelled document.
+ *
+ * When it is NOT enough: once the customer holds the document, they may have
+ * deducted its VAT, and only a credit note reverses that on their side too.
+ * The app knows which case it is (emailedAt / originalIssuedAt) and the UI
+ * says so before asking to confirm - but the decision is the owner's, so this
+ * function does not block a cancel on a delivered document. It records the
+ * delivery state in the audit payload instead, which is what an auditor would
+ * want to see.
+ *
+ * Drafts do not come here: a draft never took a number, so it is deleted.
+ */
+export async function cancelDocument(id: string, reason?: string) {
+  const { data: snap } = await supabase
+    .from("documents")
+    .select("type, number, client_name, client_id, status, emailed_at, original_issued_at")
+    .eq("id", id)
+    .maybeSingle();
+  if (!snap) throw new Error("המסמך לא נמצא");
+  if (snap.status === "draft") {
+    throw new Error("טיוטה אינה מסמך בספרים. אפשר פשוט למחוק אותה");
+  }
+  if (snap.status === "cancelled") return;
+
+  const { data: updated, error } = await supabase
+    .from("documents")
+    .update({ status: "cancelled", paid_at: null })
+    .eq("id", id)
+    .select("id");
+  if (error) throw new Error(error.message);
+  if (!updated || updated.length === 0) {
+    throw new Error("הביטול לא נשמר, ייתכן שאין הרשאה (RLS) או שהמסמך לא קיים");
+  }
+
+  logAudit({
+    action: "document.cancelled",
+    targetType: "document",
+    targetId: id,
+    targetLabel: `${DOCUMENT_TYPE_LABELS[snap.type as DocumentType]} #${snap.number} · ${snap.client_name}`,
+    payload: {
+      from: DOCUMENT_STATUS_LABELS[snap.status as InvoiceDocument["status"]],
+      reason: reason?.trim() || null,
+      // Whether the customer already held it, which is what decides if a
+      // credit note was also required.
+      delivered: Boolean(snap.emailed_at || snap.original_issued_at),
+      clientId: snap.client_id ?? null,
+      clientName: snap.client_name,
+    },
+  });
   window.dispatchEvent(new Event(CHANGE_EVENT));
 }
 

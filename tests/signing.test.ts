@@ -72,6 +72,13 @@ describe("signing eligibility (18ב(ד))", () => {
   });
 });
 
+// RSA-2048 keygen is variable-cost work (measured 94ms idle on this machine,
+// seconds when the CPU is contended), and each of these does one. Vitest's 5s
+// default turns that variance into a red suite, so the three keygen tests get
+// an explicit budget. Nothing here is slow in production: keygen happens once
+// per business, and the per-signature cost is ~40ms of PKCS#12 packing.
+const CRYPTO_TIMEOUT = 30_000;
+
 describe("signing key material", () => {
   it("generates an RSA-2048 key and a self-signed cert naming the business", () => {
     const m = generateSigningMaterial({ name: "עסק לדוגמה", taxId: "123456789", email: "a@b.co" });
@@ -85,7 +92,7 @@ describe("signing key material", () => {
     expect(m.certFingerprint).toBe(certificateFingerprint(m.certificatePem));
     expect(m.certFingerprint).toHaveLength(64);
     expect(m.expiresAt.getFullYear()).toBeGreaterThan(new Date().getFullYear() + 3);
-  });
+  }, CRYPTO_TIMEOUT);
 
   it("round-trips through PKCS#12", () => {
     const m = generateSigningMaterial({ name: "x" });
@@ -93,7 +100,7 @@ describe("signing key material", () => {
     const parsed = forge.pkcs12.pkcs12FromAsn1(forge.asn1.fromDer(p12.toString("binary")), false, "pw");
     const bags = parsed.getBags({ bagType: forge.pki.oids.certBag })[forge.pki.oids.certBag];
     expect(bags?.length).toBe(1);
-  });
+  }, CRYPTO_TIMEOUT);
 });
 
 describe("sign + verify a PDF", () => {
@@ -109,7 +116,7 @@ describe("sign + verify a PDF", () => {
       contactInfo: "https://example.test/verify/1",
       signingTime: new Date("2026-09-08T10:00:00Z"),
     });
-  });
+  }, CRYPTO_TIMEOUT);
 
   it("produces a valid signature carrying the business certificate", () => {
     expect(signed.sha256).toBe(createHash("sha256").update(signed.bytes).digest("hex"));

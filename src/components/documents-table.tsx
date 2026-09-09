@@ -23,9 +23,10 @@ import {
   MailCheck,
   FilePlus2,
   Pencil,
+  Ban,
 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/format";
-import { deleteDocument, updateDocumentStatus } from "@/lib/document-store";
+import { deleteDocument, cancelDocument, updateDocumentStatus } from "@/lib/document-store";
 import { exportDocuments } from "@/lib/csv-export";
 import { matchDocument } from "@/lib/document-search";
 import { useConfirm } from "@/components/ui/confirm-dialog";
@@ -882,6 +883,25 @@ function RowActions({ doc }: { doc: InvoiceDocument }) {
   // `deleteDocument` throws for one, so the button is hidden for those and
   // this handler only ever runs on a draft.
   const isDeletable = doc.status === "draft";
+  // סעיף 23(ב): an issued document is reversed, never removed. The detail page
+  // carries the full explanation (delivered vs not); the row keeps it short.
+  const isCancellable = doc.status !== "draft" && doc.status !== "cancelled";
+  async function handleRowCancel(e: React.MouseEvent) {
+    e.stopPropagation();
+    const ok = await confirm({
+      title: `לסמן את ${DOCUMENT_TYPE_LABELS[doc.type]} #${doc.number} כמבוטל?`,
+      message:
+        "המסמך יישאר בספרים עם מספרו, יסומן 'מבוטל' ולא ייכלל בסיכומים. אם הוא כבר נמסר ללקוח, ייתכן שנדרשת גם חשבונית זיכוי.",
+      tone: "danger",
+      confirmLabel: "סמן כמבוטל",
+    });
+    if (!ok) return;
+    try {
+      await cancelDocument(doc.id);
+    } catch (err) {
+      showToast(friendlyError(err, "שגיאה בביטול"));
+    }
+  }
   async function handleRowDelete(e: React.MouseEvent) {
     e.stopPropagation();
     const ok = await confirm({
@@ -964,6 +984,8 @@ function RowActions({ doc }: { doc: InvoiceDocument }) {
           <Pencil className="w-4 h-4" />
         </Tooltip>
       </button>
+      {/* One slot, one meaning: a draft is deleted, an issued document is
+          reversed (סעיף 23(ב)), an already-cancelled one has nothing left. */}
       {isDeletable ? (
         <button
           onClick={handleRowDelete}
@@ -973,6 +995,17 @@ function RowActions({ doc }: { doc: InvoiceDocument }) {
         >
           <Tooltip label="מחק טיוטה" side="top">
             <Trash2 className="w-4 h-4" />
+          </Tooltip>
+        </button>
+      ) : isCancellable ? (
+        <button
+          onClick={handleRowCancel}
+          className="dc-act"
+          data-tone="danger"
+          aria-label="סמן כמבוטל"
+        >
+          <Tooltip label="סמן כמבוטל" side="top">
+            <Ban className="w-4 h-4" />
           </Tooltip>
         </button>
       ) : (

@@ -47,6 +47,12 @@ export interface DocStrings {
    */
   draftMark: string;
   /**
+   * "מבוטל" - an issued document the owner reversed (סעיף 23(ב)). It keeps its
+   * number and stays in the books, so the mark has to be unmissable on any
+   * output of it: a watermark plus a line in the identity block.
+   */
+  cancelledMark: string;
+  /**
    * Replaces "מסמך ממוחשב" on an issued document the app does NOT sign: a
    * receipt for a payment 18ב(ד) keeps off secured-signature documents. The
    * customer must get it on paper, and the paper says so.
@@ -110,6 +116,7 @@ const HE: DocStrings = {
   copy: "העתק",
   computerized: "מסמך ממוחשב",
   draftMark: "טיוטה",
+  cancelledMark: "מבוטל",
   paperOnly: "להדפסה ולשמירה בנייר",
   signedLine: "חתום בחתימה אלקטרונית מאובטחת",
   verifyLabel: "אימות",
@@ -175,6 +182,7 @@ const EN: DocStrings = {
   copy: "COPY",
   computerized: "Computerized document",
   draftMark: "DRAFT",
+  cancelledMark: "CANCELLED",
   paperOnly: "Print and keep on paper",
   signedLine: "Signed with a secured electronic signature",
   verifyLabel: "Verify",
@@ -263,7 +271,7 @@ export function toDocLang(value?: string | null): DocLang {
  * reads, then the Hebrew wording the law names. A Hebrew document is
  * unchanged - just the one word.
  */
-export function statutoryMark(lang: DocLang, key: "computerized" | "draftMark"): string {
+export function statutoryMark(lang: DocLang, key: "computerized" | "draftMark" | "cancelledMark"): string {
   return lang === "he" ? HE[key] : `${EN[key]} · ${HE[key]}`;
 }
 

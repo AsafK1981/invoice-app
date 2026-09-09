@@ -9,6 +9,8 @@ export type AuditAction =
   | "document.status_changed"
   | "document.number_changed"
   | "document.deleted"
+  // סעיף 23(ב): the additional record that reverses an issued document.
+  | "document.cancelled"
   | "client.created"
   | "client.updated"
   | "client.deleted"
@@ -127,6 +129,7 @@ const ACTION_LABELS: Record<AuditAction, string> = {
   "document.status_changed": "סטטוס מסמך עודכן",
   "document.number_changed": "מספר מסמך שונה",
   "document.deleted": "מסמך נמחק",
+  "document.cancelled": "מסמך בוטל",
   "client.created": "לקוח נוסף",
   "client.updated": "לקוח עודכן",
   "client.deleted": "לקוח נמחק",

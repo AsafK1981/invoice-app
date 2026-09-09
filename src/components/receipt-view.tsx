@@ -129,6 +129,9 @@ export function ReceiptView({
         // view, the browser print, and the server PDF that prints this very
         // page - has to be marked "טיוטה".
         draft={doc.status === "draft"}
+        // סעיף 23(ב): a reversed document keeps its number and stays in the
+        // books, so every sheet it produces has to carry "מבוטל".
+        cancelled={doc.status === "cancelled"}
         computerized={computerized}
         verifyUrl={absoluteUrl(`/verify/${doc.id}`)}
         showBranding={showBranding}

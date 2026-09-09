@@ -19,9 +19,10 @@ import {
   Download,
   MoreHorizontal,
   Hash,
+  Ban,
   X,
 } from "lucide-react";
-import { useDocument, useDocuments, deleteDocument, updateDocumentStatus, markDocumentEmailed, markDocumentIssued } from "@/lib/document-store";
+import { useDocument, useDocuments, deleteDocument, cancelDocument, updateDocumentStatus, markDocumentEmailed, markDocumentIssued } from "@/lib/document-store";
 import { publicDocumentUrl } from "@/lib/public-url";
 import { DocumentAttachmentsSection } from "@/components/document-attachments-section";
 import { DocumentTimeline } from "@/components/document-timeline";
@@ -521,6 +522,43 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
     }
   }
 
+  /**
+   * סעיף 23(ב): reversing an issued document is an ADDITIONAL record, not an
+   * erasure. The document keeps its number and stays in the books marked
+   * "מבוטל", and every total in the app already excludes it.
+   *
+   * The dialog branches on one fact the app already knows: whether the
+   * customer ever received the document. If they did, they may have deducted
+   * its VAT, and the thing that reverses it on their side is a credit note -
+   * so we say that plainly instead of pretending a status flip is enough. We
+   * still let the owner cancel: the books have to reflect their decision, and
+   * the two actions are not mutually exclusive.
+   */
+  async function handleCancelDocument() {
+    if (!doc) return;
+    const label = `${DOCUMENT_TYPE_LABELS[doc.type]} #${doc.number}`;
+    const delivered = Boolean(doc.emailedAt || doc.originalIssuedAt);
+    const ok = await confirm({
+      title: `לסמן את ${label} כמבוטל?`,
+      message: delivered
+        ? "המסמך כבר נמסר ללקוח. הוא יישאר בספרים עם מספרו ויסומן 'מבוטל', ולא ייכלל בסיכומים. שים לב: אם הלקוח כבר קיזז מע\"מ, מה שמאפס את החיוב אצלו הוא חשבונית זיכוי, לא הסימון הזה."
+        : "המסמך טרם נמסר ללקוח. הוא יישאר בספרים עם מספרו, יסומן 'מבוטל' על גבי הנייר, ולא ייכלל בסיכומים. לא ניתן לבטל את הפעולה.",
+      tone: "danger",
+      confirmLabel: "סמן כמבוטל",
+    });
+    if (!ok) return;
+    setStatusUpdating(true);
+    setToast(null);
+    try {
+      await cancelDocument(doc.id);
+      setToast({ kind: "success", text: "המסמך סומן כמבוטל" });
+    } catch (err) {
+      setToast({ kind: "error", text: err instanceof Error ? err.message : "שגיאה בביטול" });
+    } finally {
+      setStatusUpdating(false);
+    }
+  }
+
   async function handleDelete() {
     if (!doc) return;
 
@@ -793,6 +831,19 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                 // trigger sits near the start of the action row.
                 className="absolute top-full mt-2 right-0 z-30 w-56 bg-white rounded-2xl shadow-lg border border-orange-100 p-1 flex flex-col gap-0.5 animate-fade-in"
               >
+                {doc.status !== "draft" && doc.status !== "cancelled" && (
+                  <button
+                    role="menuitem"
+                    onClick={() => {
+                      setMoreOpen(false);
+                      void handleCancelDocument();
+                    }}
+                    className="inline-flex items-center gap-2 px-3 py-2 min-h-[40px] rounded-xl text-sm font-medium text-rose-700 hover:bg-rose-50 text-right"
+                  >
+                    <Ban className="w-4 h-4" />
+                    סמן כמבוטל
+                  </button>
+                )}
                 <button
                   role="menuitem"
                   onClick={() => {
@@ -1219,6 +1270,19 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
           ) : (
             <>טרם התקבלה. הלקוח יכול לאשר בדף המסמך הציבורי (ההורדה נרשמת כהסכמה), או שתרשום הסכמה שניתנה בכתב בכרטיס הלקוח.</>
           )}
+        </div>
+      )}
+
+      {doc.status === "cancelled" && (
+        <div className="no-print card-soft p-4 max-w-[210mm] mx-auto flex items-start gap-3 border-rose-200 bg-rose-50">
+          <Ban className="w-5 h-5 text-rose-700 shrink-0 mt-0.5" />
+          <div className="text-sm text-rose-900">
+            <p className="font-semibold">המסמך מבוטל</p>
+            <p className="text-xs mt-0.5 text-rose-800">
+              הוא נשאר בספרים עם מספרו ואינו נכלל בסיכומים. כל פלט שלו מסומן &quot;מבוטל&quot;.
+              אם הוא כבר נמסר ללקוח, בדוק מול רואה החשבון אם נדרשת גם חשבונית זיכוי.
+            </p>
+          </div>
         </div>
       )}
 

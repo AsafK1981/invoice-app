@@ -59,6 +59,9 @@
 --      a hole in a numbering sequence the law requires to be unbroken (and is
 --      exactly what the "בדיקת רצף מספור" report now reports on). The gate is
 --      now OLD.status: only a draft, which never took a number, may go.
+--      Reversing an issued document is a STATUS change (to 'cancelled') or a
+--      credit note, and this branch deliberately leaves both open: the UPDATE
+--      branch below never guards `status` except against a revert to 'draft'.
 --
 --   2. UPDATE branch, ONE column added to the 19 already guarded:
 --      * client_id - the identity of the party the document was issued to.
@@ -166,7 +169,7 @@ BEGIN
     IF OLD.status IS DISTINCT FROM 'draft'
        AND current_user <> 'service_role' THEN
       RAISE EXCEPTION
-        'numbered documents cannot be deleted; cancel via credit note';
+        'numbered documents cannot be deleted; mark it cancelled or issue a credit note';
     END IF;
     RETURN OLD;
   END IF;

@@ -101,14 +101,25 @@ try {
   await check('numbered document delete raises the new message for authenticated', async () => {
     await asRole('authenticated', () => assert.rejects(
       db.exec(`DELETE FROM documents WHERE id='${doc}'`),
-      /numbered documents cannot be deleted; cancel via credit note/));
+      /mark it cancelled or issue a credit note/));
     assert.equal((await rows(`SELECT 1 FROM documents WHERE id='${doc}'`)).length, 1);
   });
   await check('emailed numbered document delete raises the same way', async () => {
     await db.exec(`UPDATE documents SET emailed_at=now() WHERE id='${doc}'`);
     await asRole('authenticated', () => assert.rejects(
       db.exec(`DELETE FROM documents WHERE id='${doc}'`),
-      /numbered documents cannot be deleted; cancel via credit note/));
+      /mark it cancelled or issue a credit note/));
+  });
+  // The message above tells the user to cancel instead. That has to be a real
+  // way out, so prove the trigger lets an issued document reach 'cancelled'
+  // (and still refuses the revert to 'draft' that would free its number).
+  await check('numbered document can be marked cancelled, but never reverted to draft', async () => {
+    await asRole('authenticated', () => db.exec(`UPDATE documents SET status='cancelled' WHERE id='${doc}'`));
+    assert.equal((await rows(`SELECT status FROM documents WHERE id='${doc}'`))[0].status, 'cancelled');
+    await asRole('authenticated', () => assert.rejects(
+      db.exec(`UPDATE documents SET status='draft' WHERE id='${doc}'`),
+      /cannot be reverted to draft/));
+    await db.exec(`UPDATE documents SET status='issued' WHERE id='${doc}'`);
   });
   await check('draft delete still succeeds and cascades its items', async () => {
     const draft = uuid(7);

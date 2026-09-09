@@ -118,6 +118,13 @@ interface Props {
    */
   draft?: boolean;
   /**
+   * Whether this document was reversed (status 'cancelled'). It stays in the
+   * books with its number, so every output of it has to say so: a "מבוטל"
+   * watermark and a line in the identity block. סעיף 23(ב) - the reversal is
+   * an additional record, never an erasure.
+   */
+  cancelled?: boolean;
+  /**
    * Whether this issued document IS a מסמך ממוחשב, i.e. the PDF the app emits
    * for it is signed with the business secured e-signature. Decided by
    * src/lib/signing/eligibility.ts (a receipt for a payment 18ב(ד) excludes is
@@ -177,6 +184,7 @@ export function DocumentBody({
   zeroRated = false,
   copy = false,
   draft = false,
+  cancelled = false,
   computerized = true,
   verifyUrl,
   showBranding = true,
@@ -233,6 +241,14 @@ export function DocumentBody({
           <span>{statutoryMark(language, "draftMark")}</span>
         </div>
       )}
+      {/* A cancelled document is still a document in the books; the watermark
+          is what stops anyone reading the sheet as live. Drafts win the slot
+          because a draft was never issued in the first place. */}
+      {!isDraft && cancelled && (
+        <div className="doc-draft-mark" aria-hidden="true">
+          <span>{statutoryMark(language, "cancelledMark")}</span>
+        </div>
+      )}
 
       {/* ── Header: business identity (start side) ↔ document identity ── */}
       <div className="doc-card doc-head">
@@ -279,6 +295,9 @@ export function DocumentBody({
           ) : (
             <>
               <div className="doc-orig">{copy ? s.copy : s.original}</div>
+              {cancelled && (
+                <div className="doc-orig is-cancelled">{statutoryMark(language, "cancelledMark")}</div>
+              )}
               {computerized ? (
                 <div className="doc-computerized">{statutoryMark(language, "computerized")}</div>
               ) : (
