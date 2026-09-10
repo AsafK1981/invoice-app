@@ -56,11 +56,20 @@ export function website(): JsonLdNode {
  * structured pricing so the markup does not contradict the pricing table.
  *
  * `featureList` mirrors the homepage's "כל מה שיש רק אצלנו" advantage grid
- * (src/app/(marketing)/page.tsx), INCLUDING the WhatsApp bot channel since
- * 2026-08-15, when it went live (Meta approval closed) and every on-page
- * `בקרוב` marker came off. Structured data must only claim what is
- * actually live today - if a future feature ships behind a badge again,
- * exclude it here until the badge drops.
+ * (src/app/(marketing)/page.tsx), EXCLUDING the WhatsApp channel.
+ *
+ * 2026-08-15 added the WhatsApp bot here on the belief that Meta approval
+ * had closed. It had not. The page restored its `בקרוב` pills on 08-16 and
+ * still carries an explicit "מה שכבר עובד היום" aside naming email and link
+ * delivery only, but this list was never walked back - so for most of a
+ * month the structured data told Google and AI crawlers that a feature the
+ * visible page marks as unreleased was shipped. Removed 2026-09-10, along
+ * with the "בוואטסאפ" clause of the delivery entry, which overclaimed the
+ * same channel a second time.
+ *
+ * Structured data must only claim what is actually live today. Nothing goes
+ * back in this list while a `בקרוב` badge for it exists on the page, and
+ * production still runs on Meta's TEST number (docs/whatsapp/runbook-go-live.md).
  */
 export function softwareApplication(): JsonLdNode {
   return {
@@ -78,12 +87,11 @@ export function softwareApplication(): JsonLdNode {
       "הקצאת מספרים אוטומטית מרשות המסים (חשבונית ישראל)",
       "עוזר AI בעברית לשאלות על הכנסות ומסמכים",
       "תזכורות אוטומטיות להוצאת מסמכים ולתשלומי לקוחות שמאחרים",
-      "הוצאת קבלות ורישום הוצאות ישירות מתוך וואטסאפ",
       "סריקת קבלות והוצאות בצילום",
       "מעקב תקרת עוסק פטור בזמן אמת",
       "דוחות מוכנים לרואה חשבון: מע״מ תקופתי, עזר ל-1301, הצהרת הון",
       "ייבוא היסטוריה מתוכנות חשבוניות אחרות",
-      "שליחת מסמכים במייל, בוואטסאפ ובקישור ציבורי",
+      "שליחת מסמכים במייל ובקישור ציבורי",
     ],
     offers: { "@type": "Offer", price: "15", priceCurrency: "ILS" },
     publisher: { "@id": ORG_ID },
