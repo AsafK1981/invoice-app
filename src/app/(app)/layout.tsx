@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
 import dynamic from "next/dynamic";
+import { usePathname } from "next/navigation";
 import { Sidebar } from "@/components/layout/sidebar";
 import { AppProviders } from "@/components/providers";
 import { GlobalSearch } from "@/components/global-search";
@@ -8,6 +10,43 @@ import { InstallPrompt } from "@/components/install-prompt";
 import { NotificationsBell } from "@/components/notifications-bell";
 import { EmailVerificationBanner } from "@/components/email-verification-banner";
 import { TwoFactorNudge } from "@/components/two-factor-nudge";
+
+// Client-side <Link href="/page#anchor"> navigation swaps `children` under
+// this persistent layout without a full page load, and the target section
+// (e.g. tax-officer-notice-section.tsx) often isn't in the DOM yet on the
+// first paint - it's waiting on business/document data from context. The
+// browser only auto-scrolls to a hash on a real navigation, so a client
+// transition silently lands at the top of the page. Retry across a few
+// frames until the element shows up, then scroll to it.
+function useScrollToHashOnNavigate(pathname: string) {
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (!hash) return;
+    let id: string;
+    try {
+      id = decodeURIComponent(hash.slice(1));
+    } catch {
+      return;
+    }
+    let cancelled = false;
+    let attempts = 0;
+    const tryScroll = () => {
+      if (cancelled) return;
+      const el = document.getElementById(id);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+        return;
+      }
+      attempts += 1;
+      if (attempts < 60) requestAnimationFrame(tryScroll);
+    };
+    const raf = requestAnimationFrame(tryScroll);
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(raf);
+    };
+  }, [pathname]);
+}
 
 // Floating chat button - never needs to be part of the initial server-rendered
 // HTML, so keep it out of the main bundle/SSR pass entirely (same pattern as
@@ -18,6 +57,8 @@ const AssistantWidget = dynamic(
 );
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
+  useScrollToHashOnNavigate(usePathname());
+
   return (
     <AppProviders>
       <a
