@@ -5,6 +5,7 @@ import {
   Check,
   X as XIcon,
   Minus,
+  HelpCircle,
   ArrowRight,
   Trophy,
   Gift,
@@ -51,12 +52,40 @@ const APP_NAME = APP_NAME_HE;
 
 const formatPrice = (nis: number) => formatCurrency(Math.round(nis));
 
-/** Semantic support mark: green/red/amber, never gold. */
+/** ISO date -> dd.mm.yyyy, the form the rest of the site dates things in. */
+function formatVerifiedAt(iso: string): string {
+  const [y, m, d] = iso.split("-");
+  return `${d}.${m}.${y}`;
+}
+
+/**
+ * Semantic support mark: green/red/amber, never gold.
+ *
+ * "unknown" needs its own branch and did not have one. The old ternaries fell
+ * through to the amber "חלקי" mark with aria-label="חלקי", so twelve cells
+ * whose data says `"unknown"` with the note "לא מצאנו נתון מאומת" were telling
+ * the reader, in colour and to a screen reader, that a NAMED COMPETITOR
+ * partially supports a feature - a factual assertion about someone else's
+ * product that we had explicitly recorded as unverified. The caveat existed
+ * only in the hover tooltip. Comparative advertising about a named competitor
+ * is not the place to let a missing branch invent a finding.
+ */
 function Mark({ kind, note }: { kind: FeatureSupport; note?: string }) {
-  const tone = kind === "yes" ? "yes" : kind === "no" ? "no" : "partial";
-  const Icon = kind === "yes" ? Check : kind === "no" ? XIcon : Minus;
+  const tone =
+    kind === "yes" ? "yes" : kind === "no" ? "no" : kind === "unknown" ? "unknown" : "partial";
+  const Icon =
+    kind === "yes" ? Check : kind === "no" ? XIcon : kind === "unknown" ? HelpCircle : Minus;
   const label =
-    kind === "yes" ? "תומך" : kind === "no" ? "לא תומך" : "חלקי";
+    kind === "yes"
+      ? "תומך"
+      : kind === "no"
+        ? "לא תומך"
+        : kind === "unknown"
+          ? "לא בדקנו"
+          : "חלקי";
+  // For an unverified cell the note IS the point, so lead with the label and
+  // keep the note after it rather than letting the note stand alone as if it
+  // were a finding.
   return (
     <span
       className={`v2-mk ${tone}`}
@@ -147,8 +176,8 @@ export function ComparisonViewV2({ competitor }: { competitor: Competitor }) {
           </p>
           <p className="src">
             השוואה הוגנת · נתוני המתחרה מ-
-            <LtrText text={competitor.url.replace("https://", "")} /> (עודכן
-            5/2026)
+            <LtrText text={competitor.url.replace("https://", "")} /> (מחירים
+            נבדקו <Ltr>{formatVerifiedAt(competitor.pricingVerifiedAt)}</Ltr>)
           </p>
         </header>
 
@@ -294,6 +323,9 @@ export function ComparisonViewV2({ competitor }: { competitor: Competitor }) {
               </span>
               <span className="no">
                 <XIcon strokeWidth={3} /> לא תומך
+              </span>
+              <span className="unknown">
+                <HelpCircle strokeWidth={3} /> לא בדקנו
               </span>
             </div>
           </div>

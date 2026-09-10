@@ -37,6 +37,15 @@ export interface Competitor {
   tagline: string;
   url: string;
   founded: string;
+  /**
+   * ISO date this competitor's PRICING was last checked against their live
+   * page. Per competitor on purpose: the hero used to print a single
+   * hard-coded "עודכן 5/2026" on all six pages, so two competitors that had
+   * been re-verified in August looked as stale as the four that had not, and
+   * the four that had not looked as fresh as of May forever. Update this in
+   * the same commit as the numbers above it, never separately.
+   */
+  pricingVerifiedAt: string;
   /** One-liner about who they're best for */
   bestFor: string;
   pricing: PricingTier[];
@@ -178,6 +187,7 @@ const SHARED_FEATURES = (theirSupport: Record<string, FeatureSupport>, theirNote
 export const COMPETITORS: Record<Competitor["slug"], Competitor> = {
   invoice4u: {
     slug: "invoice4u",
+    pricingVerifiedAt: "2026-08-27",
     name: "Invoice4U",
     tagline: "תוכנת חשבוניות ותיקה לעסקים צומחים",
     url: "https://www.invoice4u.co.il",
@@ -221,6 +231,7 @@ export const COMPETITORS: Record<Competitor["slug"], Competitor> = {
   },
   greeninvoice: {
     slug: "greeninvoice",
+    pricingVerifiedAt: "2026-08-25",
     name: "חשבונית ירוקה",
     tagline: "פלטפורמת חשבוניות פופולרית עם API מקיף",
     url: "https://www.greeninvoice.co.il",
@@ -288,6 +299,7 @@ export const COMPETITORS: Record<Competitor["slug"], Competitor> = {
   },
   ifreelance: {
     slug: "ifreelance",
+    pricingVerifiedAt: "2026-05-07",
     name: "iFreelance",
     tagline: "תוכנת חשבוניות לפרילנסרים, פעילה משנת 2010",
     url: "https://ifree.ifreelance.co.il",
@@ -351,6 +363,7 @@ export const COMPETITORS: Record<Competitor["slug"], Competitor> = {
   },
   sumit: {
     slug: "sumit",
+    pricingVerifiedAt: "2026-05-07",
     name: "SUMIT",
     tagline: "מערכת חשבוניות והנהלת חשבונות עם מסלול חינם (freemium)",
     url: "https://www.sumit.co.il",
@@ -408,6 +421,7 @@ export const COMPETITORS: Record<Competitor["slug"], Competitor> = {
   },
   icount: {
     slug: "icount",
+    pricingVerifiedAt: "2026-05-07",
     name: "iCount",
     tagline: "מערכת חשבוניות והנהלת חשבונות ותיקה עם קהילת רו״ח גדולה",
     url: "https://www.icount.co.il",
@@ -458,6 +472,7 @@ export const COMPETITORS: Record<Competitor["slug"], Competitor> = {
   },
   ezcount: {
     slug: "ezcount",
+    pricingVerifiedAt: "2026-05-07",
     name: "EZcount",
     tagline: "מערכת חשבוניות זולה מבית Hyp (חברת סליקה/תשלומים גדולה)",
     url: "https://www.ezcount.co.il",

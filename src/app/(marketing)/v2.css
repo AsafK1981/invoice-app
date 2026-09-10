@@ -2218,6 +2218,10 @@
 .v2-theme .v2-mk.yes { color: var(--v2-yes); background: rgba(79, 196, 122, 0.12); }
 .v2-theme .v2-mk.no { color: var(--v2-no); background: rgba(229, 84, 75, 0.12); }
 .v2-theme .v2-mk.partial { color: var(--v2-partial); background: rgba(242, 163, 60, 0.12); }
+/* "we could not verify this" - deliberately colourless, so it cannot be read
+   as a verdict about the competitor the way the green/red/amber marks are.
+   #625F5E is 5.4:1 on the card behind it. */
+.v2-theme .v2-mk.unknown { color: #625f5e; background: rgba(98, 95, 94, 0.1); }
 
 /* legend */
 .v2-theme .v2-legend {
