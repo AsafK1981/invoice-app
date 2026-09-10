@@ -62,8 +62,25 @@ installStaleAssetRecovery();
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
   tracesSampleRate: 0.1,
+  // Session replay is OFF on both paths, deliberately.
+  //
+  // This used to be `replaysOnErrorSampleRate: 1.0`, i.e. a DOM recording of
+  // the screen on every single error. The screens this app errors on show
+  // client names, invoice amounts, tax IDs and bank details - the recording
+  // is tenant financial data leaving for a subprocessor. The Sentry SDK masks
+  // text by default, but nothing in this repo pinned that: no
+  // `replayIntegration()` call, so the masking was whatever the installed SDK
+  // version happened to default to, and it could change under a minor bump
+  // without anyone noticing.
+  //
+  // Traces and error events still give the stack, the route and the release,
+  // which is what has actually diagnosed every bug here so far. If replay is
+  // ever genuinely needed, turn it back on by ADDING an explicit
+  // `integrations: [Sentry.replayIntegration({ maskAllText: true,
+  // maskAllInputs: true, blockAllMedia: true })]` - never by raising these
+  // rates alone, and update מדיניות הפרטיות §4א in the same commit.
   replaysSessionSampleRate: 0,
-  replaysOnErrorSampleRate: 1.0,
+  replaysOnErrorSampleRate: 0,
   environment: process.env.NODE_ENV,
   enabled: process.env.NODE_ENV === "production",
   // supabase-js coordinates auth-token refreshes between tabs with the
