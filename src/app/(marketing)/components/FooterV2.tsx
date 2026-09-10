@@ -48,6 +48,19 @@ export default function FooterV2() {
           <Link href="/security">אבטחת מידע</Link>
           <Link href="/accessibility">נגישות</Link>
         </nav>
+        {/* Operator identity. The site had none: no name, no contact route,
+            nothing but nav links, while /privacy named אסף קוטלר as the
+            controller and /accessibility gave an email - so the information
+            existed and was simply unreachable from any page a visitor lands
+            on. Deliberately NOT carrying a מספר עוסק yet: for a sole עוסק
+            פטור that number is his ת.ז, publishing it is a real exposure,
+            and the consumer-law disclosure duty it would answer only attaches
+            once money actually changes hands. Revisit the moment billing is
+            switched on. */}
+        <span className="v2-footer-who">
+          מופעל על ידי אסף קוטלר ·{" "}
+          <a href="mailto:asafkotlar@gmail.com">asafkotlar@gmail.com</a>
+        </span>
         <span className="v2-footer-copy">נבנה באהבה לעסקים עצמאיים בישראל</span>
       </div>
     </footer>

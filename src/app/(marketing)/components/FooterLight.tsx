@@ -35,6 +35,11 @@ export default function FooterLight() {
           <Link href="/security">אבטחת מידע</Link>
           <Link href="/accessibility">נגישות</Link>
         </nav>
+        {/* Mirrors FooterV2: see the note there for why no מספר עוסק yet. */}
+        <span className="ml-footer-who">
+          מופעל על ידי אסף קוטלר ·{" "}
+          <a href="mailto:asafkotlar@gmail.com">asafkotlar@gmail.com</a>
+        </span>
         <span className="ml-footer-copy">נבנה באהבה לעסקים עצמאיים בישראל</span>
       </div>
     </footer>

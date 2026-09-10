@@ -1345,6 +1345,17 @@
   font-size: 12px;
   color: rgba(247, 242, 235, 0.55);
 }
+/* Operator identity. Brighter than the credit line beside it (8.5:1 vs 5.3:1)
+   because it carries information a visitor may actually need, not a flourish. */
+.v2-theme .v2-footer-who {
+  font-size: 12px;
+  color: rgba(247, 242, 235, 0.75);
+}
+.v2-theme .v2-footer-who a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
 /* Same breakpoint and same behaviour as `.ml-footer-in`: seven links plus a
    wordmark and the credit line stop fitting one row, so the whole footer
    becomes a centred column rather than a squeezed one. */

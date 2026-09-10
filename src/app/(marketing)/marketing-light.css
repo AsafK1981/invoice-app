@@ -2291,6 +2291,17 @@ h3 > .ml-badge-soon {
   font-size: 12px;
   color: rgba(247, 242, 235, 0.55);
 }
+/* Operator identity, same treatment as .v2-footer-who on the other footer:
+   brighter than the credit line beside it because it carries information. */
+.ml-footer-who {
+  font-size: 12px;
+  color: rgba(247, 242, 235, 0.75);
+}
+.ml-footer-who a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
 @media (max-width: 639.98px) {
   .ml-footer-in {
     flex-direction: column;
