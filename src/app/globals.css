@@ -339,8 +339,15 @@ input:not(.input-warm):focus-visible,
   outline: 2px solid #1F232B;
   outline-offset: 2px;
 }
+/* .input-warm used to opt OUT of the ring above with a transparent outline,
+   leaving keyboard focus signalled only by a border shift to #E38F4F plus a
+   15%-opacity glow. Measured, that border is 2.49:1 against the field's own
+   background and 2.27:1 against the page - under the 3:1 that WCAG 2.1
+   SC 1.4.11 requires of a focus indicator. It now takes the same charcoal
+   ring as every other control (15.5:1); the warm border and glow stay as the
+   pointer-hover affordance underneath it. */
 .input-warm:focus-visible {
-  outline: 2px solid transparent;
+  outline: 2px solid #1f232b;
   outline-offset: 2px;
 }
 
@@ -373,7 +380,13 @@ input:not(.input-warm):focus-visible,
 .input-warm {
   width: 100%;
   background: #FFFDFA;
-  border: 1.5px solid #E8DDD0;
+  /* Was #E8DDD0: 1.32:1 against this field's own background and 1.20:1
+     against the page behind it. The border is the ONLY thing that marks
+     where the field is (the fill differs from the page by 1.10:1), so under
+     WCAG 2.1 SC 1.4.11 it has to clear 3:1 and it did not. #948573 is the
+     lightest warm taupe that clears it against both: 3.53:1 on the field,
+     3.22:1 on the page. */
+  border: 1.5px solid #948573;
   border-radius: 0.9rem;
   padding: 0.55rem 0.85rem;
   font-size: 0.9rem;
@@ -386,8 +399,30 @@ input:not(.input-warm):focus-visible,
   box-shadow: 0 0 0 3px rgba(217, 106, 29, 0.15);
   transform: translateY(-1px);
 }
+/* The app has a second input family that predates .input-warm and draws its
+   boundary with Tailwind's border-stone-300 (#d6d3d1, 1.49:1 on white). It
+   appears on 18 screens including the two unauthenticated ones, /portal and
+   /view/[id]. Same SC 1.4.11 problem, so raise it to stone-500 (4.80:1).
+
+   Scoped to real form controls on purpose: border-stone-300 is also used on
+   cards and dividers, where a decorative hairline is the intended look and
+   3:1 does not apply. Element+class beats the bare utility on specificity, so
+   this needs no edit in those 18 files and nothing to keep in sync.
+
+   Keyboard focus on these is already handled: the :focus-visible block above
+   matches input:not(.input-warm) at higher specificity than Tailwind's
+   focus:outline-none, so they get the charcoal ring. */
+input.border-stone-300,
+select.border-stone-300,
+textarea.border-stone-300 {
+  border-color: #78716c;
+}
+
 .input-warm:hover:not(:focus) {
-  border-color: #D2C6B7;
+  /* Was #D2C6B7, which is LIGHTER than the resting border now is - hover read
+     as the field fading out, and at 1.7:1 it dropped back under SC 1.4.11.
+     Hover darkens from the resting taupe instead. */
+  border-color: #7f7160;
 }
 
 /* ========== ANIMATIONS ========== */
