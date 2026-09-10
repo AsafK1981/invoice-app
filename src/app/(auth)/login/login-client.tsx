@@ -459,6 +459,40 @@ function LoginForm() {
             </>
           )}
 
+          {/* Terms/privacy assent, added 2026-09-10. Until now a visitor could
+              create an account and start issuing real tax documents without
+              either document ever being referenced in the flow - they were
+              reachable only from the marketing footer, which the signup page
+              does not render. Placed AFTER the Google button rather than above
+              the submit button so one notice sits adjacent to both entry
+              points; a checkbox would gate the form submit but cannot gate the
+              GIS button without breaking its own click handling. Signup only:
+              an existing user logging back in is not entering the contract
+              again. */}
+          {mode === "signup" && (
+            <p className="mt-5 text-center text-xs leading-relaxed text-stone-600">
+              ביצירת חשבון, או בהתחברות באמצעות Google, אתה מאשר שקראת את{" "}
+              <a
+                href="/terms"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-orange-700 underline underline-offset-2 hover:text-orange-800"
+              >
+                תנאי השימוש
+              </a>{" "}
+              ואת{" "}
+              <a
+                href="/privacy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-orange-700 underline underline-offset-2 hover:text-orange-800"
+              >
+                מדיניות הפרטיות
+              </a>{" "}
+              ושאתה מסכים להם.
+            </p>
+          )}
+
           <div className="mt-5 text-center text-sm text-stone-600">
             {mode === "login" ? (
               <>
