@@ -11,9 +11,15 @@ import { formatDate } from "@/lib/format";
  * הוראות ניהול ספרים 18ב(ב): "נישום המבקש לשלוח מסמכים ממוחשבים, יודיע על
  * כך לפקיד השומה בדואר רשום, לפני משלוח המסמך הממוחשב הראשון".
  *
+ * The duty is triggered by the SIGNATURE, not by the email: סעיף 1 defines a
+ * מסמך ממוחשב as one carrying the taxpayer's secured/approved e-signature, and
+ * this app signs (src/lib/signing/). A vendor that mails unsigned PDFs never
+ * enters the regime, which is why most competitors never mention this.
+ *
  * The app cannot post a letter. What it can do: explain the duty once, hand
- * the owner a ready letter, and record when they confirmed it was sent. The
- * dashboard banner (tax-officer-notice-banner.tsx) keeps nagging until then.
+ * the owner a ready letter, and record when they confirmed it was sent. It
+ * does NOT nag: the dashboard banner was removed 2026-09-10 (no competitor
+ * gates on this, and the duty is the taxpayer's, not the software house's).
  */
 export function TaxOfficerNoticeSection() {
   const { business, ready } = useBusiness();
@@ -52,9 +58,15 @@ export function TaxOfficerNoticeSection() {
         <div className="min-w-0 flex-1">
           <h2 className="font-bold text-stone-900">הודעה לפקיד השומה על מסמכים ממוחשבים</h2>
           <p className="text-sm text-stone-700 mt-1 leading-relaxed">
-            לפי הוראות ניהול ספרים (סעיף 18ב(ב)), עסק ששולח ללקוחותיו חשבוניות וקבלות
-            כקבצים במקום בנייר חייב להודיע על כך לפקיד השומה בדואר רשום, פעם אחת, לפני
-            המסמך הממוחשב הראשון. המכתב מוכן, צריך רק להדפיס, לחתום ולשלוח.
+            המסמכים שאתה מפיק כאן נחתמים בחתימה אלקטרונית מאובטחת על שמך ונושאים את
+            המילים "מסמך ממוחשב", כך שהקובץ שהלקוח מקבל הוא המקור עצמו ולא העתק. על
+            מסמכים כאלה חלות הוראות ניהול ספרים (סעיף 18ב), ובהן הודעה חד-פעמית לפקיד
+            השומה בדואר רשום לפני המסמך הממוחשב הראשון. המכתב מוכן, צריך רק להדפיס,
+            לחתום ולשלוח.
+          </p>
+          <p className="text-xs text-stone-500 mt-2 leading-relaxed">
+            לא חוסם כלום באפליקציה. החובה היא של העסק, לא של התוכנה, וזה המקום להסדיר
+            אותה מתי שנוח לך.
           </p>
 
           {sentAt ? (

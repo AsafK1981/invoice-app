@@ -21,7 +21,7 @@ node scripts/run-sql-file.mjs --reason "secured e-signature: keys, signature rec
 | רישום הסכמה "בכתב" / ידני וביטול מכרטיס הלקוח | `src/lib/client-store.ts`, `src/app/(app)/clients/[id]/page.tsx` |
 | מצב ההסכמה בדף המסמך של בעל העסק | `src/app/(app)/documents/[id]/page.tsx` |
 | משפט ההסכמה במייל למי שטרם הסכים | `src/app/api/send-email/route.ts`, `template.ts` |
-| מכתב לפקיד השומה, כרטיס בהגדרות, באנר בדשבורד | `src/app/(app)/notices/tax-officer/page.tsx`, `src/components/tax-officer-notice-section.tsx`, `tax-officer-notice-banner.tsx` |
+| מכתב לפקיד השומה + כרטיס בהגדרות (הבאנר בדשבורד הוסר 10.09.2026) | `src/app/(app)/notices/tax-officer/page.tsx`, `src/components/tax-officer-notice-section.tsx` |
 | רישום ב-`audit_log`: `client.consent_recorded`, `client.consent_revoked`, `business.tax_officer_notice` | `src/lib/audit-log.ts` |
 
 הסכמה שבוטלה אינה נמחקת: `computerized_consent_revoked_at` נשאר לצד תאריך ההסכמה המקורי, כי 18ב(ג) דורש שההסכמה והביטול יישמרו "כחלק בלתי נפרד ממערכת החשבונות".
