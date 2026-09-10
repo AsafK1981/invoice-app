@@ -2525,10 +2525,12 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                       value={payDetails.checkNumber || ""}
                       onChange={(e) => updatePayDetails({ checkNumber: e.target.value })}
                       placeholder="מס' שיק"
+                      aria-label="מספר שיק"
                       className="input-warm"
                       dir="ltr"
                     />
                     <BankSelect
+                      ariaLabel="בנק של השיק"
                       value={payDetails.checkBank || ""}
                       onChange={(v) => updatePayDetails({ checkBank: v })}
                     />
@@ -2537,6 +2539,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                       value={payDetails.checkBranch || ""}
                       onChange={(e) => updatePayDetails({ checkBranch: e.target.value })}
                       placeholder="סניף"
+                      aria-label="מספר סניף"
                       className="input-warm"
                       dir="ltr"
                     />
@@ -2545,6 +2548,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                       value={payDetails.checkAccount || ""}
                       onChange={(e) => updatePayDetails({ checkAccount: e.target.value })}
                       placeholder="מס' חשבון"
+                      aria-label="מספר חשבון"
                       className="input-warm"
                       dir="ltr"
                     />
@@ -2571,6 +2575,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                         updatePayDetails({ cardLast4: e.target.value.replace(/\D/g, "").slice(0, 4) })
                       }
                       placeholder="4 ספרות אחרונות"
+                      aria-label="4 ספרות אחרונות של הכרטיס"
                       className="input-warm"
                       dir="ltr"
                     />
@@ -2579,6 +2584,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                       value={payDetails.cardApproval || ""}
                       onChange={(e) => updatePayDetails({ cardApproval: e.target.value })}
                       placeholder="מס' אישור"
+                      aria-label="מספר אישור עסקה"
                       className="input-warm"
                       dir="ltr"
                     />

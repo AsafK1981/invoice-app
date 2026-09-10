@@ -234,6 +234,7 @@ export default function AdminImportForUserPage() {
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
           <input
             type="text"
+            aria-label="חיפוש משתמש"
             placeholder="חיפוש לפי אימייל או שם עסק..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -328,6 +329,7 @@ export default function AdminImportForUserPage() {
           </h2>
           <input
             ref={fileInput}
+            aria-label="בחר קובץ CSV לייבוא"
             type="file"
             accept=".csv,text/csv"
             onChange={handleFile}

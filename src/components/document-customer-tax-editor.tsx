@@ -67,6 +67,7 @@ export function DocumentCustomerTaxEditor({ doc }: { doc: InvoiceDocument }) {
         {editing ? (
           <div className="flex items-center gap-2 flex-shrink-0">
             <input
+              aria-label="ח.פ או ת.ז של הלקוח"
               type="text"
               inputMode="numeric"
               value={value}

@@ -364,6 +364,7 @@ export function BankImportModal({ open, onClose, unpaidDocuments, onPaid }: Prop
                       >
                         <td className="px-3 py-2 text-center">
                           <input
+                            aria-label="אשר את ההתאמה לשורה הזו"
                             type="checkbox"
                             disabled={noMatch}
                             checked={m.confirmed}
@@ -396,6 +397,7 @@ export function BankImportModal({ open, onClose, unpaidDocuments, onPaid }: Prop
                             <CandidateLabel doc={m.candidates[0]} />
                           ) : (
                             <select
+                              aria-label="בחר מסמך להתאמה"
                               value={m.selectedDocId ?? ""}
                               onChange={(e) => {
                                 setMatches((prev) =>

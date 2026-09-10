@@ -36,6 +36,7 @@ const VIEW_STRINGS: Record<DocLang, Record<string, string>> = {
     approveTitle: "אישור ההצעה",
     approveOptional: "לא חובה",
     approveNamePlaceholder: "שם מלא (רק אם בוחרים לאשר)",
+    approveNameLabel: "שם מלא לאישור ההצעה",
     approveButton: "אשר",
     approveBusy: "מאשר...",
     approveNameRequired: "יש להזין שם מלא",
@@ -75,6 +76,7 @@ const VIEW_STRINGS: Record<DocLang, Record<string, string>> = {
     approveTitle: "Approve this quote",
     approveOptional: "optional",
     approveNamePlaceholder: "Full name (only if you choose to approve)",
+    approveNameLabel: "Full name to approve this quote",
     approveButton: "Approve",
     approveBusy: "Approving...",
     approveNameRequired: "Please enter your full name",
@@ -460,6 +462,7 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
                   value={signatureName}
                   onChange={(e) => setSignatureName(e.target.value)}
                   placeholder={t.approveNamePlaceholder}
+                  aria-label={t.approveNameLabel}
                   autoComplete="name"
                   inputMode="text"
                   className="flex-1 px-3 py-2 rounded-xl border border-stone-300 bg-white focus:border-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-300 text-sm"

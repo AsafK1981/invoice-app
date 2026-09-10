@@ -174,6 +174,7 @@ export function DocumentNumberingSettings() {
               {isEditing ? (
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <input
+                    aria-label="המספר הבא בסדרה"
                     type="number"
                     min={1}
                     value={draftValue}

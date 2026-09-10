@@ -376,8 +376,8 @@ function CreateTemplateCard({ clients }: { clients: { id: string; name: string }
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="text-xs font-semibold text-stone-700 mb-1 block">לקוח</label>
-          <select value={clientId} onChange={(e) => setClientId(e.target.value)} className="input-warm">
+          <label className="text-xs font-semibold text-stone-700 mb-1 block" htmlFor="rc-client">לקוח</label>
+          <select id="rc-client" value={clientId} onChange={(e) => setClientId(e.target.value)} className="input-warm">
             <option value="">בחר לקוח</option>
             {clients.map((c) => (
               <option key={c.id} value={c.id}>
@@ -387,8 +387,8 @@ function CreateTemplateCard({ clients }: { clients: { id: string; name: string }
           </select>
         </div>
         <div>
-          <label className="text-xs font-semibold text-stone-700 mb-1 block">סוג מסמך</label>
-          <select value={docType} onChange={(e) => setDocType(e.target.value)} className="input-warm">
+          <label className="text-xs font-semibold text-stone-700 mb-1 block" htmlFor="rc-doctype">סוג מסמך</label>
+          <select id="rc-doctype" value={docType} onChange={(e) => setDocType(e.target.value)} className="input-warm">
             <option value="receipt">קבלה</option>
             <option value="quote">הצעת מחיר</option>
             <option value="proforma">חשבון עסקה</option>
@@ -398,8 +398,8 @@ function CreateTemplateCard({ clients }: { clients: { id: string; name: string }
       </div>
 
       <div>
-        <label className="text-xs font-semibold text-stone-700 mb-1 block">נושא</label>
-        <input
+        <label className="text-xs font-semibold text-stone-700 mb-1 block" htmlFor="rc-subject">נושא</label>
+        <input id="rc-subject"
           type="text"
           value={subject}
           onChange={(e) => setSubject(e.target.value)}
@@ -410,8 +410,8 @@ function CreateTemplateCard({ clients }: { clients: { id: string; name: string }
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="text-xs font-semibold text-stone-700 mb-1 block">תיאור</label>
-          <input
+          <label className="text-xs font-semibold text-stone-700 mb-1 block" htmlFor="rc-description">תיאור</label>
+          <input id="rc-description"
             type="text"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -420,8 +420,8 @@ function CreateTemplateCard({ clients }: { clients: { id: string; name: string }
           />
         </div>
         <div>
-          <label className="text-xs font-semibold text-stone-700 mb-1 block">סכום (₪)</label>
-          <input
+          <label className="text-xs font-semibold text-stone-700 mb-1 block" htmlFor="rc-amount">סכום (₪)</label>
+          <input id="rc-amount"
             type="number"
             dir="ltr"
             value={amount}
@@ -434,8 +434,8 @@ function CreateTemplateCard({ clients }: { clients: { id: string; name: string }
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="text-xs font-semibold text-stone-700 mb-1 block">תדירות</label>
-          <select
+          <label className="text-xs font-semibold text-stone-700 mb-1 block" htmlFor="rc-frequency">תדירות</label>
+          <select id="rc-frequency"
             value={frequency}
             onChange={(e) => {
               const next = e.target.value as "monthly" | "weekly";
@@ -449,10 +449,10 @@ function CreateTemplateCard({ clients }: { clients: { id: string; name: string }
           </select>
         </div>
         <div>
-          <label className="text-xs font-semibold text-stone-700 mb-1 block">
+          <label className="text-xs font-semibold text-stone-700 mb-1 block" htmlFor="rc-anchor-day">
             {frequency === "monthly" ? "יום החיוב בחודש" : "יום החיוב בשבוע"}
           </label>
-          <select
+          <select id="rc-anchor-day"
             value={anchorDay}
             onChange={(e) => setAnchorDay(Number(e.target.value))}
             className="input-warm"

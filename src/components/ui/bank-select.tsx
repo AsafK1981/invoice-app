@@ -12,6 +12,13 @@ interface BankSelectProps {
   otherPlaceholder?: string;
   className?: string;
   id?: string;
+  /**
+   * Accessible name for the select. Required in practice: this renders a bare
+   * <select> whose only visible cue is its first option ("בחר בנק"), and an
+   * option is not an accessible name. Callers that have a real <label> pass
+   * `id` instead and point htmlFor at it.
+   */
+  ariaLabel?: string;
 }
 
 /**
@@ -25,6 +32,7 @@ export function BankSelect({
   otherPlaceholder = "שם הבנק",
   className = "input-warm",
   id,
+  ariaLabel,
 }: BankSelectProps) {
   const known = findIsraeliBank(value);
   // "Other" mode sticks once chosen so the text field does not vanish while
@@ -37,6 +45,7 @@ export function BankSelect({
     <div className="flex flex-col gap-2">
       <select
         id={id}
+        aria-label={ariaLabel}
         value={selectValue}
         onChange={(e) => {
           const next = e.target.value;

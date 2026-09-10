@@ -152,8 +152,9 @@ export function AllocationNextStepCard({
         open={manualOpen}
         onToggle={() => setManualOpen((s) => !s)}
       >
-        <label className="text-xs font-semibold text-stone-700 mb-1 block">מספר הקצאה</label>
+        <label htmlFor="alloc-next-number" className="text-xs font-semibold text-stone-700 mb-1 block">מספר הקצאה</label>
         <input
+          id="alloc-next-number"
           type="text"
           inputMode="numeric"
           dir="ltr"

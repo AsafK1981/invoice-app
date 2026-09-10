@@ -323,8 +323,11 @@ export function BusinessFormModal({ open, onClose, business }: Props) {
             יוצגו על מסמכים שמשולמים בהעברה בנקאית, כדי שהלקוח יידע לאן לשלוח את הכסף. כל השדות אופציונליים.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
+            {/* FormField cannot reach a control inside a custom component,
+                so it emits no htmlFor here and BankSelect names itself. */}
             <FormField label="בנק">
               <BankSelect
+                ariaLabel="בנק"
                 value={form.bankName || ""}
                 onChange={(v) => update("bankName", v)}
               />

@@ -218,6 +218,9 @@ export function TwoFactorSection() {
                 value={code}
                 onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                 placeholder="000000"
+                aria-label="קוד אימות בן 6 ספרות"
+                required
+                aria-required="true"
                 className="block w-32 mt-2 input-warm font-mono text-center text-lg tracking-widest"
                 inputMode="numeric"
                 autoComplete="one-time-code"

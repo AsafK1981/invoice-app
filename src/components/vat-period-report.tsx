@@ -327,6 +327,7 @@ export function VatPeriodReport({ headless = false, business, documents, expense
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <select
+            aria-label="תקופת הדיווח"
             value={mode}
             onChange={(e) => { const next = e.target.value as PeriodMode; setMode(next); onPeriodChange?.(next); }}
             className="input-warm py-1.5 px-3 text-sm w-auto max-w-[14rem]"

@@ -316,10 +316,11 @@ function ConfirmStage({
       </div>
 
       <div>
-        <label className="block text-xs font-semibold text-stone-700 mb-1">
+        <label htmlFor="dz-confirm" className="block text-xs font-semibold text-stone-700 mb-1">
           הקלד את שם העסק:
         </label>
         <input
+          id="dz-confirm"
           type="text"
           value={confirmText}
           onChange={(e) => setConfirmText(e.target.value)}

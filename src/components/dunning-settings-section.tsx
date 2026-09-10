@@ -115,10 +115,11 @@ export function DunningSettingsSection() {
 
         {draft.enabled && (
           <div className="pl-8">
-            <label className="block text-xs font-semibold text-stone-700 mb-1">
+            <label htmlFor="dun-from-name" className="block text-xs font-semibold text-stone-700 mb-1">
               שם השולח שיופיע במייל
             </label>
             <input
+              id="dun-from-name"
               type="text"
               value={draft.fromName}
               onChange={(e) => setDraft((d) => ({ ...d, fromName: e.target.value }))}

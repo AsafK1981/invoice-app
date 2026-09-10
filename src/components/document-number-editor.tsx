@@ -69,6 +69,7 @@ export function DocumentNumberEditor({ doc }: { doc: InvoiceDocument }) {
         {editing ? (
           <div className="flex items-center gap-2 flex-shrink-0">
             <input
+              aria-label="מספר המסמך"
               type="number"
               min={1}
               value={value}

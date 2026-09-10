@@ -212,6 +212,7 @@ export function MonthlyReminderSettingsSection() {
 
                 {addOpen && (
                   <select
+                    aria-label="הוסף יום בחודש לתזכורת"
                     autoFocus
                     defaultValue=""
                     onChange={(e) => {
@@ -237,10 +238,11 @@ export function MonthlyReminderSettingsSection() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-stone-700 mb-1">
+              <label htmlFor="mr-hour" className="block text-xs font-semibold text-stone-700 mb-1">
                 באיזו שעה
               </label>
               <select
+                id="mr-hour"
                 value={draft.hour}
                 onChange={(e) => setDraft((d) => ({ ...d, hour: Number(e.target.value) }))}
                 className="px-3 py-2 rounded-xl text-sm font-semibold border-2 border-stone-200 bg-white text-stone-700 focus:border-orange-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-200"
