@@ -333,7 +333,9 @@ export default function SettingsPage() {
         <TaxAuthoritySection />
       </div>
 
-      <TaxOfficerNoticeSection />
+      <div id="tax-officer-notice" className="scroll-mt-6">
+        <TaxOfficerNoticeSection />
+      </div>
 
       <BackupSection />
 

@@ -44,7 +44,7 @@ export function TaxOfficerNoticeSection() {
   }
 
   return (
-    <section id="tax-officer-notice" className="card-soft p-5 scroll-mt-6">
+    <section className="card-soft p-5">
       <div className="flex items-start gap-3">
         <div className="w-9 h-9 rounded-2xl bg-stone-100 flex items-center justify-center shrink-0">
           <Mail className="w-4 h-4 text-stone-500" />
