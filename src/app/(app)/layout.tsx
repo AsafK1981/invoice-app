@@ -14,10 +14,12 @@ import { TwoFactorNudge } from "@/components/two-factor-nudge";
 // Client-side <Link href="/page#anchor"> navigation swaps `children` under
 // this persistent layout without a full page load, and the target section
 // (e.g. tax-officer-notice-section.tsx) often isn't in the DOM yet on the
-// first paint - it's waiting on business/document data from context. The
-// browser only auto-scrolls to a hash on a real navigation, so a client
-// transition silently lands at the top of the page. Retry across a few
-// frames until the element shows up, then scroll to it.
+// first paint - it's waiting on business/document data from context, same as
+// other cards above and below it on the page. The browser only auto-scrolls
+// to a hash on a real navigation, so a client transition silently lands at
+// the top of the page. Watch the page's height instead of scrolling once:
+// every card that mounts or resizes as its data arrives can shift the target
+// further down, so re-scroll each time the layout settles until it's quiet.
 function useScrollToHashOnNavigate(pathname: string) {
   useEffect(() => {
     const hash = window.location.hash;
@@ -29,21 +31,31 @@ function useScrollToHashOnNavigate(pathname: string) {
       return;
     }
     let cancelled = false;
-    let attempts = 0;
-    const tryScroll = () => {
-      if (cancelled) return;
-      const el = document.getElementById(id);
-      if (el) {
-        el.scrollIntoView({ behavior: "smooth", block: "start" });
-        return;
-      }
-      attempts += 1;
-      if (attempts < 60) requestAnimationFrame(tryScroll);
+    let settleTimer: ReturnType<typeof setTimeout> | undefined;
+    const scrollNow = () => {
+      document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
     };
-    const raf = requestAnimationFrame(tryScroll);
+    const scheduleScroll = () => {
+      clearTimeout(settleTimer);
+      settleTimer = setTimeout(() => {
+        if (!cancelled) scrollNow();
+      }, 150);
+    };
+    const observer = new ResizeObserver(() => {
+      if (!cancelled) scheduleScroll();
+    });
+    observer.observe(document.body);
+    scrollNow();
+    scheduleScroll();
+    const stopTimer = setTimeout(() => {
+      cancelled = true;
+      observer.disconnect();
+    }, 4000);
     return () => {
       cancelled = true;
-      cancelAnimationFrame(raf);
+      clearTimeout(settleTimer);
+      clearTimeout(stopTimer);
+      observer.disconnect();
     };
   }, [pathname]);
 }
