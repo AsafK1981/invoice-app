@@ -145,11 +145,11 @@ export default function SequenceReportPage() {
             <table className="gk-rtable w-full text-sm border-separate border-spacing-0 rounded-xl overflow-hidden shadow-sm">
               <thead>
                 <tr className="bg-gradient-to-l from-orange-500 to-orange-700 text-white">
-                  <th className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">סוג מסמך</th>
-                  <th className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">מספר ראשון</th>
-                  <th className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">מספר אחרון</th>
-                  <th className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">כמות</th>
-                  <th className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center">מספרים חסרים</th>
+                  <th scope="col" className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">סוג מסמך</th>
+                  <th scope="col" className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">מספר ראשון</th>
+                  <th scope="col" className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">מספר אחרון</th>
+                  <th scope="col" className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">כמות</th>
+                  <th scope="col" className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center">מספרים חסרים</th>
                 </tr>
               </thead>
               <tbody>

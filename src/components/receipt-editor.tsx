@@ -3218,6 +3218,12 @@ function NextStepsHint({ className = "" }: { className?: string }) {
 function ResultToast({ toast, className = "text-sm p-3" }: { toast: ToastState; className?: string }) {
   return (
     <div
+      // Rendered three times in this editor and it is how the save/generate
+      // result reaches the user, so it has to reach a screen reader too.
+      // "status" rather than "alert": the same component carries the success
+      // case, and an assertive interrupt on every successful save is worse
+      // than a polite one on the failures.
+      role="status"
       className={`rounded-xl flex items-start gap-2 ${className} ${
         toast.kind === "success"
           ? "bg-emerald-50 text-emerald-900 border border-emerald-200"

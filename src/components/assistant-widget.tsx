@@ -1095,7 +1095,7 @@ export function AssistantWidget() {
           )}
 
           {error && (
-            <p className="text-xs text-rose-600 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2">
+            <p role="alert" className="text-xs text-rose-600 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2">
               {error}
             </p>
           )}

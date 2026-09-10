@@ -226,7 +226,7 @@ export function TwoFactorSection() {
           </ol>
 
           {error && (
-            <div className="text-sm text-rose-700 flex items-center gap-1.5">
+            <div role="alert" className="text-sm text-rose-700 flex items-center gap-1.5">
               <X className="w-4 h-4" />
               {error}
             </div>

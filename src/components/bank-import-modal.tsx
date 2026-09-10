@@ -316,7 +316,7 @@ export function BankImportModal({ open, onClose, unpaidDocuments, onPaid }: Prop
             </div>
 
             {error && (
-              <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 flex items-start gap-3 text-sm text-rose-800">
+              <div role="alert" className="bg-rose-50 border border-rose-200 rounded-2xl p-4 flex items-start gap-3 text-sm text-rose-800">
                 <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
                 <span>{error}</span>
               </div>
@@ -345,11 +345,11 @@ export function BankImportModal({ open, onClose, unpaidDocuments, onPaid }: Prop
               <table className="w-full text-sm">
                 <thead className="bg-stone-100">
                   <tr>
-                    <th className="px-3 py-2 text-right font-semibold text-stone-700 w-8"></th>
-                    <th className="px-3 py-2 text-right font-semibold text-stone-700">תאריך</th>
-                    <th className="px-3 py-2 text-right font-semibold text-stone-700">תיאור</th>
-                    <th className="px-3 py-2 text-left font-semibold text-stone-700">סכום</th>
-                    <th className="px-3 py-2 text-right font-semibold text-stone-700">חשבונית מותאמת</th>
+                    <th scope="col" className="px-3 py-2 text-right font-semibold text-stone-700 w-8"></th>
+                    <th scope="col" className="px-3 py-2 text-right font-semibold text-stone-700">תאריך</th>
+                    <th scope="col" className="px-3 py-2 text-right font-semibold text-stone-700">תיאור</th>
+                    <th scope="col" className="px-3 py-2 text-left font-semibold text-stone-700">סכום</th>
+                    <th scope="col" className="px-3 py-2 text-right font-semibold text-stone-700">חשבונית מותאמת</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -422,7 +422,7 @@ export function BankImportModal({ open, onClose, unpaidDocuments, onPaid }: Prop
             </div>
 
             {error && (
-              <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 flex items-start gap-3 text-sm text-rose-800">
+              <div role="alert" className="bg-rose-50 border border-rose-200 rounded-2xl p-4 flex items-start gap-3 text-sm text-rose-800">
                 <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
                 <span>{error}</span>
               </div>

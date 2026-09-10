@@ -272,13 +272,13 @@ export function ComparisonViewV2({ competitor }: { competitor: Competitor }) {
               <table className="v2-table">
                 <thead>
                   <tr>
-                    <th className="feat">פיצ׳ר</th>
-                    <th className="col us">
+                    <th scope="col" className="feat">פיצ׳ר</th>
+                    <th scope="col" className="col us">
                       חשבונית{" "}
                       <br />
                       ידידותית
                     </th>
-                    <th className="col">
+                    <th scope="col" className="col">
                       <LtrText text={competitor.name} />
                     </th>
                   </tr>

@@ -179,7 +179,7 @@ export function BusinessFormModal({ open, onClose, business }: Props) {
     >
       <div className="space-y-4">
         {saveError && (
-          <div className="text-sm text-rose-700 bg-rose-50 border border-rose-200 p-3 rounded-xl">
+          <div role="alert" className="text-sm text-rose-700 bg-rose-50 border border-rose-200 p-3 rounded-xl">
             {saveError}
           </div>
         )}
@@ -221,7 +221,7 @@ export function BusinessFormModal({ open, onClose, business }: Props) {
                 </button>
               )}
               {uploadError && (
-                <p className="text-xs text-rose-600">{uploadError}</p>
+                <p role="alert" className="text-xs text-rose-600">{uploadError}</p>
               )}
             </div>
           </div>

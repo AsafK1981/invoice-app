@@ -163,7 +163,7 @@ export default function RecurringPage() {
       </div>
 
       {toast && (
-        <div
+        <div role="status"
           className={`flex items-start gap-2 text-sm p-3 rounded-2xl ${
             toast.kind === "success"
               ? "bg-emerald-50 text-emerald-900 border border-emerald-200"

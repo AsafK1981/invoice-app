@@ -104,7 +104,7 @@ export function ReportBody({
         <h2 className="usr-h2">פירוט סך סוגי הרשומות שנוצרו בקובץ BKMVDATA.TXT:</h2>
         <table className="usr-table">
           <thead>
-            <tr><th>קוד רשומה</th><th>תיאור רשומה</th><th className="usr-num">סך רשומות</th></tr>
+            <tr><th scope="col">קוד רשומה</th><th scope="col">תיאור רשומה</th><th scope="col" className="usr-num">סך רשומות</th></tr>
           </thead>
           <tbody>
             {recordRows.map((r) => (
@@ -129,7 +129,7 @@ export function ReportBody({
         <h2 className="usr-h2">פלט לאימות נתונים (סעיף 2.6): מסמכים לפי סוג</h2>
         <table className="usr-table">
           <thead>
-            <tr><th>מספר המסמך</th><th>סוג המסמך</th><th className="usr-num">סה״כ כמותי</th><th className="usr-num">סה״כ כספי (בש״ח)</th></tr>
+            <tr><th scope="col">מספר המסמך</th><th scope="col">סוג המסמך</th><th scope="col" className="usr-num">סה״כ כמותי</th><th scope="col" className="usr-num">סה״כ כספי (בש״ח)</th></tr>
           </thead>
           <tbody>
             {report.docTypes.map(([code, count, total]) => (

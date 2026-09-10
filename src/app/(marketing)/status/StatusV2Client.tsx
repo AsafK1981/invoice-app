@@ -107,7 +107,7 @@ export default function V2StatusPage() {
           </div>
 
           {error && (
-            <div className="v2-status-error">
+            <div role="alert" className="v2-status-error">
               לא הצלחנו להגיע לשרת. ייתכן שיש תקלה בחיבור שלך. ננסה שוב בעוד 30
               שניות.
             </div>

@@ -680,9 +680,9 @@ export default function MarketingLanding() {
                     <table className="ml-sh-table">
                       <thead>
                         <tr>
-                          <th className="c-desc">תיאור</th>
-                          <th className="c-qty">כמות</th>
-                          <th className="c-num">סכום</th>
+                          <th scope="col" className="c-desc">תיאור</th>
+                          <th scope="col" className="c-qty">כמות</th>
+                          <th scope="col" className="c-num">סכום</th>
                         </tr>
                       </thead>
                       <tbody>

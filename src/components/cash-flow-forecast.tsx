@@ -143,12 +143,12 @@ function MonthTable({ month }: { month: ForecastMonth }) {
         <table className="rpt-table">
           <thead>
             <tr>
-              <th>תאריך</th>
-              <th>פירוט</th>
-              <th>לקוח</th>
-              <th>סוג</th>
-              <th>ודאות</th>
-              <th className="n">סכום</th>
+              <th scope="col">תאריך</th>
+              <th scope="col">פירוט</th>
+              <th scope="col">לקוח</th>
+              <th scope="col">סוג</th>
+              <th scope="col">ודאות</th>
+              <th scope="col" className="n">סכום</th>
             </tr>
           </thead>
           <tbody>

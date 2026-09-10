@@ -114,7 +114,7 @@ export function EmailVerificationModal({ open, onClose, email: emailProp }: Prop
         </div>
       )}
       {error && (
-        <div className="mt-4 text-sm text-rose-700 bg-rose-50 border border-rose-200 p-3 rounded-xl">
+        <div role="alert" className="mt-4 text-sm text-rose-700 bg-rose-50 border border-rose-200 p-3 rounded-xl">
           {error}
         </div>
       )}

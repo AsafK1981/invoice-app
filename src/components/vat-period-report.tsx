@@ -609,13 +609,13 @@ export function VatPeriodReport({ headless = false, business, documents, expense
             <table className="gk-rtable w-full text-sm border-separate border-spacing-0 rounded-xl overflow-hidden shadow-sm">
               <thead>
                 <tr className="bg-gradient-to-l from-orange-500 to-orange-700 text-white">
-                  <th className="px-4 py-3 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">תאריך</th>
-                  <th className="px-4 py-3 text-xs font-extrabold tracking-wide text-right whitespace-nowrap border-l border-white/20">ספק</th>
-                  <th className="px-4 py-3 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">קטגוריה</th>
-                  <th className="px-4 py-3 text-xs font-extrabold tracking-wide text-right border-l border-white/20">תיאור</th>
-                  <th className="px-4 py-3 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">ללא מע״מ</th>
-                  <th className="px-4 py-3 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">מע״מ</th>
-                  <th className="px-4 py-3 text-xs font-extrabold tracking-wide text-center whitespace-nowrap">סכום כולל</th>
+                  <th scope="col" className="px-4 py-3 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">תאריך</th>
+                  <th scope="col" className="px-4 py-3 text-xs font-extrabold tracking-wide text-right whitespace-nowrap border-l border-white/20">ספק</th>
+                  <th scope="col" className="px-4 py-3 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">קטגוריה</th>
+                  <th scope="col" className="px-4 py-3 text-xs font-extrabold tracking-wide text-right border-l border-white/20">תיאור</th>
+                  <th scope="col" className="px-4 py-3 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">ללא מע״מ</th>
+                  <th scope="col" className="px-4 py-3 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">מע״מ</th>
+                  <th scope="col" className="px-4 py-3 text-xs font-extrabold tracking-wide text-center whitespace-nowrap">סכום כולל</th>
                 </tr>
               </thead>
               <tbody>

@@ -1,0 +1,21 @@
+# Line endings are LF in the tree, on every platform.
+#
+# Added 2026-09-10 after a scripted edit on Windows rewrote twelve source files
+# to CRLF and committed them, turning eleven-line changes into whole-file
+# diffs. core.autocrlf is false here, so without this git stores whatever the
+# editor or script happened to write.
+* text=auto eol=lf
+
+# Binary, never touched.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.ico binary
+*.pdf binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.xlsx binary
+*.zip binary

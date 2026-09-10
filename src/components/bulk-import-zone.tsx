@@ -520,7 +520,7 @@ export function BulkImportZone() {
       </div>
 
       {error && (
-        <div className="card-soft p-4 bg-rose-50 border-rose-200 flex items-start gap-3">
+        <div role="alert" className="card-soft p-4 bg-rose-50 border-rose-200 flex items-start gap-3">
           <AlertCircle className="w-5 h-5 text-rose-700 flex-shrink-0 mt-0.5" />
           <p className="text-sm text-rose-800">{error}</p>
         </div>

@@ -412,7 +412,7 @@ export default function ExpensesPage() {
       <EmailInboxQueue history={expenses} />
 
       {scanError && (
-        <div className="flex items-start gap-3 bg-rose-50 border border-rose-200 text-rose-800 px-4 py-3 rounded-2xl text-sm">
+        <div role="alert" className="flex items-start gap-3 bg-rose-50 border border-rose-200 text-rose-800 px-4 py-3 rounded-2xl text-sm">
           <span className="font-semibold">סריקה נכשלה:</span>
           <span className="flex-1">{scanError}</span>
           <button
@@ -490,14 +490,14 @@ export default function ExpensesPage() {
             <table className={`gk-etable w-full ${showVat ? "min-w-[900px]" : "min-w-[640px]"}`}>
               <thead className="text-sm text-stone-700 bg-white">
                 <tr>
-                  <th className="text-right px-6 py-3 font-semibold">תאריך</th>
-                  <th className="text-right px-6 py-3 font-semibold">קטגוריה</th>
-                  <th className="text-right px-6 py-3 font-semibold">ספק</th>
-                  <th className="text-right px-6 py-3 font-semibold">תיאור</th>
-                  {showVat && <th className="text-left px-6 py-3 font-semibold whitespace-nowrap">סכום ללא מע״מ</th>}
-                  {showVat && <th className="text-left px-6 py-3 font-semibold">מע״מ</th>}
-                  <th className="text-left px-6 py-3 font-semibold whitespace-nowrap">{showVat ? "סכום כולל מע״מ" : "סכום"}</th>
-                  <th className="px-4 py-3 w-20"></th>
+                  <th scope="col" className="text-right px-6 py-3 font-semibold">תאריך</th>
+                  <th scope="col" className="text-right px-6 py-3 font-semibold">קטגוריה</th>
+                  <th scope="col" className="text-right px-6 py-3 font-semibold">ספק</th>
+                  <th scope="col" className="text-right px-6 py-3 font-semibold">תיאור</th>
+                  {showVat && <th scope="col" className="text-left px-6 py-3 font-semibold whitespace-nowrap">סכום ללא מע״מ</th>}
+                  {showVat && <th scope="col" className="text-left px-6 py-3 font-semibold">מע״מ</th>}
+                  <th scope="col" className="text-left px-6 py-3 font-semibold whitespace-nowrap">{showVat ? "סכום כולל מע״מ" : "סכום"}</th>
+                  <th scope="col" className="px-4 py-3 w-20"></th>
                 </tr>
               </thead>
               <tbody>

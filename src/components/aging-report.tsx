@@ -79,14 +79,14 @@ export function AgingReport({ documents, headless = false }: Props) {
       <table className="w-full">
         <thead className="text-xs text-stone-700 bg-orange-50/50">
           <tr>
-            <th className="text-right px-6 py-3 font-semibold">לקוח</th>
+            <th scope="col" className="text-right px-6 py-3 font-semibold">לקוח</th>
             {BUCKET_LABELS.map((label, i) => (
-              <th key={i} className={`hidden sm:table-cell text-left px-3 py-3 font-semibold ${BUCKET_TONES[i]}`}>
+              <th scope="col" key={i} className={`hidden sm:table-cell text-left px-3 py-3 font-semibold ${BUCKET_TONES[i]}`}>
                 {label}
               </th>
             ))}
-            <th className="text-left px-6 py-3 font-semibold">סה״כ</th>
-            <th className="w-10"></th>
+            <th scope="col" className="text-left px-6 py-3 font-semibold">סה״כ</th>
+            <th scope="col" className="w-10"></th>
           </tr>
         </thead>
         <tbody>

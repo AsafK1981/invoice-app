@@ -88,7 +88,7 @@ function PortalLoginInner() {
         )}
 
         {err && (
-          <div className="mt-4 bg-rose-50 border border-rose-200 rounded-xl p-3 flex items-start gap-2 text-sm text-rose-800">
+          <div role="alert" className="mt-4 bg-rose-50 border border-rose-200 rounded-xl p-3 flex items-start gap-2 text-sm text-rose-800">
             <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
             <span>{err}</span>
           </div>

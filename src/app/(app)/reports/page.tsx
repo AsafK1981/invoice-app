@@ -507,13 +507,13 @@ export default function ReportsPage() {
           <table className="rpt-table">
             <thead>
               <tr>
-                <th>חודש</th>
-                <th className="n rpt-col-wide">מסמכים</th>
-                <th className="n">הכנסות</th>
-                <th className="n">הוצאות</th>
-                <th className="n">רווח</th>
-                <th className="n rpt-col-wide">שולי רווח</th>
-                <th className="n rpt-col-wide">רווח מצטבר</th>
+                <th scope="col">חודש</th>
+                <th scope="col" className="n rpt-col-wide">מסמכים</th>
+                <th scope="col" className="n">הכנסות</th>
+                <th scope="col" className="n">הוצאות</th>
+                <th scope="col" className="n">רווח</th>
+                <th scope="col" className="n rpt-col-wide">שולי רווח</th>
+                <th scope="col" className="n rpt-col-wide">רווח מצטבר</th>
               </tr>
             </thead>
             <tbody>

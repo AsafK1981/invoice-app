@@ -139,10 +139,10 @@ export function Form1301Helper({ headless = false, year, business, documents, ex
         <table className="w-full text-sm">
           <thead className="bg-blue-50 text-stone-700">
             <tr>
-              <th className="text-right px-4 py-3 font-semibold w-24">שדה</th>
-              <th className="text-right px-4 py-3 font-semibold">תיאור</th>
-              <th className="text-left px-4 py-3 font-semibold w-40">ערך</th>
-              <th className="w-12"></th>
+              <th scope="col" className="text-right px-4 py-3 font-semibold w-24">שדה</th>
+              <th scope="col" className="text-right px-4 py-3 font-semibold">תיאור</th>
+              <th scope="col" className="text-left px-4 py-3 font-semibold w-40">ערך</th>
+              <th scope="col" className="w-12"></th>
             </tr>
           </thead>
           <tbody>

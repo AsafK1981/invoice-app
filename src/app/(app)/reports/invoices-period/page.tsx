@@ -285,13 +285,13 @@ export default function InvoicesPeriodReportPage() {
             <table className="gk-rtable w-full text-sm border-separate border-spacing-0 rounded-xl overflow-hidden shadow-sm">
               <thead>
                 <tr className="bg-gradient-to-l from-orange-500 to-orange-700 text-white">
-                  <th className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">ת.ז / ח.פ</th>
-                  <th className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">מספר חשבונית</th>
-                  <th className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">תאריך</th>
-                  <th className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">סכום ללא מע״מ</th>
-                  <th className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">מע״מ</th>
-                  <th className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">סכום כולל מע״מ</th>
-                  <th className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap">מספר הקצאה</th>
+                  <th scope="col" className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">ת.ז / ח.פ</th>
+                  <th scope="col" className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">מספר חשבונית</th>
+                  <th scope="col" className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">תאריך</th>
+                  <th scope="col" className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">סכום ללא מע״מ</th>
+                  <th scope="col" className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">מע״מ</th>
+                  <th scope="col" className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap border-l border-white/20">סכום כולל מע״מ</th>
+                  <th scope="col" className="px-4 py-3.5 text-xs font-extrabold tracking-wide text-center whitespace-nowrap">מספר הקצאה</th>
                 </tr>
               </thead>
               <tbody>

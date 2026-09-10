@@ -300,7 +300,7 @@ export function EmailInboxSection({ onExpensesPage = false }: { onExpensesPage?:
       )}
 
       {error && (
-        <div className="mt-4 flex items-start gap-2 text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-xl p-3">
+        <div role="alert" className="mt-4 flex items-start gap-2 text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-xl p-3">
           <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
           <span>{error}</span>
         </div>
@@ -521,7 +521,7 @@ function GmailBlock({
       )}
 
       {error && (
-        <p className="mt-3 flex items-start gap-2 text-sm text-rose-800">
+        <p role="alert" className="mt-3 flex items-start gap-2 text-sm text-rose-800">
           <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
           <span>{error}</span>
         </p>

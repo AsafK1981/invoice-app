@@ -364,10 +364,10 @@ export function DocumentBody({
         <table className="doc-table">
           <thead>
             <tr>
-              <th className="c-desc">{s.thDescription}</th>
-              <th className="c-qty">{s.thQuantity}</th>
-              <th className="c-num">{s.thUnitPrice}</th>
-              <th className="c-num">{s.thAmount}</th>
+              <th scope="col" className="c-desc">{s.thDescription}</th>
+              <th scope="col" className="c-qty">{s.thQuantity}</th>
+              <th scope="col" className="c-num">{s.thUnitPrice}</th>
+              <th scope="col" className="c-num">{s.thAmount}</th>
             </tr>
           </thead>
           <tbody>

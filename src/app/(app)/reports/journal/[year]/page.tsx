@@ -183,13 +183,13 @@ export default function YearJournalPage({ params }: { params: Promise<{ year: st
             <table className="w-full text-sm border-collapse">
               <thead>
                 <tr className="bg-stone-100">
-                  <th className="text-right px-3 py-2 border border-stone-300 font-semibold text-stone-700">תאריך</th>
-                  <th className="text-right px-3 py-2 border border-stone-300 font-semibold text-stone-700">סוג מסמך</th>
-                  <th className="text-right px-3 py-2 border border-stone-300 font-semibold text-stone-700">מס׳</th>
-                  <th className="text-right px-3 py-2 border border-stone-300 font-semibold text-stone-700">לקוח</th>
-                  <th className="text-left px-3 py-2 border border-stone-300 font-semibold text-stone-700">סכום ללא מע״מ</th>
-                  <th className="text-left px-3 py-2 border border-stone-300 font-semibold text-stone-700">מע״מ</th>
-                  <th className="text-left px-3 py-2 border border-stone-300 font-semibold text-stone-700">סה״כ</th>
+                  <th scope="col" className="text-right px-3 py-2 border border-stone-300 font-semibold text-stone-700">תאריך</th>
+                  <th scope="col" className="text-right px-3 py-2 border border-stone-300 font-semibold text-stone-700">סוג מסמך</th>
+                  <th scope="col" className="text-right px-3 py-2 border border-stone-300 font-semibold text-stone-700">מס׳</th>
+                  <th scope="col" className="text-right px-3 py-2 border border-stone-300 font-semibold text-stone-700">לקוח</th>
+                  <th scope="col" className="text-left px-3 py-2 border border-stone-300 font-semibold text-stone-700">סכום ללא מע״מ</th>
+                  <th scope="col" className="text-left px-3 py-2 border border-stone-300 font-semibold text-stone-700">מע״מ</th>
+                  <th scope="col" className="text-left px-3 py-2 border border-stone-300 font-semibold text-stone-700">סה״כ</th>
                 </tr>
               </thead>
               <tbody>
@@ -233,12 +233,12 @@ export default function YearJournalPage({ params }: { params: Promise<{ year: st
             <table className="w-full text-sm border-collapse">
               <thead>
                 <tr className="bg-stone-100">
-                  <th className="text-right px-3 py-2 border border-stone-300 font-semibold text-stone-700">תאריך</th>
-                  <th className="text-right px-3 py-2 border border-stone-300 font-semibold text-stone-700">ספק</th>
-                  <th className="text-right px-3 py-2 border border-stone-300 font-semibold text-stone-700">קטגוריה</th>
-                  <th className="text-right px-3 py-2 border border-stone-300 font-semibold text-stone-700">תיאור</th>
-                  <th className="text-left px-3 py-2 border border-stone-300 font-semibold text-stone-700">מע״מ</th>
-                  <th className="text-left px-3 py-2 border border-stone-300 font-semibold text-stone-700">סכום</th>
+                  <th scope="col" className="text-right px-3 py-2 border border-stone-300 font-semibold text-stone-700">תאריך</th>
+                  <th scope="col" className="text-right px-3 py-2 border border-stone-300 font-semibold text-stone-700">ספק</th>
+                  <th scope="col" className="text-right px-3 py-2 border border-stone-300 font-semibold text-stone-700">קטגוריה</th>
+                  <th scope="col" className="text-right px-3 py-2 border border-stone-300 font-semibold text-stone-700">תיאור</th>
+                  <th scope="col" className="text-left px-3 py-2 border border-stone-300 font-semibold text-stone-700">מע״מ</th>
+                  <th scope="col" className="text-left px-3 py-2 border border-stone-300 font-semibold text-stone-700">סכום</th>
                 </tr>
               </thead>
               <tbody>
@@ -268,10 +268,10 @@ export default function YearJournalPage({ params }: { params: Promise<{ year: st
           <table className="w-full text-sm border-collapse">
             <thead>
               <tr className="bg-stone-100">
-                <th className="text-right px-3 py-2 border border-stone-300 font-semibold text-stone-700">חודש</th>
-                <th className="text-left px-3 py-2 border border-stone-300 font-semibold text-stone-700">הכנסות</th>
-                <th className="text-left px-3 py-2 border border-stone-300 font-semibold text-stone-700">הוצאות</th>
-                <th className="text-left px-3 py-2 border border-stone-300 font-semibold text-stone-700">רווח</th>
+                <th scope="col" className="text-right px-3 py-2 border border-stone-300 font-semibold text-stone-700">חודש</th>
+                <th scope="col" className="text-left px-3 py-2 border border-stone-300 font-semibold text-stone-700">הכנסות</th>
+                <th scope="col" className="text-left px-3 py-2 border border-stone-300 font-semibold text-stone-700">הוצאות</th>
+                <th scope="col" className="text-left px-3 py-2 border border-stone-300 font-semibold text-stone-700">רווח</th>
               </tr>
             </thead>
             <tbody>

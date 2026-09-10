@@ -255,11 +255,11 @@ export function CapitalDeclarationReport({ headless = false, documents, expenses
         <table className="w-full text-sm">
           <thead className="bg-purple-50 text-stone-700">
             <tr>
-              <th className="text-right px-4 py-3 font-semibold">שנה</th>
-              <th className="text-left px-4 py-3 font-semibold">הכנסות</th>
-              <th className="text-left px-4 py-3 font-semibold">הוצאות</th>
-              <th className="text-left px-4 py-3 font-semibold">רווח נקי</th>
-              <th className="text-left px-4 py-3 font-semibold text-stone-500 hidden md:table-cell">
+              <th scope="col" className="text-right px-4 py-3 font-semibold">שנה</th>
+              <th scope="col" className="text-left px-4 py-3 font-semibold">הכנסות</th>
+              <th scope="col" className="text-left px-4 py-3 font-semibold">הוצאות</th>
+              <th scope="col" className="text-left px-4 py-3 font-semibold">רווח נקי</th>
+              <th scope="col" className="text-left px-4 py-3 font-semibold text-stone-500 hidden md:table-cell">
                 מסמכים / הוצאות
               </th>
             </tr>
@@ -361,10 +361,10 @@ export function CapitalDeclarationReport({ headless = false, documents, expenses
             <table className="w-full text-xs">
               <thead className="bg-blue-50/60 text-stone-600">
                 <tr>
-                  <th className="text-right px-3 py-2 font-semibold">מסמך</th>
-                  <th className="text-right px-3 py-2 font-semibold">לקוח</th>
-                  <th className="text-right px-3 py-2 font-semibold">תאריך</th>
-                  <th className="text-left px-3 py-2 font-semibold">סכום</th>
+                  <th scope="col" className="text-right px-3 py-2 font-semibold">מסמך</th>
+                  <th scope="col" className="text-right px-3 py-2 font-semibold">לקוח</th>
+                  <th scope="col" className="text-right px-3 py-2 font-semibold">תאריך</th>
+                  <th scope="col" className="text-left px-3 py-2 font-semibold">סכום</th>
                 </tr>
               </thead>
               <tbody>

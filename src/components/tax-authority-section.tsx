@@ -255,7 +255,7 @@ export function TaxAuthoritySection() {
       </div>
 
       {toast && (
-        <div
+        <div role="status"
           className={`relative flex items-start gap-2 text-sm p-3.5 rounded-2xl ${
             toast.kind === "success"
               ? "bg-emerald-50 border border-emerald-200 text-emerald-900"

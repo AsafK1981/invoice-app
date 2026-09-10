@@ -187,7 +187,7 @@ export function PrintSheet<T>({
         <thead>
           <tr className="border-b border-stone-300">
             {columns.map((c) => (
-              <th
+              <th scope="col"
                 key={c.key}
                 className={`py-1.5 px-2 font-bold ${c.align === "end" ? "text-left" : "text-right"}`}
               >

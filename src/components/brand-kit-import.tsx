@@ -167,7 +167,7 @@ export function BrandKitImport({
       />
 
       {error && (
-        <div className="mt-3 text-sm text-rose-700 bg-rose-50 border border-rose-200 p-3 rounded-xl">{error}</div>
+        <div role="alert" className="mt-3 text-sm text-rose-700 bg-rose-50 border border-rose-200 p-3 rounded-xl">{error}</div>
       )}
 
       {result && phase === "done" && (

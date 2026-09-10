@@ -389,13 +389,13 @@ function LoginForm() {
             )}
 
             {error && (
-              <div className="text-sm text-rose-700 bg-rose-50 border border-rose-200 p-3 rounded-xl">
+              <div role="alert" className="text-sm text-rose-700 bg-rose-50 border border-rose-200 p-3 rounded-xl">
                 {error}
               </div>
             )}
 
             {success && (
-              <div className="text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 p-3 rounded-xl">
+              <div role="status" className="text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 p-3 rounded-xl">
                 {success}
               </div>
             )}

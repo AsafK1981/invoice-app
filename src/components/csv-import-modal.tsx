@@ -339,14 +339,14 @@ export function CsvImportModal({ open, onClose, entityType }: Props) {
         </button>
 
         {error && (
-          <div className="flex items-start gap-2 text-sm text-rose-700 bg-rose-50 border border-rose-200 p-3 rounded-xl">
+          <div role="alert" className="flex items-start gap-2 text-sm text-rose-700 bg-rose-50 border border-rose-200 p-3 rounded-xl">
             <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
             <span>{error}</span>
           </div>
         )}
 
         {success && (
-          <div className="flex items-start gap-2 text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 p-3 rounded-xl">
+          <div role="status" className="flex items-start gap-2 text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 p-3 rounded-xl">
             <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5" />
             <span>{success}</span>
           </div>
@@ -364,7 +364,7 @@ export function CsvImportModal({ open, onClose, entityType }: Props) {
                 <thead className="bg-orange-50 sticky top-0">
                   <tr>
                     {Object.keys(preview[0]).map((key) => (
-                      <th key={key} className="text-right px-3 py-2 font-semibold text-stone-700">
+                      <th scope="col" key={key} className="text-right px-3 py-2 font-semibold text-stone-700">
                         {key}
                       </th>
                     ))}

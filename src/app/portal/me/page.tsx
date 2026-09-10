@@ -126,7 +126,7 @@ export default function PortalDocumentsPage() {
         </header>
 
         {error && (
-          <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 text-sm text-rose-800">
+          <div role="alert" className="bg-rose-50 border border-rose-200 rounded-2xl p-4 text-sm text-rose-800">
             {error}
           </div>
         )}

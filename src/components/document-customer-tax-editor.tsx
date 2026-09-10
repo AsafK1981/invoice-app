@@ -116,7 +116,7 @@ export function DocumentCustomerTaxEditor({ doc }: { doc: InvoiceDocument }) {
       </div>
 
       {error && (
-        <div className="mt-3 flex items-start gap-2 text-sm text-rose-700 bg-rose-50 border border-rose-200 p-3 rounded-xl">
+        <div role="alert" className="mt-3 flex items-start gap-2 text-sm text-rose-700 bg-rose-50 border border-rose-200 p-3 rounded-xl">
           <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
           <span>{error}</span>
         </div>

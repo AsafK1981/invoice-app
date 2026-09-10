@@ -1259,7 +1259,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
       )}
 
       {toast && (
-        <div
+        <div role="status"
           className={`no-print text-sm p-3 rounded-2xl flex items-start gap-2 max-w-[210mm] mx-auto ${
             toast.kind === "success"
               ? "bg-emerald-50 text-emerald-900 border border-emerald-200"

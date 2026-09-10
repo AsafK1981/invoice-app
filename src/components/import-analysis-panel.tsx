@@ -76,11 +76,11 @@ export function ImportAnalysisPanel({ analysis }: { analysis: AnalyzeResult }) {
           <table className="w-full text-[11px]">
             <thead className="bg-amber-50/70 sticky top-0">
               <tr>
-                <th className="text-right px-2 py-1.5 font-semibold text-stone-600">מספר</th>
-                <th className="text-right px-2 py-1.5 font-semibold text-stone-600">סוג</th>
-                <th className="text-right px-2 py-1.5 font-semibold text-stone-600">תאריך</th>
-                <th className="text-right px-2 py-1.5 font-semibold text-stone-600">סכום</th>
-                <th className="text-right px-2 py-1.5 font-semibold text-stone-600">לקוח</th>
+                <th scope="col" className="text-right px-2 py-1.5 font-semibold text-stone-600">מספר</th>
+                <th scope="col" className="text-right px-2 py-1.5 font-semibold text-stone-600">סוג</th>
+                <th scope="col" className="text-right px-2 py-1.5 font-semibold text-stone-600">תאריך</th>
+                <th scope="col" className="text-right px-2 py-1.5 font-semibold text-stone-600">סכום</th>
+                <th scope="col" className="text-right px-2 py-1.5 font-semibold text-stone-600">לקוח</th>
               </tr>
             </thead>
             <tbody>

@@ -188,11 +188,11 @@ export default function ClientStatementPage({
             <table className="w-full text-sm border-collapse">
               <thead>
                 <tr className="bg-stone-100">
-                  <th className="text-right px-3 py-2 border border-stone-300 font-semibold text-stone-700">תאריך</th>
-                  <th className="text-right px-3 py-2 border border-stone-300 font-semibold text-stone-700">סוג</th>
-                  <th className="text-right px-3 py-2 border border-stone-300 font-semibold text-stone-700">מס׳</th>
-                  <th className="text-right px-3 py-2 border border-stone-300 font-semibold text-stone-700">סטטוס</th>
-                  <th className="text-left px-3 py-2 border border-stone-300 font-semibold text-stone-700">סכום</th>
+                  <th scope="col" className="text-right px-3 py-2 border border-stone-300 font-semibold text-stone-700">תאריך</th>
+                  <th scope="col" className="text-right px-3 py-2 border border-stone-300 font-semibold text-stone-700">סוג</th>
+                  <th scope="col" className="text-right px-3 py-2 border border-stone-300 font-semibold text-stone-700">מס׳</th>
+                  <th scope="col" className="text-right px-3 py-2 border border-stone-300 font-semibold text-stone-700">סטטוס</th>
+                  <th scope="col" className="text-left px-3 py-2 border border-stone-300 font-semibold text-stone-700">סכום</th>
                 </tr>
               </thead>
               <tbody>
