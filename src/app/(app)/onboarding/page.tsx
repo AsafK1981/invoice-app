@@ -309,10 +309,10 @@ export default function OnboardingPage() {
 
               <div className="space-y-4">
                 <div>
-                  <label className="text-xs font-semibold text-stone-700 mb-1 block">
+                  <label className="text-xs font-semibold text-stone-700 mb-1 block" htmlFor="ob-organization">
                     שם העסק *
                   </label>
-                  <input
+                  <input id="ob-organization" required aria-required="true"
                     type="text"
                     name="organization"
                     value={bizForm.name}
@@ -325,10 +325,10 @@ export default function OnboardingPage() {
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-stone-700 mb-1 block">
+                  <label className="text-xs font-semibold text-stone-700 mb-1 block" htmlFor="ob-organization-title">
                     תחום העיסוק (אופציונלי)
                   </label>
-                  <input
+                  <input id="ob-organization-title"
                     type="text"
                     name="organization-title"
                     value={bizForm.profession}
@@ -345,10 +345,10 @@ export default function OnboardingPage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-xs font-semibold text-stone-700 mb-1 block">
+                    <label className="text-xs font-semibold text-stone-700 mb-1 block" htmlFor="ob-business-type">
                       סוג עוסק *
                     </label>
-                    <select
+                    <select id="ob-business-type" required aria-required="true"
                       value={bizForm.businessType}
                       onChange={(e) =>
                         setBizForm({
@@ -365,10 +365,10 @@ export default function OnboardingPage() {
                     <BusinessTypeHint type={bizForm.businessType} />
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-stone-700 mb-1 block">
+                    <label className="text-xs font-semibold text-stone-700 mb-1 block" htmlFor="ob-tax-id">
                       מספר עוסק / ח.פ
                     </label>
-                    <input
+                    <input id="ob-tax-id"
                       type="text"
                       name="tax-id"
                       dir="ltr"
@@ -385,8 +385,8 @@ export default function OnboardingPage() {
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-stone-700 mb-1 block">כתובת</label>
-                  <input
+                  <label className="text-xs font-semibold text-stone-700 mb-1 block" htmlFor="ob-street-address">כתובת</label>
+                  <input id="ob-street-address"
                     type="text"
                     name="street-address"
                     value={bizForm.address}
@@ -399,8 +399,8 @@ export default function OnboardingPage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-xs font-semibold text-stone-700 mb-1 block">טלפון</label>
-                    <input
+                    <label className="text-xs font-semibold text-stone-700 mb-1 block" htmlFor="ob-tel">טלפון</label>
+                    <input id="ob-tel"
                       type="tel"
                       name="tel"
                       dir="ltr"
@@ -412,10 +412,10 @@ export default function OnboardingPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-stone-700 mb-1 block">
+                    <label className="text-xs font-semibold text-stone-700 mb-1 block" htmlFor="ob-email">
                       אימייל
                     </label>
-                    <input
+                    <input id="ob-email"
                       type="email"
                       name="email"
                       dir="ltr"
@@ -523,8 +523,8 @@ export default function OnboardingPage() {
 
               <div className="space-y-4">
                 <div>
-                  <label className="text-xs font-semibold text-stone-700 mb-1 block">שם הלקוח</label>
-                  <input
+                  <label className="text-xs font-semibold text-stone-700 mb-1 block" htmlFor="ob-name">שם הלקוח</label>
+                  <input id="ob-name"
                     type="text"
                     name="name"
                     value={clientForm.name}
@@ -538,10 +538,10 @@ export default function OnboardingPage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-xs font-semibold text-stone-700 mb-1 block">
+                    <label className="text-xs font-semibold text-stone-700 mb-1 block" htmlFor="ob-tax-id-2">
                       ח.פ / ת.ז
                     </label>
-                    <input
+                    <input id="ob-tax-id-2"
                       type="text"
                       name="tax-id"
                       dir="ltr"
@@ -553,8 +553,8 @@ export default function OnboardingPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-stone-700 mb-1 block">טלפון</label>
-                    <input
+                    <label className="text-xs font-semibold text-stone-700 mb-1 block" htmlFor="ob-tel-2">טלפון</label>
+                    <input id="ob-tel-2"
                       type="tel"
                       name="tel"
                       dir="ltr"
@@ -568,8 +568,8 @@ export default function OnboardingPage() {
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-stone-700 mb-1 block">אימייל</label>
-                  <input
+                  <label className="text-xs font-semibold text-stone-700 mb-1 block" htmlFor="ob-email-2">אימייל</label>
+                  <input id="ob-email-2"
                     type="email"
                     name="email"
                     dir="ltr"

@@ -451,6 +451,7 @@ export default function ExpensesPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="חיפוש: ספק, קטגוריה, סכום, תיאור..."
+                aria-label="חיפוש הוצאות"
                 className="input-warm pr-10 pl-9 w-72"
               />
               {search && (

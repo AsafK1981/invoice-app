@@ -625,6 +625,15 @@ export default function MarketingLanding() {
             </div>
 
             <div className="ml-wrap ml-show-grid">
+              {/* Every identity number in this mock is deliberately
+                  check-digit INVALID, so it cannot match a real עוסק or a real
+                  registered company. It used to be the opposite: 003244266 and
+                  514738293 both pass the Israeli check digit, which means this
+                  page was publishing a well-formed company number next to an
+                  invented company name on a document mock captioned as a real
+                  invoice. Keep new demo numbers invalid - change one digit and
+                  confirm with tests/demo-identity-numbers.test.ts, which fails
+                  the suite if any of them becomes valid again. */}
               <figure className="ml-sheet-wrap">
                 <h3 className="ml-show-col-title">המסמך שהלקוח מקבל</h3>
                 <article className="ml-sheet">
@@ -632,7 +641,7 @@ export default function MarketingLanding() {
                     <div className="ml-sh-biz">
                       <p className="ml-sh-name">סטודיו נועה</p>
                       <p className="ml-sh-bizline">
-                        עוסק מורשה <Ltr>003244266</Ltr> · עיצוב גרפי ומיתוג
+                        עוסק מורשה <Ltr>003244260</Ltr> · עיצוב גרפי ומיתוג
                         <br />
                         הרצל 12, תל אביב · <Ltr>054-1234567</Ltr> ·{" "}
                         <Ltr>noa@studio-noa.co.il</Ltr>
@@ -655,7 +664,7 @@ export default function MarketingLanding() {
                       <div className="ml-sh-glabel">לכבוד</div>
                       <div className="ml-sh-mini-v">סטודיו אורות בע״מ</div>
                       <div className="ml-sh-mini-sub">
-                        ח.פ / ת.ז <Ltr>514738293</Ltr>
+                        ח.פ / ת.ז <Ltr>514738290</Ltr>
                       </div>
                     </div>
                     <div className="ml-sh-card ml-sh-mini is-alloc">

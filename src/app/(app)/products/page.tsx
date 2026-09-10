@@ -138,6 +138,7 @@ export default function ProductsPage() {
             value={search}
             onChange={(e) => updateSearch(e.target.value)}
             placeholder="חיפוש: שם, תיאור..."
+            aria-label="חיפוש מוצרים"
             className="input-warm pr-10 pl-9"
           />
           {search && (

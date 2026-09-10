@@ -447,7 +447,7 @@ export function TaxAuthoritySection() {
                   onChange={(e) => setOperatorInput(e.target.value.replace(/\D/g, "").slice(0, 9))}
                   inputMode="numeric"
                   dir="ltr"
-                  placeholder="123456782"
+                  placeholder="123456789"
                   aria-label="ת.ז של מבצע ההקצאה"
                   className="flex-1 min-w-0 rounded-xl border border-stone-300 px-3 py-2 font-mono text-sm text-stone-900 placeholder:text-stone-400 focus:border-stone-400 focus:outline-none"
                 />

@@ -14,6 +14,15 @@ import { createElement as h } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { FormField } from "../src/components/ui/form-field";
 
+// createElement's typing wants `children` inside props when the component's
+// Props declares it required, so positional children will not typecheck.
+function field(
+  props: { label: string; required?: boolean; hint?: string },
+  children: React.ReactNode,
+) {
+  return h(FormField, { ...props, children });
+}
+
 /** id that <label for="..."> points at, or null when the attribute is absent. */
 function labelTarget(html: string): string | null {
   const m = html.match(/<label[^>]*\bfor="([^"]*)"/);
@@ -29,7 +38,7 @@ function controlId(html: string, tag: string): string | null {
 describe("FormField label association", () => {
   it("points the label at a bare input child", () => {
     const html = renderToStaticMarkup(
-      h(FormField, { label: "שם הלקוח" }, h("input", { type: "text" })),
+      field({ label: "שם הלקוח" }, h("input", { type: "text" })),
     );
     const target = labelTarget(html);
     expect(target).toBeTruthy();
@@ -39,10 +48,7 @@ describe("FormField label association", () => {
   it("reaches an input nested inside a wrapper div", () => {
     // The regression case: password field next to its show/hide button.
     const html = renderToStaticMarkup(
-      h(
-        FormField,
-        { label: "סיסמה חדשה" },
-        h(
+      field({ label: "סיסמה חדשה" }, h(
           "div",
           { className: "relative" },
           h("button", { type: "button" }, "הצג"),
@@ -59,10 +65,7 @@ describe("FormField label association", () => {
 
   it("labels the first control when a select and an input are siblings", () => {
     const html = renderToStaticMarkup(
-      h(
-        FormField,
-        { label: "בגין חשבונית מס מקורית" },
-        h(
+      field({ label: "בגין חשבונית מס מקורית" }, h(
           "div",
           null,
           h("select", null, h("option", null, "בחר")),
@@ -75,7 +78,7 @@ describe("FormField label association", () => {
 
   it("respects an id the caller already set", () => {
     const html = renderToStaticMarkup(
-      h(FormField, { label: "אימייל" }, h("input", { id: "my-own-id" })),
+      field({ label: "אימייל" }, h("input", { id: "my-own-id" })),
     );
     expect(labelTarget(html)).toBe("my-own-id");
   });
@@ -84,13 +87,13 @@ describe("FormField label association", () => {
     // IsraeliDateInput / BankSelect render their control internally, so there
     // is nothing here to point at. A dangling htmlFor would be worse than none.
     const Custom = () => h("input", { type: "date" });
-    const html = renderToStaticMarkup(h(FormField, { label: "תאריך" }, h(Custom)));
+    const html = renderToStaticMarkup(field({ label: "תאריך" }, h(Custom)));
     expect(labelTarget(html)).toBeNull();
   });
 
   it("puts required on the control, not only the asterisk", () => {
     const html = renderToStaticMarkup(
-      h(FormField, { label: "שם העסק", required: true }, h("input", {})),
+      field({ label: "שם העסק", required: true }, h("input", {})),
     );
     expect(html).toMatch(/<input[^>]*\brequired\b/);
     expect(html).toMatch(/<input[^>]*aria-required="true"/);
@@ -100,7 +103,7 @@ describe("FormField label association", () => {
 
   it("wires a hint to the control with aria-describedby", () => {
     const html = renderToStaticMarkup(
-      h(FormField, { label: "מספר עוסק", hint: "9 ספרות" }, h("input", {})),
+      field({ label: "מספר עוסק", hint: "9 ספרות" }, h("input", {})),
     );
     const m = html.match(/<input[^>]*aria-describedby="([^"]*)"/);
     expect(m).toBeTruthy();

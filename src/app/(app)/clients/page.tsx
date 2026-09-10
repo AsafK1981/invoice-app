@@ -214,6 +214,7 @@ export default function ClientsPage() {
             value={search}
             onChange={(e) => updateSearch(e.target.value)}
             placeholder="חיפוש: שם, ח.פ, אימייל, טלפון, הערות..."
+            aria-label="חיפוש לקוחות"
             className="input-warm pr-10 pl-9"
           />
           {search && (

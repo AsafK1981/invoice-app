@@ -1140,6 +1140,11 @@ export function AssistantWidget() {
               }
             }}
             rows={2}
+            // The placeholder is the only visible label here, and it changes
+            // to a status line while a file is parsing or the mic is live -
+            // so it cannot be the accessible name. A fixed aria-label keeps
+            // the field named "הודעה לעוזר החכם" whatever the placeholder says.
+            aria-label="הודעה לעוזר החכם"
             placeholder={
               parsingFile
                 ? "קורא את הקובץ..."
