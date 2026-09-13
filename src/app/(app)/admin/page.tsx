@@ -16,26 +16,19 @@ import {
   Upload,
   Activity,
 } from "lucide-react";
-import dynamic from "next/dynamic";
+import { AdminHistoryChart } from "@/components/admin-history-chart";
 import { supabase } from "@/lib/supabase";
 import { isAdminEmail } from "@/lib/admin";
 import { formatCurrency, formatDate, formatTimeAgo } from "@/lib/format";
 import { DOCUMENT_TYPE_LABELS, type DocumentType } from "@/lib/types";
 import { ActivityFeed } from "@/components/admin-activity-feed";
 
-const AdminDailyChart = dynamic(
-  () => import("@/components/charts-recharts").then((mod) => mod.AdminDailyChart),
-  {
-    ssr: false,
-    loading: () => <div className="w-full h-full rounded-xl bg-stone-100 animate-pulse" />,
-  },
-);
-
 interface Stats {
   generatedAt: string;
   users: {
     total: number;
     activeLast7d: number;
+    dailyChart: Array<{ date: string; count: number }>;
     recentSignups: Array<{
       id: string;
       email?: string;
@@ -170,6 +163,10 @@ export default function AdminPage() {
       </div>
     );
   }
+
+  const chartStartedAt = stats
+    ? [stats.documents.dailyChart[0]?.date, stats.users.dailyChart[0]?.date].filter(Boolean).sort()[0]
+    : undefined;
 
   return (
     <div className="space-y-6">
@@ -334,13 +331,21 @@ export default function AdminPage() {
             />
           </div>
 
-          {/* Daily docs chart */}
-          <div className="card-soft p-5">
-            <h2 className="font-semibold text-stone-900 mb-4">מסמכים שנוצרו: 14 ימים אחרונים</h2>
-            <div className="h-56">
-              <AdminDailyChart data={stats.documents.dailyChart} />
-            </div>
-          </div>
+          <AdminHistoryChart
+            title="מסמכים שנוצרו"
+            seriesLabel="מסמכים"
+            daily={stats.documents.dailyChart}
+            generatedAt={stats.generatedAt}
+            startedAt={chartStartedAt}
+          />
+          <AdminHistoryChart
+            title="נרשמים חדשים"
+            seriesLabel="נרשמים חדשים"
+            daily={stats.users.dailyChart}
+            generatedAt={stats.generatedAt}
+            startedAt={chartStartedAt}
+            color="#7C3AED"
+          />
 
           {/* Live usage: who did what KIND of thing, and when. Metadata by
               construction (see src/lib/admin-activity.ts): the account, its

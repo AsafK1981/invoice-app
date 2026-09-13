@@ -8,12 +8,20 @@ vi.mock("@supabase/supabase-js", () => ({ createClient: () => ({
   auth: { getUser: async () => ({ data: { user: { id: "admin" } } }), admin: { listUsers: async () => ({ data: { users: [] } }) } },
   from(table: string) {
     const query = { table, columns: "", filters: [] as string[] }; state.queries.push(query); let head = false;
+    let offset = 0; let end = 999;
     const q: any = {
       select(columns: string, opts?: { head?: boolean }) { query.columns = columns; head = !!opts?.head; return q; },
       is(key: string, value: unknown) { query.filters.push(key + ":" + value); return q; },
       gte(key: string) { query.filters.push(key); return q; }, eq: () => q,
+      lte: () => q, order: () => q,
+      range(first: number, last: number) { offset = first; end = last; return q; },
       then(resolve: (value: unknown) => void) {
         const day = new Date().toISOString().slice(0, 10);
+        if (table === "documents" && query.columns === "created_at") {
+          const eligibleCount = query.filters.includes("import_batch_id:null") ? 1505 : 1813;
+          const rows = Array.from({ length: eligibleCount }, () => ({ created_at: `${day}T00:00:00Z` }));
+          return Promise.resolve(resolve({ data: rows.slice(offset, end + 1), count: eligibleCount, error: null }));
+        }
         const data = table === "admin_document_creation_daily" ? [{ day, type: "receipt", document_count: 1505, document_count_30d: 1505, draft_count_30d: 2 }] : [];
         const count = head && table === "documents" ? query.filters.includes("import_batch_id:null") ? 1505 : 1813 : 0;
         return Promise.resolve(resolve({ data, count, error: state.error && table === "admin_document_creation_daily" ? { message: "failed" } : null }));

@@ -23,6 +23,7 @@ import {
 } from "recharts";
 import { formatCurrency, formatDate } from "@/lib/format";
 import type { Expense } from "@/lib/types";
+import type { AdminChartPoint } from "@/lib/admin-chart";
 
 /* ------------------------------------------------------------------ */
 /* ExpenseCategoriesChart (dashboard)                                  */
@@ -113,18 +114,33 @@ export function ExpenseCategoriesChart({ expenses }: ExpenseCategoriesChartProps
 /* ------------------------------------------------------------------ */
 
 interface AdminDailyChartProps {
-  data: Array<{ date: string; count: number }>;
+  data: AdminChartPoint[];
+  seriesLabel?: string;
+  color?: string;
+  granularity?: "day" | "week" | "month";
 }
 
-export function AdminDailyChart({ data }: AdminDailyChartProps) {
+export function AdminDailyChart({ data, seriesLabel = "מסמכים", color = "#1F232B", granularity = "day" }: AdminDailyChartProps) {
   return (
     <ResponsiveContainer width="100%" height="100%">
       <LineChart data={data}>
         <CartesianGrid strokeDasharray="3 3" stroke="#e8ddd0" opacity={0.4} />
-        <XAxis dataKey="date" tick={{ fontSize: 10 }} tickFormatter={(date) => formatDate(String(date))} reversed />
-        <YAxis allowDecimals={false} tick={{ fontSize: 10 }} />
-        <Tooltip labelFormatter={(date) => formatDate(String(date))} />
-        <Line type="monotone" dataKey="count" stroke="#1F232B" strokeWidth={2} dot={{ r: 3 }} />
+        <XAxis dataKey="date" tick={{ fontSize: 10 }} minTickGap={24} interval="preserveStartEnd"
+          tickFormatter={(date) => {
+            const [year, month, day] = String(date).split("-");
+            return granularity === "month" ? `${month}/${year}` : `${day}/${month}`;
+          }} reversed />
+        <YAxis allowDecimals={false} tick={{ fontSize: 10 }} width={36} domain={[0, "auto"]} />
+        <Tooltip
+          formatter={(value) => [value, seriesLabel]}
+          labelFormatter={(date, payload) => {
+            const endDate: unknown = payload[0]?.payload?.endDate;
+            return typeof endDate === "string" && endDate !== String(date)
+              ? `${formatDate(String(date))} - ${formatDate(endDate)}`
+              : formatDate(String(date));
+          }}
+        />
+        <Line type="linear" dataKey="count" name={seriesLabel} stroke={color} strokeWidth={2} dot={{ r: 3 }} isAnimationActive={false} />
       </LineChart>
     </ResponsiveContainer>
   );
