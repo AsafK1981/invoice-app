@@ -96,7 +96,22 @@ Sentry.init({
   // The stale-asset rejection is re-reported above as a named warning;
   // the raw "Event `Event` captured as promise rejection" adds nothing.
   beforeSend(event, hint) {
-    return staleAssetUrl(hint?.originalException) ? null : event;
+    if (staleAssetUrl(hint?.originalException)) return null;
+
+    // INVOICE-APP-G/H: an injected Android browser logger throws while
+    // closing the page. Match its exact error AND throwing script; a
+    // message-only ignore would also hide real application bridge errors.
+    // Sentry stores frames oldest first, so the last frame is the origin.
+    const exceptions = event.exception?.values;
+    if (exceptions?.length && exceptions.every((exception) => {
+      const frames = exception.stacktrace?.frames;
+      const origin = frames?.[frames.length - 1];
+      return exception.value ===
+        "Error invoking postMessage: Java exception was raised during method invocation" &&
+        origin?.filename === "app://navigation_performance_logger_android";
+    })) return null;
+
+    return event;
   },
 });
 
