@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { isAdminEmail } from "@/lib/admin";
 import { logAdminAccess } from "@/lib/admin-access-log";
-import { buildAdminActivity } from "@/lib/admin-activity";
+import { activityRowToEvent, decodeActivityCursor, encodeActivityCursor, type ActivityEventRow } from "@/lib/admin-activity-pagination";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -21,7 +21,7 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
  * Auth mirrors /api/admin/stats: Bearer token, admin allow-list, service role
  * for the cross-tenant reads, one row in admin_access_log per call.
  *
- * ?limit= caps the merged feed (default 50, max 200).
+ * ?limit= sets page size (default 50, max 200); cursor traverses all available events.
  */
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
@@ -45,9 +45,12 @@ export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const requested = Number(url.searchParams.get("limit") || 50);
   const limit = Number.isFinite(requested) ? Math.min(Math.max(Math.trunc(requested), 1), 200) : 50;
-  // Each source is fetched a little deeper than the final cap so a burst from
-  // one table cannot hide the newest rows of another before the merge.
-  const perSource = Math.min(limit * 2, 400);
+  const rawCursor = url.searchParams.get("cursor");
+  const cursor = rawCursor ? decodeActivityCursor(rawCursor, supabaseServiceKey) : null;
+  if (rawCursor && !cursor) {
+    return NextResponse.json({ ok: false, error: "Invalid cursor" }, { status: 400 });
+  }
+  const cutoff = cursor?.cutoff ?? new Date().toISOString();
 
   const sb = createClient(supabaseUrl, supabaseServiceKey, {
     auth: { autoRefreshToken: false, persistSession: false },
@@ -60,57 +63,23 @@ export async function GET(req: NextRequest) {
     detail: { limit },
   });
 
-  const DOC_COLUMNS = "id, business_id, type, status, created_at, emailed_at, paid_at, import_batch_id";
-
-  const [
-    createdDocs,
-    emailedDocs,
-    paidDocs,
-    expenses,
-    clients,
-    imports,
-    businesses,
-    usersResult,
-  ] = await Promise.all([
-    sb.from("documents").select(DOC_COLUMNS).is("import_batch_id", null).order("created_at", { ascending: false }).limit(perSource),
-    sb.from("documents").select(DOC_COLUMNS).not("emailed_at", "is", null).order("emailed_at", { ascending: false }).limit(perSource),
-    sb.from("admin_paid_document_activity").select(DOC_COLUMNS).order("paid_at", { ascending: false }).limit(perSource),
-    sb.from("expenses").select("id, business_id, created_at").is("import_batch_id", null).order("created_at", { ascending: false }).limit(perSource),
-    sb.from("clients").select("id, business_id, created_at").is("import_batch_id", null).order("created_at", { ascending: false }).limit(perSource),
-    sb.from("admin_import_activity").select("business_id, import_batch_id, first_created_at, last_created_at, document_count, client_count, expense_count, product_count").order("last_created_at", { ascending: false }).limit(perSource),
-    sb.from("businesses").select("id, user_id, name"),
-    sb.auth.admin.listUsers({ page: 1, perPage: 1000 }),
-  ]);
-
-  const failed = [createdDocs, emailedDocs, paidDocs, expenses, clients, imports, businesses].find((r) => r.error);
-  if (failed?.error) {
-    return NextResponse.json({ ok: false, error: failed.error.message }, { status: 500 });
+  // One row per event, already grouped and filtered in SQL. Preserve the raw
+  // timestamp in the cursor: converting through Date loses microseconds.
+  let query = sb.from("admin_activity_events")
+    .select("event_id, at, kind, email, business_name, document_type, draft, document_count, client_count, expense_count, product_count")
+    .lte("at", cutoff)
+    .order("at", { ascending: false }).order("event_id", { ascending: false })
+    .limit(limit + 1);
+  if (cursor) {
+    query = query.or("at.lt." + cursor.at + ",and(at.eq." + cursor.at + ",event_id.lt." + cursor.id + ")");
   }
-  if (usersResult.error) {
-    return NextResponse.json({ ok: false, error: usersResult.error.message }, { status: 500 });
-  }
-
-  const events = buildAdminActivity({
-    documents: [
-      ...(createdDocs.data ?? []),
-      ...(emailedDocs.data ?? []),
-      ...(paidDocs.data ?? []),
-    ],
-    expenses: expenses.data ?? [],
-    clients: clients.data ?? [],
-    imports: imports.data ?? [],
-    businesses: businesses.data ?? [],
-    users: (usersResult.data?.users ?? []).map((u) => ({
-      id: u.id,
-      email: u.email ?? null,
-      last_sign_in_at: u.last_sign_in_at ?? null,
-    })),
-    limit,
-  });
-
-  return NextResponse.json({
-    ok: true,
-    generatedAt: new Date().toISOString(),
-    events,
-  });
+  const { data, error } = await query;
+  if (error) return NextResponse.json({ ok: false, error: "Could not load activity" }, { status: 500 });
+  const rows = (data ?? []) as ActivityEventRow[];
+  const page = rows.slice(0, limit);
+  const last = page.at(-1);
+  const nextCursor = rows.length > limit && last
+    ? encodeActivityCursor({ at: last.at, id: last.event_id, cutoff }, supabaseServiceKey)
+    : null;
+  return NextResponse.json({ ok: true, generatedAt: new Date().toISOString(), events: page.map(activityRowToEvent), nextCursor });
 }

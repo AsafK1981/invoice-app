@@ -75,15 +75,15 @@ export async function GET(req: NextRequest) {
   ] = await Promise.all([
     sb.auth.admin.listUsers({ page: 1, perPage: 1000 }),
     sb.from("documents").select("*", { count: "exact", head: true }),
-    sb.from("documents").select("*", { count: "exact", head: true }).gte("created_at", sevenDaysAgo),
+    sb.from("documents").select("*", { count: "exact", head: true }).is("import_batch_id", null).gte("created_at", sevenDaysAgo),
     sb.from("clients").select("*", { count: "exact", head: true }),
     sb.from("expenses").select("*", { count: "exact", head: true }),
     sb.from("documents").select("total, total_ils, type").eq("status", "paid"),
     // Last 30 days by TYPE. No number, no client_name, no total: the columns
     // selected here are the privacy boundary, so keep the list minimal.
-    sb.from("documents")
-      .select("created_at, type, status")
-      .gte("created_at", thirtyDaysAgo),
+    sb.from("admin_document_creation_daily")
+      .select("day, type, document_count, document_count_30d, draft_count_30d")
+      .gte("day", thirtyDaysAgo.slice(0, 10)),
     // Onboarding: count businesses (proxy for "users who finished onboarding")
     sb.from("businesses").select("id, user_id"),
     // Distinct business_ids that have at least one document (engagement proxy)
@@ -118,20 +118,18 @@ export async function GET(req: NextRequest) {
   }
 
   // Documents per day for last 14 days (chart data)
-  const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
-  const { data: dailyDocs } = await sb
-    .from("documents")
-    .select("created_at")
-    .gte("created_at", fourteenDaysAgo);
+  if (docs30dResult.error || docCount7dResult.error) {
+    return NextResponse.json({ ok: false, error: "Could not load document activity" }, { status: 500 });
+  }
   const perDay: Record<string, number> = {};
   for (let i = 13; i >= 0; i--) {
     const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
     const key = d.toISOString().slice(0, 10);
     perDay[key] = 0;
   }
-  for (const row of dailyDocs ?? []) {
-    const key = (row.created_at as string).slice(0, 10);
-    if (key in perDay) perDay[key]++;
+  for (const row of docs30dResult.data ?? []) {
+    const key = String(row.day);
+    if (key in perDay) perDay[key] += Number(row.document_count);
   }
   const dailyChart = Object.entries(perDay).map(([date, count]) => ({ date, count }));
 
@@ -157,8 +155,8 @@ export async function GET(req: NextRequest) {
   for (const row of docs30dResult.data ?? []) {
     const type = String(row.type);
     const bucket = (byTypeCounts[type] ??= { count: 0, drafts: 0 });
-    bucket.count++;
-    if (row.status === "draft") bucket.drafts++;
+    bucket.count += Number(row.document_count_30d);
+    bucket.drafts += Number(row.draft_count_30d);
   }
   const byType30d = Object.entries(byTypeCounts)
     .map(([type, v]) => ({ type, count: v.count, drafts: v.drafts }))
@@ -180,7 +178,7 @@ export async function GET(req: NextRequest) {
     documents: {
       total: docCountResult.count ?? 0,
       last7d: docCount7dResult.count ?? 0,
-      last30d: (docs30dResult.data ?? []).length,
+      last30d: byType30d.reduce((sum, row) => sum + row.count, 0),
       byType30d,
       dailyChart,
     },

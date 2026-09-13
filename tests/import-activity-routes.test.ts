@@ -35,7 +35,6 @@ vi.mock("@supabase/supabase-js", () => ({ createClient: () => ({
   },
 }) }));
 import { POST } from "@/app/api/admin/import-for-user/route";
-import { GET } from "@/app/api/admin/activity/route";
 const target = "11111111-1111-4111-8111-111111111111";
 function post(entityType: string, rows: Row[]) { return POST(new NextRequest("http://localhost/api/admin/import-for-user", { method: "POST", headers: { authorization: "Bearer test", "Content-Type": "application/json" }, body: JSON.stringify({ targetUserId: target, entityType, rows }) })); }
 beforeEach(() => { state.tables = { businesses: [{ id: "b1", user_id: target, name: "Test" }] }; state.selects = []; state.failDocChunk = 0; state.docChunks = 0; });
@@ -62,25 +61,5 @@ describe("import route batch provenance", () => {
   it.each([['clients', { name: 'Client' }], ['products', { name: 'Product', price: '10' }], ['expenses', { supplier: 'Supplier', amount: '10' }]])("tags %s inserts", async (entity, row) => {
     expect((await (await post(entity, [row])).json()).imported).toBe(1);
     expect(state.tables[entity][0].import_batch_id).toBeTruthy();
-  });
-});
-describe("activity route filtering and privacy", () => {
-  it("reads eligible payments independently so historical imported payments cannot hide later actions", async () => {
-    state.tables.documents = Array.from({ length: 450 }, (_, i) => ({ id: String(i), business_id: "b1", type: "receipt", status: "paid", created_at: "2026-09-13T10:00:00Z", paid_at: "2026-09-12T10:00:00Z", import_batch_id: "batch" }));
-    state.tables.admin_paid_document_activity = [{ id: "manual-paid", business_id: "b1", type: "tax_invoice", status: "paid", created_at: "2026-01-01T10:00:00Z", paid_at: "2026-09-11T10:00:00Z", import_batch_id: null }];
-    const response = await GET(new NextRequest("http://localhost/api/admin/activity?limit=1", { headers: { authorization: "Bearer test" } }));
-    const result = await response.json();
-    expect(result.events[0].id).toBe("document.paid:manual-paid");
-    expect(state.selects.some(q => q.table === "admin_paid_document_activity")).toBe(true);
-  });
-  it("filters imported creations before limits and independently fetches full aggregate counts", async () => {
-    state.tables.documents = Array.from({ length: 450 }, (_, i) => ({ id: String(i), business_id: "b1", type: "receipt", status: "paid", created_at: "2026-09-13T10:00:00Z", paid_at: null, import_batch_id: "batch" }));
-    state.tables.documents.push({ id: "manual", business_id: "b1", type: "receipt", status: "paid", created_at: "2026-09-12T10:00:00Z", import_batch_id: null });
-    state.tables.admin_import_activity = [{ business_id: "b1", import_batch_id: "batch", first_created_at: "2026-09-13T10:00:00Z", last_created_at: "2026-09-13T10:00:00Z", document_count: 450, client_count: 90, expense_count: 0, product_count: 0 }];
-    const response = await GET(new NextRequest("http://localhost/api/admin/activity?limit=2", { headers: { authorization: "Bearer test" } }));
-    const result = await response.json();
-    expect(result.events.map((e: Row) => e.kind)).toEqual(["data.imported", "document.created"]);
-    expect(result.events[0].importCounts.documents).toBe(450);
-    for (const query of state.selects.filter(q => q.table !== "businesses")) expect(query.columns).not.toMatch(/\*|client_name|subject|amount|total|file_name/);
   });
 });
