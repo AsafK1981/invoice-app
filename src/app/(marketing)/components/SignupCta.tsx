@@ -25,7 +25,7 @@ export default function SignupCta() {
         </SignupLink>
         <Link href="/invite/FOR-FRIENDS-ONLY" className="ghost">
           <Gift />
-          קיבלת קוד מחבר? לחצו כאן
+          קיבלתם קוד מחבר? לחצו כאן
         </Link>
       </div>
     </section>

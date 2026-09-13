@@ -25,7 +25,7 @@ export const DUNNING_SUBJECTS: Record<DunningStage, string> = {
 
 export const DUNNING_TONES: Record<DunningStage, { intro: string; cta: string; signoff: string }> = {
   3: {
-    intro: "מקווה שהמסמך הגיע בסדר. רק רציתי לוודא שראיתם את חשבונית מס מספר {n} על סך {total} ששלחנו ב-{date}.",
+    intro: "מקווה שהמסמך הגיע בסדר. רק רציתי לוודא שראיתם את חשבונית המס מספר {n} על סך {total} ששלחנו ב-{date}.",
     cta: "אם נוח לכם, אשמח לסגור את התשלום. כל פרטי התשלום נמצאים בחשבונית.",
     signoff: "תודה רבה,",
   },

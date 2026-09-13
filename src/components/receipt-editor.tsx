@@ -1529,13 +1529,13 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
         setToast({
           kind: "success",
           text: result.mocked
-            ? `${docLabel} #${allocatedNumber} נשמרה. מייל מדומה נשלח ל-${emailTo}.${linkNote} פותח תצוגה...`
-            : `${docLabel} #${allocatedNumber} נשמרה ונשלחה ל-${emailTo}.${linkNote} פותח תצוגה...`,
+            ? `${docLabel} #${allocatedNumber} ${isProforma ? "נשמר" : "נשמרה"}. מייל מדומה נשלח ל-${emailTo}.${linkNote} פותח תצוגה...`
+            : `${docLabel} #${allocatedNumber} ${isProforma ? "נשמר ונשלח" : "נשמרה ונשלחה"} ל-${emailTo}.${linkNote} פותח תצוגה...`,
         });
       } else {
         setToast({
           kind: "success",
-          text: `${docLabel} #${allocatedNumber} נשמרה.${linkNote} פותח תצוגה...`,
+          text: `${docLabel} #${allocatedNumber} ${isProforma ? "נשמר" : "נשמרה"}.${linkNote} פותח תצוגה...`,
         });
       }
 

@@ -126,7 +126,7 @@ export function EmailSettingsModal({ open, onClose }: Props) {
           </a>
         </div>
 
-        <FormField label="כתובת Gmail" hint="הכתובת שממנה ישלחו המסמכים">
+        <FormField label="כתובת Gmail" hint="הכתובת שממנה יישלחו המסמכים">
           <input
             type="email"
             name="email"

@@ -986,7 +986,7 @@ export default function MarketingLanding() {
                 <p className="ml-about">
                   חשבונית ידידותית היא תוכנה להפקת חשבוניות, קבלות וניהול
                   הכנסות והוצאות לעצמאים, עוסקים פטורים ועוסקים מורשים
-                  שנולדה מתוך צורך אמיתי של עצמאיים
+                  שנולדה מתוך צורך אמיתי של עצמאים
                 </p>
               </div>
 
@@ -1047,7 +1047,7 @@ export default function MarketingLanding() {
                         <span className="ml-app-stat-l">ממוצע למסמך</span>
                         <span className="ml-app-stat-v">{shekel("4,030")}</span>
                         <span className="ml-app-stat-s">
-                          לפי מסמכים שולמו
+                          לפי מסמכים ששולמו
                         </span>
                       </div>
                     </div>

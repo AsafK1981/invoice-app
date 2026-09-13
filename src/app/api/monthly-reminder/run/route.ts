@@ -95,7 +95,7 @@ function buildHtml(businessName: string, summary: MonthlyReminderSummary): strin
       }
       ${
         summary.missingRetainerClients.length
-          ? `<p style="margin:0 0 6px 0;font-size:14px;font-weight:bold;color:#1f232b;">לקוחות שקיבלו מסמך חודש שעבר אך לא החודש:</p>
+          ? `<p style="margin:0 0 6px 0;font-size:14px;font-weight:bold;color:#1f232b;">לקוחות שקיבלו מסמך בחודש שעבר אך לא החודש:</p>
              <ul style="margin:0 0 16px 0;padding-inline-start:20px;font-size:14px;color:#1f232b;">${retainerRows}</ul>`
           : ""
       }
@@ -125,7 +125,7 @@ function buildText(businessName: string, summary: MonthlyReminderSummary): strin
     }
   }
   if (summary.missingRetainerClients.length) {
-    lines.push("", "לקוחות שקיבלו מסמך חודש שעבר אך לא החודש:");
+    lines.push("", "לקוחות שקיבלו מסמך בחודש שעבר אך לא החודש:");
     for (const c of summary.missingRetainerClients) lines.push(`- ${c}`);
   }
   if (summary.unpaidCount > 0) {

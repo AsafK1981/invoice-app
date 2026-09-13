@@ -530,7 +530,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
     const sourceLabel = DOCUMENT_TYPE_LABELS[doc.type];
     const ok = await confirm({
       title: `להמיר את ${sourceLabel} #${doc.number} ל${targetTypeLabel}?`,
-      message: `ייפתח טופס חדש עם הפרטים כבר ממולאים. לאחר שתשמור אותו, המסמך המקורי יסומן כשולם ויקושר ל${targetTypeLabel} שייווצר.`,
+      message: `ייפתח טופס חדש עם הפרטים כבר ממולאים. לאחר שתשמור אותו, המסמך המקורי יסומן כשולם ויקושר ל${targetTypeLabel} שתיווצר.`,
       confirmLabel: "המשך",
     });
     if (!ok) return;

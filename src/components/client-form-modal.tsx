@@ -209,7 +209,7 @@ export function ClientFormModal({ open, onClose, client }: Props) {
             </button>
             {invalidEmailCount > 0 && (
               <p className="text-xs text-rose-600">
-                יש {invalidEmailCount} אימייל לא תקין - בדוק את הכתובות שהודגשו באדום
+                יש {invalidEmailCount} {invalidEmailCount === 1 ? "אימייל לא תקין" : "אימיילים לא תקינים"} - בדוק את הכתובות שהודגשו באדום
               </p>
             )}
           </div>

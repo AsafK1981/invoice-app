@@ -212,7 +212,7 @@ function WarningStage({
         <AlertTriangle className="w-5 h-5 text-rose-700 flex-shrink-0 mt-0.5" />
         <div className="text-sm text-rose-900 leading-relaxed">
           <strong className="block mb-1">פעולה הרסנית: לא ניתן לשחזר.</strong>
-          ימחקו לצמיתות:
+          יימחקו לצמיתות:
           <ul className="list-disc mr-5 mt-1 space-y-0.5 text-xs">
             <li>{counts.documents} מסמכים + פירוטים + קבצים מצורפים</li>
             <li>{counts.expenses} הוצאות + קבלות סרוקות</li>

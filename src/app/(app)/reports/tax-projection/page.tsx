@@ -87,7 +87,7 @@ export default function TaxProjectionPage() {
             צפי מס שנתי
           </h1>
           <p className="text-sm text-stone-700 mt-2 mr-14">
-            הערכה כמה תהיה חייב במס סוף שנת {year}, לפי הקצב הנוכחי. תוודא עם רו״ח לפני החלטה כספית.
+            הערכה כמה תהיה חייב במס בסוף שנת {year}, לפי הקצב הנוכחי. תוודא עם רו״ח לפני החלטה כספית.
           </p>
         </div>
         <Link
@@ -200,7 +200,7 @@ export default function TaxProjectionPage() {
           איך לא להישרף בסוף השנה
         </h2>
         <p className="text-sm text-stone-800 mb-4">
-          המספרים שלמטה הם המינימום שכדאי לשמור בצד מכל הכנסה, לא לסעוד מהם.
+          המספרים שלמטה הם המינימום שכדאי לשמור בצד מכל הכנסה, לא להשתמש בהם.
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -210,7 +210,7 @@ export default function TaxProjectionPage() {
               {(projection.setAsidePct * 100).toFixed(0)}%
             </p>
             <p className="text-xs text-stone-500 mt-1">
-              ברגע שמקבל כסף, מעביר את האחוז הזה לחשבון נפרד.
+              ברגע שאתה מקבל כסף, העבר את האחוז הזה לחשבון נפרד.
             </p>
           </div>
           <div className="bg-white rounded-2xl p-4 border border-emerald-100">

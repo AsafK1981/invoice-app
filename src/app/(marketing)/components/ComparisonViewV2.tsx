@@ -430,7 +430,7 @@ export function ComparisonViewV2({ competitor }: { competitor: Competitor }) {
             </SignupLink>
             <Link href="/invite/FOR-FRIENDS-ONLY" className="ghost">
               <Gift />
-              קיבלת קוד מחבר? לחצו כאן
+              קיבלתם קוד מחבר? לחצו כאן
             </Link>
           </div>
         </section>

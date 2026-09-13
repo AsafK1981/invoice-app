@@ -269,7 +269,7 @@ function ProposalRow({ proposal }: { proposal: InvoiceProposal }) {
                 document label (חשבון עסקה / קבלה / חשבונית מס) without
                 inflecting the verb per type. */}
             {proposal.status === "approved"
-              ? `האישור הקודם לא הושלם - ${typeLabel} עדיין לא הופק`
+              ? `האישור הקודם לא הושלם - המסמך עדיין לא הופק`
               : `${typeLabel} מחכה לאישור`}
           </p>
           <p className="text-sm text-stone-700 mt-0.5">

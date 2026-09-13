@@ -123,7 +123,7 @@ export function buildHtml(args: {
     : isReminder
       ? `מקווה שאתם בסדר. רק תזכורת קלה לגבי ${escapeHtml(noun)} מספר <strong>#${number}</strong> על סך <strong>${totalFormatted}</strong>${
           daysSinceSent ? ` ששלחנו לפני ${daysSinceSent} ימים` : ""
-        }. אשמח לדעת אם הוא הגיע ומה דעתכם.`
+        }. אשמח לדעת אם המסמך הגיע ומה דעתכם.`
       : `${escapeHtml(attached)} מספר <strong>#${number}</strong> על סך <strong>${totalFormatted}</strong>.`;
   const ctaLine = isEnglish
     ? isReminder

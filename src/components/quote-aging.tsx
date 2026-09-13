@@ -110,7 +110,7 @@ export function QuoteAging({ documents }: Props) {
           </h2>
           <p className="text-xs text-stone-600 mt-1">
             סה״כ <span className="font-semibold text-stone-900">{formatCurrency(totalValue)}</span>{" "}
-            ב-{openQuotes.length} {openQuotes.length === 1 ? "הצעה" : "הצעות"} ממתינות לתשובה. לחץ על קבוצה כדי לראות אילו.
+            ב-{openQuotes.length} {openQuotes.length === 1 ? "הצעה ממתינה" : "הצעות ממתינות"} לתשובה. לחץ על קבוצה כדי לראות אילו.
           </p>
         </div>
         <Link

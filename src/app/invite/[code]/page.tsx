@@ -121,7 +121,7 @@ export default function InviteLandingPage() {
             <div className="rounded-2xl bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-100 p-5 space-y-2">
               <p className="text-sm text-stone-800 leading-relaxed">
                 ברוך הבא ל-<strong>חשבונית ידידותית</strong>, אפליקציה
-                להפקת חשבוניות וקבלות לעצמאיים.
+                להפקת חשבוניות וקבלות לעצמאים.
               </p>
               <p className="text-sm text-stone-700 leading-relaxed">
                 ההזמנה הזו תעניק לך גישה מלאה, בלי כרטיס אשראי. תוכל להפיק
