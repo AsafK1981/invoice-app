@@ -108,9 +108,12 @@ export function useProductsPage(opts: { page: number; search: string }) {
 }
 
 export const productStore = {
-  async save(product: Product) {
+  async save(product: Product, options?: { importBatchId: string }) {
     const bid = getBusinessId();
-    if (!bid) return;
+    if (!bid) {
+      if (options) throw new Error("אין עסק פעיל - רענן את הדף ונסה שוב");
+      return;
+    }
 
     const { data: existing } = await supabase
       .from("products")
@@ -129,14 +132,16 @@ export const productStore = {
         })
         .eq("id", product.id);
     } else {
-      await supabase.from("products").insert({
+      const { error } = await supabase.from("products").insert({
         id: product.id,
         business_id: bid,
+        ...(options ? { import_batch_id: options.importBatchId } : {}),
         name: product.name,
         description: product.description || null,
         price: product.price,
         unit: product.unit,
       });
+      if (error && options) throw error;
     }
     window.dispatchEvent(new Event(CHANGE_EVENT));
   },

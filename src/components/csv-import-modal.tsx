@@ -98,6 +98,7 @@ export function CsvImportModal({ open, onClose, entityType }: Props) {
     setSuccess(null);
 
     try {
+      const importBatchId = crypto.randomUUID();
       let imported = 0;
       const today = todayInIsrael();
       const skips = createSkipAccumulator();
@@ -139,7 +140,7 @@ export function CsvImportModal({ open, onClose, entityType }: Props) {
             notes: (row["הערות"] || row["notes"] || "").trim() || undefined,
             createdAt: todayInIsrael(),
           };
-          await clientStore.save(client);
+          await clientStore.save(client, { importBatchId });
           imported++;
         } else if (entityType === "products") {
           const name = (row["שם"] || row["name"] || "").trim();
@@ -152,7 +153,7 @@ export function CsvImportModal({ open, onClose, entityType }: Props) {
             price,
             unit: (row["יחידה"] || row["unit"] || "יחידה").trim(),
           };
-          await productStore.save(product);
+          await productStore.save(product, { importBatchId });
           imported++;
         } else if (entityType === "expenses") {
           const supplier = (row["ספק"] || row["supplier"] || "").trim();
@@ -166,7 +167,7 @@ export function CsvImportModal({ open, onClose, entityType }: Props) {
             amount,
             description: (row["תיאור"] || row["description"] || "").trim() || undefined,
           };
-          await expenseStore.save(expense);
+          await expenseStore.save(expense, { importBatchId });
           imported++;
         } else if (entityType === "documents") {
           const businessId = importBusinessId!;
@@ -207,6 +208,7 @@ export function CsvImportModal({ open, onClose, entityType }: Props) {
               const newClient = {
                 id: crypto.randomUUID(),
                 business_id: businessId,
+                import_batch_id: importBatchId,
                 name: clientName,
                 created_at: new Date().toISOString(),
               };
@@ -222,6 +224,7 @@ export function CsvImportModal({ open, onClose, entityType }: Props) {
           const { error: dErr } = await supabase.from("documents").insert({
             id: docId,
             business_id: businessId,
+            import_batch_id: importBatchId,
             client_id: clientId,
             ...docFields,
           });

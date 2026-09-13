@@ -60,7 +60,7 @@ export async function GET(req: NextRequest) {
     detail: { limit },
   });
 
-  const DOC_COLUMNS = "id, business_id, type, status, created_at, emailed_at, paid_at";
+  const DOC_COLUMNS = "id, business_id, type, status, created_at, emailed_at, paid_at, import_batch_id";
 
   const [
     createdDocs,
@@ -68,19 +68,21 @@ export async function GET(req: NextRequest) {
     paidDocs,
     expenses,
     clients,
+    imports,
     businesses,
     usersResult,
   ] = await Promise.all([
-    sb.from("documents").select(DOC_COLUMNS).order("created_at", { ascending: false }).limit(perSource),
+    sb.from("documents").select(DOC_COLUMNS).is("import_batch_id", null).order("created_at", { ascending: false }).limit(perSource),
     sb.from("documents").select(DOC_COLUMNS).not("emailed_at", "is", null).order("emailed_at", { ascending: false }).limit(perSource),
-    sb.from("documents").select(DOC_COLUMNS).not("paid_at", "is", null).order("paid_at", { ascending: false }).limit(perSource),
-    sb.from("expenses").select("id, business_id, created_at").order("created_at", { ascending: false }).limit(perSource),
-    sb.from("clients").select("id, business_id, created_at").order("created_at", { ascending: false }).limit(perSource),
+    sb.from("admin_paid_document_activity").select(DOC_COLUMNS).order("paid_at", { ascending: false }).limit(perSource),
+    sb.from("expenses").select("id, business_id, created_at").is("import_batch_id", null).order("created_at", { ascending: false }).limit(perSource),
+    sb.from("clients").select("id, business_id, created_at").is("import_batch_id", null).order("created_at", { ascending: false }).limit(perSource),
+    sb.from("admin_import_activity").select("business_id, import_batch_id, first_created_at, last_created_at, document_count, client_count, expense_count, product_count").order("last_created_at", { ascending: false }).limit(perSource),
     sb.from("businesses").select("id, user_id, name"),
     sb.auth.admin.listUsers({ page: 1, perPage: 1000 }),
   ]);
 
-  const failed = [createdDocs, emailedDocs, paidDocs, expenses, clients, businesses].find((r) => r.error);
+  const failed = [createdDocs, emailedDocs, paidDocs, expenses, clients, imports, businesses].find((r) => r.error);
   if (failed?.error) {
     return NextResponse.json({ ok: false, error: failed.error.message }, { status: 500 });
   }
@@ -96,6 +98,7 @@ export async function GET(req: NextRequest) {
     ],
     expenses: expenses.data ?? [],
     clients: clients.data ?? [],
+    imports: imports.data ?? [],
     businesses: businesses.data ?? [],
     users: (usersResult.data?.users ?? []).map((u) => ({
       id: u.id,

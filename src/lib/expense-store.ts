@@ -73,9 +73,12 @@ export function useExpenses() {
 }
 
 export const expenseStore = {
-  async save(expense: Expense) {
+  async save(expense: Expense, options?: { importBatchId: string }) {
     const bid = getBusinessId();
-    if (!bid) return;
+    if (!bid) {
+      if (options) throw new Error("אין עסק פעיל - רענן את הדף ונסה שוב");
+      return;
+    }
 
     const { data: existing } = await supabase
       .from("expenses")
@@ -98,9 +101,10 @@ export const expenseStore = {
         })
         .eq("id", expense.id);
     } else {
-      await supabase.from("expenses").insert({
+      const { error } = await supabase.from("expenses").insert({
         id: expense.id,
         business_id: bid,
+        ...(options ? { import_batch_id: options.importBatchId } : {}),
         date: expense.date,
         category: expense.category,
         supplier: expense.supplier,
@@ -119,6 +123,7 @@ export const expenseStore = {
           : "manual",
         source_ref: expense.sourceRef || null,
       });
+      if (error && options) throw error;
     }
     window.dispatchEvent(new Event(CHANGE_EVENT));
   },

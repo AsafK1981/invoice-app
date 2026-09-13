@@ -19,6 +19,7 @@ import type { DocumentType } from "./types";
  */
 
 export type AdminActivityKind =
+  | "data.imported"
   | "document.created"
   | "document.emailed"
   | "document.paid"
@@ -40,6 +41,7 @@ export interface AdminActivityEvent {
   documentType?: DocumentType;
   /** Only for document.created: the document was saved as a draft. */
   draft?: boolean;
+  importCounts?: { documents: number; clients: number; expenses: number; products: number };
 }
 
 export interface ActivityDocumentRow {
@@ -50,12 +52,14 @@ export interface ActivityDocumentRow {
   created_at: string;
   emailed_at?: string | null;
   paid_at?: string | null;
+  import_batch_id?: string | null;
 }
 
 export interface ActivityTimestampRow {
   id: string;
   business_id: string;
   created_at: string;
+  import_batch_id?: string | null;
 }
 
 export interface ActivityBusinessRow {
@@ -70,7 +74,19 @@ export interface ActivityUserRow {
   last_sign_in_at?: string | null;
 }
 
+export interface ActivityImportRow {
+  business_id: string;
+  import_batch_id: string;
+  first_created_at: string;
+  last_created_at: string;
+  document_count: number;
+  client_count: number;
+  expense_count: number;
+  product_count: number;
+}
+
 export interface BuildAdminActivityInput {
+  imports?: ActivityImportRow[];
   documents: ActivityDocumentRow[];
   expenses: ActivityTimestampRow[];
   clients: ActivityTimestampRow[];
@@ -125,7 +141,7 @@ export function buildAdminActivity(input: BuildAdminActivityInput): AdminActivit
   for (const d of input.documents) {
     const actor = actorFor(d.business_id);
     const documentType = d.type as DocumentType;
-    push({
+    if (!d.import_batch_id) push({
       id: `document.created:${d.id}`,
       at: d.created_at,
       kind: "document.created",
@@ -144,7 +160,7 @@ export function buildAdminActivity(input: BuildAdminActivityInput): AdminActivit
     }
     if (d.paid_at) {
       const gap = new Date(d.paid_at).getTime() - new Date(d.created_at).getTime();
-      if (Math.abs(gap) > SAME_ACTION_WINDOW_MS) {
+      if (d.import_batch_id ? gap > SAME_ACTION_WINDOW_MS : Math.abs(gap) > SAME_ACTION_WINDOW_MS) {
         push({
           id: `document.paid:${d.id}`,
           at: d.paid_at,
@@ -157,6 +173,7 @@ export function buildAdminActivity(input: BuildAdminActivityInput): AdminActivit
   }
 
   for (const x of input.expenses) {
+    if (x.import_batch_id) continue;
     push({
       id: `expense.created:${x.id}`,
       at: x.created_at,
@@ -166,11 +183,25 @@ export function buildAdminActivity(input: BuildAdminActivityInput): AdminActivit
   }
 
   for (const c of input.clients) {
+    if (c.import_batch_id) continue;
     push({
       id: `client.created:${c.id}`,
       at: c.created_at,
       kind: "client.created",
       ...actorFor(c.business_id),
+    });
+  }
+
+  for (const batch of input.imports ?? []) {
+    push({
+      id: `data.imported:${batch.business_id}:${batch.import_batch_id}`,
+      at: batch.last_created_at,
+      kind: "data.imported",
+      ...actorFor(batch.business_id),
+      importCounts: {
+        documents: Number(batch.document_count), clients: Number(batch.client_count),
+        expenses: Number(batch.expense_count), products: Number(batch.product_count),
+      },
     });
   }
 
@@ -202,6 +233,17 @@ export function describeAdminActivity(
 ): string {
   const type = e.documentType ? typeLabels[e.documentType] || e.documentType : "מסמך";
   switch (e.kind) {
+    case "data.imported": {
+      const counts = e.importCounts;
+      if (!counts) return "ייבוא";
+      const parts = [
+        counts.documents === 1 ? "מסמך אחד" : counts.documents > 0 ? `${counts.documents} מסמכים` : "",
+        counts.clients === 1 ? "לקוח אחד" : counts.clients > 0 ? `${counts.clients} לקוחות` : "",
+        counts.expenses === 1 ? "הוצאה אחת" : counts.expenses > 0 ? `${counts.expenses} הוצאות` : "",
+        counts.products === 1 ? "מוצר אחד" : counts.products > 0 ? `${counts.products} מוצרים` : "",
+      ].filter(Boolean);
+      return parts.length ? `ייבוא: ${parts.join(" · ")}` : "ייבוא";
+    }
     case "document.created":
       return e.draft ? `טיוטה חדשה: ${type}` : `מסמך חדש: ${type}`;
     case "document.emailed":

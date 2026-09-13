@@ -182,9 +182,12 @@ export async function revokeClientConsent(id: string): Promise<void> {
 }
 
 export const clientStore = {
-  async save(client: Client) {
+  async save(client: Client, options?: { importBatchId: string }) {
     const bid = getBusinessId();
-    if (!bid) return;
+    if (!bid) {
+      if (options) throw new Error("אין עסק פעיל - רענן את הדף ונסה שוב");
+      return;
+    }
 
     const { data: existing } = await supabase
       .from("clients")
@@ -205,9 +208,10 @@ export const clientStore = {
         })
         .eq("id", client.id);
     } else {
-      await supabase.from("clients").insert({
+      const { error } = await supabase.from("clients").insert({
         id: client.id,
         business_id: bid,
+        ...(options ? { import_batch_id: options.importBatchId } : {}),
         name: client.name,
         tax_id: client.taxId || null,
         address: client.address || null,
@@ -215,6 +219,7 @@ export const clientStore = {
         email: client.email || null,
         notes: client.notes || null,
       });
+      if (error && options) throw error;
     }
     window.dispatchEvent(new Event(CHANGE_EVENT));
   },

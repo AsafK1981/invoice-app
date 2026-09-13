@@ -227,6 +227,7 @@ export function BulkImportZone() {
     if (usable.length === 0) return;
     setImporting(true);
     setError(null);
+    const importBatchId = crypto.randomUUID();
     const totals: Record<EntityType, EntityTotals> = {
       clients: { imported: 0, skipped: 0, unmappedType: 0, skipSummary: [] },
       products: { imported: 0, skipped: 0, unmappedType: 0, skipSummary: [] },
@@ -247,7 +248,7 @@ export function BulkImportZone() {
     try {
       for (const file of ordered) {
         setProgress(`מייבא ${ENTITY_META[file.entity!].label} מ-${file.label}...`);
-        const result = await importOneFile(file, docSkips);
+        const result = await importOneFile(file, docSkips, importBatchId);
         totals[file.entity!].imported += result.imported;
         totals[file.entity!].skipped += result.skipped;
         totals[file.entity!].unmappedType += result.unmappedType;
@@ -267,6 +268,7 @@ export function BulkImportZone() {
   async function importOneFile(
     file: DetectedFile,
     docSkips: SkipAccumulator,
+    importBatchId: string,
   ): Promise<{ imported: number; skipped: number; unmappedType: number }> {
     let imported = 0;
     let skipped = 0;
@@ -301,7 +303,7 @@ export function BulkImportZone() {
           notes: pick(row, "הערות", "notes") || undefined,
           createdAt: todayInIsrael(),
         };
-        await clientStore.save(client);
+        await clientStore.save(client, { importBatchId });
         imported++;
       }
     } else if (file.entity === "products") {
@@ -319,7 +321,7 @@ export function BulkImportZone() {
           price,
           unit: pick(row, "יחידה", "unit") || "יחידה",
         };
-        await productStore.save(product);
+        await productStore.save(product, { importBatchId });
         imported++;
       }
     } else if (file.entity === "expenses") {
@@ -338,7 +340,7 @@ export function BulkImportZone() {
           amount,
           description: pick(row, "תיאור", "description") || undefined,
         };
-        await expenseStore.save(expense);
+        await expenseStore.save(expense, { importBatchId });
         imported++;
       }
     } else if (file.entity === "documents") {
@@ -377,6 +379,7 @@ export function BulkImportZone() {
             const newClient = {
               id: crypto.randomUUID(),
               business_id: businessId,
+              import_batch_id: importBatchId,
               name: clientName,
               created_at: new Date().toISOString(),
             };
@@ -390,6 +393,7 @@ export function BulkImportZone() {
         const { error: dErr } = await supabase.from("documents").insert({
           id: docId,
           business_id: businessId,
+          import_batch_id: importBatchId,
           client_id: clientId,
           ...docFields,
         });

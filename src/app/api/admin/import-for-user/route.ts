@@ -131,17 +131,18 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const importBatchId = crypto.randomUUID();
   let summary: ImportSummary = { imported: 0, skipped: 0, errors: [] };
 
   try {
     if (body.entityType === "clients") {
-      summary = await importClients(sb, targetBusinessId, body.rows);
+      summary = await importClients(sb, targetBusinessId, body.rows, importBatchId);
     } else if (body.entityType === "products") {
-      summary = await importProducts(sb, targetBusinessId, body.rows);
+      summary = await importProducts(sb, targetBusinessId, body.rows, importBatchId);
     } else if (body.entityType === "expenses") {
-      summary = await importExpenses(sb, targetBusinessId, body.rows);
+      summary = await importExpenses(sb, targetBusinessId, body.rows, importBatchId);
     } else if (body.entityType === "documents") {
-      summary = await importDocuments(sb, targetBusinessId, body.rows);
+      summary = await importDocuments(sb, targetBusinessId, body.rows, importBatchId);
     }
   } catch (err) {
     console.error("admin import-for-user failed:", err);
@@ -186,7 +187,7 @@ function pick(row: ImportRow, ...keys: string[]): string {
   return "";
 }
 
-async function importClients(sb: SB, businessId: string, rows: ImportRow[]): Promise<ImportSummary> {
+async function importClients(sb: SB, businessId: string, rows: ImportRow[], importBatchId: string): Promise<ImportSummary> {
   const out: ImportSummary = { imported: 0, skipped: 0, errors: [] };
   // Fetch existing client names so we can dedupe by case-insensitive name.
   const { data: existing } = await sb.from("clients").select("name").eq("business_id", businessId);
@@ -207,6 +208,7 @@ async function importClients(sb: SB, businessId: string, rows: ImportRow[]): Pro
     seen.add(key);
     toInsert.push({
       business_id: businessId,
+      import_batch_id: importBatchId,
       name,
       tax_id: pick(row, "ח.פ / ת.ז", "ח.פ", "ת.ז", "tax_id") || null,
       address: pick(row, "כתובת", "address") || null,
@@ -227,7 +229,7 @@ async function importClients(sb: SB, businessId: string, rows: ImportRow[]): Pro
   return out;
 }
 
-async function importProducts(sb: SB, businessId: string, rows: ImportRow[]): Promise<ImportSummary> {
+async function importProducts(sb: SB, businessId: string, rows: ImportRow[], importBatchId: string): Promise<ImportSummary> {
   const out: ImportSummary = { imported: 0, skipped: 0, errors: [] };
   const { data: existing } = await sb.from("products").select("name").eq("business_id", businessId);
   const seen = new Set((existing || []).map((p) => String(p.name).toLowerCase().trim()));
@@ -248,6 +250,7 @@ async function importProducts(sb: SB, businessId: string, rows: ImportRow[]): Pr
     seen.add(key);
     toInsert.push({
       business_id: businessId,
+      import_batch_id: importBatchId,
       name,
       description: pick(row, "תיאור", "description") || null,
       price,
@@ -263,7 +266,7 @@ async function importProducts(sb: SB, businessId: string, rows: ImportRow[]): Pr
   return out;
 }
 
-async function importExpenses(sb: SB, businessId: string, rows: ImportRow[]): Promise<ImportSummary> {
+async function importExpenses(sb: SB, businessId: string, rows: ImportRow[], importBatchId: string): Promise<ImportSummary> {
   const out: ImportSummary = { imported: 0, skipped: 0, errors: [] };
   const today = todayInIsrael();
   const toInsert: Array<Record<string, string | number | null>> = [];
@@ -276,6 +279,7 @@ async function importExpenses(sb: SB, businessId: string, rows: ImportRow[]): Pr
     }
     toInsert.push({
       business_id: businessId,
+      import_batch_id: importBatchId,
       date: pick(row, "תאריך", "date") || today,
       category: pick(row, "קטגוריה", "category") || "אחר",
       supplier,
@@ -292,7 +296,7 @@ async function importExpenses(sb: SB, businessId: string, rows: ImportRow[]): Pr
   return out;
 }
 
-async function importDocuments(sb: SB, businessId: string, rows: ImportRow[]): Promise<ImportSummary> {
+async function importDocuments(sb: SB, businessId: string, rows: ImportRow[], importBatchId: string): Promise<ImportSummary> {
   const out: ImportSummary = { imported: 0, skipped: 0, errors: [] };
   const skips = createSkipAccumulator();
   const unmappedTypes = createUnmappedTypeCollector();
@@ -353,6 +357,7 @@ async function importDocuments(sb: SB, businessId: string, rows: ImportRow[]): P
     }
     const toInsert = Array.from(firstSeenName.entries()).map(([, name]) => ({
       business_id: businessId,
+      import_batch_id: importBatchId,
       name,
     }));
     const { data: newClients, error: clientErr } = await sb
@@ -389,6 +394,7 @@ async function importDocuments(sb: SB, businessId: string, rows: ImportRow[]): P
     maxByType.set(record.type, Math.max(maxByType.get(record.type) ?? 0, record.number));
     docsToInsert.push({
       business_id: businessId,
+      import_batch_id: importBatchId,
       client_id: clientId,
       subject: description,
       ...docFields,

@@ -493,6 +493,7 @@ const ACTIVITY_STYLE: Record<
   AdminActivityKind,
   { icon: typeof Users; iconText: string; bg: string }
 > = {
+  "data.imported": { icon: Upload, iconText: "text-orange-700", bg: "bg-orange-100" },
   "document.created": { icon: FilePlus2, iconText: "text-orange-700", bg: "bg-orange-100" },
   "document.emailed": { icon: Mail, iconText: "text-sky-700", bg: "bg-sky-100" },
   "document.paid": { icon: Banknote, iconText: "text-emerald-700", bg: "bg-emerald-100" },
