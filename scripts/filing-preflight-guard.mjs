@@ -96,7 +96,8 @@ async function uniformSection(year, perBusiness) {
     () => sb.from("businesses").select("id,name,business_type,tax_id,address,phone,email").order("id", { ascending: true }),
     "businesses",
   );
-  const inYear = (row) => typeof row.date === "string" && row.date.startsWith(`${year}-`);
+  // Drafts never enter the file, so they are not activity either.
+  const inYear = (row) => row.status !== "draft" && typeof row.date === "string" && row.date.startsWith(`${year}-`);
   let active = 0;
   let failures = 0;
   for (const b of businesses) {

@@ -73,6 +73,11 @@ describe("uniform preflight", () => {
     expect(warnings(recent)).not.toContain("customer_number_from_client");
   });
 
+  it("ignores drafts entirely: they are not issued documents", () => {
+    const data = input({ status: "draft", date: "2026-02-30", total: NaN, items: [] });
+    expect(validateUniformInput(data)).toEqual([]);
+  });
+
   it("blocks a missing linked client", () => {
     expect(errors(input({ clientId: "missing" }))).toContain("client_missing");
   });

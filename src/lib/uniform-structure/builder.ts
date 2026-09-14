@@ -141,7 +141,10 @@ export function buildUniformStructure(input: UniformInput): UniformOutput {
   // Filter to the requested year window.
   const fromMs = new Date(input.fromDate).getTime();
   const toMs = new Date(input.toDate).getTime() + 86_400_000 - 1;
+  // Drafts are not issued documents: they never enter the file, its totals or
+  // its journal. A cancelled issued document stays (C100 1228 marks it).
   const docs = input.documents.filter((d) => {
+    if (d.status === "draft") return false;
     const t = new Date(d.date).getTime();
     return t >= fromMs && t <= toMs;
   });

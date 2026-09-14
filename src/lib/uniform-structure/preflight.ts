@@ -50,6 +50,8 @@ export function validateUniformInput(input: UniformInput): UniformIssue[] {
 
   const docKeys = new Set<string>();
   for (const d of input.documents) {
+    // Drafts never enter the file (builder.ts), so nothing about them can block it.
+    if (d.status === "draft") continue;
     const where: Where = { source: "document", sourceId: d.id, sourceLabel: `מסמך ${d.number}`, imported: Boolean(d.importBatchId) };
     if (!validPcnDate(d.date)) { add("date_invalid", "תאריך המסמך חסר או אינו תקין; לא ניתן לשייך אותו לשנת הדוח.", where); continue; }
     if (d.date < input.fromDate || d.date > input.toDate) continue;

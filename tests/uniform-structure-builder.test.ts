@@ -90,4 +90,15 @@ describe("uniform builder", () => {
     const ok = doc({ currency: "USD", exchangeRate: 3.5, total: 118.4, rounding: 0.4, subtotalIls: 350, vatIls: 63, totalIls: 414.4 });
     expect(validateUniformOutput(buildUniformStructure(input({ documents: [ok] })))).toEqual([]);
   });
+  it("leaves drafts out of every record and total; a cancelled issued document stays", () => {
+    const draft = doc({ id: "draft", number: 2, status: "draft", total: 999, items: [] });
+    const cancelled = doc({ id: "cancelled", number: 3, status: "cancelled" });
+    const out = buildUniformStructure(input({ documents: [doc(), draft, cancelled] }));
+    const c100 = lines(out.bkmvdataText, "C100");
+    expect(c100.map((l) => l.slice(25, 45).trim())).toEqual(["1", "3"]);
+    expect(lines(out.bkmvdataText, "D110").every((l) => l.slice(25, 45).trim() !== "2")).toBe(true);
+    expect(lines(out.bkmvdataText, "B100").every((l) => l.slice(60, 80).trim() !== "2")).toBe(true);
+    expect(out.docTypeSummary.find((r) => r.code === "305")).toMatchObject({ count: 2, total: 236 });
+    expect(validateUniformOutput(out)).toEqual([]);
+  });
 });
