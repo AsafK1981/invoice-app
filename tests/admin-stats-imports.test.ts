@@ -12,7 +12,7 @@ vi.mock("@supabase/supabase-js", () => ({ createClient: () => ({
     const q: any = {
       select(columns: string, opts?: { head?: boolean }) { query.columns = columns; head = !!opts?.head; return q; },
       is(key: string, value: unknown) { query.filters.push(key + ":" + value); return q; },
-      gte(key: string) { query.filters.push(key); return q; }, eq: () => q,
+      gte(key: string) { query.filters.push(key); return q; }, eq: () => q, in: () => q,
       lte: () => q, order: () => q,
       range(first: number, last: number) { offset = first; end = last; return q; },
       then(resolve: (value: unknown) => void) {

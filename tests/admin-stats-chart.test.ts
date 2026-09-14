@@ -59,6 +59,7 @@ vi.mock("@supabase/supabase-js", () => ({
         },
         gte: () => query,
         eq: () => query,
+        in: () => query,
         order: () => query,
         range: (first: number, end: number) => { offset = first; last = end; return query; },
         then: (resolve: (result: unknown) => unknown) => {

@@ -3,6 +3,8 @@ import { createClient, type User } from "@supabase/supabase-js";
 import { isAdminEmail } from "@/lib/admin";
 import { logAdminAccess } from "@/lib/admin-access-log";
 import { getAdminChartDay, type AdminDailyPoint } from "@/lib/admin-chart";
+import { countsForTurnover } from "@/lib/ita/income-tax-advances";
+import type { InvoiceDocument } from "@/lib/types";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -29,6 +31,16 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
  *
  * Every call writes one row to admin_access_log.
  */
+type TurnoverRow = {
+  subtotal: number | null;
+  subtotal_ils: number | null;
+  type: string;
+  status: string;
+  converted_to_id: string | null;
+  business_id: string;
+  import_batch_id: string | null;
+};
+
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
   if (!authHeader?.startsWith("Bearer ")) {
@@ -115,6 +127,30 @@ export async function GET(req: NextRequest) {
       .sort((a, b) => a.date.localeCompare(b.date));
   }
 
+  /**
+   * PostgREST caps an unbounded SELECT at 1000 rows and says nothing about it.
+   * The cross-tenant reads below page explicitly: a silent cap would freeze a
+   * growing total at a plausible-looking wrong number. Ordered by `id` so
+   * pages can't overlap or skip.
+   */
+  async function loadAll<T>(
+    table: string,
+    columns: string,
+    filter?: { in?: [string, string[]] },
+  ): Promise<T[]> {
+    const rows: T[] = [];
+    const PAGE = 1000;
+    for (let offset = 0; ; offset += PAGE) {
+      let q = sb.from(table).select(columns).order("id", { ascending: true });
+      if (filter?.in) q = q.in(...filter.in);
+      const { data, error } = await q.range(offset, offset + PAGE - 1);
+      if (error) throw new Error(`Unable to load ${table}`);
+      const page = (data ?? []) as unknown as T[];
+      rows.push(...page);
+      if (page.length < PAGE) return rows;
+    }
+  }
+
   try {
     const [
       allUsers,
@@ -122,7 +158,7 @@ export async function GET(req: NextRequest) {
       docCount7dResult,
       clientCountResult,
       expenseCountResult,
-      paidDocsResult,
+      turnoverDocs,
       docs30dResult,
       businessesResult,
       distinctDocOwnersResult,
@@ -133,16 +169,21 @@ export async function GET(req: NextRequest) {
       sb.from("documents").select("*", { count: "exact", head: true }).is("import_batch_id", null).gte("created_at", sevenDaysAgo),
       sb.from("clients").select("*", { count: "exact", head: true }),
       sb.from("expenses").select("*", { count: "exact", head: true }),
-      sb.from("documents").select("total, total_ils, type").eq("status", "paid"),
+      // Paid AND sent: a credit note is saved "sent" and still reduces turnover.
+      loadAll<TurnoverRow>(
+        "documents",
+        "subtotal, subtotal_ils, type, status, converted_to_id, business_id, import_batch_id",
+        { in: ["status", ["paid", "sent"]] },
+      ),
       // Last 30 days by TYPE. No number, no client_name, no total: the columns
       // selected here are the privacy boundary, so keep the list minimal.
       sb.from("admin_document_creation_daily")
         .select("day, type, document_count, document_count_30d, draft_count_30d")
         .gte("day", thirtyDaysAgo.slice(0, 10)),
       // Onboarding: count businesses (proxy for "users who finished onboarding")
-      sb.from("businesses").select("id, user_id"),
+      loadAll<{ id: string; user_id: string }>("businesses", "id, user_id"),
       // Distinct business_ids that have at least one document (engagement proxy)
-      sb.from("documents").select("business_id"),
+      loadAll<{ business_id: string }>("documents", "business_id"),
       loadDocumentChart(),
     ]);
 
@@ -173,28 +214,52 @@ export async function GET(req: NextRequest) {
         last_sign_in_at: u.last_sign_in_at,
       }));
 
-    // Total revenue (paid docs). Credit notes are stored ALREADY NEGATIVE on
-    // save (receipt-editor.tsx applies `sign = -1`), so a plain sum already
-    // subtracts them - applying a sign here again would double-negate a
-    // refund into extra revenue. `total_ils` normalizes foreign-currency
-    // documents into shekels so they don't get summed at native face value.
-    let totalRevenue = 0;
-    for (const d of paidDocsResult.data ?? []) {
-      totalRevenue += Number(d.total_ils ?? d.total ?? 0);
+    // Businesses owned by internal accounts (the Lynkeus visual-QA user writes
+    // real documents twice a week). Their turnover is synthetic.
+    const internalUserIds = new Set(
+      allUsers.filter((u) => u.email?.endsWith(".internal")).map((u) => u.id),
+    );
+    const internalBusinessIds = new Set(
+      businessesResult.filter((b) => internalUserIds.has(b.user_id)).map((b) => b.id),
+    );
+
+    // Cross-tenant turnover, split into what was created in the app and what
+    // was imported from another vendor. Until 2026-09-14 this was one plain
+    // sum of status=paid totals that read 928,406.78 while the in-app turnover
+    // was ~193k: about 72% was two bulk history imports, converted
+    // invoice+receipt pairs were counted twice, and dealers' VAT was included.
+    //
+    // Rule: `countsForTurnover`, the gate the tax reports use (drops converted
+    // sources, non-revenue types, drafts and cancelled; keeps credit notes by
+    // issuance). Amounts are `subtotal`, before VAT: VAT a dealer collects is
+    // the state's money, and summing gross mixes VAT-inclusive dealers with
+    // VAT-free exempt ones. Credit notes are stored negative; never negate.
+    let inAppTurnover = 0;
+    let importedTurnover = 0;
+    for (const d of turnoverDocs) {
+      if (internalBusinessIds.has(d.business_id)) continue;
+      if (!countsForTurnover({
+        type: d.type as InvoiceDocument["type"],
+        status: d.status as InvoiceDocument["status"],
+        convertedToId: d.converted_to_id ?? undefined,
+      })) continue;
+      const net = Number(d.subtotal_ils ?? d.subtotal ?? 0);
+      if (d.import_batch_id) importedTurnover += net;
+      else inAppTurnover += net;
     }
 
     // Onboarding funnel:
     //   signed_up         = userCount
     //   created_business  = users with at least one row in `businesses`
     //   created_first_doc = users with at least one document
-    const businesses = businessesResult.data ?? [];
+    const businesses = businessesResult;
     const usersWithBusiness = new Set(businesses.map((b) => b.user_id));
     const businessIdToUser: Record<string, string> = {};
     for (const b of businesses) {
       businessIdToUser[b.id] = b.user_id;
     }
     const usersWithDoc = new Set(
-      (distinctDocOwnersResult.data ?? [])
+      distinctDocOwnersResult
         .map((r) => businessIdToUser[r.business_id as string])
         .filter(Boolean),
     );
@@ -240,7 +305,8 @@ export async function GET(req: NextRequest) {
         total: expenseCountResult.count ?? 0,
       },
       revenue: {
-        totalPaid: totalRevenue,
+        inAppTurnover,
+        importedTurnover,
       },
     });
   } catch {

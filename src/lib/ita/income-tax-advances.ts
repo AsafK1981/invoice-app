@@ -30,7 +30,15 @@ export function roundShekelHalfUp(value: number): number {
   return value < 0 ? -magnitude : magnitude;
 }
 
-function countsForTurnover(d: InvoiceDocument): boolean {
+/**
+ * The turnover gate every מחזור figure should use: revenue types only, not a
+ * converted source, not draft/cancelled, and credit notes by issuance (they
+ * are saved "sent", stored negative). Exported so the admin dashboard sums
+ * turnover by the same rule as the tax reports instead of a weaker copy.
+ */
+export function countsForTurnover(
+  d: Pick<InvoiceDocument, "type" | "convertedToId" | "status">,
+): boolean {
   if (!isCountableRevenue(d)) return false;
   if (d.status === "draft" || d.status === "cancelled") return false;
   // Credit notes are stored negative and saved as "sent"; they reduce the

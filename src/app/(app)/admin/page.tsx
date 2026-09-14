@@ -51,7 +51,7 @@ interface Stats {
   };
   clients: { total: number };
   expenses: { total: number };
-  revenue: { totalPaid: number };
+  revenue: { inAppTurnover: number; importedTurnover: number };
   onboarding?: {
     signedUp: number;
     createdBusiness: number;
@@ -313,9 +313,9 @@ export default function AdminPage() {
               bg="from-orange-50 to-orange-100"
             />
             <StatCard
-              label="הכנסות באפליקציה"
-              value={formatCurrency(stats.revenue.totalPaid)}
-              sub="סה״כ מסמכים ששולמו"
+              label="מחזור שנוצר באפליקציה"
+              value={formatCurrency(Math.round(stats.revenue.inAppTurnover))}
+              sub={`לפני מע״מ · לא כולל ${formatCurrency(Math.round(stats.revenue.importedTurnover))} היסטוריה מיובאת`}
               icon={TrendingUp}
               gradient="from-emerald-400 to-teal-500"
               bg="from-emerald-50 to-teal-50"
@@ -458,12 +458,14 @@ function StatCard({
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <p className="text-xs font-medium text-stone-700">{label}</p>
-          <p className={`text-2xl font-bold mt-2 text-stone-900 truncate`} {...(ltr ? { dir: "ltr" } : {})}>
+          <p className={`text-xl sm:text-2xl font-bold mt-2 text-stone-900 truncate`} {...(ltr ? { dir: "ltr" } : {})}>
             {value}
           </p>
           <p className="text-xs text-stone-600 mt-1">{sub}</p>
         </div>
-        <div className={`w-10 h-10 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-md flex-shrink-0`}>
+        {/* Hidden on phones: in the two-column grid the icon ate the width
+            the number needs, and the figure truncated to "19..." */}
+        <div className={`w-10 h-10 rounded-2xl bg-gradient-to-br ${gradient} hidden sm:flex items-center justify-center shadow-md flex-shrink-0`}>
           <Icon className="w-5 h-5 text-white" />
         </div>
       </div>
