@@ -121,15 +121,60 @@ export interface PcnHeader {
   totalVat: number;
 }
 
-export type PcnWarningLevel = "error" | "warning";
+/**
+ * "error" blocks the download. "action" does not block but changes the file
+ * (an input left out) and is shown above the button, never collapsed.
+ * "warning" is a note for the collapsed "כדאי לבדוק" section.
+ */
+export type PcnWarningLevel = "error" | "action" | "warning";
+
+/** Stable identifiers for every preflight finding. The nightly guard reports these, never the messages. */
+export type PcnIssueCode =
+  | "dealer_number_invalid"
+  | "period_invalid"
+  | "period_not_whole_months"
+  | "generation_date_invalid"
+  | "exempt_business"
+  | "period_length"
+  | "period_open"
+  | "field_overflow"
+  | "file_structure"
+  | "date_invalid"
+  | "amount_invalid"
+  | "expense_amount_invalid"
+  | "sign_mismatch"
+  | "type_sign_mismatch"
+  | "zero_rated_with_vat"
+  | "foreign_currency_missing_ils"
+  | "customer_number_invalid"
+  | "customer_number_missing"
+  | "supplier_number_invalid"
+  | "input_missing_supplier_details"
+  | "refund_input_missing_supplier_details"
+  | "reference_invalid"
+  | "reference_multiple_groups"
+  | "allocation_invalid"
+  | "possible_duplicate"
+  | "zero_vat_not_zero_rated"
+  | "sale_allocation_missing"
+  | "supplier_allocation_missing";
 
 export interface PcnWarning {
+  /** Stable identifier: wording may change, codes may not. */
+  code: PcnIssueCode;
   level: PcnWarningLevel;
   message: string;
   /** "document" rows link to /documents/<id>, "expense" rows to /expenses. */
   source: "document" | "expense";
   sourceId: string;
   sourceLabel: string;
+  /** Input VAT left out of the file, set on supplier_allocation_missing. */
+  excludedVat?: number;
+}
+
+export interface PcnBlocker {
+  code: PcnIssueCode;
+  message: string;
 }
 
 /** The six figures the periodic return form (דוח תקופתי) asks for. */
@@ -156,7 +201,7 @@ export interface Pcn874Result {
    * invalid, period not a filing period, period still open). Export requires
    * both no blockers and no warnings with level error.
    */
-  blockers: string[];
+  blockers: PcnBlocker[];
   /** True when the period nets to a refund, so inputs were itemised (no K). */
   refundPeriod: boolean;
   figures: VatReturnFigures;
@@ -264,39 +309,40 @@ function validateSources(documents: InvoiceDocument[], expenses: Expense[], rang
     const isDoc = source === "document";
     const d = row as InvoiceDocument;
     const e = row as Expense;
-    const add = (message: string, level: PcnWarningLevel = "error") => warnings.push({ level, message, source, sourceId: row.id, sourceLabel: isDoc ? docLabel(d) : expenseLabel(e) });
+    const add = (code: PcnIssueCode, message: string, level: PcnWarningLevel = "error") =>
+      warnings.push({ code, level, message, source, sourceId: row.id, sourceLabel: isDoc ? docLabel(d) : expenseLabel(e) });
     if (!validPcnDate(row.date)) {
-      add("התאריך חסר או אינו תקין. פתח את הרשומה ותקן את התאריך כדי שנוכל לשייך אותה לתקופת הדיווח.");
+      add("date_invalid", "התאריך חסר או אינו תקין. פתח את הרשומה ותקן את התאריך כדי שנוכל לשייך אותה לתקופת הדיווח.");
       return;
     }
     if (row.date < range.start || row.date > range.end) return;
     const net = isDoc ? (d.subtotalIls ?? d.subtotal) : e.amount - (e.vatAmount ?? 0);
     const vat = isDoc ? (d.vatIls ?? d.vat) : (e.vatAmount ?? 0);
     if (!withinField(net, 10) || !withinField(vat, 9) || !Number.isFinite(isDoc ? d.total : e.amount))
-      add("סכום חסר, לא מספרי או גדול מדי לשדות קובץ הדיווח. בדוק את הסכום לפני מע״מ ואת המע״מ ברשומה.");
+      add("amount_invalid", "סכום חסר, לא מספרי או גדול מדי לשדות קובץ הדיווח. בדוק את הסכום לפני מע״מ ואת המע״מ ברשומה.");
     if (!isDoc && (e.amount < 0 || vat < 0 || vat > e.amount))
-      add("סכום ההוצאה או המע״מ אינו תקין: המע״מ חייב להיות בין אפס לסכום ההוצאה. זיכוי ספק דורש טיפול נפרד לפני הייצוא.");
+      add("expense_amount_invalid", "סכום ההוצאה או המע״מ אינו תקין: המע״מ חייב להיות בין אפס לסכום ההוצאה. זיכוי ספק דורש טיפול נפרד לפני הייצוא.");
     if (isDoc && ((net < 0 && vat > 0) || (net > 0 && vat < 0) || (net === 0 && vat !== 0)))
-      add("סימני הסכום והמע״מ אינם תואמים. בדוק את נתוני החשבונית או הזיכוי.");
+      add("sign_mismatch", "סימני הסכום והמע״מ אינם תואמים. בדוק את נתוני החשבונית או הזיכוי.");
     if (isDoc && ((d.type === "credit_note" && (net > 0 || vat > 0)) || (d.type !== "credit_note" && (net < 0 || vat < 0))))
-      add("סימן הסכום אינו תואם את סוג המסמך. זיכוי חייב לכלול סכומים שליליים וחשבונית רגילה סכומים חיוביים.");
-    if (isDoc && d.zeroRated && vat !== 0) add("המסמך סומן בשיעור אפס אך כולל מע״מ. בדוק את הסיווג והסכומים לפני הייצוא.");
+      add("type_sign_mismatch", "סימן הסכום אינו תואם את סוג המסמך. זיכוי חייב לכלול סכומים שליליים וחשבונית רגילה סכומים חיוביים.");
+    if (isDoc && d.zeroRated && vat !== 0) add("zero_rated_with_vat", "המסמך סומן בשיעור אפס אך כולל מע״מ. בדוק את הסיווג והסכומים לפני הייצוא.");
     if (isDoc && d.currency && d.currency !== "ILS" && (!Number.isFinite(d.subtotalIls) || !Number.isFinite(d.vatIls)))
-      add("במסמך במטבע חוץ חסרים סכומי שקל שמורים. השלם את ההמרה לשקלים לפני הדיווח.");
+      add("foreign_currency_missing_ils", "במסמך במטבע חוץ חסרים סכומי שקל שמורים. השלם את ההמרה לשקלים לפני הדיווח.");
     if (!isDoc && vat === 0) return;
     const id = String((isDoc ? d.clientTaxId : e.supplierTaxId) ?? "").trim();
-    if (id && !sourceVatIdForPcn(id)) add("מספר העוסק אינו תקין: הוא כולל תווים שאינם ספרות, יותר מ-9 ספרות, או שספרת הביקורת שגויה. בדוק מול החשבונית ותקן את המספר.");
+    if (id && !sourceVatIdForPcn(id)) add(isDoc ? "customer_number_invalid" : "supplier_number_invalid", "מספר העוסק אינו תקין: הוא כולל תווים שאינם ספרות, יותר מ-9 ספרות, או שספרת הביקורת שגויה. בדוק מול החשבונית ותקן את המספר.");
     const reference = isDoc ? String(d.number) : referenceDigits(e.reference);
     if ((isDoc || e.reference) && (!/^\d{1,9}$/.test(reference) || Number(reference) === 0))
-      add("מספר החשבונית חייב להיות מספר חיובי של עד 9 ספרות בשדה הדיווח. בדוק את האסמכתא; לא ניתן לקצר אותה אוטומטית.");
+      add("reference_invalid", "מספר החשבונית חייב להיות מספר חיובי של עד 9 ספרות בשדה הדיווח. בדוק את האסמכתא; לא ניתן לקצר אותה אוטומטית.");
     if (!isDoc && (String(e.reference ?? "").match(/\d+/g)?.length ?? 0) > 1)
-      add("האסמכתא כוללת כמה קבוצות ספרות. ודא שמספר החשבונית לדיווח הוא קבוצת הספרות האחרונה, או תקן את האסמכתא.", "warning");
+      add("reference_multiple_groups", "האסמכתא כוללת כמה קבוצות ספרות. ודא שמספר החשבונית לדיווח הוא קבוצת הספרות האחרונה, או תקן את האסמכתא.", "warning");
     const allocation = String(row.allocationNumber ?? "").trim();
     if (allocation && (!/^\d{9}$/.test(allocation) || /^0+$/.test(allocation)))
-      add("מספר ההקצאה חייב להיות 9 ספרות ואינו יכול להיות אפסים בלבד. העתק את המספר המקורי ללא קיצור.");
+      add("allocation_invalid", "מספר ההקצאה חייב להיות 9 ספרות ואינו יכול להיות אפסים בלבד. העתק את המספר המקורי ללא קיצור.");
     // Distinct invoice series/types and suppliers may legitimately reuse numbers.
     const key = isDoc ? `document:${d.type}:${d.number}:${d.date.slice(0, 4)}` : `expense:${id}:${String(e.reference)}:${e.date}:${e.amount}:${vat}`;
-    if ((isDoc || (id && reference)) && seen.has(key)) add("נמצאה רשומה נוספת עם אותם פרטי חשבונית. בדוק שלא נכלל כאן דיווח כפול.", "warning");
+    if ((isDoc || (id && reference)) && seen.has(key)) add("possible_duplicate", "נמצאה רשומה נוספת עם אותם פרטי חשבונית. בדוק שלא נכלל כאן דיווח כפול.", "warning");
     seen.add(key);
   };
   documents.filter(d => SALES_TYPES.has(d.type) && d.status !== "draft" && d.status !== "cancelled").forEach(d => check(d, "document"));
@@ -417,6 +463,7 @@ function classifyInputs(
         continue;
       }
       warnings.push({
+        code: allowPetty ? "input_missing_supplier_details" : "refund_input_missing_supplier_details",
         level: "error",
         message: allowPetty
           ? `הוצאה עם מע״מ של ${vat.toLocaleString("he-IL")} ₪ (מעל 300 ₪) חייבת מספר עוסק ומספר חשבונית של הספק. פתח את ההוצאה והשלם את הפרטים.`
@@ -433,6 +480,7 @@ function classifyInputs(
       allocationApplies(e.date, e.amount - (e.vatAmount ?? 0))
     ) {
       warnings.push({
+        code: "supplier_allocation_missing",
         level: "error",
         message: "חשבונית ספק מעל סף חשבונית ישראל בלי מספר הקצאה. בלי המספר מע״מ לא יכיר בתשומה.",
         source: "expense",
@@ -480,26 +528,27 @@ export function buildPcn874(args: BuildPcn874Args): Pcn874Result {
   const periodEnd = isoToYyyymmdd(range.end);
 
   // ── whole-file blockers ──
-  const blockers: string[] = [];
+  const blockers: PcnBlocker[] = [];
+  const block = (code: PcnIssueCode, message: string) => blockers.push({ code, message });
   if (!sourceVatIdForPcn(business.taxId)) {
-    blockers.push("מספר העוסק של העסק בהגדרות חייב להיות 9 ספרות עם ספרת ביקורת תקינה. תקן אותו לפני הדיווח.");
+    block("dealer_number_invalid", "מספר העוסק של העסק בהגדרות חייב להיות 9 ספרות עם ספרת ביקורת תקינה. תקן אותו לפני הדיווח.");
   }
   if (!validPcnDate(range.start) || !validPcnDate(range.end) || range.start > range.end) {
-    blockers.push("תקופת הדיווח אינה תקינה. בחר תאריכי התחלה וסיום תקינים לפי הסדר.");
+    block("period_invalid", "תקופת הדיווח אינה תקינה. בחר תאריכי התחלה וסיום תקינים לפי הסדר.");
   } else {
     const next = new Date(range.end + "T00:00:00Z");
     next.setUTCDate(next.getUTCDate() + 1);
     if (!range.start.endsWith("-01") || next.getUTCDate() !== 1)
-      blockers.push("בחר חודשים מלאים: מהיום הראשון בחודש ועד היום האחרון בחודש הסיום.");
+      block("period_not_whole_months", "בחר חודשים מלאים: מהיום הראשון בחודש ועד היום האחרון בחודש הסיום.");
   }
-  if (!Number.isFinite(generatedOn.getTime())) blockers.push("תאריך הפקת הקובץ אינו תקין.");
-  if (business.businessType === "exempt") blockers.push("עוסק פטור אינו מגיש דוח מע״מ מפורט. בדוק את סוג העסק בהגדרות.");
+  if (!Number.isFinite(generatedOn.getTime())) block("generation_date_invalid", "תאריך הפקת הקובץ אינו תקין.");
+  if (business.businessType === "exempt") block("exempt_business", "עוסק פטור אינו מגיש דוח מע״מ מפורט. בדוק את סוג העסק בהגדרות.");
   const months = monthsInRange(range);
   if (months !== 1 && months !== 2) {
-    blockers.push("קובץ PCN874 מוגש לחודש אחד או לחודשיים. בחר תקופת דיווח חודשית או דו-חודשית.");
+    block("period_length", "קובץ PCN874 מוגש לחודש אחד או לחודשיים. בחר תקופת דיווח חודשית או דו-חודשית.");
   }
   if (range.end >= isoDateInIsrael(generatedOn)) {
-    blockers.push("תקופת הדיווח עוד לא הסתיימה. הקובץ מופק אחרי סוף התקופה, כשכל המסמכים בפנים.");
+    block("period_open", "תקופת הדיווח עוד לא הסתיימה. הקובץ מופק אחרי סוף התקופה, כשכל המסמכים בפנים.");
   }
 
   const transactions: PcnTransaction[] = [];
@@ -556,6 +605,7 @@ export function buildPcn874(args: BuildPcn874Args): Pcn874Result {
 
     if (vat === 0 && sum !== 0) {
       warnings.push({
+        code: "zero_vat_not_zero_rated",
         level: "warning",
         message: "מסמך מס בלי מע״מ שלא סומן כעסקה בשיעור אפס. הוא מדווח כעסקה חייבת; אם זו עסקה פטורה או ייצוא, סמן זאת במסמך.",
         source: "document",
@@ -573,6 +623,7 @@ export function buildPcn874(args: BuildPcn874Args): Pcn874Result {
 
     if (!customerVat) {
       warnings.push({
+        code: "customer_number_missing",
         level: "error",
         message: `עסקה של ${Math.abs(sum).toLocaleString("he-IL")} ₪ לפני מע״מ חייבת מספר עוסק של הלקוח. הוסף את המספר ללקוח ולמסמך, אחרת מע״מ ידחה את הרשומה.`,
         source: "document",
@@ -585,6 +636,7 @@ export function buildPcn874(args: BuildPcn874Args): Pcn874Result {
     // business customer at or above the year's threshold.
     if (!allocation && customerVat && vat > 0 && allocationApplies(d.date, d.subtotalIls ?? d.subtotal)) {
       warnings.push({
+        code: "sale_allocation_missing",
         level: "warning",
         message: "מסמך מס מעל סף חשבונית ישראל בלי מספר הקצאה. קבל מספר הקצאה מעמוד המסמך לפני הדיווח.",
         source: "document",
@@ -655,15 +707,15 @@ export function buildPcn874(args: BuildPcn874Args): Pcn874Result {
 
   for (const [field, value] of Object.entries(header)) {
     if (typeof value === "number" && !withinField(value, ["taxableSalesAmount", "zeroOrExemptSales", "totalVat"].includes(field) ? 11 : 9))
-      blockers.push("סכום או מונה חורג מגודל השדה בקובץ: " + field + ". יש לבדוק את נתוני הדוח.");
+      block("field_overflow", "סכום או מונה חורג מגודל השדה בקובץ: " + field + ". יש לבדוק את נתוני הדוח.");
   }
   for (const t of sorted) {
     if (!withinField(t.invoiceSum, 10) || !withinField(t.totalVat, 9))
-      blockers.push("סכום רשומה חורג מגודל השדה בקובץ. בדוק את הרשומות המרוכזות: " + t.entryType + " " + t.refNumber);
+      block("field_overflow", "סכום רשומה חורג מגודל השדה בקובץ. בדוק את הרשומות המרוכזות: " + t.entryType + " " + t.refNumber);
   }
   const lines = [headerLine(header), ...sorted.map(transactionLine), footerLine(dealerVatId)];
 
-  blockers.push(...validatePcn874Content(lines.join("\r\n") + "\r\n"));
+  for (const problem of validatePcn874Content(lines.join("\r\n") + "\r\n")) block("file_structure", problem);
 
   return {
     filename: pcn874Filename(dealerVatId, reportMonth),
@@ -682,6 +734,16 @@ export function buildPcn874(args: BuildPcn874Args): Pcn874Result {
       netDue: totalVat,
     },
   };
+}
+
+/** The one download gate: no whole-file blocker, no blocking row, something to report. */
+export function pcnCanDownload(result: Pick<Pcn874Result, "blockers" | "warnings" | "transactions">): boolean {
+  return result.blockers.length === 0 && result.transactions.length > 0 && !result.warnings.some((w) => w.level === "error");
+}
+
+/** Distinct codes of everything that blocks the download. The nightly guard counts these. */
+export function pcnBlockingCodes(result: Pick<Pcn874Result, "blockers" | "warnings">): PcnIssueCode[] {
+  return [...new Set([...result.blockers.map((b) => b.code), ...result.warnings.filter((w) => w.level === "error").map((w) => w.code)])];
 }
 
 /**

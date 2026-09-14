@@ -144,7 +144,7 @@ export function VatPeriodReport({ headless = false, business, documents, expense
   // Whole-file blockers (dealer number, period shape, period still open) come
   // first; the byte-level self-check only matters once those are clear.
   const pcnProblems = useMemo(
-    () => [...new Set([...pcn.blockers, ...validatePcn874Content(pcn.content)])],
+    () => [...new Set([...pcn.blockers.map((b) => b.message), ...validatePcn874Content(pcn.content)])],
     [pcn.blockers, pcn.content],
   );
   const pcnErrorCount = pcnProblems.length + pcn.warnings.filter((warning) => warning.level === "error").length;

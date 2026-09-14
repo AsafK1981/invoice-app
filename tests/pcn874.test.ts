@@ -7,6 +7,8 @@ import {
   validatePcn874Content,
   roundShekel,
   signedDigits,
+  pcnCanDownload,
+  pcnBlockingCodes,
 } from "@/lib/ita/pcn874";
 import type { Expense, InvoiceDocument } from "@/lib/types";
 
@@ -288,11 +290,11 @@ describe("PCN874 classification", () => {
 
   it("blocks the file when the period is still open, spans more than two months, or the dealer number is not 9 digits", () => {
     const open = buildPcn874({ business, documents: [], expenses: [], range, generatedOn: new Date("2026-02-20T12:00:00+02:00") });
-    expect(open.blockers.some((b) => b.includes("לא הסתיימה"))).toBe(true);
+    expect(open.blockers.some((b) => b.message.includes("לא הסתיימה"))).toBe(true);
     const year = buildPcn874({ business, documents: [], expenses: [], range: { start: "2026-01-01", end: "2026-12-31" }, generatedOn: new Date("2027-01-05T12:00:00+02:00") });
-    expect(year.blockers.some((b) => b.includes("חודשיים"))).toBe(true);
+    expect(year.blockers.some((b) => b.message.includes("חודשיים"))).toBe(true);
     const badDealer = buildPcn874({ business: { taxId: "1234", businessType: "authorized" }, documents: [], expenses: [], range, generatedOn });
-    expect(badDealer.blockers.some((b) => b.includes("9 ספרות"))).toBe(true);
+    expect(badDealer.blockers.some((b) => b.message.includes("9 ספרות"))).toBe(true);
     expect(build([], []).blockers).toEqual([]);
   });
 
@@ -369,5 +371,32 @@ describe("PCN874 preflight rejects malformed source data", () => {
     const r = build([sale(), doc({ type: "credit_note", subtotal: -100, vat: -18, total: -118 })], [expense(), expense({ supplierTaxId: "512345674" })]);
     expect(r.warnings.some(w => w.message.includes("דיווח כפול"))).toBe(false);
     expect(build([sale(), sale()], []).warnings.some(w => w.message.includes("דיווח כפול"))).toBe(true);
+  });
+});
+
+describe("PCN874 issue codes", () => {
+  it("gives every blocker and warning a stable code", () => {
+    const r = buildPcn874({
+      business: { taxId: "1234", businessType: "authorized" },
+      documents: [doc({ id: "d", clientTaxId: "515555554", allocationNumber: "123456789" })],
+      expenses: [expense({ id: "e", supplierTaxId: undefined, amount: 2360, vatAmount: 360 })],
+      range,
+      generatedOn: new Date("2026-02-20T12:00:00+02:00"),
+    });
+    const blockerCodes = r.blockers.map((b) => b.code);
+    expect(blockerCodes).toEqual(expect.arrayContaining(["dealer_number_invalid", "period_open", "file_structure"]));
+    expect(r.warnings.find((w) => w.sourceId === "d")?.code).toBe("customer_number_invalid");
+    expect(r.warnings.find((w) => w.sourceId === "e")?.code).toBe("input_missing_supplier_details");
+    expect(r.warnings.every((w) => typeof w.code === "string" && w.code.length > 0)).toBe(true);
+    expect(pcnCanDownload(r)).toBe(false);
+    expect(pcnBlockingCodes(r)).toEqual(expect.arrayContaining(["dealer_number_invalid", "customer_number_invalid", "input_missing_supplier_details"]));
+  });
+
+  it("marks notes with their own codes and lets a clean file download", () => {
+    const dup = build([sale(), sale()], []);
+    expect(dup.warnings.map((w) => w.code)).toContain("possible_duplicate");
+    expect(pcnCanDownload(dup)).toBe(true);
+    expect(pcnBlockingCodes(dup)).toEqual([]);
+    expect(build([doc({ subtotal: 12000, vat: 2160, total: 14160 })], []).warnings[0].code).toBe("sale_allocation_missing");
   });
 });
