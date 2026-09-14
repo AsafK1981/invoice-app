@@ -326,7 +326,9 @@ function validateSources(documents: InvoiceDocument[], expenses: Expense[], rang
     if (isDoc && d.currency && d.currency !== "ILS" && (!Number.isFinite(d.subtotalIls) || !Number.isFinite(d.vatIls)))
       add("foreign_currency_missing_ils", "במסמך במטבע חוץ חסרים סכומי שקל שמורים. השלם את ההמרה לשקלים לפני הדיווח.");
     const id =String((isDoc ? d.clientTaxId : e.supplierTaxId) ?? "").trim();
-    if (id && !sourceVatIdForPcn(id)) add(isDoc ? "customer_number_invalid" : "supplier_number_invalid", "מספר העוסק אינו תקין: הוא כולל תווים שאינם ספרות, יותר מ-9 ספרות, או שספרת הביקורת שגויה. בדוק מול החשבונית ותקן את המספר.");
+    // A zero-rated export to a foreign customer carries a foreign id; the
+    // builder reports it as Y / 999999999, so that id cannot break the file.
+    if (id && !sourceVatIdForPcn(id) && !(isDoc && d.zeroRated)) add(isDoc ? "customer_number_invalid" : "supplier_number_invalid", "מספר העוסק אינו תקין: הוא כולל תווים שאינם ספרות, יותר מ-9 ספרות, או שספרת הביקורת שגויה. בדוק מול החשבונית ותקן את המספר.");
     const reference = isDoc ? String(d.number) : referenceDigits(e.reference);
     // A reference with no digits at all is not a malformed number:
     // classifyInputs folds it into petty cash when that is allowed and

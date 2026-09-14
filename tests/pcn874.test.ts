@@ -487,3 +487,17 @@ describe("PCN874 silent repairs (Layer 2)", () => {
     expect(r.transactions.find((t) => t.entryType === "T")?.allocationNumber).toBe("111222333");
   });
 });
+
+describe("zero-rated exports with a foreign customer number", () => {
+  it("does not block a zero-rated export whose customer number is not Israeli, and writes Y", () => {
+    const r = build([doc({ id: "exp", zeroRated: true, subtotal: 7000, vat: 0, total: 7000, clientTaxId: "DE123456789" })], []);
+    expect(r.warnings.filter((w) => w.sourceId === "exp" && w.level === "error")).toEqual([]);
+    expect(r.transactions[0]).toMatchObject({ entryType: "Y", vatId: "999999999" });
+    expect(pcnCanDownload(r)).toBe(true);
+  });
+
+  it("still blocks the same invalid number on a document that is not zero-rated", () => {
+    const r = build([doc({ id: "dom", clientTaxId: "DE123456789", allocationNumber: "123456789" })], []);
+    expect(r.warnings.some((w) => w.sourceId === "dom" && w.code === "customer_number_invalid" && w.level === "error")).toBe(true);
+  });
+});
