@@ -1,7 +1,13 @@
 import { describe, it, expect } from "vitest";
-import { countAffectedBusinesses, formatGuardPush, formatGuardTable, newOrGrownCodes } from "@/lib/filing-guard";
+import { countAffectedBusinesses, formatGuardPush, formatGuardTable, newOrGrownCodes, prefixCodes } from "@/lib/filing-guard";
 
 describe("filing guard", () => {
+  it("keeps report families apart with a prefix and a generic push header", () => {
+    expect(prefixCodes("uniform", ["journal_unbalanced", "record_invalid"])).toEqual(["uniform:journal_unbalanced", "uniform:record_invalid"]);
+    const text = formatGuardPush([{ code: "uniform:journal_unbalanced", before: 0, after: 1 }], "יולי-אוגוסט 2026, מבנה אחיד 2025");
+    expect(text.split("\n")[0]).toContain("בדיקות דוחות ההגשה");
+    expect(text).toContain("uniform:journal_unbalanced: 0 -> 1");
+  });
   it("counts each code once per business", () => {
     expect(countAffectedBusinesses([["a", "b", "a"], ["a"], []])).toEqual({ a: 2, b: 1 });
   });

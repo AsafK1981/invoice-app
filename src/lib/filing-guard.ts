@@ -31,7 +31,16 @@ export function formatGuardTable(counts: GuardCounts): string {
 
 export function formatGuardPush(changes: readonly GuardChange[], periodLabel: string): string {
   return [
-    `דיווח מפורט PCN874, ${periodLabel}: בדיקה חוסמת חדשה או מתרחבת`,
+    `בדיקות דוחות ההגשה, ${periodLabel}: בדיקה חוסמת חדשה או מתרחבת`,
     ...changes.map((c) => `${c.code}: ${c.before} -> ${c.after} עסקים`),
   ].join("\n");
+}
+
+/**
+ * Keeps report families apart in one state file. PCN874 codes stay bare (the
+ * existing state keeps comparing); the others are "invoices:<code>" and
+ * "uniform:<code>".
+ */
+export function prefixCodes(prefix: string, codes: readonly string[]): string[] {
+  return codes.map((code) => `${prefix}:${code}`);
 }
