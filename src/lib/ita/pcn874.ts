@@ -310,6 +310,10 @@ function validateSources(documents: InvoiceDocument[], expenses: Expense[], rang
     if (row.date < range.start || row.date > range.end) return;
     const net = isDoc ? (d.subtotalIls ?? d.subtotal) : e.amount - (e.vatAmount ?? 0);
     const vat = isDoc ? (d.vatIls ?? d.vat) : (e.vatAmount ?? 0);
+    // An expense without VAT never enters the file (a supplier refund with a
+    // negative amount included), so nothing about its amounts can make the
+    // file wrong. Skip it before the amount and sign checks.
+    if (!isDoc && vat === 0) return;
     if (!withinField(net, 10) || !withinField(vat, 9) || !Number.isFinite(isDoc ? d.total : e.amount))
       add("amount_invalid", "סכום חסר, לא מספרי או גדול מדי לשדות קובץ הדיווח. בדוק את הסכום לפני מע״מ ואת המע״מ ברשומה.");
     if (!isDoc && (e.amount < 0 || vat < 0 || vat > e.amount))
@@ -321,15 +325,18 @@ function validateSources(documents: InvoiceDocument[], expenses: Expense[], rang
     if (isDoc && d.zeroRated && vat !== 0) add("zero_rated_with_vat", "המסמך סומן בשיעור אפס אך כולל מע״מ. בדוק את הסיווג והסכומים לפני הייצוא.");
     if (isDoc && d.currency && d.currency !== "ILS" && (!Number.isFinite(d.subtotalIls) || !Number.isFinite(d.vatIls)))
       add("foreign_currency_missing_ils", "במסמך במטבע חוץ חסרים סכומי שקל שמורים. השלם את ההמרה לשקלים לפני הדיווח.");
-    if (!isDoc && vat === 0) return;
-    const id = String((isDoc ? d.clientTaxId : e.supplierTaxId) ?? "").trim();
+    const id =String((isDoc ? d.clientTaxId : e.supplierTaxId) ?? "").trim();
     if (id && !sourceVatIdForPcn(id)) add(isDoc ? "customer_number_invalid" : "supplier_number_invalid", "מספר העוסק אינו תקין: הוא כולל תווים שאינם ספרות, יותר מ-9 ספרות, או שספרת הביקורת שגויה. בדוק מול החשבונית ותקן את המספר.");
     const reference = isDoc ? String(d.number) : referenceDigits(e.reference);
-    if ((isDoc || e.reference) && (!/^\d{1,9}$/.test(reference) || Number(reference) === 0))
+    // A reference with no digits at all is not a malformed number:
+    // classifyInputs folds it into petty cash when that is allowed and
+    // reports it (refund period, VAT of 300 and up) when it is not.
+    if ((isDoc || reference !== "") && (!/^\d{1,9}$/.test(reference) || Number(reference) === 0))
       add("reference_invalid", "מספר החשבונית חייב להיות מספר חיובי של עד 9 ספרות בשדה הדיווח. בדוק את האסמכתא; לא ניתן לקצר אותה אוטומטית.");
     if (!isDoc && (String(e.reference ?? "").match(/\d+/g)?.length ?? 0) > 1)
       add("reference_multiple_groups", "האסמכתא כוללת כמה קבוצות ספרות. ודא שמספר החשבונית לדיווח הוא קבוצת הספרות האחרונה, או תקן את האסמכתא.", "warning");
-    const allocation = String(row.allocationNumber ?? "").trim();
+    // Separators and bidi marks go first; the digit count must then be exactly 9.
+    const allocation = String(row.allocationNumber ?? "").replace(/[\s.\-​-‏‪-‮⁦-⁩﻿]/g, "");
     if (allocation && (!/^\d{9}$/.test(allocation) || /^0+$/.test(allocation)))
       add("allocation_invalid", "מספר ההקצאה חייב להיות 9 ספרות ואינו יכול להיות אפסים בלבד. העתק את המספר המקורי ללא קיצור.");
     // Distinct invoice series/types and suppliers may legitimately reuse numbers.

@@ -432,3 +432,42 @@ describe("PCN874 builder and preflight share one strict normalizer", () => {
     expect(sLines(r.content).some((l) => l.slice(1, 10) === "515555555")).toBe(false);
   });
 });
+
+describe("PCN874 silent repairs (Layer 2)", () => {
+  it("skips an expense without VAT before any amount check, a supplier refund included", () => {
+    const r = build([sale()], [expense({ id: "refund", amount: -500, vatAmount: 0, supplierTaxId: "ABC", reference: "x" })]);
+    expect(r.warnings.filter((w) => w.sourceId === "refund")).toEqual([]);
+    expect(r.transactions.some((t) => t.sourceIds.includes("refund"))).toBe(false);
+    expect(pcnCanDownload(r)).toBe(true);
+  });
+
+  it("folds a digitless reference with VAT under 300 into petty cash in a non-refund period", () => {
+    const r = build([sale()], [expense({ id: "k", reference: "חשבונית", amount: 118, vatAmount: 18 })]);
+    expect(r.warnings.filter((w) => w.sourceId === "k")).toEqual([]);
+    expect(r.transactions.find((t) => t.entryType === "K")?.sourceIds).toEqual(["k"]);
+    expect(pcnCanDownload(r)).toBe(true);
+  });
+
+  it("still blocks a digitless reference in a refund period, with the refund code only", () => {
+    const r = build(
+      [doc({ subtotal: 100, vat: 18, total: 118, allocationNumber: "123456789" })],
+      [expense({ id: "big", amount: 5900, vatAmount: 900 }), expense({ id: "k", reference: "חשבונית", amount: 118, vatAmount: 18 })],
+    );
+    expect(r.refundPeriod).toBe(true);
+    const codes = r.warnings.filter((w) => w.sourceId === "k").map((w) => w.code);
+    expect(codes).toContain("refund_input_missing_supplier_details");
+    expect(codes).not.toContain("reference_invalid");
+  });
+
+  it("still blocks a broken date and a 10-digit allocation number", () => {
+    expect(build([sale()], [expense({ id: "d", date: "2026-02-30" })]).warnings.find((w) => w.sourceId === "d")?.code).toBe("date_invalid");
+    const r = build([sale()], [expense({ id: "a", allocationNumber: "1234567890" })]);
+    expect(r.warnings.some((w) => w.sourceId === "a" && w.code === "allocation_invalid" && w.level === "error")).toBe(true);
+  });
+
+  it("accepts an allocation number with separators or bidi marks when exactly 9 digits remain", () => {
+    const r = build([sale()], [expense({ id: "a", allocationNumber: "‏111-222-333‎" })]);
+    expect(r.warnings.filter((w) => w.sourceId === "a")).toEqual([]);
+    expect(r.transactions.find((t) => t.entryType === "T")?.allocationNumber).toBe("111222333");
+  });
+});
