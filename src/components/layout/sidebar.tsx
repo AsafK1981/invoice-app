@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useDrawerFocus } from "@/lib/use-drawer-focus";
+import { supportWhatsappHref } from "@/lib/support-link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
@@ -249,10 +250,8 @@ export function Sidebar() {
             user's real WhatsApp; if you fork this app, change it. */}
         <a
           href={(() => {
-            const PHONE = "972549000684"; // +972 549000684 (international format)
             const where = typeof window !== "undefined" ? window.location.href : "";
-            const text = `היי אסף, מצאתי משהו ב-חשבונית ידידותית:\n\n[תאר כאן את הבעיה]\n\nבעמוד: ${where}`;
-            return `https://wa.me/${PHONE}?text=${encodeURIComponent(text)}`;
+            return supportWhatsappHref(`היי אסף, מצאתי משהו ב-חשבונית ידידותית:\n\n[תאר כאן את הבעיה]\n\nבעמוד: ${where}`);
           })()}
           target="_blank"
           rel="noopener noreferrer"
