@@ -4,6 +4,7 @@ import { isAdminEmail } from "@/lib/admin";
 import { logAdminAccess } from "@/lib/admin-access-log";
 import { getAdminChartDay, type AdminDailyPoint } from "@/lib/admin-chart";
 import { countsForTurnover } from "@/lib/ita/income-tax-advances";
+import { isInternalBusinessId } from "@/lib/internal-accounts";
 import type { InvoiceDocument } from "@/lib/types";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -214,13 +215,16 @@ export async function GET(req: NextRequest) {
         last_sign_in_at: u.last_sign_in_at,
       }));
 
-    // Businesses owned by internal accounts (the Lynkeus visual-QA user writes
-    // real documents twice a week). Their turnover is synthetic.
+    // Our own businesses: the explicit list (founder, father's tax-testing
+    // business, demo, QA) plus any business owned by a `.internal` login.
+    // Their turnover is not customer usage.
     const internalUserIds = new Set(
       allUsers.filter((u) => u.email?.endsWith(".internal")).map((u) => u.id),
     );
     const internalBusinessIds = new Set(
-      businessesResult.filter((b) => internalUserIds.has(b.user_id)).map((b) => b.id),
+      businessesResult
+        .filter((b) => internalUserIds.has(b.user_id) || isInternalBusinessId(b.id))
+        .map((b) => b.id),
     );
 
     // Cross-tenant turnover, split into what was created in the app and what

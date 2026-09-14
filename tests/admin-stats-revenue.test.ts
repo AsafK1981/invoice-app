@@ -167,6 +167,18 @@ describe("admin turnover", () => {
     expect(await inApp()).toBe(1000);
   });
 
+  it("excludes our own businesses on the internal list even without a .internal login", async () => {
+    // The father's tax-testing business is owned by an ordinary email address;
+    // only the explicit id list keeps its turnover off the card.
+    const fatherBiz = "eda11499-0000-4000-8000-000000000000";
+    state.businesses.push({ id: fatherBiz, user_id: "real-user" });
+    state.paidDocs = [
+      doc({ type: "receipt", subtotal: 1000 }),
+      doc({ type: "tax_invoice_receipt", subtotal: 136853, business_id: fatherBiz }),
+    ];
+    expect(await inApp()).toBe(1000);
+  });
+
   it("prefers subtotal_ils so foreign currency is not summed at face value", async () => {
     state.paidDocs = [doc({ type: "receipt", subtotal: 100, subtotal_ils: 370 })];
     expect(await inApp()).toBe(370);
