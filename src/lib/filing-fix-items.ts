@@ -94,6 +94,16 @@ export function documentRepairControl(doc: InvoiceDocument | undefined, document
   return { kind: "credit_note", documentId };
 }
 
+/**
+ * The PCN874 button's state. "updating" wins over everything: while an inline
+ * save is in flight or the rows are being refetched, the file on screen is the
+ * one from BEFORE the fix, so it is neither downloadable nor a verdict.
+ */
+export function filingDownloadGate(state: { fileReady: boolean; refreshing: boolean; savesInFlight: number }): "ready" | "updating" | "blocked" {
+  if (state.refreshing || state.savesInFlight > 0) return "updating";
+  return state.fileReady ? "ready" : "blocked";
+}
+
 export function buildFilingFixModel(
   result: Pick<Pcn874Result, "blockers" | "warnings">,
   data: { business: { taxId: string }; documents: readonly InvoiceDocument[]; expenses: readonly Expense[] },

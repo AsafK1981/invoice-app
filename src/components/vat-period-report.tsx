@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Printer,
@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { DownloadPdfButton } from "@/components/download-pdf-button";
 import { FilingFixPanel } from "@/components/filing-fix-panel";
-import { buildFilingFixModel } from "@/lib/filing-fix-items";
+import { buildFilingFixModel, filingDownloadGate } from "@/lib/filing-fix-items";
 import { formatCurrencyWhole, formatDate } from "@/lib/format";
 import type { Business, InvoiceDocument, Expense } from "@/lib/types";
 import { exportVatPeriodExpenses } from "@/lib/csv-export";
@@ -131,7 +131,11 @@ export function VatPeriodReport({ headless = false, business, documents, expense
     () => buildFilingFixModel(pcn, { business, documents, expenses }),
     [pcn, business, documents, expenses],
   );
-  const canDownload = pcnCanDownload(pcn) && !refreshing;
+  // Inline saves in flight on the panel: the file on screen predates them.
+  const [savesInFlight, setSavesInFlight] = useState(0);
+  const trackSave = useCallback((delta: 1 | -1) => setSavesInFlight((count) => Math.max(0, count + delta)), []);
+  const downloadGate = filingDownloadGate({ fileReady: pcnCanDownload(pcn), refreshing, savesInFlight });
+  const canDownload = downloadGate === "ready";
   function changePeriod(next: PeriodMode) {
     setMode(next);
     onPeriodChange?.(next);
@@ -442,6 +446,7 @@ export function VatPeriodReport({ headless = false, business, documents, expense
           businessId={business.id}
           returnTo={returnTo}
           onUseFilingPeriod={() => changePeriod(DEFAULT_VAT_PERIOD_MODE)}
+          onSaveInFlight={trackSave}
         />
         <p className="mt-2 text-xs text-stone-600">הבדיקה אינה אישור קליטה של רשות המסים. הרשאות דיווח, מצב התיק ודיווחים שכבר הוגשו נבדקים באתר הרשות.</p>
 
@@ -482,7 +487,7 @@ export function VatPeriodReport({ headless = false, business, documents, expense
                 className="no-print inline-flex items-center justify-center gap-2 min-h-[44px] px-4 rounded-xl text-sm font-semibold text-white bg-gradient-to-l from-orange-500 to-orange-700 hover:shadow-md hover:shadow-orange-200 disabled:from-stone-300 disabled:to-stone-300 disabled:shadow-none disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <FileDown className="w-4 h-4" aria-hidden="true" />
-                {canDownload ? "הורד קובץ PCN874" : refreshing ? "מעדכן את הבדיקה..." : fixModel.periodOnly ? "בחר תקופת דיווח כדי להוריד" : "יש להשלים את מה שנשאר לפני ההורדה"}
+                {canDownload ? "הורד קובץ PCN874" : downloadGate === "updating" ? "מעדכן את הבדיקה..." : fixModel.periodOnly ? "בחר תקופת דיווח כדי להוריד" : "יש להשלים את מה שנשאר לפני ההורדה"}
               </button>
               <a
                 href="https://www.gov.il/he/service/detailed-vat-reporting"

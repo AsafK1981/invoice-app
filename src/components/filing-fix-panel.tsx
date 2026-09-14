@@ -45,6 +45,8 @@ interface Context {
   returnTo: string;
   /** Switches the report to the last ended bi-monthly period. */
   onUseFilingPeriod?: () => void;
+  /** Called with +1 when an inline save starts and -1 when it ends, so the report holds the download meanwhile. */
+  onSaveInFlight?: (delta: 1 | -1) => void;
 }
 
 interface Props extends Context {
@@ -132,11 +134,12 @@ function FixItemCard({ item, context }: { item: FilingFixItem; context: Context 
 }
 
 function FixControlView({ control, context }: { control: FixControl; context: Context }) {
-  const { businessId, returnTo, onUseFilingPeriod } = context;
+  const { businessId, returnTo, onUseFilingPeriod, onSaveInFlight } = context;
   switch (control.kind) {
     case "supplier_tax_id":
       return (
         <InlineSave
+          onSaveInFlight={onSaveInFlight}
           label="מספר עוסק של הספק"
           initial={control.current}
           placeholder="123456789"
@@ -149,6 +152,7 @@ function FixControlView({ control, context }: { control: FixControl; context: Co
     case "supplier_reference":
       return (
         <InlineSave
+          onSaveInFlight={onSaveInFlight}
           label="מספר חשבונית הספק"
           initial={control.current}
           placeholder="1042"
@@ -163,6 +167,7 @@ function FixControlView({ control, context }: { control: FixControl; context: Co
     case "expense_allocation":
       return (
         <InlineSave
+          onSaveInFlight={onSaveInFlight}
           label="מספר הקצאה"
           initial={control.current}
           placeholder="123456789"
@@ -175,10 +180,11 @@ function FixControlView({ control, context }: { control: FixControl; context: Co
         />
       );
     case "expense_date":
-      return <DateSave initial={control.current} onSave={(value) => updateExpenseFilingFields([control.expenseId], { date: value })} />;
+      return <DateSave initial={control.current} onSaveInFlight={onSaveInFlight} onSave={(value) => updateExpenseFilingFields([control.expenseId], { date: value })} />;
     case "business_tax_id":
       return (
         <InlineSave
+          onSaveInFlight={onSaveInFlight}
           label="מספר העוסק של העסק"
           initial={control.current}
           placeholder="123456789"
@@ -191,6 +197,7 @@ function FixControlView({ control, context }: { control: FixControl; context: Co
     case "customer_tax_id":
       return (
         <InlineSave
+          onSaveInFlight={onSaveInFlight}
           label="מספר עוסק של הלקוח"
           initial={control.current}
           placeholder="123456789"
@@ -241,18 +248,20 @@ function FixControlView({ control, context }: { control: FixControl; context: Co
   }
 }
 
-function useInlineSave() {
+function useInlineSave(onSaveInFlight?: (delta: 1 | -1) => void) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   async function run(task: () => Promise<void>) {
     setSaving(true);
     setError(null);
+    onSaveInFlight?.(1);
     try {
       await task();
     } catch (err) {
       setError(err instanceof Error ? err.message : "השמירה נכשלה. נסו שוב.");
     } finally {
       setSaving(false);
+      onSaveInFlight?.(-1);
     }
   }
   return { saving, error, setError, run };
@@ -280,6 +289,7 @@ function InlineSave({
   showLeadingZeroHint = false,
   prepare,
   clearable,
+  onSaveInFlight,
   onSave,
 }: {
   label: string;
@@ -292,10 +302,11 @@ function InlineSave({
   prepare: (raw: string) => Prepared;
   /** A secondary "clear" action, offered only while the record still holds a number. */
   clearable?: { label: string; note: string };
+  onSaveInFlight?: (delta: 1 | -1) => void;
   onSave: (value: string) => Promise<void>;
 }) {
   const [value, setValue] = useState(initial);
-  const { saving, error, setError, run } = useInlineSave();
+  const { saving, error, setError, run } = useInlineSave(onSaveInFlight);
   function save() {
     const next = prepare(value);
     if (!next.ok) {
@@ -347,9 +358,9 @@ function InlineSave({
   );
 }
 
-function DateSave({ initial, onSave }: { initial: string; onSave: (value: string) => Promise<void> }) {
+function DateSave({ initial, onSave, onSaveInFlight }: { initial: string; onSave: (value: string) => Promise<void>; onSaveInFlight?: (delta: 1 | -1) => void }) {
   const [value, setValue] = useState(validPcnDate(initial) ? initial : "");
-  const { saving, error, setError, run } = useInlineSave();
+  const { saving, error, setError, run } = useInlineSave(onSaveInFlight);
   function save() {
     if (!validPcnDate(value)) {
       setError("הזן תאריך מלא ותקין.");
