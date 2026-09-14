@@ -5,6 +5,7 @@ import { createClient } from "@supabase/supabase-js";
 import { CANONICAL_ORIGIN } from "@/lib/public-url";
 import { checkRate } from "@/lib/rate-limit";
 import { launchPdfBrowser, safePdfFilename } from "@/lib/pdf-browser";
+import { fitPageWidthForPdf } from "@/lib/report-pdf-fit";
 
 /**
  * POST /api/reports/pdf  { html, filename?, landscape? }  ->  application/pdf
@@ -281,6 +282,14 @@ export async function POST(req: Request) {
       // A font or image that never settles must not cost the user the PDF;
       // print whatever has rendered by now.
       console.warn("[report-pdf] setContent did not settle, printing anyway", e);
+    }
+
+    // Wide tables sit in horizontal scroll boxes that print as a hard clip:
+    // zoom the page out until the whole table fits the paper width.
+    try {
+      await fitPageWidthForPdf(page, { landscape });
+    } catch (e) {
+      console.warn("[report-pdf] width fit failed, printing unfitted", e);
     }
 
     const pdf = await page.pdf({
