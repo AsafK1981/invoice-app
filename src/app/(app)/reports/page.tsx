@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
+  CalendarCheck,
   TrendingUp, TrendingDown, Wallet, Clock, Download, ChevronDown,
   FileText, ClipboardList, Calculator, BookOpen, FileSpreadsheet, Landmark, FileArchive,
   SlidersHorizontal, Receipt, ArrowLeft, Minus, Printer, Percent, ListOrdered,
@@ -243,6 +244,10 @@ export default function ReportsPage() {
     {
       icon: ClipboardList, title: "עזר לטופס 1301", href: `/reports/form-1301/${exportYear}`,
       desc: "הערכים מוכנים להעתקה ישירה לטופס הדוח השנתי באתר רשות המסים.",
+    },
+    {
+      icon: CalendarCheck, title: "דוח תקופתי לרשות המסים", href: "/reports/periodic",
+      desc: "ההכנסות וההוצאות של החודש או החודשיים ומה להקליד בדיווח התקופתי, מע״מ ומקדמות מס הכנסה, בדוח אחד.",
     },
     ...(filesVat
       ? [{

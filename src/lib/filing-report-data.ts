@@ -6,7 +6,7 @@ import { mapProfitLossDocument, mapProfitLossExpense } from "./profit-loss-data"
 import type { InvoiceDocument, Expense } from "./types";
 
 const columns = {
-  documents: "id,date,type,status,number,client_id,client_name,client_tax_id,subtotal,vat,total,currency,exchange_rate,subtotal_ils,vat_ils,total_ils,converted_to_id,allocation_number,zero_rated,rounding",
+  documents: "id,date,type,status,number,client_id,client_name,client_tax_id,subtotal,vat,total,currency,exchange_rate,subtotal_ils,vat_ils,total_ils,converted_to_id,allocation_number,zero_rated,rounding,withholding_amount",
   expenses: "id,date,category,supplier,description,amount,vat_amount,is_equipment,supplier_tax_id,reference,allocation_number",
 };
 const numeric = (value: unknown) => typeof value === "number" ? value : typeof value === "string" && value.trim() ? Number(value) : NaN;
@@ -19,6 +19,8 @@ export function mapFilingDocument(row: Record<string, unknown>): InvoiceDocument
     subtotal: numeric(row.subtotal), subtotalIls: row.subtotal_ils == null ? undefined : numeric(row.subtotal_ils),
     allocationNumber: text(row.allocation_number), zeroRated: row.zero_rated === true,
     rounding: row.rounding == null ? 0 : numeric(row.rounding),
+    // מקדמות offset withholding at source; the same column the document store maps.
+    withholdingAmount: row.withholding_amount == null ? undefined : numeric(row.withholding_amount),
   };
 }
 export function mapFilingExpense(row: Record<string, unknown>): Expense {
