@@ -57,11 +57,8 @@
 
 import type { Business, Expense, InvoiceDocument } from "../types";
 import { formatDate } from "../format";
-import { isValidIsraeliIdNumber } from "../israeli-id";
-import {
-  allocationRequiredThreshold,
-  normalizeCustomerVatNumber,
-} from "../tax-authority";
+import { isValidIsraeliIdNumber, normalizeBusinessNumber } from "../israeli-id";
+import { allocationRequiredThreshold } from "../tax-authority";
 
 export type PcnEntryType = "S" | "L" | "M" | "Y" | "I" | "T" | "K" | "R" | "P" | "H" | "C";
 
@@ -283,12 +280,7 @@ export function validPcnVatId(value: string): boolean {
  * null when it holds anything else or fails the checksum.
  */
 export function sourceVatIdForPcn(value: unknown): string | null {
-  const raw = String(value ?? "");
-  if (!/^[\d\s.\-‎‏‪-‮⁦-⁩﻿]*$/.test(raw)) return null;
-  const digits = raw.replace(/\D/g, "");
-  if (digits.length === 0 || digits.length > 9) return null;
-  const padded = digits.padStart(9, "0");
-  return validPcnVatId(padded) ? padded : null;
+  return normalizeBusinessNumber(value).value;
 }
 
 export function validPcnDate(value: string): boolean {
@@ -451,7 +443,9 @@ function classifyInputs(
     if (e.isEquipment) equipmentInputsVat += vat;
     else otherInputsVat += vat;
 
-    const supplierVat = normalizeCustomerVatNumber(e.supplierTaxId);
+    // Same strict decision as the preflight: a number it refuses is never
+    // stripped or truncated into a different, valid-looking one.
+    const supplierVat = sourceVatIdForPcn(e.supplierTaxId) ?? "";
     const reference = referenceDigits(e.reference);
     const allocation = digitsOnly(e.allocationNumber);
 
@@ -577,7 +571,7 @@ export function buildPcn874(args: BuildPcn874Args): Pcn874Result {
     // stored negative already, so the sign carries through.
     const sum = roundShekel(d.subtotalIls ?? d.subtotal);
     const vat = roundShekel(d.vatIls ?? d.vat);
-    const customerVat = normalizeCustomerVatNumber(d.clientTaxId);
+    const customerVat = sourceVatIdForPcn(d.clientTaxId) ?? "";
     const allocation = digitsOnly(d.allocationNumber);
     const allocationField = allocation ? fixedDigits(allocation, 9) : "000000000";
 

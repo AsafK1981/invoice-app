@@ -400,3 +400,35 @@ describe("PCN874 issue codes", () => {
     expect(build([doc({ subtotal: 12000, vat: 2160, total: 14160 })], []).warnings[0].code).toBe("sale_allocation_missing");
   });
 });
+
+describe("PCN874 builder and preflight share one strict normalizer", () => {
+  const tLines = (content: string) => content.split("\r\n").filter((l) => l[0] === "T");
+  const sLines = (content: string) => content.split("\r\n").filter((l) => l[0] === "S");
+
+  it.each(["513333336", "13333331", "51-333333-6", "513.333.336", " 513 333 336 ", "‏513333336‎", "⁦513333336⁩"])(
+    "a supplier number typed as %j builds, pads and passes",
+    (supplierTaxId) => {
+      const r = build([sale()], [expense({ id: "ok", supplierTaxId })]);
+      const expected = supplierTaxId.replace(/\D/g, "").padStart(9, "0");
+      expect(r.warnings.filter((w) => w.sourceId === "ok" && w.level === "error")).toEqual([]);
+      expect(tLines(r.content).map((l) => l.slice(1, 10))).toEqual([expected]);
+      expect(validatePcn874Content(r.content)).toEqual([]);
+    },
+  );
+
+  it.each(["A513333336", "513333336X", "1513333336", "513333337"])(
+    "supplier number %j blocks and is never written as a stripped or truncated valid number",
+    (supplierTaxId) => {
+      const r = build([sale()], [expense({ id: "bad", supplierTaxId })]);
+      expect(r.warnings.some((w) => w.sourceId === "bad" && w.level === "error")).toBe(true);
+      expect(tLines(r.content).some((l) => l.slice(1, 10) === "513333336")).toBe(false);
+      expect(pcnCanDownload(r)).toBe(false);
+    },
+  );
+
+  it.each(["A515555555", "1515555555"])("customer number %j is never written as 515555555", (clientTaxId) => {
+    const r = build([doc({ id: "bad", clientTaxId, allocationNumber: "123456789" })], []);
+    expect(r.warnings.some((w) => w.sourceId === "bad" && w.level === "error")).toBe(true);
+    expect(sLines(r.content).some((l) => l.slice(1, 10) === "515555555")).toBe(false);
+  });
+});
