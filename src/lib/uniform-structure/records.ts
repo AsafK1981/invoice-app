@@ -25,6 +25,12 @@ import {
   padStr,
 } from "./encode";
 import type { Business, Client, DocumentItem, Expense, InvoiceDocument, PaymentMethod } from "../types";
+import { normalizeBusinessNumber } from "../israeli-id";
+import { uniformAmounts } from "./amounts";
+import { uniformCustomerVat } from "./customer-vat";
+
+/** 1217 / 1218 are "filled only in an export invoice" (horaot_131_raw.txt 2586-2606). */
+const INVOICE_TYPES = new Set<InvoiceDocument["type"]>(["tax_invoice", "tax_invoice_receipt", "credit_note"]);
 
 export const DOC_TYPE_CODE: Record<InvoiceDocument["type"], string> = {
   // 100 = order/proposal family in the uniform structure (מבנה אחיד). Both
@@ -100,9 +106,11 @@ export function buildA000(meta: FileMeta, counts: RecordCounts): string {
     "1", // 1011: software type: 1=single-year, 2=multi-year, pos 134
     padStr("C:\\OPENFRMT", 50), // 1012: backup path (50), pos 135-184
     bookkeepingType, // 1013: bookkeeping type, pos 185
-    "0", // 1014: balance required, pos 186 (0=N/A for single-entry)
-    padStr("", 9), // 1015: company registration # (9), pos 187-195 (optional)
-    padStr("", 9), // 1016: deductions file # (9), pos 196-204 (optional)
+    // 1014: 1 = balance per transaction, mandatory in double-entry books
+    // (horaot_131_raw.txt 1930-1938). Every B100 transaction balances on its own.
+    bookkeepingType === "2" ? "1" : "0", // 1014: balance required, pos 186
+    padNum(0, 9), // 1015: company registration # (9), pos 187-195 (optional; empty numeric = zeros)
+    padNum(0, 9), // 1016: deductions file # (9), pos 196-204 (optional)
     padStr("", 10), // 1017: future field (10), pos 205-214
     padStr(meta.business.name, 50), // 1018: business name (50), pos 215-264
     padStr(meta.business.address || "", 50), // 1019: street (50), pos 265-314
@@ -178,6 +186,10 @@ export function buildC100(args: {
   const { recordNum, meta, doc, client, linkField } = args;
   const docType = DOC_TYPE_CODE[doc.type];
   const cancelled = doc.status === "cancelled" ? "1" : "";
+  // Leading currency is ILS (1032): 1219-1224 are shekels.
+  const amounts = uniformAmounts(doc);
+  const exportInvoice = amounts.foreign && doc.zeroRated === true && INVOICE_TYPES.has(doc.type);
+  const customerVat = uniformCustomerVat(doc, client).value;
 
   return buildLine([
     "C100", // 1200 (4), pos 1-4
@@ -195,19 +207,20 @@ export function buildC100(args: {
     padStr("", 30), // 1212: country, pos 206-235
     padStr("", 2), // 1213: country code, pos 236-237
     padStr(client?.phone || "", 15), // 1214: phone, pos 238-252
-    padStr(client?.taxId || "", 9), // 1215: customer VAT, pos 253-261
+    // 1215: numeric 9(9); no number (or a refused foreign id) is zeros, never spaces.
+    padNum(customerVat || 0, 9), // 1215: customer VAT, pos 253-261
     formatDate(doc.date), // 1216: value date, pos 262-269
-    formatSignedAmount(0, 12, 2), // 1217: foreign-currency total (15), pos 270-284
-    padStr("", 3), // 1218: foreign-currency code, pos 285-287
+    formatSignedAmount(exportInvoice ? doc.total : 0, 12, 2), // 1217: foreign-currency total (15), pos 270-284
+    padStr(exportInvoice ? amounts.currency : "", 3), // 1218: foreign-currency code (ISO 4217), pos 285-287
     // Document-level discount (הנחה): the stored subtotal is already the
     // DISCOUNTED subtotal, so "amount before discount" = subtotal + discount.
-    formatSignedAmount(doc.subtotal + (doc.discountAmount ?? 0), 12, 2), // 1219: amount before discount (15), pos 288-302
-    formatSignedAmount(doc.discountAmount ?? 0, 12, 2), // 1220: doc discount (15), pos 303-317
-    formatSignedAmount(doc.subtotal, 12, 2), // 1221: amount after discount, before VAT (15), pos 318-332
-    formatSignedAmount(doc.vat, 12, 2), // 1222: VAT amount (15), pos 333-347
-    formatSignedAmount(doc.total, 12, 2), // 1223: amount inc. VAT (15), pos 348-362
+    formatSignedAmount(amounts.subtotal + amounts.discount, 12, 2), // 1219: amount before discount (15), pos 288-302
+    formatSignedAmount(amounts.discount, 12, 2), // 1220: doc discount (15), pos 303-317
+    formatSignedAmount(amounts.subtotal, 12, 2), // 1221: amount after discount, before VAT (15), pos 318-332
+    formatSignedAmount(amounts.vat, 12, 2), // 1222: VAT amount (15), pos 333-347
+    formatSignedAmount(amounts.total, 12, 2), // 1223: amount inc. VAT (15), pos 348-362
     // ניכוי מס במקור (withholding tax) deducted at source by the customer.
-    formatSignedAmount(doc.withholdingAmount ?? 0, 9, 2), // 1224: source deduction (12), pos 363-374
+    formatSignedAmount(amounts.withholding, 9, 2), // 1224: source deduction (12), pos 363-374
     padStr(client?.id?.slice(0, 15) || "", 15), // 1225: customer/supplier key, pos 375-389
     padStr("", 10), // 1226: matching field, pos 390-399
     // 1227: 0-length cancelled
@@ -234,8 +247,11 @@ export function buildD110(args: {
   /** The M100 internal SKU this line refers to; the simulator's integrity
    *  check wants every D110 1259 to resolve to an M100 1455. */
   itemCode: string;
+  /** Shekel unit price and line total (uniformLineAmounts). Defaults to the item's own amounts. */
+  amounts?: { unitPrice: number; total: number };
 }): string {
   const { recordNum, meta, doc, item, lineNumber, linkField, itemCode } = args;
+  const line = args.amounts ?? { unitPrice: item.unitPrice, total: item.total };
 
   return buildLine([
     "D110", // 1250, pos 1-4
@@ -244,7 +260,7 @@ export function buildD110(args: {
     padStr(DOC_TYPE_CODE[doc.type], 3), // 1253: doc type, pos 23-25
     padStr(String(doc.number), 20), // 1254: doc number, pos 26-45
     padNum(lineNumber, 4), // 1255: line number, pos 46-49
-    padStr("", 3), // 1256: base doc type, pos 50-52
+    padNum(0, 3), // 1256: base doc type, pos 50-52
     padStr("", 20), // 1257: base doc number, pos 53-72
     padStr("1", 1), // 1258: transaction type: 1=service, 2=goods, 3=mixed, pos 73
     padStr(itemCode.slice(0, 20), 20), // 1259: internal SKU, pos 74-93
@@ -253,9 +269,9 @@ export function buildD110(args: {
     padStr("", 30), // 1262: serial number, pos 174-203
     padStr("יחידה", 20), // 1263: unit of measure, pos 204-223
     formatSignedAmount(item.quantity, 12, 4), // 1264: quantity X9(12)v9999, len 17, pos 224-240
-    formatSignedAmount(item.unitPrice, 12, 2), // 1265: price w/o VAT, pos 241-255
+    formatSignedAmount(line.unitPrice, 12, 2), // 1265: price w/o VAT in shekels, pos 241-255
     formatSignedAmount(0, 12, 2), // 1266: line discount, pos 256-270
-    formatSignedAmount(item.total, 12, 2), // 1267: line total before VAT, pos 271-285
+    formatSignedAmount(line.total, 12, 2), // 1267: line total before VAT, pos 271-285
     padNum(0, 4), // 1268: VAT %: 9(2)v99, len 4, pos 286-289
     // 1269: 0-length cancelled
     padStr("", 7), // 1270: branch identifier, pos 290-296
@@ -297,10 +313,10 @@ export function buildD120(args: {
     padNum(pd?.checkAccount || 0, 15), // 1309: account #, pos 71-85
     padNum(pd?.checkNumber || 0, 10), // 1310: check #, pos 86-95
     formatDate(dueDate), // 1311: due date, pos 96-103
-    formatSignedAmount(doc.total, 12, 2), // 1312: row amount, pos 104-118
-    padStr("", 1), // 1313: clearing company code, pos 119
+    formatSignedAmount(uniformAmounts(doc).total, 12, 2), // 1312: row amount in shekels, pos 104-118
+    padNum(0, 1), // 1313: clearing company code, pos 119
     padStr("", 20), // 1314: cleared card name, pos 120-139
-    padStr("", 1), // 1315: credit txn type, pos 140
+    padNum(0, 1), // 1315: credit txn type, pos 140
     // 1316-1319: 0-length cancelled fields
     padStr("", 7), // 1320: branch identifier, pos 141-147
     // 1321: 0-length cancelled
@@ -329,6 +345,10 @@ export function buildB100(args: {
   side: "1" | "2";
   amount: number;
   details?: string;
+  /** ISO 4217 code of a foreign-currency document (1367). */
+  foreignCurrency?: string;
+  /** The same line in that currency (1369). */
+  foreignAmount?: number;
 }): string {
   const { recordNum, meta } = args;
   return buildLine([
@@ -340,18 +360,18 @@ export function buildB100(args: {
     padNum(args.batchNum ?? args.transactionNum, 8), // 1355: batch (manah), pos 38-45
     padStr(args.txType ?? "", 15), // 1356: transaction type, pos 46-60
     padStr(args.docRefNum, 20), // 1357: reference doc, pos 61-80
-    padStr(args.docTypeRef ?? "", 3), // 1358: reference doc type, pos 81-83
+    padNum(args.docTypeRef || 0, 3), // 1358: reference doc type, pos 81-83
     padStr("", 20), // 1359: reference 2, pos 84-103
-    padStr("", 3), // 1360: reference 2 doc type, pos 104-106
+    padNum(0, 3), // 1360: reference 2 doc type, pos 104-106
     padStr(args.details ?? "", 50), // 1361: details, pos 107-156
     formatDate(args.date), // 1362: date, pos 157-164
     formatDate(args.valueDate), // 1363: value date, pos 165-172
     padStr(args.accountKey, 15), // 1364: account in transaction, pos 173-187
     padStr(args.counterAccountKey ?? "", 15), // 1365: counter account, pos 188-202
     args.side, // 1366: operation sign (1=debit, 2=credit), pos 203
-    padStr("", 3), // 1367: foreign currency code, pos 204-206
-    formatSignedAmount(args.amount, 12, 2), // 1368: operation amount, pos 207-221
-    formatSignedAmount(0, 12, 2), // 1369: foreign-currency amount, pos 222-236
+    padStr(args.foreignCurrency ?? "", 3), // 1367: foreign currency code, pos 204-206
+    formatSignedAmount(args.amount, 12, 2), // 1368: operation amount in shekels, pos 207-221
+    formatSignedAmount(args.foreignAmount ?? 0, 12, 2), // 1369: foreign-currency amount, pos 222-236
     formatSignedAmount(0, 9, 2), // 1370: quantity field, pos 237-248
     padStr("", 10), // 1371: matching field 1, pos 249-258
     padStr("", 10), // 1372: matching field 2, pos 259-268
@@ -396,7 +416,8 @@ export function buildB110(args: {
     formatSignedAmount(0, 12, 2), // 1416: total credit, pos 308-322
     padNum(0, 4), // 1417: accountant classification code, pos 323-326
     // 1418: 0-length cancelled
-    padStr(args.customerSupplierVat || "", 9), // 1419: customer/supplier VAT, pos 327-335
+    // Padded by the shared normalizer; no number or a foreign id is zeros.
+    padNum(normalizeBusinessNumber(args.customerSupplierVat).value ?? 0, 9), // 1419: customer/supplier VAT, pos 327-335
     // 1420: 0-length cancelled
     padStr("", 7), // 1421: branch identifier, pos 336-342
     formatSignedAmount(0, 12, 2), // 1422: opening balance in foreign currency, pos 343-357

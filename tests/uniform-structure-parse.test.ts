@@ -21,6 +21,8 @@ function doc(over: Partial<InvoiceDocument>): InvoiceDocument {
     // bare YYYY-MM-DD parses as UTC midnight, which is "yesterday" west of UTC.
     date: "2026-03-15T12:00:00",
     clientName: "גין דין ענה",
+    // The document's own customer number (documents.client_tax_id), the source of 1215.
+    clientTaxId: "034567891",
     subtotal: 1000,
     vat: 180,
     total: 1180,
@@ -84,6 +86,12 @@ describe("parseBkmvdataText", () => {
     expect(out.docCount).toBe(1);
     expect(out.rows[0]["תיאור"]).toBe("ייעוץ");
     expect(out.rows[0]["סוג מסמך"]).toBe("חשבונית מס");
+  });
+
+  it("reads an all-zero customer number (no number) as empty", () => {
+    const text = buildC100({ recordNum: 2, meta, doc: doc({ clientTaxId: undefined, date: "2026-08-15T12:00:00" }), client: null, linkField: 1 });
+    expect(text.slice(252, 261)).toBe("000000000");
+    expect(parseBkmvdataText(text).rows[0]["ח.פ / ת.ז"]).toBe("");
   });
 
   it("is lenient with short or empty lines", () => {

@@ -135,7 +135,8 @@ export function parseBkmvdataText(text: string): UniformParseResult {
         number,
         date: readDate(f(line, 46, 53)),
         clientName: f(line, 58, 107).trim(),
-        clientTaxId: f(line, 253, 261).trim().replace(/^0+(?=\d)/, ""),
+        // Numeric 9(9): all zeros means "no number" (empty numeric fields are zeros).
+        clientTaxId: /^0*$/.test(f(line, 253, 261).trim()) ? "" : f(line, 253, 261).trim().replace(/^0+(?=\d)/, ""),
         phone: f(line, 238, 252).trim(),
         subtotal: readSigned(f(line, 318, 332), 2),
         vat: readSigned(f(line, 333, 347), 2),
