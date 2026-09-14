@@ -167,7 +167,7 @@ export function PushSettingsSection() {
           <div className="flex items-start gap-2 text-sm text-stone-700">
             <Smartphone className="w-4 h-4 flex-shrink-0 mt-0.5 text-stone-500" />
             <span>
-              באייפון התרעות עובדות רק אחרי שמוסיפים את האפליקציה למסך הבית: כפתור השיתוף בסאפרי - הוסף למסך הבית - ואז לחזור לכאן.
+              באייפון התרעות עובדות רק אחרי שמוסיפים את האפליקציה למסך הבית: כפתור השיתוף בספארי - הוסף למסך הבית - ואז לחזור לכאן.
             </span>
           </div>
         ) : blocked ? (
