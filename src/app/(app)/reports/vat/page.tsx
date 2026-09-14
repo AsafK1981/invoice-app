@@ -45,7 +45,7 @@ export default function VatReportPage() {
   // count updates in place instead of flashing back to "טוען...".
   const { data, error, retry, refreshing } = useFilingReportData(business.id, true, true);
 
-  if (error) return <div role="alert" className="card-soft p-6 space-y-3"><p>{error}</p><button onClick={retry} className="btn-primary">טען שוב</button></div>;
+  if (error) return <div role="alert" className="card-soft p-6 space-y-3"><p>{error}</p><button onClick={retry} className="pgbtn pgbtn-primary">טען שוב</button></div>;
   if (!data || !bizReady || !urlRead) {
     return <div className="text-center py-16 text-stone-500">טוען...</div>;
   }
@@ -63,7 +63,7 @@ export default function VatReportPage() {
             : "המחזור השנתי שמדווחים למע״מ פעם בשנה, מוכן להעתקה."
         }
       />
-      <button type="button" onClick={retry} className="btn-secondary no-print">רענן נתונים ובדוק שוב</button>
+      <button type="button" onClick={retry} className="pgbtn pgbtn-quiet no-print">רענן נתונים ובדוק שוב</button>
       <VatPeriodReport headless selectedMode={mode} onPeriodChange={changeMode} business={business} documents={data.documents} expenses={data.expenses} refreshing={refreshing} />
     </div>
   );
