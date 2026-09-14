@@ -112,7 +112,7 @@ export default function InvoicesPeriodReportPage() {
     });
   }
 
-  if (error) return <div role="alert" className="card-soft p-6 space-y-3"><p>{error}</p><button onClick={retry} className="btn-primary">טען שוב</button></div>;
+  if (error) return <div role="alert" className="card-soft p-6 space-y-3"><p>{error}</p><button onClick={retry} className="pgbtn pgbtn-primary">טען שוב</button></div>;
   if (!data || !businessReady) return <div className="text-center py-16 text-stone-500">טוען ובודק את נתוני הדוח...</div>;
 
   const money = (value: number | null) => (value == null ? <MissingAmount /> : formatCurrencyWhole(value));

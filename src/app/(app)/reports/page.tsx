@@ -333,8 +333,8 @@ export default function ReportsPage() {
             onSaved={() => downloadUniformStructure(uniformCheck.sample, false, true)}
           />
           <div className="flex flex-wrap gap-3">
-            <button type="button" data-testid="uniform-download" className="btn-primary disabled:opacity-50" disabled={uniformBusy || !uniformCanDownload(uniformCheck.issues)} onClick={() => downloadUniformStructure(uniformCheck.sample, true)}>הורד קובץ לאחר בדיקה</button>
-            <button type="button" className="btn-secondary disabled:opacity-50" disabled={uniformBusy} onClick={() => downloadUniformStructure(uniformCheck.sample, false, true)}>בדוק שוב</button>
+            <button type="button" data-testid="uniform-download" className="pgbtn pgbtn-primary disabled:opacity-50" disabled={uniformBusy || !uniformCanDownload(uniformCheck.issues)} onClick={() => downloadUniformStructure(uniformCheck.sample, true)}>הורד קובץ לאחר בדיקה</button>
+            <button type="button" className="pgbtn pgbtn-quiet disabled:opacity-50" disabled={uniformBusy} onClick={() => downloadUniformStructure(uniformCheck.sample, false, true)}>בדוק שוב</button>
           </div>
         </>}
       </div>}
