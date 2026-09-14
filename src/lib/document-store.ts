@@ -18,7 +18,7 @@ const CHANGE_EVENT = "invoice-app:documents-changed";
 // which case we don't guess.
 let lastKnownDocumentCount: number | null = null;
 
-function mapDocRow(row: Record<string, unknown>, items: DocumentItem[]): InvoiceDocument {
+export function mapDocRow(row: Record<string, unknown>, items: DocumentItem[]): InvoiceDocument {
   return {
     id: row.id as string,
     type: row.type as DocumentType,
@@ -56,9 +56,12 @@ function mapDocRow(row: Record<string, unknown>, items: DocumentItem[]): Invoice
     discountAmount: row.discount_amount != null ? Number(row.discount_amount) : undefined,
     currency: (row.currency as string) || "ILS",
     exchangeRate: row.exchange_rate != null ? Number(row.exchange_rate) : 1,
-    subtotalIls: row.subtotal_ils != null ? Number(row.subtotal_ils) : Number(row.subtotal) || 0,
-    vatIls: row.vat_ils != null ? Number(row.vat_ils) : Number(row.vat) || 0,
-    totalIls: row.total_ils != null ? Number(row.total_ils) : Number(row.total) || 0,
+    // Missing shekel snapshots stay undefined. Copying native amounts here
+    // made a foreign-currency document without shekels look converted, so the
+    // VAT checks could never see it; display code applies `?? native` itself.
+    subtotalIls: row.subtotal_ils != null ? Number(row.subtotal_ils) : undefined,
+    vatIls: row.vat_ils != null ? Number(row.vat_ils) : undefined,
+    totalIls: row.total_ils != null ? Number(row.total_ils) : undefined,
     zeroRated: Boolean(row.zero_rated),
     language: row.language === "en" ? "en" : "he",
   };

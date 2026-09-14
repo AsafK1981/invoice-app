@@ -444,7 +444,7 @@ export function DocumentBody({
             <span>{s.sumLabel[documentType]}</span>
             <span className="doc-grand-val doc-serif doc-tab">{money(total)}</span>
           </div>
-          {currency !== "ILS" && (
+          {currency !== "ILS" && totalIls != null && (
             <div className="doc-note-line">
               {s.totalInIls}{" "}
               <bdi dir="ltr">{s.exchangeRate(Number(exchangeRate ?? 1).toFixed(4))}</bdi>:{" "}
