@@ -124,7 +124,9 @@ export function buildA000(meta: FileMeta, counts: RecordCounts): string {
     formatTime(meta.generatedAt), // 1027: process start time (4), pos 391-394
     "0", // 1028: language code 0=Hebrew, pos 395
     "1", // 1029: character set 1=ISO-8859-8-i, pos 396
-    padStr("", 20), // 1030: compression program name (20), pos 397-416
+    // Mandatory (horaot_131_raw.txt 2089-2098, and the ITA simulator rejects a
+    // blank): the software the files were compressed with. The export ZIP is JSZip.
+    padStr("JSZip", 20), // 1030: compression program name (20), pos 397-416
     // 1031: 0-length cancelled field
     padStr("ILS", 3), // 1032: leading currency (3), pos 417-419
     // 1033: 0-length cancelled field

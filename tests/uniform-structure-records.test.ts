@@ -21,6 +21,8 @@ describe("A000 bookkeeping fields", () => {
     expect(field(line, 186, 186)).toBe("1");
     expect(field(line, 187, 195)).toBe("000000000");
     expect(field(line, 196, 204)).toBe("000000000");
+    // 1030 is mandatory (the ITA simulator rejects a blank): the export ZIP is made with JSZip.
+    expect(field(line, 397, 416)).toBe("JSZip".padEnd(20, " "));
     expect(line.length).toBe(468);
     const exempt = buildA000({ ...meta, business: { ...business, businessType: "exempt" } }, counts);
     expect([field(exempt, 185, 185), field(exempt, 186, 186)]).toEqual(["1", "0"]);
