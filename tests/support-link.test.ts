@@ -11,4 +11,9 @@ describe("support link", () => {
     expect(text).toContain("sign_mismatch");
     expect(filingDataFixMessage(undefined, "file_structure")).not.toContain("undefined");
   });
+  it("names the report the fix is for, PCN874 by default", () => {
+    expect(filingDataFixMessage("d", "journal_unbalanced", "uniform")).toContain("מבנה אחיד");
+    expect(filingDataFixMessage("d", "duplicate_number", "invoices_period")).toContain("דוח החשבוניות");
+    expect(filingDataFixMessage("d", "sign_mismatch")).toContain("הדיווח המפורט");
+  });
 });

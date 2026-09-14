@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { buildPcn874 } from "@/lib/ita/pcn874";
-import { buildFilingFixModel } from "@/lib/filing-fix-items";
+import { buildFilingFixModel, createFixCollector, splitFixTiers } from "@/lib/filing-fix-items";
 import type { Expense, InvoiceDocument } from "@/lib/types";
 
 const business = { taxId: "512345679", businessType: "authorized" as const };
@@ -91,5 +91,17 @@ describe("buildFilingFixModel", () => {
     expect(m.blocking[0]).toMatchObject({ code: "period_length", control: { kind: "period" } });
     expect(m.actions).toEqual([]);
     expect(m.notes).toEqual([]);
+  });
+});
+
+describe("createFixCollector", () => {
+  it("merges findings under one key, escalates to blocking and keeps messages and labels unique", () => {
+    const c = createFixCollector((code) => `title:${code}`);
+    c.put("k", "note", "client_name_missing", { kind: "none" }, "a", "L1");
+    c.put("k", "blocking", "period_invalid", { kind: "none" }, "b", "L1");
+    c.put("k", "note", "client_name_missing", { kind: "none" }, "a", "L2");
+    const [item] = c.items();
+    expect(item).toMatchObject({ tier: "blocking", code: "client_name_missing", title: "title:client_name_missing", messages: ["a", "b"], labels: ["L1", "L2"] });
+    expect(splitFixTiers(c.items())).toEqual({ blocking: [item], actions: [], notes: [], periodOnly: false });
   });
 });

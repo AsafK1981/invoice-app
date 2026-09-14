@@ -3,6 +3,11 @@
 // each with the one control that fixes it. The panel only renders this.
 import type { Expense, InvoiceDocument } from "./types";
 import { referenceDigits, sourceVatIdForPcn, type Pcn874Result, type PcnIssueCode, type PcnWarning } from "./ita/pcn874";
+import type { FilingReportKind } from "./support-link";
+import type { InvoiceListIssueCode } from "./invoice-report-preflight";
+
+/** Every code a filing panel can show. */
+export type FixCode = PcnIssueCode | InvoiceListIssueCode;
 
 export type FixControl =
   | { kind: "supplier_tax_id"; expenseIds: string[]; current: string }
@@ -12,9 +17,11 @@ export type FixControl =
   | { kind: "business_tax_id"; current: string }
   | { kind: "customer_tax_id"; documentId: string; current: string }
   | { kind: "credit_note"; documentId: string }
-  | { kind: "support"; documentId?: string; code: PcnIssueCode }
+  /** `report` names the report in the support message; omitted means PCN874. */
+  | { kind: "support"; documentId?: string; code: FixCode; report?: FilingReportKind }
   | { kind: "open_expense"; expenseId: string }
   | { kind: "open_document"; documentId: string }
+  | { kind: "open_client"; clientId: string }
   | { kind: "period" }
   | { kind: "settings" }
   | { kind: "none" };
@@ -24,7 +31,7 @@ export type FixTier = "blocking" | "action" | "note";
 export interface FilingFixItem {
   key: string;
   tier: FixTier;
-  code: PcnIssueCode;
+  code: FixCode;
   title: string;
   messages: string[];
   labels: string[];
@@ -104,6 +111,45 @@ export function filingDownloadGate(state: { fileReady: boolean; refreshing: bool
   return state.fileReady ? "ready" : "blocked";
 }
 
+export interface FixCollector {
+  put(key: string, tier: FixTier, code: FixCode, control: FixControl, message: string, label?: string, excludedVat?: number): void;
+  items(): FilingFixItem[];
+}
+
+/**
+ * Items keyed by the fix. A second finding under the same key adds its
+ * message and label, escalates the tier to blocking when it blocks, and merges
+ * grouped supplier expenses. Shared by every filing report's panel model.
+ */
+export function createFixCollector(titleOf: (code: FixCode) => string): FixCollector {
+  const items = new Map<string, FilingFixItem>();
+  return {
+    put(key, tier, code, control, message, label, excludedVat) {
+      const existing = items.get(key);
+      if (!existing) {
+        items.set(key, { key, tier, code, title: titleOf(code), messages: [message], labels: label ? [label] : [], control, excludedVat });
+        return;
+      }
+      if (tier === "blocking") existing.tier = "blocking";
+      if (!existing.messages.includes(message)) existing.messages.push(message);
+      if (label && !existing.labels.includes(label)) existing.labels.push(label);
+      if (control.kind === "supplier_tax_id" && existing.control.kind === "supplier_tax_id") {
+        for (const id of control.expenseIds) if (!existing.control.expenseIds.includes(id)) existing.control.expenseIds.push(id);
+      }
+    },
+    items: () => [...items.values()],
+  };
+}
+
+export function splitFixTiers(all: readonly FilingFixItem[]): FilingFixModel {
+  return {
+    blocking: all.filter((i) => i.tier === "blocking"),
+    actions: all.filter((i) => i.tier === "action"),
+    notes: all.filter((i) => i.tier === "note"),
+    periodOnly: false,
+  };
+}
+
 export function buildFilingFixModel(
   result: Pick<Pcn874Result, "blockers" | "warnings">,
   data: { business: { taxId: string }; documents: readonly InvoiceDocument[]; expenses: readonly Expense[] },
@@ -124,22 +170,9 @@ export function buildFilingFixModel(
 
   const documents = new Map(data.documents.map((d) => [d.id, d]));
   const expenses = new Map(data.expenses.map((e) => [e.id, e]));
-  const items = new Map<string, FilingFixItem>();
+  const collector = createFixCollector((code) => FIX_TITLES[code as PcnIssueCode] ?? code);
+  const put = collector.put;
   const suppliers = new Map<string, { name: string; hasNumber: boolean }>();
-
-  function put(key: string, tier: FixTier, code: PcnIssueCode, control: FixControl, message: string, label?: string, excludedVat?: number) {
-    const existing = items.get(key);
-    if (!existing) {
-      items.set(key, { key, tier, code, title: FIX_TITLES[code], messages: [message], labels: label ? [label] : [], control, excludedVat });
-      return;
-    }
-    if (tier === "blocking") existing.tier = "blocking";
-    if (!existing.messages.includes(message)) existing.messages.push(message);
-    if (label && !existing.labels.includes(label)) existing.labels.push(label);
-    if (control.kind === "supplier_tax_id" && existing.control.kind === "supplier_tax_id") {
-      for (const id of control.expenseIds) if (!existing.control.expenseIds.includes(id)) existing.control.expenseIds.push(id);
-    }
-  }
 
   /** There is no suppliers table: same number, or same name when the number is empty, is one supplier. */
   function supplierGroup(w: PcnWarning, tier: FixTier) {
@@ -221,7 +254,7 @@ export function buildFilingFixModel(
     else addDocumentItem(w, tier);
   }
 
-  for (const item of items.values()) {
+  for (const item of collector.items()) {
     if (item.control.kind === "supplier_tax_id") {
       const s = suppliers.get(item.key)!;
       const count = item.control.expenseIds.length;
@@ -231,7 +264,7 @@ export function buildFilingFixModel(
     }
   }
 
-  const all = [...items.values()];
+  const all = collector.items();
   // The byte-level self-check mostly repeats row problems (a missing number
   // becomes "record N has an invalid number"). Show it only when nothing
   // more specific is left; the download gate still counts it either way.
