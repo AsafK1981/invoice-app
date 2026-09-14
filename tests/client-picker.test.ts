@@ -29,6 +29,16 @@ describe("normalizeTaxId", () => {
     expect(normalizeTaxId(undefined)).toBe("");
     expect(normalizeTaxId("")).toBe("");
   });
+
+  it("pads a valid Israeli number so a padded client matches an unpadded document", () => {
+    expect(normalizeTaxId("13333331")).toBe("013333331");
+    expect(normalizeTaxId("13333331")).toBe(normalizeTaxId("013333331"));
+  });
+
+  it("leaves foreign or invalid numbers as plain digits", () => {
+    expect(normalizeTaxId("1234567")).toBe("1234567");
+    expect(normalizeTaxId("GB 123456789012")).toBe("123456789012");
+  });
 });
 
 describe("normalizeName", () => {
@@ -177,5 +187,12 @@ describe("documentsForClient / resolveDocumentClientId", () => {
     expect(resolveDocumentClientId(docs[1], [a, b, twin])).toBeUndefined();
     expect(resolveDocumentClientId(docs[2], [a, b])).toBe("b");
     expect(resolveDocumentClientId({ clientId: "", clientName: "Nobody" }, [a, b])).toBeUndefined();
+  });
+});
+
+describe("documentBelongsToClient with padded numbers", () => {
+  it("matches an unlinked document carrying the unpadded number", () => {
+    const client = makeClient({ id: "c1", taxId: "013333331" });
+    expect(documentBelongsToClient({ clientId: "", clientName: "x", clientTaxId: "13333331" }, client)).toBe(true);
   });
 });

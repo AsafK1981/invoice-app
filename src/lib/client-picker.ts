@@ -1,12 +1,15 @@
 import type { Client, InvoiceDocument } from "./types";
+import { normalizeBusinessNumber } from "./israeli-id";
 
 /**
- * Normalizes a tax id for comparison purposes: strips everything but
- * digits, so "514-123-456" and "514 123 456" and "514123456" all compare
- * equal. Returns "" for missing/blank input (never treated as a match).
+ * Normalizes a tax id for comparison purposes. A valid Israeli number is
+ * compared in its padded 9-digit form (shared normalizer), so a client saved
+ * as "013333331" still owns a locked document that carries "13333331".
+ * Anything else (foreign ids, typos) compares as plain digits, exactly as
+ * before. Returns "" for missing/blank input (never treated as a match).
  */
 export function normalizeTaxId(taxId: string | undefined | null): string {
-  return (taxId || "").replace(/\D/g, "");
+  return normalizeBusinessNumber(taxId).value ?? (taxId || "").replace(/\D/g, "");
 }
 
 /**
