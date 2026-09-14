@@ -9,6 +9,7 @@
 // in `toWindows1255()` once the entire file content is assembled.
 
 import iconv from "iconv-lite";
+import { isoDateInIsrael, validPcnDate } from "../ita/pcn874";
 
 /** Right-align number/string with leading zeros to a fixed width. */
 export function padNum(value: number | string, width: number): string {
@@ -38,23 +39,38 @@ export function padStr(value: string | undefined | null, width: number): string 
   return clean.padEnd(width, " ");
 }
 
-/** YYYYMMDD, 8 chars. Accepts ISO-8601 date strings or Date objects. */
-export function formatDate(date: string | Date | undefined | null): string {
-  if (!date) return "00000000";
-  const d = typeof date === "string" ? new Date(date) : date;
-  if (isNaN(d.getTime())) return "00000000";
-  const y = String(d.getFullYear()).padStart(4, "0");
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${y}${m}${dd}`;
+/**
+ * The Asia/Jerusalem calendar date and clock of an instant. The export may run
+ * on a server in UTC or on a machine west of it; the file must carry Israeli
+ * dates either way (an instant just after midnight in Israel is "yesterday" in UTC).
+ */
+export function israelClock(at: Date): { date: string; hh: string; mm: string } {
+  const parts = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Jerusalem", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(at);
+  const part = (type: string) => parts.find((p) => p.type === type)?.value ?? "00";
+  return { date: isoDateInIsrael(at), hh: part("hour"), mm: part("minute") };
 }
 
-/** HHMM, 4 chars. */
+/**
+ * YYYYMMDD, 8 chars. A stored YYYY-MM-DD date (a document or period date) is a
+ * calendar date and is written as it is; an instant is written as its Israeli date.
+ */
+export function formatDate(date: string | Date | undefined | null): string {
+  if (!date) return "00000000";
+  if (typeof date === "string") {
+    const calendar = date.slice(0, 10);
+    if (/^\d{4}-\d{2}-\d{2}/.test(date)) return validPcnDate(calendar) ? calendar.replace(/-/g, "") : "00000000";
+    const parsed = new Date(date);
+    return isNaN(parsed.getTime()) ? "00000000" : isoDateInIsrael(parsed).replace(/-/g, "");
+  }
+  if (isNaN(date.getTime())) return "00000000";
+  return isoDateInIsrael(date).replace(/-/g, "");
+}
+
+/** HHMM, 4 chars, Israeli clock. */
 export function formatTime(date: Date | undefined | null): string {
-  if (!date) return "0000";
-  const h = String(date.getHours()).padStart(2, "0");
-  const m = String(date.getMinutes()).padStart(2, "0");
-  return `${h}${m}`;
+  if (!date || isNaN(date.getTime())) return "0000";
+  const { hh, mm } = israelClock(date);
+  return `${hh}${mm}`;
 }
 
 /**

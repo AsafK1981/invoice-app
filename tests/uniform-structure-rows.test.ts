@@ -26,7 +26,7 @@ describe("uniform rows", () => {
 
 describe("uniform folder path", () => {
   it("names the folder with the padded dealer number without its check digit", () => {
-    const at = new Date(2026, 0, 5, 9, 7);
+    const at = new Date("2026-01-05T07:07:00Z"); // 09:07 in Israel (UTC+2)
     expect(uniformFolderPath("512345679", at)).toBe("OPENFRMT/51234567.26/01050907");
     expect(uniformFolderPath("13333331", at)).toBe("OPENFRMT/01333333.26/01050907");
   });

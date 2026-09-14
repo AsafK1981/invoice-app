@@ -7,6 +7,7 @@ import { loadUniformPages } from "@/lib/uniform-structure/load-pages";
 import { groupUniformItems, mapUniformBusiness, mapUniformClient, mapUniformDocument, mapUniformExpense } from "@/lib/uniform-structure/rows";
 import { checkRate, clientIp } from "@/lib/rate-limit";
 import { normalizeBusinessNumber } from "@/lib/israeli-id";
+import { isoDateInIsrael } from "@/lib/ita/pcn874";
 import { generateSampleDataset } from "@/lib/uniform-structure/sample-data";
 import { UNIFORM_SOFTWARE } from "@/lib/uniform-structure/software";
 import type { Client, Expense, InvoiceDocument } from "@/lib/types";
@@ -56,7 +57,7 @@ export async function GET(req: NextRequest) {
   const yearStr = searchParams.get("year");
   const taxYear = yearStr && /^\d{4}$/.test(yearStr)
     ? parseInt(yearStr, 10)
-    : new Date().getFullYear();
+    : Number(isoDateInIsrael(new Date()).slice(0, 4));
   if (yearStr && (!/^\d{4}$/.test(yearStr) || taxYear < 1900)) return NextResponse.json({ ok: false, error: "שנת מס לא תקינה" }, { status: 400 });
   try {
   const fromDate = `${taxYear}-01-01`;
