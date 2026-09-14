@@ -201,7 +201,7 @@ export async function GET(req: NextRequest) {
     toDate,
   };
   const issues = validateUniformInput(input);
-  if (!useSampleData && !software.registrationNumber) issues.push({ level: "warning", message: "מספר תעודת רישום התוכנה טרם הוזן. הבדיקה המקומית אינה אישור רישום או אישור קבלה מרשות המסים." });
+  if (!useSampleData && !software.registrationNumber) issues.push({ code: "software_registration_missing", level: "warning", message: "מספר תעודת רישום התוכנה טרם הוזן. הבדיקה המקומית אינה אישור רישום או אישור קבלה מרשות המסים." });
   if (issues.some(issue => issue.level === "error")) return NextResponse.json({ ok: false, issues, error: "יש לתקן את השגיאות לפני הורדת הקובץ." }, { status: preflight ? 200 : 422 });
   const result = buildUniformStructure(input);
   issues.push(...validateUniformOutput(result, useSampleData));
@@ -244,6 +244,6 @@ export async function GET(req: NextRequest) {
     },
   });
   } catch {
-    return NextResponse.json({ ok: false, error: "טעינת נתוני הדוח או בדיקת הקובץ נכשלה. לא הופק קובץ חלקי. נסה שוב.", issues: [{ level: "error", message: "לא ניתן לוודא שכל נתוני הדוח נטענו. נסה שוב לפני הורדה." }] }, { status: 503 });
+    return NextResponse.json({ ok: false, error: "טעינת נתוני הדוח או בדיקת הקובץ נכשלה. לא הופק קובץ חלקי. נסה שוב.", issues: [{ code: "data_load_failed", level: "error", message: "לא ניתן לוודא שכל נתוני הדוח נטענו. נסה שוב לפני הורדה." }] }, { status: 503 });
   }
 }
