@@ -47,25 +47,42 @@ interface Context {
   onUseFilingPeriod?: () => void;
   /** Called with +1 when an inline save starts and -1 when it ends, so the report holds the download meanwhile. */
   onSaveInFlight?: (delta: 1 | -1) => void;
+  /**
+   * Called after an inline save lands. Reports whose check runs on the server
+   * (the uniform export) re-check here; client-side reports refresh from the
+   * store events and leave it out.
+   */
+  onSaved?: () => void;
 }
 
 interface Props extends Context {
   model: FilingFixModel;
+  /**
+   * An advisory report (the invoices-period listing) never blocks its
+   * download: "action" items are findings that change its totals, and the
+   * headline says so instead of "ready".
+   */
+  advisory?: boolean;
 }
 
-/** The single "what's left before the download" panel on /reports/vat. */
-export function FilingFixPanel({ model, ...context }: Props) {
+/** The single "what's left" panel shared by the filing reports. */
+export function FilingFixPanel({ model, advisory = false, ...context }: Props) {
   const [notesOpen, setNotesOpen] = useState(false);
   const count = model.blocking.length;
+  const affecting = advisory ? model.actions.length : 0;
   const headline = model.periodOnly
     ? "את הקובץ המפורט מורידים לתקופת דיווח"
-    : count === 0
-      ? "הכל מוכן"
-      : count === 1
-        ? "נשאר דבר אחד לפני ההורדה"
-        : `נשארו ${count} דברים לפני ההורדה`;
-  const tone = model.periodOnly ? "text-stone-800" : count ? "text-rose-800" : "text-emerald-800";
-  const Icon = model.periodOnly ? CalendarRange : count ? AlertCircle : CheckCircle2;
+    : count === 1
+      ? "נשאר דבר אחד לפני ההורדה"
+      : count > 1
+        ? `נשארו ${count} דברים לפני ההורדה`
+        : affecting === 1
+          ? "דבר אחד משפיע על הסכומים בדוח"
+          : affecting > 1
+            ? `${affecting} דברים משפיעים על הסכומים בדוח`
+            : "הכל מוכן";
+  const tone = model.periodOnly ? "text-stone-800" : count ? "text-rose-800" : affecting ? "text-amber-800" : "text-emerald-800";
+  const Icon = model.periodOnly ? CalendarRange : count || affecting ? AlertCircle : CheckCircle2;
   return (
     <div data-testid="filing-fix-panel" className="mt-3 space-y-3">
       <p role="status" className={`flex items-center gap-2 text-base font-bold ${tone}`}>
@@ -118,7 +135,7 @@ function FixItemCard({ item, context }: { item: FilingFixItem; context: Context 
   // A period that is not a filing period is a choice, not a mistake: calm styling.
   const style = item.control.kind === "period" ? "bg-sky-50 border-sky-200 text-sky-950" : TIER_STYLE[item.tier];
   return (
-    <li data-fix-code={item.code} className={`rounded-xl border p-3 text-sm ${style}`}>
+    <li data-fix-code={item.code} data-fix-tier={item.tier} className={`rounded-xl border p-3 text-sm ${style}`}>
       <p className="font-semibold leading-relaxed">{title}</p>
       {item.labels.length > 0 && <p className="mt-0.5 text-xs text-stone-700">{item.labels.join(" · ")}</p>}
       {item.tier === "action" && item.excludedVat != null && (
@@ -134,7 +151,7 @@ function FixItemCard({ item, context }: { item: FilingFixItem; context: Context 
 }
 
 function FixControlView({ control, context }: { control: FixControl; context: Context }) {
-  const { businessId, returnTo, onUseFilingPeriod, onSaveInFlight } = context;
+  const { businessId, returnTo, onUseFilingPeriod, onSaveInFlight, onSaved } = context;
   switch (control.kind) {
     case "supplier_tax_id":
       return (
@@ -147,6 +164,7 @@ function FixControlView({ control, context }: { control: FixControl; context: Co
           showLeadingZeroHint
           prepare={israeliNumber}
           onSave={(value) => updateExpenseFilingFields(control.expenseIds, { supplierTaxId: value })}
+          onSaved={onSaved}
         />
       );
     case "supplier_reference":
@@ -162,6 +180,7 @@ function FixControlView({ control, context }: { control: FixControl; context: Co
             return ref && ref.length <= 9 && Number(ref) > 0 ? { ok: true, value } : { ok: false, message: "מספר החשבונית צריך לכלול מספר של עד 9 ספרות." };
           }}
           onSave={(value) => updateExpenseFilingFields([control.expenseId], { reference: value })}
+          onSaved={onSaved}
         />
       );
     case "expense_allocation":
@@ -177,10 +196,11 @@ function FixControlView({ control, context }: { control: FixControl; context: Co
             return /^\d{9}$/.test(value) && !/^0+$/.test(value) ? { ok: true, value } : { ok: false, message: "מספר הקצאה הוא 9 ספרות בדיוק." };
           }}
           onSave={(value) => updateExpenseFilingFields([control.expenseId], { allocationNumber: value })}
+          onSaved={onSaved}
         />
       );
     case "expense_date":
-      return <DateSave initial={control.current} onSaveInFlight={onSaveInFlight} onSave={(value) => updateExpenseFilingFields([control.expenseId], { date: value })} />;
+      return <DateSave initial={control.current} onSaveInFlight={onSaveInFlight} onSave={(value) => updateExpenseFilingFields([control.expenseId], { date: value })} onSaved={onSaved} />;
     case "business_tax_id":
       return (
         <InlineSave
@@ -192,6 +212,7 @@ function FixControlView({ control, context }: { control: FixControl; context: Co
           showLeadingZeroHint
           prepare={israeliNumber}
           onSave={(value) => saveBusinessTaxId(businessId, value)}
+          onSaved={onSaved}
         />
       );
     case "customer_tax_id":
@@ -209,6 +230,7 @@ function FixControlView({ control, context }: { control: FixControl; context: Co
             note: `בלי מספר, מכירה של פחות מ-${formatCurrencyWhole(IDENTIFIED_SALE_THRESHOLD)} לפני מע״מ מדווחת כעסקה ללקוח לא מזוהה.`,
           }}
           onSave={(value) => updateDocumentClientTaxId(control.documentId, value)}
+          onSaved={onSaved}
         />
       );
     case "credit_note":
@@ -221,7 +243,7 @@ function FixControlView({ control, context }: { control: FixControl; context: Co
     case "support":
       return (
         <a
-          href={supportWhatsappHref(filingDataFixMessage(control.documentId, control.code))}
+          href={supportWhatsappHref(filingDataFixMessage(control.documentId, control.code, control.report))}
           target="_blank"
           rel="noopener noreferrer"
           className={LINK_BUTTON}
@@ -241,6 +263,8 @@ function FixControlView({ control, context }: { control: FixControl; context: Co
       return <Link href={withReturn("/expenses", returnTo, { edit: control.expenseId })} className={LINK_BUTTON}>פתח את ההוצאה</Link>;
     case "open_document":
       return <Link href={withReturn(`/documents/${control.documentId}`, returnTo)} className={LINK_BUTTON}>פתח את המסמך</Link>;
+    case "open_client":
+      return <Link href={withReturn(`/clients/${control.clientId}`, returnTo)} className={LINK_BUTTON}>פתח את הלקוח</Link>;
     case "settings":
       return <Link href={withReturn("/settings", returnTo)} className={LINK_BUTTON}>פתח את ההגדרות</Link>;
     case "none":
@@ -291,6 +315,7 @@ function InlineSave({
   clearable,
   onSaveInFlight,
   onSave,
+  onSaved,
 }: {
   label: string;
   initial: string;
@@ -304,6 +329,7 @@ function InlineSave({
   clearable?: { label: string; note: string };
   onSaveInFlight?: (delta: 1 | -1) => void;
   onSave: (value: string) => Promise<void>;
+  onSaved?: () => void;
 }) {
   const [value, setValue] = useState(initial);
   const { saving, error, setError, run } = useInlineSave(onSaveInFlight);
@@ -313,7 +339,10 @@ function InlineSave({
       setError(next.message);
       return;
     }
-    void run(() => onSave(next.value));
+    void run(async () => {
+      await onSave(next.value);
+      onSaved?.();
+    });
   }
   return (
     <div className="no-print mt-2">
@@ -345,7 +374,10 @@ function InlineSave({
             disabled={saving}
             onClick={() => {
               setValue("");
-              void run(() => onSave(""));
+              void run(async () => {
+                await onSave("");
+                onSaved?.();
+              });
             }}
             className="no-print inline-flex items-center min-h-[44px] px-3 rounded-xl text-sm font-semibold text-stone-700 bg-white border border-stone-300 hover:bg-stone-50 disabled:opacity-50"
           >
@@ -358,7 +390,7 @@ function InlineSave({
   );
 }
 
-function DateSave({ initial, onSave, onSaveInFlight }: { initial: string; onSave: (value: string) => Promise<void>; onSaveInFlight?: (delta: 1 | -1) => void }) {
+function DateSave({ initial, onSave, onSaveInFlight, onSaved }: { initial: string; onSave: (value: string) => Promise<void>; onSaveInFlight?: (delta: 1 | -1) => void; onSaved?: () => void }) {
   const [value, setValue] = useState(validPcnDate(initial) ? initial : "");
   const { saving, error, setError, run } = useInlineSave(onSaveInFlight);
   function save() {
@@ -366,7 +398,10 @@ function DateSave({ initial, onSave, onSaveInFlight }: { initial: string; onSave
       setError("הזן תאריך מלא ותקין.");
       return;
     }
-    void run(() => onSave(value));
+    void run(async () => {
+      await onSave(value);
+      onSaved?.();
+    });
   }
   return (
     <div className="no-print mt-2">
