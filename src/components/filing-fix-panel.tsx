@@ -10,7 +10,7 @@ import { updateDocumentClientTaxId } from "@/lib/document-store";
 import { saveBusinessTaxId } from "@/lib/business-store";
 import { BUSINESS_NUMBER_MARKS, normalizeBusinessNumber } from "@/lib/israeli-id";
 import { filingBusinessNumberSave } from "@/lib/business-number-hint";
-import { referenceDigits, validPcnDate } from "@/lib/ita/pcn874";
+import { IDENTIFIED_SALE_THRESHOLD, referenceDigits, validPcnDate } from "@/lib/ita/pcn874";
 import { formatCurrencyWhole } from "@/lib/format";
 import { withReturn } from "@/lib/return-to";
 import { filingDataFixMessage, supportWhatsappHref } from "@/lib/support-link";
@@ -21,6 +21,12 @@ type Prepared = { ok: true; value: string } | { ok: false; message: string };
 /** The RAW field value is judged (never digit-stripped first); a valid number is saved in its 9-digit form. */
 const israeliNumber = (raw: string): Prepared => {
   const result = filingBusinessNumberSave(raw);
+  return result.ok ? { ok: true, value: result.value ?? "" } : result;
+};
+
+/** A customer number may also be cleared (a passport or foreign id): the store writes null. */
+const customerNumber = (raw: string): Prepared => {
+  const result = filingBusinessNumberSave(raw, { allowEmpty: true });
   return result.ok ? { ok: true, value: result.value ?? "" } : result;
 };
 
@@ -190,7 +196,11 @@ function FixControlView({ control, context }: { control: FixControl; context: Co
           placeholder="123456789"
           inputMode="numeric"
           showLeadingZeroHint
-          prepare={israeliNumber}
+          prepare={customerNumber}
+          clearable={{
+            label: "נקה את המספר",
+            note: `בלי מספר, מכירה של פחות מ-${formatCurrencyWhole(IDENTIFIED_SALE_THRESHOLD)} לפני מע״מ מדווחת כעסקה ללקוח לא מזוהה.`,
+          }}
           onSave={(value) => updateDocumentClientTaxId(control.documentId, value)}
         />
       );
@@ -269,6 +279,7 @@ function InlineSave({
   inputMode = "text",
   showLeadingZeroHint = false,
   prepare,
+  clearable,
   onSave,
 }: {
   label: string;
@@ -279,6 +290,8 @@ function InlineSave({
   showLeadingZeroHint?: boolean;
   /** Judges the raw field value: the value to save, or the specific reason it is refused. */
   prepare: (raw: string) => Prepared;
+  /** A secondary "clear" action, offered only while the record still holds a number. */
+  clearable?: { label: string; note: string };
   onSave: (value: string) => Promise<void>;
 }) {
   const [value, setValue] = useState(initial);
@@ -313,6 +326,23 @@ function InlineSave({
       </div>
       {showLeadingZeroHint && isShortValidNumber(value) && <BusinessNumberHintText value={value} digitsOnlyField />}
       {error && <p role="alert" className="mt-1 text-xs font-semibold text-rose-700">{error}</p>}
+      {clearable && initial.trim() !== "" && (
+        <div className="mt-2">
+          <button
+            type="button"
+            data-fix-clear
+            disabled={saving}
+            onClick={() => {
+              setValue("");
+              void run(() => onSave(""));
+            }}
+            className="no-print inline-flex items-center min-h-[44px] px-3 rounded-xl text-sm font-semibold text-stone-700 bg-white border border-stone-300 hover:bg-stone-50 disabled:opacity-50"
+          >
+            {clearable.label}
+          </button>
+          <p className="mt-1 text-xs leading-relaxed text-stone-700">{clearable.note}</p>
+        </div>
+      )}
     </div>
   );
 }
