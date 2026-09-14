@@ -40,8 +40,24 @@ describe("uniform export endpoint enforcement", () => {
     const download = await GET(request());
     expect(download.status).toBe(422); expect((await download.json()).issues.some((i: { level: string }) => i.level === "error")).toBe(true);
   });
+  it("accepts an 8-digit dealer number and names the folder and file with the padded number", async () => {
+    state.taxId = "13333331";
+    expect((await (await GET(request("&preflight=true"))).json()).ok).toBe(true);
+    const download = await GET(request());
+    expect(download.status).toBe(200);
+    expect(JSON.parse(download.headers.get("X-Uniform-Report")!).path).toMatch(/^OPENFRMT\/01333333\.\d{2}\/\d{8}$/);
+    expect(download.headers.get("content-disposition")).toContain("OPENFRMT-013333331-2026.zip");
+  });
+  it("gives every issue a stable code", async () => {
+    state.taxId = "123";
+    const body = await (await GET(request("&preflight=true"))).json();
+    expect(body.issues.every((i: { code?: string }) => typeof i.code === "string" && i.code.length > 0)).toBe(true);
+    expect(body.issues.map((i: { code: string }) => i.code)).toContain("dealer_number_invalid");
+  });
   it("refuses to turn failed data requests into empty exports", async () => {
     state.fail = true;
-    expect((await GET(request())).status).toBe(503);
+    const response = await GET(request());
+    expect(response.status).toBe(503);
+    expect((await response.json()).issues[0].code).toBe("data_load_failed");
   });
 });
