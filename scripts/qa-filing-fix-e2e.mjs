@@ -1,5 +1,6 @@
 // E2E for the friendly filing report on the Lynkeus QA tenant: session
-// injection, fix the business number and a grouped supplier number inline on
+// injection, clear a foreign customer number (when the seed found a small
+// sale), fix the business number and a grouped supplier number inline on
 // /reports/vat, download the PCN874 file and check it, save the allocation
 // number, check the yearly view's friendly period item, and write desktop +
 // mobile screenshots for reading.
@@ -104,8 +105,23 @@ try {
 
   await open(MOBILE);
   await page.screenshot({ path: path.join(OUT, "mobile-before.png") });
+  if (await page.$('[data-fix-code="customer_number_invalid"]')) {
+    await page.$eval('[data-fix-code="customer_number_invalid"]', (el) => el.scrollIntoView({ block: "center" }));
+    await sleep(600);
+    await page.screenshot({ path: path.join(OUT, "mobile-customer-clear.png") });
+  }
 
   await open(DESKTOP);
+  if (await page.$('[data-fix-code="customer_number_invalid"] [data-fix-clear]')) {
+    await step("a foreign customer number is cleared from the panel", async () => {
+      await page.$eval('[data-fix-code="customer_number_invalid"]', (el) => el.scrollIntoView({ block: "center" }));
+      await page.screenshot({ path: path.join(OUT, "desktop-customer-clear.png") });
+      await (await page.$('[data-fix-code="customer_number_invalid"] [data-fix-clear]')).click();
+      await page.waitForFunction(() => !document.querySelector('[data-fix-code="customer_number_invalid"]'), { timeout: 90_000 });
+    });
+  } else {
+    console.log("no foreign customer number item (seed found no small sale): clear step skipped");
+  }
   await step("business number fixed inline", () => fixInline("dealer_number_invalid", "מספר העוסק של העסק", "512345679"));
   await step("supplier number fixed inline for both expenses", () => fixInline("supplier_number_invalid", "מספר עוסק של הספק", "513333336"));
   await sleep(1500);

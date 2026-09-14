@@ -7,6 +7,9 @@
 //          their own (a sale without a customer number, an input without supplier
 //          details) get synthetic valid values so the E2E can reach a download;
 //          every original value is kept in the snapshot.
+//          One small sale (under the identified-sale threshold) gets a foreign
+//          customer number, so the E2E can clear it from the panel (it becomes
+//          an L record). Its original number is in the snapshot too.
 //   clean: remove those expenses and restore business_type / tax_id and every
 //          temporarily filled value, then print what is left (counts only).
 //
@@ -86,10 +89,12 @@ const validIsraeli = (raw) => {
   return total % 10 === 0;
 };
 
-const { data: ownDocs, error: ownDocsError } = await supabase.from("documents").select("id, client_tax_id, type, status, date")
+const { data: ownDocs, error: ownDocsError } = await supabase.from("documents").select("id, client_tax_id, type, status, date, subtotal, subtotal_ils, zero_rated")
   .eq("business_id", biz.id).gte("date", start).lte("date", end).in("type", ["tax_invoice", "tax_invoice_receipt", "credit_note"]);
 if (ownDocsError) throw ownDocsError;
-const docsToFill = ownDocs.filter((d) => d.status !== "draft" && d.status !== "cancelled" && !validIsraeli(d.client_tax_id));
+const issuedDocs = ownDocs.filter((d) => d.status !== "draft" && d.status !== "cancelled");
+const foreignDoc = issuedDocs.find((d) => d.type !== "credit_note" && !d.zero_rated && Math.abs(Number(d.subtotal_ils ?? d.subtotal)) > 0 && Math.abs(Number(d.subtotal_ils ?? d.subtotal)) < 5000);
+const docsToFill = issuedDocs.filter((d) => d !== foreignDoc && !validIsraeli(d.client_tax_id));
 const { data: ownExpenses, error: ownExpensesError } = await supabase.from("expenses").select("id, supplier_tax_id, reference, vat_amount, description")
   .eq("business_id", biz.id).gte("date", start).lte("date", end).gt("vat_amount", 0);
 if (ownExpensesError) throw ownExpensesError;
@@ -98,7 +103,7 @@ const expensesToFill = ownExpenses.filter((e) => e.description !== TAG && (!vali
 fs.writeFileSync(SNAPSHOT, JSON.stringify({
   business_type: biz.business_type,
   tax_id: biz.tax_id ?? "",
-  documents: docsToFill.map((d) => ({ id: d.id, client_tax_id: d.client_tax_id ?? null })),
+  documents: [...docsToFill, ...(foreignDoc ? [foreignDoc] : [])].map((d) => ({ id: d.id, client_tax_id: d.client_tax_id ?? null })),
   expenses: expensesToFill.map((e) => ({ id: e.id, supplier_tax_id: e.supplier_tax_id ?? null, reference: e.reference ?? null })),
 }));
 
@@ -116,6 +121,11 @@ for (const [i, e] of expensesToFill.entries()) {
   const { error } = await supabase.from("expenses").update(patch).eq("id", e.id);
   if (error) throw error;
 }
+if (foreignDoc) {
+  const { error } = await supabase.from("documents").update({ client_tax_id: "DE123456789" }).eq("id", foreignDoc.id);
+  if (error) throw error;
+}
+console.log(`foreign customer number on a small sale: ${foreignDoc ? "yes" : "no small sale in the period"}`);
 console.log(`temporarily filled ${docsToFill.length} QA documents and ${expensesToFill.length} QA expenses in the period`);
 
 const rows = [
