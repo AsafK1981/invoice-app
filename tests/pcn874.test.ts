@@ -324,6 +324,21 @@ describe("PCN874 preflight rejects malformed source data", () => {
   it.each([{ vatAmount: NaN }, { vatAmount: -18 }, { amount: 100, vatAmount: 180 }])("blocks bad input %j even when filtered out of the body", (over) => {
     expect(build([sale()], [expense({ ...over, id: "bad" })]).warnings.some(w => w.sourceId === "bad" && w.level === "error")).toBe(true);
   });
+  it.each(["13333331", "1234566", "51-333333-6", "‏513333336‎", " 513 333 336 "])(
+    "accepts a valid supplier number typed as %j and pads it to 9 digits in the file",
+    (supplierTaxId) => {
+      const r = build([sale()], [expense({ supplierTaxId, id: "short" })]);
+      expect(r.warnings.filter(w => w.sourceId === "short" && w.level === "error")).toEqual([]);
+      const expected = supplierTaxId.replace(/\D/g, "").padStart(9, "0");
+      expect(r.content.split("\r\n").some(l => l[0] === "T" && l.slice(1, 10) === expected)).toBe(true);
+    },
+  );
+  it.each(["51333333X", "1234567", "5133333360"])("still blocks supplier number %j", (supplierTaxId) => {
+    expect(build([sale()], [expense({ supplierTaxId, id: "bad" })]).warnings.some(w => w.sourceId === "bad" && w.level === "error")).toBe(true);
+  });
+  it("accepts the business's own 8-digit number", () => {
+    expect(buildPcn874({ business: { ...business, taxId: "13333331" }, documents: [sale()], expenses: [], range, generatedOn }).blockers).toEqual([]);
+  });
   it("ignores invalid drafts and cancelled documents", () => {
     expect(build([doc({ status: "draft", date: "" }), doc({ status: "cancelled", vat: NaN })], []).warnings).toEqual([]);
   });

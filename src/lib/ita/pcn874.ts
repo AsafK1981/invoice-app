@@ -231,6 +231,21 @@ export function validPcnVatId(value: string): boolean {
   return /^\d{9}$/.test(value) && isValidIsraeliIdNumber(value);
 }
 
+/**
+ * A stored business number as the user typed it: short numbers lose their
+ * leading zeros (an 8-digit עוסק is 0XXXXXXXX in the file) and pasted values
+ * carry separators or invisible bidi marks. Returns the 9-digit file form, or
+ * null when it holds anything else or fails the checksum.
+ */
+export function sourceVatIdForPcn(value: unknown): string | null {
+  const raw = String(value ?? "");
+  if (!/^[\d\s.\-‎‏‪-‮⁦-⁩﻿]*$/.test(raw)) return null;
+  const digits = raw.replace(/\D/g, "");
+  if (digits.length === 0 || digits.length > 9) return null;
+  const padded = digits.padStart(9, "0");
+  return validPcnVatId(padded) ? padded : null;
+}
+
 export function validPcnDate(value: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
   const date = new Date(`${value}T00:00:00Z`);
@@ -270,7 +285,7 @@ function validateSources(documents: InvoiceDocument[], expenses: Expense[], rang
       add("במסמך במטבע חוץ חסרים סכומי שקל שמורים. השלם את ההמרה לשקלים לפני הדיווח.");
     if (!isDoc && vat === 0) return;
     const id = String((isDoc ? d.clientTaxId : e.supplierTaxId) ?? "").trim();
-    if (id && !validPcnVatId(id)) add("מספר העוסק כולל תווים שגויים, אינו בן 9 ספרות או שספרת הביקורת שגויה. בדוק מול החשבונית ותקן את המספר.");
+    if (id && !sourceVatIdForPcn(id)) add("מספר העוסק אינו תקין: הוא כולל תווים שאינם ספרות, יותר מ-9 ספרות, או שספרת הביקורת שגויה. בדוק מול החשבונית ותקן את המספר.");
     const reference = isDoc ? String(d.number) : referenceDigits(e.reference);
     if ((isDoc || e.reference) && (!/^\d{1,9}$/.test(reference) || Number(reference) === 0))
       add("מספר החשבונית חייב להיות מספר חיובי של עד 9 ספרות בשדה הדיווח. בדוק את האסמכתא; לא ניתן לקצר אותה אוטומטית.");
@@ -466,7 +481,7 @@ export function buildPcn874(args: BuildPcn874Args): Pcn874Result {
 
   // ── whole-file blockers ──
   const blockers: string[] = [];
-  if (!validPcnVatId(String(business.taxId).trim())) {
+  if (!sourceVatIdForPcn(business.taxId)) {
     blockers.push("מספר העוסק של העסק בהגדרות חייב להיות 9 ספרות עם ספרת ביקורת תקינה. תקן אותו לפני הדיווח.");
   }
   if (!validPcnDate(range.start) || !validPcnDate(range.end) || range.start > range.end) {
