@@ -34,7 +34,7 @@ export function AgingReport({ documents, headless = false }: Props) {
           <div className="flex items-baseline gap-2 mb-1 flex-wrap">
             <AlertTriangle className="w-5 h-5 text-orange-500 self-center" />
             <h2 className="font-semibold text-stone-900">חובות פתוחים</h2>
-            <span className="text-xs text-stone-500">חלוקה לפי וותק החוב</span>
+            <span className="text-xs text-stone-500">חלוקה לפי ותק החוב</span>
           </div>
         )}
         <p className="text-sm text-stone-600 mt-2">
@@ -64,7 +64,7 @@ export function AgingReport({ documents, headless = false }: Props) {
               className="text-xs text-stone-500"
               title="כמה ימים עברו מאז הפקת המסמך, מה שמכונה בעולם החשבונאות 'גיול חובות'."
             >
-              לפי וותק החוב
+              לפי ותק החוב
             </span>
           </div>
         )}

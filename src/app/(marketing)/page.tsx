@@ -1177,7 +1177,7 @@ export default function MarketingLanding() {
                 <h3>רוצים השוואה מלאה שורה מול שורה?</h3>
                 <p className="sub">
                   בדקנו את עצמנו מול כל התוכנות המובילות בישראל. שורה מול
-                  שורה, בלי מסננות.
+                  שורה, בלי לעגל פינות.
                 </p>
                 <div className="ml-chips">
                   {Object.values(COMPETITORS).map((c) => (
