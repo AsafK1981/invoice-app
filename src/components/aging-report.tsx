@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { AlertTriangle, ChevronDown, ChevronUp, FileText } from "lucide-react";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { formatCurrencyWhole, formatDate } from "@/lib/format";
 import { DOCUMENT_TYPE_LABELS, type InvoiceDocument } from "@/lib/types";
 import { useClients } from "@/lib/client-store";
 import { AGING_BUCKET_LABELS as BUCKET_LABELS, computeAging, daysOverdue, type AgingRow } from "@/lib/aging";
@@ -71,7 +71,7 @@ export function AgingReport({ documents, headless = false }: Props) {
         <p className="text-xs text-stone-600">
           {rows.length} לקוחות · סך פתוח{" "}
           <span className="font-bold text-stone-900" dir="ltr">
-            {formatCurrency(totals.grand)}
+            {formatCurrencyWhole(totals.grand)}
           </span>
         </p>
       </div>
@@ -106,11 +106,11 @@ export function AgingReport({ documents, headless = false }: Props) {
             <td className="px-6 py-3 text-sm text-stone-900">סה״כ</td>
             {totals.buckets.map((v, i) => (
               <td key={i} className={`hidden sm:table-cell px-3 py-3 text-sm text-left font-mono ${BUCKET_TONES[i]}`}>
-                {v > 0 ? formatCurrency(v) : "-"}
+                {v > 0 ? formatCurrencyWhole(v) : "-"}
               </td>
             ))}
             <td className="px-6 py-3 text-sm text-left font-mono text-stone-900" dir="ltr">
-              {formatCurrency(totals.grand)}
+              {formatCurrencyWhole(totals.grand)}
             </td>
             <td></td>
           </tr>
@@ -144,11 +144,11 @@ function FragmentRow({
         </td>
         {row.buckets.map((v, i) => (
           <td key={i} className={`hidden sm:table-cell px-3 py-3 text-sm text-left font-mono ${BUCKET_TONES[i]}`}>
-            {v > 0 ? formatCurrency(v) : "-"}
+            {v > 0 ? formatCurrencyWhole(v) : "-"}
           </td>
         ))}
         <td className="px-6 py-3 text-sm text-left font-mono font-bold text-stone-900" dir="ltr">
-          {formatCurrency(row.total)}
+          {formatCurrencyWhole(row.total)}
         </td>
         <td className="px-2 py-3">
           <button
@@ -184,7 +184,7 @@ function FragmentRow({
                       </span>
                     </Link>
                     <span className="font-mono font-semibold text-stone-900" dir="ltr">
-                      {formatCurrency(d.totalIls ?? d.total)}
+                      {formatCurrencyWhole(d.totalIls ?? d.total)}
                     </span>
                   </li>
                 ))}

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Clock, AlertTriangle, CheckCircle2, FileQuestion, ArrowLeft, ChevronDown } from "lucide-react";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrencyWhole } from "@/lib/format";
 import type { InvoiceDocument } from "@/lib/types";
 
 interface Props {
@@ -109,7 +109,7 @@ export function QuoteAging({ documents }: Props) {
             הצעות פתוחות: לפי זמן ההפקה
           </h2>
           <p className="text-xs text-stone-600 mt-1">
-            סה״כ <span className="font-semibold text-stone-900">{formatCurrency(totalValue)}</span>{" "}
+            סה״כ <span className="font-semibold text-stone-900">{formatCurrencyWhole(totalValue)}</span>{" "}
             ב-{openQuotes.length} {openQuotes.length === 1 ? "הצעה ממתינה" : "הצעות ממתינות"} לתשובה. לחץ על קבוצה כדי לראות אילו.
           </p>
         </div>
@@ -162,7 +162,7 @@ export function QuoteAging({ documents }: Props) {
                 </span>
                 {!empty && (
                   <span className="text-xs text-stone-600">
-                    · <span dir="ltr">{formatCurrency(b.value)}</span>
+                    · <span dir="ltr">{formatCurrencyWhole(b.value)}</span>
                   </span>
                 )}
               </div>
@@ -193,7 +193,7 @@ export function QuoteAging({ documents }: Props) {
                         <span className="text-stone-600 flex-shrink-0">#{q.number}</span>
                       </span>
                       <span className="flex items-center gap-2 text-stone-600 flex-shrink-0">
-                        <span className="font-medium" dir="ltr">{formatCurrency(q.total)}</span>
+                        <span className="font-medium" dir="ltr">{formatCurrencyWhole(q.total)}</span>
                         <span className={`${expandedBucket.color} font-semibold tabular-nums`} dir="rtl">
                           {days} י׳
                         </span>

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { FileText, Info, TrendingDown, TrendingUp, Wallet } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { formatCurrencyWhole, formatDate } from "@/lib/format";
 import { HEBREW_MONTHS_SHORT } from "@/lib/report-period";
 import { ReportsBarChart, type BarDatum } from "@/components/reports-bar-chart";
 import {
@@ -43,13 +43,13 @@ export function CashFlowForecast({ result }: { result: ForecastResult }) {
       {/* Three tiles, so the shared four-column .rpt-kpis grid would leave a
           hole; same tile, laid out in three. */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-        <Kpi icon={TrendingUp} label="צפוי להיכנס" value={formatCurrency(totals.inflow)}>
+        <Kpi icon={TrendingUp} label="צפוי להיכנס" value={formatCurrencyWhole(totals.inflow)}>
           <span>{`${months.length} חודשים קדימה`}</span>
         </Kpi>
-        <Kpi icon={TrendingDown} label="צפוי לצאת" value={formatCurrency(totals.outflow)}>
+        <Kpi icon={TrendingDown} label="צפוי לצאת" value={formatCurrencyWhole(totals.outflow)}>
           <span>הוצאות שוטפות, מקדמות ומע״מ</span>
         </Kpi>
-        <Kpi icon={Wallet} label="נטו" value={formatCurrency(totals.net)}>
+        <Kpi icon={Wallet} label="נטו" value={formatCurrencyWhole(totals.net)}>
           <span>{totals.net > 0 ? "צפי חיובי" : totals.net < 0 ? "צפי שלילי - כדאי להיערך" : "צפי מאוזן"}</span>
         </Kpi>
       </div>
@@ -90,7 +90,7 @@ export function CashFlowForecast({ result }: { result: ForecastResult }) {
             </Link>{" "}
             בסך{" "}
             <span className="font-semibold text-stone-900" dir="ltr">
-              {formatCurrency(potentialQuotes.total)}
+              {formatCurrencyWhole(potentialQuotes.total)}
             </span>
             . לא נכללות בסכומים למעלה - הן יהפכו לכסף רק כשיאושרו.
           </p>
@@ -131,12 +131,12 @@ function MonthTable({ month }: { month: ForecastMonth }) {
         <div>
           <h2 className="rpt-h2">{month.label}</h2>
           <p className="rpt-hint">
-            נכנס <b dir="ltr">{formatCurrency(month.inflow)}</b> · יוצא{" "}
-            <b dir="ltr">{formatCurrency(month.outflow)}</b>
+            נכנס <b dir="ltr">{formatCurrencyWhole(month.inflow)}</b> · יוצא{" "}
+            <b dir="ltr">{formatCurrencyWhole(month.outflow)}</b>
           </p>
         </div>
         <div className="rpt-kpi-val" dir="ltr" title="נטו לחודש">
-          {formatCurrency(month.net)}
+          {formatCurrencyWhole(month.net)}
         </div>
       </div>
       <div className="overflow-x-auto">
@@ -166,7 +166,7 @@ function MonthTable({ month }: { month: ForecastMonth }) {
                 <tr className="rpt-total">
                   <td colSpan={5}>נטו</td>
                   <td className="n" dir="ltr">
-                    {formatCurrency(month.net)}
+                    {formatCurrencyWhole(month.net)}
                   </td>
                 </tr>
               </>
@@ -199,7 +199,7 @@ function LineRow({ line }: { line: ForecastLine }) {
         <Chip tone={line.confidence}>{FORECAST_CONFIDENCE_LABELS[line.confidence]}</Chip>
       </td>
       <td className={`n ${line.amount < 0 ? "text-stone-600" : "font-semibold text-emerald-800"}`} dir="ltr">
-        {formatCurrency(line.amount)}
+        {formatCurrencyWhole(line.amount)}
       </td>
     </tr>
   );

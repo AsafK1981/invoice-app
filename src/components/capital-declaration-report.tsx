@@ -5,7 +5,7 @@ import { IsraeliDateInput } from "@/components/israeli-date-input";
 import { useMemo, useState } from "react";
 import { Wallet, Printer, Download, ExternalLink, Info, Circle } from "lucide-react";
 import { DownloadPdfButton } from "@/components/download-pdf-button";
-import { formatCurrency, formatDate, shekel } from "@/lib/format";
+import { formatCurrencyWhole, formatDate, shekel } from "@/lib/format";
 import { todayInIsrael } from "@/lib/date";
 import { DOCUMENT_TYPE_LABELS, isCountableRevenue, type InvoiceDocument, type Expense } from "@/lib/types";
 import { computeOpenReceivables } from "@/lib/capital-declaration";
@@ -272,13 +272,13 @@ export function CapitalDeclarationReport({ headless = false, documents, expenses
               >
                 <td className="px-4 py-3 font-semibold text-stone-900">{r.year}</td>
                 <td className="px-4 py-3 text-left text-emerald-700 font-semibold tabular-nums">
-                  {formatCurrency(r.income)}
+                  {formatCurrencyWhole(r.income)}
                 </td>
                 <td className="px-4 py-3 text-left text-rose-700 font-semibold tabular-nums">
-                  {formatCurrency(r.expenses)}
+                  {formatCurrencyWhole(r.expenses)}
                 </td>
                 <td className="px-4 py-3 text-left font-bold text-stone-900 tabular-nums">
-                  {formatCurrency(r.profit)}
+                  {formatCurrencyWhole(r.profit)}
                 </td>
                 <td className="px-4 py-3 text-left text-xs text-stone-500 hidden md:table-cell tabular-nums">
                   {r.documentsCount} / {r.expensesCount}
@@ -288,13 +288,13 @@ export function CapitalDeclarationReport({ headless = false, documents, expenses
             <tr className="border-t-2 border-purple-200 bg-purple-100/60">
               <td className="px-4 py-3 font-bold text-stone-900">סה״כ</td>
               <td className="px-4 py-3 text-left font-bold text-emerald-700 tabular-nums">
-                {formatCurrency(totals.income)}
+                {formatCurrencyWhole(totals.income)}
               </td>
               <td className="px-4 py-3 text-left font-bold text-rose-700 tabular-nums">
-                {formatCurrency(totals.expenses)}
+                {formatCurrencyWhole(totals.expenses)}
               </td>
               <td className="px-4 py-3 text-left font-bold text-stone-900 tabular-nums">
-                {formatCurrency(totals.profit)}
+                {formatCurrencyWhole(totals.profit)}
               </td>
               <td className="px-4 py-3 text-left text-xs text-stone-600 hidden md:table-cell tabular-nums">
                 {totals.documentsCount} / {totals.expensesCount}
@@ -309,19 +309,19 @@ export function CapitalDeclarationReport({ headless = false, documents, expenses
         <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-3">
           <div className="text-xs text-emerald-900">ממוצע הכנסה שנתי</div>
           <div className="text-lg font-bold text-emerald-900 mt-0.5">
-            {formatCurrency(rows.length > 0 ? totals.income / rows.length : 0)}
+            {formatCurrencyWhole(rows.length > 0 ? totals.income / rows.length : 0)}
           </div>
         </div>
         <div className="rounded-xl bg-rose-50 border border-rose-200 p-3">
           <div className="text-xs text-rose-900">ממוצע הוצאה שנתי</div>
           <div className="text-lg font-bold text-rose-900 mt-0.5">
-            {formatCurrency(rows.length > 0 ? totals.expenses / rows.length : 0)}
+            {formatCurrencyWhole(rows.length > 0 ? totals.expenses / rows.length : 0)}
           </div>
         </div>
         <div className="gk-avg-profit rounded-xl bg-stone-50 border border-stone-200 p-3">
           <div className="text-xs text-stone-700">ממוצע רווח שנתי</div>
           <div className="text-lg font-bold text-stone-900 mt-0.5">
-            {formatCurrency(rows.length > 0 ? totals.profit / rows.length : 0)}
+            {formatCurrencyWhole(rows.length > 0 ? totals.profit / rows.length : 0)}
           </div>
         </div>
       </div>
@@ -351,7 +351,7 @@ export function CapitalDeclarationReport({ headless = false, documents, expenses
             {receivables.count} מסמכים פתוחים
           </span>
           <span className="text-lg font-bold text-blue-900 tabular-nums" dir="ltr">
-            {formatCurrency(receivables.total)}
+            {formatCurrencyWhole(receivables.total)}
           </span>
         </div>
 
@@ -379,7 +379,7 @@ export function CapitalDeclarationReport({ headless = false, documents, expenses
                     <td className="px-3 py-2 text-stone-800">{d.clientName}</td>
                     <td className="px-3 py-2 text-stone-600">{formatDate(d.date)}</td>
                     <td className="px-3 py-2 text-left font-semibold tabular-nums" dir="ltr">
-                      {formatCurrency(d.totalIls ?? d.total)}
+                      {formatCurrencyWhole(d.totalIls ?? d.total)}
                     </td>
                   </tr>
                 ))}

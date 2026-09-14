@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Wallet, Plus, ShoppingBag, Pencil, Trash2, Upload, Search, X, ScanLine, Loader2, Paperclip, Printer } from "lucide-react";
 import { useExpenses, expenseStore } from "@/lib/expense-store";
 import { useBusiness } from "@/lib/business-store";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { formatCurrency, formatCurrencyWhole, formatDate } from "@/lib/format";
 import { ExpenseFormModal } from "@/components/expense-form-modal";
 import { CsvImportModal } from "@/components/csv-import-modal";
 import { useConfirm } from "@/components/ui/confirm-dialog";
@@ -318,20 +318,20 @@ export default function ExpensesPage() {
           <p className="text-sm text-stone-700 mt-2 mr-14">
             {filtersActive ? (
               <>
-                מסונן: <span className="font-semibold text-rose-600">{formatCurrency(filteredTotal)}</span>
+                מסונן: <span className="font-semibold text-rose-600">{formatCurrencyWhole(filteredTotal)}</span>
                 {showVat && (
                   <span className="text-stone-500 mr-2">
-                    מתוכו מע״מ <span className="font-semibold text-stone-700 tabular-nums">{formatCurrency(filteredVat)}</span>
+                    מתוכו מע״מ <span className="font-semibold text-stone-700 tabular-nums">{formatCurrencyWhole(filteredVat)}</span>
                   </span>
                 )}
-                <span className="text-stone-500 mr-2">/ סה״כ {formatCurrency(grandTotal)}</span>
+                <span className="text-stone-500 mr-2">/ סה״כ {formatCurrencyWhole(grandTotal)}</span>
               </>
             ) : (
               <>
-                סה״כ <span className="font-semibold text-rose-600">{formatCurrency(grandTotal)}</span>
+                סה״כ <span className="font-semibold text-rose-600">{formatCurrencyWhole(grandTotal)}</span>
                 {showVat && (
                   <span className="text-stone-500 mr-2">
-                    מתוכו מע״מ <span className="font-semibold text-stone-700 tabular-nums">{formatCurrency(grandVat)}</span>
+                    מתוכו מע״מ <span className="font-semibold text-stone-700 tabular-nums">{formatCurrencyWhole(grandVat)}</span>
                   </span>
                 )}
               </>
@@ -592,12 +592,12 @@ export default function ExpensesPage() {
                       סה״כ · {filtered.length} הוצאות
                     </td>
                     {showVat && (
-                      <td className="px-6 py-4 text-sm text-left tabular-nums whitespace-nowrap">{formatCurrency(filteredNet)}</td>
+                      <td className="px-6 py-4 text-sm text-left tabular-nums whitespace-nowrap">{formatCurrencyWhole(filteredNet)}</td>
                     )}
                     {showVat && (
-                      <td className="px-6 py-4 text-sm text-left tabular-nums whitespace-nowrap">{formatCurrency(filteredVat)}</td>
+                      <td className="px-6 py-4 text-sm text-left tabular-nums whitespace-nowrap">{formatCurrencyWhole(filteredVat)}</td>
                     )}
-                    <td className="px-6 py-4 text-base text-left text-rose-600 tabular-nums whitespace-nowrap">{formatCurrency(filteredTotal)}</td>
+                    <td className="px-6 py-4 text-base text-left text-rose-600 tabular-nums whitespace-nowrap">{formatCurrencyWhole(filteredTotal)}</td>
                     <td className="px-4 py-4"></td>
                   </tr>
                 </tfoot>
@@ -650,14 +650,14 @@ export default function ExpensesPage() {
                   header: "סכום ללא מע״מ",
                   align: "end" as const,
                   render: (e: Expense) => formatCurrency(e.amount - (e.vatAmount ?? 0)),
-                  footer: formatCurrency(filteredNet),
+                  footer: formatCurrencyWhole(filteredNet),
                 },
                 {
                   key: "vat",
                   header: "מע״מ",
                   align: "end" as const,
                   render: (e: Expense) => (e.vatAmount ? formatCurrency(e.vatAmount) : "-"),
-                  footer: formatCurrency(filteredVat),
+                  footer: formatCurrencyWhole(filteredVat),
                 },
               ]
             : []),
@@ -666,7 +666,7 @@ export default function ExpensesPage() {
             header: showVat ? "סכום כולל מע״מ" : "סכום",
             align: "end" as const,
             render: (e) => formatCurrency(e.amount),
-            footer: formatCurrency(filteredTotal),
+            footer: formatCurrencyWhole(filteredTotal),
           },
         ]}
       />

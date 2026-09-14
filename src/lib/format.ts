@@ -58,6 +58,28 @@ export function formatCurrency(amount: number): string {
 }
 
 /**
+ * Half-up to a whole shekel: below .5 down, .5 and above up (away from zero
+ * for negatives). Snaps to agorot first so a float sum that should be x.50
+ * but lands on x.4999999 still rounds up.
+ */
+export function roundToShekel(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  const agorot = Math.round(Math.abs(value) * 100);
+  const whole = Math.floor((agorot + 50) / 100);
+  return value < 0 ? -whole : whole;
+}
+
+/**
+ * ILS amount for reports, dashboards and summaries: always a whole shekel,
+ * "₪ 10,642". Asaf's rule (asked twice): no report shows agorot anywhere.
+ * Documents themselves (invoice body, editor, public view) keep
+ * {@link formatCurrency} - the legal amount on a tax document is exact.
+ */
+export function formatCurrencyWhole(amount: number): string {
+  return formatCurrency(roundToShekel(amount));
+}
+
+/**
  * A plain calendar date with no time part: "2026-07-05" (optionally with a
  * trailing time we ignore only when the caller asked for a date-only value).
  */

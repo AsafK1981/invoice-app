@@ -8,7 +8,7 @@ import { ArrowRight, SlidersHorizontal, Download, Printer } from "lucide-react";
 import { DownloadPdfButton } from "@/components/download-pdf-button";
 import { useDocuments } from "@/lib/document-store";
 import { useClients } from "@/lib/client-store";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrencyWhole } from "@/lib/format";
 import {
   DOCUMENT_STATUS_LABELS,
   DOCUMENT_TYPE_LABELS,
@@ -426,17 +426,17 @@ export default function CustomReportPage() {
             <span className="whitespace-nowrap">
               <span className="text-stone-300 mx-1.5">·</span>
               סה״כ כולל מע״מ{" "}
-              <span className="font-bold text-orange-700">{formatCurrency(totals.total)}</span>
+              <span className="font-bold text-orange-700">{formatCurrencyWhole(totals.total)}</span>
             </span>
             <span className="whitespace-nowrap">
               <span className="text-stone-300 mx-1.5">·</span>
               לא כולל מע״מ{" "}
-              <span className="font-semibold text-stone-800">{formatCurrency(totals.net)}</span>
+              <span className="font-semibold text-stone-800">{formatCurrencyWhole(totals.net)}</span>
             </span>
             <span className="whitespace-nowrap">
               <span className="text-stone-300 mx-1.5">·</span>
               מע״מ{" "}
-              <span className="font-semibold text-stone-800">{formatCurrency(totals.vat)}</span>
+              <span className="font-semibold text-stone-800">{formatCurrencyWhole(totals.vat)}</span>
             </span>
           </span>
         </div>
@@ -475,9 +475,9 @@ export default function CustomReportPage() {
                       <td className="px-4 py-3.5 text-center align-middle whitespace-nowrap text-stone-700 border-b border-l border-stone-200">{DOCUMENT_TYPE_LABELS[d.type]}</td>
                       <td className="px-4 py-3.5 text-center align-middle text-stone-700 border-b border-l border-stone-200">{d.clientName}</td>
                       <td className="px-4 py-3.5 text-center align-middle tabular-nums whitespace-nowrap text-stone-700 border-b border-l border-stone-200">{taxId || <span className="text-stone-300">-</span>}</td>
-                      <td className="px-4 py-3.5 text-center align-middle tabular-nums text-stone-700 whitespace-nowrap border-b border-l border-stone-200">{formatCurrency(d.subtotalIls ?? d.subtotal)}</td>
-                      <td className="px-4 py-3.5 text-center align-middle tabular-nums text-stone-700 whitespace-nowrap border-b border-l border-stone-200">{formatCurrency(d.vatIls ?? d.vat)}</td>
-                      <td className="px-4 py-3.5 text-center align-middle tabular-nums font-extrabold text-stone-900 whitespace-nowrap border-b border-l border-stone-200">{formatCurrency(d.totalIls ?? d.total)}</td>
+                      <td className="px-4 py-3.5 text-center align-middle tabular-nums text-stone-700 whitespace-nowrap border-b border-l border-stone-200">{formatCurrencyWhole(d.subtotalIls ?? d.subtotal)}</td>
+                      <td className="px-4 py-3.5 text-center align-middle tabular-nums text-stone-700 whitespace-nowrap border-b border-l border-stone-200">{formatCurrencyWhole(d.vatIls ?? d.vat)}</td>
+                      <td className="px-4 py-3.5 text-center align-middle tabular-nums font-extrabold text-stone-900 whitespace-nowrap border-b border-l border-stone-200">{formatCurrencyWhole(d.totalIls ?? d.total)}</td>
                       <td className="px-4 py-3.5 text-center align-middle tabular-nums whitespace-nowrap text-stone-700 border-b border-l border-stone-200">{d.allocationNumber || <span className="text-stone-300">-</span>}</td>
                       <td className="px-4 py-3.5 text-center align-middle whitespace-nowrap text-stone-700 border-b border-stone-200">{DOCUMENT_STATUS_LABELS[d.status]}</td>
                     </tr>
@@ -489,9 +489,9 @@ export default function CustomReportPage() {
                   <td className="px-4 py-4 text-center border-t-2 border-l border-orange-200" colSpan={5}>
                     סה״כ · {totals.count} מסמכים
                   </td>
-                  <td className="px-4 py-4 text-center tabular-nums whitespace-nowrap border-t-2 border-l border-orange-200">{formatCurrency(totals.net)}</td>
-                  <td className="px-4 py-4 text-center tabular-nums whitespace-nowrap border-t-2 border-l border-orange-200">{formatCurrency(totals.vat)}</td>
-                  <td className="px-4 py-4 text-center tabular-nums whitespace-nowrap border-t-2 border-l border-orange-200">{formatCurrency(totals.total)}</td>
+                  <td className="px-4 py-4 text-center tabular-nums whitespace-nowrap border-t-2 border-l border-orange-200">{formatCurrencyWhole(totals.net)}</td>
+                  <td className="px-4 py-4 text-center tabular-nums whitespace-nowrap border-t-2 border-l border-orange-200">{formatCurrencyWhole(totals.vat)}</td>
+                  <td className="px-4 py-4 text-center tabular-nums whitespace-nowrap border-t-2 border-l border-orange-200">{formatCurrencyWhole(totals.total)}</td>
                   <td className="px-4 py-4 border-t-2 border-l border-orange-200"></td>
                   <td className="px-4 py-4 border-t-2 border-orange-200"></td>
                 </tr>

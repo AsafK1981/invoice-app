@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { isCountableRevenue, type InvoiceDocument, type Expense } from "@/lib/types";
-import { formatCurrency, shekel } from "@/lib/format";
+import { formatCurrencyWhole, shekel } from "@/lib/format";
 
 interface Props {
   documents: InvoiceDocument[];
@@ -706,7 +706,7 @@ function MonthlyLineChart({
                   className="inline-block w-2 h-2 rounded-full"
                   style={{ background: SERIES.income.dot }}
                 />
-                {SERIES.income.label}: {formatCurrency(Math.round(income[hover] || 0))}
+                {SERIES.income.label}: {formatCurrencyWhole(Math.round(income[hover] || 0))}
               </div>
             )}
             {showExpense && (
@@ -715,7 +715,7 @@ function MonthlyLineChart({
                   className="inline-block w-2 h-2 rounded-full"
                   style={{ background: SERIES.expense.dot }}
                 />
-                {SERIES.expense.label}: {formatCurrency(Math.round(expenses[hover] || 0))}
+                {SERIES.expense.label}: {formatCurrencyWhole(Math.round(expenses[hover] || 0))}
               </div>
             )}
           </div>

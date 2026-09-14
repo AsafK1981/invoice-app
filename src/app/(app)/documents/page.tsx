@@ -8,7 +8,7 @@ import { useDrafts } from "@/lib/draft-store";
 import { DocumentsTable } from "@/components/documents-table";
 import { DraftsList } from "@/components/drafts-list";
 import { BankImportModal } from "@/components/bank-import-modal";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrencyWhole } from "@/lib/format";
 
 export default function DocumentsPage() {
   const { documents } = useDocuments();
@@ -73,7 +73,7 @@ export default function DocumentsPage() {
                 <span>
                   שולם:{" "}
                   <span className="font-semibold text-emerald-700" dir="ltr">
-                    {formatCurrency(totals.paid)}
+                    {formatCurrencyWhole(totals.paid)}
                   </span>
                 </span>
               </>
@@ -84,7 +84,7 @@ export default function DocumentsPage() {
                 <span>
                   ממתין לתשלום:{" "}
                   <span className="font-semibold text-amber-700" dir="ltr">
-                    {formatCurrency(totals.outstanding)}
+                    {formatCurrencyWhole(totals.outstanding)}
                   </span>
                 </span>
               </>

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Check, Copy, ExternalLink } from "lucide-react";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { formatCurrencyWhole, formatDate } from "@/lib/format";
 import { saveIncomeTaxAdvanceRate } from "@/lib/business-store";
 import { biMonthlyRange, singleMonthRange, type ReportRange } from "@/lib/ita/vat-periods";
 import { advanceDueDate, computeAdvance } from "@/lib/ita/income-tax-advances";
@@ -103,7 +103,7 @@ export function IncomeTaxAdvancesReport({ business, documents }: Props) {
     {
       key: "turnover",
       label: "מחזור עסקאות בתקופה (ללא מע״מ)",
-      display: formatCurrency(result.turnover),
+      display: formatCurrencyWhole(result.turnover),
       clipboard: String(result.turnover),
       hint: `על ${result.docCount} מסמכים ששולמו בתקופה`,
     },
@@ -116,23 +116,23 @@ export function IncomeTaxAdvancesReport({ business, documents }: Props) {
     {
       key: "advance",
       label: "סכום המקדמה",
-      display: formatCurrency(result.advance),
+      display: formatCurrencyWhole(result.advance),
       clipboard: String(result.advance),
     },
     {
       key: "offset",
       label: "ניכוי מס במקור בתקופה (ניתן לקיזוז)",
-      display: formatCurrency(result.offset),
+      display: formatCurrencyWhole(result.offset),
       clipboard: String(result.offset),
       hint:
         result.withheld > result.offset
-          ? `מתוך ${formatCurrency(result.withheld)} שנוכו בתקופה`
+          ? `מתוך ${formatCurrencyWhole(result.withheld)} שנוכו בתקופה`
           : undefined,
     },
     {
       key: "due",
       label: "לתשלום",
-      display: formatCurrency(result.due),
+      display: formatCurrencyWhole(result.due),
       clipboard: String(result.due),
     },
   ];
@@ -239,7 +239,7 @@ export function IncomeTaxAdvancesReport({ business, documents }: Props) {
           to offset against, so "everything carries over" would be noise. */}
       {result.ratePercent > 0 && result.carriedToAnnual > 0 && (
         <p className="mt-3 rounded-xl bg-emerald-50 border border-emerald-200 p-3 text-sm text-emerald-900">
-          עודף ניכוי במקור של {formatCurrency(result.carriedToAnnual)} לא אבד, הוא מתקזז בדוח השנתי.
+          עודף ניכוי במקור של {formatCurrencyWhole(result.carriedToAnnual)} לא אבד, הוא מתקזז בדוח השנתי.
         </p>
       )}
 

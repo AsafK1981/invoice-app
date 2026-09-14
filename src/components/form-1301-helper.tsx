@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { ClipboardList, Printer, Copy, Check } from "lucide-react";
 import { DownloadPdfButton } from "@/components/download-pdf-button";
 import { useState } from "react";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrencyWhole } from "@/lib/format";
 import { isCountableRevenue, type Business, type InvoiceDocument, type Expense } from "@/lib/types";
 
 interface Props {
@@ -157,7 +157,7 @@ export function Form1301Helper({ headless = false, year, business, documents, ex
                   {f.note && <div className="text-xs text-stone-500 mt-0.5">{f.note}</div>}
                 </td>
                 <td className="px-4 py-3 text-left font-bold text-stone-900 tabular-nums">
-                  {formatCurrency(f.value)}
+                  {formatCurrencyWhole(f.value)}
                 </td>
                 <td className="px-2 py-3">
                   <button

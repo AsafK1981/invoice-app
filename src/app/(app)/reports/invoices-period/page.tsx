@@ -9,7 +9,7 @@ import { DownloadPdfButton } from "@/components/download-pdf-button";
 import { useFilingReportData } from "@/lib/filing-report-data";
 import { invoiceReportPreflight } from "@/lib/invoice-report-preflight";
 import { ReportPreflight } from "@/components/report-preflight";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrencyWhole } from "@/lib/format";
 import { todayInIsrael } from "@/lib/date";
 import { DOCUMENT_TYPE_LABELS, type DocumentType } from "@/lib/types";
 import { useBusiness } from "@/lib/business-store";
@@ -304,9 +304,9 @@ export default function InvoicesPeriodReportPage() {
                       </Link>
                     </td>
                     <td className="px-4 py-3.5 text-center align-middle tabular-nums whitespace-nowrap text-stone-700 border-b border-l border-stone-200">{fmtDate(r.date)}</td>
-                    <td className="px-4 py-3.5 text-center align-middle tabular-nums whitespace-nowrap text-stone-700 border-b border-l border-stone-200">{formatCurrency(r.net)}</td>
-                    <td className="px-4 py-3.5 text-center align-middle tabular-nums whitespace-nowrap text-stone-700 border-b border-l border-stone-200">{formatCurrency(r.vat)}</td>
-                    <td className="px-4 py-3.5 text-center align-middle tabular-nums font-extrabold text-stone-900 whitespace-nowrap border-b border-l border-stone-200">{formatCurrency(r.total)}</td>
+                    <td className="px-4 py-3.5 text-center align-middle tabular-nums whitespace-nowrap text-stone-700 border-b border-l border-stone-200">{formatCurrencyWhole(r.net)}</td>
+                    <td className="px-4 py-3.5 text-center align-middle tabular-nums whitespace-nowrap text-stone-700 border-b border-l border-stone-200">{formatCurrencyWhole(r.vat)}</td>
+                    <td className="px-4 py-3.5 text-center align-middle tabular-nums font-extrabold text-stone-900 whitespace-nowrap border-b border-l border-stone-200">{formatCurrencyWhole(r.total)}</td>
                     <td className="px-4 py-3.5 text-center align-middle tabular-nums whitespace-nowrap text-stone-700 border-b border-stone-200">{r.allocation || <span className="text-stone-300">-</span>}</td>
                   </tr>
                 ))}
@@ -314,9 +314,9 @@ export default function InvoicesPeriodReportPage() {
               <tfoot>
                 <tr className="bg-orange-50 text-stone-900 font-black">
                   <td className="px-4 py-4 text-center border-t-2 border-l border-orange-200" colSpan={3}>סה״כ · {rows.length} חשבוניות</td>
-                  <td className="px-4 py-4 text-center tabular-nums whitespace-nowrap border-t-2 border-l border-orange-200">{formatCurrency(totals.net)}</td>
-                  <td className="px-4 py-4 text-center tabular-nums whitespace-nowrap border-t-2 border-l border-orange-200">{formatCurrency(totals.vat)}</td>
-                  <td className="px-4 py-4 text-center tabular-nums whitespace-nowrap border-t-2 border-l border-orange-200">{formatCurrency(totals.total)}</td>
+                  <td className="px-4 py-4 text-center tabular-nums whitespace-nowrap border-t-2 border-l border-orange-200">{formatCurrencyWhole(totals.net)}</td>
+                  <td className="px-4 py-4 text-center tabular-nums whitespace-nowrap border-t-2 border-l border-orange-200">{formatCurrencyWhole(totals.vat)}</td>
+                  <td className="px-4 py-4 text-center tabular-nums whitespace-nowrap border-t-2 border-l border-orange-200">{formatCurrencyWhole(totals.total)}</td>
                   <td className="px-4 py-4 border-t-2 border-orange-200"></td>
                 </tr>
               </tfoot>

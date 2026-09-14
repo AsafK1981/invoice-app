@@ -25,7 +25,7 @@ import {
   Pencil,
   Ban,
 } from "lucide-react";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { formatCurrency, formatCurrencyWhole, formatDate } from "@/lib/format";
 import { deleteDocument, cancelDocument, updateDocumentStatus } from "@/lib/document-store";
 import { cancellationRoute } from "@/lib/document-cancel";
 import { exportDocuments } from "@/lib/csv-export";
@@ -693,7 +693,7 @@ export function DocumentsTable({ documents, limit, exportSlot, onPrintingChange 
                 header: "סכום",
                 align: "end" as const,
                 render: (d) => formatCurrency(d.totalIls ?? d.total),
-                footer: formatCurrency(printTotal),
+                footer: formatCurrencyWhole(printTotal),
               },
             ]}
           />,

@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { Printer, FileText, Users, Tag, TrendingUp, TrendingDown } from "lucide-react";
 import { DownloadPdfButton } from "@/components/download-pdf-button";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrencyWhole } from "@/lib/format";
 import {
   DOCUMENT_TYPE_LABELS,
   isCountableRevenue,
@@ -188,7 +188,7 @@ export function TaxYearDetail({ headless = false, year, documents, expenses, all
       {stats.totalVat > 0 && (
         <div className="rounded-2xl bg-blue-50 border border-blue-200 p-4 mb-6">
           <p className="text-sm text-blue-900">
-            <strong>מע״מ שנגבה:</strong> {formatCurrency(stats.totalVat)}, ייתכן ויש להעביר
+            <strong>מע״מ שנגבה:</strong> {formatCurrencyWhole(stats.totalVat)}, ייתכן ויש להעביר
             לרשות המסים בדיווח התקופתי.
           </p>
         </div>
@@ -206,19 +206,19 @@ export function TaxYearDetail({ headless = false, year, documents, expenses, all
             <div>
               <div className="text-xs text-stone-600">צפי הכנסות</div>
               <div className="text-lg font-bold text-emerald-700 tabular-nums">
-                {formatCurrency(stats.projection.income)}
+                {formatCurrencyWhole(stats.projection.income)}
               </div>
             </div>
             <div>
               <div className="text-xs text-stone-600">צפי הוצאות</div>
               <div className="text-lg font-bold text-rose-700 tabular-nums">
-                {formatCurrency(stats.projection.expenses)}
+                {formatCurrencyWhole(stats.projection.expenses)}
               </div>
             </div>
             <div>
               <div className="text-xs text-stone-600">צפי רווח נקי</div>
               <div className="text-lg font-bold text-stone-900 tabular-nums">
-                {formatCurrency(stats.projection.profit)}
+                {formatCurrencyWhole(stats.projection.profit)}
               </div>
             </div>
           </div>
@@ -245,7 +245,7 @@ export function TaxYearDetail({ headless = false, year, documents, expenses, all
                     <span className="text-xs text-stone-500">({data.count})</span>
                   </span>
                   <span className="text-sm font-semibold text-stone-900">
-                    {formatCurrency(data.total)}
+                    {formatCurrencyWhole(data.total)}
                   </span>
                 </li>
               ))
@@ -279,7 +279,7 @@ export function TaxYearDetail({ headless = false, year, documents, expenses, all
                       </span>
                     </span>
                     <span className="text-sm font-semibold text-stone-900">
-                      {formatCurrency(data.total)}
+                      {formatCurrencyWhole(data.total)}
                     </span>
                   </li>
                 );
@@ -314,7 +314,7 @@ export function TaxYearDetail({ headless = false, year, documents, expenses, all
                     </span>
                   </span>
                   <span className="text-sm font-semibold text-stone-900">
-                    {formatCurrency(c.total)}
+                    {formatCurrencyWhole(c.total)}
                   </span>
                 </li>
               );
@@ -351,7 +351,7 @@ function DeltaCard({
         <span className="text-xs font-medium text-stone-600">{label}</span>
         <Icon className="w-4 h-4 text-stone-400" />
       </div>
-      <div className="text-2xl font-bold text-stone-900">{formatCurrency(value)}</div>
+      <div className="text-2xl font-bold text-stone-900">{formatCurrencyWhole(value)}</div>
       {delta && (
         <div
           className={`text-xs mt-1 font-medium ${

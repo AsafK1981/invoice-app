@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { AlertTriangle, TrendingUp, ShieldCheck } from "lucide-react";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrencyWhole } from "@/lib/format";
 import { getExemptCeiling } from "@/lib/tax-thresholds";
 import { isCountableRevenue } from "@/lib/types";
 import type { Business, InvoiceDocument } from "@/lib/types";
@@ -99,7 +99,7 @@ export function ExemptCeilingTracker({ business, documents }: Props) {
           <div className="flex items-baseline justify-between gap-3 flex-wrap">
             <p className="text-sm font-bold text-stone-900">{theme.title}</p>
             <p className="text-xs text-stone-600">
-              תקרת עוסק פטור {year}: {formatCurrency(ceiling)}
+              תקרת עוסק פטור {year}: {formatCurrencyWhole(ceiling)}
             </p>
           </div>
 
@@ -113,7 +113,7 @@ export function ExemptCeilingTracker({ business, documents }: Props) {
           <div className="mt-2 flex items-baseline justify-between gap-3 flex-wrap">
             <p className="text-base font-bold text-stone-900">
               <span dir="ltr" className="inline-flex items-baseline gap-1">
-                {formatCurrency(yearlyTurnover)}
+                {formatCurrencyWhole(yearlyTurnover)}
                 <span className="text-xs font-medium text-stone-600">
                   ({percentage.toFixed(0)}%)
                 </span>
@@ -122,10 +122,10 @@ export function ExemptCeilingTracker({ business, documents }: Props) {
             <p className="text-xs font-medium text-stone-700">
               {exceeded ? (
                 <span className="text-rose-700 font-bold">
-                  חריגה של {formatCurrency(yearlyTurnover - ceiling)}
+                  חריגה של {formatCurrencyWhole(yearlyTurnover - ceiling)}
                 </span>
               ) : (
-                <>נותרו {formatCurrency(remaining)} עד התקרה</>
+                <>נותרו {formatCurrencyWhole(remaining)} עד התקרה</>
               )}
             </p>
           </div>

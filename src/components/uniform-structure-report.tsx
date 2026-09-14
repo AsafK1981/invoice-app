@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Printer, X } from "lucide-react";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { formatCurrencyWhole, formatDate } from "@/lib/format";
 import { APPENDIX_1_DOC_TYPES } from "@/lib/uniform-structure/builder";
 
 /**
@@ -137,7 +137,7 @@ export function ReportBody({
                 <td dir="ltr" className="usr-mono">{code}</td>
                 <td>{labelByCode.get(code) ?? code}</td>
                 <td className="usr-num">{count.toLocaleString("he-IL")}</td>
-                <td className="usr-num">{count === 0 ? "0" : formatCurrency(total)}</td>
+                <td className="usr-num">{count === 0 ? "0" : formatCurrencyWhole(total)}</td>
               </tr>
             ))}
           </tbody>

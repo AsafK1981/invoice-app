@@ -15,7 +15,7 @@ import { useDocuments } from "@/lib/document-store";
 import { isCountableRevenue } from "@/lib/types";
 import { useExpenses } from "@/lib/expense-store";
 import { useBusiness } from "@/lib/business-store";
-import { formatCurrency, shekel } from "@/lib/format";
+import { formatCurrencyWhole, shekel } from "@/lib/format";
 import { NumberInput } from "@/components/number-input";
 import {
   projectAnnualTax,
@@ -111,13 +111,13 @@ export default function TaxProjectionPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card
           label="הכנסות מצטברות השנה"
-          value={formatCurrency(ytd.ytdIncome)}
+          value={formatCurrencyWhole(ytd.ytdIncome)}
           icon={TrendingUp}
           tone="emerald"
         />
         <Card
           label="הוצאות מצטברות"
-          value={formatCurrency(ytd.ytdExpenses)}
+          value={formatCurrencyWhole(ytd.ytdExpenses)}
           icon={Wallet}
           tone="rose"
         />
@@ -136,11 +136,11 @@ export default function TaxProjectionPage() {
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Pill label="הכנסה צפויה" value={formatCurrency(projection.projectedIncome)} />
-          <Pill label="הוצאות צפויות" value={formatCurrency(projection.projectedExpenses)} />
+          <Pill label="הכנסה צפויה" value={formatCurrencyWhole(projection.projectedIncome)} />
+          <Pill label="הוצאות צפויות" value={formatCurrencyWhole(projection.projectedExpenses)} />
           <Pill
             label="רווח חייב"
-            value={formatCurrency(projection.projectedProfit)}
+            value={formatCurrencyWhole(projection.projectedProfit)}
             emphasize
           />
         </div>
@@ -186,7 +186,7 @@ export default function TaxProjectionPage() {
             dir="ltr"
             title="מס הכנסה + ביטוח לאומי + דמי בריאות"
           >
-            {formatCurrency(projection.totalTax)}
+            {formatCurrencyWhole(projection.totalTax)}
           </p>
         </div>
         <p className="text-xs text-stone-600 mt-1">
@@ -216,7 +216,7 @@ export default function TaxProjectionPage() {
           <div className="bg-white rounded-2xl p-4 border border-emerald-100">
             <p className="text-xs text-stone-600 mb-1">להפריש בחודש (מעכשיו עד סוף השנה)</p>
             <p className="text-2xl font-bold text-emerald-700" dir="ltr">
-              {formatCurrency(projection.monthlyReserve)}
+              {formatCurrencyWhole(projection.monthlyReserve)}
             </p>
             <p className="text-xs text-stone-500 mt-1">
               ~{projection.monthsRemaining.toFixed(1)} חודשים נשארו עד 31 בדצמבר.
@@ -325,7 +325,7 @@ function Bar({
           <p className="text-xs text-stone-600">{description}</p>
         </div>
         <p className="text-base font-bold text-stone-900" dir="ltr">
-          {formatCurrency(value)}
+          {formatCurrencyWhole(value)}
         </p>
       </div>
       <div className="h-2 rounded-full bg-stone-100 overflow-hidden">

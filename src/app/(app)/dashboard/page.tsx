@@ -23,7 +23,7 @@ import { useDocuments } from "@/lib/document-store";
 import { isCountableRevenue } from "@/lib/types";
 import { useExpenses } from "@/lib/expense-store";
 import { useClients } from "@/lib/client-store";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { formatCurrencyWhole, formatDate } from "@/lib/format";
 import { todayInIsrael } from "@/lib/date";
 import { addDays, daysInclusive } from "@/lib/report-period";
 import { useBusiness } from "@/lib/business-store";
@@ -240,7 +240,7 @@ export default function DashboardPage() {
   const cards = [
     {
       label: "הכנסות",
-      value: formatCurrency(stats.income),
+      value: formatCurrencyWhole(stats.income),
       sub: stats.paidCount === 1 ? "מסמך אחד שולם" : `${stats.paidCount} מסמכים שולמו`,
       icon: TrendingUp,
       href: `/documents?status=paid${monthQs}`,
@@ -251,7 +251,7 @@ export default function DashboardPage() {
     },
     {
       label: "הוצאות",
-      value: formatCurrency(stats.expenseTotal),
+      value: formatCurrencyWhole(stats.expenseTotal),
       sub: stats.expensesInRange.length === 1 ? "פעולה אחת" : `${stats.expensesInRange.length} פעולות`,
       icon: TrendingDown,
       href: "/expenses",
@@ -262,7 +262,7 @@ export default function DashboardPage() {
     },
     {
       label: "רווח",
-      value: formatCurrency(stats.profit),
+      value: formatCurrencyWhole(stats.profit),
       sub: stats.income > 0 ? `${((stats.profit / stats.income) * 100).toFixed(0)}% מההכנסות` : "-",
       icon: PiggyBank,
       href: "/reports",
@@ -272,7 +272,7 @@ export default function DashboardPage() {
     },
     {
       label: "ממוצע למסמך",
-      value: formatCurrency(stats.avgInvoice),
+      value: formatCurrencyWhole(stats.avgInvoice),
       sub: "לפי מסמכים ששולמו",
       icon: Receipt,
       href: `/documents?status=paid${monthQs}`,
@@ -290,7 +290,7 @@ export default function DashboardPage() {
         stats.openQuotes.length === 0
           ? "אין"
           : stats.openQuotesValue > 0
-          ? formatCurrency(stats.openQuotesValue)
+          ? formatCurrencyWhole(stats.openQuotesValue)
           : `${stats.openQuotes.length} ${stats.openQuotes.length === 1 ? "הצעה" : "הצעות"}`,
       icon: FileQuestion,
       href: "/documents?type=quote&status=sent",

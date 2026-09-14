@@ -7,7 +7,7 @@ import { DownloadPdfButton } from "@/components/download-pdf-button";
 import { useDocuments } from "@/lib/document-store";
 import { useExpenses } from "@/lib/expense-store";
 import { useBusiness } from "@/lib/business-store";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { formatCurrencyWhole, formatDate } from "@/lib/format";
 import { todayInIsrael } from "@/lib/date";
 import { DOCUMENT_TYPE_LABELS, BUSINESS_TYPE_LABELS, isCountableRevenue } from "@/lib/types";
 
@@ -199,20 +199,20 @@ export default function YearJournalPage({ params }: { params: Promise<{ year: st
                     <td className="px-3 py-1.5 border border-stone-200">{DOCUMENT_TYPE_LABELS[d.type]}</td>
                     <td className="px-3 py-1.5 border border-stone-200 font-mono">{d.number}</td>
                     <td className="px-3 py-1.5 border border-stone-200">{d.clientName}</td>
-                    <td className="px-3 py-1.5 border border-stone-200 text-left font-mono">{formatCurrency(d.subtotalIls ?? d.subtotal)}</td>
+                    <td className="px-3 py-1.5 border border-stone-200 text-left font-mono">{formatCurrencyWhole(d.subtotalIls ?? d.subtotal)}</td>
                     {/* Net (no Math.abs): a credit-note row's subtotal column
                         above already shows negative, so a positive VAT here
                         would make the row inconsistent with itself and with
                         the netted totals row below. */}
-                    <td className="px-3 py-1.5 border border-stone-200 text-left font-mono">{formatCurrency(d.vatIls ?? d.vat)}</td>
-                    <td className="px-3 py-1.5 border border-stone-200 text-left font-mono font-semibold">{formatCurrency(d.totalIls ?? d.total)}</td>
+                    <td className="px-3 py-1.5 border border-stone-200 text-left font-mono">{formatCurrencyWhole(d.vatIls ?? d.vat)}</td>
+                    <td className="px-3 py-1.5 border border-stone-200 text-left font-mono font-semibold">{formatCurrencyWhole(d.totalIls ?? d.total)}</td>
                   </tr>
                 ))}
                 <tr className="bg-emerald-50 font-bold">
                   <td className="px-3 py-2 border border-stone-300" colSpan={4}>סה״כ הכנסות</td>
-                  <td className="px-3 py-2 border border-stone-300 text-left font-mono">{formatCurrency(data.totalIncome - data.totalIncomeVat)}</td>
-                  <td className="px-3 py-2 border border-stone-300 text-left font-mono">{formatCurrency(data.totalIncomeVat)}</td>
-                  <td className="px-3 py-2 border border-stone-300 text-left font-mono">{formatCurrency(data.totalIncome)}</td>
+                  <td className="px-3 py-2 border border-stone-300 text-left font-mono">{formatCurrencyWhole(data.totalIncome - data.totalIncomeVat)}</td>
+                  <td className="px-3 py-2 border border-stone-300 text-left font-mono">{formatCurrencyWhole(data.totalIncomeVat)}</td>
+                  <td className="px-3 py-2 border border-stone-300 text-left font-mono">{formatCurrencyWhole(data.totalIncome)}</td>
                 </tr>
               </tbody>
             </table>
@@ -248,13 +248,13 @@ export default function YearJournalPage({ params }: { params: Promise<{ year: st
                     <td className="px-3 py-1.5 border border-stone-200">{e.supplier}</td>
                     <td className="px-3 py-1.5 border border-stone-200">{e.category}</td>
                     <td className="px-3 py-1.5 border border-stone-200 text-stone-600">{e.description || "-"}</td>
-                    <td className="px-3 py-1.5 border border-stone-200 text-left font-mono">{formatCurrency(e.vatAmount || 0)}</td>
-                    <td className="px-3 py-1.5 border border-stone-200 text-left font-mono font-semibold">{formatCurrency(e.amount)}</td>
+                    <td className="px-3 py-1.5 border border-stone-200 text-left font-mono">{formatCurrencyWhole(e.vatAmount || 0)}</td>
+                    <td className="px-3 py-1.5 border border-stone-200 text-left font-mono font-semibold">{formatCurrencyWhole(e.amount)}</td>
                   </tr>
                 ))}
                 <tr className="bg-rose-50 font-bold">
                   <td className="px-3 py-2 border border-stone-300" colSpan={5}>סה״כ הוצאות</td>
-                  <td className="px-3 py-2 border border-stone-300 text-left font-mono">{formatCurrency(data.totalExpenses)}</td>
+                  <td className="px-3 py-2 border border-stone-300 text-left font-mono">{formatCurrencyWhole(data.totalExpenses)}</td>
                 </tr>
               </tbody>
             </table>
@@ -282,17 +282,17 @@ export default function YearJournalPage({ params }: { params: Promise<{ year: st
                 return (
                   <tr key={idx} className="even:bg-stone-50/60">
                     <td className="px-3 py-1.5 border border-stone-200">{name}</td>
-                    <td className="px-3 py-1.5 border border-stone-200 text-left font-mono text-emerald-700">{formatCurrency(inc)}</td>
-                    <td className="px-3 py-1.5 border border-stone-200 text-left font-mono text-rose-700">{formatCurrency(exp)}</td>
-                    <td className="px-3 py-1.5 border border-stone-200 text-left font-mono font-semibold">{formatCurrency(inc - exp)}</td>
+                    <td className="px-3 py-1.5 border border-stone-200 text-left font-mono text-emerald-700">{formatCurrencyWhole(inc)}</td>
+                    <td className="px-3 py-1.5 border border-stone-200 text-left font-mono text-rose-700">{formatCurrencyWhole(exp)}</td>
+                    <td className="px-3 py-1.5 border border-stone-200 text-left font-mono font-semibold">{formatCurrencyWhole(inc - exp)}</td>
                   </tr>
                 );
               })}
               <tr className="bg-orange-100 font-bold">
                 <td className="px-3 py-2 border border-stone-300">סה״כ שנתי</td>
-                <td className="px-3 py-2 border border-stone-300 text-left font-mono">{formatCurrency(data.totalIncome)}</td>
-                <td className="px-3 py-2 border border-stone-300 text-left font-mono">{formatCurrency(data.totalExpenses)}</td>
-                <td className="px-3 py-2 border border-stone-300 text-left font-mono">{formatCurrency(data.profit)}</td>
+                <td className="px-3 py-2 border border-stone-300 text-left font-mono">{formatCurrencyWhole(data.totalIncome)}</td>
+                <td className="px-3 py-2 border border-stone-300 text-left font-mono">{formatCurrencyWhole(data.totalExpenses)}</td>
+                <td className="px-3 py-2 border border-stone-300 text-left font-mono">{formatCurrencyWhole(data.profit)}</td>
               </tr>
             </tbody>
           </table>

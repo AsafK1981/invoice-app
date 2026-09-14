@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Building2, ArrowLeft } from "lucide-react";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrencyWhole } from "@/lib/format";
 import { isCountableRevenue, type InvoiceDocument } from "@/lib/types";
 
 interface Props {
@@ -64,7 +64,7 @@ export function TopClients({ documents, limit = 5 }: Props) {
                 </div>
               </div>
               <span className="text-sm font-semibold text-stone-900 flex-shrink-0">
-                {formatCurrency(client.total)}
+                {formatCurrencyWhole(client.total)}
               </span>
             </div>
             <div className="h-[3px] bg-[#f1ebe2] rounded-full overflow-hidden">

@@ -21,7 +21,7 @@ import { CONSENT_SOURCE_LABELS, consentStatus } from "@/lib/consent";
 import { documentsForClient } from "@/lib/client-picker";
 import { useDocuments } from "@/lib/document-store";
 import { DocumentsTable } from "@/components/documents-table";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { formatCurrencyWhole, formatDate } from "@/lib/format";
 
 export default function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -164,7 +164,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
             </div>
             <div className="min-w-0">
               <p className="text-xs text-stone-600">סה״כ שולם</p>
-              <p className="text-lg font-bold text-stone-900 truncate">{formatCurrency(totalPaid)}</p>
+              <p className="text-lg font-bold text-stone-900 truncate">{formatCurrencyWhole(totalPaid)}</p>
             </div>
           </div>
         </div>
@@ -175,7 +175,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
             </div>
             <div className="min-w-0">
               <p className="text-xs text-stone-600">סה״כ חויב</p>
-              <p className="text-lg font-bold text-stone-900 truncate">{formatCurrency(totalBilled)}</p>
+              <p className="text-lg font-bold text-stone-900 truncate">{formatCurrencyWhole(totalBilled)}</p>
             </div>
           </div>
         </div>

@@ -19,7 +19,7 @@ import {
 import { AdminHistoryChart } from "@/components/admin-history-chart";
 import { supabase } from "@/lib/supabase";
 import { isAdminEmail } from "@/lib/admin";
-import { formatCurrency, formatDate, formatTimeAgo } from "@/lib/format";
+import { formatCurrency, formatCurrencyWhole, formatDate, formatTimeAgo } from "@/lib/format";
 import { DOCUMENT_TYPE_LABELS, type DocumentType } from "@/lib/types";
 import { ActivityFeed } from "@/components/admin-activity-feed";
 

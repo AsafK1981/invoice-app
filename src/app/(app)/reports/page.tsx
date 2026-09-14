@@ -13,7 +13,7 @@ import { isCountableRevenue } from "@/lib/types";
 import { useExpenses } from "@/lib/expense-store";
 import { useBusiness } from "@/lib/business-store";
 import { useClients } from "@/lib/client-store";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrencyWhole } from "@/lib/format";
 import { exportDocuments, exportExpenses, exportMonthlySummary } from "@/lib/csv-export";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/ui/toast";
@@ -400,16 +400,16 @@ export default function ReportsPage() {
 
       {/* ---------- four numbers, one style ---------- */}
       <div className="rpt-kpis">
-        <Kpi icon={TrendingUp} label="הכנסות (שולם)" value={formatCurrency(totalIncome)}>
+        <Kpi icon={TrendingUp} label="הכנסות (שולם)" value={formatCurrencyWhole(totalIncome)}>
           <Delta pct={comparison?.income ?? null} vs={comparison?.label} />
         </Kpi>
-        <Kpi icon={TrendingDown} label="הוצאות" value={formatCurrency(totalExpenses)}>
+        <Kpi icon={TrendingDown} label="הוצאות" value={formatCurrencyWhole(totalExpenses)}>
           <Delta pct={comparison?.expenses ?? null} vs={comparison?.label} inverse />
         </Kpi>
-        <Kpi icon={Wallet} label="רווח נטו" value={formatCurrency(profit)}>
+        <Kpi icon={Wallet} label="רווח נטו" value={formatCurrencyWhole(profit)}>
           <span>{totalIncome > 0 ? `${Math.round((profit / totalIncome) * 100)}% מההכנסות` : "אין עדיין הכנסות בתקופה"}</span>
         </Kpi>
-        <Kpi icon={Clock} label="פתוח לגבייה" value={formatCurrency(aging.totals.grand)}>
+        <Kpi icon={Clock} label="פתוח לגבייה" value={formatCurrencyWhole(aging.totals.grand)}>
           <span>
             {aging.rows.length === 0
               ? "אין חשבוניות פתוחות"
@@ -449,7 +449,7 @@ export default function ReportsPage() {
               <p className="text-sm text-stone-600">אין מסמכים פתוחים לגבייה כרגע.</p>
             ) : (
               <>
-                <div className="rpt-aging-total" dir="ltr">{formatCurrency(aging.totals.grand)}</div>
+                <div className="rpt-aging-total" dir="ltr">{formatCurrencyWhole(aging.totals.grand)}</div>
                 <div className="rpt-aging-bar" aria-hidden="true">
                   {aging.totals.buckets.map((v, i) =>
                     v > 0 ? <i key={i} style={{ flex: v, background: bucketColors[i] }} /> : null,
@@ -459,7 +459,7 @@ export default function ReportsPage() {
                   {aging.totals.buckets.map((v, i) => (
                     <div key={i}>
                       <dt><i style={{ background: v > 0 ? bucketColors[i] : "var(--icotile)" }} />{AGING_BUCKET_LABELS[i]}</dt>
-                      <dd dir="ltr">{v > 0 ? formatCurrency(v) : "-"}</dd>
+                      <dd dir="ltr">{v > 0 ? formatCurrencyWhole(v) : "-"}</dd>
                     </div>
                   ))}
                 </dl>
@@ -471,7 +471,7 @@ export default function ReportsPage() {
                       ) : (
                         <span>{r.clientName}</span>
                       )}
-                      <b dir="ltr">{formatCurrency(r.total)}</b>
+                      <b dir="ltr">{formatCurrencyWhole(r.total)}</b>
                     </li>
                   ))}
                   {aging.rows.length > topDebtors.length && (
@@ -527,22 +527,22 @@ export default function ReportsPage() {
                     <tr key={r.month}>
                       <td className="rpt-td-month">{r.label}</td>
                       <td className="n rpt-td-docs rpt-col-wide">{r.docs}</td>
-                      <td className="n rpt-td-income" dir="ltr">{formatCurrency(r.income)}</td>
-                      <td className="n rpt-td-expense" dir="ltr">{formatCurrency(r.expenses)}</td>
-                      <td className="n rpt-td-profit" dir="ltr">{formatCurrency(r.income - r.expenses)}</td>
+                      <td className="n rpt-td-income" dir="ltr">{formatCurrencyWhole(r.income)}</td>
+                      <td className="n rpt-td-expense" dir="ltr">{formatCurrencyWhole(r.expenses)}</td>
+                      <td className="n rpt-td-profit" dir="ltr">{formatCurrencyWhole(r.income - r.expenses)}</td>
                       <td className="n rpt-col-wide"><MarginPill pct={r.margin} /></td>
-                      <td className="n rpt-td-cum rpt-col-wide" dir="ltr">{formatCurrency(r.cumulative)}</td>
+                      <td className="n rpt-td-cum rpt-col-wide" dir="ltr">{formatCurrencyWhole(r.cumulative)}</td>
                     </tr>
                   ))}
                   {tableRows.length > 1 && (
                     <tr className="rpt-total">
                       <td>סה״כ · {periodStepLabel(period)}</td>
                       <td className="n rpt-col-wide">{totalDocs}</td>
-                      <td className="n" dir="ltr">{formatCurrency(totalIncome)}</td>
-                      <td className="n" dir="ltr">{formatCurrency(totalExpenses)}</td>
-                      <td className="n" dir="ltr">{formatCurrency(profit)}</td>
+                      <td className="n" dir="ltr">{formatCurrencyWhole(totalIncome)}</td>
+                      <td className="n" dir="ltr">{formatCurrencyWhole(totalExpenses)}</td>
+                      <td className="n" dir="ltr">{formatCurrencyWhole(profit)}</td>
                       <td className="n rpt-col-wide"><MarginPill pct={totalMargin} /></td>
-                      <td className="n rpt-col-wide" dir="ltr">{formatCurrency(profit)}</td>
+                      <td className="n rpt-col-wide" dir="ltr">{formatCurrencyWhole(profit)}</td>
                     </tr>
                   )}
                 </>

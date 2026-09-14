@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrencyWhole } from "@/lib/format";
 
 export interface BarDatum {
   key: string;
@@ -185,12 +185,12 @@ export function ReportsBarChart({ data }: Props) {
           <div className="rpt-chart-tip-row">
             <i className="rpt-chart-dot rpt-chart-dot-income" />
             <span>הכנסות</span>
-            <b dir="ltr">{formatCurrency(hovered.income)}</b>
+            <b dir="ltr">{formatCurrencyWhole(hovered.income)}</b>
           </div>
           <div className="rpt-chart-tip-row">
             <i className="rpt-chart-dot rpt-chart-dot-expense" />
             <span>הוצאות</span>
-            <b dir="ltr">{formatCurrency(hovered.expenses)}</b>
+            <b dir="ltr">{formatCurrencyWhole(hovered.expenses)}</b>
           </div>
         </div>
       )}

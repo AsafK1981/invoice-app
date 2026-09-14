@@ -12,9 +12,9 @@ import { calculateProfitLoss, RESULT_LABEL } from "@/lib/profit-loss";
 import { periodLabel, type Period } from "@/lib/report-period";
 import { downloadXlsx, sheet } from "@/lib/xlsx-export";
 import { todayInIsrael } from "@/lib/date";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { formatCurrencyWhole, formatDate } from "@/lib/format";
 
-const money = (cents: number) => formatCurrency(cents / 100);
+const money = (cents: number) => formatCurrencyWhole(cents / 100);
 
 export default function ProfitLossPage() {
   const { business, ready } = useBusiness();

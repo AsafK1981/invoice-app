@@ -16,7 +16,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { DownloadPdfButton } from "@/components/download-pdf-button";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { formatCurrencyWhole, formatDate } from "@/lib/format";
 import type { Business, InvoiceDocument, Expense } from "@/lib/types";
 import { exportVatPeriodExpenses } from "@/lib/csv-export";
 import { biMonthlyRange, singleMonthRange, yearRange } from "@/lib/ita/vat-periods";
@@ -264,7 +264,7 @@ export function VatPeriodReport({ headless = false, business, documents, expense
           <div className="text-xs font-medium text-orange-700 mb-1">מחזור העסקאות בשנת {exemptYear}</div>
           <div className="flex items-center gap-3 flex-wrap">
             <p className="text-2xl font-bold text-stone-900 tabular-nums" dir="ltr">
-              {formatCurrency(exempt.turnover)}
+              {formatCurrencyWhole(exempt.turnover)}
             </p>
             <button
               type="button"
@@ -296,8 +296,8 @@ export function VatPeriodReport({ headless = false, business, documents, expense
           className={`text-sm mt-2 font-semibold ${exempt.overCeiling ? "text-rose-700" : "text-emerald-700"}`}
         >
           {exempt.overCeiling
-            ? `המחזור חורג מתקרת עוסק פטור לשנת ${exemptYear} (${formatCurrency(exempt.ceiling)}) - יש לבדוק מעבר לעוסק מורשה.`
-            : `המחזור מתחת לתקרת עוסק פטור לשנת ${exemptYear} (${formatCurrency(exempt.ceiling)}).`}
+            ? `המחזור חורג מתקרת עוסק פטור לשנת ${exemptYear} (${formatCurrencyWhole(exempt.ceiling)}) - יש לבדוק מעבר לעוסק מורשה.`
+            : `המחזור מתחת לתקרת עוסק פטור לשנת ${exemptYear} (${formatCurrencyWhole(exempt.ceiling)}).`}
         </p>
         <p className="text-xs text-stone-600 mt-3 leading-relaxed border-t border-orange-100 pt-3">
           המחזור מחושב לפי כל המסמכים שהופקו בשנה (גם אם טרם שולמו), בלי טיוטות וביטולים, וחשבוניות זיכוי מקטינות אותו. זו אותה הגדרה כמו מד התקרה בדף הראשי.
@@ -357,9 +357,9 @@ export function VatPeriodReport({ headless = false, business, documents, expense
             <ArrowUpFromLine className="w-3.5 h-3.5" />
             מע״מ עסקאות (פלט)
           </div>
-          <p className="text-2xl font-bold text-stone-900" dir="ltr">{formatCurrency(pcn.figures.outputVat)}</p>
+          <p className="text-2xl font-bold text-stone-900" dir="ltr">{formatCurrencyWhole(pcn.figures.outputVat)}</p>
           <p className="text-xs text-stone-600 mt-1">
-            על {stats.docCount} מסמכי מס · בסיס {formatCurrency(pcn.figures.taxableSales)}
+            על {stats.docCount} מסמכי מס · בסיס {formatCurrencyWhole(pcn.figures.taxableSales)}
           </p>
         </div>
         <div className="rounded-2xl bg-rose-50 border border-rose-200 p-4">
@@ -368,10 +368,10 @@ export function VatPeriodReport({ headless = false, business, documents, expense
             מע״מ תשומות (קלט)
           </div>
           <p className="text-2xl font-bold text-stone-900" dir="ltr">
-            {formatCurrency(pcn.figures.equipmentInputVat + pcn.figures.otherInputVat)}
+            {formatCurrencyWhole(pcn.figures.equipmentInputVat + pcn.figures.otherInputVat)}
           </p>
           <p className="text-xs text-stone-600 mt-1">
-            על {stats.expenseCount} הוצאות · בסיס {formatCurrency(stats.inputBase)}
+            על {stats.expenseCount} הוצאות · בסיס {formatCurrencyWhole(stats.inputBase)}
           </p>
         </div>
         <div
@@ -385,7 +385,7 @@ export function VatPeriodReport({ headless = false, business, documents, expense
             {refundDue ? "החזר ממע״מ" : "מע״מ לתשלום"}
           </div>
           <p className="text-2xl font-bold text-stone-900" dir="ltr">
-            {formatCurrency(Math.abs(pcn.figures.netDue))}
+            {formatCurrencyWhole(Math.abs(pcn.figures.netDue))}
           </p>
           <p className="text-xs text-stone-600 mt-1">
             {refundDue
@@ -410,7 +410,7 @@ export function VatPeriodReport({ headless = false, business, documents, expense
               </span>
               <span className="flex items-center gap-2">
                 <b className="text-base font-extrabold text-stone-900 tabular-nums" dir="ltr">
-                  {formatCurrency(row.value)}
+                  {formatCurrencyWhole(row.value)}
                 </b>
                 <button
                   type="button"
@@ -583,7 +583,7 @@ export function VatPeriodReport({ headless = false, business, documents, expense
               <li key={r.id} className="rounded-xl border border-stone-200 bg-white px-3.5 py-3">
                 <div className="flex items-baseline justify-between gap-3">
                   <span className="font-semibold text-stone-900 truncate">{r.supplier || "ללא ספק"}</span>
-                  <span className="font-extrabold text-stone-900 tabular-nums whitespace-nowrap" dir="ltr">{formatCurrency(r.amount)}</span>
+                  <span className="font-extrabold text-stone-900 tabular-nums whitespace-nowrap" dir="ltr">{formatCurrencyWhole(r.amount)}</span>
                 </div>
                 <div className="mt-0.5 flex items-baseline justify-between gap-3 text-xs text-stone-500">
                   <span className="truncate">
@@ -591,18 +591,18 @@ export function VatPeriodReport({ headless = false, business, documents, expense
                     {r.category ? ` · ${r.category}` : ""}
                     {r.description ? ` · ${r.description}` : ""}
                   </span>
-                  <span className="tabular-nums whitespace-nowrap">מע״מ {formatCurrency(r.vat)}</span>
+                  <span className="tabular-nums whitespace-nowrap">מע״מ {formatCurrencyWhole(r.vat)}</span>
                 </div>
               </li>
             ))}
             <li className="rounded-xl bg-orange-50 border border-orange-200 px-3.5 py-3 font-black text-stone-900">
               <div className="flex items-baseline justify-between gap-3">
                 <span>סה״כ · {stats.expenseRows.length} הוצאות</span>
-                <span className="tabular-nums" dir="ltr">{formatCurrency(stats.inputGross)}</span>
+                <span className="tabular-nums" dir="ltr">{formatCurrencyWhole(stats.inputGross)}</span>
               </div>
               <div className="mt-0.5 flex items-baseline justify-between gap-3 text-xs font-semibold text-stone-600">
-                <span>ללא מע״מ {formatCurrency(stats.inputBase)}</span>
-                <span>מע״מ {formatCurrency(stats.inputVat)}</span>
+                <span>ללא מע״מ {formatCurrencyWhole(stats.inputBase)}</span>
+                <span>מע״מ {formatCurrencyWhole(stats.inputVat)}</span>
               </div>
             </li>
           </ul>
@@ -626,18 +626,18 @@ export function VatPeriodReport({ headless = false, business, documents, expense
                     <td className="px-4 py-3 text-right align-middle font-semibold text-stone-900 border-b border-l border-stone-200">{r.supplier || <span className="text-stone-300">-</span>}</td>
                     <td className="px-4 py-3 text-center align-middle whitespace-nowrap text-stone-700 border-b border-l border-stone-200">{r.category || <span className="text-stone-300">-</span>}</td>
                     <td className="px-4 py-3 text-right align-middle text-stone-600 border-b border-l border-stone-200 max-w-[22rem]">{r.description || <span className="text-stone-300">-</span>}</td>
-                    <td className="px-4 py-3 text-center align-middle tabular-nums whitespace-nowrap text-stone-700 border-b border-l border-stone-200">{formatCurrency(r.net)}</td>
-                    <td className="px-4 py-3 text-center align-middle tabular-nums whitespace-nowrap text-stone-700 border-b border-l border-stone-200">{formatCurrency(r.vat)}</td>
-                    <td className="px-4 py-3 text-center align-middle tabular-nums font-extrabold text-stone-900 whitespace-nowrap border-b border-stone-200">{formatCurrency(r.amount)}</td>
+                    <td className="px-4 py-3 text-center align-middle tabular-nums whitespace-nowrap text-stone-700 border-b border-l border-stone-200">{formatCurrencyWhole(r.net)}</td>
+                    <td className="px-4 py-3 text-center align-middle tabular-nums whitespace-nowrap text-stone-700 border-b border-l border-stone-200">{formatCurrencyWhole(r.vat)}</td>
+                    <td className="px-4 py-3 text-center align-middle tabular-nums font-extrabold text-stone-900 whitespace-nowrap border-b border-stone-200">{formatCurrencyWhole(r.amount)}</td>
                   </tr>
                 ))}
               </tbody>
               <tfoot>
                 <tr className="bg-orange-50 text-stone-900 font-black">
                   <td className="px-4 py-3.5 text-center border-t-2 border-l border-orange-200" colSpan={4}>סה״כ · {stats.expenseRows.length} הוצאות</td>
-                  <td className="px-4 py-3.5 text-center tabular-nums whitespace-nowrap border-t-2 border-l border-orange-200">{formatCurrency(stats.inputBase)}</td>
-                  <td className="px-4 py-3.5 text-center tabular-nums whitespace-nowrap border-t-2 border-l border-orange-200">{formatCurrency(stats.inputVat)}</td>
-                  <td className="px-4 py-3.5 text-center tabular-nums whitespace-nowrap border-t-2 border-orange-200">{formatCurrency(stats.inputGross)}</td>
+                  <td className="px-4 py-3.5 text-center tabular-nums whitespace-nowrap border-t-2 border-l border-orange-200">{formatCurrencyWhole(stats.inputBase)}</td>
+                  <td className="px-4 py-3.5 text-center tabular-nums whitespace-nowrap border-t-2 border-l border-orange-200">{formatCurrencyWhole(stats.inputVat)}</td>
+                  <td className="px-4 py-3.5 text-center tabular-nums whitespace-nowrap border-t-2 border-orange-200">{formatCurrencyWhole(stats.inputGross)}</td>
                 </tr>
               </tfoot>
             </table>

@@ -21,7 +21,7 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from "recharts";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { formatCurrencyWhole, formatDate } from "@/lib/format";
 import type { Expense } from "@/lib/types";
 import type { AdminChartPoint } from "@/lib/admin-chart";
 
@@ -69,7 +69,7 @@ export function ExpenseCategoriesChart({ expenses }: ExpenseCategoriesChartProps
     <div className="space-y-4">
       <div>
         <p className="text-xs text-stone-600 mb-2">
-          סה״כ <span className="font-bold text-stone-900">{formatCurrency(total)}</span>
+          סה״כ <span className="font-bold text-stone-900">{formatCurrencyWhole(total)}</span>
         </p>
         <div style={{ display: "flex", height: 10, borderRadius: 3, overflow: "hidden", gap: 2 }}>
           {data.map((item, idx) => (
@@ -79,7 +79,7 @@ export function ExpenseCategoriesChart({ expenses }: ExpenseCategoriesChartProps
                 width: `${(item.value / total) * 100}%`,
                 backgroundColor: colorForRank(idx),
               }}
-              title={`${item.name}: ${formatCurrency(item.value)}`}
+              title={`${item.name}: ${formatCurrencyWhole(item.value)}`}
             />
           ))}
         </div>

@@ -21,7 +21,7 @@ import {
 import { useClients, useClientsPage, clientStore } from "@/lib/client-store";
 import { resolveDocumentClientId } from "@/lib/client-picker";
 import { useDocuments } from "@/lib/document-store";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { formatCurrencyWhole, formatDate } from "@/lib/format";
 import { parseEmails } from "@/lib/emails";
 import { ClientFormModal } from "@/components/client-form-modal";
 import { CsvImportModal } from "@/components/csv-import-modal";
@@ -367,7 +367,7 @@ export default function ClientsPage() {
                   <div className="mt-auto pt-3 border-t border-orange-100 flex items-baseline justify-between gap-2 text-sm">
                     <span className="text-stone-700">
                       <span className="font-bold text-stone-900 text-base" dir="ltr">
-                        {formatCurrency(stats.totalBilled)}
+                        {formatCurrencyWhole(stats.totalBilled)}
                       </span>{" "}
                       ב-{stats.docCount} {stats.docCount === 1 ? "מסמך" : "מסמכים"}
                     </span>
@@ -421,8 +421,8 @@ export default function ClientsPage() {
             key: "billed",
             header: "סה״כ חויב",
             align: "end" as const,
-            render: (c) => formatCurrency(statsByClient.get(c.id)?.totalBilled ?? 0),
-            footer: formatCurrency(printBilledTotal),
+            render: (c) => formatCurrencyWhole(statsByClient.get(c.id)?.totalBilled ?? 0),
+            footer: formatCurrencyWhole(printBilledTotal),
           },
         ]}
       />
