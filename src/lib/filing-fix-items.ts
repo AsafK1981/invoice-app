@@ -5,9 +5,10 @@ import type { Expense, InvoiceDocument } from "./types";
 import { referenceDigits, sourceVatIdForPcn, type Pcn874Result, type PcnIssueCode, type PcnWarning } from "./ita/pcn874";
 import type { FilingReportKind } from "./support-link";
 import type { InvoiceListIssueCode } from "./invoice-report-preflight";
+import type { UniformIssueCode } from "./uniform-structure/issues";
 
-/** Every code a filing panel can show. */
-export type FixCode = PcnIssueCode | InvoiceListIssueCode;
+/** Every code a filing panel can show: PCN874, uniform structure, invoices-period. */
+export type FixCode = PcnIssueCode | UniformIssueCode | InvoiceListIssueCode;
 
 export type FixControl =
   | { kind: "supplier_tax_id"; expenseIds: string[]; current: string }
