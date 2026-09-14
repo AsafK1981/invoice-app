@@ -6,17 +6,16 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, FileSpreadsheet, Download, Printer } from "lucide-react";
 import { DownloadPdfButton } from "@/components/download-pdf-button";
+import { FilingFixPanel } from "@/components/filing-fix-panel";
 import { useFilingReportData } from "@/lib/filing-report-data";
 import { invoiceReportPreflight } from "@/lib/invoice-report-preflight";
-import { ReportPreflight } from "@/components/report-preflight";
+import { buildInvoicePeriodReport, invoicePeriodStampLines, invoicePeriodTotalsPartial } from "@/lib/invoice-period-report";
+import { buildInvoicePeriodFixModel } from "@/lib/invoice-period-fix-items";
 import { formatCurrencyWhole } from "@/lib/format";
 import { todayInIsrael } from "@/lib/date";
-import { DOCUMENT_TYPE_LABELS, type DocumentType } from "@/lib/types";
+import { DOCUMENT_TYPE_LABELS } from "@/lib/types";
 import { useBusiness } from "@/lib/business-store";
 import { exportInvoicesPeriod } from "@/lib/csv-export";
-
-// VAT documents that carry a net/VAT breakdown and an allocation number.
-const REPORT_TYPES: DocumentType[] = ["tax_invoice", "tax_invoice_receipt", "credit_note"];
 
 const LENGTHS: { months: number; label: string }[] = [
   { months: 1, label: "חודש" },
@@ -61,9 +60,15 @@ function rangeLabel(endYm: string, lengthMonths: number): string {
   return `${MONTH_NAMES[s.getMonth()]} ${s.getFullYear()} עד ${end}`;
 }
 
+/** A cell whose document has no usable shekel amounts: visible, never a fake zero. */
+function MissingAmount() {
+  return <span className="text-amber-700 font-semibold">חסר בשקלים</span>;
+}
+
 export default function InvoicesPeriodReportPage() {
   const { business, ready: businessReady } = useBusiness();
-  const { data, error, retry } = useFilingReportData(business.id, false);
+  // Keep the table on screen while an inline customer-number fix refetches.
+  const { data, error, retry, refreshing } = useFilingReportData(business.id, false, true);
   const documents = data?.documents;
 
   const [rangeMode, setRangeMode] = useState<"preset" | "custom">("preset");
@@ -72,77 +77,45 @@ export default function InvoicesPeriodReportPage() {
   const [fromDate, setFromDate] = useState<string>(() => `${todayInIsrael().slice(0, 7)}-01`);
   const [toDate, setToDate] = useState<string>(() => todayInIsrael());
 
-  const inRange = useMemo(() => {
-    if (rangeMode === "custom") {
-      const lo = fromDate || "0000-00-00";
-      const hi = toDate || "9999-99-99";
-      return (date: string) => date >= lo && date <= hi;
-    }
-    const start = startOfRange(endMonth, lengthMonths);
-    const end = afterEnd(endMonth);
-    return (date: string) => date >= start && date < end;
-  }, [rangeMode, fromDate, toDate, endMonth, lengthMonths]);
-
-  const rows = useMemo(() => {
-    return (documents ?? [])
-      .filter(
-        (d) =>
-          REPORT_TYPES.includes(d.type) && d.status !== "draft" && d.status !== "cancelled" &&
-          typeof d.date === "string" &&
-          inRange(d.date),
-      )
-      .map((d) => ({
-        id: d.id,
-        type: d.type,
-        number: d.number,
-        date: d.date,
-        customerTaxId: d.clientTaxId || "",
-        clientName: d.clientName,
-        net: d.subtotalIls ?? d.subtotal,
-        vat: d.vatIls ?? d.vat,
-        total: d.totalIls ?? d.total,
-        allocation: d.allocationNumber || "",
-      }))
-      .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.number - b.number));
-  }, [documents, inRange]);
-
   const reportStart = rangeMode === "custom" ? fromDate : startOfRange(endMonth, lengthMonths);
   const reportEnd = rangeMode === "custom" ? toDate : endOfRange(endMonth);
+  const report = useMemo(() => buildInvoicePeriodReport(documents ?? [], reportStart, reportEnd), [documents, reportStart, reportEnd]);
+  const { rows, totals } = report;
   const issues = useMemo(() => invoiceReportPreflight(documents ?? [], reportStart, reportEnd), [documents, reportStart, reportEnd]);
-  const blocked = !data || !businessReady || !!error || issues.some((issue) => issue.level === "error");
+  const fixModel = useMemo(() => buildInvoicePeriodFixModel(issues), [issues]);
+  const stamp = useMemo(() => invoicePeriodStampLines(issues, report), [issues, report]);
+  const partial = invoicePeriodTotalsPartial(issues, report);
+  // Only an unusable period stops the exports. Every other finding is shown
+  // above the table and written into the Excel file and the PDF.
+  const canExport = Boolean(data) && businessReady && !error && !refreshing && rows.length > 0 && !issues.some((issue) => issue.level === "error");
 
   const currentLabel =
     rangeMode === "custom"
       ? `${fromDate ? fmtDate(fromDate) : "?"} עד ${toDate ? fmtDate(toDate) : "?"}`
       : rangeLabel(endMonth, lengthMonths);
 
-  const totals = useMemo(
-    () =>
-      rows.reduce(
-        (acc, r) => ({ net: acc.net + r.net, vat: acc.vat + r.vat, total: acc.total + r.total }),
-        { net: 0, vat: 0, total: 0 },
-      ),
-    [rows],
-  );
-
   function fmtDate(iso: string): string {
     const [y, m, d] = iso.split("-");
     return `${d}/${m}/${y}`;
   }
 
-  // Styled .xlsx with a total row (csv-export.ts).
-  function exportCsv() {
-    if (blocked || rows.length === 0) return;
+  // Styled .xlsx with a total row and the stamp (invoice-period-report.ts).
+  function exportXlsx() {
+    if (!canExport) return;
     void exportInvoicesPeriod({
       rows,
       periodLabel: currentLabel,
       fileTag: rangeMode === "custom" ? `${fromDate}_עד_${toDate}` : `${endMonth}-${lengthMonths}ח`,
       businessName: business.name,
+      stamp,
+      incomplete: partial,
     });
   }
 
   if (error) return <div role="alert" className="card-soft p-6 space-y-3"><p>{error}</p><button onClick={retry} className="btn-primary">טען שוב</button></div>;
   if (!data || !businessReady) return <div className="text-center py-16 text-stone-500">טוען ובודק את נתוני הדוח...</div>;
+
+  const money = (value: number | null) => (value == null ? <MissingAmount /> : formatCurrencyWhole(value));
 
   return (
     <div className="space-y-6">
@@ -170,8 +143,8 @@ export default function InvoicesPeriodReportPage() {
         </div>
         <div className="flex flex-wrap items-center gap-2 no-print">
           <button
-            onClick={exportCsv}
-            disabled={blocked || rows.length === 0}
+            onClick={exportXlsx}
+            disabled={!canExport}
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-white border-2 border-emerald-200 text-stone-800 hover:bg-emerald-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Download className="w-4 h-4 text-emerald-600" />
@@ -180,13 +153,13 @@ export default function InvoicesPeriodReportPage() {
           <DownloadPdfButton
             filename="דוח-חשבוניות-תקופתי"
             landscape
-            disabled={blocked || rows.length === 0}
+            disabled={!canExport}
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-white border-2 border-orange-200 text-stone-800 hover:bg-orange-50 disabled:opacity-50 disabled:cursor-not-allowed"
             iconClassName="w-4 h-4 text-orange-600"
           />
           <button
-            onClick={() => { if (!blocked && rows.length) window.print(); }}
-            disabled={blocked || rows.length === 0}
+            onClick={() => { if (canExport) window.print(); }}
+            disabled={!canExport}
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-white border-2 border-orange-200 text-stone-800 hover:bg-orange-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Printer className="w-4 h-4 text-orange-600" />
@@ -266,16 +239,29 @@ export default function InvoicesPeriodReportPage() {
         </div>
       </div>
 
-      <ReportPreflight issues={issues} description="דוח זה מיועד לעיון ולהעברה לרואה החשבון. קובצי Excel ו-PDF אלה אינם קובץ העלאה לשירות הדיווח המפורט של מע״מ. טיוטות ומסמכים מבוטלים אינם נכללים." />
-      <button type="button" onClick={retry} className="btn-secondary no-print">רענן נתונים ובדוק שוב</button>
+      <section aria-label="בדיקת הדוח" className="card-soft p-4 no-print">
+        <p className="text-sm text-stone-600 leading-relaxed">
+          דוח זה מיועד לעיון ולהעברה לרואה החשבון. קובצי Excel ו-PDF אלה אינם קובץ העלאה לשירות הדיווח המפורט של מע״מ. טיוטות ומסמכים מבוטלים אינם נכללים. מה שנמצא בבדיקה לא חוסם את ההורדה, והוא נכתב גם בתוך הקובץ.
+        </p>
+        <FilingFixPanel model={fixModel} businessId={business.id} returnTo="/reports/invoices-period" advisory />
+      </section>
       <p className="text-sm no-print"><Link href="/reports/vat" className="font-semibold text-orange-700 underline inline-flex min-h-[44px] items-center">להכנת דיווח מע״מ וקובץ PCN874</Link></p>
 
       {/* Report */}
       <div className="card-soft overflow-hidden">
-        <div className="px-5 py-3.5 border-b border-stone-100 flex items-baseline justify-between">
+        <div className="px-5 py-3.5 border-b border-stone-100 flex items-baseline justify-between gap-3">
           <h2 className="font-bold text-stone-900 text-lg">{currentLabel}</h2>
-          <span className="text-sm text-stone-500">{rows.length} חשבוניות</span>
+          <span className="text-sm text-stone-500">{rows.length} חשבוניות{partial ? " · סכומים חלקיים" : ""}</span>
         </div>
+        {stamp.length > 0 && (
+          // The PDF and the printout carry what the panel shows on screen.
+          <div data-testid="invoice-report-stamp" className="hidden print:block px-5 py-3 border-b border-amber-200 bg-amber-50 text-sm text-amber-950">
+            <p className="font-bold">הערות לדוח</p>
+            <ul className="mt-1 space-y-0.5">
+              {stamp.map((line, index) => <li key={index}>{line}</li>)}
+            </ul>
+          </div>
+        )}
         {rows.length === 0 ? (
           <div className="p-12 text-center text-stone-500">
             אין חשבוניות מס בתקופה שנבחרה.
@@ -304,16 +290,16 @@ export default function InvoicesPeriodReportPage() {
                       </Link>
                     </td>
                     <td className="px-4 py-3.5 text-center align-middle tabular-nums whitespace-nowrap text-stone-700 border-b border-l border-stone-200">{fmtDate(r.date)}</td>
-                    <td className="px-4 py-3.5 text-center align-middle tabular-nums whitespace-nowrap text-stone-700 border-b border-l border-stone-200">{formatCurrencyWhole(r.net)}</td>
-                    <td className="px-4 py-3.5 text-center align-middle tabular-nums whitespace-nowrap text-stone-700 border-b border-l border-stone-200">{formatCurrencyWhole(r.vat)}</td>
-                    <td className="px-4 py-3.5 text-center align-middle tabular-nums font-extrabold text-stone-900 whitespace-nowrap border-b border-l border-stone-200">{formatCurrencyWhole(r.total)}</td>
+                    <td className="px-4 py-3.5 text-center align-middle tabular-nums whitespace-nowrap text-stone-700 border-b border-l border-stone-200">{money(r.net)}</td>
+                    <td className="px-4 py-3.5 text-center align-middle tabular-nums whitespace-nowrap text-stone-700 border-b border-l border-stone-200">{money(r.vat)}</td>
+                    <td className="px-4 py-3.5 text-center align-middle tabular-nums font-extrabold text-stone-900 whitespace-nowrap border-b border-l border-stone-200">{money(r.total)}</td>
                     <td className="px-4 py-3.5 text-center align-middle tabular-nums whitespace-nowrap text-stone-700 border-b border-stone-200">{r.allocation || <span className="text-stone-300">-</span>}</td>
                   </tr>
                 ))}
               </tbody>
               <tfoot>
                 <tr className="bg-orange-50 text-stone-900 font-black">
-                  <td className="px-4 py-4 text-center border-t-2 border-l border-orange-200" colSpan={3}>סה״כ · {rows.length} חשבוניות</td>
+                  <td className="px-4 py-4 text-center border-t-2 border-l border-orange-200" colSpan={3}>סה״כ{partial ? " חלקי" : ""} · {rows.length} חשבוניות</td>
                   <td className="px-4 py-4 text-center tabular-nums whitespace-nowrap border-t-2 border-l border-orange-200">{formatCurrencyWhole(totals.net)}</td>
                   <td className="px-4 py-4 text-center tabular-nums whitespace-nowrap border-t-2 border-l border-orange-200">{formatCurrencyWhole(totals.vat)}</td>
                   <td className="px-4 py-4 text-center tabular-nums whitespace-nowrap border-t-2 border-l border-orange-200">{formatCurrencyWhole(totals.total)}</td>
