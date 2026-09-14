@@ -19,7 +19,7 @@ import { DownloadPdfButton } from "@/components/download-pdf-button";
 import { formatCurrencyWhole, formatDate } from "@/lib/format";
 import type { Business, InvoiceDocument, Expense } from "@/lib/types";
 import { exportVatPeriodExpenses } from "@/lib/csv-export";
-import { biMonthlyRange, singleMonthRange, yearRange } from "@/lib/ita/vat-periods";
+import { DEFAULT_VAT_PERIOD_MODE, VAT_PERIOD_LABELS, VAT_PERIOD_MODES, vatPeriodRange, type VatPeriodMode } from "@/lib/vat-report-period";
 import { buildPcn874, validatePcn874Content, PCN_ENTRY_LABELS } from "@/lib/ita/pcn874";
 import { exemptDealerAnnualTurnover, exemptDeclarationDeadline, roundShekelHalfUp } from "@/lib/ita/income-tax-advances";
 import { getExemptCeiling } from "@/lib/tax-thresholds";
@@ -33,17 +33,11 @@ interface Props {
   headless?: boolean;
   selectedMode?: PeriodMode;
   onPeriodChange?: (mode: PeriodMode) => void;
+  /** The page is refetching after an inline fix: hold the download until the new rows land. */
+  refreshing?: boolean;
 }
 
-export type PeriodMode = "this_2m" | "last_2m" | "this_month" | "last_month" | "this_year";
-
-const MODE_LABELS: Record<PeriodMode, string> = {
-  this_2m: "תקופה דו-חודשית נוכחית",
-  last_2m: "תקופה דו-חודשית קודמת",
-  this_month: "חודש נוכחי",
-  last_month: "חודש קודם",
-  this_year: "שנה נוכחית",
-};
+export type PeriodMode = VatPeriodMode;
 
 /** The figures typed into the periodic return, in form order. */
 interface CopyRow {
@@ -53,10 +47,10 @@ interface CopyRow {
   hint?: string;
 }
 
-export function VatPeriodReport({ headless = false, business, documents, expenses, selectedMode, onPeriodChange }: Props) {
+export function VatPeriodReport({ headless = false, business, documents, expenses, selectedMode, onPeriodChange, refreshing = false }: Props) {
   // ALL hooks must run before any conditional return, same trap as
   // React #310 yesterday. The early return for עוסק פטור comes last.
-  const [mode, setMode] = useState<PeriodMode>(selectedMode ?? "this_2m");
+  const [mode, setMode] = useState<PeriodMode>(selectedMode ?? DEFAULT_VAT_PERIOD_MODE);
   // Stable across renders. Without memo, the next two useMemos invalidate
   // every render because Date instances aren't ===; the report would
   // re-aggregate documents/expenses on every keystroke elsewhere on the
@@ -64,17 +58,7 @@ export function VatPeriodReport({ headless = false, business, documents, expense
   // today's calendar date, which doesn't change for the life of the
   // component instance (worst case: midnight rollover, acceptable).
   const today = useMemo(() => new Date(), []);
-  const range = useMemo(() => {
-    switch (mode) {
-      case "this_2m": return biMonthlyRange(today, 0);
-      case "last_2m": return biMonthlyRange(today, -1);
-      case "this_month": return singleMonthRange(today, 0);
-      case "last_month": return singleMonthRange(today, -1);
-      case "this_year": return yearRange(today);
-    }
-    // unreachable, satisfies TS
-    return biMonthlyRange(today, 0);
-  }, [mode, today]);
+  const range = useMemo(() => vatPeriodRange(mode, today), [mode, today]);
   // Fix-it links send the user elsewhere; this brings them back to the same
   // report on the same period instead of the default one.
   const returnTo = `/reports/vat?period=${mode}`;
@@ -211,7 +195,7 @@ export function VatPeriodReport({ headless = false, business, documents, expense
 
   /** Hand the file over as-is: ASCII, CRLF, the name the ITA expects. */
   function downloadPcn() {
-    if (pcnErrorCount > 0 || pcn.transactions.length === 0) return;
+    if (refreshing || pcnErrorCount > 0 || pcn.transactions.length === 0) return;
     const blob = new Blob([pcn.content], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -336,8 +320,8 @@ export function VatPeriodReport({ headless = false, business, documents, expense
             onChange={(e) => { const next = e.target.value as PeriodMode; setMode(next); onPeriodChange?.(next); }}
             className="input-warm py-1.5 px-3 text-sm w-auto max-w-[14rem]"
           >
-            {(Object.keys(MODE_LABELS) as PeriodMode[]).map((m) => (
-              <option key={m} value={m}>{MODE_LABELS[m]}</option>
+            {VAT_PERIOD_MODES.map((m) => (
+              <option key={m} value={m}>{VAT_PERIOD_LABELS[m]}</option>
             ))}
           </select>
           <DownloadPdfButton
@@ -535,7 +519,7 @@ export function VatPeriodReport({ headless = false, business, documents, expense
               <button
                 type="button"
                 onClick={downloadPcn}
-                disabled={pcnErrorCount > 0}
+                disabled={refreshing || pcnErrorCount > 0}
                 className="no-print inline-flex items-center justify-center gap-2 min-h-[44px] px-4 rounded-xl text-sm font-semibold text-white bg-gradient-to-l from-orange-500 to-orange-700 hover:shadow-md hover:shadow-orange-200 disabled:from-stone-300 disabled:to-stone-300 disabled:shadow-none disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <FileDown className="w-4 h-4" aria-hidden="true" />
