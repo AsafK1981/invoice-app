@@ -3,9 +3,6 @@ import { DOCUMENT_TYPE_LABELS } from "./types";
 import { validPcnDate } from "./ita/pcn874";
 import { normalizeBusinessNumber } from "./israeli-id";
 
-/** Kept for `report-preflight.tsx` until the uniform export moves to the panel. */
-export interface ReportIssue { level: "error" | "warning"; message: string; href?: string; sourceLabel?: string }
-
 export const invoiceReportTypes: readonly DocumentType[] = ["tax_invoice", "tax_invoice_receipt", "credit_note"];
 
 export type InvoiceListIssueCode =
