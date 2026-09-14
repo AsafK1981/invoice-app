@@ -446,9 +446,10 @@ function classifyInputs(
     const vat = roundShekel(e.vatAmount ?? 0);
     const net = roundShekel(Math.max(0, e.amount - (e.vatAmount ?? 0)));
     if (vat === 0) continue;
-
-    if (e.isEquipment) equipmentInputsVat += vat;
-    else otherInputsVat += vat;
+    const claim = () => {
+      if (e.isEquipment) equipmentInputsVat += vat;
+      else otherInputsVat += vat;
+    };
 
     // Same strict decision as the preflight: a number it refuses is never
     // stripped or truncated into a different, valid-looking one.
@@ -458,6 +459,7 @@ function classifyInputs(
 
     if (!supplierVat || !reference) {
       if (allowPetty && vat < PETTY_CASH_VAT_THRESHOLD) {
+        claim();
         petty.sum += net;
         petty.vat += vat;
         petty.ids.push(e.id);
@@ -475,21 +477,25 @@ function classifyInputs(
       });
     }
 
-    if (
-      supplierVat &&
-      !allocation &&
-      allocationApplies(e.date, e.amount - (e.vatAmount ?? 0))
-    ) {
+    // Since 2024 (חשבונית ישראל) input VAT on a supplier invoice above the
+    // threshold without an allocation number is not deductible. Claiming it
+    // would overstate the deduction, so the input stays out of the header AND
+    // the body (the self-check requires them to agree). The file is still
+    // valid and downloadable; the visible "action" item restores it.
+    if (supplierVat && !allocation && allocationApplies(e.date, e.amount - (e.vatAmount ?? 0))) {
       warnings.push({
         code: "supplier_allocation_missing",
-        level: "error",
-        message: "חשבונית ספק מעל סף חשבונית ישראל בלי מספר הקצאה. בלי המספר מע״מ לא יכיר בתשומה.",
+        level: "action",
+        message: `מע״מ תשומות של ${vat.toLocaleString("he-IL")} ₪ לא נכלל בדוח כי לחשבונית אין מספר הקצאה. הוסף את מספר ההקצאה כדי לקזז אותו.`,
+        excludedVat: vat,
         source: "expense",
         sourceId: e.id,
         sourceLabel: expenseLabel(e),
       });
+      continue;
     }
 
+    claim();
     transactions.push({
       entryType: "T",
       vatId: supplierVat || "000000000",

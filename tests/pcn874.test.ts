@@ -238,13 +238,27 @@ describe("PCN874 classification", () => {
     });
   });
 
-  it("warns about a supplier invoice above the allocation threshold without an allocation number", () => {
+  it("leaves a supplier invoice above the allocation threshold out of the file until it has an allocation number", () => {
     // 2026-01: threshold 10,000 before VAT.
-    const r = build([sale()], [expense({ amount: 14160, vatAmount: 2160 })]);
-    expect(r.warnings.some((w) => w.level === "error" && w.message.includes("הקצאה"))).toBe(true);
-    const ok = build([sale()], [expense({ amount: 14160, vatAmount: 2160, allocationNumber: "111222333" })]);
+    const r = build([sale()], [expense({ id: "noalloc", amount: 14160, vatAmount: 2160 })]);
+    const item = r.warnings.find((w) => w.code === "supplier_allocation_missing");
+    expect(item).toMatchObject({ level: "action", source: "expense", sourceId: "noalloc", excludedVat: 2160 });
+    expect(r.warnings.some((w) => w.level === "error")).toBe(false);
+    expect(r.header.otherInputsVat).toBe(0);
+    expect(r.transactions.some((t) => t.entryType === "T")).toBe(false);
+    expect(r.blockers).toEqual([]);
+    expect(pcnCanDownload(r)).toBe(true);
+
+    const ok = build([sale()], [expense({ id: "noalloc", amount: 14160, vatAmount: 2160, allocationNumber: "111222333" })]);
     expect(ok.warnings).toEqual([]);
+    expect(ok.header.otherInputsVat).toBe(2160);
     expect(ok.transactions.find((x) => x.entryType === "T")!.allocationNumber).toBe("111222333");
+  });
+
+  it("excludes equipment input VAT the same way", () => {
+    const r = build([sale()], [expense({ isEquipment: true, amount: 14160, vatAmount: 2160 })]);
+    expect(r.header.equipmentInputsVat).toBe(0);
+    expect(r.warnings[0]).toMatchObject({ code: "supplier_allocation_missing", excludedVat: 2160 });
   });
 
   it("warns about our own tax invoice above the allocation threshold without an allocation number", () => {
@@ -351,9 +365,11 @@ describe("PCN874 preflight rejects malformed source data", () => {
   });
   it("requires supplier allocations strictly above threshold on invoice date", () => {
     const at = build([sale()], [expense({ amount: 11800, vatAmount: 1800 })]);
-    expect(at.warnings.some(w => w.source === "expense" && w.message.includes("הקצאה"))).toBe(false);
+    expect(at.warnings.some(w => w.code === "supplier_allocation_missing")).toBe(false);
+    expect(at.header.otherInputsVat).toBe(1800);
     const above = build([sale()], [expense({ amount: 11800.01, vatAmount: 1800 })]);
-    expect(above.warnings.some(w => w.source === "expense" && w.level === "error" && w.message.includes("הקצאה"))).toBe(true);
+    expect(above.warnings.some(w => w.source === "expense" && w.level === "action" && w.code === "supplier_allocation_missing")).toBe(true);
+    expect(above.header.otherInputsVat).toBe(0);
   });
   it("detects numeric corruption, impossible dates and a wrong payable independently", () => {
     const r = build([sale()], []);
