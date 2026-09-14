@@ -284,6 +284,12 @@ export interface InvoiceDocument {
    * way; see src/lib/document-strings.ts.
    */
   language?: "he" | "en";
+  /**
+   * Set when the document came in through a data import (another system's
+   * numbers). The VAT report routes its data errors to support instead of
+   * offering a credit note, which would double-report someone else's typo.
+   */
+  importBatchId?: string;
 }
 
 /**
