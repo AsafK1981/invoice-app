@@ -43,12 +43,12 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# security reports (contain exploit details — never commit)
+# security reports (contain exploit details - never commit)
 AEGIS_*.pdf
 *Security_Report*.pdf
 *security_report*.pdf
 
-# Tax Authority forms — only commit blank public-domain templates,
+# Tax Authority forms - only commit blank public-domain templates,
 # never signed/scanned versions (they contain Asaf's ID, signature,
 # and personal details). The 2 blank PDFs already committed are fine;
 # signed scans dropped here will be auto-excluded.
@@ -62,11 +62,11 @@ Rashot Hamisim/**/*מולא*
 
 # Local-only working docs. THIS REPO IS PUBLIC, and each of these directories
 # holds material that must never leave the machine:
-#   docs/tax-authority/  — SIGNED Tax Authority forms (ID number, signature) plus
+#   docs/tax-authority/  - SIGNED Tax Authority forms (ID number, signature) plus
 #                          the registration package with personal contact details
-#   docs/payments/       — clearing-company onboarding notes with personal
+#   docs/payments/       - clearing-company onboarding notes with personal
 #                          identifiers (email, phone) and KYC instructions
-#   docs/marketing/      — GTM planning that includes Asaf's home address, phone,
+#   docs/marketing/      - GTM planning that includes Asaf's home address, phone,
 #                          email and a real Tax Authority allocation number
 docs/tax-authority/
 docs/payments/
