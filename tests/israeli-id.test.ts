@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isValidIsraeliIdNumber, normalizeBusinessNumber } from "@/lib/israeli-id";
+import { BUSINESS_NUMBER_MARKS, isValidIsraeliIdNumber, normalizeBusinessNumber } from "@/lib/israeli-id";
 
 describe("isValidIsraeliIdNumber", () => {
   it("accepts known-valid 9-digit numbers", () => {
@@ -50,6 +50,22 @@ describe("normalizeBusinessNumber", () => {
       expect(normalizeBusinessNumber(raw)).toMatchObject({ value: "513333336", reason: "ok" });
     },
   );
+
+  it.each([
+    "51\u2013234567\u20139",
+    "51\u2014234567\u20139",
+    "51\u2010234567\u20119",
+    "51\u2012234567\u22129",
+    "51\u00AD234567\u00AD9",
+    "\u061C512345679\u2060",
+    "51\u00A0234567\u202F9",
+  ])("strips typographic dashes, soft hyphens and invisible joiners in %j", (raw) => {
+    expect(normalizeBusinessNumber(raw)).toMatchObject({ value: "512345679", reason: "ok" });
+  });
+
+  it("exports the separator class for allocation numbers and inline fields", () => {
+    expect("111\u2013222\u2014333\u00AD".replace(BUSINESS_NUMBER_MARKS, "")).toBe("111222333");
+  });
 
   it.each(["", "   ", "--", null, undefined])("reports empty for %j", (raw) => {
     expect(normalizeBusinessNumber(raw)).toEqual({ value: null, reason: "empty", digitCount: 0 });

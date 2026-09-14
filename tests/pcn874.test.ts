@@ -487,6 +487,10 @@ describe("PCN874 silent repairs (Layer 2)", () => {
     expect(r.warnings.filter((w) => w.sourceId === "a")).toEqual([]);
     expect(r.transactions.find((t) => t.entryType === "T")?.allocationNumber).toBe("111222333");
   });
+  it("accepts an allocation number written with typographic dashes", () => {
+    const r = build([sale()], [expense({ id: "a", allocationNumber: "111\u2013222\u2014333" })]);
+    expect(r.warnings.filter((w) => w.sourceId === "a")).toEqual([]);
+  });
 });
 
 describe("zero-rated exports with a foreign customer number", () => {

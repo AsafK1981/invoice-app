@@ -8,14 +8,13 @@ import { BusinessNumberHintText } from "@/components/business-number-hint";
 import { updateExpenseFilingFields } from "@/lib/expense-store";
 import { updateDocumentClientTaxId } from "@/lib/document-store";
 import { saveBusinessTaxId } from "@/lib/business-store";
-import { normalizeBusinessNumber } from "@/lib/israeli-id";
+import { BUSINESS_NUMBER_MARKS, normalizeBusinessNumber } from "@/lib/israeli-id";
 import { referenceDigits, validPcnDate } from "@/lib/ita/pcn874";
 import { formatCurrencyWhole } from "@/lib/format";
 import { withReturn } from "@/lib/return-to";
 import { filingDataFixMessage, supportWhatsappHref } from "@/lib/support-link";
 import type { FilingFixItem, FilingFixModel, FixControl } from "@/lib/filing-fix-items";
 
-const MARKS = /[\s.\-\u200B-\u200F\u202A-\u202E\u2066-\u2069\uFEFF]/g;
 const onlyDigits = (value: string) => value.replace(/\D/g, "");
 const israeliNumberProblem = (value: string) =>
   normalizeBusinessNumber(value).value ? null : "זה לא מספר עוסק ישראלי תקין. בדוק מול החשבונית.";
@@ -157,7 +156,7 @@ function FixControlView({ control, context }: { control: FixControl; context: Co
           initial={control.current}
           placeholder="123456789"
           inputMode="numeric"
-          normalize={(value) => value.replace(MARKS, "")}
+          normalize={(value) => value.replace(BUSINESS_NUMBER_MARKS, "")}
           validate={(value) => (/^\d{9}$/.test(value) && !/^0+$/.test(value) ? null : "מספר הקצאה הוא 9 ספרות בדיוק.")}
           onSave={(value) => updateExpenseFilingFields([control.expenseId], { allocationNumber: value })}
         />

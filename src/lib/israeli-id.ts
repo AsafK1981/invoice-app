@@ -57,11 +57,17 @@ export interface NormalizedBusinessNumber {
 }
 
 /**
- * Characters a pasted business number may legitimately carry around its
- * digits: whitespace, hyphens, dots, bidi controls (LRM/RLM, embeddings,
- * isolates) and zero-width marks. Anything else makes the value "letters".
+ * Characters a pasted business number (or allocation number) may legitimately
+ * carry around its digits: whitespace incl. no-break spaces, dots, ASCII and
+ * typographic hyphens and dashes (hyphen, non-breaking hyphen, figure dash, en
+ * and em dash, minus sign), the soft hyphen, bidi controls (LRM/RLM, ALM,
+ * embeddings, isolates) and zero-width marks and joiners. Anything else makes
+ * the value "letters". Word and Excel autocorrect a hyphen into a dash, so the
+ * dashes are real input.
  */
-const ALLOWED_BUSINESS_NUMBER = /^[\d\s.\-\u200B-\u200F\u202A-\u202E\u2066-\u2069\uFEFF]*$/;
+export const BUSINESS_NUMBER_MARKS = /[\s.\-\u00A0\u00AD\u061C\u200B-\u200F\u2010-\u2014\u202A-\u202F\u2060\u2066-\u2069\u2212\uFEFF]/g;
+
+const ALLOWED_BUSINESS_NUMBER = /^[\d\s.\-\u00A0\u00AD\u061C\u200B-\u200F\u2010-\u2014\u202A-\u202F\u2060\u2066-\u2069\u2212\uFEFF]*$/;
 
 /**
  * The ONE decision about an Israeli business number, shared by the PCN874
