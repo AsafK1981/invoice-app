@@ -30,8 +30,9 @@ import {
 } from "@/lib/report-period";
 import { PeriodPicker } from "@/components/period-picker";
 import { ReportsBarChart, type BarDatum } from "@/components/reports-bar-chart";
-import { ReportPreflight } from "@/components/report-preflight";
-import type { ReportIssue } from "@/lib/invoice-report-preflight";
+import { FilingFixPanel } from "@/components/filing-fix-panel";
+import { buildUniformFixModel } from "@/lib/uniform-fix-items";
+import { uniformCanDownload, type UniformIssue } from "@/lib/uniform-structure/issues";
 import type { InvoiceDocument, Expense } from "@/lib/types";
 
 type MonthTotals = { income: number; expenses: number; docs: number };
@@ -70,8 +71,9 @@ export default function ReportsPage() {
   const [period, setPeriod] = useState<Period>(() => String(new Date().getFullYear()));
   /** The 2.6 + 5.4 printouts of the last מבנה אחיד export, shown right after the ZIP lands. */
   const [uniformReport, setUniformReport] = useState<UniformReportData | null>(null);
-  const [uniformCheck, setUniformCheck] = useState<{ year: number; sample: boolean; issues: ReportIssue[] } | null>(null);
+  const [uniformCheck, setUniformCheck] = useState<{ year: number; sample: boolean; issues: UniformIssue[] } | null>(null);
   const [uniformBusy, setUniformBusy] = useState(false);
+  const uniformModel = useMemo(() => (uniformCheck ? buildUniformFixModel(uniformCheck.issues) : null), [uniformCheck]);
 
   const year = periodYear(period);
   /** File-name tag for the exports: "2026-08", or "2026-01-05_2026-03-10" for a range. */
@@ -192,12 +194,16 @@ export default function ReportsPage() {
 
   const exportYear = year ?? new Date().getFullYear();
 
-  async function downloadUniformStructure(sample = false, download = false) {
+  /**
+   * `recheck`: run the check again (after an inline fix) and keep the current
+   * panel on screen until the new result lands, instead of clearing it.
+   */
+  async function downloadUniformStructure(sample = false, download = false, recheck = false) {
     if (uniformBusy) return;
     setMenuOpen(false);
     setUniformBusy(true);
     const checkedYear = exportYear;
-    if (!download) setUniformCheck(null);
+    if (!download && !recheck) setUniformCheck(null);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) throw new Error("פג תוקף ההתחברות, התחבר מחדש");
@@ -207,11 +213,15 @@ export default function ReportsPage() {
       });
       if (!res.ok || !download) {
         const result = await res.json();
+        if (res.status === 429) {
+          setUniformCheck({ year: checkedYear, sample, issues: [{ code: "rate_limited", level: "error", message: friendlyError(result, "יותר מדי בדיקות ברצף. המתן כמה דקות ונסה שוב.") }] });
+          return;
+        }
         if (Array.isArray(result.issues)) {
-          const issues: ReportIssue[] = result.issues;
-          if (!res.ok && !issues.some((issue) => issue.level === "error")) issues.push({ level: "error", message: friendlyError(result, "הבדיקה נכשלה. נסו שוב.") });
+          const issues: UniformIssue[] = result.issues;
+          if (!res.ok && !issues.some((issue) => issue.level === "error")) issues.push({ code: "data_load_failed", level: "error", message: friendlyError(result, "הבדיקה נכשלה. נסו שוב.") });
           setUniformCheck({ year: checkedYear, sample, issues });
-          if (!download) requestAnimationFrame(() => document.getElementById("uniform-preflight")?.scrollIntoView({ block: "start", behavior: "smooth" }));
+          if (!download && !recheck) requestAnimationFrame(() => document.getElementById("uniform-preflight")?.scrollIntoView({ block: "start", behavior: "smooth" }));
         } else throw new Error(friendlyError(result, "בדיקת הקובץ נכשלה. נסו שוב."));
         return;
       }
@@ -225,7 +235,7 @@ export default function ReportsPage() {
       setUniformReport(parseUniformReport(res.headers.get("X-Uniform-Report")));
     } catch (error) {
       const message = error instanceof Error ? error.message : "הבדיקה נכשלה. נסו שוב.";
-      setUniformCheck({ year: checkedYear, sample, issues: [{ level: "error", message }] });
+      setUniformCheck({ year: checkedYear, sample, issues: [{ code: "data_load_failed", level: "error", message }] });
     } finally {
       setUniformBusy(false);
     }
@@ -311,13 +321,20 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-6 rpt" data-print-hidden={uniformReport ? "true" : undefined}>
-      {(uniformBusy || uniformCheck?.year === exportYear) && <div id="uniform-preflight" className="space-y-3 no-print">
+      {(uniformBusy || uniformCheck?.year === exportYear) && <div id="uniform-preflight" className="card-soft p-4 space-y-3 no-print">
         <h2 className="text-lg font-bold">בדיקה לפני הורדת מבנה אחיד לשנת {exportYear}</h2>
-        {uniformBusy ? <p role="status">טוען את כל הנתונים ובודק את הקובץ...</p> : uniformCheck && <>
-          <ReportPreflight issues={uniformCheck.issues} description={uniformCheck.sample ? "קובץ דוגמה עם נתונים מלאכותיים לבדיקת תוכנה בלבד. אין להגישו כדיווח של העסק." : "קובץ מבנה אחיד מיועד לביקורת או להעברה לפי דרישה. הוא אינו דוח מע״מ תקופתי. הבדיקה המקומית אינה אישור קליטה או אישור רישום תוכנה של רשות המסים."} />
+        {uniformBusy && <p className="text-sm text-stone-600">טוען את כל הנתונים ובודק את הקובץ...</p>}
+        {uniformCheck && uniformModel && <>
+          <p className="text-sm text-stone-600 leading-relaxed">{uniformCheck.sample ? "קובץ דוגמה עם נתונים מלאכותיים לבדיקת תוכנה בלבד. אין להגישו כדיווח של העסק." : "קובץ מבנה אחיד מיועד לביקורת או להעברה לפי דרישה. הוא אינו דוח מע״מ תקופתי. הבדיקה המקומית אינה אישור קליטה או אישור רישום תוכנה של רשות המסים."}</p>
+          <FilingFixPanel
+            model={uniformModel}
+            businessId={business.id}
+            returnTo="/reports"
+            onSaved={() => downloadUniformStructure(uniformCheck.sample, false, true)}
+          />
           <div className="flex flex-wrap gap-3">
-            <button type="button" className="btn-primary disabled:opacity-50" disabled={uniformCheck.issues.some((issue) => issue.level === "error")} onClick={() => downloadUniformStructure(uniformCheck.sample, true)}>הורד קובץ לאחר בדיקה</button>
-            <button type="button" className="btn-secondary" onClick={() => downloadUniformStructure(uniformCheck.sample)}>בדוק שוב</button>
+            <button type="button" data-testid="uniform-download" className="btn-primary disabled:opacity-50" disabled={uniformBusy || !uniformCanDownload(uniformCheck.issues)} onClick={() => downloadUniformStructure(uniformCheck.sample, true)}>הורד קובץ לאחר בדיקה</button>
+            <button type="button" className="btn-secondary disabled:opacity-50" disabled={uniformBusy} onClick={() => downloadUniformStructure(uniformCheck.sample, false, true)}>בדוק שוב</button>
           </div>
         </>}
       </div>}
