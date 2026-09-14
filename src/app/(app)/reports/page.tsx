@@ -322,7 +322,7 @@ export default function ReportsPage() {
         businessName={business.name}
         taxId={business.taxId}
       />
-      {/* ---------- header: title + one period control that scopes the whole page ---------- */}
+      {/* ---------- header: title only; the period control lives with the numbers below ---------- */}
       <div className="rpt-head">
         <div>
           <h1 className="text-3xl font-bold text-stone-900 flex items-center gap-3">
@@ -332,73 +332,6 @@ export default function ReportsPage() {
             דו״חות
           </h1>
           <p className="text-sm text-stone-700 mt-2 mr-14">הדוחות לרשויות המס ולרואה החשבון, ומתחתם מה נכנס, מה יצא ומה נשאר</p>
-        </div>
-        <div className="rpt-controls">
-          <PeriodPicker period={period} onChange={setPeriod} />
-          <div className="rpt-menu-wrap" ref={menuRef}>
-            <button
-              type="button"
-              className="pgbtn pgbtn-quiet"
-              aria-haspopup="menu"
-              aria-expanded={menuOpen}
-              onClick={() => setMenuOpen((o) => !o)}
-            >
-              <Download aria-hidden="true" />
-              ייצוא
-              <ChevronDown aria-hidden="true" className="rpt-menu-caret" />
-            </button>
-            {menuOpen && (
-              <div className="rpt-menu" role="menu">
-                <div className="rpt-menu-cap">{periodLabel(period)}</div>
-                <button type="button" role="menuitem" disabled={filteredDocs.length === 0}
-                  onClick={() => { exportDocuments(filteredDocs, fileTag, exportMeta); setMenuOpen(false); }}>
-                  <FileSpreadsheet aria-hidden="true" />
-                  <span>מסמכים ל-Excel</span>
-                  <small>{filteredDocs.length}</small>
-                </button>
-                <button type="button" role="menuitem" disabled={filteredExpenses.length === 0}
-                  onClick={() => { exportExpenses(filteredExpenses, fileTag, { ...exportMeta, showVat: filesVat }); setMenuOpen(false); }}>
-                  <FileSpreadsheet aria-hidden="true" />
-                  <span>הוצאות ל-Excel</span>
-                  <small>{filteredExpenses.length}</small>
-                </button>
-                <button type="button" role="menuitem" disabled={tableRows.length === 0}
-                  onClick={() => { exportMonthlySummary(tableRows, fileTag, exportMeta); setMenuOpen(false); }}>
-                  <FileSpreadsheet aria-hidden="true" />
-                  <span>הטבלה החודשית ל-Excel</span>
-                  <small>{tableRows.length}</small>
-                </button>
-                <div className="rpt-menu-cap">לרשות המסים · {exportYear}</div>
-                <button type="button" role="menuitem" onClick={() => downloadUniformStructure(false)}
-                  title="ייצוא קבצי מבנה אחיד (OPENFORMAT 1.31) מהנתונים האמיתיים, לביקורת">
-                  <FileArchive aria-hidden="true" />
-                  <span>מבנה אחיד</span>
-                </button>
-                <button type="button" role="menuitem" onClick={() => downloadUniformStructure(true)}
-                  title="קבצי מבנה אחיד עם נתוני דוגמה סינתטיים, לסימולטור של רשות המסים">
-                  <FileArchive aria-hidden="true" />
-                  <span>מבנה אחיד: קובץ דוגמה</span>
-                </button>
-              </div>
-            )}
-          </div>
-          {/* No print sheet here: this page IS the report. `.rpt-controls` is
-              already hidden in print (app-skin.css), so the button prints
-              itself away along with the rest of the controls. */}
-          <DownloadPdfButton
-            filename={`לוח-דוחות-${exportYear}`}
-            className="pgbtn pgbtn-quiet"
-            title="הורדת לוח הדוחות כקובץ PDF למחשב"
-          />
-          <button
-            type="button"
-            className="pgbtn pgbtn-quiet"
-            onClick={() => window.print()}
-            title="הדפסת לוח הדוחות"
-          >
-            <Printer aria-hidden="true" />
-            הדפסה
-          </button>
         </div>
       </div>
 
@@ -414,9 +347,78 @@ export default function ReportsPage() {
       </section>
 
       {/* ---------- then the numbers: income, expenses, net, chart, month by month ---------- */}
-      <div className="rpt-sect-head">
-        <h2 className="rpt-h2">הכנסות, הוצאות ורווח</h2>
-        <p className="rpt-hint">{periodLabel(period)}</p>
+      <div className="rpt-head rpt-numbers-head">
+        <div>
+          <h2 className="rpt-h2">הכנסות, הוצאות ורווח</h2>
+          <p className="rpt-hint">{periodLabel(period)}</p>
+        </div>
+          <div className="rpt-controls">
+            <PeriodPicker period={period} onChange={setPeriod} />
+            <div className="rpt-menu-wrap" ref={menuRef}>
+              <button
+                type="button"
+                className="pgbtn pgbtn-quiet"
+                aria-haspopup="menu"
+                aria-expanded={menuOpen}
+                onClick={() => setMenuOpen((o) => !o)}
+              >
+                <Download aria-hidden="true" />
+                ייצוא
+                <ChevronDown aria-hidden="true" className="rpt-menu-caret" />
+              </button>
+              {menuOpen && (
+                <div className="rpt-menu" role="menu">
+                  <div className="rpt-menu-cap">{periodLabel(period)}</div>
+                  <button type="button" role="menuitem" disabled={filteredDocs.length === 0}
+                    onClick={() => { exportDocuments(filteredDocs, fileTag, exportMeta); setMenuOpen(false); }}>
+                    <FileSpreadsheet aria-hidden="true" />
+                    <span>מסמכים ל-Excel</span>
+                    <small>{filteredDocs.length}</small>
+                  </button>
+                  <button type="button" role="menuitem" disabled={filteredExpenses.length === 0}
+                    onClick={() => { exportExpenses(filteredExpenses, fileTag, { ...exportMeta, showVat: filesVat }); setMenuOpen(false); }}>
+                    <FileSpreadsheet aria-hidden="true" />
+                    <span>הוצאות ל-Excel</span>
+                    <small>{filteredExpenses.length}</small>
+                  </button>
+                  <button type="button" role="menuitem" disabled={tableRows.length === 0}
+                    onClick={() => { exportMonthlySummary(tableRows, fileTag, exportMeta); setMenuOpen(false); }}>
+                    <FileSpreadsheet aria-hidden="true" />
+                    <span>הטבלה החודשית ל-Excel</span>
+                    <small>{tableRows.length}</small>
+                  </button>
+                  <div className="rpt-menu-cap">לרשות המסים · {exportYear}</div>
+                  <button type="button" role="menuitem" onClick={() => downloadUniformStructure(false)}
+                    title="ייצוא קבצי מבנה אחיד (OPENFORMAT 1.31) מהנתונים האמיתיים, לביקורת">
+                    <FileArchive aria-hidden="true" />
+                    <span>מבנה אחיד</span>
+                  </button>
+                  <button type="button" role="menuitem" onClick={() => downloadUniformStructure(true)}
+                    title="קבצי מבנה אחיד עם נתוני דוגמה סינתטיים, לסימולטור של רשות המסים">
+                    <FileArchive aria-hidden="true" />
+                    <span>מבנה אחיד: קובץ דוגמה</span>
+                  </button>
+                </div>
+              )}
+            </div>
+            {/* No print sheet here: this page IS the report. `.rpt-controls` is
+                already hidden in print (app-skin.css), so the button prints
+                itself away along with the rest of the controls. */}
+            <DownloadPdfButton
+              filename={`לוח-דוחות-${exportYear}`}
+              className="pgbtn pgbtn-quiet"
+              title="הורדת לוח הדוחות כקובץ PDF למחשב"
+            />
+            <button
+              type="button"
+              className="pgbtn pgbtn-quiet"
+              onClick={() => window.print()}
+              title="הדפסת לוח הדוחות"
+            >
+              <Printer aria-hidden="true" />
+              הדפסה
+            </button>
+          </div>
       </div>
 
       {/* ---------- four numbers, one style ---------- */}

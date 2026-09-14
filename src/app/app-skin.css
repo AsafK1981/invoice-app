@@ -1001,6 +1001,13 @@ html .rpt-head {
   gap: var(--dc-sp-4);
   flex-wrap: wrap;
 }
+/* Since 2026-09-14 the period control heads the numbers half of the page,
+   under the report cards, so it reads as scoping those numbers only. */
+html .rpt-numbers-head {
+  align-items: center;
+  padding-top: var(--dc-sp-5, 1.5rem);
+  border-top: 1px solid var(--goldtintline);
+}
 html .rpt-controls {
   display: flex;
   align-items: center;
