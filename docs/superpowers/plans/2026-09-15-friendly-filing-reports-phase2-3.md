@@ -10,6 +10,19 @@
 
 **Spec:** `docs/superpowers/specs/2026-09-15-friendly-filing-reports-phase2-3-design.md`
 
+**Council decisions (2026-09-15, these override the tasks below where they differ). Execution order: Phase 3 (Tasks 8 support-link/collector part, 12-16) first, then Phase 2 (1-7, 9-11), then 17-19.**
+
+1. C100 1215: new `src/lib/uniform-structure/customer-vat.ts` `uniformCustomerVat(doc, client)` returns `{ value, raw, fallback, refused }`. Snapshot first; the client's `taxId` only when the snapshot is empty and `doc.date < "2026-06-25"`. `buildC100` writes `padNum(value || 0, 9)`; the preflight uses the same helper and adds the note `customer_number_from_client` when `fallback` is true (new `UniformIssueCode`). Task 4's C100 test expects the fallback only for a pre-cutoff date; `tests/uniform-structure-parse.test.ts` gives the fixture document `clientTaxId: "034567891"`.
+2. 1217/1218 only when `doc.zeroRated && foreign && type in tax_invoice | tax_invoice_receipt | credit_note`. `mapUniformDocument` maps `zero_rated`.
+3. Empty numeric fields are zeros: `padNum` for 1015, 1016, 1215, 1256, 1313, 1315, 1358, 1360, 1419 (audited against every `9(n)` format in `horaot_131_raw.txt`). Task 4 expectations for blank 1215/1419 become `"000000000"`. `parse.ts` maps an all-zero 1215 to "".
+4. New blocking code `foreign_currency_ils_mismatch` in `validateUniformInput`: `|totalIls - round2(total*rate)| > 0.01` or `|subtotalIls + vatIls + round2(rounding*rate) - totalIls| > 0.01`. `uniformAmounts` foreign `roundingCap = max(|round2(rounding*rate)|, 0.01)`. Task 3's last rounding case becomes `-0.01`; Task 6's "gap larger than the stored rounding" case becomes this code, and a separate ILS case (`total: 118.02`, no rounding) proves `journal_unbalanced`.
+5. `buildAccountKeys(clients: {id, createdAt}[], categories, reserved)`: clients sorted by `createdAt` then id, categories sorted by name, `assignAccountKeys` keeps the caller's order. The builder passes ALL `input.expenses` categories (every expense of the business) so keys are stable across years.
+6. `ROUNDING_ACCOUNT` tbCode/tbDesc = `INCOME` / "הכנסות".
+7. Invoices-period: `invoicePeriodTotalsPartial(issues, report)` = missing amounts OR any `totals` finding; drives the table footer, the header note, the Excel total label and subtitle. An invalid date is reported (level `totals`, message names the month) only when its `YYYY-MM` prefix overlaps the period; a date without a readable month is a `note` and does not mark totals partial.
+8. A000 1014 = "1" when 1013 = "2", else "0" (`horaot_131_raw.txt:1920-1938`).
+9. After Task 11, run a simulator sample (sample dataset plus a foreign-id client, a no-number client, a USD zero-rated export, a USD domestic invoice, a rounding case) through `secapp.taxes.gov.il/TmbakmmsmlNew/frmCheckFiles.aspx` (no login, free) with gstack browse; report the result.
+10. Guard `--dry-run` only.
+
 **Working rules for the executor**
 
 - Work only in `C:\wtp2` (detached worktree). Its `node_modules` is a junction to the main checkout: never delete, move or `rm -rf` it, and never run `npm install` here.

@@ -279,3 +279,55 @@ aggregation, codes only:
 7. Guard pushes for `uniform:` and `invoices:` codes join the existing zero-noise state; verified with `--dry-run` only. Enable real pushes later?
 8. Invoices-period marks totals partial only for missing amounts; a broken date or a duplicate is stamped but does not flip the label (`invoice-report-preflight.ts:18,22`).
 9. Preflight rate limit is 12 checks per 5 minutes (`route.ts:53`); every inline save re-checks, so a long fix session can hit `rate_limited`.
+
+## Council decisions (2026-09-15) - these override the sections above
+
+1. **C100 1215 source.** One shared helper, `uniformCustomerVat(doc, client)` in
+   `src/lib/uniform-structure/customer-vat.ts`, used by `records.ts` and the
+   preflight. The document snapshot (`documents.client_tax_id`) normalized by
+   `normalizeBusinessNumber`. The linked client's `tax_id` is used ONLY when the
+   snapshot is empty AND the document date is before 2026-06-25 (the column was
+   added by `scripts/migrations/20260625-document-client-tax-id.sql` with no
+   backfill). Using the fallback emits the note `customer_number_from_client`.
+   The parse round-trip fixture carries a snapshot; a separate case covers the
+   pre-2026-06-25 fallback.
+2. **1217/1218** are written only when the document is zero-rated AND its
+   currency is not ILS AND it is an invoice type (305 / 320 / 330). Otherwise
+   zeros and blank. `mapUniformDocument` maps `zero_rated`, `exchange_rate` and
+   `client_tax_id`.
+3. **Empty numeric fields are zeros, never spaces** (`horaot_131_raw.txt:982-983`:
+   "a numeric field with no value is filled with zeros"). Audited against the
+   field formats: 1015, 1016, 1215, 1256, 1313, 1315, 1358, 1360 and 1419 now go
+   through `padNum`. The BKMVDATA importer reads an all-zero 1215 as empty.
+4. **Foreign-currency consistency blocks** (`foreign_currency_ils_mismatch`):
+   `|totalIls - round2(total x rate)| > 0.01`, or
+   `|subtotalIls + vatIls + round2(rounding x rate) - totalIls| > 0.01`. This
+   catches native amounts stored as shekels (`document-store.ts:194` fallback,
+   the RPC COALESCE). The foreign rounding cap is at least 0.01 so independent
+   agora rounding of the three snapshots never unbalances the journal.
+5. **Account keys.** Clients are ordered by `createdAt`, then id; categories by
+   name. Category keys are built from ALL expense categories the export loads
+   (the route loads every expense of the business, the builder filters by year
+   afterwards), so a category keeps its key across tax years. B110 rows are still
+   written only for the year's categories.
+6. **ROUNDING** joins the existing trial-balance group of `SALES-000`
+   (`INCOME` / "הכנסות").
+7. **Invoices-period partial totals.** The total is labelled partial for ANY
+   `totals` finding (missing shekel amounts, a dropped invalid-date row, a
+   duplicate number, a total mismatch). An invalid date is reported only in a
+   period its `YYYY-MM` prefix overlaps, and the message names that month. A date
+   with no readable month is a collapsed note ("appears in no period") and does
+   not mark totals partial, so one broken row is not flagged in every period.
+8. **1014 (balance required).** `horaot_131_raw.txt:1920-1938`: 1013 is
+   0 = not relevant / 1 = single-entry / 2 = double-entry; 1014 is 1 = balance per
+   transaction / 2 = per batch, "mandatory in double-entry books". The builder
+   declares 1013 = 2 for non-exempt businesses and every B100 transaction balances
+   on its own (batch 1355 = transaction number), so 1014 = 1 when 1013 = 2 and 0
+   otherwise.
+9. **Simulator.** The ITA simulator (`secapp.taxes.gov.il/TmbakmmsmlNew/frmCheckFiles.aspx`)
+   needs no login and is free; a sample with a foreign-id client, a client with no
+   number, a USD zero-rated export invoice, a USD domestic invoice and a rounding
+   case is run through it during execution.
+10. The guard stays `--dry-run` only: no pushes, no scheduled task.
+
+Open questions 1, 2, 5, 6 and 8 above are resolved by these decisions.
