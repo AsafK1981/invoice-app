@@ -208,7 +208,8 @@ export function generateSampleDataset(input: SampleInput): SampleDataset {
     const total = subtotal + vat;
 
     const status: InvoiceDocument["status"] =
-      (type === "quote" || type === "proforma") && rng() < 0.3 ? "draft" : "paid";
+      // An open (sent, unpaid) quote rather than a draft: drafts never enter the file.
+      (type === "quote" || type === "proforma") && rng() < 0.3 ? "sent" : "paid";
 
     const paymentMethod =
       type === "receipt" || type === "tax_invoice_receipt"
