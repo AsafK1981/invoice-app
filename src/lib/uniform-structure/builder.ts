@@ -24,6 +24,9 @@ import {
   type FileMeta,
   type RecordCounts,
 } from "./records";
+import { buildAccountKeys } from "./account-keys";
+import { journalRounding, uniformAmounts, uniformLineAmounts } from "./amounts";
+import { normalizeBusinessNumber } from "../israeli-id";
 import { isCountableRevenue, type Business, type Client, type Expense, type InvoiceDocument } from "../types";
 
 export interface UniformInput {
@@ -57,7 +60,7 @@ export interface DocTypeSummaryRow {
   code: string;
   label: string;
   count: number;
-  /** Money total in shekels (`totalIls ?? total`), 0 for unmanaged types. */
+  /** Money total in shekels (the C100 1223 amounts), 0 for unmanaged types. */
   total: number;
 }
 
@@ -108,14 +111,20 @@ const STANDARD_ACCOUNTS = [
   { code: "BANK", name: "בנק", tbCode: "ASSETS", tbDesc: "מזומנים ושווי מזומנים" },
 ];
 
-/** B110 account key for an expense category; 15 chars max (field 1403). */
-function expenseAccountKey(category: string): string {
-  return `EXP-${category}`.slice(0, 15);
-}
+/**
+ * The declared account for a stored הפרש עיגול. Written only when some
+ * document posts to it, and every posting is capped at that document's stored
+ * rounding (journalRounding), so it can never hide any other gap.
+ */
+export const ROUNDING_ACCOUNT = { code: "ROUNDING", name: "הפרשי עיגול", tbCode: "INCOME", tbDesc: "הכנסות" };
 
 export function buildUniformStructure(input: UniformInput): UniformOutput {
+  // The dealer number goes into every record. The preflight blocks a number
+  // the shared normalizer refuses, so this is the padded 9-digit form (an
+  // 8-digit עוסק is 0XXXXXXXX in the file, exactly as in PCN874).
+  const dealerVat = normalizeBusinessNumber(input.business.taxId).value ?? input.business.taxId;
   const meta: FileMeta = {
-    business: input.business,
+    business: { ...input.business, taxId: dealerVat },
     taxYear: input.taxYear,
     generatedAt: new Date(),
     // Software identity as registered at רשות המסים - see software.ts for
@@ -164,12 +173,35 @@ export function buildUniformStructure(input: UniformInput): UniformOutput {
     }
   }
 
+  // One id-to-key map feeds every B110 row and every B100 posting below.
+  // Clients in creation order; categories from EVERY expense the export
+  // loaded (all years), so a category keeps its key from one tax year to the next.
+  const accountKeys = buildAccountKeys(
+    input.clients,
+    input.expenses.map((e) => e.category ?? ""),
+    [...STANDARD_ACCOUNTS.map((a) => a.code), ROUNDING_ACCOUNT.code],
+  );
+
+  // B100 journal documents, decided up front: whether any of them posts a
+  // rounding line decides whether the rounding account row exists.
+  //
+  // isCountableRevenue() excludes documents with convertedToId set (e.g. a
+  // quote/proforma marked "paid" on conversion into the receipt/tax invoice
+  // that actually represents the revenue) - without it this ledger would
+  // book the same money twice, once under the source doc and once under the
+  // converted target. C100/D110 below intentionally do NOT apply this
+  // filter: they're a registry of every document number issued, not a
+  // revenue ledger, so converted docs still belong there.
+  const journalDocs = docs.filter((d) => d.status === "paid" && isCountableRevenue(d));
+  const roundingByDoc = new Map(journalDocs.map((d) => [d.id, journalRounding(uniformAmounts(d))]));
+  const needsRoundingAccount = [...roundingByDoc.values()].some((value) => Math.abs(value) >= 0.005);
+
   // Sequence numbers are monotonic across the entire BKMVDATA file.
   let recordNum = 2; // 1 = A100
 
-  // ── B110 chart of accounts (standard + per-client) ──────────────────
+  // ── B110 chart of accounts (standard + per-client + per-category) ───
   const b110Lines: string[] = [];
-  for (const acct of STANDARD_ACCOUNTS) {
+  for (const acct of needsRoundingAccount ? [...STANDARD_ACCOUNTS, ROUNDING_ACCOUNT] : STANDARD_ACCOUNTS) {
     b110Lines.push(
       buildB110({
         recordNum: recordNum++,
@@ -186,7 +218,7 @@ export function buildUniformStructure(input: UniformInput): UniformOutput {
       buildB110({
         recordNum: recordNum++,
         meta,
-        accountKey: `CLI-${c.id.slice(0, 10)}`,
+        accountKey: accountKeys.client(c.id),
         accountName: c.name,
         trialBalanceCode: "CUSTOMERS",
         trialBalanceDesc: "לקוחות",
@@ -194,20 +226,14 @@ export function buildUniformStructure(input: UniformInput): UniformOutput {
       }),
     );
   }
-  // One expense account per category. Every B100 account key (field 1364)
-  // must resolve to a B110 row, and the expense journal below posts to
-  // `EXP-<category>`.
-  const expenseAccounts = new Map<string, string>();
-  for (const e of expenses) {
-    const key = expenseAccountKey(e.category);
-    if (!expenseAccounts.has(key)) expenseAccounts.set(key, e.category);
-  }
-  for (const [key, category] of expenseAccounts) {
+  // One expense account per category, never merged: every B100 account key
+  // (field 1364) must resolve to its own B110 row.
+  for (const category of new Set(expenses.map((e) => e.category ?? ""))) {
     b110Lines.push(
       buildB110({
         recordNum: recordNum++,
         meta,
-        accountKey: key,
+        accountKey: accountKeys.expense(category),
         accountName: `הוצאות ${category}`.slice(0, 50),
         trialBalanceCode: "EXPENSES",
         trialBalanceDesc: "הוצאות",
@@ -241,7 +267,7 @@ export function buildUniformStructure(input: UniformInput): UniformOutput {
     const code = DOC_TYPE_CODE[doc.type];
     const row = perType.get(code) ?? { count: 0, total: 0 };
     row.count += 1;
-    row.total += doc.totalIls ?? doc.total;
+    row.total += uniformAmounts(doc).total;
     perType.set(code, row);
   }
   const c100Count = c100Lines.length;
@@ -260,6 +286,7 @@ export function buildUniformStructure(input: UniformInput): UniformOutput {
     // treats a D110 under a 400 header as an orphan ("לא נמצאה רשומת
     // כותרת מסמך"). A tax-invoice-receipt (320) keeps both kinds of rows.
     if (doc.type === "receipt") continue;
+    const lineAmounts = uniformLineAmounts(doc);
     doc.items.forEach((item, idx) => {
       d110Lines.push(
         buildD110({
@@ -270,6 +297,7 @@ export function buildUniformStructure(input: UniformInput): UniformOutput {
           lineNumber: idx + 1,
           linkField: linkOf(doc),
           itemCode: uniqueItems.get(item.description.trim())?.code ?? "",
+          amounts: lineAmounts[idx],
         }),
       );
     });
@@ -286,86 +314,50 @@ export function buildUniformStructure(input: UniformInput): UniformOutput {
   const d120Count = d120Lines.length;
 
   // ── B100 journal entries ───────────────────────────────────────────
-  // Each paid document: dr customer / cr sales / [cr vat]
+  // Each paid document: dr customer / cr sales / [cr vat] / [cr rounding]
   // Each expense: dr expense / cr cash
-  //
-  // isCountableRevenue() excludes documents with convertedToId set (e.g. a
-  // quote/proforma marked "paid" on conversion into the receipt/tax invoice
-  // that actually represents the revenue) - without it this ledger would
-  // book the same money twice, once under the source doc and once under the
-  // converted target. C100/D110 above intentionally do NOT apply this
-  // filter: they're a registry of every document number issued, not a
-  // revenue ledger, so converted docs still belong there.
   const b100Lines: string[] = [];
   let txNum = 1;
 
-  for (const doc of docs) {
-    if (doc.status !== "paid" || !isCountableRevenue(doc)) continue;
+  for (const doc of journalDocs) {
     const client = doc.clientId ? clientById.get(doc.clientId) || null : null;
     const docTypeCode = DOC_TYPE_CODE[doc.type];
-    const customerAcct = client ? `CLI-${client.id.slice(0, 10)}` : "CASH";
-
-    b100Lines.push(
-      buildB100({
-        recordNum: recordNum++,
-        meta,
-        transactionNum: txNum,
-        transactionLine: 1,
-        docRefNum: String(doc.number),
-        docTypeRef: docTypeCode,
-        date: doc.date,
-        valueDate: doc.date,
-        accountKey: customerAcct,
-        counterAccountKey: "SALES-000",
-        details: `${doc.clientName} ${doc.subject ?? ""}`.slice(0, 50),
-        // `totalIls` normalizes foreign-currency documents into shekels;
-        // this government export has no per-line currency field, so the raw
-        // native-currency `total` would silently misreport a USD invoice as
-        // if it were that many shekels.
-        amount: doc.totalIls ?? doc.total,
-        side: "1",
-      }),
-    );
-    b100Lines.push(
-      buildB100({
-        recordNum: recordNum++,
-        meta,
-        transactionNum: txNum,
-        transactionLine: 2,
-        docRefNum: String(doc.number),
-        docTypeRef: docTypeCode,
-        date: doc.date,
-        valueDate: doc.date,
-        accountKey: "SALES-000",
-        counterAccountKey: customerAcct,
-        details: `${doc.clientName} ${doc.subject ?? ""}`.slice(0, 50),
-        amount: doc.subtotalIls ?? doc.subtotal,
-        side: "2",
-      }),
-    );
-    if (Math.abs(doc.vatIls ?? doc.vat) > 0.001) {
+    const customerAcct = client ? accountKeys.client(client.id) : "CASH";
+    const amounts = uniformAmounts(doc);
+    const details = `${doc.clientName} ${doc.subject ?? ""}`.slice(0, 50);
+    let transactionLine = 1;
+    // 1368 is in shekels. A foreign-currency document also carries its
+    // currency (1367) and the same line in that currency (1369).
+    const post = (accountKey: string, counterAccountKey: string, side: "1" | "2", amount: number, native: number, lineDetails = details) => {
       b100Lines.push(
         buildB100({
           recordNum: recordNum++,
           meta,
           transactionNum: txNum,
-          transactionLine: 3,
+          transactionLine: transactionLine++,
           docRefNum: String(doc.number),
           docTypeRef: docTypeCode,
           date: doc.date,
           valueDate: doc.date,
-          accountKey: "VAT-COL",
-          counterAccountKey: customerAcct,
-          details: "מע״מ עסקאות",
-          amount: doc.vatIls ?? doc.vat,
-          side: "2",
+          accountKey,
+          counterAccountKey,
+          details: lineDetails,
+          amount,
+          side,
+          ...(amounts.foreign ? { foreignCurrency: amounts.currency, foreignAmount: native } : {}),
         }),
       );
-    }
+    };
+    post(customerAcct, "SALES-000", "1", amounts.total, doc.total);
+    post("SALES-000", customerAcct, "2", amounts.subtotal, doc.subtotal);
+    if (Math.abs(amounts.vat) > 0.001) post("VAT-COL", customerAcct, "2", amounts.vat, doc.vat, "מע״מ עסקאות");
+    const rounding = roundingByDoc.get(doc.id) ?? 0;
+    if (Math.abs(rounding) >= 0.005) post(ROUNDING_ACCOUNT.code, customerAcct, "2", rounding, doc.rounding ?? 0, "הפרש עיגול");
     txNum++;
   }
 
   for (const e of expenses) {
+    const expenseAcct = accountKeys.expense(e.category ?? "");
     b100Lines.push(
       buildB100({
         recordNum: recordNum++,
@@ -376,7 +368,7 @@ export function buildUniformStructure(input: UniformInput): UniformOutput {
         docTypeRef: "800",
         date: e.date,
         valueDate: e.date,
-        accountKey: expenseAccountKey(e.category),
+        accountKey: expenseAcct,
         counterAccountKey: "CASH",
         details: `${e.supplier} ${e.description ?? ""}`.slice(0, 50),
         amount: e.amount,
@@ -394,7 +386,7 @@ export function buildUniformStructure(input: UniformInput): UniformOutput {
         date: e.date,
         valueDate: e.date,
         accountKey: "CASH",
-        counterAccountKey: expenseAccountKey(e.category),
+        counterAccountKey: expenseAcct,
         details: `${e.supplier} ${e.description ?? ""}`.slice(0, 50),
         amount: e.amount,
         side: "2",

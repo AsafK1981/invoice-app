@@ -28,10 +28,10 @@ describe("uniform preflight", () => {
     const data = input(); data.clients = [{ id: "abcdefghij1", name: "א", createdAt: "2026-01-01" }, { id: "abcdefghij2", name: "ב", createdAt: "2026-01-01" }];
     expect(validateUniformInput(data).some(i => i.message.includes("מתנגשים"))).toBe(true);
   });
-  it("accepts source rounding but blocks an unbalanced generated journal", () => {
+  it("accepts source rounding and balances the journal through the rounding account", () => {
     const data = input({ rounding: 0.4, total: 118.4 });
     expect(validateUniformInput(data)).toEqual([]);
-    expect(validateUniformOutput(buildUniformStructure(data)).some(i => i.message.includes("מאוזנת"))).toBe(true);
+    expect(validateUniformOutput(buildUniformStructure(data))).toEqual([]);
   });
   it("detects malformed date, orphan detail and altered footer", () => {
     for (const change of ["date", "link", "footer"]) {
