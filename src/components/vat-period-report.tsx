@@ -23,6 +23,7 @@ import { biMonthlyRange, singleMonthRange, yearRange } from "@/lib/ita/vat-perio
 import { buildPcn874, validatePcn874Content, PCN_ENTRY_LABELS } from "@/lib/ita/pcn874";
 import { exemptDealerAnnualTurnover, exemptDeclarationDeadline, roundShekelHalfUp } from "@/lib/ita/income-tax-advances";
 import { getExemptCeiling } from "@/lib/tax-thresholds";
+import { withReturn } from "@/lib/return-to";
 
 interface Props {
   business: Business;
@@ -74,6 +75,9 @@ export function VatPeriodReport({ headless = false, business, documents, expense
     // unreachable, satisfies TS
     return biMonthlyRange(today, 0);
   }, [mode, today]);
+  // Fix-it links send the user elsewhere; this brings them back to the same
+  // report on the same period instead of the default one.
+  const returnTo = `/reports/vat?period=${mode}`;
 
   const stats = useMemo(() => {
     const docsInRange = documents.filter(
@@ -457,7 +461,9 @@ export function VatPeriodReport({ headless = false, business, documents, expense
                 {pcn.warnings.map((w, i) => {
                   const isError = w.level === "error";
                   const Icon = isError ? AlertCircle : AlertTriangle;
-                  const href = w.source === "document" ? `/documents/${w.sourceId}` : "/expenses";
+                  const href = w.source === "document"
+                    ? withReturn(`/documents/${w.sourceId}`, returnTo)
+                    : withReturn("/expenses", returnTo, { edit: w.sourceId });
                   return (
                     <li
                       key={`${w.sourceId}-${i}`}
@@ -570,7 +576,7 @@ export function VatPeriodReport({ headless = false, business, documents, expense
         {stats.expenseRows.length === 0 ? (
           <div className="rounded-xl border border-dashed border-stone-200 p-6 text-center text-sm text-stone-500">
             אין הוצאות בתקופה שנבחרה.{" "}
-            <Link href="/expenses" className="no-print text-orange-700 font-semibold hover:underline">
+            <Link href={withReturn("/expenses", returnTo, { new: "1" })} className="no-print text-orange-700 font-semibold hover:underline">
               להוספת הוצאה
             </Link>
           </div>

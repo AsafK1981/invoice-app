@@ -19,6 +19,9 @@ import { EmailInboxSection } from "@/components/email-inbox-section";
 import { type Period, periodMatches, periodLabel } from "@/lib/report-period";
 import { supabase } from "@/lib/supabase";
 import type { Expense } from "@/lib/types";
+import { useRouter } from "next/navigation";
+import { ReturnBar } from "@/components/return-bar";
+import { RETURN_PARAM, safeReturnPath } from "@/lib/return-to";
 
 /**
  * Rows shown per page in the expenses table.
@@ -120,7 +123,8 @@ function matchesExpense(e: Expense, query: string): boolean {
 }
 
 export default function ExpensesPage() {
-  const { items: expenses } = useExpenses();
+  const { items: expenses, ready: expensesReady } = useExpenses();
+  const router = useRouter();
   const { business } = useBusiness();
   const [modalOpen, setModalOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
@@ -190,6 +194,32 @@ export default function ExpensesPage() {
   useEffect(() => {
     setPage(0);
   }, [search, categoryFilter, period]);
+
+  // Arrived from a report's fix-it link: ?edit=<id> (or ?new=1) opens the
+  // form straight away, and ?return=<path> offers, and after a save takes,
+  // the way back to that report. Read from window, not useSearchParams, so
+  // the page needs no Suspense boundary.
+  const [returnTo, setReturnTo] = useState<string | null>(null);
+  const deepLinkRef = useRef<{ edit: string | null; isNew: boolean } | null>(null);
+  const savedForReturnRef = useRef(false);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setReturnTo(safeReturnPath(params.get(RETURN_PARAM)));
+    deepLinkRef.current = { edit: params.get("edit"), isNew: params.get("new") === "1" };
+  }, []);
+  useEffect(() => {
+    const link = deepLinkRef.current;
+    if (!link || !expensesReady) return;
+    deepLinkRef.current = null;
+    if (link.edit) {
+      const target = expenses.find((e) => e.id === link.edit);
+      if (target) openEdit(target);
+    } else if (link.isNew) {
+      openNew();
+    }
+    // openEdit/openNew only set state; running once when the list is ready is the point.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expensesReady, expenses]);
 
   function openNew() {
     setEditing(null);
@@ -304,6 +334,7 @@ export default function ExpensesPage() {
   return (
     <>
     <div className="space-y-6" data-print-hidden={printing ? "true" : undefined}>
+      {returnTo && <ReturnBar to={returnTo} />}
       {/* Title on the inline-start, the period control on the inline-end -
           the same header the reports page has, so a free date range is one
           click away instead of the last entry of a month dropdown. */}
@@ -618,6 +649,11 @@ export default function ExpensesPage() {
         onClose={() => {
           setModalOpen(false);
           setPrefill(null);
+          if (returnTo && savedForReturnRef.current) router.push(returnTo);
+        }}
+        onSave={async (record) => {
+          await expenseStore.save(record);
+          if (returnTo) savedForReturnRef.current = true;
         }}
         expense={editing}
         prefill={prefill}

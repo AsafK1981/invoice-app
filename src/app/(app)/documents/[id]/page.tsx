@@ -3,6 +3,7 @@
 import { use, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { RETURN_PARAM, returnLabel, safeReturnPath } from "@/lib/return-to";
 import {
   ArrowRight,
   Printer,
@@ -97,6 +98,8 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
   }, [moreOpen]);
   const confirm = useConfirm();
   const searchParams = useSearchParams();
+  // Reached from a report's fix-it link: the back link returns to that report.
+  const returnTo = safeReturnPath(searchParams.get(RETURN_PARAM));
   // Buyer's business/VAT number: the doc's own snapshot, else the linked
   // client's. Absent ⇒ private customer (B2C), for whom no allocation number
   // is ever required. Computed here (ahead of the ready/doc guards below) so
@@ -653,11 +656,11 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
       />
       <div className="no-print flex items-center justify-between flex-wrap gap-3">
         <Link
-          href="/documents"
+          href={returnTo ?? "/documents"}
           className="inline-flex items-center gap-1 text-sm text-orange-600 hover:text-orange-700 font-medium"
         >
           <ArrowRight className="w-4 h-4" />
-          חזרה למסמכים
+          {returnTo ? returnLabel(returnTo) : "חזרה למסמכים"}
         </Link>
         <div className="flex items-center gap-2 flex-wrap">
           {canConvert && (
