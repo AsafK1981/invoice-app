@@ -174,6 +174,11 @@ export async function updateExpenseFilingFields(
   if (ids.length === 0 || Object.keys(columns).length === 0) return;
   const { data, error } = await supabase.from("expenses").update(columns).in("id", [...ids]).select("id");
   if (error) throw new Error(error.message);
-  if (!data || data.length !== ids.length) throw new Error("חלק מההוצאות לא עודכנו. רענן את הדף ונסה שוב.");
+  if (!data || data.length !== ids.length) {
+    // Some rows may have changed (a grouped supplier update): broadcast first so
+    // the report refetches what was written, then say that the rest was not.
+    window.dispatchEvent(new Event(CHANGE_EVENT));
+    throw new Error("חלק מההוצאות לא עודכנו. רענן את הדף ונסה שוב.");
+  }
   window.dispatchEvent(new Event(CHANGE_EVENT));
 }

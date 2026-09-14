@@ -54,9 +54,13 @@ describe("updateExpenseFilingFields", () => {
     expect(state.calls[0].update).toEqual({ reference: "INV-9", allocation_number: "111222333", date: "2026-08-10" });
   });
 
-  it("throws on a partial write and on an error, without broadcasting", async () => {
+  it("broadcasts before throwing on a partial write, so the panel refetches the rows that did change", async () => {
     state.rows = 1;
     await expect(updateExpenseFilingFields(["a", "b"], { reference: "1" })).rejects.toThrow("חלק מההוצאות");
+    expect(window.dispatchEvent).toHaveBeenCalledTimes(1);
+  });
+
+  it("throws on an error without broadcasting", async () => {
     state.error = { message: "denied" };
     await expect(updateExpenseFilingFields(["a"], { reference: "1" })).rejects.toThrow("denied");
     expect(window.dispatchEvent).not.toHaveBeenCalled();
