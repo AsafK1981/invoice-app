@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, SlidersHorizontal, Download, Printer } from "lucide-react";
 import { DownloadPdfButton } from "@/components/download-pdf-button";
+import { HorizontalScroll } from "@/components/horizontal-scroll";
 import { useDocuments } from "@/lib/document-store";
 import { useClients } from "@/lib/client-store";
 import { formatCurrencyWhole } from "@/lib/format";
@@ -407,7 +408,9 @@ export default function CustomReportPage() {
       </div>
 
       {/* Report */}
-      <div className="card-soft overflow-hidden">
+      {/* overflow-clip, not -hidden: hidden makes the card a scroll container,
+          which would stop the table's sticky scroll bar from sticking. */}
+      <div className="card-soft overflow-clip">
         <div className="px-5 py-3.5 border-b border-stone-100 flex items-baseline justify-between flex-wrap gap-x-4 gap-y-1">
           <div>
             <h2 className="font-bold text-stone-900 text-lg">תוצאות</h2>
@@ -445,7 +448,8 @@ export default function CustomReportPage() {
             אין מסמכים התואמים למסננים שנבחרו.
           </div>
         ) : (
-          <div className="p-5 overflow-x-auto">
+          <div className="p-5">
+            <HorizontalScroll label="טבלת תוצאות הדוח">
             <table className="gk-rtable w-full text-sm border-separate border-spacing-0 rounded-xl overflow-hidden shadow-sm">
               <thead>
                 <tr className="bg-gradient-to-l from-orange-500 to-orange-700 text-white">
@@ -497,6 +501,7 @@ export default function CustomReportPage() {
                 </tr>
               </tfoot>
             </table>
+            </HorizontalScroll>
           </div>
         )}
       </div>
