@@ -12,6 +12,8 @@ import { todayInIsrael } from "@/lib/date";
 import { getVatRate, round2 } from "@/lib/vat";
 import { formatCurrency, formatDate } from "@/lib/format";
 import type { Expense } from "@/lib/types";
+import { BusinessNumberHintText } from "@/components/business-number-hint";
+import { businessNumberForSave } from "@/lib/business-number-hint";
 
 type PrefillFromScan = {
   date?: string;
@@ -332,7 +334,7 @@ export function ExpenseFormModal({
       // PCN874 details. Only meaningful when this expense carries VAT, but we
       // keep whatever was typed so flipping the entry mode back and forth
       // doesn't silently drop the supplier's invoice number.
-      supplierTaxId: vatDetails.supplierTaxId.trim() || undefined,
+      supplierTaxId: businessNumberForSave(vatDetails.supplierTaxId) || undefined,
       reference: vatDetails.reference.trim() || undefined,
       isEquipment: vatOn ? isEquipment : false,
       allocationNumber: vatDetails.allocationNumber.trim() || undefined,
@@ -588,21 +590,24 @@ export function ExpenseFormModal({
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <FormField label="מספר עוסק / ח.פ של הספק">
-                    <input
-                      type="text"
-                      dir="ltr"
-                      inputMode="numeric"
-                      maxLength={9}
-                      value={vatDetails.supplierTaxId}
-                      onChange={(e) =>
-                        setVatDetails((d) => ({
-                          ...d,
-                          supplierTaxId: e.target.value.replace(/\D/g, "").slice(0, 9),
-                        }))
-                      }
-                      placeholder="123456789"
-                      className="input-warm"
-                    />
+                    <div>
+                      <input
+                        type="text"
+                        dir="ltr"
+                        inputMode="numeric"
+                        maxLength={9}
+                        value={vatDetails.supplierTaxId}
+                        onChange={(e) =>
+                          setVatDetails((d) => ({
+                            ...d,
+                            supplierTaxId: e.target.value.replace(/\D/g, "").slice(0, 9),
+                          }))
+                        }
+                        placeholder="123456789"
+                        className="input-warm"
+                      />
+                      <BusinessNumberHintText value={vatDetails.supplierTaxId} digitsOnlyField />
+                    </div>
                   </FormField>
                   <FormField label="מספר חשבונית הספק">
                     <input

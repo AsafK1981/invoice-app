@@ -8,6 +8,8 @@ import { clientStore } from "@/lib/client-store";
 import { parseEmails, joinEmails, isValidEmail } from "@/lib/emails";
 import { todayInIsrael } from "@/lib/date";
 import type { Client } from "@/lib/types";
+import { BusinessNumberHintText } from "@/components/business-number-hint";
+import { businessNumberForSave } from "@/lib/business-number-hint";
 
 interface Props {
   open: boolean;
@@ -72,7 +74,7 @@ export function ClientFormModal({ open, onClose, client }: Props) {
     const record: Client = {
       id: client?.id ?? crypto.randomUUID(),
       name: form.name.trim(),
-      taxId: form.taxId.trim() || undefined,
+      taxId: businessNumberForSave(form.taxId) || undefined,
       address: form.address.trim() || undefined,
       phone: form.phone.trim() || undefined,
       email: cleanEmails.length > 0 ? joinEmails(cleanEmails) : undefined,
@@ -136,16 +138,19 @@ export function ClientFormModal({ open, onClose, client }: Props) {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField label="ח.פ / ת.ז">
-            <input
-              type="text"
-              name="tax-id"
-              dir="ltr"
-              value={form.taxId}
-              onChange={(e) => update("taxId", e.target.value)}
-              placeholder="514123456"
-              autoComplete="on"
-              className="input-warm"
-            />
+            <div>
+              <input
+                type="text"
+                name="tax-id"
+                dir="ltr"
+                value={form.taxId}
+                onChange={(e) => update("taxId", e.target.value)}
+                placeholder="514123456"
+                autoComplete="on"
+                className="input-warm"
+              />
+              <BusinessNumberHintText value={form.taxId} />
+            </div>
           </FormField>
 
           <FormField label="טלפון">
