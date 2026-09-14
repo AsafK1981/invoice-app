@@ -11,16 +11,16 @@ import {
   Copy,
   Check,
   FileDown,
-  AlertTriangle,
-  AlertCircle,
   ExternalLink,
 } from "lucide-react";
 import { DownloadPdfButton } from "@/components/download-pdf-button";
+import { FilingFixPanel } from "@/components/filing-fix-panel";
+import { buildFilingFixModel } from "@/lib/filing-fix-items";
 import { formatCurrencyWhole, formatDate } from "@/lib/format";
 import type { Business, InvoiceDocument, Expense } from "@/lib/types";
 import { exportVatPeriodExpenses } from "@/lib/csv-export";
 import { DEFAULT_VAT_PERIOD_MODE, VAT_PERIOD_LABELS, VAT_PERIOD_MODES, vatPeriodRange, type VatPeriodMode } from "@/lib/vat-report-period";
-import { buildPcn874, validatePcn874Content, PCN_ENTRY_LABELS } from "@/lib/ita/pcn874";
+import { buildPcn874, pcnCanDownload, PCN_ENTRY_LABELS } from "@/lib/ita/pcn874";
 import { exemptDealerAnnualTurnover, exemptDeclarationDeadline, roundShekelHalfUp } from "@/lib/ita/income-tax-advances";
 import { getExemptCeiling } from "@/lib/tax-thresholds";
 import { withReturn } from "@/lib/return-to";
@@ -125,13 +125,17 @@ export function VatPeriodReport({ headless = false, business, documents, expense
     () => buildPcn874({ business, documents, expenses, range }),
     [business, documents, expenses, range],
   );
-  // Whole-file blockers (dealer number, period shape, period still open) come
-  // first; the byte-level self-check only matters once those are clear.
-  const pcnProblems = useMemo(
-    () => [...new Set([...pcn.blockers.map((b) => b.message), ...validatePcn874Content(pcn.content)])],
-    [pcn.blockers, pcn.content],
+  // What is left before the download, grouped by the fix. The panel and the
+  // button read the same result, so the count and the gate cannot disagree.
+  const fixModel = useMemo(
+    () => buildFilingFixModel(pcn, { business, documents, expenses }),
+    [pcn, business, documents, expenses],
   );
-  const pcnErrorCount = pcnProblems.length + pcn.warnings.filter((warning) => warning.level === "error").length;
+  const canDownload = pcnCanDownload(pcn) && !refreshing;
+  function changePeriod(next: PeriodMode) {
+    setMode(next);
+    onPeriodChange?.(next);
+  }
 
   const formRows = useMemo<CopyRow[]>(() => {
     const f = pcn.figures;
@@ -195,7 +199,7 @@ export function VatPeriodReport({ headless = false, business, documents, expense
 
   /** Hand the file over as-is: ASCII, CRLF, the name the ITA expects. */
   function downloadPcn() {
-    if (refreshing || pcnErrorCount > 0 || pcn.transactions.length === 0) return;
+    if (!canDownload) return;
     const blob = new Blob([pcn.content], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -317,7 +321,7 @@ export function VatPeriodReport({ headless = false, business, documents, expense
           <select
             aria-label="תקופת הדיווח"
             value={mode}
-            onChange={(e) => { const next = e.target.value as PeriodMode; setMode(next); onPeriodChange?.(next); }}
+            onChange={(e) => changePeriod(e.target.value as PeriodMode)}
             className="input-warm py-1.5 px-3 text-sm w-auto max-w-[14rem]"
           >
             {VAT_PERIOD_MODES.map((m) => (
@@ -433,50 +437,13 @@ export function VatPeriodReport({ headless = false, business, documents, expense
         <p className="text-sm text-stone-700 mt-1 leading-relaxed">
           קובץ להעלאה בשירות &quot;דיווח מפורט&quot; למי שחייב בדיווח זה. הבדיקה מתעדכנת אוטומטית לפי הנתונים והתקופה שנבחרה.
         </p>
-        <p role="status" className="mt-3 text-sm font-semibold">
-          {pcnErrorCount > 0 ? "יש שגיאות לתיקון לפני הורדת הקובץ." : pcn.warnings.length > 0 ? "לא נמצאו שגיאות חוסמות. יש הערות לבדיקה לפני ההורדה." : "בדיקות הנתונים ומבנה הקובץ עברו."}
-        </p>
-        <p className="mt-1 text-xs text-stone-600">הבדיקה אינה אישור קליטה של רשות המסים. הרשאות דיווח, מצב התיק ודיווחים שכבר הוגשו נבדקים באתר הרשות.</p>
-        {pcnErrorCount > 0 && <p className="mt-1 text-xs text-stone-600">סכומים ותאריכים במסמך שכבר הופק אינם ניתנים לעריכה. לתיקון כזה יש לפנות לרואה החשבון או לתמיכה; פרטי זיהוי והקצאה אפשר לבדוק במסך המסמך.</p>}
-        {pcnProblems.length > 0 && pcn.transactions.length === 0 && <ul className="mt-2 text-sm text-rose-800">{pcnProblems.map((problem) => <li key={problem}>{problem}</li>)}</ul>}
-
-            {pcn.warnings.length > 0 && (
-              <ul className="mt-3 space-y-2">
-                {pcn.warnings.map((w, i) => {
-                  const isError = w.level === "error";
-                  const Icon = isError ? AlertCircle : AlertTriangle;
-                  const href = w.source === "document"
-                    ? withReturn(`/documents/${w.sourceId}`, returnTo)
-                    : withReturn("/expenses", returnTo, { edit: w.sourceId });
-                  return (
-                    <li
-                      key={`${w.sourceId}-${i}`}
-                      className={`rounded-xl border p-3 text-sm ${
-                        isError
-                          ? "bg-rose-50 border-rose-200 text-rose-900"
-                          : "bg-amber-50 border-amber-200 text-amber-900"
-                      }`}
-                    >
-                      <div className="flex items-start gap-2">
-                        <Icon
-                          className={`w-4 h-4 mt-0.5 shrink-0 ${isError ? "text-rose-600" : "text-amber-600"}`}
-                          aria-hidden="true"
-                        />
-                        <div className="min-w-0">
-                          <p className="leading-relaxed">{w.message}</p>
-                          <Link
-                            href={href}
-                            className="no-print inline-flex items-center gap-1 mt-1 text-xs font-semibold underline hover:no-underline"
-                          >
-                            {w.sourceLabel}
-                          </Link>
-                        </div>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
+        <FilingFixPanel
+          model={fixModel}
+          businessId={business.id}
+          returnTo={returnTo}
+          onUseFilingPeriod={() => changePeriod(DEFAULT_VAT_PERIOD_MODE)}
+        />
+        <p className="mt-2 text-xs text-stone-600">הבדיקה אינה אישור קליטה של רשות המסים. הרשאות דיווח, מצב התיק ודיווחים שכבר הוגשו נבדקים באתר הרשות.</p>
 
         {pcn.transactions.length === 0 ? (
           <div className="mt-3 rounded-xl border border-dashed border-stone-200 p-6 text-center text-sm text-stone-600">
@@ -504,26 +471,17 @@ export function VatPeriodReport({ headless = false, business, documents, expense
               </p>
             )}
 
-            {pcnProblems.length > 0 && (
-              <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">
-                <p className="font-semibold">הקובץ אינו זמין להורדה:</p>
-                <ul className="list-disc mt-1 pr-5 space-y-0.5">
-                  {pcnProblems.map((p) => (
-                    <li key={p}>{p}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
 
             <div className="mt-4 flex flex-wrap items-center gap-3">
               <button
                 type="button"
+                data-testid="pcn874-download"
                 onClick={downloadPcn}
-                disabled={refreshing || pcnErrorCount > 0}
+                disabled={!canDownload}
                 className="no-print inline-flex items-center justify-center gap-2 min-h-[44px] px-4 rounded-xl text-sm font-semibold text-white bg-gradient-to-l from-orange-500 to-orange-700 hover:shadow-md hover:shadow-orange-200 disabled:from-stone-300 disabled:to-stone-300 disabled:shadow-none disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <FileDown className="w-4 h-4" aria-hidden="true" />
-                {pcnErrorCount > 0 ? "יש לתקן שגיאות לפני ההורדה" : "הורד קובץ PCN874"}
+                {canDownload ? "הורד קובץ PCN874" : refreshing ? "מעדכן את הבדיקה..." : fixModel.periodOnly ? "בחר תקופת דיווח כדי להוריד" : "יש להשלים את מה שנשאר לפני ההורדה"}
               </button>
               <a
                 href="https://www.gov.il/he/service/detailed-vat-reporting"
