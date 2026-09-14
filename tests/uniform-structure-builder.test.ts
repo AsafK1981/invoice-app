@@ -101,4 +101,21 @@ describe("uniform builder", () => {
     expect(out.docTypeSummary.find((r) => r.code === "305")).toMatchObject({ count: 2, total: 236 });
     expect(validateUniformOutput(out)).toEqual([]);
   });
+  it("writes one line for an issued document without line items, from the document itself", () => {
+    const itemless = doc({ items: [], subject: "" });
+    const out = buildUniformStructure(input({ documents: [itemless] }));
+    const d110 = lines(out.bkmvdataText, "D110");
+    expect(d110).toHaveLength(1);
+    expect(d110[0].slice(93, 123).trim()).toBe("חשבונית מס");
+    expect(Number(d110[0].slice(223, 240)) / 10000).toBe(1);
+    expect(signed(d110[0].slice(240, 255))).toBe(100);
+    expect(signed(d110[0].slice(270, 285))).toBe(100);
+    expect(d110[0].slice(285, 289)).toBe("1800");
+    expect(lines(out.bkmvdataText, "M100").map((l) => l.slice(82, 132).trim())).toContain("חשבונית מס");
+    expect(validateUniformOutput(out)).toEqual([]);
+    const withSubject = buildUniformStructure(input({ documents: [doc({ items: [], subject: "ייעוץ ספטמבר", currency: "USD", exchangeRate: 3.6, subtotalIls: 360, vatIls: 64.8, totalIls: 424.8 })] }));
+    const [line] = lines(withSubject.bkmvdataText, "D110");
+    expect([line.slice(93, 123).trim(), signed(line.slice(270, 285))]).toEqual(["ייעוץ ספטמבר", 360]);
+    expect(validateUniformOutput(withSubject)).toEqual([]);
+  });
 });

@@ -251,6 +251,8 @@ export function buildD110(args: {
   itemCode: string;
   /** Shekel unit price and line total (uniformLineAmounts). Defaults to the item's own amounts. */
   amounts?: { unitPrice: number; total: number };
+  /** Field 1268 in percent (18 for 18%); 0 when not given. */
+  vatPercent?: number;
 }): string {
   const { recordNum, meta, doc, item, lineNumber, linkField, itemCode } = args;
   const line = args.amounts ?? { unitPrice: item.unitPrice, total: item.total };
@@ -274,7 +276,7 @@ export function buildD110(args: {
     formatSignedAmount(line.unitPrice, 12, 2), // 1265: price w/o VAT in shekels, pos 241-255
     formatSignedAmount(0, 12, 2), // 1266: line discount, pos 256-270
     formatSignedAmount(line.total, 12, 2), // 1267: line total before VAT, pos 271-285
-    padNum(0, 4), // 1268: VAT %: 9(2)v99, len 4, pos 286-289
+    padNum(Math.round((args.vatPercent ?? 0) * 100), 4), // 1268: VAT %: 9(2)v99, len 4, pos 286-289
     // 1269: 0-length cancelled
     padStr("", 7), // 1270: branch identifier, pos 290-296
     // 1271: 0-length cancelled

@@ -26,6 +26,7 @@ export type UniformIssueCode =
   | "total_mismatch"
   | "too_many_lines"
   | "items_mismatch"
+  | "items_synthesized"
   | "item_amount_invalid"
   | "check_details_invalid"
   | "check_due_date_invalid"
@@ -91,6 +92,7 @@ export const UNIFORM_FIX_TITLES: Record<UniformIssueCode, string> = {
   total_mismatch: "הסכום הכולל לא תואם לסכום לפני מע״מ, המע״מ והעיגול",
   too_many_lines: "יותר מדי שורות במסמך",
   items_mismatch: "סכום השורות לא תואם לסכום המסמך",
+  items_synthesized: "מסמך בלי שורות: נכתבה שורה מתוך המסמך",
   item_amount_invalid: "כמות או סכום לא תקינים בשורת מסמך",
   check_details_invalid: "חסרים פרטי המחאה",
   check_due_date_invalid: "תאריך פירעון ההמחאה לא תקין",

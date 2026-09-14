@@ -78,6 +78,14 @@ describe("uniform preflight", () => {
     expect(validateUniformInput(data)).toEqual([]);
   });
 
+  it("an issued document without line items is a note, not a blocker; wrong existing lines still block", () => {
+    const itemless = input({ items: [] });
+    expect(errors(itemless)).toEqual([]);
+    expect(validateUniformInput(itemless)).toContainEqual(expect.objectContaining({ code: "items_synthesized", level: "warning", sourceId: "doc1" }));
+    expect(errors(input({ items: [{ id: "i", description: "x", quantity: 1, unitPrice: 50, total: 50 }] }))).toContain("items_mismatch");
+    expect(warnings(input({ type: "receipt", items: [] }))).not.toContain("items_synthesized");
+  });
+
   it("blocks a missing linked client", () => {
     expect(errors(input({ clientId: "missing" }))).toContain("client_missing");
   });

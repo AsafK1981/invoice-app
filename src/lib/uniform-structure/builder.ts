@@ -26,6 +26,7 @@ import {
 } from "./records";
 import { buildAccountKeys } from "./account-keys";
 import { journalRounding, uniformAmounts, uniformLineAmounts } from "./amounts";
+import { documentVatPercent, uniformDocumentLines } from "./lines";
 import { normalizeBusinessNumber } from "../israeli-id";
 import { isCountableRevenue, type Business, type Client, type Expense, type InvoiceDocument } from "../types";
 
@@ -165,7 +166,7 @@ export function buildUniformStructure(input: UniformInput): UniformOutput {
   // Collect unique items across all docs for M100 master records.
   const uniqueItems = new Map<string, { code: string; description: string }>();
   for (const doc of docs) {
-    for (const item of doc.items) {
+    for (const item of uniformDocumentLines(doc).items) {
       const key = item.description.trim();
       if (!uniqueItems.has(key)) {
         const code = item.productId
@@ -289,8 +290,9 @@ export function buildUniformStructure(input: UniformInput): UniformOutput {
     // treats a D110 under a 400 header as an orphan ("לא נמצאה רשומת
     // כותרת מסמך"). A tax-invoice-receipt (320) keeps both kinds of rows.
     if (doc.type === "receipt") continue;
-    const lineAmounts = uniformLineAmounts(doc);
-    doc.items.forEach((item, idx) => {
+    const { items: docLines, synthesized } = uniformDocumentLines(doc);
+    const lineAmounts = uniformLineAmounts({ ...doc, items: docLines });
+    docLines.forEach((item, idx) => {
       d110Lines.push(
         buildD110({
           recordNum: recordNum++,
@@ -301,6 +303,7 @@ export function buildUniformStructure(input: UniformInput): UniformOutput {
           linkField: linkOf(doc),
           itemCode: uniqueItems.get(item.description.trim())?.code ?? "",
           amounts: lineAmounts[idx],
+          ...(synthesized ? { vatPercent: documentVatPercent(doc) } : {}),
         }),
       );
     });

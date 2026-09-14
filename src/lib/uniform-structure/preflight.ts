@@ -87,7 +87,10 @@ export function validateUniformInput(input: UniformInput): UniformIssue[] {
     if (Math.abs(d.subtotal + d.vat + (d.rounding ?? 0) - d.total) > 0.03) add("total_mismatch", "הסכום לפני מע״מ בתוספת המע״מ והעיגול אינו תואם לסכום הכולל.", where);
     if (d.clientId && !clientById.has(d.clientId)) add("client_missing", "הלקוח המקושר למסמך חסר בנתוני הדוח. יש לבדוק את קישור הלקוח.", where);
     if (d.items.length > 9999) add("too_many_lines", "מספר שורות המסמך חורג מגודל השדה בקובץ.", where);
-    if (d.type !== "receipt" && Math.abs(d.items.reduce((sum, item) => sum + item.total, 0) - (d.discountAmount ?? 0) - d.subtotal) > 0.03)
+    // No stored lines: the builder writes one line from the document (lines.ts). Only lines that exist and disagree block.
+    if (d.type !== "receipt" && d.items.length === 0)
+      add("items_synthesized", "למסמך לא נשמרו שורות, ולכן נכתבה בקובץ שורה אחת מתוך המסמך עצמו (תיאור, כמות 1 והסכום לפני מע״מ).", where, "warning");
+    else if (d.type !== "receipt" && Math.abs(d.items.reduce((sum, item) => sum + item.total, 0) - (d.discountAmount ?? 0) - d.subtotal) > 0.03)
       add("items_mismatch", "סכום שורות המסמך בניכוי ההנחה אינו תואם לסכום לפני מע״מ. בדוק את שורות המסמך.", where);
     for (const item of d.items) {
       if (!fits(item.quantity, 12, 4) || !fits(item.unitPrice) || !fits(item.total)) add("item_amount_invalid", "כמות או סכום בשורת המסמך חסרים או חורגים מגודל השדה.", where);

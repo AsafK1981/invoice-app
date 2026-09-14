@@ -34,6 +34,8 @@ function controlFor(issue: UniformIssue): FixControl {
       return { kind: "none" };
     case "date_invalid":
       return issue.source === "expense" && issue.sourceId ? { kind: "expense_date", expenseId: issue.sourceId, current: issue.current ?? "" } : support;
+    case "items_synthesized":
+      return issue.sourceId ? { kind: "open_document", documentId: issue.sourceId } : { kind: "none" };
     case "expense_amount_invalid":
       return issue.sourceId ? { kind: "open_expense", expenseId: issue.sourceId } : { kind: "none" };
     default:
