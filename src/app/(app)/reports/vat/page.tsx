@@ -4,29 +4,46 @@ import { useEffect, useState } from "react";
 import { Receipt } from "lucide-react";
 import { useFilingReportData } from "@/lib/filing-report-data";
 import { useBusiness } from "@/lib/business-store";
-import { VatPeriodReport, type PeriodMode } from "@/components/vat-period-report";
+import { VatPeriodReport } from "@/components/vat-period-report";
 import { ReportPageHeader } from "@/components/report-page-header";
-
-const MODES: readonly PeriodMode[] = ["this_2m", "last_2m", "this_month", "last_month", "this_year"];
+import {
+  DEFAULT_VAT_PERIOD_MODE,
+  VAT_PERIOD_STORAGE_KEY,
+  resolveVatPeriodMode,
+  type VatPeriodMode,
+} from "@/lib/vat-report-period";
 
 export default function VatReportPage() {
-  const [mode, setMode] = useState<PeriodMode>("this_2m");
+  const [mode, setMode] = useState<VatPeriodMode>(DEFAULT_VAT_PERIOD_MODE);
   // The period lives in the URL (?period=) so coming back from fixing an
-  // expense or a document lands on the period the user was working on.
+  // expense or a document lands on the period the user was working on, and in
+  // localStorage so a monthly filer switches once and it sticks.
   // Read from window on mount rather than useSearchParams, which would force a
   // Suspense boundary; the report itself only mounts once data has loaded.
   const [urlRead, setUrlRead] = useState(false);
   useEffect(() => {
-    const fromUrl = new URLSearchParams(window.location.search).get("period");
-    if (fromUrl && (MODES as readonly string[]).includes(fromUrl)) setMode(fromUrl as PeriodMode);
+    let stored: string | null = null;
+    try {
+      stored = window.localStorage.getItem(VAT_PERIOD_STORAGE_KEY);
+    } catch {
+      stored = null;
+    }
+    setMode(resolveVatPeriodMode(new URLSearchParams(window.location.search).get("period"), stored));
     setUrlRead(true);
   }, []);
-  function changeMode(next: PeriodMode) {
+  function changeMode(next: VatPeriodMode) {
     setMode(next);
+    try {
+      window.localStorage.setItem(VAT_PERIOD_STORAGE_KEY, next);
+    } catch {
+      // Storage blocked (private mode): the URL still carries the choice.
+    }
     window.history.replaceState(window.history.state, "", `/reports/vat?period=${next}`);
   }
   const { business, ready: bizReady } = useBusiness();
-  const { data, error, retry } = useFilingReportData(business.id);
+  // Keep the report mounted while an inline fix refetches, so the panel's
+  // count updates in place instead of flashing back to "טוען...".
+  const { data, error, retry, refreshing } = useFilingReportData(business.id, true, true);
 
   if (error) return <div role="alert" className="card-soft p-6 space-y-3"><p>{error}</p><button onClick={retry} className="btn-primary">טען שוב</button></div>;
   if (!data || !bizReady || !urlRead) {
@@ -47,7 +64,7 @@ export default function VatReportPage() {
         }
       />
       <button type="button" onClick={retry} className="btn-secondary no-print">רענן נתונים ובדוק שוב</button>
-      <VatPeriodReport headless selectedMode={mode} onPeriodChange={changeMode} business={business} documents={data.documents} expenses={data.expenses} />
+      <VatPeriodReport headless selectedMode={mode} onPeriodChange={changeMode} business={business} documents={data.documents} expenses={data.expenses} refreshing={refreshing} />
     </div>
   );
 }
