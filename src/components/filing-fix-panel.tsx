@@ -109,6 +109,9 @@ function FixItemCard({ item, context }: { item: FilingFixItem; context: Context 
     <li data-fix-code={item.code} className={`rounded-xl border p-3 text-sm ${style}`}>
       <p className="font-semibold leading-relaxed">{title}</p>
       {item.labels.length > 0 && <p className="mt-0.5 text-xs text-stone-700">{item.labels.join(" · ")}</p>}
+      {item.tier === "action" && item.excludedVat != null && (
+        <p className="mt-1 text-xs leading-relaxed text-stone-700">לא חוסם את ההורדה. הוסף את מספר ההקצאה כדי שהמע״מ ייכלל בדוח.</p>
+      )}
       {/* Merged findings usually say the same thing twice; the first message is the specific one. */}
       {item.excludedVat == null && item.messages[0] && (
         <p className="mt-1 text-xs leading-relaxed text-stone-700">{item.messages[0]}</p>
