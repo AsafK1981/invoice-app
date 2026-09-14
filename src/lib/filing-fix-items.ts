@@ -142,11 +142,57 @@ export function createFixCollector(titleOf: (code: FixCode) => string): FixColle
   };
 }
 
+/** How a group of repeated notes is counted, per code. Codes without an entry read "<title> (N)". */
+const NOTE_COUNT_TITLES: Partial<Record<FixCode, (count: number) => string>> = {
+  text_truncated: (n) => `${n} טקסטים יקוצרו או יוחלפו בקובץ`,
+  client_number_not_israeli: (n) => `${n} לקוחות עם מספר זיהוי זר`,
+  customer_number_not_israeli: (n) => `${n} מסמכים עם מספר לקוח שאינו ישראלי`,
+  customer_number_from_client: (n) => `${n} מסמכים שמספר הלקוח בהם נלקח מכרטיס הלקוח`,
+  items_synthesized: (n) => `${n} מסמכים בלי שורות`,
+  possible_duplicate: (n) => `${n} רשומות שאולי דווחו פעמיים`,
+  reference_multiple_groups: (n) => `${n} אסמכתאות עם כמה קבוצות ספרות`,
+  zero_vat_not_zero_rated: (n) => `${n} מסמכי מס בלי מע״מ שלא סומנו בשיעור אפס`,
+  sale_allocation_missing: (n) => `${n} מסמכי מס מעל הסף בלי מספר הקצאה`,
+  client_name_missing: (n) => `${n} מסמכים בלי שם לקוח`,
+  number_invalid: (n) => `${n} מסמכים בלי מספר תקין`,
+  date_invalid: (n) => `${n} מסמכים בלי תאריך תקין`,
+};
+const NOTE_EXAMPLES = 3;
+
+/**
+ * Notes are collapsed and rarely need action, so a code that repeats becomes
+ * ONE item: a counted title and up to three example labels. A single note
+ * keeps its own title and inline control.
+ */
+export function groupRepeatedNotes(notes: readonly FilingFixItem[]): FilingFixItem[] {
+  const byCode = new Map<FixCode, FilingFixItem[]>();
+  for (const note of notes) byCode.set(note.code, [...(byCode.get(note.code) ?? []), note]);
+  const grouped: FilingFixItem[] = [];
+  for (const [code, group] of byCode) {
+    if (group.length === 1) {
+      grouped.push(group[0]);
+      continue;
+    }
+    const labels = [...new Set(group.map((item) => item.labels[0]).filter((label): label is string => Boolean(label)))];
+    const shown = labels.slice(0, NOTE_EXAMPLES);
+    grouped.push({
+      key: `notes:${code}`,
+      tier: "note",
+      code,
+      title: NOTE_COUNT_TITLES[code]?.(group.length) ?? `${group[0].title} (${group.length})`,
+      messages: [group[0].messages[0] ?? ""],
+      labels: labels.length > NOTE_EXAMPLES ? [...shown, `ועוד ${labels.length - NOTE_EXAMPLES}`] : shown,
+      control: { kind: "none" },
+    });
+  }
+  return grouped;
+}
+
 export function splitFixTiers(all: readonly FilingFixItem[]): FilingFixModel {
   return {
     blocking: all.filter((i) => i.tier === "blocking"),
     actions: all.filter((i) => i.tier === "action"),
-    notes: all.filter((i) => i.tier === "note"),
+    notes: groupRepeatedNotes(all.filter((i) => i.tier === "note")),
     periodOnly: false,
   };
 }
@@ -273,7 +319,7 @@ export function buildFilingFixModel(
   return {
     blocking: all.filter((i) => i.tier === "blocking" && (i.key !== "blocker:file_structure" || specific.length === 0)),
     actions: all.filter((i) => i.tier === "action"),
-    notes: all.filter((i) => i.tier === "note"),
+    notes: groupRepeatedNotes(all.filter((i) => i.tier === "note")),
     periodOnly: false,
   };
 }

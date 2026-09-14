@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { buildPcn874 } from "@/lib/ita/pcn874";
-import { buildFilingFixModel, createFixCollector, splitFixTiers } from "@/lib/filing-fix-items";
+import { buildFilingFixModel, createFixCollector, groupRepeatedNotes, splitFixTiers } from "@/lib/filing-fix-items";
 import type { Expense, InvoiceDocument } from "@/lib/types";
 
 const business = { taxId: "512345679", businessType: "authorized" as const };
@@ -103,5 +103,30 @@ describe("createFixCollector", () => {
     const [item] = c.items();
     expect(item).toMatchObject({ tier: "blocking", code: "client_name_missing", title: "title:client_name_missing", messages: ["a", "b"], labels: ["L1", "L2"] });
     expect(splitFixTiers(c.items())).toEqual({ blocking: [item], actions: [], notes: [], periodOnly: false });
+  });
+});
+
+describe("groupRepeatedNotes", () => {
+  it("turns repeated notes of one code into one item with a count and up to 3 examples", () => {
+    const c = createFixCollector((code) => `title:${code}`);
+    for (const label of ["א", "ב", "ג", "ד"]) c.put(`note:text_truncated:${label}`, "note", "text_truncated", { kind: "open_document", documentId: label }, "טקסט ארוך", label);
+    c.put("note:client_number_not_israeli:x", "note", "client_number_not_israeli", { kind: "open_client", clientId: "x" }, "זר", "לקוח");
+    const notes = groupRepeatedNotes(c.items());
+    expect(notes).toHaveLength(2);
+    expect(notes[0]).toMatchObject({ key: "notes:text_truncated", tier: "note", code: "text_truncated", title: "4 טקסטים יקוצרו או יוחלפו בקובץ", labels: ["א", "ב", "ג", "ועוד 1"], messages: ["טקסט ארוך"], control: { kind: "none" } });
+    expect(notes[1]).toMatchObject({ title: "title:client_number_not_israeli", control: { kind: "open_client", clientId: "x" } });
+  });
+
+  it("applies to every report model: split tiers and the PCN874 model", () => {
+    const c = createFixCollector((code) => code);
+    c.put("a", "note", "client_number_not_israeli", { kind: "none" }, "m", "1");
+    c.put("b", "note", "client_number_not_israeli", { kind: "none" }, "m", "2");
+    c.put("c", "blocking", "record_invalid", { kind: "none" }, "m");
+    c.put("d", "blocking", "record_invalid", { kind: "none" }, "m2");
+    const m = splitFixTiers(c.items());
+    expect(m.notes.map((i) => i.title)).toEqual(["2 לקוחות עם מספר זיהוי זר"]);
+    expect(m.blocking).toHaveLength(2);
+    const pcn = model([doc({ id: "a" }), doc({ id: "b" }), doc({ id: "c" })], []);
+    expect(pcn.notes.map((i) => [i.code, i.title])).toEqual([["possible_duplicate", "2 רשומות שאולי דווחו פעמיים"]]);
   });
 });
