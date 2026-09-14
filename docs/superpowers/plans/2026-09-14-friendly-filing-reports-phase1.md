@@ -10,6 +10,20 @@
 
 **Spec:** `docs/superpowers/specs/2026-09-14-friendly-filing-reports-design.md`
 
+**Coordinator decisions (2026-09-14, these override the tasks below where they differ)**
+
+1. Unallocated supplier invoice: excluded from header and records (Task 6). Approved.
+2. Layer 4: credit note button for in-app issued documents, support button for imported / foreign-currency-without-shekels (Tasks 13, 16). Approved.
+3. Narrow throwing saves (Task 11). Approved.
+4. Guard via `node --import tsx` with pure row mappers (Tasks 7, 19). Approved. Do NOT register a scheduled task.
+5. KEEP "שנה נוכחית" in the period picker (Task 15 keeps `this_year`); only the default changes to the last ended bi-monthly period. When the selected period cannot produce a PCN874 file (a year or longer range), the panel shows ONE friendly item with a button that switches to the last ended bi-monthly period instead of a blocker list (Tasks 13, 16, 17: control `{ kind: "period" }`, panel prop `onUseFilingPeriod`).
+6. Keep-previous-data refetch (Task 14). Approved.
+7. NEW Task 6a: a non-Israeli customer number on a zero-rated export does not block (the builder writes Y / 999999999). Block only when the document is NOT zero-rated and the number is invalid.
+8. Sales-side allocation warning stays a collapsed note. Approved.
+9. Expense form: only the checksum and "missing a leading zero" hints (Tasks 9, 10: `businessNumberHint(raw, { digitsOnlyField: true })`, component prop `digitsOnlyField`).
+10. `*_ils` fix as planned (Task 8).
+11. Task 20: the guard runs in `--dry-run` only. No real Gaya push. The E2E still seeds and restores the QA business, and the restore is verified.
+
 **Working rules for the executor**
 
 - Work only in `C:\wtpcn` (detached worktree). Its `node_modules` is a junction to the main checkout: never delete, move or `rm -rf` it, and never run `npm install` here.
@@ -951,6 +965,46 @@ cd /c/wtpcn && git add src/lib/ita/pcn874.ts tests/pcn874.test.ts && git commit 
 ```
 
 ---
+### Task 6a: A foreign customer number on a zero-rated export does not block
+
+**Files:**
+- Modify: `src/lib/ita/pcn874.ts` (`validateSources`, the business-number check)
+- Test: `tests/pcn874.test.ts`
+
+- [ ] **Step 1: Write the failing test**
+
+```ts
+describe("zero-rated exports with a foreign customer number", () => {
+  it("does not block a zero-rated export whose customer number is not Israeli, and writes Y", () => {
+    const r = build([doc({ id: "exp", zeroRated: true, subtotal: 7000, vat: 0, total: 7000, clientTaxId: "DE123456789" })], []);
+    expect(r.warnings.filter((w) => w.sourceId === "exp" && w.level === "error")).toEqual([]);
+    expect(r.transactions[0]).toMatchObject({ entryType: "Y", vatId: "999999999" });
+    expect(pcnCanDownload(r)).toBe(true);
+  });
+
+  it("still blocks the same invalid number on a document that is not zero-rated", () => {
+    const r = build([doc({ id: "dom", clientTaxId: "DE123456789", allocationNumber: "123456789" })], []);
+    expect(r.warnings.some((w) => w.sourceId === "dom" && w.code === "customer_number_invalid" && w.level === "error")).toBe(true);
+  });
+});
+```
+
+- [ ] **Step 2: Run to see it fail**: `cd /c/wtpcn && npx vitest run tests/pcn874.test.ts -t "foreign customer number"` (first case FAILS).
+
+- [ ] **Step 3: Implement**: in `validateSources` replace `    if (id && !sourceVatIdForPcn(id))` with:
+
+```ts
+    // A zero-rated export to a foreign customer carries a foreign id; the
+    // builder reports it as Y / 999999999, so that id cannot break the file.
+    if (id && !sourceVatIdForPcn(id) && !(isDoc && d.zeroRated))
+```
+
+- [ ] **Step 4: Run**: `cd /c/wtpcn && npx vitest run tests/pcn874.test.ts` (PASS).
+
+- [ ] **Step 5: Commit** `src/lib/ita/pcn874.ts tests/pcn874.test.ts` with message "fix(pcn874): foreign customer number on a zero-rated export no longer blocks" and the trailer.
+
+---
+
 ### Task 7: Pure row mappers (node-safe) and `importBatchId`
 
 Why: the guard (Task 19) must run the same mapping as `/reports/vat`, but `filing-report-data.ts` and `profit-loss-data.ts` import `report-rows.ts`, which creates the browser Supabase client at import time.
@@ -3338,13 +3392,10 @@ Then poll until ready: `curl -s -o /dev/null -w "%{http_code}" http://localhost:
 Run: `cd /c/wtpcn && node scripts/qa-seed-filing-fix.mjs --reason "QA: filing fix E2E" seed`
 Expected: `seeded 3 expenses in ...; QA business is authorized with an empty business number`.
 
-- [ ] **Step 5: Guard pushes once, then stays quiet**
+- [ ] **Step 5: Guard sees the seeded codes (dry run only, per coordinator: no real push)**
 
-Run: `cd /c/wtpcn && node --import tsx scripts/filing-preflight-guard.mjs`
-Expected: the table lists at least `dealer_number_invalid` and `supplier_number_invalid` (the QA tenant), `[gaya push] 200`, and `.filing-preflight-guard-state.json` now exists. (First run has no state, so every current code counts as new; that is expected.)
-
-Run again: `cd /c/wtpcn && node --import tsx scripts/filing-preflight-guard.mjs`
-Expected: `no new or grown codes, staying quiet`, no push line.
+Run: `cd /c/wtpcn && node --import tsx scripts/filing-preflight-guard.mjs --dry-run`
+Expected: the table lists at least `dealer_number_invalid` and `supplier_number_invalid` with a count of 1 or more, no push, no state file. The zero-noise diff logic is covered by `tests/filing-guard.test.ts`.
 
 - [ ] **Step 6: Run the E2E**
 
