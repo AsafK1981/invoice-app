@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { BrandLockup } from "@/components/brand-mark";
 import { useBusinessInit } from "@/lib/business-init";
 import { useRequireAuth } from "@/lib/auth";
+import { installPrintWidthFit } from "@/lib/print-width-fit";
 import { ConfirmProvider } from "@/components/ui/confirm-dialog";
 import { ToastProvider } from "@/components/ui/toast";
 
@@ -21,6 +22,10 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, loading: authLoading } = useRequireAuth();
   const { businessId, loading: bizLoading } = useBusinessInit();
+
+  // Every print in the app shrinks wide tables to fit the paper instead of
+  // cutting them off (src/lib/print-width-fit.ts).
+  useEffect(() => installPrintWidthFit(), []);
 
   useEffect(() => {
     if (!user) return;

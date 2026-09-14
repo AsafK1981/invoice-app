@@ -24,12 +24,12 @@ import type { Page } from "puppeteer-core";
 // rules the PDF actually uses: globals.css pins A4 portrait with 15mm margins,
 // and report-pdf.ts injects A4 landscape with 12mm margins when asked.
 const MM_TO_PX = 96 / 25.4;
-const PORTRAIT_WIDTH_PX = Math.floor((210 - 2 * 15) * MM_TO_PX);
-const LANDSCAPE_WIDTH_PX = Math.floor((297 - 2 * 12) * MM_TO_PX);
+export const PORTRAIT_WIDTH_PX = Math.floor((210 - 2 * 15) * MM_TO_PX);
+export const LANDSCAPE_WIDTH_PX = Math.floor((297 - 2 * 12) * MM_TO_PX);
 
 // Below this the text is too small to read on paper. Content still wider than
 // that is rare (thousands of px of no-wrap columns); it prints at the floor.
-const MIN_ZOOM = 0.4;
+export const MIN_ZOOM = 0.4;
 const MAX_PASSES = 5;
 
 const ZOOM_STYLE_ID = "report-pdf-fit";
@@ -76,14 +76,19 @@ function applyZoom(id: string, zoom: number): void {
  * wrappers), and hidden/clip boxes that hold a table (rounded cards). Not
  * counted: other hidden boxes, which are deliberate clips (truncated names,
  * sr-only text, icons) and would otherwise shrink every page for nothing.
+ *
+ * Also used in the browser by src/lib/print-width-fit.ts, on a hidden frame,
+ * which is why it takes the document to measure (puppeteer passes none).
  */
-function measureWorstOverflowRatio(): number {
-  const root = document.documentElement;
+export function measureWorstOverflowRatio(doc?: Document): number {
+  const d = doc ?? document;
+  const view = d.defaultView ?? window;
+  const root = d.documentElement;
   let worst = root.clientWidth > 0 ? root.scrollWidth / root.clientWidth : 1;
-  for (const el of Array.from(document.body.querySelectorAll<HTMLElement>("*"))) {
+  for (const el of Array.from(d.body.querySelectorAll<HTMLElement>("*"))) {
     // A long report is mostly cells; none of them is ever the clipping box.
     if (/^(TD|TH|TR|TBODY|THEAD|TFOOT)$/.test(el.tagName)) continue;
-    const ox = getComputedStyle(el).overflowX;
+    const ox = view.getComputedStyle(el).overflowX;
     if (ox === "visible") continue;
     if ((ox === "hidden" || ox === "clip") && !el.querySelector("table")) continue;
     if (el.clientWidth < 40) continue;
