@@ -92,3 +92,4 @@ backup-out/
 # nightly filing preflight guard state and the QA E2E snapshot (local only)
 .filing-preflight-guard-state.json
 .qa-filing-fix-snapshot.json
+.qa-uniform-invoices-snapshot.json
