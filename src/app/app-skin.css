@@ -1350,6 +1350,8 @@ html .rpt-total td {
   border-top: 1px solid var(--goldtintline);
 }
 html .rpt-table tbody tr.rpt-total:hover td { background: var(--goldtint); }
+/* Expenses report detail table: up to nine columns, so tighter cells. */
+html .rpt-table-dense th, html .rpt-table-dense td { padding-inline: 0.6rem; }
 html .rpt-empty { padding: 3rem 1rem !important; text-align: center; color: var(--muted); font-size: 0.85rem; white-space: normal !important; }
 
 /* Report cards grid */

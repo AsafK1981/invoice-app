@@ -239,7 +239,7 @@ export function validPcnDate(value: string): boolean {
 
 const validCompactDate = (v: string) => /^\d{8}$/.test(v) && validPcnDate(`${v.slice(0, 4)}-${v.slice(4, 6)}-${v.slice(6, 8)}`);
 const withinField = (n: number, width: number) => Number.isFinite(n) && Math.abs(roundShekel(n)) < 10 ** width;
-const allocationApplies = (date: string, net: number) => date >= "2024-05-05" && net > allocationRequiredThreshold(new Date(`${date}T12:00:00Z`));
+export const allocationApplies = (date: string, net: number) => date >= "2024-05-05" && net > allocationRequiredThreshold(new Date(`${date}T12:00:00Z`));
 
 /** Inspect original values before filtering dates or lossy numeric formatting. */
 function validateSources(documents: InvoiceDocument[], expenses: Expense[], range: BuildPcn874Args["range"]): PcnWarning[] {

@@ -256,6 +256,10 @@ export default function ReportsPage() {
           desc: "המחזור השנתי שמדווחים למע״מ עד 31 בינואר, מוכן להעתקה.",
         } as ReportCardSpec]),
     {
+      icon: TrendingDown, title: "דוח הוצאות", href: "/reports/expenses",
+      desc: "כל ההוצאות לתקופה שתבחר, לפי קטגוריה ולפי הוצאה: לפני מע״מ, מע״מ תשומות וכולל מע״מ.",
+    },
+    {
       icon: Percent, title: "מקדמות מס הכנסה", href: "/reports/advances",
       desc: "המחזור לתקופה, אחוז המקדמה והסכום לתשלום ב-15 לחודש, מוכנים להעתקה.",
     },
@@ -327,7 +331,7 @@ export default function ReportsPage() {
             </span>
             דו״חות
           </h1>
-          <p className="text-sm text-stone-700 mt-2 mr-14">מה נכנס, מה יצא ומה נשאר - לפי התקופה שבחרת</p>
+          <p className="text-sm text-stone-700 mt-2 mr-14">הדוחות לרשויות המס ולרואה החשבון, ומתחתם מה נכנס, מה יצא ומה נשאר</p>
         </div>
         <div className="rpt-controls">
           <PeriodPicker period={period} onChange={setPeriod} />
@@ -396,6 +400,23 @@ export default function ReportsPage() {
             הדפסה
           </button>
         </div>
+      </div>
+
+      {/* ---------- the reports first: one card per report, each on its own page ---------- */}
+      <section aria-label="דוחות לרשויות המס ולרואה החשבון">
+        <div className="rpt-sect-head">
+          <h2 className="rpt-h2">דוחות לרשויות המס ולרואה החשבון</h2>
+          <p className="rpt-hint">הדוחות השנתיים מחושבים לשנת {exportYear}</p>
+        </div>
+        <div className="rpt-grid">
+          {cards.map((c) => <ReportCard key={c.title} {...c} />)}
+        </div>
+      </section>
+
+      {/* ---------- then the numbers: income, expenses, net, chart, month by month ---------- */}
+      <div className="rpt-sect-head">
+        <h2 className="rpt-h2">הכנסות, הוצאות ורווח</h2>
+        <p className="rpt-hint">{periodLabel(period)}</p>
       </div>
 
       {/* ---------- four numbers, one style ---------- */}
@@ -549,17 +570,6 @@ export default function ReportsPage() {
               )}
             </tbody>
           </table>
-        </div>
-      </section>
-
-      {/* ---------- one card per report, each opens on its own page ---------- */}
-      <section aria-label="דוחות לרשויות המס ולרואה החשבון">
-        <div className="rpt-sect-head">
-          <h2 className="rpt-h2">דוחות לרשויות המס ולרואה החשבון</h2>
-          <p className="rpt-hint">הדוחות השנתיים מחושבים לשנת {exportYear}</p>
-        </div>
-        <div className="rpt-grid">
-          {cards.map((c) => <ReportCard key={c.title} {...c} />)}
         </div>
       </section>
     </div>
