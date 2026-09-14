@@ -7,6 +7,7 @@ import { createSharedStore } from "./shared-store";
 import { DEFAULT_NEXT_NUMBER, DOCUMENT_STATUS_LABELS, DOCUMENT_TYPE_LABELS, type DocumentType, type InvoiceDocument, type DocumentItem } from "./types";
 import { logAudit } from "./audit-log";
 import { cancellationRoute } from "./document-cancel";
+import { filingBusinessNumberSave } from "./business-number-hint";
 import { track } from "@vercel/analytics";
 
 const CHANGE_EVENT = "invoice-app:documents-changed";
@@ -546,14 +547,17 @@ export async function updateDocumentNumber(id: string, newNumber: number) {
 /**
  * Set/replace the customer's עוסק/ח.פ number on a document. Needed for the
  * חשבונית ישראל allocation request (v2 mandates customer_vat_number), and it
- * also fills the first column of the periodic invoices report. Stored digits-
- * only; empty clears it.
+ * also fills the first column of the periodic invoices report. Judged raw
+ * with normalizeBusinessNumber (letters, more than 9 digits and a bad check
+ * digit are refused with the reason) and stored as the 9-digit form; empty
+ * clears it.
  */
 export async function updateDocumentClientTaxId(id: string, taxId: string) {
-  const clean = String(taxId || "").replace(/\D/g, "");
+  const number = filingBusinessNumberSave(String(taxId ?? ""), { allowEmpty: true });
+  if (!number.ok) throw new Error(number.message);
   const { data, error } = await supabase
     .from("documents")
-    .update({ client_tax_id: clean || null })
+    .update({ client_tax_id: number.value })
     .eq("id", id)
     .select();
   if (error) throw new Error(error.message);

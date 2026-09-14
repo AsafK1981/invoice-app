@@ -9,15 +9,20 @@ import { updateExpenseFilingFields } from "@/lib/expense-store";
 import { updateDocumentClientTaxId } from "@/lib/document-store";
 import { saveBusinessTaxId } from "@/lib/business-store";
 import { BUSINESS_NUMBER_MARKS, normalizeBusinessNumber } from "@/lib/israeli-id";
+import { filingBusinessNumberSave } from "@/lib/business-number-hint";
 import { referenceDigits, validPcnDate } from "@/lib/ita/pcn874";
 import { formatCurrencyWhole } from "@/lib/format";
 import { withReturn } from "@/lib/return-to";
 import { filingDataFixMessage, supportWhatsappHref } from "@/lib/support-link";
 import type { FilingFixItem, FilingFixModel, FixControl } from "@/lib/filing-fix-items";
 
-const onlyDigits = (value: string) => value.replace(/\D/g, "");
-const israeliNumberProblem = (value: string) =>
-  normalizeBusinessNumber(value).value ? null : "זה לא מספר עוסק ישראלי תקין. בדוק מול החשבונית.";
+type Prepared = { ok: true; value: string } | { ok: false; message: string };
+
+/** The RAW field value is judged (never digit-stripped first); a valid number is saved in its 9-digit form. */
+const israeliNumber = (raw: string): Prepared => {
+  const result = filingBusinessNumberSave(raw);
+  return result.ok ? { ok: true, value: result.value ?? "" } : result;
+};
 
 /** A valid Israeli number typed without its leading zero: the one hint worth showing next to a strict save. */
 const isShortValidNumber = (value: string) => {
@@ -131,8 +136,7 @@ function FixControlView({ control, context }: { control: FixControl; context: Co
           placeholder="123456789"
           inputMode="numeric"
           showLeadingZeroHint
-          normalize={onlyDigits}
-          validate={israeliNumberProblem}
+          prepare={israeliNumber}
           onSave={(value) => updateExpenseFilingFields(control.expenseIds, { supplierTaxId: value })}
         />
       );
@@ -142,9 +146,10 @@ function FixControlView({ control, context }: { control: FixControl; context: Co
           label="מספר חשבונית הספק"
           initial={control.current}
           placeholder="1042"
-          validate={(value) => {
+          prepare={(raw) => {
+            const value = raw.trim();
             const ref = referenceDigits(value);
-            return ref && ref.length <= 9 && Number(ref) > 0 ? null : "מספר החשבונית צריך לכלול מספר של עד 9 ספרות.";
+            return ref && ref.length <= 9 && Number(ref) > 0 ? { ok: true, value } : { ok: false, message: "מספר החשבונית צריך לכלול מספר של עד 9 ספרות." };
           }}
           onSave={(value) => updateExpenseFilingFields([control.expenseId], { reference: value })}
         />
@@ -156,8 +161,10 @@ function FixControlView({ control, context }: { control: FixControl; context: Co
           initial={control.current}
           placeholder="123456789"
           inputMode="numeric"
-          normalize={(value) => value.replace(BUSINESS_NUMBER_MARKS, "")}
-          validate={(value) => (/^\d{9}$/.test(value) && !/^0+$/.test(value) ? null : "מספר הקצאה הוא 9 ספרות בדיוק.")}
+          prepare={(raw) => {
+            const value = raw.replace(BUSINESS_NUMBER_MARKS, "");
+            return /^\d{9}$/.test(value) && !/^0+$/.test(value) ? { ok: true, value } : { ok: false, message: "מספר הקצאה הוא 9 ספרות בדיוק." };
+          }}
           onSave={(value) => updateExpenseFilingFields([control.expenseId], { allocationNumber: value })}
         />
       );
@@ -171,8 +178,7 @@ function FixControlView({ control, context }: { control: FixControl; context: Co
           placeholder="123456789"
           inputMode="numeric"
           showLeadingZeroHint
-          normalize={onlyDigits}
-          validate={israeliNumberProblem}
+          prepare={israeliNumber}
           onSave={(value) => saveBusinessTaxId(businessId, value)}
         />
       );
@@ -184,8 +190,7 @@ function FixControlView({ control, context }: { control: FixControl; context: Co
           placeholder="123456789"
           inputMode="numeric"
           showLeadingZeroHint
-          normalize={onlyDigits}
-          validate={israeliNumberProblem}
+          prepare={israeliNumber}
           onSave={(value) => updateDocumentClientTaxId(control.documentId, value)}
         />
       );
@@ -263,8 +268,7 @@ function InlineSave({
   placeholder,
   inputMode = "text",
   showLeadingZeroHint = false,
-  normalize = (value: string) => value.trim(),
-  validate,
+  prepare,
   onSave,
 }: {
   label: string;
@@ -273,20 +277,19 @@ function InlineSave({
   inputMode?: "text" | "numeric";
   /** Only the "missing a leading zero" line: a foreign number cannot be filed, so the save check speaks for the rest. */
   showLeadingZeroHint?: boolean;
-  normalize?: (value: string) => string;
-  validate: (value: string) => string | null;
+  /** Judges the raw field value: the value to save, or the specific reason it is refused. */
+  prepare: (raw: string) => Prepared;
   onSave: (value: string) => Promise<void>;
 }) {
   const [value, setValue] = useState(initial);
   const { saving, error, setError, run } = useInlineSave();
   function save() {
-    const next = normalize(value);
-    const problem = validate(next);
-    if (problem) {
-      setError(problem);
+    const next = prepare(value);
+    if (!next.ok) {
+      setError(next.message);
       return;
     }
-    void run(() => onSave(next));
+    void run(() => onSave(next.value));
   }
   return (
     <div className="no-print mt-2">

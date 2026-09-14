@@ -20,6 +20,7 @@ vi.mock("@/lib/supabase", () => ({ supabase: { from: (table: string) => {
 } } }));
 import { updateExpenseFilingFields } from "@/lib/expense-store";
 import { saveBusinessTaxId } from "@/lib/business-store";
+import { updateDocumentClientTaxId } from "@/lib/document-store";
 
 beforeEach(() => { state.calls = []; state.rows = 0; state.error = null; window.dispatchEvent = vi.fn(); });
 
@@ -30,6 +31,21 @@ describe("updateExpenseFilingFields", () => {
     expect(state.calls[0]).toMatchObject({ table: "expenses", update: { supplier_tax_id: "513333336" }, in: ["id", ["a", "b"]] });
     expect(Object.keys(state.calls[0].update!)).toEqual(["supplier_tax_id"]);
     expect(window.dispatchEvent).toHaveBeenCalledTimes(1);
+  });
+
+  it("validates the raw supplier number and saves the padded form, never stripping letters", async () => {
+    state.rows = 1;
+    await expect(updateExpenseFilingFields(["a"], { supplierTaxId: "51333333X6" })).rejects.toThrow("אותיות");
+    await expect(updateExpenseFilingFields(["a"], { supplierTaxId: "513333337" })).rejects.toThrow("ספרת הביקורת");
+    expect(state.calls).toEqual([]);
+    await updateExpenseFilingFields(["a"], { supplierTaxId: "13333331" });
+    expect(state.calls[0].update).toEqual({ supplier_tax_id: "013333331" });
+  });
+
+  it("clears the supplier number to null on an empty value", async () => {
+    state.rows = 1;
+    await updateExpenseFilingFields(["a"], { supplierTaxId: " " });
+    expect(state.calls[0].update).toEqual({ supplier_tax_id: null });
   });
 
   it("maps reference, allocation and date", async () => {
@@ -44,6 +60,24 @@ describe("updateExpenseFilingFields", () => {
     state.error = { message: "denied" };
     await expect(updateExpenseFilingFields(["a"], { reference: "1" })).rejects.toThrow("denied");
     expect(window.dispatchEvent).not.toHaveBeenCalled();
+  });
+});
+
+describe("updateDocumentClientTaxId", () => {
+  it("refuses letters, too many digits and a bad checksum without writing", async () => {
+    state.rows = 1;
+    await expect(updateDocumentClientTaxId("d", "DE12345678")).rejects.toThrow("אותיות");
+    await expect(updateDocumentClientTaxId("d", "5133333360")).rejects.toThrow("9 ספרות");
+    await expect(updateDocumentClientTaxId("d", "513333337")).rejects.toThrow("ספרת הביקורת");
+    expect(state.calls).toEqual([]);
+  });
+
+  it("saves the 9-digit form, and null when cleared", async () => {
+    state.rows = 1;
+    await updateDocumentClientTaxId("d", "13333331");
+    expect(state.calls[0]).toMatchObject({ table: "documents", update: { client_tax_id: "013333331" }, eq: ["id", "d"] });
+    await updateDocumentClientTaxId("d", "");
+    expect(state.calls[1].update).toEqual({ client_tax_id: null });
   });
 });
 

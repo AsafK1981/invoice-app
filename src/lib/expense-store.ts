@@ -7,6 +7,7 @@ import { createSharedStore } from "./shared-store";
 import { logAudit } from "./audit-log";
 import { formatCurrency } from "./format";
 import { todayInIsrael } from "./date";
+import { filingBusinessNumberSave } from "./business-number-hint";
 import type { Expense } from "./types";
 
 const CHANGE_EVENT = "invoice-app:expenses-changed";
@@ -161,7 +162,12 @@ export async function updateExpenseFilingFields(
   patch: { supplierTaxId?: string; reference?: string; allocationNumber?: string; date?: string },
 ): Promise<void> {
   const columns: Record<string, string | null> = {};
-  if (patch.supplierTaxId !== undefined) columns.supplier_tax_id = patch.supplierTaxId.replace(/\D/g, "") || null;
+  if (patch.supplierTaxId !== undefined) {
+    // Judged raw, never digit-stripped: "51333333X6" must not become a valid-looking number.
+    const number = filingBusinessNumberSave(patch.supplierTaxId, { allowEmpty: true });
+    if (!number.ok) throw new Error(number.message);
+    columns.supplier_tax_id = number.value;
+  }
   if (patch.reference !== undefined) columns.reference = patch.reference.trim() || null;
   if (patch.allocationNumber !== undefined) columns.allocation_number = patch.allocationNumber.replace(/\D/g, "") || null;
   if (patch.date !== undefined) columns.date = patch.date;
