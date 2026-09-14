@@ -88,3 +88,7 @@ backup-out/
 
 # one-shot session marker written by a local agent, not project state
 .domain-delegation-announced
+
+# nightly filing preflight guard state and the QA E2E snapshot (local only)
+.filing-preflight-guard-state.json
+.qa-filing-fix-snapshot.json
