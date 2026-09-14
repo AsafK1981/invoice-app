@@ -12,6 +12,7 @@ import type { OpenReceivablesResult } from "./capital-declaration";
 import type { ForecastLine, ForecastResult } from "./cash-flow-forecast";
 import { FORECAST_CONFIDENCE_LABELS, FORECAST_KIND_LABELS } from "./cash-flow-forecast";
 import { downloadXlsx, sheet } from "./xlsx-export";
+import { invoicesPeriodSheet, type InvoicePeriodRow } from "./invoice-period-report";
 
 /** Header-block context every export can carry. */
 export interface ExportMeta {
@@ -295,46 +296,16 @@ export function exportCustomReport(params: {
   ]);
 }
 
-/** /reports/invoices-period: the accountant's VAT-document listing for a period. */
+/** /reports/invoices-period: the accountant's VAT-document listing for a period, stamped with what the check found. */
 export function exportInvoicesPeriod(params: {
-  rows: {
-    type: DocumentType;
-    number: number;
-    date: string;
-    customerTaxId: string;
-    clientName: string;
-    net: number;
-    vat: number;
-    total: number;
-    allocation: string;
-  }[];
+  rows: InvoicePeriodRow[];
   periodLabel: string;
   fileTag: string;
   businessName?: string;
+  stamp: string[];
+  incomplete: boolean;
 }) {
-  const { rows, periodLabel, fileTag, businessName } = params;
-  type Row = (typeof rows)[number];
-  return downloadXlsx(`דוח-חשבוניות-${fileTag}.xlsx`, [
-    sheet<Row>({
-      name: "חשבוניות",
-      title: "דוח חשבוניות לתקופה",
-      subtitle: periodLabel,
-      businessName,
-      countLabel: `${rows.length} מסמכים`,
-      rows,
-      columns: [
-        { header: "ת.ז / ח.פ", value: (r) => r.customerTaxId },
-        { header: "מספר חשבונית", value: (r) => r.number, kind: "int", width: 13 },
-        { header: "סוג", value: (r) => DOCUMENT_TYPE_LABELS[r.type] },
-        { header: "לקוח", value: (r) => r.clientName },
-        { header: "תאריך", value: (r) => r.date, kind: "date" },
-        { header: "סכום ללא מע״מ", value: (r) => r.net, kind: "money", total: "sum" },
-        { header: "מע״מ", value: (r) => r.vat, kind: "money", total: "sum" },
-        { header: "סכום כולל מע״מ", value: (r) => r.total, kind: "money", total: "sum" },
-        { header: "מספר הקצאה", value: (r) => r.allocation },
-      ],
-    }),
-  ]);
+  return downloadXlsx(`דוח-חשבוניות-${params.fileTag}.xlsx`, [invoicesPeriodSheet(params)]);
 }
 
 /** VAT period report: the detailed expense (input VAT) listing. */
