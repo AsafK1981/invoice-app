@@ -167,6 +167,23 @@ export async function saveTaxOfficerNoticeSentAt(
   window.dispatchEvent(new Event(CHANGE_EVENT));
 }
 
+/**
+ * Persist only the business number, from the VAT report's inline fix. Its own
+ * UPDATE for the same reason as saveIncomeTaxAdvanceRate: a whole-row
+ * saveBusiness() from this screen's snapshot could revert a setting saved in
+ * another tab. A zero-row result means RLS refused, so it throws.
+ */
+export async function saveBusinessTaxId(businessId: string, taxId: string): Promise<void> {
+  const { data, error } = await supabase
+    .from("businesses")
+    .update({ tax_id: taxId.trim() })
+    .eq("id", businessId)
+    .select("id");
+  if (error) throw new Error(error.message);
+  if (!data || data.length === 0) throw new Error("השמירה לא בוצעה. רענן את הדף ונסה שוב.");
+  window.dispatchEvent(new Event(CHANGE_EVENT));
+}
+
 export async function saveBusiness(business: Business): Promise<void> {
   const { data, error } = await supabase
     .from("businesses")

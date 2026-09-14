@@ -148,3 +148,26 @@ export const expenseStore = {
   },
 
 };
+
+/**
+ * Inline fixes from the VAT report's "what's left" panel: one narrow UPDATE of
+ * only the named filing fields, on every listed expense (a supplier's number
+ * belongs to all its expenses; there is no suppliers table). Same RLS client
+ * as save(), but it throws on an error or a partial write so the panel can
+ * say why nothing changed.
+ */
+export async function updateExpenseFilingFields(
+  ids: readonly string[],
+  patch: { supplierTaxId?: string; reference?: string; allocationNumber?: string; date?: string },
+): Promise<void> {
+  const columns: Record<string, string | null> = {};
+  if (patch.supplierTaxId !== undefined) columns.supplier_tax_id = patch.supplierTaxId.replace(/\D/g, "") || null;
+  if (patch.reference !== undefined) columns.reference = patch.reference.trim() || null;
+  if (patch.allocationNumber !== undefined) columns.allocation_number = patch.allocationNumber.replace(/\D/g, "") || null;
+  if (patch.date !== undefined) columns.date = patch.date;
+  if (ids.length === 0 || Object.keys(columns).length === 0) return;
+  const { data, error } = await supabase.from("expenses").update(columns).in("id", [...ids]).select("id");
+  if (error) throw new Error(error.message);
+  if (!data || data.length !== ids.length) throw new Error("חלק מההוצאות לא עודכנו. רענן את הדף ונסה שוב.");
+  window.dispatchEvent(new Event(CHANGE_EVENT));
+}
