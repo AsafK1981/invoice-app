@@ -61,7 +61,7 @@ export interface NormalizedBusinessNumber {
  * digits: whitespace, hyphens, dots, bidi controls (LRM/RLM, embeddings,
  * isolates) and zero-width marks. Anything else makes the value "letters".
  */
-const ALLOWED_BUSINESS_NUMBER = /^[\d\s.\-​-‏‪-‮⁦-⁩﻿]*$/;
+const ALLOWED_BUSINESS_NUMBER = /^[\d\s.\-\u200B-\u200F\u202A-\u202E\u2066-\u2069\uFEFF]*$/;
 
 /**
  * The ONE decision about an Israeli business number, shared by the PCN874

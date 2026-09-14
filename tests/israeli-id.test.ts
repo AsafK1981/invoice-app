@@ -44,7 +44,7 @@ describe("normalizeBusinessNumber", () => {
     expect(normalizeBusinessNumber("13333331")).toEqual({ value: "013333331", reason: "ok", digitCount: 8 });
   });
 
-  it.each(["51-333333-6", "513.333.336", " 513 333 336 ", "‏513333336‎", "⁦513333336⁩", "​513333336﻿"])(
+  it.each(["51-333333-6", "513.333.336", " 513 333 336 ", "\u200F513333336\u200E", "\u2066513333336\u2069", "\u200B513333336\uFEFF"])(
     "strips separators, bidi and zero-width marks in %j",
     (raw) => {
       expect(normalizeBusinessNumber(raw)).toMatchObject({ value: "513333336", reason: "ok" });

@@ -338,7 +338,7 @@ function validateSources(documents: InvoiceDocument[], expenses: Expense[], rang
     if (!isDoc && (String(e.reference ?? "").match(/\d+/g)?.length ?? 0) > 1)
       add("reference_multiple_groups", "האסמכתא כוללת כמה קבוצות ספרות. ודא שמספר החשבונית לדיווח הוא קבוצת הספרות האחרונה, או תקן את האסמכתא.", "warning");
     // Separators and bidi marks go first; the digit count must then be exactly 9.
-    const allocation = String(row.allocationNumber ?? "").replace(/[\s.\-​-‏‪-‮⁦-⁩﻿]/g, "");
+    const allocation = String(row.allocationNumber ?? "").replace(/[\s.\-\u200B-\u200F\u202A-\u202E\u2066-\u2069\uFEFF]/g, "");
     if (allocation && (!/^\d{9}$/.test(allocation) || /^0+$/.test(allocation)))
       add("allocation_invalid", "מספר ההקצאה חייב להיות 9 ספרות ואינו יכול להיות אפסים בלבד. העתק את המספר המקורי ללא קיצור.");
     // Distinct invoice series/types and suppliers may legitimately reuse numbers.

@@ -15,7 +15,7 @@ import { withReturn } from "@/lib/return-to";
 import { filingDataFixMessage, supportWhatsappHref } from "@/lib/support-link";
 import type { FilingFixItem, FilingFixModel, FixControl } from "@/lib/filing-fix-items";
 
-const MARKS = /[\s.\-​-‏‪-‮⁦-⁩﻿]/g;
+const MARKS = /[\s.\-\u200B-\u200F\u202A-\u202E\u2066-\u2069\uFEFF]/g;
 const onlyDigits = (value: string) => value.replace(/\D/g, "");
 const israeliNumberProblem = (value: string) =>
   normalizeBusinessNumber(value).value ? null : "זה לא מספר עוסק ישראלי תקין. בדוק מול החשבונית.";
@@ -122,7 +122,7 @@ function FixControlView({ control, context }: { control: FixControl; context: Co
           initial={control.current}
           placeholder="123456789"
           inputMode="numeric"
-          showBusinessHint
+          showLeadingZeroHint
           normalize={onlyDigits}
           validate={israeliNumberProblem}
           onSave={(value) => updateExpenseFilingFields(control.expenseIds, { supplierTaxId: value })}
@@ -162,7 +162,7 @@ function FixControlView({ control, context }: { control: FixControl; context: Co
           initial={control.current}
           placeholder="123456789"
           inputMode="numeric"
-          showBusinessHint
+          showLeadingZeroHint
           normalize={onlyDigits}
           validate={israeliNumberProblem}
           onSave={(value) => saveBusinessTaxId(businessId, value)}
@@ -175,7 +175,7 @@ function FixControlView({ control, context }: { control: FixControl; context: Co
           initial={control.current}
           placeholder="123456789"
           inputMode="numeric"
-          showBusinessHint
+          showLeadingZeroHint
           normalize={onlyDigits}
           validate={israeliNumberProblem}
           onSave={(value) => updateDocumentClientTaxId(control.documentId, value)}
@@ -242,7 +242,7 @@ function SaveButton({ saving, onClick }: { saving: boolean; onClick: () => void 
       data-fix-save
       onClick={onClick}
       disabled={saving}
-      className="no-print inline-flex items-center justify-center min-h-[44px] px-4 rounded-xl text-sm font-semibold text-white bg-gradient-to-l from-orange-500 to-orange-700 hover:shadow-md disabled:opacity-50"
+      className="no-print shrink-0 inline-flex items-center justify-center min-h-[44px] px-4 rounded-xl text-sm font-semibold text-white bg-gradient-to-l from-orange-500 to-orange-700 hover:shadow-md disabled:opacity-50"
     >
       {saving ? "שומר..." : "שמור"}
     </button>
@@ -254,7 +254,7 @@ function InlineSave({
   initial,
   placeholder,
   inputMode = "text",
-  showBusinessHint = false,
+  showLeadingZeroHint = false,
   normalize = (value: string) => value.trim(),
   validate,
   onSave,
@@ -263,7 +263,8 @@ function InlineSave({
   initial: string;
   placeholder?: string;
   inputMode?: "text" | "numeric";
-  showBusinessHint?: boolean;
+  /** Only the "missing a leading zero" line: a foreign number cannot be filed, so the save check speaks for the rest. */
+  showLeadingZeroHint?: boolean;
   normalize?: (value: string) => string;
   validate: (value: string) => string | null;
   onSave: (value: string) => Promise<void>;
@@ -281,22 +282,25 @@ function InlineSave({
   }
   return (
     <div className="no-print mt-2">
-      <div className="flex flex-wrap items-center gap-2">
-        <input
-          aria-label={label}
-          dir="ltr"
-          inputMode={inputMode}
-          value={value}
-          placeholder={placeholder}
-          onChange={(e) => setValue(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") save();
-          }}
-          className="input-warm w-48 max-w-full text-sm py-2 px-3"
-        />
+      <div className="flex items-center gap-2">
+        {/* .input-warm is full width; the wrapper keeps the field and its save button on one line. */}
+        <div className="w-full max-w-[16rem]">
+          <input
+            aria-label={label}
+            dir="ltr"
+            inputMode={inputMode}
+            value={value}
+            placeholder={placeholder}
+            onChange={(e) => setValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") save();
+            }}
+            className="input-warm text-sm py-2 px-3"
+          />
+        </div>
         <SaveButton saving={saving} onClick={save} />
       </div>
-      {showBusinessHint && <BusinessNumberHintText value={value} />}
+      {showLeadingZeroHint && <BusinessNumberHintText value={value} digitsOnlyField />}
       {error && <p role="alert" className="mt-1 text-xs font-semibold text-rose-700">{error}</p>}
     </div>
   );
@@ -314,8 +318,10 @@ function DateSave({ initial, onSave }: { initial: string; onSave: (value: string
   }
   return (
     <div className="no-print mt-2">
-      <div className="flex flex-wrap items-center gap-2">
-        <IsraeliDateInput aria-label="תאריך ההוצאה" value={value} onChange={(e) => setValue(e.target.value)} className="input-warm w-40 text-sm py-2 px-3" />
+      <div className="flex items-center gap-2">
+        <div className="w-full max-w-[12rem]">
+          <IsraeliDateInput aria-label="תאריך ההוצאה" value={value} onChange={(e) => setValue(e.target.value)} className="input-warm text-sm py-2 px-3" />
+        </div>
         <SaveButton saving={saving} onClick={save} />
       </div>
       {error && <p role="alert" className="mt-1 text-xs font-semibold text-rose-700">{error}</p>}

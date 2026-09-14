@@ -340,7 +340,7 @@ describe("PCN874 preflight rejects malformed source data", () => {
   it.each([{ vatAmount: NaN }, { vatAmount: -18 }, { amount: 100, vatAmount: 180 }])("blocks bad input %j even when filtered out of the body", (over) => {
     expect(build([sale()], [expense({ ...over, id: "bad" })]).warnings.some(w => w.sourceId === "bad" && w.level === "error")).toBe(true);
   });
-  it.each(["13333331", "1234566", "51-333333-6", "‏513333336‎", " 513 333 336 "])(
+  it.each(["13333331", "1234566", "51-333333-6", "\u200F513333336\u200E", " 513 333 336 "])(
     "accepts a valid supplier number typed as %j and pads it to 9 digits in the file",
     (supplierTaxId) => {
       const r = build([sale()], [expense({ supplierTaxId, id: "short" })]);
@@ -421,7 +421,7 @@ describe("PCN874 builder and preflight share one strict normalizer", () => {
   const tLines = (content: string) => content.split("\r\n").filter((l) => l[0] === "T");
   const sLines = (content: string) => content.split("\r\n").filter((l) => l[0] === "S");
 
-  it.each(["513333336", "13333331", "51-333333-6", "513.333.336", " 513 333 336 ", "‏513333336‎", "⁦513333336⁩"])(
+  it.each(["513333336", "13333331", "51-333333-6", "513.333.336", " 513 333 336 ", "\u200F513333336\u200E", "\u2066513333336\u2069"])(
     "a supplier number typed as %j builds, pads and passes",
     (supplierTaxId) => {
       const r = build([sale()], [expense({ id: "ok", supplierTaxId })]);
@@ -482,7 +482,7 @@ describe("PCN874 silent repairs (Layer 2)", () => {
   });
 
   it("accepts an allocation number with separators or bidi marks when exactly 9 digits remain", () => {
-    const r = build([sale()], [expense({ id: "a", allocationNumber: "‏111-222-333‎" })]);
+    const r = build([sale()], [expense({ id: "a", allocationNumber: "\u200F111-222-333\u200E" })]);
     expect(r.warnings.filter((w) => w.sourceId === "a")).toEqual([]);
     expect(r.transactions.find((t) => t.entryType === "T")?.allocationNumber).toBe("111222333");
   });
