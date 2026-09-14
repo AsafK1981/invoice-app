@@ -325,10 +325,15 @@ function validateSources(documents: InvoiceDocument[], expenses: Expense[], rang
     if (isDoc && d.zeroRated && vat !== 0) add("zero_rated_with_vat", "המסמך סומן בשיעור אפס אך כולל מע״מ. בדוק את הסיווג והסכומים לפני הייצוא.");
     if (isDoc && d.currency && d.currency !== "ILS" && (!Number.isFinite(d.subtotalIls) || !Number.isFinite(d.vatIls)))
       add("foreign_currency_missing_ils", "במסמך במטבע חוץ חסרים סכומי שקל שמורים. השלם את ההמרה לשקלים לפני הדיווח.");
-    const id =String((isDoc ? d.clientTaxId : e.supplierTaxId) ?? "").trim();
+    const id = String((isDoc ? d.clientTaxId : e.supplierTaxId) ?? "").trim();
+    const idCheck = normalizeBusinessNumber(id);
     // A zero-rated export to a foreign customer carries a foreign id; the
     // builder reports it as Y / 999999999, so that id cannot break the file.
-    if (id && !sourceVatIdForPcn(id) && !(isDoc && d.zeroRated)) add(isDoc ? "customer_number_invalid" : "supplier_number_invalid", "מספר העוסק אינו תקין: הוא כולל תווים שאינם ספרות, יותר מ-9 ספרות, או שספרת הביקורת שגויה. בדוק מול החשבונית ותקן את המספר.");
+    // Only a CLEARLY foreign id qualifies (letters, or more than 9 digits): a
+    // digits-only number that fails the checksum is a mistyped Israeli number,
+    // and filing it as an export would hide a domestic zero-rated sale.
+    const foreignExportId = isDoc && d.zeroRated && (idCheck.reason === "letters" || idCheck.reason === "too_long");
+    if (id && !idCheck.value && !foreignExportId) add(isDoc ? "customer_number_invalid" : "supplier_number_invalid", "מספר העוסק אינו תקין: הוא כולל תווים שאינם ספרות, יותר מ-9 ספרות, או שספרת הביקורת שגויה. בדוק מול החשבונית ותקן את המספר.");
     const reference = isDoc ? String(d.number) : referenceDigits(e.reference);
     // A reference with no digits at all is not a malformed number:
     // classifyInputs folds it into petty cash when that is allowed and

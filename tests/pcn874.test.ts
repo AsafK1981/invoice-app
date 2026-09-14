@@ -10,6 +10,7 @@ import {
   pcnCanDownload,
   pcnBlockingCodes,
 } from "@/lib/ita/pcn874";
+import { buildFilingFixModel } from "@/lib/filing-fix-items";
 import type { Expense, InvoiceDocument } from "@/lib/types";
 
 const business = { taxId: "512345679", businessType: "authorized" as const };
@@ -495,6 +496,23 @@ describe("zero-rated exports with a foreign customer number", () => {
     expect(r.transactions[0]).toMatchObject({ entryType: "Y", vatId: "999999999" });
     expect(pcnCanDownload(r)).toBe(true);
   });
+
+  it("does not block a zero-rated export whose customer number has more than 9 digits", () => {
+    const r = build([doc({ id: "exp", zeroRated: true, subtotal: 7000, vat: 0, total: 7000, clientTaxId: "1234567890123" })], []);
+    expect(r.warnings.filter((w) => w.sourceId === "exp" && w.level === "error")).toEqual([]);
+    expect(r.transactions[0]).toMatchObject({ entryType: "Y", vatId: "999999999" });
+  });
+
+  it.each(["513333337", "51-333333-7", "1234567"])(
+    "blocks a zero-rated document whose Israeli-looking number %j fails the checksum, never filing it as an export",
+    (clientTaxId) => {
+      const r = build([doc({ id: "zr", zeroRated: true, subtotal: 7000, vat: 0, total: 7000, clientTaxId })], []);
+      expect(r.warnings.some((w) => w.sourceId === "zr" && w.code === "customer_number_invalid" && w.level === "error")).toBe(true);
+      expect(pcnCanDownload(r)).toBe(false);
+      const model = buildFilingFixModel(r, { business: { taxId: "513333336" }, documents: [doc({ id: "zr", zeroRated: true, clientTaxId })], expenses: [] });
+      expect(model.blocking.find((i) => i.code === "customer_number_invalid")?.control).toEqual({ kind: "customer_tax_id", documentId: "zr", current: clientTaxId });
+    },
+  );
 
   it("still blocks the same invalid number on a document that is not zero-rated", () => {
     const r = build([doc({ id: "dom", clientTaxId: "DE123456789", allocationNumber: "123456789" })], []);
