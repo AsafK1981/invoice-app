@@ -451,7 +451,8 @@ export function VatPeriodReport({ headless = false, business, documents, expense
           </div>
         ) : (
           <>
-            <ul className="mt-3 flex flex-wrap gap-2">
+            {/* Record counts and the refund note describe a file; a yearly view has none. */}
+            {!fixModel.periodOnly && <ul className="mt-3 flex flex-wrap gap-2">
               {pcnCounts.map((c) => (
                 <li
                   key={c.type}
@@ -463,9 +464,9 @@ export function VatPeriodReport({ headless = false, business, documents, expense
                   <span className="block text-stone-600 mt-0.5">{c.label}</span>
                 </li>
               ))}
-            </ul>
+            </ul>}
 
-            {pcn.refundPeriod && (
+            {pcn.refundPeriod && !fixModel.periodOnly && (
               <p className="mt-3 rounded-xl bg-blue-50 border border-blue-200 p-3 text-sm text-blue-900">
                 התקופה מסתיימת בהחזר, ולכן כל תשומה מופיעה בקובץ בנפרד (בלי ריכוז קופה קטנה), כפי שמע״מ דורש בדוח להחזר.
               </p>

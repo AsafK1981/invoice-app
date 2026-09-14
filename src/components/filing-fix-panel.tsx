@@ -20,6 +20,12 @@ const onlyDigits = (value: string) => value.replace(/\D/g, "");
 const israeliNumberProblem = (value: string) =>
   normalizeBusinessNumber(value).value ? null : "זה לא מספר עוסק ישראלי תקין. בדוק מול החשבונית.";
 
+/** A valid Israeli number typed without its leading zero: the one hint worth showing next to a strict save. */
+const isShortValidNumber = (value: string) => {
+  const n = normalizeBusinessNumber(value);
+  return n.reason === "ok" && n.digitCount < 9;
+};
+
 const LINK_BUTTON =
   "no-print inline-flex items-center gap-1.5 mt-2 min-h-[44px] px-3 rounded-xl text-sm font-semibold bg-white border-2 border-orange-200 text-stone-800 hover:bg-orange-50";
 
@@ -103,10 +109,10 @@ function FixItemCard({ item, context }: { item: FilingFixItem; context: Context 
     <li data-fix-code={item.code} className={`rounded-xl border p-3 text-sm ${style}`}>
       <p className="font-semibold leading-relaxed">{title}</p>
       {item.labels.length > 0 && <p className="mt-0.5 text-xs text-stone-700">{item.labels.join(" · ")}</p>}
-      {item.excludedVat == null &&
-        item.messages.map((message) => (
-          <p key={message} className="mt-1 text-xs leading-relaxed text-stone-700">{message}</p>
-        ))}
+      {/* Merged findings usually say the same thing twice; the first message is the specific one. */}
+      {item.excludedVat == null && item.messages[0] && (
+        <p className="mt-1 text-xs leading-relaxed text-stone-700">{item.messages[0]}</p>
+      )}
       <FixControlView control={item.control} context={context} />
     </li>
   );
@@ -300,7 +306,7 @@ function InlineSave({
         </div>
         <SaveButton saving={saving} onClick={save} />
       </div>
-      {showLeadingZeroHint && <BusinessNumberHintText value={value} digitsOnlyField />}
+      {showLeadingZeroHint && isShortValidNumber(value) && <BusinessNumberHintText value={value} digitsOnlyField />}
       {error && <p role="alert" className="mt-1 text-xs font-semibold text-rose-700">{error}</p>}
     </div>
   );
