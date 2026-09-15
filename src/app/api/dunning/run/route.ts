@@ -173,6 +173,27 @@ export async function POST(req: NextRequest) {
     }),
   );
 
+  // An email stage is claimed in dunning_log (success=false) before sending
+  // and released if the send fails. A run that died between the claim and the
+  // send, or whose release failed, leaves a claim that would suppress that
+  // stage forever. Claims older than an hour are from a finished run, so they
+  // are cleared here and the stage is retried today. Best effort: a failed
+  // sweep only means those stages wait for a later run. Accepted trade-off:
+  // if a send succeeded but flipping success=true failed (same database, a
+  // second earlier), that one stage can go out twice; the route logs it.
+  try {
+    const staleBefore = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const { error: sweepError } = await admin
+      .from("dunning_log")
+      .delete()
+      .eq("channel", "email")
+      .eq("success", false)
+      .lt("sent_at", staleBefore);
+    if (sweepError) console.warn("[dunning] stale claim sweep failed:", sweepError.message);
+  } catch (e) {
+    console.warn("[dunning] stale claim sweep failed:", e instanceof Error ? e.message : e);
+  }
+
   let sent = 0;
   let prepared = 0;
   let skipped = 0;

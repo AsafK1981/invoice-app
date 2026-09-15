@@ -119,7 +119,11 @@ export function dueReminderDate(input: ReminderScheduleInput): string | null {
     return currentHourIsrael >= hour ? scheduled : null;
   }
 
-  if (!lastSent) return null;
+  // Never sent: allow one day of catch-up, so a subscriber whose chosen-day
+  // cron ticks were all skipped (GitHub schedules can drop runs) is not
+  // silently pushed back a whole month. Anything older than that is a day
+  // that passed before the reminder existed, not a missed send.
+  if (!lastSent) return daysBetween(scheduled, todayIsrael) <= 1 ? scheduled : null;
   const previous = latestOccurrence(days, scheduled, true);
   if (!previous || lastSent < previous) return null;
   if (daysBetween(previous, lastSent) > CATCH_UP_EVIDENCE_DAYS) return null;

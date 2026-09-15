@@ -166,6 +166,11 @@ describe("shouldSendMonthlyReminder", () => {
     ).toBe(false);
   });
 
+  it("(g2) never sent: the day after a skipped chosen day still catches up, two days after does not", () => {
+    expect(shouldSendMonthlyReminder({ days: [1], hour: 9, lastSent: null, todayIsrael: "2026-08-02", currentHourIsrael: 3 })).toBe(true);
+    expect(shouldSendMonthlyReminder({ days: [1], hour: 9, lastSent: null, todayIsrael: "2026-08-03", currentHourIsrael: 12 })).toBe(false);
+  });
+
   it("(h) fires again next month after a previous month's last_sent", () => {
     expect(
       shouldSendMonthlyReminder({
