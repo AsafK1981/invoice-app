@@ -20,12 +20,17 @@ import {
   ClipboardList,
 } from "lucide-react";
 import { useDocuments } from "@/lib/document-store";
-import { isCountableRevenue } from "@/lib/types";
+import { countsAsIncome } from "@/lib/revenue";
 import { useExpenses } from "@/lib/expense-store";
 import { useClients } from "@/lib/client-store";
 import { formatCurrencyWhole, formatDate } from "@/lib/format";
 import { todayInIsrael } from "@/lib/date";
-import { addDays, daysInclusive } from "@/lib/report-period";
+import {
+  addDays,
+  makeRange,
+  previousEquivalentRange,
+  trailingMonthsPeriod,
+} from "@/lib/report-period";
 import { useBusiness } from "@/lib/business-store";
 import { useProducts } from "@/lib/product-store";
 import { DocumentsTable } from "@/components/documents-table";
@@ -77,13 +82,6 @@ const RANGE_LABELS: Record<DateRange, string> = {
   "12m": "שנה",
 };
 
-/** Hebrew name of the matching previous period, for the delta tooltips. */
-const PREV_RANGE_LABELS: Record<DateRange, string> = {
-  "1m": "חודש שעבר",
-  "2m": "החודשיים שלפניהם",
-  "6m": "חצי השנה שלפניה",
-  "12m": "השנה שלפניה",
-};
 
 /** ISO date of the first day of the month `monthsBack` months before now. */
 function monthStart(monthsBack: number): string {
@@ -96,15 +94,6 @@ function getRangeStart(range: DateRange): string {
   return monthStart(RANGE_MONTHS[range] - 1);
 }
 
-/**
- * The matching previous period: the same number of calendar months,
- * immediately before the current range. `end` is exclusive (the first day
- * of the current range).
- */
-function getPreviousRange(range: DateRange): { start: string; end: string } {
-  const n = RANGE_MONTHS[range];
-  return { start: monthStart(2 * n - 1), end: monthStart(n - 1) };
-}
 
 /**
  * Compute percentage delta between current and previous, treating each
@@ -153,37 +142,44 @@ export default function DashboardPage() {
       (e) => (!start || e.date >= start) && (!end || e.date <= end),
     );
 
-    const paidDocs = inRange.filter((d) => d.status === "paid" && isCountableRevenue(d));
-    const income = paidDocs.reduce((sum, d) => sum + (d.totalIls ?? d.total), 0);
+    // Income follows the app-wide rule (paid revenue documents minus credit
+    // notes, which are stored negative and never "paid"). The count and the
+    // average are over the paid documents themselves, so a refund lowers
+    // the average instead of counting as one more document.
+    const incomeDocs = inRange.filter(countsAsIncome);
+    const income = incomeDocs.reduce((sum, d) => sum + (d.totalIls ?? d.total), 0);
+    const paidCount = incomeDocs.filter((d) => d.type !== "credit_note").length;
     const expenseTotal = expensesInRange.reduce((sum, e) => sum + e.amount, 0);
     const profit = income - expenseTotal;
     const openQuotes = inRange.filter((d) => d.type === "quote" && d.status === "sent");
     const openQuotesValue = openQuotes.reduce((sum, d) => sum + (d.totalIls ?? d.total), 0);
-    const avgInvoice = paidDocs.length > 0 ? income / paidDocs.length : 0;
+    const avgInvoice = paidCount > 0 ? income / paidCount : 0;
 
-    // Previous-period stats for month-over-month-style deltas. A custom
-    // window compares against the equally long window that ends the day
-    // before it starts; with an open end there is no honest comparison.
+    // Previous-period stats for month-over-month-style deltas, over the same
+    // stretch of the previous period (1-5 September against 1-5 August, not
+    // against all of August). A custom window compares against the equally
+    // long window that ends the day before it starts; with an open end there
+    // is no honest comparison. Both bounds are inclusive.
     const prev =
       range === "custom"
         ? customFrom && customTo
-          ? { start: addDays(customFrom, -daysInclusive(customFrom, customTo)), end: customFrom }
+          ? previousEquivalentRange(makeRange(customFrom, customTo))
           : null
-        : getPreviousRange(range);
+        : previousEquivalentRange(trailingMonthsPeriod(RANGE_MONTHS[range]));
     let prevIncome = 0;
     let prevExpense = 0;
     let prevProfit = 0;
     let prevPaidCount = 0;
     let prevAvg = 0;
     if (prev) {
-      const prevDocs = documents.filter((d) => d.date >= prev.start && d.date < prev.end);
-      const prevExpenses = expenses.filter((e) => e.date >= prev.start && e.date < prev.end);
-      const prevPaid = prevDocs.filter((d) => d.status === "paid" && isCountableRevenue(d));
-      prevIncome = prevPaid.reduce((sum, d) => sum + (d.totalIls ?? d.total), 0);
+      const prevDocs = documents.filter((d) => d.date >= prev.start && d.date <= prev.end);
+      const prevExpenses = expenses.filter((e) => e.date >= prev.start && e.date <= prev.end);
+      const prevIncomeDocs = prevDocs.filter(countsAsIncome);
+      prevIncome = prevIncomeDocs.reduce((sum, d) => sum + (d.totalIls ?? d.total), 0);
       prevExpense = prevExpenses.reduce((sum, e) => sum + e.amount, 0);
       prevProfit = prevIncome - prevExpense;
-      prevPaidCount = prevPaid.length;
-      prevAvg = prevPaid.length > 0 ? prevIncome / prevPaid.length : 0;
+      prevPaidCount = prevIncomeDocs.filter((d) => d.type !== "credit_note").length;
+      prevAvg = prevPaidCount > 0 ? prevIncome / prevPaidCount : 0;
     }
 
     return {
@@ -195,23 +191,19 @@ export default function DashboardPage() {
       openQuotes,
       openQuotesValue,
       avgInvoice,
-      paidCount: paidDocs.length,
+      paidCount,
       hasPrev: prev !== null,
+      prev,
       incomeDelta: calcDelta(income, prevIncome),
       expenseDelta: calcDelta(expenseTotal, prevExpense),
       profitDelta: calcDelta(profit, prevProfit),
-      paidCountDelta: calcDelta(paidDocs.length, prevPaidCount),
+      paidCountDelta: calcDelta(paidCount, prevPaidCount),
       avgDelta: calcDelta(avgInvoice, prevAvg),
     };
   }, [documents, expenses, range, customFrom, customTo]);
 
   /** Hebrew label for the previous period (used in tooltips on delta badges) */
-  const prevLabel =
-    range === "custom"
-      ? customFrom && customTo
-        ? `${formatDate(addDays(customFrom, -daysInclusive(customFrom, customTo)))} - ${formatDate(addDays(customFrom, -1))}`
-        : ""
-      : PREV_RANGE_LABELS[range];
+  const prevLabel = stats.prev ? `${formatDate(stats.prev.start)} - ${formatDate(stats.prev.end)}` : "";
 
   /** The picker's name for the period, wherever the page mentions it. */
   const rangeLabel =

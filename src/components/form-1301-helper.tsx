@@ -5,7 +5,8 @@ import { ClipboardList, Printer, Copy, Check } from "lucide-react";
 import { DownloadPdfButton } from "@/components/download-pdf-button";
 import { useState } from "react";
 import { formatCurrencyWhole } from "@/lib/format";
-import { isCountableRevenue, type Business, type InvoiceDocument, type Expense } from "@/lib/types";
+import { type Business, type InvoiceDocument, type Expense } from "@/lib/types";
+import { countsAsIncome } from "@/lib/revenue";
 
 interface Props {
   year: number;
@@ -34,7 +35,7 @@ export function Form1301Helper({ headless = false, year, business, documents, ex
   const [copied, setCopied] = useState<string | null>(null);
 
   const fields = useMemo<FieldRow[]>(() => {
-    const paid = documents.filter((d) => d.status === "paid" && isCountableRevenue(d));
+    const paid = documents.filter((d) => countsAsIncome(d));
     const grossIncome = paid.reduce((s, d) => s + ((d.subtotalIls ?? d.subtotal) || ((d.totalIls ?? d.total) - (d.vatIls ?? (d.vat || 0)))), 0);
     const totalIncomeWithVat = paid.reduce((s, d) => s + (d.totalIls ?? d.total), 0);
     // Net of credit notes, not absolute: a credit note reduces the
@@ -52,7 +53,7 @@ export function Form1301Helper({ headless = false, year, business, documents, ex
         code: "150 / 158",
         label: "מחזור עסקי (הכנסות מעסק/משלח יד לפני מע״מ)",
         value: grossIncome,
-        note: "סך כל המסמכים ששולמו, ללא מע״מ",
+        note: "מסמכים ששולמו פחות חשבוניות זיכוי, ללא מע״מ",
       },
       {
         code: "170",

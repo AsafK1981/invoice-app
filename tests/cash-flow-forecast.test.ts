@@ -230,6 +230,22 @@ describe("recurring income", () => {
     expect(recurring.map((l) => l.date)).toEqual(["2026-10-01", "2026-11-01"]);
     expect(result.months[0].inflow).toBe(0);
   });
+
+  // VAT_RATES holds whole percents (authorized: 18). The gross-up once used
+  // `1 + 18` instead of `1 + 18 / 100`, so a מורשה's recurring rent of
+  // 3,200 showed up as 60,800 a month and inflated the advance estimate too.
+  it("grosses an authorized business's net cadence up by 18%, not by 19x", () => {
+    const result = run({
+      documents: rentHistory(),
+      business: { businessType: "authorized", incomeTaxAdvanceRate: 10 },
+    });
+    const recurring = linesOf(result, "recurring_income");
+    expect(recurring).toHaveLength(3);
+    expect(recurring.every((l) => l.amount === 3776)).toBe(true);
+    // September's forecast inflow (3,776 gross) -> 3,200 pre-VAT -> 10% = 320.
+    const october = linesOf(result, "income_tax_advance").find((l) => l.date === "2026-10-15");
+    expect(october?.amount).toBe(-320);
+  });
 });
 
 describe("open quotes", () => {

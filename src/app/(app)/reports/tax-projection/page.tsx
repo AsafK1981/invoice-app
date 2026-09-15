@@ -12,7 +12,7 @@ import {
   Info,
 } from "lucide-react";
 import { useDocuments } from "@/lib/document-store";
-import { isCountableRevenue } from "@/lib/types";
+
 import { useExpenses } from "@/lib/expense-store";
 import { useBusiness } from "@/lib/business-store";
 import { formatCurrencyWhole, shekel } from "@/lib/format";
@@ -20,6 +20,7 @@ import { NumberInput } from "@/components/number-input";
 import {
   projectAnnualTax,
   TAX_CREDIT_DEFAULT_POINTS,
+  yearToDateTaxBase,
 } from "@/lib/tax-projection";
 
 export default function TaxProjectionPage() {
@@ -43,16 +44,14 @@ export default function TaxProjectionPage() {
       (yearEnd.getTime() - yearStart.getTime()) / 86400000,
     );
 
-    const prefix = `${year}-`;
-    // Credit notes are stored ALREADY NEGATIVE on save (receipt-editor.tsx
-    // applies `sign = -1`), so a plain sum already subtracts them; negating
-    // them again here would turn a refund into extra projected income.
-    const ytdIncome = documents
-      .filter((d) => d.status === "paid" && isCountableRevenue(d) && d.date.startsWith(prefix))
-      .reduce((s, d) => s + (d.totalIls ?? d.total), 0);
-    const ytdExpenses = expenses
-      .filter((e) => e.date.startsWith(prefix))
-      .reduce((s, e) => s + e.amount, 0);
+    // Paid income minus credit notes; before VAT for a מורשה or company
+    // (the VAT is not theirs), gross for an עוסק פטור.
+    const { ytdIncome, ytdExpenses } = yearToDateTaxBase(
+      documents,
+      expenses,
+      year,
+      business.businessType,
+    );
 
     const projection = projectAnnualTax({
       ytdIncome,
@@ -66,7 +65,7 @@ export default function TaxProjectionPage() {
       ytd: { ytdIncome, ytdExpenses, daysElapsed, daysInYear },
       projection,
     };
-  }, [documents, expenses, year, points, today]);
+  }, [documents, expenses, year, points, today, business.businessType]);
 
   if (!docsReady || !expReady || !bizReady) {
     return <div className="text-center py-16 text-stone-500">טוען...</div>;
@@ -110,13 +109,13 @@ export default function TaxProjectionPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card
-          label="הכנסות מצטברות השנה"
+          label={exempt ? "הכנסות מצטברות השנה" : "הכנסות מצטברות השנה (לפני מע״מ)"}
           value={formatCurrencyWhole(ytd.ytdIncome)}
           icon={TrendingUp}
           tone="emerald"
         />
         <Card
-          label="הוצאות מצטברות"
+          label={exempt ? "הוצאות מצטברות" : "הוצאות מצטברות (בלי מע״מ)"}
           value={formatCurrencyWhole(ytd.ytdExpenses)}
           icon={Wallet}
           tone="rose"
@@ -214,12 +213,12 @@ export default function TaxProjectionPage() {
             </p>
           </div>
           <div className="bg-white rounded-2xl p-4 border border-emerald-100">
-            <p className="text-xs text-stone-600 mb-1">להפריש בחודש (מעכשיו עד סוף השנה)</p>
+            <p className="text-xs text-stone-600 mb-1">להפריש בכל חודש מעכשיו עד סוף השנה</p>
             <p className="text-2xl font-bold text-emerald-700" dir="ltr">
               {formatCurrencyWhole(projection.monthlyReserve)}
             </p>
             <p className="text-xs text-stone-500 mt-1">
-              ~{projection.monthsRemaining.toFixed(1)} חודשים נשארו עד 31 בדצמבר.
+              בסך הכול {formatCurrencyWhole(projection.remainingReserve)} ב-~{projection.monthsRemaining.toFixed(1)} החודשים שנשארו, בהנחה שהחלק של החודשים שעברו כבר הופרש. אם עוד לא הפרשת כלום, צריך להפריש את כל {formatCurrencyWhole(projection.totalTax)}.
             </p>
           </div>
         </div>

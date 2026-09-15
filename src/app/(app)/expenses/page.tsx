@@ -4,7 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Wallet, Plus, ShoppingBag, Pencil, Trash2, Upload, Search, X, ScanLine, Loader2, Paperclip, Printer } from "lucide-react";
 import { useExpenses, expenseStore } from "@/lib/expense-store";
 import { useBusiness } from "@/lib/business-store";
-import { formatCurrency, formatCurrencyWhole, formatDate } from "@/lib/format";
+import { formatCurrency, formatCurrencyWhole, formatDate, hebrewCount } from "@/lib/format";
+import { clampPage } from "@/lib/pagination";
 import { ExpenseFormModal } from "@/components/expense-form-modal";
 import { CsvImportModal } from "@/components/csv-import-modal";
 import { useConfirm } from "@/components/ui/confirm-dialog";
@@ -184,13 +185,15 @@ export default function ExpensesPage() {
   }, [period, categoryFilter, search]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  // The list can shrink under the current page without any filter changing
+  // (deleting the only row on the last page), so the page shown is clamped
+  // to the last page that still has rows.
+  const currentPage = clampPage(page, filtered.length, PAGE_SIZE);
   const paginated = useMemo(
-    () => filtered.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE),
-    [filtered, page]
+    () => filtered.slice(currentPage * PAGE_SIZE, currentPage * PAGE_SIZE + PAGE_SIZE),
+    [filtered, currentPage]
   );
-  // Any change to what's filtered (new search, new filter selection, or the
-  // list itself changing after an add/edit/delete) can leave `page` pointing
-  // past the new last page - reset to page 1 whenever the filtered set does.
+  // A new search or filter selection starts again from page 1.
   useEffect(() => {
     setPage(0);
   }, [search, categoryFilter, period]);
@@ -513,7 +516,7 @@ export default function ExpensesPage() {
               </button>
             )}
             <div className="text-sm font-medium text-stone-700 mr-auto">
-              {filtered.length} הוצאות
+              {hebrewCount(filtered.length, "הוצאה אחת", "הוצאות")}
             </div>
           </div>
 
@@ -620,7 +623,7 @@ export default function ExpensesPage() {
                 <tfoot>
                   <tr>
                     <td colSpan={4} className="px-6 py-4 text-sm">
-                      סה״כ · {filtered.length} הוצאות
+                      סה״כ · {hebrewCount(filtered.length, "הוצאה אחת", "הוצאות")}
                     </td>
                     {showVat && (
                       <td className="px-6 py-4 text-sm text-left tabular-nums whitespace-nowrap">{formatCurrencyWhole(filteredNet)}</td>
@@ -635,7 +638,7 @@ export default function ExpensesPage() {
               )}
             </table>
           </div>
-          <Pagination page={page} pageCount={pageCount} onPageChange={setPage} />
+          <Pagination page={currentPage} pageCount={pageCount} onPageChange={setPage} />
         </div>
       )}
 
@@ -673,7 +676,7 @@ export default function ExpensesPage() {
         subtitle={printSubtitle}
         rows={filtered}
         rowKey={(e) => e.id}
-        countLabel={`${filtered.length} הוצאות`}
+        countLabel={hebrewCount(filtered.length, "הוצאה אחת", "הוצאות")}
         columns={[
           { key: "date", header: "תאריך", render: (e) => formatDate(e.date), footer: "סה״כ" },
           { key: "category", header: "קטגוריה", render: (e) => e.category },

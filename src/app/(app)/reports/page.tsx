@@ -10,11 +10,11 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useDocuments } from "@/lib/document-store";
-import { isCountableRevenue } from "@/lib/types";
+import { countsAsIncome } from "@/lib/revenue";
 import { useExpenses } from "@/lib/expense-store";
 import { useBusiness } from "@/lib/business-store";
 import { useClients } from "@/lib/client-store";
-import { formatCurrencyWhole } from "@/lib/format";
+import { formatCurrencyWhole, hebrewCount } from "@/lib/format";
 import { exportDocuments, exportExpenses, exportMonthlySummary } from "@/lib/csv-export";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/ui/toast";
@@ -37,11 +37,11 @@ import type { InvoiceDocument, Expense } from "@/lib/types";
 
 type MonthTotals = { income: number; expenses: number; docs: number };
 
-/** Paid, countable income and expenses summed per "YYYY-MM". */
+/** Income (paid, countable, net of credit notes) and expenses summed per "YYYY-MM". */
 function bucketByMonth(documents: InvoiceDocument[], expenses: Expense[]): Map<string, MonthTotals> {
   const map = new Map<string, MonthTotals>();
   for (const d of documents) {
-    if (d.status !== "paid" || !isCountableRevenue(d)) continue;
+    if (!countsAsIncome(d)) continue;
     const m = d.date.slice(0, 7);
     const cur = map.get(m) || { income: 0, expenses: 0, docs: 0 };
     cur.income += d.totalIls ?? d.total;
@@ -83,11 +83,11 @@ export default function ReportsPage() {
   const filteredDocs = useMemo(() => documents.filter((d) => periodMatches(period, d.date)), [documents, period]);
   const filteredExpenses = useMemo(() => expenses.filter((e) => periodMatches(period, e.date)), [expenses, period]);
 
-  const paidDocs = useMemo(
-    () => filteredDocs.filter((d) => d.status === "paid" && isCountableRevenue(d)),
+  const incomeDocs = useMemo(
+    () => filteredDocs.filter(countsAsIncome),
     [filteredDocs],
   );
-  const totalIncome = paidDocs.reduce((sum, d) => sum + (d.totalIls ?? d.total), 0);
+  const totalIncome = incomeDocs.reduce((sum, d) => sum + (d.totalIls ?? d.total), 0);
   const totalExpenses = filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
   const profit = totalIncome - totalExpenses;
 
@@ -98,7 +98,7 @@ export default function ReportsPage() {
     if (!cur || !prev) return null;
     let curIncome = 0, prevIncome = 0, curExpenses = 0, prevExpenses = 0;
     for (const d of documents) {
-      if (d.status !== "paid" || !isCountableRevenue(d)) continue;
+      if (!countsAsIncome(d)) continue;
       const v = d.totalIls ?? d.total;
       if (inRange(d.date, cur)) curIncome += v;
       else if (inRange(d.date, prev)) prevIncome += v;
@@ -458,7 +458,7 @@ export default function ReportsPage() {
           <span>
             {aging.rows.length === 0
               ? "אין חשבוניות פתוחות"
-              : `${aging.rows.length} לקוחות · ${aging.totals.docCount} מסמכים`}
+              : `${hebrewCount(aging.rows.length, "לקוח אחד", "לקוחות")} · ${hebrewCount(aging.totals.docCount, "מסמך אחד", "מסמכים")}`}
           </span>
         </Kpi>
       </div>
@@ -521,7 +521,7 @@ export default function ReportsPage() {
                   ))}
                   {aging.rows.length > topDebtors.length && (
                     <li className="rpt-aging-more">
-                      <Link href="/reports/aging">ועוד {aging.rows.length - topDebtors.length} לקוחות</Link>
+                      <Link href="/reports/aging">ועוד {hebrewCount(aging.rows.length - topDebtors.length, "לקוח אחד", "לקוחות")}</Link>
                     </li>
                   )}
                 </ul>

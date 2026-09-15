@@ -3,13 +3,14 @@
 import { useMemo } from "react";
 import { Printer, FileText, Users, Tag, TrendingUp, TrendingDown } from "lucide-react";
 import { DownloadPdfButton } from "@/components/download-pdf-button";
-import { formatCurrencyWhole } from "@/lib/format";
+import { formatCurrencyWhole, hebrewCount } from "@/lib/format";
+import { inRange, periodRange, previousEquivalentRange } from "@/lib/report-period";
 import {
   DOCUMENT_TYPE_LABELS,
-  isCountableRevenue,
   type InvoiceDocument,
   type Expense,
 } from "@/lib/types";
+import { countsAsIncome } from "@/lib/revenue";
 
 interface Props {
   year: number;
@@ -24,11 +25,10 @@ interface Props {
 
 export function TaxYearDetail({ headless = false, year, documents, expenses, allDocuments, allExpenses }: Props) {
   const stats = useMemo(() => {
-    // Count only real revenue documents: exclude price quotes / proformas and
-    // any doc already converted into another (its revenue lives in the target,
-    // so counting both double-counts). Credit notes stay in (stored negative,
-    // so they subtract). Status filter (paid) is unchanged.
-    const paid = documents.filter((d) => d.status === "paid" && isCountableRevenue(d));
+    // The app-wide income rule (revenue.ts): paid revenue documents, not
+    // quotes / proformas or a converted source, minus credit notes (stored
+    // negative and saved "sent", so they count by issue date).
+    const paid = documents.filter((d) => countsAsIncome(d));
     const totalIncome = paid.reduce((s, d) => s + (d.totalIls ?? d.total), 0);
     const totalExpenses = expenses.reduce((s, e) => s + e.amount, 0);
     // Net of credit notes, not absolute: a credit note reduces the
@@ -71,15 +71,30 @@ export function TaxYearDetail({ headless = false, year, documents, expenses, all
       .sort((a, b) => b.total - a.total)
       .slice(0, 5);
 
-    // Prior year comparison
-    const priorYear = year - 1;
-    const priorPaid = allDocuments.filter(
-      (d) => d.status === "paid" && isCountableRevenue(d) && d.date.startsWith(`${priorYear}-`)
-    );
-    const priorIncome = priorPaid.reduce((s, d) => s + (d.totalIls ?? d.total), 0);
-    const priorExpensesTotal = allExpenses
-      .filter((e) => e.date.startsWith(`${priorYear}-`))
-      .reduce((s, e) => s + e.amount, 0);
+    // Prior year comparison, over the same stretch: a year in progress
+    // (1 Jan - 5 Sep) is compared with 1 Jan - 5 Sep of last year, not with
+    // all of last year, which showed a steep decline every year until
+    // December. A finished year is compared with the whole previous year.
+    // The current side is clipped the same way, so documents dated after
+    // today do not tip the comparison.
+    const priorRange = previousEquivalentRange(String(year));
+    const currentRange = periodRange(String(year));
+    const comparedIncome = currentRange
+      ? paid.filter((d) => inRange(d.date, currentRange)).reduce((s, d) => s + (d.totalIls ?? d.total), 0)
+      : totalIncome;
+    const comparedExpenses = currentRange
+      ? expenses.filter((e) => inRange(e.date, currentRange)).reduce((s, e) => s + e.amount, 0)
+      : totalExpenses;
+    const priorIncome = priorRange
+      ? allDocuments
+          .filter((d) => countsAsIncome(d) && inRange(d.date, priorRange))
+          .reduce((s, d) => s + (d.totalIls ?? d.total), 0)
+      : 0;
+    const priorExpensesTotal = priorRange
+      ? allExpenses.filter((e) => inRange(e.date, priorRange)).reduce((s, e) => s + e.amount, 0)
+      : 0;
+    // Partial when the prior window stops before 31 December.
+    const priorIsPartial = priorRange ? !priorRange.end.endsWith("-12-31") : false;
 
     // End-of-year projection, only meaningful when looking at the
     // current year mid-stride. Extrapolate linearly from days-elapsed.
@@ -115,9 +130,12 @@ export function TaxYearDetail({ headless = false, year, documents, expenses, all
       incomeByType: Array.from(incomeByType.entries()),
       sortedExpenseCats,
       topClients,
+      comparedIncome,
+      comparedExpenses,
       priorIncome,
       priorExpensesTotal,
       priorProfit: priorIncome - priorExpensesTotal,
+      priorIsPartial,
       paidCount: paid.length,
       hasPriorData: priorIncome > 0 || priorExpensesTotal > 0,
       projection,
@@ -130,9 +148,10 @@ export function TaxYearDetail({ headless = false, year, documents, expenses, all
     return { pct: Math.round(pct), up: pct >= 0 };
   }
 
-  const incomeDelta = deltaPct(stats.totalIncome, stats.priorIncome);
-  const expenseDelta = deltaPct(stats.totalExpenses, stats.priorExpensesTotal);
-  const profitDelta = deltaPct(stats.profit, stats.priorProfit);
+  const incomeDelta = deltaPct(stats.comparedIncome, stats.priorIncome);
+  const expenseDelta = deltaPct(stats.comparedExpenses, stats.priorExpensesTotal);
+  const profitDelta = deltaPct(stats.comparedIncome - stats.comparedExpenses, stats.priorProfit);
+  const deltaVs = stats.priorIsPartial ? "מאותה תקופה אשתקד" : "משנה קודמת";
 
   return (
     <div className="card-soft p-6 print:shadow-none">
@@ -166,6 +185,7 @@ export function TaxYearDetail({ headless = false, year, documents, expenses, all
           label="הכנסות שנתיות"
           value={stats.totalIncome}
           delta={incomeDelta}
+          vs={deltaVs}
           good={(d) => d.up}
           icon={TrendingUp}
         />
@@ -173,6 +193,7 @@ export function TaxYearDetail({ headless = false, year, documents, expenses, all
           label="הוצאות שנתיות"
           value={stats.totalExpenses}
           delta={expenseDelta}
+          vs={deltaVs}
           good={(d) => !d.up}
           icon={TrendingDown}
         />
@@ -180,6 +201,7 @@ export function TaxYearDetail({ headless = false, year, documents, expenses, all
           label="רווח לפני מס"
           value={stats.profit}
           delta={profitDelta}
+          vs={deltaVs}
           good={(d) => d.up}
           icon={TrendingUp}
         />
@@ -310,7 +332,7 @@ export function TaxYearDetail({ headless = false, year, documents, expenses, all
                     <span className="text-stone-500 font-mono ml-1">{idx + 1}.</span>
                     {c.name}{" "}
                     <span className="text-xs text-stone-500">
-                      ({c.count} מסמכים · {pct}%)
+                      ({hebrewCount(c.count, "מסמך אחד", "מסמכים")} · {pct}%)
                     </span>
                   </span>
                   <span className="text-sm font-semibold text-stone-900">
@@ -324,9 +346,10 @@ export function TaxYearDetail({ headless = false, year, documents, expenses, all
       </div>
 
       <div className="mt-6 pt-5 border-t border-orange-100 text-xs text-stone-500">
-        סיכום זה אינו תחליף לייעוץ של רואה חשבון. נתונים מבוססים על
+        סיכום זה אינו תחליף לייעוץ של רואה חשבון. הנתונים מבוססים על
         {" "}
-        {stats.paidCount} מסמכים ששולמו ו-{expenses.length} הוצאות שנרשמו במערכת בשנת {year}.
+        {hebrewCount(stats.paidCount, "מסמך אחד", "מסמכים")} משנת {year} (מסמכים שסומנו כשולמו וחשבוניות זיכוי) ועל{" "}
+        {hebrewCount(expenses.length, "הוצאה אחת", "הוצאות")} באותה שנה.
       </div>
     </div>
   );
@@ -338,10 +361,12 @@ function DeltaCard({
   delta,
   good,
   icon: Icon,
+  vs,
 }: {
   label: string;
   value: number;
   delta: { pct: number; up: boolean } | null;
+  vs: string;
   good: (d: { pct: number; up: boolean }) => boolean;
   icon: typeof TrendingUp;
 }) {
@@ -358,7 +383,7 @@ function DeltaCard({
             good(delta) ? "text-emerald-700" : "text-rose-700"
           }`}
         >
-          {delta.up ? "▲" : "▼"} {Math.abs(delta.pct)}% משנה קודמת
+          {delta.up ? "▲" : "▼"} {Math.abs(delta.pct)}% {vs}
         </div>
       )}
     </div>

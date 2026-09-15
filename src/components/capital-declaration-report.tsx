@@ -5,9 +5,10 @@ import { IsraeliDateInput } from "@/components/israeli-date-input";
 import { useMemo, useState } from "react";
 import { Wallet, Printer, Download, ExternalLink, Info, Circle } from "lucide-react";
 import { DownloadPdfButton } from "@/components/download-pdf-button";
-import { formatCurrencyWhole, formatDate, shekel } from "@/lib/format";
+import { formatCurrencyWhole, formatDate, hebrewCount, shekel } from "@/lib/format";
 import { todayInIsrael } from "@/lib/date";
-import { DOCUMENT_TYPE_LABELS, isCountableRevenue, type InvoiceDocument, type Expense } from "@/lib/types";
+import { DOCUMENT_TYPE_LABELS, type InvoiceDocument, type Expense } from "@/lib/types";
+import { countsAsIncome } from "@/lib/revenue";
 import { computeOpenReceivables } from "@/lib/capital-declaration";
 import { exportCapitalDeclarationDraft } from "@/lib/csv-export";
 import { useBusiness } from "@/lib/business-store";
@@ -74,7 +75,7 @@ export function CapitalDeclarationReport({ headless = false, documents, expenses
     const result: YearRow[] = [];
     for (let y = fromYear; y <= toYear; y++) {
       const yearDocs = documents.filter(
-        (d) => d.status === "paid" && isCountableRevenue(d) && d.date.startsWith(`${y}-`)
+        (d) => countsAsIncome(d) && d.date.startsWith(`${y}-`)
       );
       const yearExpenses = expenses.filter((e) => e.date.startsWith(`${y}-`));
       const income = yearDocs.reduce((s, d) => s + (d.totalIls ?? d.total), 0);
@@ -248,7 +249,7 @@ export function CapitalDeclarationReport({ headless = false, documents, expenses
         </span>
       </div>
 
-      <p className="text-xs text-stone-600 mb-2">הכנסות עסקיות מוצהרות, לפי שנה (מסמכים ששולמו בפועל):</p>
+      <p className="text-xs text-stone-600 mb-2">הכנסות עסקיות מוצהרות, לפי שנה (מסמכים ששולמו בפועל, פחות חשבוניות זיכוי):</p>
 
       <div className="overflow-hidden rounded-2xl border border-purple-100">
         <div className="overflow-x-auto">
@@ -348,7 +349,7 @@ export function CapitalDeclarationReport({ headless = false, documents, expenses
 
         <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 flex items-baseline justify-between gap-3 flex-wrap">
           <span className="text-sm text-blue-900">
-            {receivables.count} מסמכים פתוחים
+            {hebrewCount(receivables.count, "מסמך פתוח אחד", "מסמכים פתוחים")}
           </span>
           <span className="text-lg font-bold text-blue-900 tabular-nums" dir="ltr">
             {formatCurrencyWhole(receivables.total)}

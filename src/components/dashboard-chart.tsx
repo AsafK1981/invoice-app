@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { isCountableRevenue, type InvoiceDocument, type Expense } from "@/lib/types";
+import type { InvoiceDocument, Expense } from "@/lib/types";
+import { countsAsIncome } from "@/lib/revenue";
 import { formatCurrencyWhole, shekel } from "@/lib/format";
 
 interface Props {
@@ -173,7 +174,7 @@ export function DashboardChart({ documents, expenses }: Props) {
   const data = useMemo<MonthDatum[]>(() => {
     return buildBuckets(range).map((b) => {
       const income = documents
-        .filter((doc) => doc.status === "paid" && isCountableRevenue(doc) && doc.date.startsWith(b.prefix))
+        .filter((doc) => countsAsIncome(doc) && doc.date.startsWith(b.prefix))
         .reduce((sum, doc) => sum + (doc.totalIls ?? doc.total), 0);
 
       const bucketExpenses = expenses
@@ -192,7 +193,7 @@ export function DashboardChart({ documents, expenses }: Props) {
   // should still render (flat at ₪0), not hide the chart.
   const hasAnyData =
     expenses.length > 0 ||
-    documents.some((doc) => doc.status === "paid" && isCountableRevenue(doc));
+    documents.some((doc) => countsAsIncome(doc));
 
   if (!hasAnyData) {
     return (

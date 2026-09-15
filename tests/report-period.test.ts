@@ -14,6 +14,7 @@ import {
   rangeBounds,
   addDays,
   daysInclusive,
+  trailingMonthsPeriod,
 } from "@/lib/report-period";
 
 // A fixed "today" (Israel time is UTC+3 in August, so noon UTC is the same day).
@@ -98,6 +99,36 @@ describe("range period model", () => {
     expect(switchMode("2026-01-05..2026-03-10", "year", TODAY)).toBe("2026");
     // One that holds today anchors on this month.
     expect(switchMode("2026-08-01..2026-09-30", "month", TODAY)).toBe("2026-08");
+  });
+});
+
+// The dashboard and the annual summary used to compare a period still
+// running with a whole previous one: on 5 September, five days of income
+// against all of August showed a red "↓ 80%" for an ordinary month.
+describe("comparing a period in progress with the same stretch before it", () => {
+  const FIFTH = new Date(Date.UTC(2026, 8, 5, 12));
+
+  it("compares the first five days of this month with the first five days of last month", () => {
+    expect(trailingMonthsPeriod(1, FIFTH)).toBe("2026-09");
+    expect(previousEquivalentRange(trailingMonthsPeriod(1, FIFTH), FIFTH)).toEqual({
+      start: "2026-08-01",
+      end: "2026-08-05",
+    });
+  });
+
+  it("turns several trailing months into a range and compares an equally long window", () => {
+    expect(trailingMonthsPeriod(2, FIFTH)).toBe("2026-08-01..2026-09-05");
+    // 36 days (1 Aug - 5 Sep) -> the 36 days ending 31 July.
+    expect(previousEquivalentRange(trailingMonthsPeriod(2, FIFTH), FIFTH)).toEqual({
+      start: "2026-06-26",
+      end: "2026-07-31",
+    });
+    expect(trailingMonthsPeriod(12, FIFTH)).toBe("2025-10-01..2026-09-05");
+  });
+
+  it("compares a year in progress with the same days of last year, and a finished year in full", () => {
+    expect(previousEquivalentRange("2026", FIFTH)).toEqual({ start: "2025-01-01", end: "2025-09-05" });
+    expect(previousEquivalentRange("2025", FIFTH)).toEqual({ start: "2024-01-01", end: "2024-12-31" });
   });
 });
 

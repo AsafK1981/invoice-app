@@ -343,7 +343,8 @@ export function forecastCashFlow(inputs: ForecastInputs): ForecastResult {
   // by the VAT factor before saving), while every other inflow here is the
   // gross cash the client actually pays. Gross the lines up for businesses
   // that charge VAT; exempt dealers have a zero rate and are unchanged.
-  const recurringVatFactor = 1 + (VAT_RATES[business.businessType] ?? 0);
+  // VAT_RATES holds whole percents (18), so it is divided by 100 here.
+  const recurringVatFactor = 1 + (VAT_RATES[business.businessType] ?? 0) / 100;
   let recurringCount = 0;
   for (const pattern of patterns) {
     // The pattern carries no total - it is a template, not a document - so the

@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { AlertTriangle, ChevronDown, ChevronUp, FileText } from "lucide-react";
-import { formatCurrencyWhole, formatDate } from "@/lib/format";
+import { formatCurrencyWhole, formatDate, hebrewCount } from "@/lib/format";
 import { DOCUMENT_TYPE_LABELS, type InvoiceDocument } from "@/lib/types";
 import { useClients } from "@/lib/client-store";
 import { AGING_BUCKET_LABELS as BUCKET_LABELS, computeAging, daysOverdue, type AgingRow } from "@/lib/aging";
@@ -69,7 +69,7 @@ export function AgingReport({ documents, headless = false }: Props) {
           </div>
         )}
         <p className="text-xs text-stone-600">
-          {rows.length} לקוחות · סך פתוח{" "}
+          {hebrewCount(rows.length, "לקוח אחד", "לקוחות")} · סך פתוח{" "}
           <span className="font-bold text-stone-900" dir="ltr">
             {formatCurrencyWhole(totals.grand)}
           </span>
@@ -184,7 +184,7 @@ function FragmentRow({
                       </span>
                     </Link>
                     <span className="font-mono font-semibold text-stone-900" dir="ltr">
-                      {formatCurrencyWhole(d.totalIls ?? d.total)}
+                      {formatCurrencyWhole(row.openAmounts[d.id] ?? d.totalIls ?? d.total)}
                     </span>
                   </li>
                 ))}

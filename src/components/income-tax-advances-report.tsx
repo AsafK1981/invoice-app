@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Check, Copy, ExternalLink } from "lucide-react";
-import { formatCurrencyWhole, formatDate } from "@/lib/format";
+import { formatCurrencyWhole, formatDate, hebrewCount } from "@/lib/format";
 import { saveIncomeTaxAdvanceRate } from "@/lib/business-store";
 import { biMonthlyRange, singleMonthRange, type ReportRange } from "@/lib/ita/vat-periods";
 import { advanceDueDate, computeAdvance } from "@/lib/ita/income-tax-advances";
@@ -105,7 +105,7 @@ export function IncomeTaxAdvancesReport({ business, documents }: Props) {
       label: "מחזור עסקאות בתקופה (ללא מע״מ)",
       display: formatCurrencyWhole(result.turnover),
       clipboard: String(result.turnover),
-      hint: `על ${result.docCount} מסמכים ששולמו בתקופה`,
+      hint: `לפי ${hebrewCount(result.docCount, "מסמך אחד", "מסמכים")} מהתקופה: מסמכים שסומנו כשולמו, וחשבוניות זיכוי`,
     },
     {
       key: "rate",

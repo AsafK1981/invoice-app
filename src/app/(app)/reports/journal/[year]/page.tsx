@@ -9,7 +9,8 @@ import { useExpenses } from "@/lib/expense-store";
 import { useBusiness } from "@/lib/business-store";
 import { formatCurrencyWhole, formatDate } from "@/lib/format";
 import { todayInIsrael } from "@/lib/date";
-import { DOCUMENT_TYPE_LABELS, BUSINESS_TYPE_LABELS, isCountableRevenue } from "@/lib/types";
+import { DOCUMENT_TYPE_LABELS, BUSINESS_TYPE_LABELS } from "@/lib/types";
+import { countsAsIncome } from "@/lib/revenue";
 
 const MONTH_NAMES = [
   "ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יוני",
@@ -31,7 +32,7 @@ export default function YearJournalPage({ params }: { params: Promise<{ year: st
     // (convertedToId set) is skipped so its revenue isn't double-counted with
     // the target receipt. Credit notes stay in (stored negative → subtract).
     const incomeDocs = documents
-      .filter((d) => d.status === "paid" && isCountableRevenue(d) && d.date.startsWith(prefix))
+      .filter((d) => countsAsIncome(d) && d.date.startsWith(prefix))
       .sort((a, b) => a.date.localeCompare(b.date) || a.number - b.number);
     const yearExpenses = expenses
       .filter((e) => e.date.startsWith(prefix))

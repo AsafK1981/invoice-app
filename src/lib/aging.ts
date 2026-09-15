@@ -1,5 +1,6 @@
 import type { Client, InvoiceDocument } from "./types";
 import { normalizeName, resolveDocumentClientId } from "./client-picker";
+import { round2 } from "./vat";
 
 /**
  * Open-receivables ("aging") math, shared by the reports overview card and
@@ -13,6 +14,8 @@ export interface AgingRow {
   buckets: [number, number, number, number];
   total: number;
   docs: InvoiceDocument[];
+  /** What is still open on each document, by id: its total net of the credit notes issued against it. */
+  openAmounts: Record<string, number>;
 }
 
 export interface AgingTotals {
@@ -42,12 +45,35 @@ export function bucketIndex(days: number): 0 | 1 | 2 | 3 {
   return 3;
 }
 
-/** A document that is still waiting for money. */
+/**
+ * A document that is still waiting for money: an unpaid tax invoice or
+ * proforma that was not converted into a successor. A price quote is an
+ * offer, not a debt (the cash-flow forecast lists quotes as potential and
+ * never counts them), so it was wrongly part of "פתוח לגבייה" before.
+ */
 export function isOpenReceivable(d: InvoiceDocument): boolean {
   return (
     d.status === "sent" &&
-    (d.type === "quote" || d.type === "proforma" || d.type === "tax_invoice")
+    !d.convertedToId &&
+    (d.type === "proforma" || d.type === "tax_invoice")
   );
+}
+
+/**
+ * Credit notes netted per original document, the same rule as the cash-flow
+ * forecast: credit notes are stored ALREADY NEGATIVE, so they are added, and
+ * only a credit note that names its original reduces a debt (a credit note
+ * has no "settled" state, so a free-standing one would linger forever).
+ */
+function creditsByOriginal(documents: InvoiceDocument[]): Map<string, number> {
+  const credits = new Map<string, number>();
+  for (const d of documents) {
+    if (d.type !== "credit_note") continue;
+    if (d.status === "draft" || d.status === "cancelled") continue;
+    if (!d.originalDocumentId) continue;
+    credits.set(d.originalDocumentId, (credits.get(d.originalDocumentId) ?? 0) + (d.totalIls ?? d.total));
+  }
+  return credits;
 }
 
 export function computeAging(
@@ -55,8 +81,12 @@ export function computeAging(
   clients: Client[],
 ): { rows: AgingRow[]; totals: AgingTotals } {
   const byClient = new Map<string, AgingRow>();
+  const credits = creditsByOriginal(documents);
   for (const d of documents) {
     if (!isOpenReceivable(d)) continue;
+    // Credited in part: only the rest is owed. Credited in full: nothing is.
+    const amount = round2(Math.max(0, (d.totalIls ?? d.total) + (credits.get(d.id) ?? 0)));
+    if (amount <= 0) continue;
     const b = bucketIndex(daysOverdue(d));
     // Same attribution rule as the client pages: an unlinked document
     // (client_id null) is grouped under the one saved client it names,
@@ -71,13 +101,14 @@ export function computeAging(
         buckets: [0, 0, 0, 0],
         total: 0,
         docs: [],
+        openAmounts: {},
       };
       byClient.set(key, row);
     }
-    const amount = d.totalIls ?? d.total;
     row.buckets[b] += amount;
     row.total += amount;
     row.docs.push(d);
+    row.openAmounts[d.id] = amount;
   }
   const rows = Array.from(byClient.values()).sort((a, b) => b.total - a.total);
   const totals: AgingTotals = { buckets: [0, 0, 0, 0], grand: 0, docCount: 0 };

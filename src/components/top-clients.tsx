@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { Building2, ArrowLeft } from "lucide-react";
 import { formatCurrencyWhole } from "@/lib/format";
-import { isCountableRevenue, type InvoiceDocument } from "@/lib/types";
+import { type InvoiceDocument } from "@/lib/types";
+import { countsAsIncome } from "@/lib/revenue";
 
 interface Props {
   documents: InvoiceDocument[];
@@ -14,7 +15,7 @@ export function TopClients({ documents, limit = 5 }: Props) {
   const byClient = new Map<string, { name: string; total: number; count: number }>();
 
   documents
-    .filter((d) => d.status === "paid" && isCountableRevenue(d))
+    .filter((d) => countsAsIncome(d))
     .forEach((d) => {
       // `totalIls` normalizes foreign-currency documents into shekels so a
       // USD invoice doesn't get summed at its native face value alongside

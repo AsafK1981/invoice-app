@@ -12,6 +12,9 @@
 //     https://taxsummaries.pwc.com/israel/individual/taxes-on-personal-income
 //   - 2026 BL rates: btl.gov.il (Self_Employed/rates page)
 
+import { countsAsIncome } from "./revenue";
+import type { Business, Expense, InvoiceDocument } from "./types";
+
 // Annual income-tax brackets for 2026, in ILS. Each tuple: [upperBound, rate].
 // The last entry uses Infinity to catch everything above 721,560.
 // Note: the 50% top bracket is actually 47% income tax + 3% מס יסף surtax;
@@ -70,8 +73,54 @@ export interface ProjectionResult {
   setAsidePct: number;
   /** Months remaining in the calendar year (for monthly reserve). */
   monthsRemaining: number;
-  /** Recommended monthly reserve from today through year-end. */
+  /**
+   * The share of the projected annual tax that belongs to the rest of the
+   * year (totalTax × days remaining / days in year): what is still to be set
+   * aside, assuming the year-to-date share already was.
+   */
+  remainingReserve: number;
+  /** What to set aside each month from now to year-end: remainingReserve spread over the months left. */
   monthlyReserve: number;
+}
+
+type TaxBaseDocument = Pick<
+  InvoiceDocument,
+  "date" | "type" | "status" | "convertedToId" | "total" | "totalIls" | "subtotal" | "subtotalIls"
+>;
+type TaxBaseExpense = Pick<Expense, "date" | "amount" | "vatAmount">;
+
+/**
+ * Year-to-date income and expenses as income tax and ביטוח לאומי see them.
+ *
+ * Income follows the app-wide rule (paid revenue documents minus credit
+ * notes, see revenue.ts). A עוסק מורשה or company collects VAT on behalf of
+ * the state, so its taxable income is BEFORE VAT (`subtotalIls ?? subtotal`)
+ * and its expenses are net of the VAT it reclaims. An עוסק פטור neither
+ * charges nor reclaims VAT, so for it the gross amounts are the real ones.
+ * Taxing the VAT-inclusive totals overstated a מורשה's projected tax by
+ * roughly the 18% VAT on top of every shekel.
+ */
+export function yearToDateTaxBase(
+  documents: TaxBaseDocument[],
+  expenses: TaxBaseExpense[],
+  year: number,
+  businessType: Business["businessType"],
+): { ytdIncome: number; ytdExpenses: number } {
+  const prefix = `${year}-`;
+  const exempt = businessType === "exempt";
+  let ytdIncome = 0;
+  for (const d of documents) {
+    if (!d.date.startsWith(prefix) || !countsAsIncome(d)) continue;
+    // Credit notes are stored ALREADY NEGATIVE on save (receipt-editor.tsx
+    // applies `sign = -1`), so a plain sum subtracts them.
+    ytdIncome += exempt ? (d.totalIls ?? d.total) : (d.subtotalIls ?? d.subtotal);
+  }
+  let ytdExpenses = 0;
+  for (const e of expenses) {
+    if (!e.date.startsWith(prefix)) continue;
+    ytdExpenses += exempt ? e.amount : e.amount - (e.vatAmount ?? 0);
+  }
+  return { ytdIncome, ytdExpenses };
 }
 
 /** Apply progressive brackets to a yearly amount. Returns the tax. */
@@ -136,14 +185,18 @@ export function projectAnnualTax(inputs: ProjectionInputs): ProjectionResult {
   const effectiveRate = projectedProfit > 0 ? totalTax / projectedProfit : 0;
   const setAsidePct = projectedIncome > 0 ? totalTax / projectedIncome : 0;
 
-  const monthsRemaining = Math.max(0.5, (daysInYear - daysElapsed) / 30.4);
-  // Spread the full projected annual tax across the months left in the
-  // year, so by year-end the user has reserved the whole liability.
-  // Fewer months remaining → a larger monthly reserve (catch-up), which
-  // is the intent. (The previous formula multiplied then divided by
-  // monthsRemaining, which cancelled out to a constant totalTax/12 and
-  // badly under-reserved late in the year.)
-  const monthlyReserve = totalTax / monthsRemaining;
+  const daysRemaining = Math.max(0, daysInYear - daysElapsed);
+  const monthsRemaining = Math.max(0.5, daysRemaining / 30.4);
+  // What to set aside per month FROM NOW ON: the share of the year's tax
+  // that belongs to the days still ahead, spread over them. The tax on the
+  // months already gone was earned (and, following this page, set aside) in
+  // those months. The earlier `totalTax / monthsRemaining` put the WHOLE
+  // year's tax on the months left, so a user who followed it every month
+  // reserved about four times the tax by December. For a steady earner this
+  // is about totalTax / 12 whatever the month; the catch-up for a user who
+  // set nothing aside is the whole totalTax, shown next to it.
+  const remainingReserve = daysInYear > 0 ? totalTax * Math.min(1, daysRemaining / daysInYear) : 0;
+  const monthlyReserve = daysRemaining > 0 ? remainingReserve / (daysRemaining / 30.4) : 0;
 
   return {
     projectedIncome,
@@ -155,6 +208,7 @@ export function projectAnnualTax(inputs: ProjectionInputs): ProjectionResult {
     effectiveRate,
     setAsidePct,
     monthsRemaining,
+    remainingReserve,
     monthlyReserve,
   };
 }

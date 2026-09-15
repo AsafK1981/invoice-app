@@ -282,6 +282,22 @@ export function previousEquivalentRange(p: Period, today = new Date()): { start:
   return { start: prevRange.start, end: clipped < prevRange.end ? clipped : prevRange.end };
 }
 
+/**
+ * The dashboard's "last N calendar months, including this one" as a Period,
+ * so it can be compared through {@link previousEquivalentRange}: the month
+ * itself for N = 1 (compared day-for-day with last month), otherwise a range
+ * from the first of the earliest month to today (compared with the equally
+ * long window before it). Comparing a running month with a whole previous
+ * one showed a red "↓ 80%" on the 5th of every month.
+ */
+export function trailingMonthsPeriod(months: number, today = new Date()): Period {
+  const t = toIsraelDate(today);
+  if (months <= 1) return t.slice(0, 7);
+  const [y, m] = t.split("-").map(Number);
+  const first = new Date(Date.UTC(y, m - 1 - (months - 1), 1, 12));
+  return makeRange(`${first.getUTCFullYear()}-${pad2(first.getUTCMonth() + 1)}-01`, t);
+}
+
 export function inRange(date: string, r: { start: string; end: string }): boolean {
   return date >= r.start && date <= r.end;
 }

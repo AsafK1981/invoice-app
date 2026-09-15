@@ -13,7 +13,7 @@ import { buildExpenseReport, expenseCategories, type ExpenseKind, type ExpenseRe
 import { periodLabel, type Period } from "@/lib/report-period";
 import { downloadXlsx, sheet, type XlsxColumn } from "@/lib/xlsx-export";
 import { todayInIsrael } from "@/lib/date";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { formatCurrency, formatDate, hebrewCount } from "@/lib/format";
 
 /** Which amounts the table shows. עוסק פטור never sees this switch. */
 type VatView = "full" | "gross" | "net";
@@ -81,7 +81,7 @@ export default function ExpensesReportPage() {
           ...meta,
           name: "הוצאות",
           title: "דוח הוצאות",
-          countLabel: `${report.rows.length} הוצאות`,
+          countLabel: hebrewCount(report.rows.length, "הוצאה אחת", "הוצאות"),
           rows: report.rows,
           columns: [
             { header: "תאריך", value: (r) => r.date, kind: "date" },
@@ -96,7 +96,7 @@ export default function ExpensesReportPage() {
             ...amountCols<ExpenseReportRow>(),
             ...(hasVat ? [{ header: "מספר הקצאה", value: (r: ExpenseReportRow) => r.allocationNumber }] : []),
           ],
-          notes: filesVat && report.gapCount > 0 ? [`${report.gapCount} הוצאות חסרות פרטים שנדרשים כדי שמע״מ יכיר בתשומה.`] : undefined,
+          notes: filesVat && report.gapCount > 0 ? [report.gapCount === 1 ? "להוצאה אחת חסרים פרטים שנדרשים כדי שמע״מ יכיר בתשומה." : `ל-${report.gapCount} הוצאות חסרים פרטים שנדרשים כדי שמע״מ יכיר בתשומה.`] : undefined,
         }),
         sheet<ExpenseCategoryTotal>({
           ...meta,
@@ -192,7 +192,9 @@ export default function ExpensesReportPage() {
                 <div role="note" className="flex gap-3 rounded-xl bg-amber-50 border border-amber-200 p-4 text-amber-900 no-print">
                   <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" aria-hidden="true" />
                   <p className="text-sm leading-relaxed">
-                    ל-{report.gapCount} הוצאות חסרים פרטים שמע״מ דורש כדי להכיר בתשומה (מספר עוסק, מספר חשבונית או מספר הקצאה). הן מסומנות בטבלה.{" "}
+                    {report.gapCount === 1
+                      ? "להוצאה אחת חסרים פרטים שמע״מ דורש כדי להכיר בתשומה (מספר עוסק, מספר חשבונית או מספר הקצאה). היא מסומנת בטבלה."
+                      : `ל-${report.gapCount} הוצאות חסרים פרטים שמע״מ דורש כדי להכיר בתשומה (מספר עוסק, מספר חשבונית או מספר הקצאה). הן מסומנות בטבלה.`}{" "}
                     <Link href="/expenses" className="font-semibold underline">להשלמה בעמוד ההוצאות</Link>
                   </p>
                 </div>

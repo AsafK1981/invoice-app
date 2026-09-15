@@ -33,15 +33,27 @@ describe("summarizeIncome", () => {
     expect(s.documentCount).toBe(0);
   });
 
-  // The regression the coding council caught on 2026-08-08: the assistant's
-  // first income tool counted credit notes without a status check, while every
-  // revenue screen requires paid for credit notes too. A freshly created
-  // credit note defaults to "sent", so the mismatch was immediate, not
-  // theoretical.
-  it("ignores an unpaid (sent) credit note - the 2026-08-08 council bug", () => {
+  // The approved revenue rule (owner decision, 2026-09-15): income = paid
+  // revenue documents MINUS credit notes. The editor saves every credit note
+  // as "sent" and nothing ever marks it "paid", so the old gate (paid only,
+  // asserted here since 2026-08-08) meant a real credit note NEVER reduced
+  // income on the dashboard or in the assistant, while /reports/profit-loss
+  // and the advances report did subtract it. A sent credit note now counts
+  // by its issue date; drafts and cancelled ones still do not.
+  it("subtracts a sent credit note - credit notes are never marked paid", () => {
     const s = summarizeIncome([
       row({ total: 100 }),
       row({ type: "credit_note", status: "sent", total: -40 }),
+    ]);
+    expect(s.total).toBe(60);
+    expect(s.documentCount).toBe(2);
+  });
+
+  it("ignores a draft or cancelled credit note", () => {
+    const s = summarizeIncome([
+      row({ total: 100 }),
+      row({ type: "credit_note", status: "draft", total: -40 }),
+      row({ type: "credit_note", status: "cancelled", total: -40 }),
     ]);
     expect(s.total).toBe(100);
     expect(s.documentCount).toBe(1);

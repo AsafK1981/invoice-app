@@ -1,16 +1,16 @@
-import { isCountableRevenue } from "./types";
-import type { DocumentType } from "./types";
+import { countsAsIncome } from "./revenue";
+import type { DocumentStatus, DocumentType } from "./types";
 
 /**
  * Aggregates a period's income the way the rest of the app counts it.
  *
- * This lives here rather than inline in /api/assistant because the first
- * version of that route restated the counting rule instead of calling
- * isCountableRevenue, and got it wrong: it counted credit notes regardless of
- * status, so an unpaid credit note made the assistant quote a lower number than
- * the dashboard for the same period. The rule is one gate -
- * `status === "paid" && isCountableRevenue(doc)` - and it belongs in one place
- * with tests on it.
+ * This lives here rather than inline in /api/assistant so the assistant
+ * quotes the same number as the dashboard. The rule is the app-wide one in
+ * revenue.ts (`countsAsIncome`): paid revenue documents MINUS credit notes.
+ * A credit note is stored negative and saved "sent", never "paid", so it
+ * counts by issue date whatever its status. (Until 2026-09-15 this gate let
+ * only paid documents through, which never subtracted a real credit note;
+ * the owner settled the rule that day.)
  */
 export interface IncomeRow {
   type: string;
@@ -41,9 +41,9 @@ function round2(n: number): number {
 export function summarizeIncome(rows: IncomeRow[], topClientLimit = 10): IncomeSummary {
   const countable = rows.filter(
     (d) =>
-      d.status === "paid" &&
-      isCountableRevenue({
+      countsAsIncome({
         type: d.type as DocumentType,
+        status: d.status as DocumentStatus,
         convertedToId: d.converted_to_id ?? undefined,
       }),
   );

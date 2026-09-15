@@ -178,3 +178,14 @@ export function formatMonth(date: string): string {
     timeZone: "Asia/Jerusalem",
   }).format(parsed);
 }
+
+/**
+ * A Hebrew count phrase with the singular said the way a person says it:
+ * `hebrewCount(1, "מסמך אחד", "מסמכים")` is "מסמך אחד", any other count is
+ * the numeral and the plural ("0 מסמכים", "3 מסמכים"). The singular phrase is
+ * passed whole because the numeral's gender follows the noun (הוצאה אחת,
+ * לקוח אחד). Replaces "1 מסמכים", which read as a machine wrote it.
+ */
+export function hebrewCount(count: number, one: string, many: string): string {
+  return count === 1 ? one : `${count} ${many}`;
+}
