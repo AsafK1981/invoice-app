@@ -108,7 +108,8 @@ describe("buildPeriodicFiling", () => {
     expect(f.income.turnover).toEqual({ count: 2, net: 500, vat: 90, gross: 590 });
     expect(f.expenses.rows).toHaveLength(2);
     expect(f.expenses.totals.vat).toBe(216);
-    expect(f.deadlines).toEqual({ regular: "2026-09-15", online: "2026-09-19", detailed: "2026-09-23" });
+    // Yom Kippur moved July-August 2026 to 24.9 in the Authority's table, for all three.
+    expect(f.deadlines).toEqual({ regular: "2026-09-24", online: "2026-09-24", detailed: "2026-09-24", official: true });
   });
 
   it("marks which rows feed the VAT return and which feed the advance", () => {
@@ -252,7 +253,10 @@ describe("filing period helpers", () => {
   });
 
   it("deadlines roll into the next year after December", () => {
-    expect(filingDeadlines("2026-12-31")).toEqual({ regular: "2027-01-15", online: "2027-01-19", detailed: "2027-01-23" });
+    // December 2026 is in the Tax Authority's 2026 table.
+    expect(filingDeadlines("2026-12-31")).toEqual({ regular: "2027-01-18", online: "2027-01-19", detailed: "2027-01-26", official: true });
+    // December 2027 is not published yet: statutory day, weekend rule only.
+    expect(filingDeadlines("2027-12-31")).toMatchObject({ official: false });
   });
 });
 

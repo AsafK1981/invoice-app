@@ -39,6 +39,7 @@ import { TopClients } from "@/components/top-clients";
 import { QuoteAging } from "@/components/quote-aging";
 import { OnboardingChecklist } from "@/components/onboarding-checklist";
 import { ExemptCeilingTracker } from "@/components/exempt-ceiling-tracker";
+import { NextFilingCard } from "@/components/next-filing-card";
 import { RecurringDueAlert } from "@/components/recurring-due-alert";
 import { InvoiceProposalCard } from "@/components/invoice-proposal-card";
 import { BetaBanner } from "@/components/beta-banner";
@@ -338,6 +339,8 @@ export default function DashboardPage() {
       />
 
       <ExemptCeilingTracker business={business} documents={documents} />
+
+      {ready && business.id && <NextFilingCard business={business} />}
 
       <InvoiceProposalCard />
 

@@ -14,7 +14,9 @@ export type NotificationKind =
   | "proposal_ready"
   | "whatsapp_reminder_ready"
   // ניהול ספרים 25(ו): first week of a quarter, no backup taken yet.
-  | "backup_reminder";
+  | "backup_reminder"
+  // A filing deadline (VAT, advances, annual report...) is a few days away; /obligations.
+  | "filing_deadline";
 
 export interface NotificationRow {
   id: string;
@@ -64,6 +66,7 @@ export const NOTIFICATION_KIND_LABELS: Record<NotificationKind, string> = {
   proposal_ready: "חשבונית מוכנה לאישור",
   whatsapp_reminder_ready: "תזכורת בוואטסאפ מוכנה לשליחה",
   backup_reminder: "תזכורת לגיבוי הרבעוני",
+  filing_deadline: "מועד הגשה מתקרב",
 };
 
 /** Same-origin guard for href values stored in notifications. Never let a

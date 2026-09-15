@@ -127,7 +127,7 @@ export default function PeriodicFilingPage() {
           ],
           notes: [
             "הסכומים בשקלים שלמים, כפי שהטופס המקוון דורש.",
-            `מועד אחרון: ${formatDate(filing.deadlines.regular)}. בדיווח ותשלום מקוון: ${formatDate(filing.deadlines.online)}. חייבי דיווח מפורט: ${formatDate(filing.deadlines.detailed)}.`,
+            deadlineSentence(filing.deadlines, filing.filesVat),
             ...(figuresUnreliable ? ["שים לב: נמצאו בעיות בנתוני המע״מ לתקופה. יש לתקן אותן לפני הדיווח."] : []),
           ],
         }),
@@ -263,10 +263,14 @@ export default function PeriodicFilingPage() {
                     <b>התקופה עדיין לא הסתיימה.</b> הסכומים יתעדכנו עד {formatDate(filing.range.end)}.
                   </>
                 )}{" "}
-                מועד אחרון: {formatDate(filing.deadlines.regular)}. בדיווח ותשלום באתר רשות המסים: עד {formatDate(filing.deadlines.online)}
-                {hasVat && <>, וחייבי דיווח מפורט עד {formatDate(filing.deadlines.detailed)}</>}.
+                {deadlineSentence(filing.deadlines, hasVat)}
               </p>
-              <p className="text-xs mt-1 opacity-90">מועד שחל בחג או בשבת נדחה לפי לוח המועדים שרשות המסים מפרסמת בכל שנה.</p>
+              <p className="text-xs mt-1 opacity-90">
+                {filing.deadlines.official
+                  ? "התאריכים לפי לוח המועדים שרשות המסים פרסמה, כולל דחיות בגלל חגים."
+                  : "רשות המסים עוד לא פרסמה את לוח המועדים לתקופה הזו. מועד שחל בחג עשוי לזוז."}{" "}
+                <Link href="/obligations" className="no-print font-semibold underline">לכל מועדי ההגשה</Link>
+              </p>
             </div>
 
             {/* ---------- VAT data checks: the same panel /reports/vat shows ---------- */}
@@ -579,6 +583,14 @@ function FoldWhenLong({ count, blocking, children }: { count: number; blocking: 
       {open && children}
     </>
   );
+}
+
+/** "מועד אחרון: 24.09.2026." with the online and detailed dates only when they differ. */
+function deadlineSentence(d: { regular: string; online: string; detailed: string }, withDetailed: boolean): string {
+  const parts = [`מועד אחרון: ${formatDate(d.regular)}.`];
+  if (d.online !== d.regular) parts.push(`בדיווח ותשלום באתר רשות המסים: עד ${formatDate(d.online)}.`);
+  if (withDetailed && d.detailed !== d.regular) parts.push(`חייבי דיווח מפורט: עד ${formatDate(d.detailed)}.`);
+  return parts.join(" ");
 }
 
 const docCount = (n: number) => (n === 1 ? "מסמך אחד" : `${n} מסמכים`);

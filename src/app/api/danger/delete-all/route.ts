@@ -318,6 +318,17 @@ export async function POST(req: NextRequest) {
     deleted.assistant_memory = res.count || 0;
   });
 
+  // Filing calendar settings and "filed" marks describe this business's
+  // obligations and history; a full wipe starts the calendar from defaults.
+  await step("filing_preferences", async () => {
+    const res = await admin
+      .from("filing_preferences")
+      .delete({ count: "exact" })
+      .eq("business_id", businessId);
+    assertOk(res, "delete filing_preferences");
+    deleted.filing_preferences = res.count || 0;
+  });
+
   // 11) Storage cleanup; delete in chunks so we don't blow past Supabase's
   // per-call limit.
   await step("storage_attachments", async () => {

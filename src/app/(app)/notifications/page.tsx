@@ -16,6 +16,7 @@ import {
   BellRing,
   MessageCircle,
   HardDriveDownload,
+  CalendarCheck,
 } from "lucide-react";
 import {
   useNotifications,
@@ -44,6 +45,7 @@ const KIND_STYLE: Record<
   proposal_ready: { icon: Sparkles, iconColor: "text-violet-700", bg: "bg-violet-50 border-violet-200" },
   whatsapp_reminder_ready: { icon: MessageCircle, iconColor: "text-emerald-700", bg: "bg-emerald-50 border-emerald-200" },
   backup_reminder: { icon: HardDriveDownload, iconColor: "text-stone-700", bg: "bg-stone-50 border-stone-200" },
+  filing_deadline: { icon: CalendarCheck, iconColor: "text-emerald-700", bg: "bg-emerald-50 border-emerald-200" },
 };
 
 

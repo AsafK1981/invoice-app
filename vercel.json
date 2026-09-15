@@ -25,6 +25,10 @@
       "schedule": "20 8 * * *"
     },
     {
+      "path": "/api/cron/filing-reminders",
+      "schedule": "0 6 * * *"
+    },
+    {
       "path": "/api/cron/backup-reminder",
       "schedule": "15 5 1-7 1,4,7,10 *"
     }

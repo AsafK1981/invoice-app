@@ -20,6 +20,7 @@ import { computeAdvance, countsForTurnover, type AdvanceComputation } from "./it
 import { buildExpenseReport, type ExpenseReport } from "./expense-report";
 import { periodLabel, type Period } from "./report-period";
 import { toIsraelDate } from "./date";
+import { periodicDeadline } from "./ita/filing-calendar";
 
 export interface FilingRange {
   /** Inclusive ISO date. */
@@ -154,23 +155,25 @@ export function vatReportModeFor(p: Period, today = new Date()): "this_2m" | "la
 }
 
 /**
- * Deadlines for a period ending on `rangeEnd`. The statutory date is the 15th
- * of the next month; reporting AND paying online on the Tax Authority's site
- * extends it to the 19th, and a דיווח מפורט (PCN874) filer gets the 23rd.
- * When a date falls on a holiday or rest day the Authority publishes a shifted
- * calendar each year; the page says so rather than guessing the shift.
+ * Deadlines for a period ending on `rangeEnd`, from the shared filing calendar
+ * (src/lib/ita/filing-calendar.ts): the Tax Authority's published table when
+ * it covers the month (holiday shifts included, e.g. July-August 2026 is due
+ * 24.9.2026), otherwise the statutory 15th / 23rd moved off a weekend. Online
+ * reporting and payment runs to the 19th when that is later.
  */
 export interface FilingDeadlines {
   regular: string;
   online: string;
   detailed: string;
+  /** True when the dates come from the Authority's published table. */
+  official: boolean;
 }
 
 export function filingDeadlines(rangeEnd: string): FilingDeadlines {
-  const [y, m] = rangeEnd.split("-").map(Number);
-  const year = m === 12 ? y + 1 : y;
-  const month = pad2(m === 12 ? 1 : m + 1);
-  return { regular: `${year}-${month}-15`, online: `${year}-${month}-19`, detailed: `${year}-${month}-23` };
+  const ym = rangeEnd.slice(0, 7);
+  const periodic = periodicDeadline("periodic", ym);
+  const detailed = periodicDeadline("detailed", ym);
+  return { regular: periodic.date, online: periodic.onlineDate ?? periodic.date, detailed: detailed.date, official: periodic.official };
 }
 
 /** One line of the "what to type" list, whole shekels. */

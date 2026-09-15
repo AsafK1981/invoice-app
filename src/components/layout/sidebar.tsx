@@ -25,6 +25,7 @@ import {
   Landmark,
   Bell,
   CalendarClock,
+  CalendarCheck,
   Globe,
   Import,
   Palette,
@@ -66,6 +67,9 @@ const navItems: NavItem[] = [
   { href: "/notifications", label: "התראות", icon: Bell, tone: "orange" },
   { href: "/reminders", label: "תזכורות", icon: CalendarClock, tone: "orange" },
   { href: "/reports", label: "דו״חות", icon: TrendingUp, tone: "emerald" },
+  // Every filing deadline (VAT, advances, national insurance, annual report)
+  // on one calendar with what, where and how (Asaf, 2026-09-15).
+  { href: "/obligations", label: "חובות הגשה", icon: CalendarCheck, tone: "emerald" },
   // A first-time user who arrives from Invoice4U / Morning / iCount looks for
   // "where do I bring my data in" before anything else, and used to find it
   // only as a small button inside /documents (2026-08-25: one watched a new
