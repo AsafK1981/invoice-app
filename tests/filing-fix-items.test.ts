@@ -117,6 +117,32 @@ describe("groupRepeatedNotes", () => {
     expect(notes[1]).toMatchObject({ title: "title:client_number_not_israeli", control: { kind: "open_client", clientId: "x" } });
   });
 
+  it("keeps every member's own control inside the group: 2+ foreign-id clients keep their client links", () => {
+    const c = createFixCollector((code) => code);
+    c.put("note:client_number_not_israeli:x", "note", "client_number_not_israeli", { kind: "open_client", clientId: "x" }, "זר", "Acme");
+    c.put("note:client_number_not_israeli:y", "note", "client_number_not_israeli", { kind: "open_client", clientId: "y" }, "זר", "Globex");
+    const [group] = groupRepeatedNotes(c.items());
+    expect(group).toMatchObject({ title: "2 לקוחות עם מספר זיהוי זר", control: { kind: "none" } });
+    expect(group.members?.map((m) => [m.labels, m.control])).toEqual([
+      [["Acme"], { kind: "open_client", clientId: "x" }],
+      [["Globex"], { kind: "open_client", clientId: "y" }],
+    ]);
+  });
+
+  it("2+ references with several digit groups are one group whose members keep an inline reference field", () => {
+    const m = model([doc()], [
+      expense({ id: "r1", reference: "2024/7788", amount: 2360, vatAmount: 360 }),
+      expense({ id: "r2", reference: "12-3456", amount: 2360, vatAmount: 360, date: "2026-02-02" }),
+    ]);
+    expect(m.notes).toHaveLength(1);
+    expect(m.notes[0]).toMatchObject({ code: "reference_multiple_groups", title: "2 אסמכתאות עם כמה קבוצות ספרות" });
+    expect(m.notes[0].members?.map((i) => i.control)).toEqual([
+      { kind: "supplier_reference", expenseId: "r1", current: "2024/7788" },
+      { kind: "supplier_reference", expenseId: "r2", current: "12-3456" },
+    ]);
+    expect(m.notes[0].members?.every((i) => i.title === "באסמכתא יש כמה קבוצות ספרות")).toBe(true);
+  });
+
   it("applies to every report model: split tiers and the PCN874 model", () => {
     const c = createFixCollector((code) => code);
     c.put("a", "note", "client_number_not_israeli", { kind: "none" }, "m", "1");

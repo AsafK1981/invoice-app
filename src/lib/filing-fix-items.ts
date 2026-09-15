@@ -38,6 +38,8 @@ export interface FilingFixItem {
   labels: string[];
   control: FixControl;
   excludedVat?: number;
+  /** A counted group of repeated notes: each member keeps its own title, labels and control. */
+  members?: FilingFixItem[];
 }
 
 export interface FilingFixModel {
@@ -184,6 +186,8 @@ export function groupRepeatedNotes(notes: readonly FilingFixItem[]): FilingFixIt
       messages: [group[0].messages[0] ?? ""],
       labels: labels.length > NOTE_EXAMPLES ? [...shown, `ועוד ${labels.length - NOTE_EXAMPLES}`] : shown,
       control: { kind: "none" },
+      // Links and inline fields are never lost: the panel lists the members on demand.
+      members: group,
     });
   }
   return grouped;
@@ -247,6 +251,7 @@ export function buildFilingFixModel(
           put(`supplier_reference:${w.sourceId}`, tier, w.code, { kind: "supplier_reference", expenseId: w.sourceId, current: e?.reference ?? "" }, w.message, w.sourceLabel);
         return;
       case "reference_invalid":
+      case "reference_multiple_groups":
         put(`supplier_reference:${w.sourceId}`, tier, w.code, { kind: "supplier_reference", expenseId: w.sourceId, current: e?.reference ?? "" }, w.message, w.sourceLabel);
         return;
       case "allocation_invalid":
@@ -308,7 +313,7 @@ export function buildFilingFixModel(
       const s = suppliers.get(item.key)!;
       const count = item.control.expenseIds.length;
       item.title = `${s.hasNumber ? `מספר העוסק של ${s.name} לא תקין` : `חסר מספר עוסק ל-${s.name}`}${count > 1 ? ` (${count} הוצאות)` : ""}`;
-    } else if (item.control.kind === "supplier_reference" && item.code !== "reference_invalid") {
+    } else if (item.control.kind === "supplier_reference" && item.code !== "reference_invalid" && item.code !== "reference_multiple_groups") {
       item.title = "חסר מספר חשבונית של הספק";
     }
   }

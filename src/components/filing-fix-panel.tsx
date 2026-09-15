@@ -146,7 +146,32 @@ function FixItemCard({ item, context }: { item: FilingFixItem; context: Context 
         <p className="mt-1 text-xs leading-relaxed text-stone-700">{item.messages[0]}</p>
       )}
       <FixControlView control={item.control} context={context} />
+      {item.members && item.members.length > 0 && <GroupMembers members={item.members} context={context} />}
     </li>
+  );
+}
+
+/** The individual notes behind a counted group, each with its own link or inline field. */
+function GroupMembers({ members, context }: { members: FilingFixItem[]; context: Context }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="mt-2">
+      <button
+        type="button"
+        aria-expanded={open}
+        data-fix-members
+        onClick={() => setOpen((value) => !value)}
+        className="no-print inline-flex items-center gap-1.5 min-h-[44px] px-3 rounded-xl text-sm font-semibold bg-white border border-stone-300 text-stone-800 hover:bg-stone-50"
+      >
+        {open ? <ChevronDown className="w-4 h-4" aria-hidden="true" /> : <ChevronLeft className="w-4 h-4" aria-hidden="true" />}
+        {open ? "הסתר את הפירוט" : `הצג את כל ה-${members.length}`}
+      </button>
+      {open && (
+        <ul className="mt-2 space-y-2">
+          {members.map((member) => <FixItemCard key={member.key} item={member} context={context} />)}
+        </ul>
+      )}
+    </div>
   );
 }
 
