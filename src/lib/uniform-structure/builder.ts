@@ -290,7 +290,7 @@ export function buildUniformStructure(input: UniformInput): UniformOutput {
     // treats a D110 under a 400 header as an orphan ("לא נמצאה רשומת
     // כותרת מסמך"). A tax-invoice-receipt (320) keeps both kinds of rows.
     if (doc.type === "receipt") continue;
-    const { items: docLines, synthesized } = uniformDocumentLines(doc);
+    const { items: docLines } = uniformDocumentLines(doc);
     const lineAmounts = uniformLineAmounts({ ...doc, items: docLines });
     docLines.forEach((item, idx) => {
       d110Lines.push(
@@ -303,7 +303,8 @@ export function buildUniformStructure(input: UniformInput): UniformOutput {
           linkField: linkOf(doc),
           itemCode: uniqueItems.get(item.description.trim())?.code ?? "",
           amounts: lineAmounts[idx],
-          ...(synthesized ? { vatPercent: documentVatPercent(doc) } : {}),
+          // 1268: the document VAT rate on every line (0 for zero-rated or exempt).
+          vatPercent: documentVatPercent(doc),
         }),
       );
     });

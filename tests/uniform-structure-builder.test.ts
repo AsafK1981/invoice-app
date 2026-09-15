@@ -118,4 +118,9 @@ describe("uniform builder", () => {
     expect([line.slice(93, 123).trim(), signed(line.slice(270, 285))]).toEqual(["ייעוץ ספטמבר", 360]);
     expect(validateUniformOutput(withSubject)).toEqual([]);
   });
+  it("writes the document VAT percent on every line, 0 for a zero-rated document", () => {
+    const out = buildUniformStructure(input({ documents: [doc(), doc({ id: "z", number: 2, zeroRated: true, vat: 0, total: 100 })] }));
+    expect(lines(out.bkmvdataText, "D110").map((l) => l.slice(285, 289))).toEqual(["1800", "0000"]);
+    expect(validateUniformOutput(out)).toEqual([]);
+  });
 });
