@@ -25,8 +25,13 @@ const ROOT = new URL("../", import.meta.url);
 const MARKER = new URL(".subscriber-threshold-announced", ROOT);
 const THRESHOLD = 50;
 
+// .env.local starts with a UTF-8 BOM and uses CRLF line endings. Without stripping the BOM
+// the first key stops matching ^[A-Z0-9_]+=, and a trailing \r makes (.*)$ fail on every
+// line, so every key silently read as undefined (made invoice-app-subscriber-threshold
+// fail every run, found 2026-09-15).
 const env = readFileSync(new URL(".env.local", ROOT), "utf8")
-  .split("\n")
+  .replace(/^\uFEFF/, "")
+  .split(/\r?\n/)
   .reduce((a, line) => {
     const m = line.match(/^([A-Z0-9_]+)=(.*)$/);
     if (m) a[m[1]] = m[2].trim().replace(/^["']|["']$/g, "");

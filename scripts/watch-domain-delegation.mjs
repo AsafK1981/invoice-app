@@ -27,8 +27,13 @@ const ROOT = new URL("../", import.meta.url);
 const MARKER = new URL(".domain-delegation-announced", ROOT);
 const DOMAIN = "friendlyinvoice.co.il";
 
+// .env.local starts with a UTF-8 BOM and uses CRLF line endings. Without stripping the BOM
+// the first key stops matching ^[A-Z0-9_]+=, and a trailing \r makes (.*)$ fail on every
+// line, so every key silently read as undefined (made invoice-app-subscriber-threshold
+// fail every run, found 2026-09-15).
 const env = readFileSync(new URL(".env.local", ROOT), "utf8")
-  .split("\n")
+  .replace(/^\uFEFF/, "")
+  .split(/\r?\n/)
   .reduce((a, line) => {
     const m = line.match(/^([A-Z0-9_]+)=(.*)$/);
     if (m) a[m[1]] = m[2].trim().replace(/^["']|["']$/g, "");
@@ -54,41 +59,50 @@ async function isLive() {
   }
 }
 
-const { live, why } = await isLive();
+// Exit codes go through process.exitCode and main() returns, never process.exit():
+// exiting while undici still holds keep-alive sockets crashes Node on Windows with a
+// libuv assertion (task result 0xC0000409). Same fix as check-subscriber-threshold.mjs.
+async function main() {
+  const { live, why } = await isLive();
 
-if (!live) {
-  console.log(`[${new Date().toISOString()}] ${DOMAIN} not live yet - ${why}`);
-  process.exit(0);
+  if (!live) {
+    console.log(`[${new Date().toISOString()}] ${DOMAIN} not live yet - ${why}`);
+    return;
+  }
+
+  if (existsSync(MARKER)) {
+    console.log(`[${new Date().toISOString()}] ${DOMAIN} is live; already announced, staying quiet.`);
+    return;
+  }
+
+  const text = [
+    `✅ ${DOMAIN} עלה לאוויר - האצלת הרשם פורסמה והדומיין עונה.`,
+    ``,
+    `עכשיו אפשר להשלים את המעבר: NEXT_PUBLIC_SITE_ORIGIN ב-Vercel (production בלבד),`,
+    `לדחוף את קומיט 5026125, redeploy, ולעדכן את Site URL ב-Supabase.`,
+  ].join("\n");
+
+  if (!env.GAYA_PUSH_URL || !env.GAYA_PUSH_TOKEN) {
+    console.error("GAYA_PUSH_URL / GAYA_PUSH_TOKEN missing in .env.local - cannot push");
+    console.log(text);
+    process.exitCode = 1;
+    return;
+  }
+
+  try {
+    const res = await fetch(env.GAYA_PUSH_URL, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${env.GAYA_PUSH_TOKEN}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ text, source: "invoice-app-domain" }),
+    });
+    console.log(`[gaya push] ${res.status}`);
+    // Only mark as announced once the push actually left, so a failed push retries.
+    if (res.ok) writeFileSync(MARKER, new Date().toISOString());
+  } catch (e) {
+    console.error(`[gaya push failed] ${e.message}`);
+    process.exitCode = 1;
+    return;
+  }
 }
 
-if (existsSync(MARKER)) {
-  console.log(`[${new Date().toISOString()}] ${DOMAIN} is live; already announced, staying quiet.`);
-  process.exit(0);
-}
-
-const text = [
-  `✅ ${DOMAIN} עלה לאוויר - האצלת הרשם פורסמה והדומיין עונה.`,
-  ``,
-  `עכשיו אפשר להשלים את המעבר: NEXT_PUBLIC_SITE_ORIGIN ב-Vercel (production בלבד),`,
-  `לדחוף את קומיט 5026125, redeploy, ולעדכן את Site URL ב-Supabase.`,
-].join("\n");
-
-if (!env.GAYA_PUSH_URL || !env.GAYA_PUSH_TOKEN) {
-  console.error("GAYA_PUSH_URL / GAYA_PUSH_TOKEN missing in .env.local - cannot push");
-  console.log(text);
-  process.exit(1);
-}
-
-try {
-  const res = await fetch(env.GAYA_PUSH_URL, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${env.GAYA_PUSH_TOKEN}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ text, source: "invoice-app-domain" }),
-  });
-  console.log(`[gaya push] ${res.status}`);
-  // Only mark as announced once the push actually left, so a failed push retries.
-  if (res.ok) writeFileSync(MARKER, new Date().toISOString());
-} catch (e) {
-  console.error(`[gaya push failed] ${e.message}`);
-  process.exit(1);
-}
+await main();
