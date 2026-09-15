@@ -273,7 +273,7 @@ export default function ObligationsPage() {
                         {events.map((o) => (
                           <span
                             key={o.key}
-                            className={`block truncate rounded-md border px-1 text-[11px] leading-4 font-semibold ${filed[o.key] ? "bg-stone-50 text-stone-500 border-stone-200 line-through" : ""}`}
+                            className={`block truncate rounded-md border px-0.5 text-[11px] leading-4 font-semibold ${filed[o.key] ? "bg-stone-50 text-stone-500 border-stone-200 line-through" : ""}`}
                             style={filed[o.key] ? undefined : toneStyle(o.authority)}
                           >
                             {OBLIGATIONS[o.id].short}

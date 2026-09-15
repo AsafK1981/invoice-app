@@ -60,7 +60,7 @@ export function TopClients({ documents, limit = 5 }: Props) {
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-stone-900 truncate">{client.name}</p>
                   <p className="text-xs text-stone-600">
-                    {client.count} {client.count === 1 ? "מסמך" : "מסמכים"}
+                    {client.count === 1 ? "מסמך אחד" : `${client.count} מסמכים`}
                   </p>
                 </div>
               </div>
