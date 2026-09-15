@@ -48,26 +48,33 @@ export function Form1301Helper({ headless = false, year, business, documents, ex
     const vatInput = expenses.reduce((s, e) => s + (e.vatAmount || 0), 0);
     const netProfit = grossIncome - (totalExpenses - vatInput);
 
+    // Field numbers verified 2026-09-15 against the Tax Authority's own 2025
+    // forms (1301-2025 and 1320-2025 PDFs on gov.il): business PROFIT goes in
+    // 150 (the registered spouse) or 170 (the other spouse); turnover is the
+    // disclosure field 238 / 239 and is not part of the tax calculation;
+    // expenses are not a 1301 field at all, they are itemised on נספח א
+    // (טופס 1320), whose bottom line is the profit carried to 150 / 170.
+    // 158 / 172 are SALARY fields and must never be offered here.
     const rows: FieldRow[] = [
       {
-        code: "150 / 158",
-        label: "מחזור עסקי (הכנסות מעסק/משלח יד לפני מע״מ)",
+        code: "238 / 239",
+        label: "מחזור עסקי מעסק או משלח יד, ללא מע״מ",
         value: grossIncome,
-        note: "מסמכים ששולמו פחות חשבוניות זיכוי, ללא מע״מ",
+        note: "שדה גילוי בלבד, לא נכנס לחישוב המס. 238 לבן הזוג הרשום, 239 לבן או בת הזוג. מסמכים ששולמו פחות חשבוניות זיכוי.",
       },
       {
-        code: "170",
+        code: "טופס 1320",
         label: "הוצאות מוכרות",
         value: business.businessType === "authorized" ? totalExpenses - vatInput : totalExpenses,
         note: business.businessType === "authorized"
-          ? "סה״כ הוצאות ללא רכיב המע״מ (ניתן לקיזוז בנפרד)"
-          : "סה״כ הוצאות שנרשמו במערכת",
+          ? "אין שדה אחד כזה ב-1301: ההוצאות מפורטות שורה-שורה בנספח א (טופס 1320). כאן בלי רכיב המע״מ, שמקוזז בדוח המע״מ."
+          : "אין שדה אחד כזה ב-1301: ההוצאות מפורטות שורה-שורה בנספח א (טופס 1320). זה הסכום הכולל שנרשם במערכת.",
       },
       {
-        code: "172",
-        label: "רווח נקי מעסק לפני מס",
+        code: "150 / 170",
+        label: "הכנסה מעסק או משלח יד (הרווח אחרי הוצאות)",
         value: netProfit,
-        note: "מחזור פחות הוצאות מוכרות",
+        note: "150 לבן הזוג הרשום, 170 לבן או בת הזוג. זה הסכום שבשורה התחתונה של טופס 1320, לפני מס.",
       },
     ];
 
