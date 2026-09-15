@@ -96,6 +96,15 @@ describe("A. convert / duplicate / credit note load the pricing context", () => 
     expect(editorTotal(p, 18).total).toBe(118);
   });
 
+  it("a foreign-currency quote or proforma converts at the new document's rate, not the quote's", () => {
+    for (const type of ["quote", "proforma"]) {
+      const src = { ...invoice, type, currency: "USD", exchange_rate: 3.5, discount_amount: null } as SourceDocRow;
+      const p = buildSourcePrefill(src, invoiceItems, { targetType: "tax_invoice_receipt", isConvert: true });
+      expect(p.currency).toBe("USD");
+      expect(p.pinnedExchangeRate, type).toBeNull();
+    }
+  });
+
   it("a duplicate takes the day's exchange rate and no convert note", () => {
     const src = { ...invoice, currency: "EUR", exchange_rate: 4 } as SourceDocRow;
     const p = buildSourcePrefill(src, invoiceItems, { targetType: "tax_invoice", isConvert: false });

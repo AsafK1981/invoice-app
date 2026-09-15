@@ -213,8 +213,19 @@ export function buildSourcePrefill(
     zeroRated: Boolean(src.zero_rated),
     roundTotal: Boolean(src.round_total),
     language: src.language === "en" ? "en" : "he",
+    // Only a VAT document's rate is the rate of a real transaction: a receipt
+    // for a tax invoice, or a credit note reversing it, keeps that rate so the
+    // shekel figures match the invoice. A quote or proforma was never a
+    // transaction, so converting one takes the rate of the new document's date
+    // like any new document (council 2026-09-15).
     pinnedExchangeRate:
-      mode !== "duplicate" && currency !== "ILS" && rate !== null && rate > 0 ? rate : null,
+      mode !== "duplicate" &&
+      (src.type === "tax_invoice" || src.type === "tax_invoice_receipt") &&
+      currency !== "ILS" &&
+      rate !== null &&
+      rate > 0
+        ? rate
+        : null,
     discountAmount,
     withholdingRate,
     expectedTotal: mode === "convert" && total !== null ? Math.abs(total) : null,
