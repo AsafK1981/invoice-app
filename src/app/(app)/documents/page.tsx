@@ -10,6 +10,8 @@ import { DraftsList } from "@/components/drafts-list";
 import { BankImportModal } from "@/components/bank-import-modal";
 import { formatCurrencyWhole } from "@/lib/format";
 import { StoreLoadError } from "@/components/store-load-error";
+import { countsAsIncome } from "@/lib/revenue";
+import { computeClientAccount } from "@/lib/aging";
 
 export default function DocumentsPage() {
   const { documents, error: loadError, retry } = useDocuments();
@@ -35,25 +37,15 @@ export default function DocumentsPage() {
     [documents],
   );
 
+  // The same two rules every other screen uses, so this header can never
+  // disagree with the dashboard or "פתוח לגבייה": paid = income by the approved
+  // revenue rule (a converted quote is not counted next to its receipt, credit
+  // notes subtract), outstanding = the client-account balance (no quotes, no
+  // converted documents, credit notes net the invoice they name).
   const totals = useMemo(() => {
     let paid = 0;
-    let outstanding = 0;
-    for (const d of documents) {
-      if (d.status === "draft" || d.status === "cancelled") continue;
-      // Credit notes are stored ALREADY NEGATIVE on save (receipt-editor.tsx
-      // applies `sign = -1`), so a plain sum already subtracts them; applying
-      // a sign here again would double-negate and turn a refund into extra
-      // "paid" total. `totalIls` normalizes foreign-currency documents into
-      // shekels so they don't get summed at their native face value.
-      if (d.status === "paid") paid += (d.totalIls ?? d.total);
-      else if (d.status === "sent" && (d.type === "quote" || d.type === "proforma" || d.type === "tax_invoice")) {
-        // "outstanding" = sent but unpaid quotes/invoices → money potentially
-        // owed to you. Receipts and tax_invoice_receipts are paid by definition
-        // and aren't double-counted here.
-        outstanding += (d.totalIls ?? d.total);
-      }
-    }
-    return { paid, outstanding };
+    for (const d of documents) if (countsAsIncome(d)) paid += d.totalIls ?? d.total;
+    return { paid, outstanding: computeClientAccount(documents).balance };
   }, [documents]);
 
   return (
