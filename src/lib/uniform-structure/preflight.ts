@@ -3,6 +3,7 @@ import { normalizeBusinessNumber } from "../israeli-id";
 import { validPcnDate, validPcnVatId } from "../ita/pcn874";
 import { foreignIlsConsistent, isForeignCurrency, uniformAmounts } from "./amounts";
 import { uniformCustomerVat } from "./customer-vat";
+import { foreignRateProblem } from "../fx-rate-sanity";
 import type { UniformInput, UniformOutput } from "./builder";
 import type { UniformIssue, UniformIssueCode } from "./issues";
 import { DOC_TYPE_CODE } from "./records";
@@ -74,6 +75,10 @@ export function validateUniformInput(input: UniformInput): UniformIssue[] {
       // Native amounts stored as shekels (a missing conversion) look complete
       // but would report a USD 100 invoice as 100 shekels: the snapshots must
       // match the rate and add up, each within one agora.
+      // A rate of exactly 1 (editor and database default) or far off the known
+      // range: the snapshots are probably native amounts. A data fix.
+      else if (foreignRateProblem(d.currency, rate))
+        add("foreign_currency_rate_suspect", "שער ההמרה של המסמך שווה ל-1 או רחוק מהשער המקובל למטבע, ולכן סכומי השקל שלו כנראה שגויים. נדרש תיקון נתונים לפני הייצוא.", where);
       else if ([d.subtotalIls, d.vatIls, d.totalIls].every(finite) && !foreignIlsConsistent(d))
         add("foreign_currency_ils_mismatch", "סכומי השקל השמורים של מסמך במטבע חוץ אינם תואמים לשער ההמרה או אינם מסתכמים לסכום הכולל. נדרש תיקון נתונים לפני הייצוא.", where);
     } else if ([[d.subtotalIls, d.subtotal], [d.vatIls, d.vat], [d.totalIls, d.total]].some(([ils, original]) => ils != null && (!Number.isFinite(ils) || Math.abs(ils - original!) > 0.01))) {

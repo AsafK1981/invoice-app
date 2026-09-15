@@ -165,11 +165,18 @@ describe("PCN874 classification", () => {
 
   it("uses the shekel snapshot for foreign-currency documents", () => {
     const r = build(
-      [doc({ currency: "USD", subtotal: 1000, vat: 180, total: 1180, subtotalIls: 3700, vatIls: 666, totalIls: 4366 })],
+      [doc({ currency: "USD", exchangeRate: 3.7, subtotal: 1000, vat: 180, total: 1180, subtotalIls: 3700, vatIls: 666, totalIls: 4366 })],
       [],
     );
     expect(r.transactions[0].invoiceSum).toBe(3700);
     expect(r.transactions[0].totalVat).toBe(666);
+  });
+
+  it("blocks a foreign-currency document whose rate is missing, exactly 1 or implausible", () => {
+    for (const exchangeRate of [undefined, 1, 37]) {
+      const r = build([doc({ id: "fx", currency: "USD", exchangeRate, subtotal: 1000, vat: 180, total: 1180, subtotalIls: 1000, vatIls: 180, totalIls: 1180 })], []);
+      expect(r.warnings).toContainEqual(expect.objectContaining({ sourceId: "fx", code: "foreign_currency_rate_invalid", level: "error" }));
+    }
   });
 
   it("skips drafts, cancelled documents, receipts and documents outside the period", () => {

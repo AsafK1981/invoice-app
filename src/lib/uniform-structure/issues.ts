@@ -21,6 +21,7 @@ export type UniformIssueCode =
   | "foreign_currency_missing_ils"
   | "foreign_currency_invalid"
   | "foreign_currency_ils_mismatch"
+  | "foreign_currency_rate_suspect"
   | "ils_mismatch"
   | "amount_invalid"
   | "total_mismatch"
@@ -87,6 +88,7 @@ export const UNIFORM_FIX_TITLES: Record<UniformIssueCode, string> = {
   foreign_currency_missing_ils: "חסרים סכומים בשקלים למסמך במטבע חוץ",
   foreign_currency_invalid: "חסר שער המרה או קוד מטבע למסמך במטבע חוץ",
   foreign_currency_ils_mismatch: "סכומי השקל של מסמך במטבע חוץ לא תואמים לשער",
+  foreign_currency_rate_suspect: "שער ההמרה של מסמך במטבע חוץ לא סביר",
   ils_mismatch: "סכומי השקל השמורים לא תואמים למסמך",
   amount_invalid: "סכום חסר או גדול מדי לשדות הקובץ",
   total_mismatch: "הסכום הכולל לא תואם לסכום לפני מע״מ, המע״מ והעיגול",

@@ -58,6 +58,7 @@
 import type { Business, Expense, InvoiceDocument } from "../types";
 import { formatDate } from "../format";
 import { BUSINESS_NUMBER_MARKS, isValidIsraeliIdNumber, normalizeBusinessNumber } from "../israeli-id";
+import { foreignRateProblem } from "../fx-rate-sanity";
 import { allocationRequiredThreshold } from "../tax-authority";
 
 export type PcnEntryType = "S" | "L" | "M" | "Y" | "I" | "T" | "K" | "R" | "P" | "H" | "C";
@@ -143,6 +144,7 @@ export type PcnIssueCode =
   | "type_sign_mismatch"
   | "zero_rated_with_vat"
   | "foreign_currency_missing_ils"
+  | "foreign_currency_rate_invalid"
   | "customer_number_invalid"
   | "customer_number_missing"
   | "supplier_number_invalid"
@@ -325,6 +327,10 @@ function validateSources(documents: InvoiceDocument[], expenses: Expense[], rang
     if (isDoc && d.zeroRated && vat !== 0) add("zero_rated_with_vat", "המסמך סומן בשיעור אפס אך כולל מע״מ. בדוק את הסיווג והסכומים לפני הייצוא.");
     if (isDoc && d.currency && d.currency !== "ILS" && (!Number.isFinite(d.subtotalIls) || !Number.isFinite(d.vatIls)))
       add("foreign_currency_missing_ils", "במסמך במטבע חוץ חסרים סכומי שקל שמורים. השלם את ההמרה לשקלים לפני הדיווח.");
+    // A rate of 1 (the editor default when the rate fetch failed) or far off the
+    // known range means the shekel amounts are probably native amounts.
+    if (isDoc && d.currency && d.currency !== "ILS" && foreignRateProblem(d.currency, d.exchangeRate))
+      add("foreign_currency_rate_invalid", "שער ההמרה של מסמך במטבע חוץ חסר, שווה ל-1 או רחוק מהשער המקובל, ולכן סכומי השקל שלו כנראה שגויים. נדרש תיקון נתונים.");
     const id = String((isDoc ? d.clientTaxId : e.supplierTaxId) ?? "").trim();
     const idCheck = normalizeBusinessNumber(id);
     // A zero-rated export to a foreign customer carries a foreign id; the

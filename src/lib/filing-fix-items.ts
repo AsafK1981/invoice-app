@@ -69,6 +69,7 @@ export const FIX_TITLES: Record<PcnIssueCode, string> = {
   type_sign_mismatch: "סימן הסכום לא תואם את סוג המסמך",
   zero_rated_with_vat: "מסמך בשיעור אפס שכולל מע״מ",
   foreign_currency_missing_ils: "חסרים סכומים בשקלים למסמך במטבע חוץ",
+  foreign_currency_rate_invalid: "שער ההמרה של מסמך במטבע חוץ לא סביר",
   customer_number_invalid: "מספר העוסק של הלקוח לא תקין",
   customer_number_missing: "חסר מספר עוסק של הלקוח",
   supplier_number_invalid: "מספר העוסק של הספק לא תקין",
@@ -273,6 +274,7 @@ export function buildFilingFixModel(
       case "type_sign_mismatch":
       case "zero_rated_with_vat":
       case "foreign_currency_missing_ils":
+      case "foreign_currency_rate_invalid":
       case "date_invalid":
       case "amount_invalid":
       case "reference_invalid":

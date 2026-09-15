@@ -34,6 +34,8 @@ describe("uniform preflight", () => {
     [{ total: 119 }, "total_mismatch"],
     [{ paymentMethod: "check" as const }, "check_details_invalid"],
     [{ subtotalIls: 90 }, "ils_mismatch"],
+    [{ currency: "USD", exchangeRate: 1, subtotalIls: 100, vatIls: 18, totalIls: 118 }, "foreign_currency_rate_suspect"],
+    [{ currency: "USD", exchangeRate: 37, subtotalIls: 3700, vatIls: 666, totalIls: 4366 }, "foreign_currency_rate_suspect"],
     [{ currency: "USD", exchangeRate: 3.6, subtotalIls: 100, vatIls: 18, totalIls: 118 }, "foreign_currency_ils_mismatch"],
     [{ currency: "USD", exchangeRate: 3.6, subtotalIls: 360, vatIls: 60, totalIls: 424.8 }, "foreign_currency_ils_mismatch"],
   ] as Array<[Partial<InvoiceDocument>, string]>)("blocks bad original data %j with %s", (over, code) => {
