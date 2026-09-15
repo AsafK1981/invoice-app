@@ -657,7 +657,12 @@ export default function ExpensesPage() {
         onClose={() => {
           setModalOpen(false);
           setPrefill(null);
-          if (returnTo && savedForReturnRef.current) router.push(returnTo);
+          // One trip back per save. Clearing the flag as it is read means a
+          // navigation that never happens (blocked, failed) cannot send a
+          // later close, after a form the user only looked at, to the report.
+          const goBack = returnTo && savedForReturnRef.current;
+          savedForReturnRef.current = false;
+          if (goBack) router.push(returnTo);
         }}
         onSave={async (record) => {
           await expenseStore.save(record);
