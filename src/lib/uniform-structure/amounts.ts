@@ -69,8 +69,10 @@ export function foreignIlsConsistent(doc: InvoiceDocument): boolean {
   const rate = doc.exchangeRate ?? NaN;
   const { subtotalIls, vatIls, totalIls } = doc;
   if (![rate, subtotalIls, vatIls, totalIls].every((v) => typeof v === "number" && Number.isFinite(v))) return false;
-  const within = (a: number, b: number) => Math.abs(round2(a - b)) <= 0.01;
-  return within(totalIls!, round2(doc.total * rate)) && within(subtotalIls! + vatIls! + round2((doc.rounding ?? 0) * rate), totalIls!);
+  const within = (a: number, b: number, tolerance = 0.01) => Math.abs(round2(a - b)) <= tolerance + 1e-9;
+  // One agora per rounded component: the converted total, plus the converted rounding when there is one.
+  const totalTolerance = doc.rounding ? 0.02 : 0.01;
+  return within(totalIls!, round2(doc.total * rate), totalTolerance) && within(subtotalIls! + vatIls! + round2((doc.rounding ?? 0) * rate), totalIls!);
 }
 
 /**

@@ -55,5 +55,8 @@ describe("uniform shekel amounts", () => {
     // stored rounding converted with the rate is allowed
     expect(foreignIlsConsistent(doc({ currency: "USD", exchangeRate: 3.5, total: 118.4, rounding: 0.4, subtotalIls: 350, vatIls: 63, totalIls: 414.4 }))).toBe(true);
     expect(foreignIlsConsistent(doc())).toBe(true);
+    // two rounded components (the total and the converted rounding) may drift one agora each
+    expect(foreignIlsConsistent(doc({ currency: "USD", exchangeRate: 3.5, total: 118.4, rounding: 0.4, subtotalIls: 350, vatIls: 63.02, totalIls: 414.42 }))).toBe(true);
+    expect(foreignIlsConsistent({ ...ok, totalIls: 424.82, vatIls: 64.82 })).toBe(false);
   });
 });
