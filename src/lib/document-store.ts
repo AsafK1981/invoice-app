@@ -208,7 +208,11 @@ export async function createDocument(
 
   if (error) {
     if (error.code === "23505" || /duplicate|unique/i.test(error.message)) {
-      throw new Error(`כבר קיים מסמך מאותו סוג עם מספר ${doc.number}. בחר מספר אחר.`);
+      throw new Error(
+        doc.number != null
+          ? `כבר קיים מסמך מאותו סוג עם מספר ${doc.number}. בחר מספר אחר.`
+          : "המספר הבא ברצף כבר תפוס במסמך אחר. נסה שוב, ואם זה חוזר פנה לתמיכה.",
+      );
     }
     throw new Error("שגיאה בשמירת המסמך: " + error.message);
   }
@@ -395,6 +399,80 @@ export async function cancelDocument(
     },
   });
   window.dispatchEvent(new Event(CHANGE_EVENT));
+
+  // A document created by converting a quote / proforma / tax invoice is what
+  // counts that payment. Once it is cancelled, the source must stop being
+  // "paid and converted", or it is neither income nor a receivable and can
+  // never be converted again.
+  await releaseConversionSources(id);
+}
+
+/**
+ * Detach every source document that was converted into `targetId` (now
+ * cancelled): converted_to_id back to null, status back to "sent" (a cancelled
+ * source stays cancelled), paid_at cleared, with an audit entry per source.
+ * The immutability trigger freezes number/type/date/money/party columns only;
+ * status (except back to draft or to cancelled on a delivered VAT document),
+ * paid_at and converted_to_id stay writable after issue, which is exactly what
+ * linkConvertedDocument relies on too (see
+ * scripts/migrations/20260908-documents-no-delete-once-numbered.sql).
+ */
+export async function releaseConversionSources(targetId: string) {
+  const { data: sources, error } = await supabase
+    .from("documents")
+    .select("id, type, number, client_name, client_id, status")
+    .eq("converted_to_id", targetId);
+  if (error) {
+    throw new Error("המסמך סומן כמבוטל, אבל בדיקת המסמך המקורי שממנו הומר נכשלה: " + error.message);
+  }
+  if (!sources || sources.length === 0) return;
+
+  for (const src of sources) {
+    const nextStatus = src.status === "cancelled" ? "cancelled" : "sent";
+    const label = `${DOCUMENT_TYPE_LABELS[src.type as DocumentType]} #${src.number}`;
+    const { data: updated, error: updateError } = await supabase
+      .from("documents")
+      .update({ converted_to_id: null, status: nextStatus, paid_at: null })
+      .eq("id", src.id)
+      .eq("converted_to_id", targetId)
+      .select("id");
+    if (updateError || !updated || updated.length === 0) {
+      throw new Error(
+        `המסמך סומן כמבוטל, אבל החזרת ${label} למצב פתוח נכשלה${updateError ? ": " + updateError.message : ""}. סמנו אותו כלא שולם ידנית.`,
+      );
+    }
+    logAudit({
+      action: "document.conversion_unlinked",
+      targetType: "document",
+      targetId: src.id as string,
+      targetLabel: `${label} · ${src.client_name}`,
+      payload: {
+        from: DOCUMENT_STATUS_LABELS[src.status as InvoiceDocument["status"]],
+        to: DOCUMENT_STATUS_LABELS[nextStatus as InvoiceDocument["status"]],
+        cancelledDocumentId: targetId,
+        clientId: src.client_id ?? null,
+        clientName: src.client_name,
+      },
+    });
+  }
+  window.dispatchEvent(new Event(CHANGE_EVENT));
+}
+
+/**
+ * The two facts that decide whether a convert may go ahead (see
+ * conversionBlock in document-prefill.ts), read fresh from the database right
+ * before the new document is created. Null when the source is gone.
+ */
+export async function getConversionSourceState(
+  sourceId: string,
+): Promise<{ type: string; number: number; status: string; converted_to_id: string | null } | null> {
+  const { data, error } = await supabase
+    .from("documents")
+    .select("type, number, status, converted_to_id")
+    .eq("id", sourceId)
+    .maybeSingle();
+  if (error) throw new Error("בדיקת המסמך המקורי נכשלה: " + error.message);
+  return (data as { type: string; number: number; status: string; converted_to_id: string | null } | null) ?? null;
 }
 
 export async function updateDocumentStatus(id: string, status: InvoiceDocument["status"]) {

@@ -22,6 +22,12 @@ export interface DraftPayload extends EditorDraft {
   allocationNumber: string;
   /** The chosen document number to use on finalize (defaults to the counter). */
   documentNumber?: string;
+  /**
+   * True when the user typed documentNumber themselves. Only then is it sent
+   * on issue; an untouched number is re-read on resume and assigned by the
+   * database. Missing on drafts saved before 2026-09-15 = not typed.
+   */
+  documentNumberTouched?: boolean;
 }
 
 export interface ServerDraft {

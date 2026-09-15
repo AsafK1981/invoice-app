@@ -31,7 +31,20 @@ import { IsraeliDateInput, reportInvalidIsraeliDate } from "@/components/israeli
 import { sendReceiptEmail } from "@/lib/email";
 import { EmailVerificationModal } from "@/components/email-verification-modal";
 import { GrowingTextarea } from "@/components/ui/growing-textarea";
-import { createDocument, getNextDocumentNumber, linkConvertedDocument, markDocumentEmailed, useDocuments } from "@/lib/document-store";
+import { createDocument, getConversionSourceState, getNextDocumentNumber, linkConvertedDocument, markDocumentEmailed, useDocuments } from "@/lib/document-store";
+import {
+  buildSourcePrefill,
+  conversionBlock,
+  conversionBlockMessage,
+  creditRefFromSource,
+  isCreditableInvoice,
+  mayStartIssue,
+  numberToSend,
+  resumedDocumentNumber,
+  type ConversionBlock,
+  type SourceDocRow,
+  type SourceItemRow,
+} from "@/lib/document-prefill";
 import { getBusinessId, isPlaceholderBusinessName, isPlaceholderBusinessTaxId } from "@/lib/business-init";
 import { parseEmails, joinEmails, isValidEmail } from "@/lib/emails";
 import { getVatRate, computeAmounts, round2, canIssueTaxInvoices, type VatMode } from "@/lib/vat";
@@ -236,7 +249,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
       root.style.removeProperty("--mobile-dock-h");
     };
   }, []);
-  const [toast, setToast] = useState<{ kind: "success" | "error"; text: string } | null>(null);
+  const [toast, setToast] = useState<ToastState | null>(null);
   const [emailVerifyModalOpen, setEmailVerifyModalOpen] = useState(false);
 
   const [allocationNumber, setAllocationNumber] = useState<string>("");
@@ -247,6 +260,24 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   // The document's number, shown while drafting and editable before finalizing.
   // Defaults to the next number for this type; the real number is reserved on save.
   const [docNumber, setDocNumber] = useState<string>("");
+  // Whether the user typed the number themselves. Only then is it sent on
+  // issue; otherwise the database takes the next free number at that moment,
+  // so a number shown at mount (or kept in a draft) that another document has
+  // since taken can never block the issue.
+  const [docNumberTouched, setDocNumberTouched] = useState<boolean>(false);
+  // Set the moment createDocument succeeds. From then on this form is spent:
+  // a second click (after a failed email send, or during the redirect delay)
+  // would issue a second numbered document.
+  const issuedRef = useRef<{ id: string; number: number } | null>(null);
+  const [issuedDoc, setIssuedDoc] = useState<{ id: string; number: number } | null>(null);
+  // Convert (?convert=1) of a source that is already converted, cancelled or
+  // still a draft. Blocks issuing and offers the existing converted document.
+  const [convertBlocked, setConvertBlocked] = useState<{ block: ConversionBlock; message: string } | null>(null);
+  // Convert: the source's total, to warn when the new document's total differs.
+  const [convertExpected, setConvertExpected] = useState<{ total: number; currency: string; label: string } | null>(null);
+  // Convert / credit note: use the source's exchange rate instead of a fresh
+  // lookup while the currency and date are still the prefilled ones.
+  const pinnedRateRef = useRef<{ currency: string; date: string; rate: number } | null>(null);
   // Server-draft this editor is bound to (set when resuming, or after the first
   // "שמור טיוטה"); subsequent saves update the same row, and finalizing deletes it.
   const serverDraftIdRef = useRef<string | null>(resumeDraftId);
@@ -316,9 +347,8 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   // Same idea for the document language: a customer who got an English invoice
   // last month gets one again, without the user going back into the advanced
   // panel every time. Only while the user has not chosen a language by hand.
-  // Unlike the payment method this also applies to a copy/convert: nothing
-  // hydrates the language from the source document, so the client's own
-  // history is the best available answer.
+  // A copy/convert loads the source document's language and marks it as
+  // chosen (languageTouched), so this default does not override it.
   useEffect(() => {
     if (languageTouched || !clientId) return;
     if (clientDefaults.language && clientDefaults.language !== language) {
@@ -638,6 +668,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
       rate,
       allocationNumber,
       documentNumber: docNumber,
+      documentNumberTouched: docNumberTouched,
     };
     exitAutosaveRef.current = isDraftEmpty(payload)
       ? null
@@ -672,6 +703,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
     rate,
     allocationNumber,
     docNumber,
+    docNumberTouched,
   ]);
 
   // Auto-save the in-progress document as a server draft when the user leaves
@@ -755,6 +787,12 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
 
   useEffect(() => {
     if (currency === "ILS") { setRate(1); setRateLoading(false); return; }
+    const pinned = pinnedRateRef.current;
+    if (pinned && pinned.currency === currency && pinned.date === date) {
+      setRate(pinned.rate);
+      setRateLoading(false);
+      return;
+    }
     let cancelled = false;
     setRateLoading(true);
     fetch(`/api/exchange-rate?currency=${currency}&date=${date}`)
@@ -842,42 +880,80 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
         console.warn("[convert] source doc belongs to a different business; abort");
         return;
       }
+      // Converting a source that was already converted (browser Back, a
+      // second tab), cancelled, or never issued would create a second paid
+      // document for one payment. Refuse up front and load nothing, so the
+      // form cannot be used to issue a standalone copy either.
+      if (isConvert) {
+        const block = conversionBlock(srcDoc as SourceDocRow);
+        if (block) {
+          setConvertBlocked({ block, message: conversionBlockMessage(block, srcDoc as SourceDocRow) });
+          return;
+        }
+      }
+
       const { data: srcItems } = await supabase
         .from("document_items")
         .select("*")
         .eq("document_id", fromDocId)
         .order("sort_order");
 
-      if (srcDoc.client_id) {
-        setClientId(srcDoc.client_id);
+      const prefill = buildSourcePrefill(srcDoc as SourceDocRow, (srcItems || []) as SourceItemRow[], {
+        targetType: documentType,
+        isConvert,
+      });
+
+      if (prefill.client?.kind === "saved") {
+        setClientId(prefill.client.clientId);
         setAdhocMode(false);
-      } else if (srcDoc.client_name) {
+      } else if (prefill.client?.kind === "adhoc") {
         setAdhocMode(true);
-        setAdhocName(srcDoc.client_name);
+        setAdhocName(prefill.client.name);
         // Restore the ad-hoc customer tax id too; without it a duplicated
         // B2B tax invoice looks B2C (empty tax id) and the allocation banner
         // wrongly shows "no allocation number needed".
-        setAdhocTaxId(srcDoc.client_tax_id || "");
+        setAdhocTaxId(prefill.client.taxId);
       }
-      if (isConvert) {
-        const srcLabel = DOCUMENT_TYPE_LABELS[srcDoc.type as DocumentType] ?? "מסמך";
-        const noteText = `הומר מ${srcLabel} #${srcDoc.number}`;
-        setSubject(srcDoc.subject || "");
-        setNotes(srcDoc.notes ? `${srcDoc.notes}\n${noteText}` : noteText);
-      } else {
-        setSubject(srcDoc.subject || "");
-        setNotes(srcDoc.notes || "");
+      setSubject(prefill.subject);
+      setNotes(prefill.notes);
+      if (prefill.items.length > 0) {
+        setItems(prefill.items.map((i) => ({ id: crypto.randomUUID(), ...i })));
       }
-      if (srcItems && srcItems.length > 0) {
-        setItems(
-          srcItems.map((row: { id: string; product_id: string | null; description: string; quantity: number; unit_price: number }) => ({
-            id: crypto.randomUUID(),
-            productId: row.product_id || undefined,
-            description: row.description,
-            quantity: Math.abs(Number(row.quantity)) || 1,
-            unitPrice: Number(row.unit_price) || 0,
-          }))
-        );
+      // Stored unit prices are net, so the copy is priced VAT-exclusive; the
+      // rest of the pricing context comes from the source so the new document
+      // lands on the same total (see src/lib/document-prefill.ts).
+      setVatMode(prefill.vatMode);
+      if (prefill.pinnedExchangeRate !== null) {
+        pinnedRateRef.current = { currency: prefill.currency, date, rate: prefill.pinnedExchangeRate };
+      }
+      setCurrency(prefill.currency);
+      setZeroRated(prefill.zeroRated);
+      setRoundTotal(prefill.roundTotal);
+      setLanguage(prefill.language);
+      setLanguageTouched(true);
+      if (prefill.currency !== "ILS" || prefill.zeroRated) setShowAdvanced(true);
+      if (prefill.discountAmount !== null && allowDiscount) {
+        setShowDiscount(true);
+        setDiscountMode("amount");
+        setDiscountInput(String(prefill.discountAmount));
+      }
+      if (prefill.withholdingRate !== null && isPaymentRecording) {
+        setShowWithholding(true);
+        setWithholdingRateInput(String(prefill.withholdingRate));
+        setWithholdingTouched(false);
+      }
+      if (prefill.expectedTotal !== null) {
+        setConvertExpected({
+          total: prefill.expectedTotal,
+          currency: prefill.currency,
+          label: `${DOCUMENT_TYPE_LABELS[srcDoc.type as DocumentType] ?? "המסמך המקורי"} #${srcDoc.number}`,
+        });
+      }
+      // "Cancel via credit note" opens this editor with ?from=<invoice>: link
+      // the credit note to that invoice instead of leaving the picker empty.
+      if (isCreditNote) {
+        const refId = creditRefFromSource(srcDoc as SourceDocRow);
+        if (refId) setCreditRefDocId(refId);
       }
     })();
   }, [fromDocId, isConvert]);
@@ -929,7 +1005,12 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
       setZeroRated(Boolean(p.zeroRated));
       setRate(p.rate || 1);
       setAllocationNumber(p.allocationNumber || "");
-      setDocNumber(p.documentNumber || String(await getNextDocumentNumber(p.documentType || documentType)));
+      // A draft keeps its number only when the user had typed it; otherwise
+      // show the current next number (the database assigns the real one on
+      // issue, see numberToSend).
+      const keptNumber = resumedDocumentNumber(p);
+      setDocNumberTouched(keptNumber !== null);
+      setDocNumber(keptNumber ?? String(await getNextDocumentNumber(p.documentType || documentType)));
     })();
   }, [resumeDraftId]);
 
@@ -988,7 +1069,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
     emailRecipients.length > 0 && emailRecipients.every(isValidEmail);
 
   useEffect(() => {
-    if (!toast) return;
+    if (!toast || toast.sticky) return;
     const t = setTimeout(() => setToast(null), 5000);
     return () => clearTimeout(t);
   }, [toast]);
@@ -1078,7 +1159,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   const creditRefManual = creditRefDocId === "__manual__";
   const creditRefPicked =
     isCreditNote && creditRefDocId && !creditRefManual
-      ? allDocuments.find((d) => d.id === creditRefDocId)
+      ? allDocuments.find((d) => d.id === creditRefDocId && isCreditableInvoice(d))
       : undefined;
   const creditRefNum = creditRefPicked ? String(creditRefPicked.number) : creditRefNumber.trim();
   const creditRefDateVal = creditRefPicked ? creditRefPicked.date : creditRefDate;
@@ -1089,11 +1170,9 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
     () =>
       isCreditNote
         ? allDocuments
-            .filter(
-              (d) =>
-                (d.type === "tax_invoice" || d.type === "tax_invoice_receipt") &&
-                d.status !== "draft",
-            )
+            // A cancelled invoice is out of the books already; crediting it
+            // would reverse income that is no longer counted.
+            .filter(isCreditableInvoice)
             .sort((a, b) => b.number - a.number)
         : [],
     [isCreditNote, allDocuments],
@@ -1169,13 +1248,21 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
     withholdingValid;
   // One place for "why the buttons are off": the desktop bar, the mobile
   // card, the mobile dock and the allocation card all read these.
-  const saveDisabled = !canSave || saving || rateLoading || businessProfileIncomplete;
+  const saveDisabled =
+    !canSave || saving || rateLoading || businessProfileIncomplete || !!convertBlocked || !!issuedDoc;
   const draftDisabled = savingDraft || saving;
 
   // Why the save button is disabled, in one plain sentence. Rendered next to
   // BOTH save affordances (the desktop summary card and the mobile action bar),
   // so the mobile user is never left tapping a dead button with no explanation.
-  const blockReason: string | null = canSave
+  const formBlockReason: string | null = issuedDoc
+    ? `${docLabel} #${issuedDoc.number} כבר הופק${isProforma ? "" : "ה"} מהטופס הזה. אפשר להמשיך מדף המסמך.`
+    : convertBlocked
+      ? convertBlocked.message
+      : null;
+  const blockReason: string | null = formBlockReason
+    ? formBlockReason
+    : canSave
     ? null
     : !clientReady
       ? "יש לבחור לקוח או למלא שם של לקוח מזדמן"
@@ -1281,6 +1368,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
         rate,
         allocationNumber,
         documentNumber: docNumber,
+        documentNumberTouched: docNumberTouched,
       };
       const id = await saveDraftToServer({
         id: serverDraftIdRef.current,
@@ -1319,7 +1407,16 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
     // until after the click handler returns; a fast double-tap on mobile
     // reliably fires twice and would create two docs + two emails. The
     // ref check fires synchronously on the very first call.
-    if (saveInFlightRef.current) return;
+    // This form already issued its document; never create a second one.
+    if (
+      !mayStartIssue({
+        inFlight: saveInFlightRef.current,
+        issuedDocumentId: issuedRef.current?.id ?? null,
+        convertBlocked: !!convertBlocked,
+      })
+    ) {
+      return;
+    }
     saveInFlightRef.current = true;
     setSaving(true);
     setToast(null);
@@ -1397,7 +1494,9 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
       const draft: Omit<InvoiceDocument, "number"> & { number?: number } = {
         id: crypto.randomUUID(),
         type: documentType,
-        number: parseInt(docNumber, 10) || undefined,
+        // Null unless the user typed a number: the database takes the next
+        // free one at issue time (see numberToSend).
+        number: numberToSend(docNumber, docNumberTouched) ?? undefined,
         date,
         clientId: effectiveClientId,
         clientName,
@@ -1441,7 +1540,23 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
         ),
       };
 
+      // Re-check the convert source right before issuing: another tab (or
+      // this one, via browser Back) may have converted it since the form
+      // loaded. A second paid receipt for one payment cannot be undone
+      // without a credit note, so refuse here rather than after the fact.
+      if (isConvert && fromDocId) {
+        const state = await getConversionSourceState(fromDocId);
+        const block = conversionBlock(state);
+        if (block) {
+          const message = conversionBlockMessage(block, state);
+          setConvertBlocked({ block, message });
+          throw new Error(message);
+        }
+      }
+
       const { id: docId, number: allocatedNumber } = await createDocument(draft);
+      issuedRef.current = { id: docId, number: allocatedNumber };
+      setIssuedDoc({ id: docId, number: allocatedNumber });
       const doc = { ...draft, id: docId, number: allocatedNumber };
 
       // The doc actually persisted; clear the localStorage draft so it doesn't
@@ -1512,10 +1627,22 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
         if (!result.ok) {
           if (result.code === "EMAIL_NOT_VERIFIED") {
             setEmailVerifyModalOpen(true);
-            setToast({ kind: "error", text: "המסמך נשמר, אבל צריך לאמת קודם את כתובת המייל שלך כדי לשלוח אותו." });
+            setToast({
+              kind: "error",
+              text: `${docLabel} #${allocatedNumber} הופק${isProforma ? "" : "ה"}, אבל צריך לאמת קודם את כתובת המייל שלך כדי לשלוח אותו. אחרי האימות שלחו מדף המסמך.`,
+              sticky: true,
+              href: `/documents/${doc.id}`,
+              linkLabel: "פתח את המסמך",
+            });
             return;
           }
-          setToast({ kind: "error", text: `המסמך נשמר אבל שליחת המייל נכשלה: ${result.error}` });
+          setToast({
+            kind: "error",
+            text: `${docLabel} #${allocatedNumber} הופק${isProforma ? "" : "ה"}, אבל שליחת המייל נכשלה: ${result.error}. המסמך כבר קיים, ואפשר לשלוח אותו שוב מדף המסמך.`,
+            sticky: true,
+            href: `/documents/${doc.id}`,
+            linkLabel: "פתח את המסמך",
+          });
           return;
         }
         // CRITICAL: stamp emailed_at on the new doc so the detail-page
@@ -1663,6 +1790,50 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
           </div>
         );
       })()}
+      {convertBlocked && (
+        <div role="alert" className="card-soft p-3 mb-4 bg-rose-50 border-rose-200">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5 text-rose-600" />
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-stone-900 text-sm">אי אפשר להמיר את המסמך</p>
+              <p className="text-xs text-stone-700 mt-0.5">{convertBlocked.message}</p>
+              <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
+                {convertBlocked.block.kind === "already_converted" && (
+                  <a
+                    href={`/documents/${convertBlocked.block.convertedToId}`}
+                    className="inline-flex items-center text-xs font-semibold text-orange-700 hover:text-orange-800 underline"
+                  >
+                    פתח את המסמך שכבר נוצר ←
+                  </a>
+                )}
+                {fromDocId && (
+                  <a
+                    href={`/documents/${fromDocId}`}
+                    className="inline-flex items-center text-xs font-semibold text-stone-700 hover:text-stone-900 underline"
+                  >
+                    חזרה למסמך המקורי
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {convertExpected &&
+        !convertBlocked &&
+        !issuedDoc &&
+        currency === convertExpected.currency &&
+        Math.abs(round2(total - convertExpected.total)) >= 0.01 && (
+          <div className="card-soft p-3 mb-4 bg-amber-50 border-amber-200">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5 text-amber-700" />
+              <p className="flex-1 min-w-0 text-xs text-stone-800">
+                הסכום כאן ({money(total)}) שונה מהסכום של {convertExpected.label} (
+                {money(convertExpected.total)}). המסמך המקורי יסומן כשולם במלואו, לכן כדאי לבדוק את הסכום לפני ההפקה.
+              </p>
+            </div>
+          </div>
+        )}
       {clientOpenInvoices.length > 0 && (
         <div className="card-soft p-3 mb-4 bg-amber-50 border-amber-200">
           <div className="flex items-start gap-3">
@@ -2007,7 +2178,10 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                   type="number"
                   min={1}
                   value={docNumber}
-                  onChange={(e) => setDocNumber(e.target.value)}
+                  onChange={(e) => {
+                    setDocNumber(e.target.value);
+                    setDocNumberTouched(true);
+                  }}
                   className="input-warm tabular-nums text-center"
                   dir="ltr"
                 />
@@ -3160,7 +3334,15 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-type ToastState = { kind: "success" | "error"; text: string };
+type ToastState = {
+  kind: "success" | "error";
+  text: string;
+  /** Stays until replaced instead of fading after 5 seconds. */
+  sticky?: boolean;
+  /** Optional link rendered after the text (e.g. to the issued document). */
+  href?: string;
+  linkLabel?: string;
+};
 
 const ISSUE_BTN_PRIMARY =
   "inline-flex items-center justify-center gap-2 min-h-[48px] px-4 bg-gradient-to-l from-orange-500 to-orange-700 text-white rounded-2xl text-sm font-bold hover:shadow-lg hover:shadow-orange-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:from-stone-300 disabled:to-stone-300 disabled:cursor-not-allowed disabled:shadow-none transition-all";
@@ -3246,7 +3428,17 @@ function ResultToast({ toast, className = "text-sm p-3" }: { toast: ToastState; 
       ) : (
         <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-rose-600" />
       )}
-      <span>{toast.text}</span>
+      <span>
+        {toast.text}
+        {toast.href && (
+          <>
+            {" "}
+            <a href={toast.href} className="font-semibold underline">
+              {toast.linkLabel ?? "פתח"}
+            </a>
+          </>
+        )}
+      </span>
     </div>
   );
 }

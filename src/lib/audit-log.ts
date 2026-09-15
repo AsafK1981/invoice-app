@@ -11,6 +11,8 @@ export type AuditAction =
   | "document.deleted"
   // סעיף 23(ב): the additional record that reverses an issued document.
   | "document.cancelled"
+  // A converted document was cancelled, so its source goes back to open.
+  | "document.conversion_unlinked"
   | "client.created"
   | "client.updated"
   | "client.deleted"
@@ -130,6 +132,7 @@ const ACTION_LABELS: Record<AuditAction, string> = {
   "document.number_changed": "מספר מסמך שונה",
   "document.deleted": "מסמך נמחק",
   "document.cancelled": "מסמך בוטל",
+  "document.conversion_unlinked": "המרה בוטלה, המסמך המקורי חזר להיות פתוח",
   "client.created": "לקוח נוסף",
   "client.updated": "לקוח עודכן",
   "client.deleted": "לקוח נמחק",
