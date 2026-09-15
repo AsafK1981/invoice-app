@@ -54,13 +54,28 @@ export interface AccountKeys {
  * natural key); categories ordered by name. Pass every category of the
  * business, not only the year's, so a category keeps its key across years.
  */
-export function buildAccountKeys(clients: Iterable<{ id: string; createdAt?: string }>, categories: Iterable<string>, reserved: Iterable<string>): AccountKeys {
+export function buildAccountKeys(
+  clients: Iterable<{ id: string; createdAt?: string }>,
+  categories: Iterable<string | { category: string; date?: string }>,
+  reserved: Iterable<string>,
+): AccountKeys {
   const reservedList = [...reserved];
   const orderedClients = [...clients]
     .sort((a, b) => compare(a.createdAt ?? "", b.createdAt ?? "") || compare(a.id, b.id))
     .map((c) => c.id);
   const clientKeys = assignAccountKeys("CLI-", orderedClients, 10, reservedList);
-  const orderedCategories = [...new Set([...categories].map((c) => c ?? ""))].sort();
+  // Earliest use first, then name: an older category keeps its natural key
+  // when a newer one with the same prefix appears later.
+  const firstUse = new Map<string, string>();
+  for (const entry of categories) {
+    const category = typeof entry === "string" ? entry : entry.category ?? "";
+    const date = typeof entry === "string" ? "" : entry.date ?? "";
+    const known = firstUse.get(category);
+    if (known === undefined || (date && (!known || date < known))) firstUse.set(category, date);
+  }
+  const orderedCategories = [...firstUse.entries()]
+    .sort(([a, aDate], [b, bDate]) => compare(aDate || "9999", bDate || "9999") || compare(a, b))
+    .map(([category]) => category);
   const expenseKeys = assignAccountKeys("EXP-", orderedCategories, 11, [...reservedList, ...clientKeys.values()]);
   return {
     client: (id) => clientKeys.get(id) ?? `CLI-${id.slice(0, 10)}`,

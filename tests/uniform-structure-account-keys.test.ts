@@ -31,6 +31,19 @@ describe("account keys", () => {
     expect(keys.expense("הוצאות משרד מיוחדות")).toBe("EXP-הוצאות מ~01");
   });
 
+  it("the category first used earliest keeps its natural key when a newer one shares the prefix", () => {
+    const keys = buildAccountKeys([], [
+      { category: "הוצאות משרד כלליות", date: "2026-03-01" },
+      { category: "הוצאות משרד מיוחדות", date: "2024-05-01" },
+      { category: "הוצאות משרד כלליות", date: "2026-01-01" },
+    ], []);
+    expect(keys.expense("הוצאות משרד מיוחדות")).toBe("EXP-הוצאות משרד");
+    expect(keys.expense("הוצאות משרד כלליות")).toBe("EXP-הוצאות מ~01");
+    // same first date: name order
+    const tie = buildAccountKeys([], [{ category: "הוצאות משרד מיוחדות", date: "2026-01-01" }, { category: "הוצאות משרד כלליות", date: "2026-01-01" }], []);
+    expect(tie.expense("הוצאות משרד כלליות")).toBe("EXP-הוצאות משרד");
+  });
+
   it("never hands out a reserved or already used key, and keeps the caller's order", () => {
     expect(assignAccountKeys("CLI-", ["abc"], 10, ["CLI-abc"]).get("abc")).toBe("CLI-abc~01");
     expect(assignAccountKeys("CLI-", ["abcdefghij-2", "abcdefghij-1"], 10).get("abcdefghij-2")).toBe("CLI-abcdefghij");

@@ -182,7 +182,7 @@ export function buildUniformStructure(input: UniformInput): UniformOutput {
   // loaded (all years), so a category keeps its key from one tax year to the next.
   const accountKeys = buildAccountKeys(
     input.clients,
-    input.expenses.map((e) => e.category ?? ""),
+    input.expenses.map((e) => ({ category: e.category ?? "", date: e.date })),
     [...STANDARD_ACCOUNTS.map((a) => a.code), ROUNDING_ACCOUNT.code],
   );
 
