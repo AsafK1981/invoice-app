@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Check, RotateCcw } from "lucide-react";
-import { useBusiness, saveBusiness } from "@/lib/business-store";
+import { useBusiness, saveBusinessLogo, saveDocumentDesign } from "@/lib/business-store";
 import { getVatRate, calculateVat, round2 } from "@/lib/vat";
 import {
   DOCUMENT_TEMPLATES,
@@ -74,6 +74,10 @@ export function DocumentDesignSection() {
   // sets it together with the colours, so it is drafted here and persisted
   // by the same "שמור עיצוב" click.
   const [draftLogo, setDraftLogo] = useState<string | undefined>(undefined);
+  // The logo as loaded (or last saved) here. The logo is written only when
+  // the draft differs from it, so saving a design from an old tab cannot
+  // revert a logo changed in the business details since.
+  const savedLogo = useRef<string | undefined>(undefined);
   const initialized = useRef(false);
 
   // Initialize the draft from the business's SAVED design exactly once,
@@ -86,6 +90,7 @@ export function DocumentDesignSection() {
       initialized.current = true;
       setDraft(normalizeDocumentDesign(business.documentDesign) ?? DEFAULT_DESIGN);
       setDraftLogo(business.logoUrl);
+      savedLogo.current = business.logoUrl;
     }
   }, [ready, business.documentDesign, business.logoUrl]);
 
@@ -146,7 +151,11 @@ export function DocumentDesignSection() {
     setSaveError(null);
     setSaving(true);
     try {
-      await saveBusiness({ ...business, logoUrl: draftLogo, documentDesign: draft });
+      await saveDocumentDesign(business.id, draft);
+      if ((draftLogo || undefined) !== (savedLogo.current || undefined)) {
+        await saveBusinessLogo(business.id, draftLogo);
+        savedLogo.current = draftLogo;
+      }
       setJustSaved(true);
       setTimeout(() => setJustSaved(false), 2000);
     } catch (err) {

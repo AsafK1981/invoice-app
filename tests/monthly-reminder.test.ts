@@ -1,5 +1,13 @@
 import { describe, it, expect } from "vitest";
-import { buildMonthlyReminder, type MonthlyReminderDoc } from "@/lib/monthly-reminder";
+import {
+  buildMonthlyReminder,
+  issuedSentence,
+  missingRetainerHeading,
+  notificationBody,
+  unpaidSentence,
+  type MonthlyReminderDoc,
+  type MonthlyReminderSummary,
+} from "@/lib/monthly-reminder";
 
 /**
  * `now` is fixed mid-August so "this month" = 2026-08 and "last month" =
@@ -196,7 +204,7 @@ describe("buildMonthlyReminder", () => {
     expect(result).toBeNull();
   });
 
-  it("still includes an open draft quote in openItems (unfinished work, not excluded)", () => {
+  it("leaves a draft quote out of openItems, so it cannot block the nothing-to-report skip", () => {
     const result = buildMonthlyReminder(
       [
         doc({ id: "a", date: "2026-08-01", status: "paid" }),
@@ -212,8 +220,7 @@ describe("buildMonthlyReminder", () => {
       ],
       NOW,
     );
-    expect(result).not.toBeNull();
-    expect(result!.openItems.some((i) => i.clientName === "לקוח טיוטה פתוחה")).toBe(true);
+    expect(result).toBeNull();
   });
 
   it("computes the previous month via string arithmetic, not Date#setMonth overflow (Mar 31 -> Feb)", () => {
@@ -240,5 +247,90 @@ describe("buildMonthlyReminder", () => {
     );
     expect(result).not.toBeNull();
     expect(result!.missingRetainerClients).toEqual(["לקוח דצמבר"]);
+  });
+
+  it("ignores open quotes older than the 60-day window, so years-old quotes do not force a reminder", () => {
+    const result = buildMonthlyReminder(
+      [
+        doc({ id: "a", date: "2026-08-01", status: "paid" }),
+        doc({ id: "old", type: "quote", status: "sent", date: "2023-02-01", clientName: "הצעה ישנה" }),
+        doc({ id: "edge", type: "quote", status: "sent", date: "2026-06-15", clientName: "הצעה בקצה" }),
+      ],
+      NOW,
+    );
+    // 2026-06-16 is exactly 60 days before 2026-08-15, so 06-15 is outside too.
+    expect(result).toBeNull();
+    const inside = buildMonthlyReminder(
+      [
+        doc({ id: "a", date: "2026-08-01", status: "paid" }),
+        doc({ id: "recent", type: "quote", status: "sent", date: "2026-06-16", clientName: "הצעה עדכנית" }),
+      ],
+      NOW,
+    );
+    expect(inside!.openItems.map((i) => i.clientName)).toEqual(["הצעה עדכנית"]);
+  });
+
+  it("does not count a sent quote as unpaid", () => {
+    const result = buildMonthlyReminder(
+      [
+        doc({ id: "q", type: "quote", status: "sent", date: "2026-08-05", paidAt: null }),
+        doc({ id: "p", type: "proforma", status: "sent", date: "2026-08-06", paidAt: null }),
+      ],
+      NOW,
+    );
+    expect(result!.unpaidCount).toBe(1);
+  });
+
+  it("on the 1st compares last month against the month before it, not against the brand-new month", () => {
+    const first = new Date("2026-09-01T06:00:00.000Z");
+    const docs = [
+      doc({ id: "a", date: "2026-08-10", status: "paid", clientId: "c1", clientName: "לקוח קבוע" }),
+      doc({ id: "b", date: "2026-07-10", status: "paid", clientId: "c1", clientName: "לקוח קבוע" }),
+    ];
+    // Billed in August as in July: nothing is missing, and August had a document.
+    expect(buildMonthlyReminder(docs, first)).toBeNull();
+
+    const lapsed = buildMonthlyReminder(
+      [...docs, doc({ id: "c", date: "2026-07-12", status: "paid", clientId: "c2", clientName: "לקוח שנעלם" })],
+      first,
+    );
+    expect(lapsed!.reportsPreviousMonth).toBe(true);
+    expect(lapsed!.missingRetainerClients).toEqual(["לקוח שנעלם"]);
+    expect(lapsed!.documentsThisMonthCount).toBe(1);
+    expect(lapsed!.periodLabel).toBe("אוגוסט 2026");
+    expect(issuedSentence(lapsed!)).toBe("באוגוסט 2026 הוצאתם מסמך אחד.");
+    expect(missingRetainerHeading(lapsed!)).toBe("לקוחות שקיבלו מסמך ביולי 2026 אך לא באוגוסט 2026:");
+
+    // From the 4th on, the report is about the current month again.
+    const fourth = buildMonthlyReminder(docs, new Date("2026-09-04T06:00:00.000Z"));
+    expect(fourth!.reportsPreviousMonth).toBe(false);
+    expect(fourth!.missingRetainerClients).toEqual(["לקוח קבוע"]);
+  });
+});
+
+describe("monthly reminder wording", () => {
+  const base: MonthlyReminderSummary = {
+    periodLabel: "ספטמבר 2026",
+    previousPeriodLabel: "אוגוסט 2026",
+    reportsPreviousMonth: false,
+    documentsThisMonthCount: 1,
+    openItems: [{ id: "x", type: "quote", number: 1, clientName: "א", amount: 1 }],
+    missingRetainerClients: [],
+    unpaidCount: 1,
+  };
+
+  it("uses singular forms for one", () => {
+    expect(issuedSentence(base)).toBe("החודש הוצאתם מסמך אחד.");
+    expect(unpaidSentence(base)).toBe("יש מסמך אחד שטרם שולם.");
+    expect(notificationBody(base)).toBe("מסמך אחד החודש, פתוח אחד.");
+  });
+
+  it("uses plural forms and a plain zero sentence", () => {
+    const many = { ...base, documentsThisMonthCount: 3, unpaidCount: 4, openItems: [...base.openItems, ...base.openItems] };
+    expect(issuedSentence(many)).toBe("החודש הוצאתם 3 מסמכים.");
+    expect(unpaidSentence(many)).toBe("יש 4 מסמכים שטרם שולמו.");
+    expect(notificationBody(many)).toBe("3 מסמכים החודש, 2 פתוחים.");
+    expect(issuedSentence({ ...base, documentsThisMonthCount: 0 })).toBe("החודש לא הוצאתם מסמכים.");
+    expect(unpaidSentence({ ...base, unpaidCount: 0 })).toBe("");
   });
 });

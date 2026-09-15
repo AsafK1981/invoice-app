@@ -6,7 +6,7 @@ import { Modal } from "@/components/ui/modal";
 import { FormField } from "@/components/ui/form-field";
 import { BankSelect } from "@/components/ui/bank-select";
 import { BusinessTypeHint } from "@/components/business-type-hint";
-import { saveBusiness } from "@/lib/business-store";
+import { saveBusiness, saveBusinessLogo } from "@/lib/business-store";
 import { isPlaceholderBusinessName, isPlaceholderBusinessTaxId } from "@/lib/business-init";
 import { supabase } from "@/lib/supabase";
 import type { Business } from "@/lib/types";
@@ -125,6 +125,12 @@ export function BusinessFormModal({ open, onClose, business }: Props) {
         paymentNotes: form.paymentNotes?.trim() || undefined,
         defaultDocNotes: form.defaultDocNotes?.trim() || undefined,
       });
+      // The logo has its own column-scoped save, and only when it was changed
+      // in this modal: `business` is the snapshot the modal opened with, so
+      // an untouched logo is never rewritten from it.
+      if ((form.logoUrl || undefined) !== (business.logoUrl || undefined)) {
+        await saveBusinessLogo(business.id, form.logoUrl);
+      }
       setSaving(false);
       setJustSaved(true);
       // Best-effort cleanup of logos replaced during this edit: the bucket

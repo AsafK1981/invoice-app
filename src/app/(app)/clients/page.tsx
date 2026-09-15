@@ -26,6 +26,7 @@ import { parseEmails } from "@/lib/emails";
 import { ClientFormModal } from "@/components/client-form-modal";
 import { CsvImportModal } from "@/components/csv-import-modal";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { useToast } from "@/components/ui/toast";
 import { Tooltip } from "@/components/ui/tooltip";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Pagination } from "@/components/ui/pagination";
@@ -83,6 +84,7 @@ export default function ClientsPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
   const confirm = useConfirm();
+  const showToast = useToast();
   const { printing, print, downloadPdf, pdfBusy } = usePrintSheet();
 
   const statsByClient = useMemo(() => buildStatsByClient(documents, clients), [documents, clients]);
@@ -138,7 +140,12 @@ export default function ClientsPage() {
       tone: "danger",
       confirmLabel: "מחק",
     });
-    if (ok) await clientStore.remove(client.id);
+    if (!ok) return;
+    try {
+      await clientStore.remove(client.id);
+    } catch {
+      showToast(`לא הצלחנו למחוק את ${client.name}. נסו שוב.`, "error");
+    }
   }
 
   return (

@@ -3,6 +3,7 @@ import { Resend } from "resend";
 import nodemailer from "nodemailer";
 import { createClient } from "@supabase/supabase-js";
 import { checkRate, clientIp } from "@/lib/rate-limit";
+import { parseEmailRecipients } from "@/lib/email-recipients";
 import { sanitizeEmailSubject } from "@/lib/email-subject";
 import { type DocumentType } from "@/lib/types";
 import { docStrings, toDocLang } from "@/lib/document-strings";
@@ -67,16 +68,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Per-user limit on top of per-IP. A legitimate user behind a NAT
-    // shouldn't see this; a single user account being abused will.
-    const userLimit = checkRate({ key: `send-email:user:${user.id}`, max: 60, windowMs: 60 * 60_000 });
-    if (!userLimit.ok) {
-      return NextResponse.json(
-        { ok: false, error: "חרגת ממכסת השליחה השעתית (60 מיילים בשעה)." },
-        { status: 429, headers: { "Retry-After": String(Math.ceil(userLimit.resetIn / 1000)) } },
-      );
-    }
-
     const body = await req.json();
     // Only these come from the client. Everything shown in the email
     // (business name, amount, doc number, client name, logo) is derived
@@ -84,6 +75,31 @@ export async function POST(req: NextRequest) {
     // user can't send fabricated invoice content (phishing) through the
     // platform's shared Gmail identity.
     const { to, subject, documentId, kind, daysSinceSent } = body;
+
+    // Recipients are validated and capped before anything else touches them:
+    // the body is caller-controlled, and one request used to be able to
+    // carry an unlimited list to the shared Gmail fallback.
+    const parsedRecipients = parseEmailRecipients(to);
+    if (!parsedRecipients.ok) {
+      return NextResponse.json({ ok: false, error: parsedRecipients.error }, { status: 400 });
+    }
+    const recipients = parsedRecipients.recipients;
+
+    // Per-user limit on top of per-IP, counted in RECIPIENTS, not requests:
+    // one request to ten addresses is ten emails out of the shared quota. A
+    // legitimate user behind a NAT shouldn't see this; an abused account will.
+    const userLimit = checkRate({
+      key: `send-email:user:${user.id}`,
+      max: 60,
+      windowMs: 60 * 60_000,
+      cost: recipients.length,
+    });
+    if (!userLimit.ok) {
+      return NextResponse.json(
+        { ok: false, error: "חרגת ממכסת השליחה השעתית (60 נמענים בשעה). נסו שוב מאוחר יותר." },
+        { status: 429, headers: { "Retry-After": String(Math.ceil(userLimit.resetIn / 1000)) } },
+      );
+    }
 
     if (!documentId || !UUID_RE.test(String(documentId))) {
       return NextResponse.json({ ok: false, error: "documentId required" }, { status: 400 });
@@ -251,19 +267,6 @@ export async function POST(req: NextRequest) {
     // that will sit in someone's inbox for weeks.
     const baseUrl = CANONICAL_ORIGIN;
     const viewUrl = `${baseUrl}/view/${documentId}`;
-
-    if (!to) {
-      return NextResponse.json({ ok: false, error: "חסר נמען" }, { status: 400 });
-    }
-
-    const recipients = String(to)
-      .split(/[,;\n]+/)
-      .map((s) => s.trim())
-      .filter(Boolean);
-
-    if (recipients.length === 0) {
-      return NextResponse.json({ ok: false, error: "לא נמצאו נמענים" }, { status: 400 });
-    }
 
     const isReminder = kind === "reminder";
     const baseSubject = sanitizeEmailSubject(subject, `${businessName} - ${docLabel} #${receiptNumber}`);

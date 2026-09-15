@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Bell, BellOff, AlertCircle, MessageCircle } from "lucide-react";
-import { useBusiness, saveBusiness, saveDunningWhatsappEnabled } from "@/lib/business-store";
+import { useBusiness, saveDunningSettings, saveDunningWhatsappEnabled } from "@/lib/business-store";
 import { useToast } from "@/components/ui/toast";
 
 interface Draft {
@@ -64,10 +64,9 @@ export function DunningSettingsSection() {
     setErr(null);
     setSaving(true);
     try {
-      await saveBusiness({
-        ...business,
-        dunningEnabled: draft.enabled,
-        dunningFromName: draft.fromName.trim() || undefined,
+      await saveDunningSettings(business.id, {
+        enabled: draft.enabled,
+        fromName: draft.fromName,
       });
       await refetch();
       setBaseline(draft);

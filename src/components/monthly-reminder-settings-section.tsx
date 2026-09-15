@@ -11,7 +11,7 @@ import {
   Bell,
   MessageCircle,
 } from "lucide-react";
-import { useBusiness, saveBusiness } from "@/lib/business-store";
+import { useBusiness, saveMonthlyReminderSettings } from "@/lib/business-store";
 import { sanitizeReminderDays, nextReminderOccurrence } from "@/lib/reminder-schedule";
 import { todayInIsrael, toIsraelHour } from "@/lib/date";
 import { useToast } from "@/components/ui/toast";
@@ -90,7 +90,16 @@ export function MonthlyReminderSettingsSection() {
 
   const preview = useMemo(() => {
     if (!draft.enabled) return null;
-    const next = nextReminderOccurrence(draft.days, draft.hour, todayInIsrael(), toIsraelHour(new Date()));
+    // The stored last-sent date keeps this preview in step with the cron: a
+    // day that already passed this month is not treated as due just because
+    // the setting was turned on or changed after it.
+    const next = nextReminderOccurrence(
+      draft.days,
+      draft.hour,
+      todayInIsrael(),
+      toIsraelHour(new Date()),
+      business.monthlyReminderLastSent ?? null,
+    );
     if (!next) return null;
     const dateLabel = next.toLocaleDateString("he-IL", {
       weekday: "long",
@@ -99,7 +108,7 @@ export function MonthlyReminderSettingsSection() {
       year: "numeric",
     });
     return `${dateLabel} בשעה ${hourLabel(draft.hour)}`;
-  }, [draft.enabled, draft.days, draft.hour]);
+  }, [draft.enabled, draft.days, draft.hour, business.monthlyReminderLastSent]);
 
   async function handleSave() {
     if (!draft.emailOn && !draft.inappOn) {
@@ -112,12 +121,11 @@ export function MonthlyReminderSettingsSection() {
       const channels: string[] = [];
       if (draft.emailOn) channels.push("email");
       if (draft.inappOn) channels.push("inapp");
-      await saveBusiness({
-        ...business,
-        monthlyReminderEnabled: draft.enabled,
-        monthlyReminderDays: sanitizeReminderDays(draft.days),
-        monthlyReminderHour: draft.hour,
-        monthlyReminderChannels: channels,
+      await saveMonthlyReminderSettings(business.id, {
+        enabled: draft.enabled,
+        days: sanitizeReminderDays(draft.days),
+        hour: draft.hour,
+        channels,
       });
       await refetch();
       setBaseline(draft);

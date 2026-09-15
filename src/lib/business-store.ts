@@ -184,6 +184,95 @@ export async function saveBusinessTaxId(businessId: string, taxId: string): Prom
   window.dispatchEvent(new Event(CHANGE_EVENT));
 }
 
+/**
+ * One scoped UPDATE for a settings surface: writes only `patch`, throws on an
+ * error, and treats a zero-row result as a refusal (RLS), since supabase-js
+ * reports "updated nothing" as success.
+ */
+async function updateBusinessColumns(
+  businessId: string,
+  patch: Record<string, unknown>,
+): Promise<void> {
+  const { data, error } = await supabase
+    .from("businesses")
+    .update(patch)
+    .eq("id", businessId)
+    .select("id");
+  if (error) throw new Error(error.message);
+  if (!data || data.length === 0) {
+    throw new Error("השמירה לא בוצעה. רענן את הדף ונסה שוב.");
+  }
+  window.dispatchEvent(new Event(CHANGE_EVENT));
+}
+
+/** Persist only the business logo (business details modal, design page brand import). */
+export async function saveBusinessLogo(
+  businessId: string,
+  logoUrl: string | undefined,
+): Promise<void> {
+  await updateBusinessColumns(businessId, { logo_url: logoUrl || null });
+}
+
+/**
+ * Persist only the document design. Never writes anything that has not been
+ * through the same normalizeDocumentDesign() validation every READ path
+ * applies. `null` (no design chosen) round-trips as `null`, not as
+ * `{template:"general",...}` - see normalizeDocumentDesign for why.
+ */
+export async function saveDocumentDesign(
+  businessId: string,
+  design: Business["documentDesign"],
+): Promise<void> {
+  await updateBusinessColumns(businessId, { document_design: normalizeDocumentDesign(design) });
+}
+
+/** Persist only the automatic client payment-reminder settings (email pass). */
+export async function saveDunningSettings(
+  businessId: string,
+  settings: { enabled: boolean; fromName?: string },
+): Promise<void> {
+  await updateBusinessColumns(businessId, {
+    dunning_enabled: settings.enabled,
+    dunning_from_name: settings.fromName?.trim() || null,
+  });
+}
+
+/** Persist only the monthly reminder settings. `monthly_reminder_last_sent` is the cron's, never written here. */
+export async function saveMonthlyReminderSettings(
+  businessId: string,
+  settings: { enabled: boolean; days: number[]; hour: number; channels: string[] },
+): Promise<void> {
+  const days = sanitizeReminderDays(settings.days);
+  const hour = Number.isInteger(settings.hour) && settings.hour >= 0 && settings.hour <= 23 ? settings.hour : 9;
+  await updateBusinessColumns(businessId, {
+    monthly_reminder_enabled: settings.enabled,
+    monthly_reminder_days: days.length > 0 ? days : [1],
+    monthly_reminder_hour: hour,
+    monthly_reminder_channels: settings.channels.length > 0 ? settings.channels : ["email", "inapp"],
+  });
+}
+
+/** Persist only the recurring-document suggestions switch. */
+export async function saveRecurringSuggestionsEnabled(
+  businessId: string,
+  enabled: boolean,
+): Promise<void> {
+  await updateBusinessColumns(businessId, { recurring_suggestions_enabled: enabled });
+}
+
+/**
+ * Persist the business DETAILS form: identity, contact, bank and document
+ * defaults. Nothing else.
+ *
+ * Every other businesses column is owned by its own settings surface and
+ * written by its own scoped setter above (logo, design, payment reminders,
+ * monthly reminder, recurring suggestions, WhatsApp reminders, push kinds,
+ * advance rate, tax-officer notice), or by /api/email-inbox (inbox_token,
+ * inbox_enabled). This UPDATE writes the snapshot the form was opened with,
+ * so any column included here could be silently reverted by a details save
+ * from an old tab - which is exactly how saving business details used to
+ * turn client payment reminders back on.
+ */
 export async function saveBusiness(business: Business): Promise<void> {
   const { data, error } = await supabase
     .from("businesses")
@@ -194,47 +283,12 @@ export async function saveBusiness(business: Business): Promise<void> {
       address: business.address,
       phone: business.phone || null,
       email: business.email || null,
-      logo_url: business.logoUrl || null,
       bank_name: business.bankName || null,
       bank_branch: business.bankBranch || null,
       bank_account: business.bankAccount || null,
       payment_notes: business.paymentNotes || null,
       default_doc_notes: business.defaultDocNotes || null,
-      dunning_enabled: business.dunningEnabled ?? false,
-      dunning_from_name: business.dunningFromName || null,
-      monthly_reminder_enabled: business.monthlyReminderEnabled ?? false,
-      monthly_reminder_days:
-        sanitizeReminderDays(business.monthlyReminderDays).length > 0
-          ? sanitizeReminderDays(business.monthlyReminderDays)
-          : [1],
-      monthly_reminder_hour: business.monthlyReminderHour ?? 9,
-      monthly_reminder_channels:
-        business.monthlyReminderChannels && business.monthlyReminderChannels.length > 0
-          ? business.monthlyReminderChannels
-          : ["email", "inapp"],
-      recurring_suggestions_enabled: business.recurringSuggestionsEnabled !== false,
       round_total_default: business.roundTotalDefault ?? false,
-      income_tax_advance_rate:
-        business.incomeTaxAdvanceRate != null && Number.isFinite(business.incomeTaxAdvanceRate)
-          ? business.incomeTaxAdvanceRate
-          : null,
-      // Defense in depth: this is the client's own write path, but the raw
-      // in-memory value could in principle be anything (a bug elsewhere, a
-      // stale object). Never write anything to the DB that hasn't been
-      // through the same normalizeDocumentDesign() validation that every
-      // READ path also applies. `null` (no design chosen) round-trips as
-      // `null`, not as `{template:"general",...}` - see the doc comment on
-      // normalizeDocumentDesign for why that distinction matters.
-      document_design: normalizeDocumentDesign(business.documentDesign),
-      // dunning_whatsapp_enabled is deliberately absent too: it is owned by
-      // saveDunningWhatsappEnabled(), so a settings save made from a stale
-      // snapshot can't flip the owner's collection reminders back on or off.
-      //
-      // inbox_token / inbox_enabled are deliberately absent. They are owned by
-      // /api/email-inbox, and this whole-row UPDATE writes a snapshot the form
-      // was opened with - so including them would let a settings save made in
-      // one tab silently revert an address rotation made in another, pointing
-      // the owner's forwarding rule at a dead address.
     })
     .eq("id", business.id)
     .select();

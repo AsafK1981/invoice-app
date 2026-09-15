@@ -11,6 +11,17 @@ import type { Client } from "@/lib/types";
 import { BusinessNumberHintText } from "@/components/business-number-hint";
 import { businessNumberForSave } from "@/lib/business-number-hint";
 
+/**
+ * The message shown when a client save fails. The store's own messages are
+ * Hebrew and actionable, so they are shown as is; a raw technical (English)
+ * database error is replaced by a plain Hebrew one.
+ */
+export function clientSaveErrorMessage(err: unknown): string {
+  const message = err instanceof Error ? err.message : "";
+  if (message && /[\u0590-\u05FF]/.test(message)) return message;
+  return "הלקוח לא נשמר. בדקו את החיבור ונסו שוב.";
+}
+
 interface Props {
   open: boolean;
   onClose: () => void;
@@ -28,11 +39,13 @@ export function ClientFormModal({ open, onClose, client }: Props) {
   const [emails, setEmails] = useState<string[]>([""]);
   const [saving, setSaving] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
     setSaving(false);
     setJustSaved(false);
+    setSaveError(null);
     if (client) {
       setForm({
         name: client.name,
@@ -81,8 +94,17 @@ export function ClientFormModal({ open, onClose, client }: Props) {
       notes: form.notes.trim() || undefined,
       createdAt: client?.createdAt ?? todayInIsrael(),
     };
+    setSaveError(null);
     setSaving(true);
-    await clientStore.save(record);
+    try {
+      await clientStore.save(record);
+    } catch (err) {
+      // Stay open with the typed details, and say so: the button used to
+      // show "נשמר ✓" even when nothing reached the database.
+      setSaveError(clientSaveErrorMessage(err));
+      setSaving(false);
+      return;
+    }
     setSaving(false);
     setJustSaved(true);
     setTimeout(onClose, 900);
@@ -241,6 +263,12 @@ export function ClientFormModal({ open, onClose, client }: Props) {
             className="input-warm"
           />
         </FormField>
+
+        {saveError && (
+          <div role="alert" className="text-sm text-rose-700 bg-rose-50 border border-rose-200 p-3 rounded-xl">
+            {saveError}
+          </div>
+        )}
       </div>
     </Modal>
   );

@@ -36,6 +36,11 @@ export interface RateCheck {
   key: string;
   max: number;
   windowMs: number;
+  /**
+   * How many units this call uses (default 1). A request that would take the
+   * bucket past `max` is refused whole and consumes nothing.
+   */
+  cost?: number;
 }
 
 export interface RateResult {
@@ -44,21 +49,23 @@ export interface RateResult {
   resetIn: number; // ms until the window resets
 }
 
-export function checkRate({ key, max, windowMs }: RateCheck): RateResult {
+export function checkRate({ key, max, windowMs, cost = 1 }: RateCheck): RateResult {
   const now = Date.now();
   sweep(now);
+  const units = Math.max(1, Math.floor(cost));
 
   const cur = buckets.get(key);
   if (!cur || cur.resetAt <= now) {
-    buckets.set(key, { count: 1, resetAt: now + windowMs });
-    return { ok: true, remaining: max - 1, resetIn: windowMs };
+    if (units > max) return { ok: false, remaining: max, resetIn: windowMs };
+    buckets.set(key, { count: units, resetAt: now + windowMs });
+    return { ok: true, remaining: max - units, resetIn: windowMs };
   }
 
-  if (cur.count >= max) {
-    return { ok: false, remaining: 0, resetIn: cur.resetAt - now };
+  if (cur.count + units > max) {
+    return { ok: false, remaining: Math.max(0, max - cur.count), resetIn: cur.resetAt - now };
   }
 
-  cur.count++;
+  cur.count += units;
   return { ok: true, remaining: max - cur.count, resetIn: cur.resetAt - now };
 }
 

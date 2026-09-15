@@ -1054,6 +1054,11 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
     try {
       await clientStore.save({ ...selectedClient, taxId });
       setClientTaxIdDraft("");
+    } catch (err) {
+      // The draft stays in the box so the user can retry; the save used to
+      // fail silently here (or reject unhandled).
+      console.warn("[receipt-editor] failed to save the client tax id", err);
+      setToast({ kind: "error", text: "המספר לא נשמר בכרטיס הלקוח. נסו שוב." });
     } finally {
       setSavingClientTaxId(false);
     }

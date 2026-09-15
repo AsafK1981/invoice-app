@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Sparkles,
@@ -13,7 +13,9 @@ import {
   Palette,
 } from "lucide-react";
 import { track } from "@vercel/analytics";
-import { useBusiness, saveBusiness } from "@/lib/business-store";
+import { useBusiness, saveBusiness, saveDocumentDesign } from "@/lib/business-store";
+import { onboardingFormFromBusiness, reseedOnboardingForm } from "@/lib/onboarding-form";
+import { useToast } from "@/components/ui/toast";
 import { clientStore } from "@/lib/client-store";
 import { supabase } from "@/lib/supabase";
 import { BusinessTypeHint } from "@/components/business-type-hint";
@@ -33,20 +35,21 @@ export default function OnboardingPage() {
   const { business, ready } = useBusiness();
   const [step, setStep] = useState<Step>("welcome");
   const [saving, setSaving] = useState(false);
+  const showToast = useToast();
 
-  const [bizForm, setBizForm] = useState({
-    name: business.name === "העסק שלי" ? "" : business.name,
-    businessType: business.businessType,
-    taxId: business.taxId === "000000000" ? "" : business.taxId,
-    address: business.address,
-    phone: business.phone || "",
-    email: business.email || "",
-    // Free-text profession hint, used ONLY client-side to suggest a document
-    // design template (see suggestTemplateForBusinessType). Deliberately not
-    // persisted as its own DB column: it drives a one-tap suggestion, not a
-    // stored business attribute, so no schema change is needed for it.
-    profession: "",
-  });
+  const [bizForm, setBizForm] = useState(() => onboardingFormFromBusiness(business));
+  const initialBizForm = useRef(bizForm);
+  const bizFormSeeded = useRef(false);
+
+  // Re-seed once the business store is ready (see reseedOnboardingForm): the
+  // first render only has the store's empty default, and saving that would
+  // blank a returning user's real profile. Declared before the email prefill
+  // below so the prefill lands on the re-seeded form.
+  useEffect(() => {
+    if (!ready || bizFormSeeded.current) return;
+    bizFormSeeded.current = true;
+    setBizForm((f) => reseedOnboardingForm(f, initialBizForm.current, business));
+  }, [ready, business]);
 
   const [clientForm, setClientForm] = useState({
     name: "",
@@ -79,15 +82,6 @@ export default function OnboardingPage() {
     };
   }, [ready, business.email]);
 
-  // The exact object saved to the DB by saveBusinessAndAdvance. The `design`
-  // step's "use this design" action needs to merge document_design onto the
-  // business record - but the `business` value from useBusiness() only
-  // refreshes asynchronously after a save (it refetches on a window event),
-  // so reading it back immediately after saveBusinessAndAdvance could still
-  // see the pre-save snapshot and silently revert the fields the user just
-  // typed. This ref-like snapshot is always the freshest known-good state.
-  const [savedBusiness, setSavedBusiness] = useState<Business | null>(null);
-
   // Whether the optional "design" step is inserted into the flow. Decided
   // once, when advancing past the business step (not recomputed on every
   // keystroke), so the progress bar's step count doesn't jitter while the
@@ -111,7 +105,7 @@ export default function OnboardingPage() {
   // placeholder (isPlaceholderBusinessTaxId), and drafts are exempt by design.
   // So the number is now collected at the moment it actually matters.
   async function saveBusinessAndAdvance() {
-    if (!bizForm.name.trim()) return;
+    if (!bizForm.name.trim() || !ready) return;
     setSaving(true);
     try {
       const merged: Business = {
@@ -124,7 +118,6 @@ export default function OnboardingPage() {
         email: bizForm.email.trim() || undefined,
       };
       await saveBusiness(merged);
-      setSavedBusiness(merged);
 
       // Only offer the design suggestion when it's a confident match (not
       // 'general' - never nudge a user who gave no usable signal) AND the
@@ -134,6 +127,8 @@ export default function OnboardingPage() {
       const showDesign = suggestedTemplateId !== "general" && !business.documentDesign;
       setIncludeDesignStep(showDesign);
       setStep(showDesign ? "design" : "client");
+    } catch {
+      showToast("לא הצלחנו לשמור את פרטי העסק. בדקו את החיבור ונסו שוב.", "error");
     } finally {
       setSaving(false);
     }
@@ -142,20 +137,21 @@ export default function OnboardingPage() {
   async function applyDesignSuggestion() {
     setSaving(true);
     try {
-      const base = savedBusiness ?? business;
-      await saveBusiness({
-        ...base,
-        documentDesign: {
-          template: suggestedTemplate.id,
-          accent: suggestedTemplate.accent,
-          font: suggestedTemplate.font,
-          layout: suggestedTemplate.layout,
-          pattern: "none",
-          logoPosition: "right",
-        },
+      // Column-scoped: writes only document_design, so it cannot revert the
+      // details saved a moment ago even if `business` is still the pre-save
+      // snapshot (useBusiness refetches asynchronously).
+      await saveDocumentDesign(business.id, {
+        template: suggestedTemplate.id,
+        accent: suggestedTemplate.accent,
+        font: suggestedTemplate.font,
+        layout: suggestedTemplate.layout,
+        pattern: "none",
+        logoPosition: "right",
       });
       track("onboarding_design_suggestion_accepted", { template: suggestedTemplate.id });
       setStep("client");
+    } catch {
+      showToast("לא הצלחנו לשמור את העיצוב. נסו שוב, או דלגו על השלב הזה.", "error");
     } finally {
       setSaving(false);
     }
@@ -183,6 +179,8 @@ export default function OnboardingPage() {
       };
       await clientStore.save(client);
       setStep("done");
+    } catch {
+      showToast("לא הצלחנו לשמור את הלקוח. נסו שוב.", "error");
     } finally {
       setSaving(false);
     }
@@ -438,7 +436,7 @@ export default function OnboardingPage() {
                 </button>
                 <button
                   onClick={saveBusinessAndAdvance}
-                  disabled={!bizForm.name.trim() || saving}
+                  disabled={!bizForm.name.trim() || saving || !ready}
                   className="btn-glow inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-orange-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:shadow-md hover:shadow-orange-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
                   {saving ? "שומר..." : "המשך"}

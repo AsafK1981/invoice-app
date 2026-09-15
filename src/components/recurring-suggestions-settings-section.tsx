@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Repeat, AlertCircle } from "lucide-react";
-import { useBusiness, saveBusiness } from "@/lib/business-store";
+import { useBusiness, saveRecurringSuggestionsEnabled } from "@/lib/business-store";
 import { useToast } from "@/components/ui/toast";
 
 /**
@@ -36,7 +36,7 @@ export function RecurringSuggestionsSettingsSection() {
     setErr(null);
     setSaving(true);
     try {
-      await saveBusiness({ ...business, recurringSuggestionsEnabled: enabled });
+      await saveRecurringSuggestionsEnabled(business.id, enabled);
       await refetch();
       setBaseline(enabled);
       showToast("ההגדרה נשמרה", "success");

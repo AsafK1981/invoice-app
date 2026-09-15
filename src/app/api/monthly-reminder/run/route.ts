@@ -5,7 +5,15 @@ import { createClient } from "@supabase/supabase-js";
 import { createNotificationForBusiness } from "@/lib/notifications-server";
 import { CANONICAL_ORIGIN } from "@/lib/public-url";
 import { toIsraelDate, toIsraelHour } from "@/lib/date";
-import { buildMonthlyReminder, type MonthlyReminderDoc, type MonthlyReminderSummary } from "@/lib/monthly-reminder";
+import {
+  buildMonthlyReminder,
+  issuedSentence,
+  missingRetainerHeading,
+  notificationBody as buildNotificationBody,
+  unpaidSentence,
+  type MonthlyReminderDoc,
+  type MonthlyReminderSummary,
+} from "@/lib/monthly-reminder";
 import { sanitizeReminderDays, shouldSendMonthlyReminder } from "@/lib/reminder-schedule";
 import { DOCUMENT_TYPE_LABELS } from "@/lib/types";
 
@@ -85,7 +93,7 @@ function buildHtml(businessName: string, summary: MonthlyReminderSummary): strin
     </div>
     <div style="background:#ffffff;border:1px solid #e8ddd0;border-radius:12px;padding:24px;margin-bottom:24px;">
       <p style="margin:0 0 16px 0;font-size:15px;color:#1f232b;line-height:1.6;">
-        החודש הוצאתם ${summary.documentsThisMonthCount} מסמכים. הנה מה שכדאי לבדוק:
+        ${escapeHtml(issuedSentence(summary))} הנה מה שכדאי לבדוק:
       </p>
       ${
         summary.openItems.length
@@ -95,13 +103,13 @@ function buildHtml(businessName: string, summary: MonthlyReminderSummary): strin
       }
       ${
         summary.missingRetainerClients.length
-          ? `<p style="margin:0 0 6px 0;font-size:14px;font-weight:bold;color:#1f232b;">לקוחות שקיבלו מסמך בחודש שעבר אך לא החודש:</p>
+          ? `<p style="margin:0 0 6px 0;font-size:14px;font-weight:bold;color:#1f232b;">${escapeHtml(missingRetainerHeading(summary))}</p>
              <ul style="margin:0 0 16px 0;padding-inline-start:20px;font-size:14px;color:#1f232b;">${retainerRows}</ul>`
           : ""
       }
       ${
         summary.unpaidCount > 0
-          ? `<p style="margin:0 0 16px 0;font-size:14px;color:#1f232b;">יש ${summary.unpaidCount} מסמכים שטרם שולמו.</p>`
+          ? `<p style="margin:0 0 16px 0;font-size:14px;color:#1f232b;">${escapeHtml(unpaidSentence(summary))}</p>`
           : ""
       }
     </div>
@@ -117,7 +125,7 @@ function buildHtml(businessName: string, summary: MonthlyReminderSummary): strin
 }
 
 function buildText(businessName: string, summary: MonthlyReminderSummary): string {
-  const lines = [`תזכורת חודשית - ${summary.periodLabel}`, "", `החודש הוצאתם ${summary.documentsThisMonthCount} מסמכים.`];
+  const lines = [`תזכורת חודשית - ${summary.periodLabel}`, "", issuedSentence(summary)];
   if (summary.openItems.length) {
     lines.push("", "מסמכים פתוחים שטרם הפכו לחשבונית:");
     for (const item of summary.openItems) {
@@ -125,11 +133,11 @@ function buildText(businessName: string, summary: MonthlyReminderSummary): strin
     }
   }
   if (summary.missingRetainerClients.length) {
-    lines.push("", "לקוחות שקיבלו מסמך בחודש שעבר אך לא החודש:");
+    lines.push("", missingRetainerHeading(summary));
     for (const c of summary.missingRetainerClients) lines.push(`- ${c}`);
   }
   if (summary.unpaidCount > 0) {
-    lines.push("", `יש ${summary.unpaidCount} מסמכים שטרם שולמו.`);
+    lines.push("", unpaidSentence(summary));
   }
   lines.push("", `${APP_URL}/documents`);
   return lines.join("\n");
@@ -195,11 +203,10 @@ export async function POST(req: NextRequest) {
     auth: { user: GMAIL_USER, pass: GMAIL_APP_PASSWORD.replace(/\s+/g, "") },
   });
 
-  // Candidates: this run's hourly tick is the first (or a later catch-up)
-  // tick at/after the chosen hour on the latest chosen day-of-month that has
-  // already arrived, and last_sent hasn't caught up to that date yet. See
-  // reminder-schedule.ts for the exact rule (including multi-day-per-month,
-  // missed-day, and month-rollover catch-up semantics).
+  // Candidates: today is a chosen day and its hour has been reached, or a
+  // genuinely missed day is being caught up, and last_sent hasn't caught up to
+  // that date yet. See dueReminderDate in reminder-schedule.ts for the exact
+  // rule, which the settings preview shares.
   const candidates = (bizs as BusinessRow[]).filter((b) =>
     shouldSendMonthlyReminder({
       days: sanitizeReminderDays(b.monthly_reminder_days),
@@ -321,7 +328,7 @@ export async function POST(req: NextRequest) {
       // Same reminder-style title/body regardless of which channel(s) fire -
       // when inapp is the only channel, the notification itself IS the
       // reminder, so it must not read like a mere "we emailed you" receipt.
-      const notificationBody = `${summary.documentsThisMonthCount} מסמכים החודש, ${summary.openItems.length} פתוחים.`;
+      const notificationBody = buildNotificationBody(summary);
 
       const emailAttempted = channels.email && Boolean(recipientEmail);
       if (emailAttempted) {

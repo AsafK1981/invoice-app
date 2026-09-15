@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   shouldSendMonthlyReminder,
+  nextReminderOccurrence,
   sanitizeReminderDays,
   clampDayToMonth,
 } from "@/lib/reminder-schedule";
@@ -142,9 +143,18 @@ describe("shouldSendMonthlyReminder", () => {
     ).toBe(false);
   });
 
-  it("(g) a missed day fires on a later day in the same month (catch-up)", () => {
-    // Chosen day 1, nothing sent, we're now on day 5 - should fire
-    // immediately regardless of hour (today is already past the scheduled day).
+  it("(g) a missed day is caught up later in the month only when the last send proves the schedule was running", () => {
+    // Sent on the 1st of July, the 1st of August was missed (outage): catch up.
+    expect(
+      shouldSendMonthlyReminder({
+        days: [1],
+        hour: 9,
+        lastSent: "2026-07-01",
+        todayIsrael: "2026-08-05",
+        currentHourIsrael: 3,
+      }),
+    ).toBe(true);
+    // Never sent: a day that passed before the reminder existed is not "missed".
     expect(
       shouldSendMonthlyReminder({
         days: [1],
@@ -153,7 +163,7 @@ describe("shouldSendMonthlyReminder", () => {
         todayIsrael: "2026-08-05",
         currentHourIsrael: 3,
       }),
-    ).toBe(true);
+    ).toBe(false);
   });
 
   it("(h) fires again next month after a previous month's last_sent", () => {
@@ -264,5 +274,51 @@ describe("shouldSendMonthlyReminder", () => {
         }),
       ).toBe(false);
     });
+  });
+});
+
+function ymd(d: Date | null): string | null {
+  if (!d) return null;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/** Walks the cron hour by hour from `from` (inclusive) and returns the first tick that sends. */
+function firstSendFrom(days: number[], hour: number, lastSent: string | null, from: string, maxDays = 62): string | null {
+  const [y, m, d] = from.split("-").map(Number);
+  for (let i = 0; i < maxDays; i++) {
+    const date = new Date(Date.UTC(y, m - 1, d + i));
+    const today = date.toISOString().slice(0, 10);
+    for (let h = i === 0 ? 12 : 0; h < 24; h++) {
+      if (shouldSendMonthlyReminder({ days, hour, lastSent, todayIsrael: today, currentHourIsrael: h })) {
+        return `${today} ${h}`;
+      }
+    }
+  }
+  return null;
+}
+
+describe("settings changed mid-month (no settings-changed-at column)", () => {
+  it("enabled on the 20th with day 1 and never sent: nothing until the 1st of next month", () => {
+    expect(firstSendFrom([1], 9, null, "2026-09-20")).toBe("2026-10-01 9");
+    expect(ymd(nextReminderOccurrence([1], 9, "2026-09-20", 12, null))).toBe("2026-10-01");
+  });
+
+  it("last sent 25.08, day changed from 25 to 5 on 10.09: next send is 5.10", () => {
+    expect(firstSendFrom([5], 9, "2026-08-25", "2026-09-10")).toBe("2026-10-05 9");
+    expect(ymd(nextReminderOccurrence([5], 9, "2026-09-10", 12, "2026-08-25"))).toBe("2026-10-05");
+  });
+
+  it("the preview says today when the cron is about to send today", () => {
+    // Chosen day is today, hour already passed, never sent: the next tick sends.
+    expect(shouldSendMonthlyReminder({ days: [15], hour: 9, lastSent: null, todayIsrael: "2026-09-15", currentHourIsrael: 14 })).toBe(true);
+    expect(ymd(nextReminderOccurrence([15], 9, "2026-09-15", 14, null))).toBe("2026-09-15");
+    // Already sent today: the preview moves to next month.
+    expect(ymd(nextReminderOccurrence([15], 20, "2026-09-15", 14, "2026-09-15"))).toBe("2026-10-15");
+  });
+
+  it("a genuine outage right after a normal send is still caught up", () => {
+    expect(firstSendFrom([5], 9, "2026-08-05", "2026-09-10")).toBe("2026-09-10 12");
+    // A catch-up stamped two days late still counts as evidence.
+    expect(firstSendFrom([5], 9, "2026-08-07", "2026-09-10")).toBe("2026-09-10 12");
   });
 });

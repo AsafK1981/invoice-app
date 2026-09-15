@@ -182,11 +182,15 @@ export async function revokeClientConsent(id: string): Promise<void> {
 }
 
 export const clientStore = {
+  /**
+   * Insert or update a client. Throws on every failure (no active business,
+   * a PostgREST error, or an update that matched no row) so no caller can
+   * report "saved" for a write that never happened.
+   */
   async save(client: Client, options?: { importBatchId: string }) {
     const bid = getBusinessId();
     if (!bid) {
-      if (options) throw new Error("אין עסק פעיל - רענן את הדף ונסה שוב");
-      return;
+      throw new Error("אין עסק פעיל - רענן את הדף ונסה שוב");
     }
 
     const { data: existing } = await supabase
@@ -196,7 +200,7 @@ export const clientStore = {
       .single();
 
     if (existing) {
-      await supabase
+      const { data: updated, error } = await supabase
         .from("clients")
         .update({
           name: client.name,
@@ -206,7 +210,12 @@ export const clientStore = {
           email: client.email || null,
           notes: client.notes || null,
         })
-        .eq("id", client.id);
+        .eq("id", client.id)
+        .select("id");
+      if (error) throw new Error(error.message);
+      if (!updated || updated.length === 0) {
+        throw new Error("השמירה לא בוצעה. רענן את הדף ונסה שוב.");
+      }
     } else {
       const { error } = await supabase.from("clients").insert({
         id: client.id,
@@ -219,7 +228,7 @@ export const clientStore = {
         email: client.email || null,
         notes: client.notes || null,
       });
-      if (error && options) throw error;
+      if (error) throw new Error(error.message);
     }
     window.dispatchEvent(new Event(CHANGE_EVENT));
   },
@@ -230,7 +239,17 @@ export const clientStore = {
       .select("name")
       .eq("id", id)
       .maybeSingle();
-    await supabase.from("clients").delete().eq("id", id);
+    const { data: deleted, error } = await supabase
+      .from("clients")
+      .delete()
+      .eq("id", id)
+      .select("id");
+    if (error) throw new Error(error.message);
+    // RLS turns a refused delete into "0 rows, no error": nothing was
+    // deleted, so there is nothing to audit.
+    if (!deleted || deleted.length === 0) {
+      throw new Error("המחיקה לא בוצעה. רענן את הדף ונסה שוב.");
+    }
     if (snap?.name) {
       logAudit({
         action: "client.deleted",
