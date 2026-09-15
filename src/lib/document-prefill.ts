@@ -184,8 +184,10 @@ export function buildSourcePrefill(
     // netLineAmounts in src/lib/vat.ts), so quantity x unit price can be a few
     // agorot off the amount actually charged. Re-pricing it as quantity x unit
     // price would credit or collect a different amount; carry it as one unit
-    // at the stored line total instead.
-    if (lineTotal !== null && Math.abs(round2(quantity * unitPrice) - round2(Math.abs(lineTotal))) > 0.005) {
+    // at the stored line total instead. Only when the amount must match the
+    // source (a credit note or a convert): a duplicate is a new sale, and
+    // keeping "1000 x 1.00" there matters more than a few agorot (council).
+    if (mode !== "duplicate" && lineTotal !== null && Math.abs(round2(quantity * unitPrice) - round2(Math.abs(lineTotal))) > 0.005) {
       return { productId: row.product_id || undefined, description: row.description, quantity: 1, unitPrice: Math.abs(lineTotal) };
     }
     return { productId: row.product_id || undefined, description: row.description, quantity, unitPrice };

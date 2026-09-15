@@ -179,3 +179,16 @@ describe("form 1301 helper expense figure", () => {
     expect(form1301Expenses(expenses, "company").deductibleExpenses).toBe(150);
   });
 });
+
+describe("prefill quantity collapse is limited to amount-matching modes (council)", () => {
+  it("a duplicate keeps the original quantity and unit price", async () => {
+    const { buildSourcePrefill } = await import("@/lib/document-prefill");
+    const src = { id: "d1", type: "tax_invoice", number: 7, status: "sent", client_id: null, client_name: "x", subject: "", notes: "", currency: "ILS", exchange_rate: 1, discount_amount: null, total: 1000 } as never;
+    const items = [{ description: "unit", quantity: 1000, unit_price: 0.85, total: 847.46 }];
+    const dup = buildSourcePrefill(src, items as never, { targetType: "tax_invoice", isConvert: false });
+    expect(dup.mode).toBe("duplicate");
+    expect(dup.items[0]).toMatchObject({ quantity: 1000, unitPrice: 0.85 });
+    const credit = buildSourcePrefill(src, items as never, { targetType: "credit_note", isConvert: false });
+    expect(credit.items[0]).toMatchObject({ quantity: 1, unitPrice: 847.46 });
+  });
+});
