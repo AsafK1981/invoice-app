@@ -24,7 +24,8 @@
 //
 // Usage: node scripts/watch-ita-calendar.mjs [--dry-run]
 
-import { spawn } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -161,10 +162,27 @@ async function push(id, text) {
   console.log(`push ${id}: ${res.status} ${(await res.text()).slice(0, 160)}`);
 }
 
+/**
+ * The calendar file as it is on production (origin/master), not as it happens
+ * to be in this checkout: the task runs from a long-lived worktree, and once a
+ * reviewed commit adds next year's table the watcher must see it without anyone
+ * updating that worktree. Falls back to the local file when git is unavailable.
+ */
+function productionCalendarSource() {
+  const cwd = fileURLToPath(ROOT);
+  try {
+    execFileSync("git", ["fetch", "--quiet", "origin", "master"], { cwd, stdio: "ignore", timeout: 60000 });
+    return execFileSync("git", ["show", "origin/master:src/lib/ita/filing-calendar.ts"], { cwd, encoding: "utf8", timeout: 30000 });
+  } catch (err) {
+    console.warn(`could not read origin/master (${err.message}); using the local file`);
+    return readFileSync(new URL("src/lib/ita/filing-calendar.ts", ROOT), "utf8");
+  }
+}
+
 async function main() {
   const forcedYear = process.argv.find((a) => a.startsWith("--year="));
   const year = forcedYear ? Number(forcedYear.slice(7)) : targetYear(today);
-  const calendarSource = readFileSync(new URL("src/lib/ita/filing-calendar.ts", ROOT), "utf8");
+  const calendarSource = productionCalendarSource();
   const covered = coveredMonths(calendarSource).filter((m) => m.startsWith(`${year}-`));
   console.log(`today ${today}; target tax year ${year}; app covers ${covered.length}/12 months`);
 
