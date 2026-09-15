@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { User } from "@supabase/supabase-js";
 import { createPublicAuthStore, schedulePublicAuth, SIGNED_OUT_SNAPSHOT } from "../src/lib/public-auth-store";
 const user = { id: "verified-user" } as User;
@@ -70,7 +70,14 @@ describe("shared public auth", () => {
 
 describe("public auth scheduling", () => {
   const originalWindow = globalThis.window;
-  afterEach(() => { vi.useRealTimers(); vi.stubGlobal("window", originalWindow); });
+  // The session-storage key is derived from the Supabase URL, so the test
+  // pins that URL instead of trusting whatever the environment happens to
+  // hold: with a real project URL in the environment (a .env.local next to
+  // the checkout, a pre-push hook) the key would not match and the
+  // cross-tab case would silently stop testing anything.
+  const SESSION_KEY = "sb-test-auth-token";
+  beforeEach(() => { vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://test.supabase.co"); });
+  afterEach(() => { vi.useRealTimers(); vi.stubGlobal("window", originalWindow); vi.unstubAllEnvs(); });
   function browser(hint: string | null = null) {
     const target = new EventTarget();
     const win = Object.assign(target, { localStorage: { getItem: vi.fn().mockReturnValue(hint) } });
@@ -95,7 +102,7 @@ describe("public auth scheduling", () => {
   });
   it("starts for cross-tab session changes or the bounded timer", () => {
     vi.useFakeTimers(); const win = browser(); const start = vi.fn(); schedulePublicAuth(start);
-    const change = Object.assign(new Event("storage"), { key: "sb-test-auth-token" }); win.dispatchEvent(change);
+    const change = Object.assign(new Event("storage"), { key: SESSION_KEY }); win.dispatchEvent(change);
     expect(start).toHaveBeenCalledTimes(1);
     const second = vi.fn(); schedulePublicAuth(second); vi.advanceTimersByTime(2500); expect(second).toHaveBeenCalledTimes(1);
   });
