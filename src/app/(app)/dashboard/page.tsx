@@ -38,6 +38,7 @@ import { DashboardChart } from "@/components/dashboard-chart";
 import { TopClients } from "@/components/top-clients";
 import { QuoteAging } from "@/components/quote-aging";
 import { OnboardingChecklist } from "@/components/onboarding-checklist";
+import { StoreLoadError, failedStore } from "@/components/store-load-error";
 import { ExemptCeilingTracker } from "@/components/exempt-ceiling-tracker";
 import { NextFilingCard } from "@/components/next-filing-card";
 import { RecurringDueAlert } from "@/components/recurring-due-alert";
@@ -110,9 +111,18 @@ function calcDelta(curr: number, prev: number): { pct: number | null; mode: "up"
 }
 
 export default function DashboardPage() {
-  const { documents, ready } = useDocuments();
-  const { items: expenses } = useExpenses();
-  const { items: clients } = useClients();
+  const { documents, ready, error: docsError, retry: retryDocs } = useDocuments();
+  const { items: expenses, error: expError, retry: retryExp } = useExpenses();
+  const { items: clients, error: clientsError, retry: retryClients } = useClients();
+  // A failed load must not look like an empty business: no "בואו נתחיל"
+  // hero, no zero KPIs. Everything built from the stores is replaced by the
+  // error and its retry button until the load succeeds.
+  const loadSources = [
+    { error: docsError, retry: retryDocs },
+    { error: expError, retry: retryExp },
+    { error: clientsError, retry: retryClients },
+  ];
+  const loadFailed = failedStore(loadSources) !== null;
   const { items: products } = useProducts();
   const { business } = useBusiness();
   const [range, setRange] = useState<RangeChoice>("1m");
@@ -330,6 +340,11 @@ export default function DashboardPage() {
       </div>
 
       <BetaBanner />
+
+      {loadFailed ? (
+        <StoreLoadError sources={loadSources} />
+      ) : (
+      <>
 
       <OnboardingChecklist
         business={business}
@@ -560,6 +575,8 @@ export default function DashboardPage() {
         </div>
         <DocumentsTable documents={documents} limit={10} />
       </div>
+      </>
+      )}
     </div>
   );
 }

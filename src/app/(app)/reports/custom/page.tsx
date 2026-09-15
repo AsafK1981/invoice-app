@@ -8,6 +8,7 @@ import { ArrowRight, SlidersHorizontal, Download, Printer } from "lucide-react";
 import { DownloadPdfButton } from "@/components/download-pdf-button";
 import { HorizontalScroll } from "@/components/horizontal-scroll";
 import { useDocuments } from "@/lib/document-store";
+import { StoreLoadError } from "@/components/store-load-error";
 import { useClients } from "@/lib/client-store";
 import { formatCurrencyWhole } from "@/lib/format";
 import {
@@ -101,8 +102,8 @@ function fmtDate(iso: string): string {
 }
 
 export default function CustomReportPage() {
-  const { documents, ready } = useDocuments();
-  const { items: clients } = useClients();
+  const { documents, ready, error: docsError, retry: retryDocs } = useDocuments();
+  const { items: clients, error: clientsError, retry: retryClients } = useClients();
 
   const { business } = useBusiness();
   const [rangeMode, setRangeMode] = useState<"preset" | "custom">("preset");
@@ -198,6 +199,10 @@ export default function CustomReportPage() {
       subtitle: [periodLabel, ...activeFilterLabels].join(" · "),
       businessName: business.name,
     });
+  }
+
+  if (docsError || clientsError) {
+    return <StoreLoadError sources={[{ error: docsError, retry: retryDocs }, { error: clientsError, retry: retryClients }]} />;
   }
 
   return (

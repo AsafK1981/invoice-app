@@ -9,9 +9,10 @@ import { DocumentsTable } from "@/components/documents-table";
 import { DraftsList } from "@/components/drafts-list";
 import { BankImportModal } from "@/components/bank-import-modal";
 import { formatCurrencyWhole } from "@/lib/format";
+import { StoreLoadError } from "@/components/store-load-error";
 
 export default function DocumentsPage() {
-  const { documents } = useDocuments();
+  const { documents, error: loadError, retry } = useDocuments();
   const { drafts } = useDrafts();
   const [tab, setTab] = useState<"documents" | "drafts">("documents");
   const [bankImportOpen, setBankImportOpen] = useState(false);
@@ -65,6 +66,7 @@ export default function DocumentsPage() {
             </span>
             מסמכים
           </h1>
+          {!loadError && (
           <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-sm text-stone-700 mt-2 mr-14">
             <span>{documents.length} מסמכים סה״כ</span>
             {totals.paid > 0 && (
@@ -90,6 +92,7 @@ export default function DocumentsPage() {
               </>
             )}
           </div>
+          )}
         </div>
       </div>
 
@@ -156,7 +159,9 @@ export default function DocumentsPage() {
       </div>
 
       <div className="card-soft overflow-hidden">
-        {tab === "documents" ? (
+        {tab === "documents" && loadError ? (
+          <StoreLoadError sources={[{ error: loadError, retry }]} />
+        ) : tab === "documents" ? (
           <DocumentsTable
             documents={documents}
             exportSlot={exportSlot}

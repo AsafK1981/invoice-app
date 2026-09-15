@@ -7,7 +7,7 @@
  */
 import type { InvoiceDocument, Expense, Client, DocumentType } from "./types";
 import { DOCUMENT_TYPE_LABELS, DOCUMENT_STATUS_LABELS, PAYMENT_METHOD_LABELS } from "./types";
-import { formatCurrency, formatDate } from "./format";
+import { formatCurrency, formatDate, hebrewCount } from "./format";
 import type { OpenReceivablesResult } from "./capital-declaration";
 import type { ForecastLine, ForecastResult } from "./cash-flow-forecast";
 import { FORECAST_CONFIDENCE_LABELS, FORECAST_KIND_LABELS } from "./cash-flow-forecast";
@@ -212,14 +212,14 @@ export function exportCapitalDeclarationDraft(params: {
       title: "חייבים פתוחים (נכס בהצהרת הון)",
       subtitle: `מסמכים שהופקו ולא שולמו נכון ל-${formatDate(asOfDate)}`,
       businessName,
-      countLabel: `${receivables.count} מסמכים`,
+      countLabel: hebrewCount(receivables.count, "מסמך אחד", "מסמכים"),
       rows: receivables.docs,
       columns: [
         { header: "סוג", value: (d) => DOCUMENT_TYPE_LABELS[d.type as DocumentType] },
         { header: "מספר", value: (d) => d.number, kind: "int", width: 9 },
         { header: "לקוח", value: (d) => d.clientName },
         { header: "תאריך", value: (d) => d.date, kind: "date" },
-        { header: "סכום", value: (d) => d.totalIls ?? d.total, kind: "money", total: "sum" },
+        { header: "סכום", value: (d) => receivables.openAmounts[d.id] ?? (d.totalIls ?? d.total), kind: "money", total: "sum" },
       ],
     }),
     sheet<string>({

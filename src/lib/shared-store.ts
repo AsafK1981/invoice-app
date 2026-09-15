@@ -18,7 +18,15 @@
 
 export type SharedStoreState<T> = {
   data: T;
+  /** True once a fetch has SUCCEEDED; a failed first fetch leaves it false. */
   ready: boolean;
+  /**
+   * Hebrew message of the last failed fetch, null after a success. A failure
+   * never replaces the data with an empty list: the first load stays
+   * `ready: false` (an empty dashboard or a report of zeros would be a lie),
+   * and a failed refetch keeps the last good rows next to the error.
+   */
+  error: string | null;
 };
 
 export type SharedStore<T> = {
@@ -32,7 +40,8 @@ export type SharedStore<T> = {
  * `fetcher` resolves the full dataset. Returning `undefined` means "skip -
  * nothing to fetch yet" (mirrors the original hooks' `if (!bid) return`):
  * the store keeps whatever it already had and stays `ready: false` until a
- * real fetch succeeds. `emptyValue` is both the initial snapshot's data and
+ * real fetch succeeds. A fetcher that THROWS sets `error` (see
+ * SharedStoreState) and never resolves to an empty dataset. `emptyValue` is both the initial snapshot's data and
  * the SSR snapshot (`getServerSnapshot`), so server rendering never touches
  * the browser-only fetch path.
  */
@@ -46,11 +55,13 @@ export function createSharedStore<T>(
    * keeps a page that never renders, say, expenses from fetching them.
    */
   onStart?: (refetch: () => Promise<void>) => void,
+  /** Shown when the fetcher throws something without a message. */
+  errorMessage = "טעינת הנתונים נכשלה. נסו שוב.",
 ): SharedStore<T> {
-  let state: SharedStoreState<T> = { data: emptyValue, ready: false };
+  let state: SharedStoreState<T> = { data: emptyValue, ready: false, error: null };
   // useSyncExternalStore requires getServerSnapshot to return the SAME object
   // every call, or React warns and can loop during hydration.
-  const serverState: SharedStoreState<T> = { data: emptyValue, ready: false };
+  const serverState: SharedStoreState<T> = { data: emptyValue, ready: false, error: null };
   const listeners = new Set<() => void>();
   let inFlight: Promise<void> | null = null;
   // A refetch requested while one is already running (e.g. a save fires the
@@ -73,9 +84,19 @@ export function createSharedStore<T>(
       try {
         do {
           rerunWanted = false;
-          const data = await fetcher();
+          let data: T | undefined;
+          try {
+            data = await fetcher();
+          } catch (err) {
+            const error = err instanceof Error && err.message ? err.message : errorMessage;
+            if (state.error !== error) {
+              state = { ...state, error };
+              notify();
+            }
+            continue;
+          }
           if (data !== undefined) {
-            state = { data, ready: true };
+            state = { data, ready: true, error: null };
             notify();
           }
         } while (rerunWanted);

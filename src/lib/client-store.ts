@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { supabase } from "./supabase";
 import { getBusinessId, onBusinessReady } from "./business-init";
 import { createSharedStore } from "./shared-store";
+import { loadAllPages, type RowPage } from "./report-rows";
+import { STORE_LOAD_MESSAGES } from "./store-load";
 import { logAudit } from "./audit-log";
 import { todayInIsrael } from "./date";
 import { searchTerms, ilikeOrClause } from "./ilike-search";
@@ -37,15 +39,18 @@ function mapRow(row: Record<string, unknown>): Client {
   };
 }
 
-async function fetchClients(): Promise<Client[] | undefined> {
+export async function fetchClients(): Promise<Client[] | undefined> {
   const bid = getBusinessId();
   if (!bid) return undefined;
-  const { data } = await supabase
+  // Paged and throwing on failure, same as fetchDocuments in document-store.ts.
+  const rows = await loadAllPages((from, to) => supabase
     .from("clients")
-    .select("*")
+    .select("*", { count: "exact" })
     .eq("business_id", bid)
-    .order("created_at", { ascending: false });
-  return (data || []).map(mapRow);
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: true })
+    .range(from, to) as unknown as PromiseLike<RowPage>, STORE_LOAD_MESSAGES.clients);
+  return rows.map(mapRow);
 }
 
 // One shared fetch + snapshot for every useClients() consumer on the page.
@@ -63,7 +68,11 @@ export function useClients() {
     clientsStore.getSnapshot,
     clientsStore.getServerSnapshot,
   );
-  return { items: snapshot.data, ready: snapshot.ready };
+  return { items: snapshot.data, ready: snapshot.ready, error: snapshot.error, retry: retryClients };
+}
+
+function retryClients() {
+  void clientsStore.refetch();
 }
 
 /**

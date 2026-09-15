@@ -2,11 +2,14 @@
 
 import { Clock } from "lucide-react";
 import { useDocuments } from "@/lib/document-store";
+import { StoreLoadError } from "@/components/store-load-error";
 import { AgingReport } from "@/components/aging-report";
 import { ReportPageHeader } from "@/components/report-page-header";
 
 export default function AgingPage() {
-  const { documents, ready } = useDocuments();
+  const { documents, ready, error, retry } = useDocuments();
+
+  if (error) return <StoreLoadError sources={[{ error, retry }]} />;
 
   if (!ready) {
     return <div className="text-center py-16 text-stone-500">טוען...</div>;

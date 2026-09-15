@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
     admin
       .from("documents")
       .select(
-        "id, type, number, date, status, total, total_ils, currency, vat, subtotal, client_id, business_id, paid_at, allocation_number",
+        "id, type, number, date, status, total, total_ils, currency, vat, subtotal, client_id, business_id, paid_at, allocation_number, converted_to_id, original_document_id",
       )
       .in("client_id", clientIds)
       .neq("status", "draft")
@@ -51,10 +51,23 @@ export async function GET(req: NextRequest) {
       .in("id", businessIds),
   ]);
 
+  // The portal's totals need to know what was converted and what a credit
+  // note credits (lib/portal-totals.ts), but not other document ids: the
+  // successor id becomes a boolean, and a credit note's original is kept
+  // only when that document is already in this client's own list.
+  const rows = (docsRes.data || []) as Record<string, unknown>[];
+  const listed = new Set(rows.map((d) => d.id as string));
+  const documents = rows.map(({ converted_to_id, original_document_id, ...d }) => ({
+    ...d,
+    converted: Boolean(converted_to_id),
+    original_document_id:
+      typeof original_document_id === "string" && listed.has(original_document_id) ? original_document_id : null,
+  }));
+
   return NextResponse.json({
     ok: true,
     email: payload.email,
-    documents: docsRes.data || [],
+    documents,
     businesses: bizRes.data || [],
   });
 }

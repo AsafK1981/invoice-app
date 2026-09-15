@@ -4,6 +4,7 @@ import { use, useMemo } from "react";
 import { ClipboardList } from "lucide-react";
 import { useDocuments } from "@/lib/document-store";
 import { useExpenses } from "@/lib/expense-store";
+import { StoreLoadError } from "@/components/store-load-error";
 import { useBusiness } from "@/lib/business-store";
 import { Form1301Helper } from "@/components/form-1301-helper";
 import { ReportPageHeader } from "@/components/report-page-header";
@@ -13,8 +14,8 @@ import { YearStepper } from "@/components/year-stepper";
 export default function Form1301Page({ params }: { params: Promise<{ year: string }> }) {
   const { year: yearStr } = use(params);
   const year = parseInt(yearStr, 10);
-  const { documents, ready: docsReady } = useDocuments();
-  const { items: expenses, ready: expReady } = useExpenses();
+  const { documents, ready: docsReady, error: docsError, retry: retryDocs } = useDocuments();
+  const { items: expenses, ready: expReady, error: expError, retry: retryExp } = useExpenses();
   const { business, ready: bizReady } = useBusiness();
 
   const yearDocs = useMemo(() => documents.filter((d) => periodMatches(String(year), d.date)), [documents, year]);
@@ -23,6 +24,8 @@ export default function Form1301Page({ params }: { params: Promise<{ year: strin
   if (!Number.isFinite(year)) {
     return <div className="text-center py-16 text-stone-500">שנה לא תקינה</div>;
   }
+  if (docsError || expError) return <StoreLoadError sources={[{ error: docsError, retry: retryDocs }, { error: expError, retry: retryExp }]} />;
+
   if (!docsReady || !expReady || !bizReady) {
     return <div className="text-center py-16 text-stone-500">טוען...</div>;
   }

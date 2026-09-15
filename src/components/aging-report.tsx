@@ -105,11 +105,11 @@ export function AgingReport({ documents, headless = false }: Props) {
           <tr className="border-t-2 border-orange-200 bg-orange-50/40 font-bold">
             <td className="px-6 py-3 text-sm text-stone-900">סה״כ</td>
             {totals.buckets.map((v, i) => (
-              <td key={i} className={`hidden sm:table-cell px-3 py-3 text-sm text-left font-mono ${BUCKET_TONES[i]}`}>
+              <td key={i} className={`hidden sm:table-cell px-3 py-3 text-sm text-left tabular-nums ${BUCKET_TONES[i]}`}>
                 {v > 0 ? formatCurrencyWhole(v) : "-"}
               </td>
             ))}
-            <td className="px-6 py-3 text-sm text-left font-mono text-stone-900" dir="ltr">
+            <td className="px-6 py-3 text-sm text-left tabular-nums text-stone-900" dir="ltr">
               {formatCurrencyWhole(totals.grand)}
             </td>
             <td></td>
@@ -143,11 +143,11 @@ function FragmentRow({
           )}
         </td>
         {row.buckets.map((v, i) => (
-          <td key={i} className={`hidden sm:table-cell px-3 py-3 text-sm text-left font-mono ${BUCKET_TONES[i]}`}>
+          <td key={i} className={`hidden sm:table-cell px-3 py-3 text-sm text-left tabular-nums ${BUCKET_TONES[i]}`}>
             {v > 0 ? formatCurrencyWhole(v) : "-"}
           </td>
         ))}
-        <td className="px-6 py-3 text-sm text-left font-mono font-bold text-stone-900" dir="ltr">
+        <td className="px-6 py-3 text-sm text-left tabular-nums font-bold text-stone-900" dir="ltr">
           {formatCurrencyWhole(row.total)}
         </td>
         <td className="px-2 py-3">
@@ -175,15 +175,15 @@ function FragmentRow({
                       className="flex items-center gap-2 hover:text-orange-700"
                     >
                       <FileText className="w-3.5 h-3.5 text-stone-400" />
-                      <span className="font-mono">
+                      <span className="tabular-nums">
                         {DOCUMENT_TYPE_LABELS[d.type]} #{d.number}
                       </span>
                       <span className="text-stone-500">· {formatDate(d.date)}</span>
                       <span className="text-stone-500">
-                        ({daysOverdue(d)} ימים)
+                        ({hebrewCount(daysOverdue(d), "יום אחד", "ימים")})
                       </span>
                     </Link>
-                    <span className="font-mono font-semibold text-stone-900" dir="ltr">
+                    <span className="tabular-nums font-semibold text-stone-900" dir="ltr">
                       {formatCurrencyWhole(row.openAmounts[d.id] ?? d.totalIls ?? d.total)}
                     </span>
                   </li>

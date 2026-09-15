@@ -4,6 +4,8 @@ import { useSyncExternalStore } from "react";
 import { supabase } from "./supabase";
 import { getBusinessId, onBusinessReady } from "./business-init";
 import { createSharedStore } from "./shared-store";
+import { loadAllPages, type RowPage } from "./report-rows";
+import { STORE_LOAD_MESSAGES } from "./store-load";
 import { logAudit } from "./audit-log";
 import { formatCurrency } from "./format";
 import { todayInIsrael } from "./date";
@@ -44,15 +46,18 @@ function filingColumns(expense: Expense) {
   };
 }
 
-async function fetchExpenses(): Promise<Expense[] | undefined> {
+export async function fetchExpenses(): Promise<Expense[] | undefined> {
   const bid = getBusinessId();
   if (!bid) return undefined;
-  const { data } = await supabase
+  // Paged and throwing on failure, same as fetchDocuments in document-store.ts.
+  const rows = await loadAllPages((from, to) => supabase
     .from("expenses")
-    .select("*")
+    .select("*", { count: "exact" })
     .eq("business_id", bid)
-    .order("date", { ascending: false });
-  return (data || []).map(mapRow);
+    .order("date", { ascending: false })
+    .order("id", { ascending: true })
+    .range(from, to) as unknown as PromiseLike<RowPage>, STORE_LOAD_MESSAGES.expenses);
+  return rows.map(mapRow);
 }
 
 // One shared fetch + snapshot for every useExpenses() consumer on the page.
@@ -70,7 +75,11 @@ export function useExpenses() {
     expensesStore.getSnapshot,
     expensesStore.getServerSnapshot,
   );
-  return { items: snapshot.data, ready: snapshot.ready };
+  return { items: snapshot.data, ready: snapshot.ready, error: snapshot.error, retry: retryExpenses };
+}
+
+function retryExpenses() {
+  void expensesStore.refetch();
 }
 
 export const expenseStore = {

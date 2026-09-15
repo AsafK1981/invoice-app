@@ -12,6 +12,7 @@ import type { LucideIcon } from "lucide-react";
 import { useDocuments } from "@/lib/document-store";
 import { countsAsIncome } from "@/lib/revenue";
 import { useExpenses } from "@/lib/expense-store";
+import { StoreLoadError } from "@/components/store-load-error";
 import { useBusiness } from "@/lib/business-store";
 import { useClients } from "@/lib/client-store";
 import { formatCurrencyWhole, hebrewCount } from "@/lib/format";
@@ -63,9 +64,9 @@ function deltaPct(cur: number, prev: number): number | null {
 }
 
 export default function ReportsPage() {
-  const { documents, ready: docsReady } = useDocuments();
-  const { items: expenses, ready: expReady } = useExpenses();
-  const { items: clients } = useClients();
+  const { documents, ready: docsReady, error: docsError, retry: retryDocs } = useDocuments();
+  const { items: expenses, ready: expReady, error: expError, retry: retryExp } = useExpenses();
+  const { items: clients, error: clientsError, retry: retryClients } = useClients();
   const { business } = useBusiness();
   const showToast = useToast();
   const [period, setPeriod] = useState<Period>(() => String(new Date().getFullYear()));
@@ -311,6 +312,8 @@ export default function ReportsPage() {
       desc: "בחר מסננים חופשיים - תאריך, לקוח, סוג, סטטוס - והפק כל חתך.",
     },
   ];
+
+  if (docsError || expError || clientsError) return <StoreLoadError sources={[{ error: docsError, retry: retryDocs }, { error: expError, retry: retryExp }, { error: clientsError, retry: retryClients }]} />;
 
   if (!docsReady || !expReady) {
     return <div className="text-center py-16 text-stone-500">טוען...</div>;

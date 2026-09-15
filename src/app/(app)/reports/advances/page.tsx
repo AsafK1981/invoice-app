@@ -2,13 +2,16 @@
 
 import { Percent } from "lucide-react";
 import { useDocuments } from "@/lib/document-store";
+import { StoreLoadError } from "@/components/store-load-error";
 import { useBusiness } from "@/lib/business-store";
 import { IncomeTaxAdvancesReport } from "@/components/income-tax-advances-report";
 import { ReportPageHeader } from "@/components/report-page-header";
 
 export default function AdvancesReportPage() {
-  const { documents, ready: docsReady } = useDocuments();
+  const { documents, ready: docsReady, error: docsError, retry: retryDocs } = useDocuments();
   const { business, ready: bizReady } = useBusiness();
+
+  if (docsError) return <StoreLoadError sources={[{ error: docsError, retry: retryDocs }]} />;
 
   if (!docsReady || !bizReady) {
     return <div className="text-center py-16 text-stone-500">טוען...</div>;

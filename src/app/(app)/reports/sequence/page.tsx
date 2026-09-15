@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowRight, ListOrdered, Printer, CheckCircle2, AlertTriangle } from "lucide-react";
 import { DownloadPdfButton } from "@/components/download-pdf-button";
 import { useDocuments } from "@/lib/document-store";
+import { StoreLoadError } from "@/components/store-load-error";
 import { useBusiness } from "@/lib/business-store";
 import { DOCUMENT_TYPE_LABELS } from "@/lib/types";
 import { buildSequenceRows, totalMissing } from "@/lib/sequence-check";
@@ -23,7 +24,7 @@ import { buildSequenceRows, totalMissing } from "@/lib/sequence-check";
  */
 
 export default function SequenceReportPage() {
-  const { documents, ready } = useDocuments();
+  const { documents, ready, error, retry } = useDocuments();
   const { business } = useBusiness();
   const [year, setYear] = useState<number>(() => new Date().getFullYear());
 
@@ -41,6 +42,8 @@ export default function SequenceReportPage() {
   const rows = useMemo(() => buildSequenceRows(documents, year), [documents, year]);
   const missingCount = totalMissing(rows);
   const periodLabel = `שנת המס ${year}`;
+
+  if (error) return <StoreLoadError sources={[{ error, retry }]} />;
 
   if (!ready) {
     return <div className="text-center py-16 text-stone-500">טוען...</div>;

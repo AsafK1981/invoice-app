@@ -14,6 +14,7 @@ import {
 import { useDocuments } from "@/lib/document-store";
 
 import { useExpenses } from "@/lib/expense-store";
+import { StoreLoadError } from "@/components/store-load-error";
 import { useBusiness } from "@/lib/business-store";
 import { formatCurrencyWhole, shekel } from "@/lib/format";
 import { NumberInput } from "@/components/number-input";
@@ -24,8 +25,8 @@ import {
 } from "@/lib/tax-projection";
 
 export default function TaxProjectionPage() {
-  const { documents, ready: docsReady } = useDocuments();
-  const { items: expenses, ready: expReady } = useExpenses();
+  const { documents, ready: docsReady, error: docsError, retry: retryDocs } = useDocuments();
+  const { items: expenses, ready: expReady, error: expError, retry: retryExp } = useExpenses();
   const { business, ready: bizReady } = useBusiness();
 
   const [points, setPoints] = useState(TAX_CREDIT_DEFAULT_POINTS);
@@ -66,6 +67,8 @@ export default function TaxProjectionPage() {
       projection,
     };
   }, [documents, expenses, year, points, today, business.businessType]);
+
+  if (docsError || expError) return <StoreLoadError sources={[{ error: docsError, retry: retryDocs }, { error: expError, retry: retryExp }]} />;
 
   if (!docsReady || !expReady || !bizReady) {
     return <div className="text-center py-16 text-stone-500">טוען...</div>;

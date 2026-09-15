@@ -19,7 +19,8 @@ import {
   X,
 } from "lucide-react";
 import { useClients, useClientsPage, clientStore } from "@/lib/client-store";
-import { resolveDocumentClientId } from "@/lib/client-picker";
+import { buildStatsByClient } from "@/lib/client-stats";
+import { StoreLoadError } from "@/components/store-load-error";
 import { useDocuments } from "@/lib/document-store";
 import { formatCurrencyWhole, formatDate } from "@/lib/format";
 import { parseEmails } from "@/lib/emails";
@@ -34,35 +35,7 @@ import { PrintSheet, usePrintSheet } from "@/components/print-sheet";
 import { DownloadPdfButton } from "@/components/download-pdf-button";
 import { useBusiness } from "@/lib/business-store";
 import { exportClients } from "@/lib/csv-export";
-import type { Client, InvoiceDocument } from "@/lib/types";
-
-interface ClientStats {
-  docCount: number;
-  totalBilled: number;
-  lastDocDate: string | null;
-}
-
-function buildStatsByClient(documents: InvoiceDocument[], clients: Client[]): Map<string, ClientStats> {
-  const m = new Map<string, ClientStats>();
-  for (const d of documents) {
-    if (d.status === "draft" || d.status === "cancelled") continue;
-    // Unlinked documents (client_id null) are attributed to the one client
-    // their name / tax id identifies, so the per-client count here agrees
-    // with the client page and the documents list.
-    const clientId = resolveDocumentClientId(d, clients);
-    if (!clientId) continue;
-    // Credit notes are stored ALREADY NEGATIVE on save (receipt-editor.tsx
-    // applies `sign = -1`), so a plain sum already subtracts them; applying
-    // a sign here again would double-negate. `totalIls` normalizes
-    // foreign-currency documents into shekels.
-    const cur = m.get(clientId) ?? { docCount: 0, totalBilled: 0, lastDocDate: null };
-    cur.docCount += 1;
-    cur.totalBilled += (d.totalIls ?? d.total);
-    if (!cur.lastDocDate || d.date > cur.lastDocDate) cur.lastDocDate = d.date;
-    m.set(clientId, cur);
-  }
-  return m;
-}
+import type { Client } from "@/lib/types";
 
 // Search used to be matched in-memory here (matchesClient); it now happens
 // server-side in useClientsPage() (see client-store.ts) so a search over a
@@ -75,8 +48,8 @@ export default function ClientsPage() {
   // what's on screen), and the empty-catalog check - none of which may ever
   // be silently truncated to one page. The rendered grid below reads from
   // useClientsPage() instead, which does the real server-side pagination.
-  const { items: clients } = useClients();
-  const { documents } = useDocuments();
+  const { items: clients, error: clientsError, retry: retryClients } = useClients();
+  const { documents, error: docsError, retry: retryDocs } = useDocuments();
   const { business } = useBusiness();
   const [modalOpen, setModalOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
@@ -159,11 +132,13 @@ export default function ClientsPage() {
             </span>
             לקוחות
           </h1>
+          {!clientsError && (
           <p className="text-sm text-stone-700 mt-2 mr-14">
             {search.trim()
               ? `${filteredTotal} מתוך ${clients.length} לקוחות`
               : `${clients.length} לקוחות בספר`}
           </p>
+          )}
         </div>
       </div>
 
@@ -236,7 +211,11 @@ export default function ClientsPage() {
         </div>
       )}
 
-      {clients.length === 0 ? (
+      {clientsError || docsError ? (
+        // The cards' billed totals and the "no clients yet" state both come
+        // from the shared stores; a failed load must not read as either.
+        <StoreLoadError sources={[{ error: clientsError, retry: retryClients }, { error: docsError, retry: retryDocs }]} />
+      ) : clients.length === 0 ? (
         <EmptyState
           icon={Users}
           tone="teal"

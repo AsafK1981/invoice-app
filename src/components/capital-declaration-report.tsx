@@ -380,7 +380,7 @@ export function CapitalDeclarationReport({ headless = false, documents, expenses
                     <td className="px-3 py-2 text-stone-800">{d.clientName}</td>
                     <td className="px-3 py-2 text-stone-600">{formatDate(d.date)}</td>
                     <td className="px-3 py-2 text-left font-semibold tabular-nums" dir="ltr">
-                      {formatCurrencyWhole(d.totalIls ?? d.total)}
+                      {formatCurrencyWhole(receivables.openAmounts[d.id] ?? (d.totalIls ?? d.total))}
                     </td>
                   </tr>
                 ))}

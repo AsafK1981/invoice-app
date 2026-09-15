@@ -4,6 +4,7 @@ import { use, useMemo } from "react";
 import { FileText } from "lucide-react";
 import { useDocuments } from "@/lib/document-store";
 import { useExpenses } from "@/lib/expense-store";
+import { StoreLoadError } from "@/components/store-load-error";
 import { TaxYearDetail } from "@/components/tax-year-detail";
 import { ReportPageHeader } from "@/components/report-page-header";
 import { periodMatches } from "@/lib/report-period";
@@ -12,8 +13,8 @@ import { YearStepper } from "@/components/year-stepper";
 export default function AnnualSummaryPage({ params }: { params: Promise<{ year: string }> }) {
   const { year: yearStr } = use(params);
   const year = parseInt(yearStr, 10);
-  const { documents, ready: docsReady } = useDocuments();
-  const { items: expenses, ready: expReady } = useExpenses();
+  const { documents, ready: docsReady, error: docsError, retry: retryDocs } = useDocuments();
+  const { items: expenses, ready: expReady, error: expError, retry: retryExp } = useExpenses();
 
   const yearDocs = useMemo(() => documents.filter((d) => periodMatches(String(year), d.date)), [documents, year]);
   const yearExpenses = useMemo(() => expenses.filter((e) => periodMatches(String(year), e.date)), [expenses, year]);
@@ -21,6 +22,8 @@ export default function AnnualSummaryPage({ params }: { params: Promise<{ year: 
   if (!Number.isFinite(year)) {
     return <div className="text-center py-16 text-stone-500">שנה לא תקינה</div>;
   }
+  if (docsError || expError) return <StoreLoadError sources={[{ error: docsError, retry: retryDocs }, { error: expError, retry: retryExp }]} />;
+
   if (!docsReady || !expReady) {
     return <div className="text-center py-16 text-stone-500">טוען...</div>;
   }

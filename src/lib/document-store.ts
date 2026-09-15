@@ -4,6 +4,8 @@ import { useSyncExternalStore } from "react";
 import { supabase } from "./supabase";
 import { getBusinessId, onBusinessReady } from "./business-init";
 import { createSharedStore } from "./shared-store";
+import { loadAllPages, type RowPage } from "./report-rows";
+import { STORE_LOAD_MESSAGES } from "./store-load";
 import { DEFAULT_NEXT_NUMBER, DOCUMENT_STATUS_LABELS, DOCUMENT_TYPE_LABELS, type DocumentType, type InvoiceDocument, type DocumentItem } from "./types";
 import { logAudit } from "./audit-log";
 import { cancellationRoute } from "./document-cancel";
@@ -79,18 +81,23 @@ function mapItemRow(row: Record<string, unknown>): DocumentItem {
   };
 }
 
-async function fetchDocuments(): Promise<InvoiceDocument[] | undefined> {
+export async function fetchDocuments(): Promise<InvoiceDocument[] | undefined> {
   const bid = getBusinessId();
   if (!bid) return undefined;
 
-  const { data: docs } = await supabase
+  // Paged, and a failure throws: a single select was capped at 1,000 rows
+  // by PostgREST (an imported history silently lost its oldest documents)
+  // and a failed one used to look exactly like "no documents yet".
+  const docs = await loadAllPages((from, to) => supabase
     .from("documents")
-    .select("*, document_items(*)")
+    .select("*, document_items(*)", { count: "exact" })
     .eq("business_id", bid)
     .order("date", { ascending: false })
-    .order("sort_order", { foreignTable: "document_items" });
+    .order("id", { ascending: true })
+    .order("sort_order", { foreignTable: "document_items" })
+    .range(from, to) as unknown as PromiseLike<RowPage>, STORE_LOAD_MESSAGES.documents);
 
-  if (!docs || docs.length === 0) {
+  if (docs.length === 0) {
     lastKnownDocumentCount = 0;
     return [];
   }
@@ -122,7 +129,11 @@ export function useDocuments() {
     documentsStore.getSnapshot,
     documentsStore.getServerSnapshot,
   );
-  return { documents: snapshot.data, ready: snapshot.ready };
+  return { documents: snapshot.data, ready: snapshot.ready, error: snapshot.error, retry: retryDocuments };
+}
+
+function retryDocuments() {
+  void documentsStore.refetch();
 }
 
 export function useDocument(id: string) {

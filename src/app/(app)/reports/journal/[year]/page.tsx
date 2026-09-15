@@ -6,6 +6,7 @@ import { Printer, ArrowRight } from "lucide-react";
 import { DownloadPdfButton } from "@/components/download-pdf-button";
 import { useDocuments } from "@/lib/document-store";
 import { useExpenses } from "@/lib/expense-store";
+import { StoreLoadError } from "@/components/store-load-error";
 import { useBusiness } from "@/lib/business-store";
 import { formatCurrencyWhole, formatDate } from "@/lib/format";
 import { todayInIsrael } from "@/lib/date";
@@ -21,8 +22,8 @@ export default function YearJournalPage({ params }: { params: Promise<{ year: st
   const { year: yearStr } = use(params);
   const year = parseInt(yearStr, 10);
 
-  const { documents, ready: docsReady } = useDocuments();
-  const { items: expenses, ready: expReady } = useExpenses();
+  const { documents, ready: docsReady, error: docsError, retry: retryDocs } = useDocuments();
+  const { items: expenses, ready: expReady, error: expError, retry: retryExp } = useExpenses();
   const { business, ready: bizReady } = useBusiness();
 
   const data = useMemo(() => {
@@ -80,6 +81,8 @@ export default function YearJournalPage({ params }: { params: Promise<{ year: st
       profit: totalIncome - totalExpenses,
     };
   }, [documents, expenses, year]);
+
+  if (docsError || expError) return <StoreLoadError sources={[{ error: docsError, retry: retryDocs }, { error: expError, retry: retryExp }]} />;
 
   if (!docsReady || !expReady || !bizReady) {
     return (

@@ -20,13 +20,15 @@ import { useClients, recordClientConsent, revokeClientConsent } from "@/lib/clie
 import { CONSENT_SOURCE_LABELS, consentStatus } from "@/lib/consent";
 import { documentsForClient } from "@/lib/client-picker";
 import { useDocuments } from "@/lib/document-store";
+import { computeClientAccount } from "@/lib/aging";
+import { StoreLoadError } from "@/components/store-load-error";
 import { DocumentsTable } from "@/components/documents-table";
 import { formatCurrencyWhole, formatDate } from "@/lib/format";
 
 export default function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { items: clients, ready: clientsReady } = useClients();
-  const { documents, ready: docsReady } = useDocuments();
+  const { items: clients, ready: clientsReady, error: clientsError, retry: retryClients } = useClients();
+  const { documents, ready: docsReady, error: docsError, retry: retryDocs } = useDocuments();
 
   const client = clients.find((c) => c.id === id) ?? null;
 
@@ -35,22 +37,21 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
     // Includes unlinked documents (client_id null) that name this customer,
     // so the page never shows fewer documents than the documents list does.
     const mine = documentsForClient(documents, client, clients);
-    // Total billed = all non-cancelled, non-draft documents. Credit notes are
-    // stored ALREADY NEGATIVE on save (receipt-editor.tsx applies
-    // `sign = -1`), so a plain sum already subtracts them - applying a sign
-    // here again would double-negate a refund into extra billing.
-    const billed = mine
-      .filter((d) => d.status !== "draft" && d.status !== "cancelled")
-      .reduce((s, d) => s + (d.totalIls ?? d.total), 0);
-    const paid = mine
-      .filter((d) => d.status === "paid")
-      .reduce((s, d) => s + (d.totalIls ?? d.total), 0);
+    // Billed / paid follow the one client-account rule (lib/aging.ts): an
+    // open quote is not money owed, a converted proforma is not counted next
+    // to the invoice-receipt that replaced it, and credit notes (stored
+    // negative) reduce billed.
+    const { billed, paid } = computeClientAccount(mine);
     const last = mine.length > 0 ? mine.map((d) => d.date).sort().at(-1) : null;
     const open = mine.filter(
       (d) => d.status === "sent" && (d.type === "quote" || d.type === "proforma" || d.type === "tax_invoice"),
     ).length;
     return { docs: mine, totalBilled: billed, totalPaid: paid, lastDocDate: last ?? null, openCount: open };
   }, [client, documents, clients]);
+
+  if (clientsError || docsError) {
+    return <StoreLoadError sources={[{ error: clientsError, retry: retryClients }, { error: docsError, retry: retryDocs }]} />;
+  }
 
   if (!clientsReady || !docsReady) {
     return <div className="text-center py-16 text-stone-500">טוען...</div>;

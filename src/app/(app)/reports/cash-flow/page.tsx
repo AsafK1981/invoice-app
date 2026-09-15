@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { FileSpreadsheet, TrendingUp } from "lucide-react";
 import { useDocuments } from "@/lib/document-store";
 import { useExpenses } from "@/lib/expense-store";
+import { StoreLoadError } from "@/components/store-load-error";
 import { useBusiness } from "@/lib/business-store";
 import { useClients } from "@/lib/client-store";
 import { todayInIsrael } from "@/lib/date";
@@ -20,9 +21,9 @@ import { DownloadPdfButton } from "@/components/download-pdf-button";
  * every mode the shared PeriodPicker offers looks backwards.
  */
 export default function CashFlowPage() {
-  const { documents, ready: docsReady } = useDocuments();
-  const { items: expenses, ready: expReady } = useExpenses();
-  const { items: clients } = useClients();
+  const { documents, ready: docsReady, error: docsError, retry: retryDocs } = useDocuments();
+  const { items: expenses, ready: expReady, error: expError, retry: retryExp } = useExpenses();
+  const { items: clients, error: clientsError, retry: retryClients } = useClients();
   const { business, ready: bizReady } = useBusiness();
 
   const result = useMemo(
@@ -36,6 +37,8 @@ export default function CashFlowPage() {
       }),
     [documents, expenses, clients, business],
   );
+
+  if (docsError || expError || clientsError) return <StoreLoadError sources={[{ error: docsError, retry: retryDocs }, { error: expError, retry: retryExp }, { error: clientsError, retry: retryClients }]} />;
 
   if (!docsReady || !expReady || !bizReady) {
     return <div className="text-center py-16 text-stone-500">טוען...</div>;

@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { formatDocTotal } from "@/lib/currencies";
+import { portalTotals } from "@/lib/portal-totals";
 
 interface PortalDoc {
   id: string;
@@ -25,6 +26,8 @@ interface PortalDoc {
   currency?: string | null;
   business_id: string;
   paid_at?: string | null;
+  converted?: boolean;
+  original_document_id?: string | null;
 }
 
 interface PortalBusiness {
@@ -93,15 +96,10 @@ export default function PortalDocumentsPage() {
     docsByBusiness.set(d.business_id, list);
   }
 
-  // Credit notes are stored ALREADY NEGATIVE on save (receipt-editor.tsx
-  // applies `sign = -1`), so a plain sum already subtracts them; negating
-  // them again here would double-negate a refund into extra "paid" total.
-  const totalPaid = docs
-    .filter((d) => d.status === "paid")
-    .reduce((s, d) => s + (d.total_ils ?? d.total), 0);
-  const totalOpen = docs
-    .filter((d) => d.status === "sent" && (d.type === "quote" || d.type === "proforma" || d.type === "tax_invoice"))
-    .reduce((s, d) => s + (d.total_ils ?? d.total), 0);
+  // Same receivable rule as the business's client card (lib/aging.ts): a
+  // quote is an offer and never "ממתין לתשלום", a converted proforma is not
+  // counted beside its invoice-receipt, credit notes (stored negative) net.
+  const { paid: totalPaid, open: totalOpen } = portalTotals(docs);
 
   if (loading) {
     return (

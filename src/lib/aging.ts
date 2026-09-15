@@ -65,7 +65,7 @@ export function isOpenReceivable(d: InvoiceDocument): boolean {
  * only a credit note that names its original reduces a debt (a credit note
  * has no "settled" state, so a free-standing one would linger forever).
  */
-function creditsByOriginal(documents: InvoiceDocument[]): Map<string, number> {
+export function creditsByOriginal(documents: InvoiceDocument[]): Map<string, number> {
   const credits = new Map<string, number>();
   for (const d of documents) {
     if (d.type !== "credit_note") continue;
@@ -74,6 +74,81 @@ function creditsByOriginal(documents: InvoiceDocument[]): Map<string, number> {
     credits.set(d.originalDocumentId, (credits.get(d.originalDocumentId) ?? 0) + (d.totalIls ?? d.total));
   }
   return credits;
+}
+
+/** One line of a client's account (כרטסת): a document and what it adds, in shekels. */
+export interface ClientAccountRow {
+  doc: InvoiceDocument;
+  /** `totalIls ?? total`; negative for a credit note. */
+  amount: number;
+}
+
+export interface ClientAccount {
+  rows: ClientAccountRow[];
+  billed: number;
+  paid: number;
+  /** billed - paid, which is exactly what computeAging reports as open for these documents. */
+  balance: number;
+}
+
+/**
+ * Whether a document is a line of a client's account: an issued, not
+ * converted receipt / tax invoice / tax invoice-receipt / proforma, or a
+ * credit note. A price quote is an offer, not a charge, and a converted
+ * document is represented by its successor (a proforma converted into a
+ * tax invoice-receipt counted both, doubling billed and paid).
+ */
+export function isClientAccountDocument(d: InvoiceDocument): boolean {
+  if (d.status === "draft" || d.status === "cancelled") return false;
+  if (d.convertedToId) return false;
+  return (
+    d.type === "receipt" ||
+    d.type === "tax_invoice" ||
+    d.type === "tax_invoice_receipt" ||
+    d.type === "proforma" ||
+    d.type === "credit_note"
+  );
+}
+
+/**
+ * Billed / paid / balance over ONE client's documents (pass the output of
+ * documentsForClient), on the same receivable rule as computeAging so the
+ * client card, the statement, the portal and "פתוח לגבייה" agree:
+ *
+ * - billed: every account document, credit notes (stored negative) included.
+ * - paid: documents marked paid. A credit note that reduces an open
+ *   receivable lowers the debt; any other credit (against a paid document,
+ *   naming no original, or beyond what was still open) is a refund of money
+ *   already received, so it lowers paid instead. That keeps
+ *   balance = billed - paid = the aging open amount.
+ */
+export function computeClientAccount(documents: InvoiceDocument[]): ClientAccount {
+  const rows = documents
+    .filter(isClientAccountDocument)
+    .map((doc) => ({ doc, amount: doc.totalIls ?? doc.total }));
+  const credits = creditsByOriginal(documents);
+  let billed = 0;
+  let paid = 0;
+  let creditTotal = 0;
+  let creditAbsorbedByDebt = 0;
+  for (const { doc, amount } of rows) {
+    billed += amount;
+    if (doc.type === "credit_note") {
+      creditTotal += amount;
+      continue;
+    }
+    if (doc.status === "paid") paid += amount;
+    if (isOpenReceivable(doc)) {
+      const credit = credits.get(doc.id) ?? 0;
+      // A credit note can lower this debt to zero, never below.
+      creditAbsorbedByDebt += Math.max(credit, -amount);
+    }
+  }
+  // Credits (negative) that did not reduce an open debt were refunds.
+  paid += creditTotal - creditAbsorbedByDebt;
+  billed = round2(billed);
+  paid = round2(paid);
+  return { rows, billed, paid, balance: round2(billed - paid) };
 }
 
 export function computeAging(

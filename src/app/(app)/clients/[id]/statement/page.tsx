@@ -7,6 +7,8 @@ import { DownloadPdfButton } from "@/components/download-pdf-button";
 import { useClients } from "@/lib/client-store";
 import { documentsForClient } from "@/lib/client-picker";
 import { useDocuments } from "@/lib/document-store";
+import { computeClientAccount } from "@/lib/aging";
+import { StoreLoadError } from "@/components/store-load-error";
 import { useBusiness } from "@/lib/business-store";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { todayInIsrael } from "@/lib/date";
@@ -18,8 +20,8 @@ export default function ClientStatementPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  const { items: clients, ready: clientsReady } = useClients();
-  const { documents, ready: docsReady } = useDocuments();
+  const { items: clients, ready: clientsReady, error: clientsError, retry: retryClients } = useClients();
+  const { documents, ready: docsReady, error: docsError, retry: retryDocs } = useDocuments();
   const { business, ready: bizReady } = useBusiness();
 
   const client = clients.find((c) => c.id === id) ?? null;
@@ -35,32 +37,27 @@ export default function ClientStatementPage({
     }
     // documentsForClient also claims unlinked documents (client_id null)
     // that name this customer - the statement must not miss a receipt.
-    const mine = documentsForClient(documents, client, clients)
-      .filter((d) => d.status !== "draft" && d.status !== "cancelled")
-      .sort((a, b) => a.date.localeCompare(b.date));
-
-    let totalBilled = 0;
-    let totalPaid = 0;
-    const rows = mine.map((d) => {
-      // Credit notes are stored ALREADY NEGATIVE on save (receipt-editor.tsx
-      // applies `sign = -1`), so `signed` is just the ILS-normalized amount
-      // as-is - applying a sign again here would double-negate a refund
-      // into extra billing. `totalIls` normalizes foreign-currency
-      // documents into shekels (this statement has no per-row currency
-      // column).
-      const signed = d.totalIls ?? d.total;
-      totalBilled += signed;
-      if (d.status === "paid") totalPaid += signed;
-      return { doc: d, signed };
-    });
+    // The account rule lives in computeClientAccount (lib/aging.ts), shared
+    // with the client card, the portal and "פתוח לגבייה": no quotes (an
+    // offer is not a charge), no converted documents (the successor carries
+    // the amount), credit notes (stored negative, in shekels via totalIls)
+    // net the debt they name.
+    const account = computeClientAccount(documentsForClient(documents, client, clients));
+    const rows = account.rows
+      .map(({ doc, amount }) => ({ doc, signed: amount }))
+      .sort((a, b) => a.doc.date.localeCompare(b.doc.date));
 
     return {
       rows,
-      totalBilled,
-      totalPaid,
-      balance: totalBilled - totalPaid,
+      totalBilled: account.billed,
+      totalPaid: account.paid,
+      balance: account.balance,
     };
   }, [client, documents, clients]);
+
+  if (clientsError || docsError) {
+    return <StoreLoadError sources={[{ error: clientsError, retry: retryClients }, { error: docsError, retry: retryDocs }]} />;
+  }
 
   if (!clientsReady || !docsReady || !bizReady) {
     return <div className="text-center py-16 text-stone-500">טוען...</div>;
@@ -202,7 +199,7 @@ export default function ClientStatementPage({
                     <td className="px-3 py-1.5 border border-stone-200">{DOCUMENT_TYPE_LABELS[doc.type]}</td>
                     <td className="px-3 py-1.5 border border-stone-200 font-mono">{doc.number}</td>
                     <td className="px-3 py-1.5 border border-stone-200">
-                      {doc.status === "paid" ? "שולם" : "ממתין"}
+                      {doc.type === "credit_note" ? "זיכוי" : doc.status === "paid" ? "שולם" : "ממתין"}
                       {doc.paidAt && doc.status === "paid" && (
                         <span className="text-xs text-stone-500"> ({formatDate(doc.paidAt.slice(0, 10))})</span>
                       )}

@@ -22,6 +22,7 @@ import { supabase } from "@/lib/supabase";
 import type { Expense } from "@/lib/types";
 import { useRouter } from "next/navigation";
 import { ReturnBar } from "@/components/return-bar";
+import { StoreLoadError } from "@/components/store-load-error";
 import { RETURN_PARAM, safeReturnPath } from "@/lib/return-to";
 
 /**
@@ -124,7 +125,7 @@ function matchesExpense(e: Expense, query: string): boolean {
 }
 
 export default function ExpensesPage() {
-  const { items: expenses, ready: expensesReady } = useExpenses();
+  const { items: expenses, ready: expensesReady, error: expensesError, retry: retryExpenses } = useExpenses();
   const router = useRouter();
   const { business } = useBusiness();
   const [modalOpen, setModalOpen] = useState(false);
@@ -349,6 +350,7 @@ export default function ExpensesPage() {
             </span>
             הוצאות
           </h1>
+          {!expensesError && (
           <p className="text-sm text-stone-700 mt-2 mr-14">
             {filtersActive ? (
               <>
@@ -371,6 +373,7 @@ export default function ExpensesPage() {
               </>
             )}
           </p>
+          )}
           <EmailInboxLink />
         </div>
         {expenses.length > 0 && (
@@ -459,7 +462,9 @@ export default function ExpensesPage() {
         </div>
       )}
 
-      {expenses.length === 0 ? (
+      {expensesError ? (
+        <StoreLoadError sources={[{ error: expensesError, retry: retryExpenses }]} />
+      ) : expenses.length === 0 ? (
         <EmptyState
           icon={Wallet}
           tone="pink"
