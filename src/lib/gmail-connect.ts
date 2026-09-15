@@ -21,7 +21,7 @@
 // are exported and unit-tested; the network functions take an access token
 // and use fetch, no googleapis package.
 
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { GOOGLE_OAUTH_CLIENT_ID } from "./google-oauth-client-id";
 import { decryptColumn, decryptColumnOrNull, encryptColumn } from "./crypto";
@@ -59,6 +59,52 @@ export interface OAuthStatePayload {
   userId: string;
   /** Unix ms. */
   exp: number;
+  /**
+   * sha256 (base64url) of the per-attempt nonce that sits in the
+   * GMAIL_OAUTH_NONCE_COOKIE of the browser that pressed "חבר". The callback
+   * only proceeds when that browser brings the matching cookie back.
+   */
+  nonceHash: string;
+}
+
+// ── Browser binding: the nonce cookie ───────────────────────────────────────
+//
+// The signed state alone proves "this business asked to connect less than ten
+// minutes ago", but not "and the person consenting on Google is that same
+// person". Without a browser binding, a consent link started by one account
+// could be completed by someone else, attaching their mailbox to the wrong
+// business. So connect also drops a random nonce into an HttpOnly cookie
+// scoped to the callback path, the state carries its hash, and the callback
+// refuses to exchange the code unless the two agree.
+
+export const GMAIL_OAUTH_NONCE_COOKIE = "gmail_oauth_nonce";
+
+/** Cookie attributes for the nonce. Path-scoped so no other route ever sees it. */
+export function gmailNonceCookieOptions(maxAgeSeconds: number = Math.floor(OAUTH_STATE_TTL_MS / 1000)) {
+  return {
+    httpOnly: true,
+    secure: true,
+    sameSite: "lax" as const,
+    path: GMAIL_CALLBACK_PATH,
+    maxAge: maxAgeSeconds,
+  };
+}
+
+/** 32 random bytes, base64url. One per connect attempt. */
+export function newOAuthNonce(): string {
+  return randomBytes(32).toString("base64url");
+}
+
+export function hashOAuthNonce(nonce: string): string {
+  return createHash("sha256").update(nonce, "utf8").digest("base64url");
+}
+
+/** True only when a cookie nonce is present and hashes to the state's nonceHash. */
+export function oauthNonceMatches(cookieNonce: string | null | undefined, nonceHash: string): boolean {
+  if (!cookieNonce || !nonceHash) return false;
+  const a = Buffer.from(hashOAuthNonce(cookieNonce));
+  const b = Buffer.from(nonceHash);
+  return a.length === b.length && timingSafeEqual(a, b);
 }
 
 function b64url(buf: Buffer | string): string {
@@ -73,9 +119,9 @@ function stateKey(secret: string): Buffer {
 
 /**
  * The `state` parameter we hand to Google and get back untouched. It binds the
- * callback to the business and user who pressed "חבר", so a stolen callback
- * URL cannot attach someone else's Gmail to this business, and it expires so
- * an old link cannot be replayed a week later.
+ * callback to the business and user who pressed "חבר" and (through nonceHash)
+ * to the browser they pressed it in, and it expires so an old link cannot be
+ * replayed a week later.
  */
 export function signOAuthState(payload: OAuthStatePayload, secret: string): string {
   if (!secret) throw new Error("oauth state: missing signing secret");
@@ -107,9 +153,17 @@ export function verifyOAuthState(
   }
   if (!parsed || typeof parsed !== "object") return null;
   const p = parsed as Record<string, unknown>;
-  if (typeof p.businessId !== "string" || typeof p.userId !== "string" || typeof p.exp !== "number") return null;
+  if (
+    typeof p.businessId !== "string" ||
+    typeof p.userId !== "string" ||
+    typeof p.exp !== "number" ||
+    typeof p.nonceHash !== "string" ||
+    !p.nonceHash
+  ) {
+    return null;
+  }
   if (p.exp <= now) return null;
-  return { businessId: p.businessId, userId: p.userId, exp: p.exp };
+  return { businessId: p.businessId, userId: p.userId, exp: p.exp, nonceHash: p.nonceHash };
 }
 
 // ── The Google side of OAuth ───────────────────────────────────────────────

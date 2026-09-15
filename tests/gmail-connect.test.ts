@@ -5,6 +5,10 @@ import {
   daysAgoIso,
   emailFromIdToken,
   gmailMessageIdentity,
+  gmailNonceCookieOptions,
+  hashOAuthNonce,
+  newOAuthNonce,
+  oauthNonceMatches,
   pickGmailAttachments,
   signOAuthState,
   verifyOAuthState,
@@ -16,7 +20,7 @@ import { CANONICAL_HOST, CANONICAL_ORIGIN } from "@/lib/public-url";
 const SECRET = "test-column-key-0123456789abcdef";
 
 describe("OAuth state", () => {
-  const payload = { businessId: "b-1", userId: "u-1", exp: Date.now() + 60_000 };
+  const payload = { businessId: "b-1", userId: "u-1", exp: Date.now() + 60_000, nonceHash: hashOAuthNonce("n-1") };
 
   it("round-trips a signed payload", () => {
     const state = signOAuthState(payload, SECRET);
@@ -53,6 +57,53 @@ describe("OAuth state", () => {
 
   it("refuses to sign without a secret", () => {
     expect(() => signOAuthState(payload, "")).toThrow();
+  });
+
+  it("rejects a correctly signed state that carries no nonce hash (pre-binding shape)", () => {
+    const empty = signOAuthState({ ...payload, nonceHash: "" }, SECRET);
+    expect(verifyOAuthState(empty, SECRET)).toBeNull();
+    const legacy = signOAuthState(
+      { businessId: payload.businessId, userId: payload.userId, exp: payload.exp } as unknown as typeof payload,
+      SECRET,
+    );
+    expect(verifyOAuthState(legacy, SECRET)).toBeNull();
+  });
+});
+
+describe("OAuth browser nonce", () => {
+  it("makes a fresh, unguessable nonce each time", () => {
+    const a = newOAuthNonce();
+    const b = newOAuthNonce();
+    expect(a).not.toBe(b);
+    expect(Buffer.from(a, "base64url")).toHaveLength(32);
+  });
+
+  it("matches only the cookie whose hash is in the state", () => {
+    const nonce = newOAuthNonce();
+    const hash = hashOAuthNonce(nonce);
+    expect(hash).not.toContain(nonce);
+    expect(oauthNonceMatches(nonce, hash)).toBe(true);
+    expect(oauthNonceMatches(newOAuthNonce(), hash)).toBe(false);
+    expect(oauthNonceMatches(hash, hash)).toBe(false);
+  });
+
+  it("rejects a missing or empty cookie, and an empty hash", () => {
+    const hash = hashOAuthNonce("x");
+    expect(oauthNonceMatches(undefined, hash)).toBe(false);
+    expect(oauthNonceMatches(null, hash)).toBe(false);
+    expect(oauthNonceMatches("", hash)).toBe(false);
+    expect(oauthNonceMatches("x", "")).toBe(false);
+  });
+
+  it("scopes the cookie to the callback, HttpOnly, Secure, Lax, ten minutes", () => {
+    expect(gmailNonceCookieOptions()).toEqual({
+      httpOnly: true,
+      secure: true,
+      sameSite: "lax",
+      path: "/api/gmail/callback",
+      maxAge: 600,
+    });
+    expect(gmailNonceCookieOptions(0).maxAge).toBe(0);
   });
 });
 

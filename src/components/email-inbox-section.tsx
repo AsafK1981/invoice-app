@@ -356,6 +356,8 @@ function GmailBlock({
     const flag = url.searchParams.get("gmail");
     if (!flag) return;
     if (flag === "connected") setNotice("Gmail מחובר. בחרו תקופה ולחצו \"סרוק עכשיו\" כדי לייבא חשבוניות שכבר קיבלתם.");
+    else if (flag === "browser")
+      setError("החיבור ל-Gmail לא הושלם: יש להתחיל ולסיים אותו באותו דפדפן, תוך 10 דקות. לחצו שוב על \"חבר את Gmail\" מכאן.");
     else setError("החיבור ל-Gmail לא הושלם. נסו שוב, ובמסך של גוגל אשרו את ההרשאה לקריאת המייל.");
     url.searchParams.delete("gmail");
     window.history.replaceState(null, "", url.pathname + url.search + url.hash);

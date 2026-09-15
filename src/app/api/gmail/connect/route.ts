@@ -1,6 +1,8 @@
 // Start and end a Gmail connection for הוצאות מהמייל.
 //
-// POST   -> { ok, url }   the Google consent URL to send the browser to
+// POST   -> { ok, url }   the Google consent URL to send the browser to, plus
+//                         an HttpOnly nonce cookie that binds the attempt to
+//                         this browser (checked by the callback)
 // DELETE -> { ok }        revoke the grant (best effort) and forget the account
 //
 // Both are Bearer-authenticated and act on the caller's own business only.
@@ -13,9 +15,13 @@ import { resolveInboxCaller } from "@/lib/email-inbox-server";
 import { decryptColumnOrNull } from "@/lib/crypto";
 import {
   GMAIL_CALLBACK_PATH,
+  GMAIL_OAUTH_NONCE_COOKIE,
   OAUTH_STATE_TTL_MS,
   buildGoogleAuthUrl,
   getGmailAccount,
+  gmailNonceCookieOptions,
+  hashOAuthNonce,
+  newOAuthNonce,
   revokeToken,
   signOAuthState,
 } from "@/lib/gmail-connect";
@@ -39,9 +45,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "החיבור ל-Gmail עוד לא הופעל בשרת." }, { status: 503 });
   }
 
-  const state = signOAuthState({ businessId: business.id, userId, exp: Date.now() + OAUTH_STATE_TTL_MS }, secret);
+  // Bind the attempt to this browser: the nonce goes into an HttpOnly cookie
+  // on this very response (a same-origin fetch, so the browser stores it
+  // before it navigates to Google), and only its hash goes into the state.
+  const nonce = newOAuthNonce();
+  const state = signOAuthState(
+    { businessId: business.id, userId, exp: Date.now() + OAUTH_STATE_TTL_MS, nonceHash: hashOAuthNonce(nonce) },
+    secret,
+  );
   const url = buildGoogleAuthUrl(`${requestOrigin(req)}${GMAIL_CALLBACK_PATH}`, state);
-  return NextResponse.json({ ok: true, url });
+  const res = NextResponse.json({ ok: true, url });
+  res.headers.set("Cache-Control", "no-store");
+  res.cookies.set(GMAIL_OAUTH_NONCE_COOKIE, nonce, gmailNonceCookieOptions());
+  return res;
 }
 
 export async function DELETE(req: NextRequest) {
