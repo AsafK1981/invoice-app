@@ -11,6 +11,7 @@ import { logAudit } from "./audit-log";
 import { cancellationRoute } from "./document-cancel";
 import { filingBusinessNumberSave } from "./business-number-hint";
 import { track } from "@vercel/analytics";
+import { conversionBlockFromRpcError, conversionBlockMessage, type ConversionBlock } from "./document-prefill";
 
 const CHANGE_EVENT = "invoice-app:documents-changed";
 
@@ -168,8 +169,29 @@ export async function getNextDocumentNumber(type: DocumentType): Promise<number>
   return (data?.next_number as number) ?? DEFAULT_NEXT_NUMBER[type];
 }
 
+/**
+ * Thrown by createDocument when the database refused a convert because the
+ * source was already converted, cancelled, a draft or gone. Nothing was
+ * created and no running number was used.
+ */
+export class ConversionBlockedError extends Error {
+  readonly block: ConversionBlock;
+  constructor(block: ConversionBlock) {
+    super(conversionBlockMessage(block));
+    this.name = "ConversionBlockedError";
+    this.block = block;
+  }
+}
+
+/**
+ * `opts.convertSourceId`: this document is the conversion of that quote /
+ * proforma / tax invoice. The database then locks the source, refuses a second
+ * convert, creates the document and marks the source paid and converted, all
+ * in one transaction (scripts/migrations/20260915-atomic-convert-and-cancel.sql).
+ */
 export async function createDocument(
-  doc: Omit<InvoiceDocument, "number"> & { number?: number }
+  doc: Omit<InvoiceDocument, "number"> & { number?: number },
+  opts: { convertSourceId?: string } = {},
 ): Promise<{ id: string; number: number }> {
   const bid = getBusinessId();
   if (!bid) throw new Error("אין עסק פעיל");
@@ -217,9 +239,17 @@ export async function createDocument(
     p_payment_details: doc.paymentDetails ?? null,
     p_payment_reference: doc.paymentReference ?? null,
     p_language: doc.language === "en" ? "en" : "he",
+    // Only sent on a convert, so a plain create keeps working against a
+    // database that does not have the 33-arg function yet.
+    ...(opts.convertSourceId ? { p_source_document_id: opts.convertSourceId } : {}),
   });
 
   if (error) {
+    const block = opts.convertSourceId ? conversionBlockFromRpcError(error) : null;
+    if (block) throw new ConversionBlockedError(block);
+    if (opts.convertSourceId && /convert_type_not_allowed/.test(error.message)) {
+      throw new Error("אי אפשר להמיר את המסמך המקורי לסוג המסמך הזה.");
+    }
     if (error.code === "23505" || /duplicate|unique/i.test(error.message)) {
       throw new Error(
         doc.number != null
@@ -368,107 +398,104 @@ export async function cancelDocument(
   if (snap.status === "draft") {
     throw new Error("טיוטה אינה מסמך בספרים. אפשר פשוט למחוק אותה");
   }
-  if (snap.status === "cancelled") return;
+  const alreadyCancelled = snap.status === "cancelled";
 
-  const route = cancellationRoute(
-    {
-      type: snap.type as DocumentType,
-      status: snap.status as InvoiceDocument["status"],
-      emailedAt: snap.emailed_at as string | null,
-      originalIssuedAt: snap.original_issued_at as string | null,
-    },
-    { vatRegistered: opts.vatRegistered },
-  );
-  if (route.kind === "credit_note") {
-    throw new Error(
-      "המסמך כבר יצא אליך מהעסק ונושא מע\"מ. לפי הוראות ניהול ספרים 23א(2) מבטלים אותו בחשבונית זיכוי, לא בסימון מבוטל",
+  if (!alreadyCancelled) {
+    const route = cancellationRoute(
+      {
+        type: snap.type as DocumentType,
+        status: snap.status as InvoiceDocument["status"],
+        emailedAt: snap.emailed_at as string | null,
+        originalIssuedAt: snap.original_issued_at as string | null,
+      },
+      { vatRegistered: opts.vatRegistered },
     );
-  }
-
-  const { data: updated, error } = await supabase
-    .from("documents")
-    .update({ status: "cancelled", paid_at: null })
-    .eq("id", id)
-    .select("id");
-  if (error) throw new Error(error.message);
-  if (!updated || updated.length === 0) {
-    throw new Error("הביטול לא נשמר, ייתכן שאין הרשאה (RLS) או שהמסמך לא קיים");
-  }
-
-  logAudit({
-    action: "document.cancelled",
-    targetType: "document",
-    targetId: id,
-    targetLabel: `${DOCUMENT_TYPE_LABELS[snap.type as DocumentType]} #${snap.number} · ${snap.client_name}`,
-    payload: {
-      from: DOCUMENT_STATUS_LABELS[snap.status as InvoiceDocument["status"]],
-      reason: opts.reason?.trim() || null,
-      // The two facts 23א(1) turns on: whether the original had left, and the
-      // owner's own statement that the period was not yet reported.
-      delivered: Boolean(snap.emailed_at || snap.original_issued_at),
-      affirmed_not_reported: opts.affirmedNotReported ?? null,
-      clientId: snap.client_id ?? null,
-      clientName: snap.client_name,
-    },
-  });
-  window.dispatchEvent(new Event(CHANGE_EVENT));
-
-  // A document created by converting a quote / proforma / tax invoice is what
-  // counts that payment. Once it is cancelled, the source must stop being
-  // "paid and converted", or it is neither income nor a receivable and can
-  // never be converted again.
-  await releaseConversionSources(id);
-}
-
-/**
- * Detach every source document that was converted into `targetId` (now
- * cancelled): converted_to_id back to null, status back to "sent" (a cancelled
- * source stays cancelled), paid_at cleared, with an audit entry per source.
- * The immutability trigger freezes number/type/date/money/party columns only;
- * status (except back to draft or to cancelled on a delivered VAT document),
- * paid_at and converted_to_id stay writable after issue, which is exactly what
- * linkConvertedDocument relies on too (see
- * scripts/migrations/20260908-documents-no-delete-once-numbered.sql).
- */
-export async function releaseConversionSources(targetId: string) {
-  const { data: sources, error } = await supabase
-    .from("documents")
-    .select("id, type, number, client_name, client_id, status")
-    .eq("converted_to_id", targetId);
-  if (error) {
-    throw new Error("המסמך סומן כמבוטל, אבל בדיקת המסמך המקורי שממנו הומר נכשלה: " + error.message);
-  }
-  if (!sources || sources.length === 0) return;
-
-  for (const src of sources) {
-    const nextStatus = src.status === "cancelled" ? "cancelled" : "sent";
-    const label = `${DOCUMENT_TYPE_LABELS[src.type as DocumentType]} #${src.number}`;
-    const { data: updated, error: updateError } = await supabase
-      .from("documents")
-      .update({ converted_to_id: null, status: nextStatus, paid_at: null })
-      .eq("id", src.id)
-      .eq("converted_to_id", targetId)
-      .select("id");
-    if (updateError || !updated || updated.length === 0) {
+    if (route.kind === "credit_note") {
       throw new Error(
-        `המסמך סומן כמבוטל, אבל החזרת ${label} למצב פתוח נכשלה${updateError ? ": " + updateError.message : ""}. סמנו אותו כלא שולם ידנית.`,
+        "המסמך כבר יצא אליך מהעסק ונושא מע\"מ. לפי הוראות ניהול ספרים 23א(2) מבטלים אותו בחשבונית זיכוי, לא בסימון מבוטל",
       );
     }
+  }
+
+  // One transaction: mark cancelled and release every source that was
+  // converted into this document (a document created by converting a quote /
+  // proforma / tax invoice is what counts that payment; once it is cancelled
+  // the source must stop being "paid and converted"). On an already-cancelled
+  // document only the release runs, which repairs a document cancelled by the
+  // old two-request code whose source stayed linked.
+  const { data, error } = await supabase.rpc("cancel_document_atomic", { p_document_id: id });
+  if (error) {
+    if (/cancel_document_not_found/.test(error.message)) {
+      throw new Error("הביטול לא נשמר, ייתכן שאין הרשאה (RLS) או שהמסמך לא קיים");
+    }
+    throw new Error(
+      alreadyCancelled
+        ? `החזרת המסמך המקורי למצב פתוח נכשלה: ${error.message}. לא בוצע שום שינוי, אפשר לנסות שוב.`
+        : `${error.message}. לא בוצע שום שינוי, אפשר לנסות שוב.`,
+    );
+  }
+  const result = parseCancelResult(data);
+
+  if (!result.alreadyCancelled) {
+    logAudit({
+      action: "document.cancelled",
+      targetType: "document",
+      targetId: id,
+      targetLabel: `${DOCUMENT_TYPE_LABELS[snap.type as DocumentType]} #${snap.number} · ${snap.client_name}`,
+      payload: {
+        from: DOCUMENT_STATUS_LABELS[snap.status as InvoiceDocument["status"]],
+        reason: opts.reason?.trim() || null,
+        // The two facts 23א(1) turns on: whether the original had left, and the
+        // owner's own statement that the period was not yet reported.
+        delivered: Boolean(snap.emailed_at || snap.original_issued_at),
+        affirmed_not_reported: opts.affirmedNotReported ?? null,
+        clientId: snap.client_id ?? null,
+        clientName: snap.client_name,
+      },
+    });
+  }
+
+  for (const src of result.released) {
+    const label = `${DOCUMENT_TYPE_LABELS[src.type as DocumentType] ?? "מסמך"} #${src.number}`;
     logAudit({
       action: "document.conversion_unlinked",
       targetType: "document",
-      targetId: src.id as string,
-      targetLabel: `${label} · ${src.client_name}`,
+      targetId: src.id,
+      targetLabel: `${label} · ${src.client_name ?? ""}`,
       payload: {
-        from: DOCUMENT_STATUS_LABELS[src.status as InvoiceDocument["status"]],
-        to: DOCUMENT_STATUS_LABELS[nextStatus as InvoiceDocument["status"]],
-        cancelledDocumentId: targetId,
+        from: DOCUMENT_STATUS_LABELS[src.from_status as InvoiceDocument["status"]] ?? src.from_status,
+        to: DOCUMENT_STATUS_LABELS[src.to_status as InvoiceDocument["status"]] ?? src.to_status,
+        cancelledDocumentId: id,
         clientId: src.client_id ?? null,
         clientName: src.client_name,
       },
     });
   }
+
   window.dispatchEvent(new Event(CHANGE_EVENT));
+  return { alreadyCancelled: result.alreadyCancelled, releasedCount: result.released.length };
+}
+
+type ReleasedSource = {
+  id: string;
+  type: string;
+  number: number;
+  client_name: string | null;
+  client_id: string | null;
+  from_status: string;
+  to_status: string;
+};
+
+/** Shape check for cancel_document_atomic's json result. */
+export function parseCancelResult(data: unknown): { alreadyCancelled: boolean; released: ReleasedSource[] } {
+  if (!data || typeof data !== "object") {
+    throw new Error("השרת החזיר תשובה לא תקינה לאחר ביטול המסמך");
+  }
+  const row = data as { already_cancelled?: unknown; released?: unknown };
+  const released = Array.isArray(row.released)
+    ? (row.released as ReleasedSource[]).filter((r) => r && typeof r.id === "string")
+    : [];
+  return { alreadyCancelled: row.already_cancelled === true, released };
 }
 
 /**
@@ -530,38 +557,6 @@ export async function updateDocumentStatus(id: string, status: InvoiceDocument["
  * can show a clear "✓ נשלח" indicator (the existing `status` field is set
  * to "sent" on doc creation and doesn't actually mean an email went out).
  */
-/**
- * Records that `sourceQuoteId` was converted into `targetReceiptId` and
- * marks the source quote as "paid", because conversion only happens
- * when the client actually paid for the quote. One transaction, both
- * updates. Used by the receipt editor after a successful create-from
- * convert flow.
- */
-export async function linkConvertedDocument(sourceQuoteId: string, targetReceiptId: string) {
-  // Race-safe: only update when converted_to_id is still null. Two tabs
-  // converting the same quote simultaneously would otherwise produce two
-  // different receipts and the second tab's link would silently overwrite
-  // the first. With this guard the second update returns 0 rows and we
-  // throw a clear error instead.
-  const { data, error } = await supabase
-    .from("documents")
-    .update({
-      converted_to_id: targetReceiptId,
-      status: "paid",
-      paid_at: new Date().toISOString(),
-    })
-    .eq("id", sourceQuoteId)
-    .is("converted_to_id", null)
-    .select();
-  if (error) throw new Error(error.message);
-  if (!data || data.length === 0) {
-    throw new Error(
-      "ההצעה כבר הומרה לקבלה אחרת. שני טאבים פעילים? רענן ובדוק.",
-    );
-  }
-  window.dispatchEvent(new Event(CHANGE_EVENT));
-}
-
 /**
  * Sets (or clears) the מספר הקצאה on a document. Pass null/empty to clear.
  * Sets allocation_set_at to now() when a number is provided so the UI can

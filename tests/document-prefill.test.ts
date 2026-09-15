@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   buildSourcePrefill,
   conversionBlock,
+  conversionBlockFromRpcError,
   conversionBlockMessage,
   creditRefFromSource,
   isCreditableInvoice,
@@ -253,5 +254,27 @@ describe("E. credit note reference", () => {
     expect(isCreditableInvoice({ type: "tax_invoice", status: "cancelled" })).toBe(false);
     expect(isCreditableInvoice({ type: "tax_invoice_receipt", status: "draft" })).toBe(false);
     expect(isCreditableInvoice({ type: "receipt", status: "paid" })).toBe(false);
+  });
+});
+
+describe("conversionBlockFromRpcError", () => {
+  it("maps each database refusal code to the same block the client-side check uses", () => {
+    expect(conversionBlockFromRpcError({ message: "convert_source_already_converted", hint: " rcpt-1 " })).toEqual({
+      kind: "already_converted",
+      convertedToId: "rcpt-1",
+    });
+    expect(conversionBlockFromRpcError({ message: "convert_source_already_converted" })).toEqual({
+      kind: "already_converted",
+      convertedToId: "",
+    });
+    expect(conversionBlockFromRpcError({ message: "convert_source_cancelled" })).toEqual({ kind: "cancelled" });
+    expect(conversionBlockFromRpcError({ message: "convert_source_draft" })).toEqual({ kind: "draft" });
+    expect(conversionBlockFromRpcError({ message: "convert_source_not_found" })).toEqual({ kind: "not_found" });
+  });
+
+  it("returns null for anything else", () => {
+    expect(conversionBlockFromRpcError({ message: "convert_type_not_allowed" })).toBeNull();
+    expect(conversionBlockFromRpcError({ message: "duplicate key value" })).toBeNull();
+    expect(conversionBlockFromRpcError(null)).toBeNull();
   });
 });

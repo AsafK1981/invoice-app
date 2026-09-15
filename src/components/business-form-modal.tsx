@@ -7,6 +7,7 @@ import { FormField } from "@/components/ui/form-field";
 import { BankSelect } from "@/components/ui/bank-select";
 import { BusinessTypeHint } from "@/components/business-type-hint";
 import { saveBusiness, saveBusinessLogo } from "@/lib/business-store";
+import { saveBusinessThenLogo } from "@/lib/business-save-steps";
 import { isPlaceholderBusinessName, isPlaceholderBusinessTaxId } from "@/lib/business-init";
 import { supabase } from "@/lib/supabase";
 import type { Business } from "@/lib/types";
@@ -112,24 +113,34 @@ export function BusinessFormModal({ open, onClose, business }: Props) {
     setSaveError(null);
     setSaving(true);
     try {
-      await saveBusiness({
-        ...form,
-        name: form.name.trim(),
-        taxId: form.taxId.trim(),
-        address: form.address.trim(),
-        phone: form.phone?.trim() || undefined,
-        email: form.email?.trim() || undefined,
-        bankName: form.bankName?.trim() || undefined,
-        bankBranch: form.bankBranch?.trim() || undefined,
-        bankAccount: form.bankAccount?.trim() || undefined,
-        paymentNotes: form.paymentNotes?.trim() || undefined,
-        defaultDocNotes: form.defaultDocNotes?.trim() || undefined,
-      });
       // The logo has its own column-scoped save, and only when it was changed
       // in this modal: `business` is the snapshot the modal opened with, so
       // an untouched logo is never rewritten from it.
-      if ((form.logoUrl || undefined) !== (business.logoUrl || undefined)) {
-        await saveBusinessLogo(business.id, form.logoUrl);
+      const outcome = await saveBusinessThenLogo({
+        saveDetails: () =>
+          saveBusiness({
+            ...form,
+            name: form.name.trim(),
+            taxId: form.taxId.trim(),
+            address: form.address.trim(),
+            phone: form.phone?.trim() || undefined,
+            email: form.email?.trim() || undefined,
+            bankName: form.bankName?.trim() || undefined,
+            bankBranch: form.bankBranch?.trim() || undefined,
+            bankAccount: form.bankAccount?.trim() || undefined,
+            paymentNotes: form.paymentNotes?.trim() || undefined,
+            defaultDocNotes: form.defaultDocNotes?.trim() || undefined,
+          }),
+        saveLogo: () => saveBusinessLogo(business.id, form.logoUrl),
+        logoChanged: (form.logoUrl || undefined) !== (business.logoUrl || undefined),
+      });
+      if (!outcome.ok) {
+        // Details failed: nothing changed. Logo failed: the details ARE saved,
+        // so say so and keep the modal open with the new logo still selected,
+        // so "save" again retries it. Replaced files are kept (the saved
+        // business may still point at one of them).
+        setSaveError(outcome.message);
+        return;
       }
       setSaving(false);
       setJustSaved(true);
@@ -144,8 +155,6 @@ export function BusinessFormModal({ open, onClose, business }: Props) {
       }
       setTimeout(onClose, 900);
       return;
-    } catch (err) {
-      setSaveError(err instanceof Error ? err.message : "שגיאה בשמירה");
     } finally {
       setSaving(false);
     }

@@ -269,6 +269,27 @@ export function conversionBlock(
   return null;
 }
 
+/**
+ * create_document_atomic locks the convert source and refuses inside the same
+ * transaction that would create the document (see
+ * scripts/migrations/20260915-atomic-convert-and-cancel.sql). Its refusals
+ * arrive as PostgREST errors whose message is one of these codes; the id of the
+ * document that already took the conversion rides in `hint`. Null for any
+ * other error.
+ */
+export function conversionBlockFromRpcError(
+  err: { message?: string | null; hint?: string | null } | null | undefined,
+): ConversionBlock | null {
+  const message = err?.message ?? "";
+  if (message.includes("convert_source_already_converted")) {
+    return { kind: "already_converted", convertedToId: err?.hint?.trim() ?? "" };
+  }
+  if (message.includes("convert_source_cancelled")) return { kind: "cancelled" };
+  if (message.includes("convert_source_draft")) return { kind: "draft" };
+  if (message.includes("convert_source_not_found")) return { kind: "not_found" };
+  return null;
+}
+
 export function conversionBlockMessage(
   block: ConversionBlock,
   src?: { type?: string; number?: number | string } | null,

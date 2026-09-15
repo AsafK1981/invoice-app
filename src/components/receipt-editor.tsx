@@ -31,7 +31,7 @@ import { IsraeliDateInput, reportInvalidIsraeliDate } from "@/components/israeli
 import { sendReceiptEmail } from "@/lib/email";
 import { EmailVerificationModal } from "@/components/email-verification-modal";
 import { GrowingTextarea } from "@/components/ui/growing-textarea";
-import { createDocument, getConversionSourceState, getNextDocumentNumber, linkConvertedDocument, markDocumentEmailed, useDocuments } from "@/lib/document-store";
+import { ConversionBlockedError, createDocument, getConversionSourceState, getNextDocumentNumber, markDocumentEmailed, useDocuments } from "@/lib/document-store";
 import {
   buildSourcePrefill,
   conversionBlock,
@@ -1587,21 +1587,36 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
         ),
       };
 
-      // Re-check the convert source right before issuing: another tab (or
-      // this one, via browser Back) may have converted it since the form
-      // loaded. A second paid receipt for one payment cannot be undone
-      // without a credit note, so refuse here rather than after the fact.
-      if (isConvert && fromDocId) {
-        const state = await getConversionSourceState(fromDocId);
-        const block = conversionBlock(state);
+      // Re-check the convert source right before issuing, for a friendly
+      // message with the source's name: another tab (or this one, via browser
+      // Back) may have converted it since the form loaded. The real guard is
+      // in the database: createDocument passes the source id, and
+      // create_document_atomic locks the source, refuses a second convert and
+      // links the source in the same transaction that creates this document.
+      const convertSourceId = isConvert && fromDocId ? fromDocId : undefined;
+      let sourceState: Awaited<ReturnType<typeof getConversionSourceState>> = null;
+      if (convertSourceId) {
+        sourceState = await getConversionSourceState(convertSourceId);
+        const block = conversionBlock(sourceState);
         if (block) {
-          const message = conversionBlockMessage(block, state);
+          const message = conversionBlockMessage(block, sourceState);
           setConvertBlocked({ block, message });
           throw new Error(message);
         }
       }
 
-      const { id: docId, number: allocatedNumber } = await createDocument(draft);
+      let created: { id: string; number: number };
+      try {
+        created = await createDocument(draft, { convertSourceId });
+      } catch (err) {
+        if (err instanceof ConversionBlockedError) {
+          const message = conversionBlockMessage(err.block, sourceState);
+          setConvertBlocked({ block: err.block, message });
+          throw new Error(message);
+        }
+        throw err;
+      }
+      const { id: docId, number: allocatedNumber } = created;
       issuedRef.current = { id: docId, number: allocatedNumber };
       setIssuedDoc({ id: docId, number: allocatedNumber });
       const doc = { ...draft, id: docId, number: allocatedNumber };
@@ -1641,25 +1656,8 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
         serverDraftIdRef.current = null;
       }
 
-      // If this was a convert-from-quote flow, link the original quote to
-      // this new receipt and mark it paid. Failures are logged but
-      // don't block the success toast; the receipt itself is already
-      // created, the link is purely for navigation/UX.
-      let linkFailed = false;
-      if (isConvert && fromDocId) {
-        try {
-          await linkConvertedDocument(fromDocId, docId);
-        } catch (err) {
-          console.warn("[convert] failed to link source quote", err);
-          linkFailed = true;
-        }
-      }
-      // #32: the new doc was created fine, but linking/marking the source quote
-      // failed; surface it so the user can reconcile (mark the quote paid
-      // manually) instead of silently believing the conversion fully closed.
-      const linkNote = linkFailed
-        ? " שים לב: קישור הצעת המחיר המקורית נכשל, סמן אותה כשולמה ידנית."
-        : "";
+      // A convert's source was already linked and marked paid by
+      // create_document_atomic, in the same transaction as the create.
 
       if (send) {
         const result = await sendReceiptEmail({
@@ -1708,13 +1706,13 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
         setToast({
           kind: "success",
           text: result.mocked
-            ? `${docLabel} #${allocatedNumber} ${isProforma ? "נשמר" : "נשמרה"}. מייל מדומה נשלח ל-${emailTo}.${linkNote} פותח תצוגה...`
-            : `${docLabel} #${allocatedNumber} ${isProforma ? "נשמר ונשלח" : "נשמרה ונשלחה"} ל-${emailTo}.${linkNote} פותח תצוגה...`,
+            ? `${docLabel} #${allocatedNumber} ${isProforma ? "נשמר" : "נשמרה"}. מייל מדומה נשלח ל-${emailTo}. פותח תצוגה...`
+            : `${docLabel} #${allocatedNumber} ${isProforma ? "נשמר ונשלח" : "נשמרה ונשלחה"} ל-${emailTo}. פותח תצוגה...`,
         });
       } else {
         setToast({
           kind: "success",
-          text: `${docLabel} #${allocatedNumber} ${isProforma ? "נשמר" : "נשמרה"}.${linkNote} פותח תצוגה...`,
+          text: `${docLabel} #${allocatedNumber} ${isProforma ? "נשמר" : "נשמרה"}. פותח תצוגה...`,
         });
       }
 
@@ -1725,7 +1723,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
       const nextUrl = willNeedAllocation
         ? `/documents/${doc.id}?needsAllocation=1`
         : `/documents/${doc.id}`;
-      setTimeout(() => router.push(nextUrl), linkFailed ? 3500 : 1000);
+      setTimeout(() => router.push(nextUrl), 1000);
     } catch (err) {
       const message = err instanceof Error ? err.message : "שגיאה לא ידועה";
       setToast({ kind: "error", text: `שמירת המסמך נכשלה: ${message}` });
@@ -1845,7 +1843,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
               <p className="font-semibold text-stone-900 text-sm">אי אפשר להמיר את המסמך</p>
               <p className="text-xs text-stone-700 mt-0.5">{convertBlocked.message}</p>
               <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
-                {convertBlocked.block.kind === "already_converted" && (
+                {convertBlocked.block.kind === "already_converted" && convertBlocked.block.convertedToId && (
                   <a
                     href={`/documents/${convertBlocked.block.convertedToId}`}
                     className="inline-flex items-center text-xs font-semibold text-orange-700 hover:text-orange-800 underline"

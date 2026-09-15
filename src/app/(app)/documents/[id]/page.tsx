@@ -632,6 +632,29 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
     }
   }
 
+  /**
+   * A document cancelled by the old two-request cancel could stay cancelled
+   * while its conversion source was never released (still paid + converted,
+   * so it can never be converted again). Cancelling again is idempotent: on a
+   * cancelled document cancel_document_atomic only runs the release.
+   */
+  async function handleReleaseSource() {
+    if (!doc || doc.status !== "cancelled") return;
+    setStatusUpdating(true);
+    setToast(null);
+    try {
+      await cancelDocument(doc.id, {
+        vatRegistered: canIssueTaxInvoices(business),
+        affirmedNotReported: true,
+      });
+      setToast({ kind: "success", text: "המסמך המקורי חזר למצב פתוח" });
+    } catch (err) {
+      setToast({ kind: "error", text: err instanceof Error ? err.message : "שגיאה בשחרור המסמך המקורי" });
+    } finally {
+      setStatusUpdating(false);
+    }
+  }
+
   async function handleDelete() {
     if (!doc) return;
 
@@ -1360,6 +1383,23 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
               הוא נשאר בספרים עם מספרו ואינו נכלל בסיכומים. כל פלט שלו מסומן &quot;מבוטל&quot;.
               אם הוא כבר נמסר ללקוח, בדוק מול רואה החשבון אם נדרשת גם חשבונית זיכוי.
             </p>
+            {sourceQuote && (
+              <div className="mt-2 text-xs text-rose-900">
+                <p>
+                  {DOCUMENT_TYPE_LABELS[sourceQuote.type]} #{sourceQuote.number} עדיין מסומן כשולם וכמומר למסמך הזה,
+                  ולכן אי אפשר להמיר אותו שוב.
+                </p>
+                <button
+                  type="button"
+                  onClick={handleReleaseSource}
+                  disabled={statusUpdating}
+                  className="mt-1.5 inline-flex items-center gap-1.5 px-3 py-1.5 min-h-[36px] rounded-lg text-xs font-semibold bg-white border border-rose-300 text-rose-800 hover:bg-rose-100 disabled:opacity-60"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  החזר את {DOCUMENT_TYPE_LABELS[sourceQuote.type]} #{sourceQuote.number} למצב פתוח
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
