@@ -1,4 +1,5 @@
-import { formatCurrency } from "@/lib/format";
+import { formatDocTotal } from "@/lib/currencies";
+import { formatDate } from "@/lib/format";
 
 // One source of truth for the collection-reminder wording, shared by the two
 // channels that use it:
@@ -8,9 +9,10 @@ import { formatCurrency } from "@/lib/format";
 //  * the assisted WhatsApp reminder, which only PREPARES a message that the
 //    owner then sends from their own number with one tap.
 //
-// The strings below were the email's for months and moved here unchanged, so
-// the email keeps rendering byte-for-byte what it always did. Anything that
-// edits them changes both channels on purpose.
+// The strings below were the email's for months. The document noun is a
+// placeholder since 2026-09-15 so a חשבון עסקה is not called "חשבונית המס";
+// for a tax invoice the rendered text is still byte-for-byte what it always
+// was. Anything that edits them changes both channels on purpose.
 //
 // House rule: plain hyphens only, never a long dash.
 
@@ -18,30 +20,55 @@ export type DunningStage = 3 | 14 | 30;
 export const DUNNING_STAGES: DunningStage[] = [30, 14, 3]; // newest first; earliest match wins
 
 export const DUNNING_SUBJECTS: Record<DunningStage, string> = {
-  3: "תזכורת: חשבונית מספר {n}",
-  14: "תזכורת שנייה: חשבונית מספר {n}",
-  30: "חשבונית מספר {n}: תשלום מתעכב",
+  3: "תזכורת: {doc} מספר {n}",
+  14: "תזכורת שנייה: {doc} מספר {n}",
+  30: "{doc} מספר {n}: תשלום מתעכב",
 };
 
 export const DUNNING_TONES: Record<DunningStage, { intro: string; cta: string; signoff: string }> = {
   3: {
-    intro: "מקווה שהמסמך הגיע בסדר. רק רציתי לוודא שראיתם את חשבונית המס מספר {n} על סך {total} ששלחנו ב-{date}.",
-    cta: "אם נוח לכם, אשמח לסגור את התשלום. כל פרטי התשלום נמצאים בחשבונית.",
+    intro: "מקווה שהמסמך הגיע בסדר. רק רציתי לוודא שראיתם את {docFull} מספר {n} על סך {total} ששלחנו ב-{date}.",
+    cta: "אם נוח לכם, אשמח לסגור את התשלום. כל פרטי התשלום נמצאים {inDoc}.",
     signoff: "תודה רבה,",
   },
   14: {
-    intro: "אנחנו עוקבים אחרי חשבונית מספר {n} על סך {total} ששלחנו ב-{date}. חלפו כבר {days} ימים ולא ראינו את התשלום.",
+    intro: "אנחנו עוקבים אחרי {doc} מספר {n} על סך {total} ששלחנו ב-{date}. חלפו כבר {days} ימים ולא ראינו את התשלום.",
     cta: "אשמח לקבל עדכון: האם התשלום בוצע ולא הגיע, או שעדיין מתעכב?",
     signoff: "תודה,",
   },
   30: {
-    intro: "חשבונית מספר {n} על סך {total} מ-{date} עדיין לא שולמה. חלפו {days} ימים.",
+    intro: "{doc} מספר {n} על סך {total} מ-{date} עדיין לא {paid}. חלפו {days} ימים.",
     cta: "אנא תאמו אתנו תאריך תשלום בהקדם. אם יש בעיה או שאלה, נשמח לסייע.",
     signoff: "בכבוד רב,",
   },
 };
 
-/** Fill `{n}` / `{total}` / `{date}` / `{days}` placeholders. Unknown keys
+/**
+ * The document-noun placeholders for a reminder, in correct Hebrew for the
+ * type. Only the two receivable types are ever chased (see
+ * isOpenReceivable); anything else falls back to the tax-invoice wording.
+ * "חשבון עסקה" is masculine, so its verb is "שולם", not "שולמה".
+ */
+export function dunningDocVars(type?: string | null): Record<"doc" | "docFull" | "theDoc" | "inDoc" | "paid", string> {
+  if (type === "proforma") {
+    return {
+      doc: "חשבון עסקה",
+      docFull: "חשבון העסקה",
+      theDoc: "חשבון העסקה",
+      inDoc: "בחשבון העסקה",
+      paid: "שולם",
+    };
+  }
+  return {
+    doc: "חשבונית",
+    docFull: "חשבונית המס",
+    theDoc: "החשבונית",
+    inDoc: "בחשבונית",
+    paid: "שולמה",
+  };
+}
+
+/** Fill `{n}` / `{total}` / `{date}` / `{days}` / document-noun placeholders. Unknown keys
  *  render as empty rather than leaving a raw `{brace}` in a client's face. */
 export function fillDunningVars(template: string, vars: Record<string, string>): string {
   return template.replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? "");
@@ -75,7 +102,7 @@ export function dunningStageFor(days: number): DunningStage | null {
  * tone on them there would sound like chasing someone who is not late.
  */
 export const PRE_STAGE_TONE = {
-  intro: "שלחתי לך את החשבונית מספר {n} על סך {total} מ-{date}, אשמח לתשלום.",
+  intro: "שלחתי לך את {theDoc} מספר {n} על סך {total} מ-{date}, אשמח לתשלום.",
   cta: "כל פרטי התשלום נמצאים במסמך. אם כבר שילמת, אפשר להתעלם מההודעה.",
   signoff: "תודה,",
 };
@@ -90,6 +117,10 @@ interface ReminderTextArgs {
   clientName: string;
   number: number;
   total: number;
+  /** ISO 4217 code the total is in; missing means ILS. */
+  currency?: string | null;
+  /** Document type, for the noun ("חשבונית" / "חשבון עסקה"). */
+  docType?: string | null;
   /** Issue date, already formatted for a human reader. */
   date: string;
   days: number;
@@ -107,8 +138,9 @@ interface ReminderTextArgs {
 export function whatsappReminderText(args: ReminderTextArgs): string {
   const tone = toneForStage(args.stage);
   const vars = {
+    ...dunningDocVars(args.docType),
     n: String(args.number),
-    total: formatCurrency(args.total),
+    total: formatDocTotal(args.total, args.currency),
     date: args.date,
     days: String(args.days),
   };
@@ -119,4 +151,45 @@ export function whatsappReminderText(args: ReminderTextArgs): string {
     `לצפייה במסמך: ${args.viewUrl}\n\n` +
     `${tone.signoff}\n${args.businessName}`
   );
+}
+
+export interface DunningEmailContent {
+  subject: string;
+  intro: string;
+  cta: string;
+  signoff: string;
+}
+
+/**
+ * Everything wording-related in one stage's dunning email, already filled:
+ * the noun matches the type, the total is in the document's own currency and
+ * the issue date is the Israeli DD.MM.YYYY, never the raw ISO value.
+ *
+ * The copy is Hebrew only. An English document still gets the Hebrew email
+ * (there is no English collection wording yet), but its amount is correct.
+ */
+export function dunningEmailContent(args: {
+  stage: DunningStage;
+  docType?: string | null;
+  number: number;
+  total: number;
+  currency?: string | null;
+  /** Issue date as stored, "YYYY-MM-DD". */
+  date: string;
+  days: number;
+}): DunningEmailContent {
+  const tone = DUNNING_TONES[args.stage];
+  const vars = {
+    ...dunningDocVars(args.docType),
+    n: String(args.number),
+    total: formatDocTotal(args.total, args.currency),
+    date: formatDate(args.date),
+    days: String(args.days),
+  };
+  return {
+    subject: fillDunningVars(DUNNING_SUBJECTS[args.stage], vars),
+    intro: fillDunningVars(tone.intro, vars),
+    cta: fillDunningVars(tone.cta, vars),
+    signoff: tone.signoff,
+  };
 }

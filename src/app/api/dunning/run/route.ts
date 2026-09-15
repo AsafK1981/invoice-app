@@ -1,17 +1,11 @@
-import { formatCurrency } from "@/lib/format";
+import { formatDocTotal } from "@/lib/currencies";
 import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 import { createClient } from "@supabase/supabase-js";
 import { createNotificationForBusiness } from "@/lib/notifications-server";
 import { CANONICAL_ORIGIN } from "@/lib/public-url";
-import {
-  DUNNING_SUBJECTS,
-  DUNNING_TONES,
-  daysSinceIssue,
-  dunningStageFor,
-  fillDunningVars,
-  type DunningStage,
-} from "@/lib/dunning-copy";
+import { dunningEmailContent, type DunningEmailContent } from "@/lib/dunning-copy";
+import { RECEIVABLE_TYPES, planDunningEmails } from "@/lib/dunning-plan";
 import {
   WHATSAPP_ASSIST_CHANNEL,
   planAssistedReminders,
@@ -37,6 +31,7 @@ interface DocRow {
   number: number;
   date: string;
   total: number;
+  currency: string | null;
   type: string;
   status: string;
   paid_at: string | null;
@@ -68,24 +63,12 @@ function escapeHtml(s: string): string {
 }
 
 function buildHtml(args: {
-  businessName: string;
   fromName: string;
   clientName: string;
-  number: number;
-  total: number;
-  date: string;
-  days: number;
-  bucket: DunningStage;
+  content: DunningEmailContent;
   viewUrl: string;
 }): string {
-  const { businessName, fromName, clientName, number, total, date, days, bucket, viewUrl } = args;
-  const tone = DUNNING_TONES[bucket];
-  const vars = {
-    n: String(number),
-    total: formatCurrency(total),
-    date,
-    days: String(days),
-  };
+  const { fromName, clientName, content, viewUrl } = args;
   return `<!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
@@ -100,8 +83,8 @@ function buildHtml(args: {
     </div>
     <div style="background:#ffffff;border:1px solid #e8ddd0;border-radius:12px;padding:24px;margin-bottom:24px;">
       <p style="margin:0 0 12px 0;font-size:16px;color:#1f232b;">שלום ${escapeHtml(clientName)},</p>
-      <p style="margin:0 0 16px 0;font-size:15px;color:#1f232b;line-height:1.6;">${escapeHtml(fillDunningVars(tone.intro, vars))}</p>
-      <p style="margin:0 0 12px 0;font-size:14px;color:#1f232b;line-height:1.6;">${escapeHtml(fillDunningVars(tone.cta, vars))}</p>
+      <p style="margin:0 0 16px 0;font-size:15px;color:#1f232b;line-height:1.6;">${escapeHtml(content.intro)}</p>
+      <p style="margin:0 0 12px 0;font-size:14px;color:#1f232b;line-height:1.6;">${escapeHtml(content.cta)}</p>
     </div>
     <div style="text-align:center;margin-bottom:24px;">
       <a href="${escapeHtml(viewUrl)}" style="display:inline-block;background:#d96a1d;background-image:linear-gradient(135deg,#d96a1d,#c45f1a);color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:12px;font-size:16px;font-weight:bold;">
@@ -114,7 +97,7 @@ function buildHtml(args: {
         <a href="${escapeHtml(viewUrl)}" style="color:#1f232b;">${escapeHtml(viewUrl)}</a>
       </p>
     </div>
-    <p style="font-size:13px;color:#6b6560;text-align:center;margin-bottom:8px;">${escapeHtml(tone.signoff)}</p>
+    <p style="font-size:13px;color:#6b6560;text-align:center;margin-bottom:8px;">${escapeHtml(content.signoff)}</p>
     <p style="font-size:14px;color:#1f232b;text-align:center;font-weight:600;margin:0 0 16px 0;">${escapeHtml(fromName)}</p>
     <p style="font-size:11px;color:#9a9086;text-align:center;">תזכורת אוטומטית. אם התשלום כבר בוצע ולא הגיע, נשמח לשמוע.</p>
   </div>
@@ -125,31 +108,20 @@ function buildHtml(args: {
 function buildText(args: {
   fromName: string;
   clientName: string;
-  number: number;
-  total: number;
-  date: string;
-  days: number;
-  bucket: DunningStage;
+  content: DunningEmailContent;
   viewUrl: string;
 }): string {
-  const { fromName, clientName, number, total, date, days, bucket, viewUrl } = args;
-  const tone = DUNNING_TONES[bucket];
-  const vars = {
-    n: String(number),
-    total: formatCurrency(total),
-    date,
-    days: String(days),
-  };
+  const { fromName, clientName, content, viewUrl } = args;
   return `שלום ${clientName},
 
-${fillDunningVars(tone.intro, vars)}
+${content.intro}
 
-${fillDunningVars(tone.cta, vars)}
+${content.cta}
 
 לצפייה במסמך:
 ${viewUrl}
 
-${tone.signoff}
+${content.signoff}
 ${fromName}
 `;
 }
@@ -230,9 +202,12 @@ export async function POST(req: NextRequest) {
 
     const { data: docs } = await admin
       .from("documents")
-      .select("id, business_id, client_id, client_name, number, date, total, type, status, paid_at, converted_to_id")
+      .select("id, business_id, client_id, client_name, number, date, total, currency, type, status, paid_at, converted_to_id")
       .eq("business_id", biz.id)
-      .in("type", ["quote", "proforma", "tax_invoice"])
+      // Receivables only, the same rule both passes apply row by row below
+      // (isOpenReceivable). Quotes used to be selected here and got a
+      // "חשבונית המס" payment reminder.
+      .in("type", [...RECEIVABLE_TYPES])
       .eq("status", "sent")
       // Defensive: never dun a doc that's been paid, even if its status
       // wasn't flipped to "paid" (status/paid_at can desync via the bank
@@ -272,67 +247,66 @@ export async function POST(req: NextRequest) {
       continue;
     }
 
-    // Email dedupe reads only its own channel's rows. Rows written before
-    // the channel column existed default to 'email', which is what they are.
-    const seenBuckets = new Set(
-      (existingLogs || [])
-        .filter((l) => (l.channel ?? "email") === "email")
-        .map((l) => `${l.document_id}:${l.day_bucket}`),
-    );
-
     // Empty when the business only opted in to the assisted pass, so the
     // whole email block below is skipped without another level of nesting.
-    const emailQueue = emailPass ? (docs as DocRow[]) : [];
+    const emailPlan = emailPass
+      ? planDunningEmails(docs as DocRow[], emailByClient, existingLogs || [])
+      : { queue: [], skipped: 0, noEmail: [] };
+    skipped += emailPlan.skipped;
+    for (const { doc, stage } of emailPlan.noEmail) {
+      details.push({ doc: doc.id, bucket: stage, outcome: "no client email" });
+    }
 
-    for (const doc of emailQueue) {
-      const days = daysSinceIssue(doc.date);
-      const bucket = dunningStageFor(days);
-      if (!bucket) {
-        skipped++;
-        continue;
-      }
-      if (seenBuckets.has(`${doc.id}:${bucket}`)) {
-        skipped++;
-        continue;
-      }
-      const clientEmail = doc.client_id ? emailByClient.get(doc.client_id) : null;
-      if (!clientEmail) {
-        skipped++;
-        details.push({ doc: doc.id, bucket, outcome: "no client email" });
-        continue;
-      }
-
+    for (const { doc, stage: bucket, days, email: clientEmail } of emailPlan.queue) {
       const fromName = biz.dunning_from_name || biz.name;
-      const subject = fillDunningVars(DUNNING_SUBJECTS[bucket], { n: String(doc.number) });
+      // Hebrew copy for every document. language='en' has no English
+      // collection wording yet; the amount is still in the document currency.
+      const content = dunningEmailContent({
+        stage: bucket,
+        docType: doc.type,
+        number: doc.number,
+        total: doc.total,
+        currency: doc.currency,
+        date: doc.date,
+        days,
+      });
       const viewUrl = `${APP_URL}/view/${doc.id}`;
-      const html = buildHtml({
-        businessName: biz.name,
-        fromName,
-        clientName: doc.client_name,
-        number: doc.number,
-        total: doc.total,
-        date: doc.date,
-        days,
-        bucket,
-        viewUrl,
+      const html = buildHtml({ fromName, clientName: doc.client_name, content, viewUrl });
+      const text = buildText({ fromName, clientName: doc.client_name, content, viewUrl });
+
+      // Claim the stage BEFORE sending. The UNIQUE(document_id, day_bucket,
+      // channel) key makes this the one gate a (document, stage) passes
+      // exactly once: if the insert fails (a concurrent run already claimed
+      // it, or the DB is unavailable) nothing is sent. The old order (send,
+      // then an unchecked insert) re-sent the same stage every day whenever
+      // that insert failed. The row starts as success=false and is flipped
+      // after the send; a send failure removes it so tomorrow retries.
+      const { error: claimError } = await admin.from("dunning_log").insert({
+        document_id: doc.id,
+        business_id: biz.id,
+        day_bucket: bucket,
+        sent_to: clientEmail,
+        success: false,
+        // Explicit, though it is also the column default: the assisted
+        // pass below writes rows for the same (document, bucket) pair and
+        // only the channel tells them apart.
+        channel: "email",
       });
-      const text = buildText({
-        fromName,
-        clientName: doc.client_name,
-        number: doc.number,
-        total: doc.total,
-        date: doc.date,
-        days,
-        bucket,
-        viewUrl,
-      });
+      if (claimError) {
+        console.error(
+          `[dunning] could not claim email stage ${bucket} for document ${doc.id}, not sending: ${claimError.message}`,
+        );
+        errors++;
+        details.push({ doc: doc.id, bucket, outcome: `error: dunning_log claim failed (${claimError.message})` });
+        continue;
+      }
 
       try {
         await transporter.sendMail({
           from: `"${fromName}" <${GMAIL_USER}>`,
           to: clientEmail,
           replyTo: biz.email || GMAIL_USER,
-          subject,
+          subject: content.subject,
           html,
           text,
           headers: {
@@ -340,38 +314,52 @@ export async function POST(req: NextRequest) {
             "Auto-Submitted": "auto-generated",
           },
         });
-        await admin.from("dunning_log").insert({
-          document_id: doc.id,
-          business_id: biz.id,
-          day_bucket: bucket,
-          sent_to: clientEmail,
-          success: true,
-          // Explicit, though it is also the column default: the assisted
-          // pass below writes rows for the same (document, bucket) pair and
-          // only the channel tells them apart.
-          channel: "email",
-        });
-        await createNotificationForBusiness({
-          businessId: biz.id,
-          kind: "dunning_sent",
-          title: `נשלחה תזכורת ל-${doc.client_name}`,
-          body: `מסמך #${doc.number} (${formatCurrency(Number(doc.total))}): תזכורת יום ${bucket}.`,
-          href: `/documents/${doc.id}`,
-          documentId: doc.id,
-        });
-        sent++;
-        details.push({ doc: doc.id, bucket, outcome: "sent" });
       } catch (err) {
         const msg = err instanceof Error ? err.message : "unknown error";
-        // Deliberately do NOT write a dunning_log row on failure: the
-        // UNIQUE(document_id, day_bucket, channel) constraint + the seenBuckets
-        // check would then treat this bucket as already-done and never
-        // retry, so a transient send failure would silently drop that
-        // reminder forever. Leaving no row means the next run retries.
-        // The failure is still surfaced in the run response `details`.
+        // Release the claim so a transient send failure is retried tomorrow
+        // instead of being marked done forever by the dedupe key. If even
+        // the release fails the stage stays claimed (never sent twice, but
+        // not retried either), so say so loudly.
+        const { error: releaseError } = await admin
+          .from("dunning_log")
+          .delete()
+          .eq("document_id", doc.id)
+          .eq("day_bucket", bucket)
+          .eq("channel", "email");
+        if (releaseError) {
+          console.error(
+            `[dunning] send failed AND claim release failed for document ${doc.id} stage ${bucket}, this stage will not retry: ${releaseError.message}`,
+          );
+        }
         errors++;
         details.push({ doc: doc.id, bucket, outcome: `error: ${msg}` });
+        continue;
       }
+
+      const { error: confirmError } = await admin
+        .from("dunning_log")
+        .update({ success: true })
+        .eq("document_id", doc.id)
+        .eq("day_bucket", bucket)
+        .eq("channel", "email");
+      if (confirmError) {
+        // The email went out and the claim row still blocks a re-send; only
+        // its success flag is stale.
+        console.error(
+          `[dunning] email sent but dunning_log success flag not updated for document ${doc.id} stage ${bucket}: ${confirmError.message}`,
+        );
+      }
+
+      await createNotificationForBusiness({
+        businessId: biz.id,
+        kind: "dunning_sent",
+        title: `נשלחה תזכורת ל-${doc.client_name}`,
+        body: `מסמך #${doc.number} (${formatDocTotal(Number(doc.total), doc.currency)}): תזכורת יום ${bucket}.`,
+        href: `/documents/${doc.id}`,
+        documentId: doc.id,
+      });
+      sent++;
+      details.push({ doc: doc.id, bucket, outcome: "sent" });
     }
 
     // Assisted pass: prepare, do not send. One notification per (document,

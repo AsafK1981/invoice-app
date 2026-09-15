@@ -11,6 +11,7 @@ import {
   Briefcase,
 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/format";
+import { formatDocTotal } from "@/lib/currencies";
 
 interface PortalDoc {
   id: string;
@@ -20,6 +21,8 @@ interface PortalDoc {
   status: string;
   total: number;
   total_ils?: number | null;
+  /** ISO 4217 code the total is in; missing means ILS. */
+  currency?: string | null;
   business_id: string;
   paid_at?: string | null;
 }
@@ -204,7 +207,7 @@ export default function PortalDocumentsPage() {
                             </div>
                             <div className="flex items-center gap-3">
                               <span className="font-bold text-stone-900 text-sm" dir="ltr">
-                                {formatCurrency(d.total)}
+                                {formatDocTotal(d.total, d.currency)}
                               </span>
                               <ExternalLink className="w-3.5 h-3.5 text-stone-400" />
                             </div>

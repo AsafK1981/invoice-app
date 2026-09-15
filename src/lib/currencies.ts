@@ -1,4 +1,4 @@
-import { shekel } from "./format";
+import { formatCurrency, shekel } from "./format";
 
 export interface Currency {
   code: string;
@@ -36,4 +36,19 @@ export function formatMoney(amount: number, code: string): string {
   const negative = amount < 0 && /[1-9]/.test(digits);
   if (code === "ILS") return shekel(digits, negative);
   return `\u2066${negative ? "-" : ""}${currencySymbol(code)}${digits}\u2069`;
+}
+
+/**
+ * A document total in the document's OWN currency, the way the app renders a
+ * total everywhere: the shared formatCurrency for ILS (whole amounts drop the
+ * agorot), formatMoney with the right symbol for anything else. A missing or
+ * empty currency means ILS - every row written before the column existed.
+ *
+ * Use this for any amount that belongs to a single document (a reminder, a
+ * notification, a list row). Totals that ADD documents together must use the
+ * ILS snapshot (total_ils) and formatCurrency instead.
+ */
+export function formatDocTotal(total: number, currency?: string | null): string {
+  const code = currency || "ILS";
+  return code === "ILS" ? formatCurrency(Number(total)) : formatMoney(Number(total), code);
 }

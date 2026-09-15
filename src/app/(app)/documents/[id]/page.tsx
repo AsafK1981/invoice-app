@@ -38,13 +38,15 @@ import { EmailVerificationModal } from "@/components/email-verification-modal";
 import { ReceiptView } from "@/components/receipt-view";
 import { canIssueTaxInvoices } from "@/lib/vat";
 import { requiresAllocationNumber, shouldFocusAllocationOnArrival } from "@/lib/tax-authority";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { formatDate } from "@/lib/format";
 import { CONSENT_SOURCE_LABELS } from "@/lib/consent";
 import { signingEligibility } from "@/lib/signing/eligibility";
 import { cancellationRoute } from "@/lib/document-cancel";
 import { useDocumentSignature } from "@/lib/signature-store";
 import { DOCUMENT_TYPE_LABELS, PAYMENT_METHOD_LABELS, type InvoiceDocument } from "@/lib/types";
 import { docStrings } from "@/lib/document-strings";
+import { formatDocTotal } from "@/lib/currencies";
+import { whatsappShareText } from "@/lib/document-share-text";
 import { waDigits, whatsappLink } from "@/lib/whatsapp-link";
 import { daysSinceIssue, dunningStageFor, whatsappReminderText } from "@/lib/dunning-copy";
 
@@ -465,11 +467,15 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
       return;
     }
     if (!(await confirmFirstEmission())) return;
-    const docLabel = DOCUMENT_TYPE_LABELS[doc.type];
-    const message =
-      `שלום ${doc.clientName},\n\n` +
-      `מצורף ${docLabel} מספר #${doc.number} על סך ${formatCurrency(doc.total)}.\n\n` +
-      `לצפייה והורדה: ${publicUrl}`;
+    const message = whatsappShareText({
+      clientName: doc.clientName,
+      type: doc.type,
+      number: doc.number,
+      total: doc.total,
+      currency: doc.currency,
+      language: doc.language,
+      viewUrl: publicUrl,
+    });
     window.open(whatsappLink(client?.phone, message), "_blank", "noopener");
   }
 
@@ -494,6 +500,8 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
       clientName: doc.clientName,
       number: doc.number,
       total: doc.total,
+      currency: doc.currency,
+      docType: doc.type,
       date: formatDate(doc.date),
       days,
       stage: dunningStageFor(days),
@@ -1058,7 +1066,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                 {" "}איך לשלוח {docItWord} ללקוח?
               </h2>
               <p className="text-sm text-stone-600 mt-1">
-                {doc.clientName} · {formatCurrency(doc.total)}
+                {doc.clientName} · {formatDocTotal(doc.total, doc.currency)}
                 {allocationGate
                   ? " · קודם צריך מספר הקצאה, בכרטיס שלמעלה"
                   : " · בחרו דרך אחת, אפשר גם כמה"}

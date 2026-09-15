@@ -1,8 +1,9 @@
-import { formatCurrency } from "@/lib/format";
+import { formatDocTotal } from "@/lib/currencies";
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { createNotificationForBusiness } from "@/lib/notifications-server";
 import { clientIp } from "@/lib/rate-limit";
+import { quoteApprovalVerdict } from "@/lib/quote-approval";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -60,7 +61,7 @@ export async function POST(
 
   const { data: doc, error: fetchError } = await admin
     .from("documents")
-    .select("id, type, status, approved_at, business_id, client_name, number, total")
+    .select("id, type, status, approved_at, converted_to_id, business_id, client_name, number, total, currency")
     .eq("id", id)
     .maybeSingle();
 
@@ -68,28 +69,53 @@ export async function POST(
     return NextResponse.json({ ok: false, error: "Not found" }, { status: 404 });
   }
 
-  if (doc.type !== "quote") {
-    return NextResponse.json(
-      { ok: false, error: "Only quotes can be approved" },
-      { status: 400 }
-    );
+  const verdict = quoteApprovalVerdict(doc);
+  if (verdict.kind === "rejected") {
+    return NextResponse.json({ ok: false, error: verdict.error }, { status: verdict.status });
   }
-
-  if (doc.approved_at) {
+  if (verdict.kind === "already_approved") {
     return NextResponse.json(
-      { ok: true, alreadyApproved: true, approvedAt: doc.approved_at },
+      { ok: true, alreadyApproved: true, approvedAt: verdict.approvedAt },
       { status: 200 }
     );
   }
 
+  // Conditional, so the check above and the write are one atomic step: the
+  // row only changes while it is still an unapproved, open quote. Two
+  // submits racing each other both pass the read, but only one UPDATE
+  // matches, and only that one notifies the owner.
   const approvedAt = new Date().toISOString();
-  const { error: updateError } = await admin
+  const { data: updated, error: updateError } = await admin
     .from("documents")
     .update({ approved_at: approvedAt, approval_signature: signature })
-    .eq("id", id);
+    .eq("id", id)
+    .eq("type", "quote")
+    .eq("status", "sent")
+    .is("approved_at", null)
+    .is("converted_to_id", null)
+    .select("id");
 
   if (updateError) {
     return NextResponse.json({ ok: false, error: updateError.message }, { status: 500 });
+  }
+
+  if (!updated || updated.length === 0) {
+    // Lost the race, or the quote changed between the read and the write.
+    const { data: current } = await admin
+      .from("documents")
+      .select("type, status, approved_at, converted_to_id")
+      .eq("id", id)
+      .maybeSingle();
+    if (current?.approved_at) {
+      return NextResponse.json(
+        { ok: true, alreadyApproved: true, approvedAt: current.approved_at },
+        { status: 200 }
+      );
+    }
+    return NextResponse.json(
+      { ok: false, error: "Quote can no longer be approved" },
+      { status: 409 }
+    );
   }
 
   if (doc.business_id) {
@@ -97,7 +123,7 @@ export async function POST(
       businessId: doc.business_id,
       kind: "quote_approved",
       title: `${doc.client_name} אישר/ה את הצעת המחיר`,
-      body: `הצעת מחיר #${doc.number} על סך ${formatCurrency(Number(doc.total))} אושרה על-ידי ${signature}.`,
+      body: `הצעת מחיר #${doc.number} על סך ${formatDocTotal(Number(doc.total), doc.currency)} אושרה על-ידי ${signature}.`,
       href: `/documents/${id}`,
       documentId: id,
     });

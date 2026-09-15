@@ -26,6 +26,7 @@ import {
   Ban,
 } from "lucide-react";
 import { formatCurrency, formatCurrencyWhole, formatDate } from "@/lib/format";
+import { formatDocTotal } from "@/lib/currencies";
 import { deleteDocument, cancelDocument, updateDocumentStatus } from "@/lib/document-store";
 import { cancellationRoute } from "@/lib/document-cancel";
 import { exportDocuments } from "@/lib/csv-export";
@@ -846,7 +847,7 @@ function DocumentRow({ doc: d, showAlloc }: { doc: InvoiceDocument; showAlloc: b
           of flow it reserves nothing on the 59 rows that are not overdue. */}
       <span className="dc-cell" data-col="amount">
         <span className="dc-amtwrap">
-          <span className="dc-amt">{formatCurrency(d.total)}</span>
+          <span className="dc-amt">{formatDocTotal(d.total, d.currency)}</span>
           {unpaidDays >= OVERDUE_DAYS && (
             <span className="dc-late">{unpaidDays} ימים ללא תשלום</span>
           )}

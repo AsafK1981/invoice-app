@@ -11,6 +11,7 @@
 // unit-testable; the route only feeds it rows and writes what comes back.
 
 import { daysSinceIssue, dunningStageFor, type DunningStage } from "./dunning-copy";
+import { isOpenReceivable } from "./dunning-plan";
 import { DOCUMENT_TYPE_LABELS, type DocumentType } from "./types";
 import { waDigits } from "./whatsapp-link";
 
@@ -18,9 +19,6 @@ import { waDigits } from "./whatsapp-link";
  *  rows stay `"email"`, which is the column default, so the old
  *  one-email-per-(document, stage) semantics are untouched. */
 export const WHATSAPP_ASSIST_CHANNEL = "whatsapp_assist";
-
-/** Only real receivables get chased. A quote is not money owed yet. */
-const RECEIVABLE_TYPES = new Set(["tax_invoice", "proforma"]);
 
 export interface AssistedDocRow {
   id: string;
@@ -88,10 +86,7 @@ export function planAssistedReminders(
 
   const out: AssistedReminder[] = [];
   for (const doc of docs) {
-    if (!RECEIVABLE_TYPES.has(doc.type)) continue;
-    if (doc.status !== "sent") continue;
-    if (doc.paid_at) continue;
-    if (doc.converted_to_id) continue;
+    if (!isOpenReceivable(doc)) continue;
     if (!doc.client_id) continue;
 
     const days = daysSinceIssue(doc.date, today);
