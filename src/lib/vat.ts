@@ -105,6 +105,44 @@ function withDiscount(
   };
 }
 
+/**
+ * The stored (net) unit price and line total of one item, exactly as the
+ * document persists them. Exclusive mode and zero VAT: the typed price is the
+ * net price, line total = round2(quantity x round2(price)) (unchanged since
+ * launch). Inclusive mode: the typed price includes VAT, so the line's net is
+ * derived from the line's GROSS amount, round2(round2(quantity x price) /
+ * (1 + rate)). Rounding the net unit price first and then multiplying by the
+ * quantity (the old way) amplified the per-unit rounding by the quantity:
+ * 1000 x 1.00 incl. VAT stored net 850 / VAT 150 instead of 847.46 / 152.54.
+ *
+ * `document_items.unit_price` is NUMERIC(12,2), so the stored unit price stays
+ * the agora-rounded net unit price; for an inclusive line with a quantity other
+ * than 1 the line total can differ from quantity x unit price by up to
+ * quantity x half an agora. The line total is the authoritative amount (the
+ * header subtotal is the sum of line totals, which create_document_atomic
+ * checks; the uniform structure export reads line totals).
+ */
+export function netLineAmounts(
+  item: AmountInput,
+  vatRate: number,
+  vatMode: VatMode,
+  /** -1 for a credit note: the sign goes in before the final rounding, as the editor always did. */
+  sign: 1 | -1 = 1,
+): { unitPrice: number; total: number } {
+  if (vatRate === 0 || vatMode === "exclusive") {
+    const unitPrice = round2(item.unitPrice);
+    return { unitPrice, total: round2(sign * item.quantity * unitPrice) };
+  }
+  // Unit price: the same expression as before this change, so stored unit
+  // prices do not move. Line total: divide the gross (exact) rather than
+  // multiply by the rounded-in-binary factor.
+  const factor = 1 / (1 + vatRate / 100);
+  return {
+    unitPrice: round2(item.unitPrice * factor),
+    total: round2((sign * round2(item.quantity * item.unitPrice)) / (1 + vatRate / 100)),
+  };
+}
+
 export function computeAmounts(
   items: AmountInput[],
   vatRate: number,
@@ -113,8 +151,7 @@ export function computeAmounts(
   discount = 0,
 ) {
   // Header figures are summed from the SAME per-line rounded amounts the
-  // document persists (receipt-editor stores round2(qty × round2(unit ×
-  // factor)) per line). Rounding the per-line nets and summing those,
+  // document persists (netLineAmounts, which receipt-editor stores per line). Rounding the per-line nets and summing those,
   // rather than rounding one big gross sum, guarantees the line items
   // always reconcile with the header subtotal/VAT/total (otherwise they
   // could drift a few agorot apart, which both looks wrong on the document
@@ -129,7 +166,7 @@ export function computeAmounts(
   }
   if (vatMode === "inclusive") {
     const factor = 1 / (1 + vatRate / 100);
-    const lineNets = items.map((i) => round2(i.quantity * round2(i.unitPrice * factor)));
+    const lineNets = items.map((i) => netLineAmounts(i, vatRate, vatMode).total);
     const lineGross = items.map((i) => round2(i.quantity * i.unitPrice));
     const subtotal = sum(lineNets);
     const total = sum(lineGross);
@@ -159,6 +196,17 @@ export function computeAmounts(
  */
 export function canIssueTaxInvoicesByType(type: string | null | undefined): boolean {
   return type === "authorized" || type === "company";
+}
+
+/**
+ * The input VAT an expense may record. Only a VAT-registered dealer (עוסק
+ * מורשה / חברה) deducts input VAT; for an עוסק פטור the VAT on a supplier's
+ * invoice is part of the cost, so the expense is its gross amount with VAT 0.
+ * Same rule as the manual expense form (which hides the VAT field for them),
+ * applied server-side too so a scanned VAT figure never slips into the books.
+ */
+export function expenseVatForBusinessType(vatAmount: number, businessType: string | null | undefined): number {
+  return canIssueTaxInvoicesByType(businessType) ? vatAmount : 0;
 }
 
 /**

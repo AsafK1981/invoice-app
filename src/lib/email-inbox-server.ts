@@ -21,6 +21,8 @@ export interface InboxCallerBusiness {
   userId: string;
   inboxToken: string | null;
   inboxEnabled: boolean;
+  /** businesses.business_type: decides whether an approved expense may carry VAT. */
+  businessType: string | null;
 }
 
 export type InboxCaller =
@@ -52,7 +54,7 @@ export async function resolveInboxCaller(req: Request): Promise<InboxCaller> {
   // Same "first business by created_at" rule the rest of the app uses.
   const { data: rows, error } = await admin
     .from("businesses")
-    .select("id, user_id, inbox_token, inbox_enabled")
+    .select("id, user_id, inbox_token, inbox_enabled, business_type")
     .eq("user_id", user.id)
     .order("created_at", { ascending: true })
     .limit(1);
@@ -77,6 +79,7 @@ export async function resolveInboxCaller(req: Request): Promise<InboxCaller> {
       userId: row.user_id as string,
       inboxToken: (row.inbox_token as string) || null,
       inboxEnabled: Boolean(row.inbox_enabled),
+      businessType: (row.business_type as string) || null,
     },
   };
 }

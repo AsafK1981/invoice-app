@@ -4,6 +4,7 @@ import {
   calculateVat,
   round2,
   computeAmounts,
+  netLineAmounts,
   canIssueTaxInvoices,
   canIssueTaxInvoicesByType,
   deriveVatRate,
@@ -334,9 +335,9 @@ describe("computeAmounts: line/header reconciliation (multi-line rounding)", () 
   });
 
   it("inclusive: sum of line nets equals header subtotal, and subtotal + vat == total", () => {
-    const factor = 1 / 1.18;
+    // Inclusive lines persist netLineAmounts (net from the line's gross) since 2026-09-15.
     const r = computeAmounts(tricky, 18, "inclusive");
-    const lineSum = round2(lineNetsOf(tricky, factor).reduce((s, n) => s + n, 0));
+    const lineSum = round2(tricky.map((i) => netLineAmounts(i, 18, "inclusive").total).reduce((s, n) => s + n, 0));
     expect(lineSum).toBe(r.subtotal);
     expect(round2(r.subtotal + r.vat)).toBe(r.total);
   });

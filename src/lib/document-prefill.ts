@@ -42,6 +42,8 @@ export interface SourceItemRow {
   description: string;
   quantity: number | string;
   unit_price: number | string;
+  /** Stored line total (net). Optional so older callers and tests still type-check. */
+  total?: number | string | null;
 }
 
 export interface PrefillItem {
@@ -172,13 +174,22 @@ export function buildSourcePrefill(
     notes = notes ? `${notes}\n${noteText}` : noteText;
   }
 
-  let items: PrefillItem[] = srcItems.map((row) => ({
-    productId: row.product_id || undefined,
-    description: row.description,
+  let items: PrefillItem[] = srcItems.map((row) => {
     // A credit note stores negative quantities; the editor applies the sign.
-    quantity: Math.abs(Number(row.quantity)) || 1,
-    unitPrice: Math.abs(Number(row.unit_price)) || 0,
-  }));
+    const quantity = Math.abs(Number(row.quantity)) || 1;
+    const unitPrice = Math.abs(Number(row.unit_price)) || 0;
+    const lineTotal = num(row.total);
+    // A line entered VAT-inclusive with a quantity other than 1 stores its
+    // exact net line total next to an agora-rounded unit price (see
+    // netLineAmounts in src/lib/vat.ts), so quantity x unit price can be a few
+    // agorot off the amount actually charged. Re-pricing it as quantity x unit
+    // price would credit or collect a different amount; carry it as one unit
+    // at the stored line total instead.
+    if (lineTotal !== null && Math.abs(round2(quantity * unitPrice) - round2(Math.abs(lineTotal))) > 0.005) {
+      return { productId: row.product_id || undefined, description: row.description, quantity: 1, unitPrice: Math.abs(lineTotal) };
+    }
+    return { productId: row.product_id || undefined, description: row.description, quantity, unitPrice };
+  });
 
   const currency = (src.currency || "ILS").toUpperCase();
   const rate = num(src.exchange_rate);

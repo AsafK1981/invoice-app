@@ -7,6 +7,8 @@ import { useState } from "react";
 import { formatCurrencyWhole } from "@/lib/format";
 import { type Business, type InvoiceDocument, type Expense } from "@/lib/types";
 import { countsAsIncome } from "@/lib/revenue";
+import { form1301Expenses } from "@/lib/form-1301-figures";
+import { canIssueTaxInvoicesByType } from "@/lib/vat";
 
 interface Props {
   year: number;
@@ -44,9 +46,8 @@ export function Form1301Helper({ headless = false, year, business, documents, ex
     // are stored ALREADY NEGATIVE on save). Math.abs() here would add a
     // refund's VAT back in as if it were still collected.
     const vatCollected = paid.reduce((s, d) => s + ((d.vatIls ?? d.vat) || 0), 0);
-    const totalExpenses = expenses.reduce((s, e) => s + e.amount, 0);
-    const vatInput = expenses.reduce((s, e) => s + (e.vatAmount || 0), 0);
-    const netProfit = grossIncome - (totalExpenses - vatInput);
+    const { vatInput, deductibleExpenses } = form1301Expenses(expenses, business.businessType);
+    const netProfit = grossIncome - deductibleExpenses;
 
     // Field numbers verified 2026-09-15 against the Tax Authority's own 2025
     // forms (1301-2025 and 1320-2025 PDFs on gov.il): business PROFIT goes in
@@ -65,8 +66,8 @@ export function Form1301Helper({ headless = false, year, business, documents, ex
       {
         code: "טופס 1320",
         label: "הוצאות מוכרות",
-        value: business.businessType === "authorized" ? totalExpenses - vatInput : totalExpenses,
-        note: business.businessType === "authorized"
+        value: deductibleExpenses,
+        note: canIssueTaxInvoicesByType(business.businessType)
           ? "אין שדה אחד כזה ב-1301: ההוצאות מפורטות שורה-שורה בנספח א (טופס 1320). כאן בלי רכיב המע״מ, שמקוזז בדוח המע״מ."
           : "אין שדה אחד כזה ב-1301: ההוצאות מפורטות שורה-שורה בנספח א (טופס 1320). זה הסכום הכולל שנרשם במערכת.",
       },

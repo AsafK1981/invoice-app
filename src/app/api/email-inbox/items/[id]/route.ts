@@ -27,23 +27,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { removeReceipt } from "@/lib/email-inbox";
 import { UUID_RE, resolveInboxCaller } from "@/lib/email-inbox-server";
+import { parseExpense } from "@/lib/email-inbox-expense";
 
 export const runtime = "nodejs";
-
-const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-
-interface ExpenseInput {
-  date: string;
-  category: string;
-  supplier: string;
-  amount: number;
-  vatAmount: number;
-  description: string | null;
-  supplierTaxId: string | null;
-  reference: string | null;
-  isEquipment: boolean;
-  allocationNumber: string | null;
-}
 
 export async function POST(
   req: NextRequest,
@@ -142,7 +128,7 @@ export async function POST(
     );
   }
 
-  const parsed = parseExpense(body.expense);
+  const parsed = parseExpense(body.expense, business.businessType);
   if (typeof parsed === "string") {
     return NextResponse.json({ ok: false, error: parsed }, { status: 400 });
   }
@@ -184,65 +170,4 @@ export async function POST(
   }
 
   return NextResponse.json({ ok: true, status: "approved", expenseId: expenseId ?? null });
-}
-
-/**
- * Validate what the owner submitted. Everything the books depend on (date,
- * amount, supplier) is required; the rest is optional and normalised the same
- * way expenseStore.save() normalises it, so an email-approved row is
- * indistinguishable from a hand-typed one.
- *
- * The returned object is handed to email_inbox_approve() as jsonb, so its key
- * names are part of that function's contract - see the INSERT there.
- */
-function parseExpense(raw: unknown): ExpenseInput | string {
-  if (!raw || typeof raw !== "object") return "חסרים פרטי ההוצאה.";
-  const e = raw as Record<string, unknown>;
-
-  const date = String(e.date || "").trim();
-  if (!DATE_RE.test(date) || Number.isNaN(Date.parse(`${date}T00:00:00Z`))) {
-    return "תאריך לא תקין.";
-  }
-  const year = Number(date.slice(0, 4));
-  if (year < 2000 || year > 2100) return "תאריך לא תקין.";
-
-  const supplier = String(e.supplier ?? "").trim().slice(0, 120);
-  if (!supplier) return "חסר שם ספק.";
-
-  const amount = round2(Number(e.amount));
-  if (!Number.isFinite(amount) || amount <= 0 || amount > 10_000_000) {
-    return "סכום לא תקין.";
-  }
-
-  const rawVat = e.vatAmount == null || e.vatAmount === "" ? 0 : Number(e.vatAmount);
-  const vatAmount = round2(rawVat);
-  if (!Number.isFinite(vatAmount) || vatAmount < 0 || vatAmount > amount) {
-    return "סכום מע\"מ לא תקין.";
-  }
-
-  const category = String(e.category ?? "").trim().slice(0, 60) || "אחר";
-  const description = String(e.description ?? "").trim().slice(0, 1000) || null;
-  const supplierTaxId = String(e.supplierTaxId ?? "").replace(/\D/g, "").slice(0, 15) || null;
-  const reference = String(e.reference ?? "").trim().slice(0, 60) || null;
-  // מספר הקצאה of the SUPPLIER's invoice (חשבונית ישראל). Digits only, same
-  // normalisation filingColumns() applies, because the PCN874 writer reads
-  // this column without re-cleaning it.
-  const allocationNumber = String(e.allocationNumber ?? "").replace(/\D/g, "").slice(0, 30) || null;
-
-  return {
-    date,
-    category,
-    supplier,
-    amount,
-    vatAmount,
-    description,
-    supplierTaxId,
-    reference,
-    isEquipment: e.isEquipment === true,
-    allocationNumber,
-  };
-}
-
-function round2(n: number): number {
-  return Math.round(n * 100) / 100;
 }

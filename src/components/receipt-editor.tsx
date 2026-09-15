@@ -47,7 +47,7 @@ import {
 } from "@/lib/document-prefill";
 import { getBusinessId, isPlaceholderBusinessName, isPlaceholderBusinessTaxId } from "@/lib/business-init";
 import { parseEmails, joinEmails, isValidEmail } from "@/lib/emails";
-import { getVatRate, computeAmounts, round2, canIssueTaxInvoices, type VatMode } from "@/lib/vat";
+import { getVatRate, computeAmounts, netLineAmounts, round2, canIssueTaxInvoices, type VatMode } from "@/lib/vat";
 import {
   suggestedWithholding,
   netAfterWithholding,
@@ -56,6 +56,7 @@ import {
 import { requiresAllocationNumber } from "@/lib/tax-authority";
 import { CURRENCIES, currencySymbol, formatMoney } from "@/lib/currencies";
 import { ilsEquivalents } from "@/lib/exchange-rate";
+import { exchangeRateBlockReason, isUsableSavedRate, rateAutoAction } from "@/lib/editor-exchange-rate";
 import { todayInIsrael } from "@/lib/date";
 import { AllocationConnectBanner } from "@/components/allocation-connect-banner";
 import { AllocationNextStepCard } from "@/components/allocation-next-step-card";
@@ -306,6 +307,15 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   const [zeroRated, setZeroRated] = useState(false);
   const [rate, setRate] = useState(1);
   const [rateLoading, setRateLoading] = useState(false);
+  // True once the rate is the user's own (typed, or a resumed draft's saved
+  // rate): the effect below then stops replacing it with a fresh lookup when
+  // the date changes. Cleared by changing the currency or pressing refresh.
+  const [rateUserSet, setRateUserSet] = useState(false);
+  // Bumped by the refresh button to force a new lookup for the same currency/date.
+  const [rateRefreshTick, setRateRefreshTick] = useState(0);
+  // What the last automatic lookup said: "failed" (nothing came back, the rate
+  // was left as it was) or "fallback" (a past date got today's rate).
+  const [rateNote, setRateNote] = useState<"failed" | "fallback" | null>(null);
 
   // Credit note (#17): a זיכוי must reference the original tax invoice it
   // credits (Israeli law). The user either picks one of their issued tax
@@ -786,22 +796,33 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   const effectiveVatRate = zeroRated ? 0 : baseVatRate;
 
   useEffect(() => {
-    if (currency === "ILS") { setRate(1); setRateLoading(false); return; }
-    const pinned = pinnedRateRef.current;
-    if (pinned && pinned.currency === currency && pinned.date === date) {
-      setRate(pinned.rate);
+    const action = rateAutoAction({ currency, date, userSetRate: rateUserSet, pinned: pinnedRateRef.current });
+    if (action.kind === "ils") { setRate(1); setRateLoading(false); setRateNote(null); return; }
+    if (action.kind === "keep") { setRateLoading(false); return; }
+    if (action.kind === "pinned") {
+      setRate(action.rate);
       setRateLoading(false);
+      setRateNote(null);
       return;
     }
     let cancelled = false;
     setRateLoading(true);
+    setRateNote(null);
     fetch(`/api/exchange-rate?currency=${currency}&date=${date}`)
       .then((r) => r.json())
-      .then((d) => { if (!cancelled && d.ok && d.rate) setRate(d.rate); })
-      .catch(() => {})
+      .then((d) => {
+        if (cancelled) return;
+        if (d.ok && typeof d.rate === "number" && d.rate > 0) {
+          setRate(d.rate);
+          setRateNote(d.fallback ? "fallback" : null);
+        } else {
+          setRateNote("failed");
+        }
+      })
+      .catch(() => { if (!cancelled) setRateNote("failed"); })
       .finally(() => { if (!cancelled) setRateLoading(false); });
     return () => { cancelled = true; };
-  }, [currency, date]);
+  }, [currency, date, rateUserSet, rateRefreshTick]);
 
   // Lines subtotal BEFORE any discount; drives the % calculation and validation.
   const linesSubtotal = useMemo(
@@ -830,7 +851,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
     () => computeAmounts(items, effectiveVatRate, vatMode, roundTotal, discountAmount),
     [items, effectiveVatRate, vatMode, roundTotal, discountAmount]
   );
-  const { subtotal, vat, total, rounding, netUnitPriceFactor } = amounts;
+  const { subtotal, vat, total, rounding } = amounts;
 
   // ניכוי מס במקור, computed on the total incl. VAT: the withholding is rounded
   // half-up to a whole shekel, and so is the net "שולם בפועל" (10,641.50 reads
@@ -1003,7 +1024,15 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
       if (p.language) setLanguage(p.language);
       setLanguageTouched(Boolean(p.languageTouched));
       setZeroRated(Boolean(p.zeroRated));
-      setRate(p.rate || 1);
+      // Keep the draft's saved rate (the effect would otherwise replace it with
+      // a fresh lookup); a missing or placeholder rate is looked up again.
+      if (isUsableSavedRate(p.currency || "ILS", p.rate)) {
+        setRate(p.rate);
+        setRateUserSet(true);
+      } else {
+        setRate(1);
+        setRateUserSet(false);
+      }
       setAllocationNumber(p.allocationNumber || "");
       // A draft keeps its number only when the user had typed it; otherwise
       // show the current next number (the database assigns the real one on
@@ -1038,17 +1067,17 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   const previewItems = useMemo(
     () =>
       items.map((i) => {
-        const unitPrice = round2(i.unitPrice * netUnitPriceFactor);
+        const line = netLineAmounts(i, effectiveVatRate, vatMode);
         return {
           id: i.id,
           productId: i.productId,
           description: i.description.trim() || subjectFallback,
           quantity: i.quantity,
-          unitPrice,
-          total: round2(i.quantity * unitPrice),
+          unitPrice: line.unitPrice,
+          total: line.total,
         };
       }),
-    [items, netUnitPriceFactor, subjectFallback]
+    [items, effectiveVatRate, vatMode, subjectFallback]
   );
 
   const emailTo = useMemo(() => emails.map((e) => e.trim()).filter(Boolean).join(", "), [emails]);
@@ -1240,12 +1269,17 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   const emailsTyped = emailTo.length > 0;
   const canSend = allEmailsValid && !willNeedAllocation;
 
+  // A foreign-currency document needs a real rate: 0 (field cleared) stores
+  // total_ils = 0, and 1 (failed lookup) reports dollars as shekels. Same check
+  // as the PCN874 / uniform structure preflights. Quiet while a lookup runs.
+  const rateBlock = rateLoading ? null : exchangeRateBlockReason(currency, rate);
   const canSave =
     clientReady &&
     items.every((i) => itemDescription(i) && i.quantity > 0 && i.unitPrice >= 0) &&
     creditRefValid &&
     discountValid &&
-    withholdingValid;
+    withholdingValid &&
+    !rateBlock;
   // One place for "why the buttons are off": the desktop bar, the mobile
   // card, the mobile dock and the allocation card all read these.
   const saveDisabled =
@@ -1272,7 +1306,9 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
           ? "יש לתקן את סכום ההנחה"
           : !withholdingValid
             ? "יש לתקן את סכום ניכוי המס במקור"
-            : "כל פריט חייב תיאור (או נושא למסמך, שיועתק אליו), כמות חיובית ומחיר";
+            : rateBlock
+              ? rateBlock
+              : "כל פריט חייב תיאור (או נושא למסמך, שיועתק אליו), כמות חיובית ומחיר";
 
   // What the two issue buttons say. When an allocation number will be needed,
   // the label names the next step instead of promising a finished document.
@@ -1393,6 +1429,14 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
     // is still in flight; `rate` still holds 1 / the previous currency's
     // value, which would be stamped onto exchangeRate/subtotalIls/totalIls.
     if (rateLoading) return;
+    // Belt and braces for the canSave check above: never issue a foreign
+    // document at a missing / 1 / implausible rate.
+    const rateProblem = exchangeRateBlockReason(currency, rate);
+    if (rateProblem) {
+      setShowAdvanced(true);
+      setToast({ kind: "error", text: rateProblem });
+      return;
+    }
     // #18: block issuing a legal document with an empty/placeholder business
     // profile. Draft-saving (handleSaveDraft) is intentionally exempt.
     if (businessProfileIncomplete) {
@@ -1457,15 +1501,18 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
         }
       }
 
+      // Same per-line figures computeAmounts summed into the header, so the
+      // item totals always add up to the subtotal (create_document_atomic
+      // rejects a mismatch beyond one agora).
       const persistItems = items.map((i) => {
-        const netUnitPrice = round2(i.unitPrice * netUnitPriceFactor);
+        const line = netLineAmounts(i, effectiveVatRate, vatMode, sign);
         return {
           id: i.id,
           productId: i.productId,
           description: itemDescription(i),
           quantity: sign * i.quantity,
-          unitPrice: netUnitPrice,
-          total: round2(sign * i.quantity * netUnitPrice),
+          unitPrice: line.unitPrice,
+          total: line.total,
         };
       });
 
@@ -2264,7 +2311,11 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
               <FormField label="מטבע">
                 <select
                   value={currency}
-                  onChange={(e) => setCurrency(e.target.value)}
+                  onChange={(e) => {
+                    setCurrency(e.target.value);
+                    // A new currency needs its own rate: look it up again.
+                    setRateUserSet(false);
+                  }}
                   className="input-warm"
                 >
                   {CURRENCIES.map((c) => (
@@ -2297,13 +2348,38 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                   <NumberInput
                     step="0.0001"
                     value={rate}
-                    onValueChange={setRate}
+                    onValueChange={(v) => {
+                      setRate(v);
+                      setRateUserSet(true);
+                      setRateNote(null);
+                    }}
                     className="input-warm font-mono"
                     aria-label={`שער ${currency}→₪`}
                   />
                   <span className="text-xs text-stone-500 block mt-1">
                     ≈ {formatMoney(round2(total * rate), "ILS")}
                   </span>
+                  {rateNote === "failed" && (
+                    <span className="text-xs text-rose-700 block mt-1">
+                      לא הצלחנו לטעון את השער היציג. יש להזין אותו ידנית.
+                    </span>
+                  )}
+                  {rateNote === "fallback" && (
+                    <span className="text-xs text-amber-800 block mt-1">
+                      זה השער היציג העדכני ולא השער של תאריך המסמך. במסמך בתאריך קודם כדאי לבדוק ולהזין את השער היציג של אותו יום.
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRateUserSet(false);
+                      setRateRefreshTick((n) => n + 1);
+                    }}
+                    disabled={rateLoading}
+                    className="text-xs text-stone-600 underline underline-offset-2 hover:text-stone-900 mt-1 disabled:opacity-50"
+                  >
+                    טען שוב את השער היציג
+                  </button>
                 </FormField>
               )}
 
@@ -2545,7 +2621,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                                   round2(item.quantity * round2(item.unitPrice)) *
                                     (1 + effectiveVatRate / 100)
                                 )
-                              : round2(item.quantity * round2(item.unitPrice * netUnitPriceFactor))
+                              : netLineAmounts(item, effectiveVatRate, vatMode).total
                           )}
                         </span>
                       </p>

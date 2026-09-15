@@ -1,4 +1,5 @@
 import { round2 } from "./vat";
+import { toIsraelDate, todayInIsrael } from "./date";
 
 export interface MoneyTriple {
   subtotal: number;
@@ -28,14 +29,21 @@ export function ilsEquivalents(m: MoneyTriple, rate: number): IlsTriple {
 }
 
 // BoI representative rate fetcher. Swappable for tests. Returns ₪ per 1 unit.
-// Uses the Bank of Israel public API, which returns the current representative
-// rate per currency: { currentExchangeRate, unit }. `unit` is the quoting unit
-// (1 for USD/EUR/GBP, 10 for JPY, etc.), so ₪-per-unit = rate / unit. This
-// endpoint serves the CURRENT rate (not a historical per-date rate); for the
-// common case of issuing today's invoice that is correct, and the editor lets
-// the user override the rate for back-dated documents. The `dateISO` arg is
-// kept for the cache key + future historical support.
-type RateFetcher = (currency: string, dateISO: string) => Promise<number>;
+// Uses the Bank of Israel public API, which returns the CURRENT representative
+// rate per currency: { currentExchangeRate, unit, lastUpdate }. `unit` is the
+// quoting unit (1 for USD/EUR/GBP, 10 for JPY, etc.), so ₪-per-unit = rate /
+// unit. This endpoint has no date parameter: it cannot answer "the rate on
+// 2026-03-01". So the requested date never selects the rate; it only decides
+// whether the answer is labelled as a fallback (a past date got today's rate)
+// and the cache is keyed by currency with a short lifetime, never by the
+// requested date (caching today's rate as a past date's rate used to make the
+// wrong answer look final).
+export interface FetchedRate {
+  rate: number;
+  /** Israel calendar date the upstream rate was published for, when it says. */
+  rateDate: string | null;
+}
+type RateFetcher = (currency: string, dateISO: string) => Promise<number | FetchedRate>;
 
 let fetcher: RateFetcher = async (currency) => {
   const res = await fetch(`https://boi.org.il/PublicApi/GetExchangeRate?key=${currency}`, {
@@ -46,30 +54,68 @@ let fetcher: RateFetcher = async (currency) => {
   const rate = Number(json?.currentExchangeRate);
   const unit = Number(json?.unit) || 1;
   if (!Number.isFinite(rate) || rate <= 0) throw new Error("BoI: no rate");
-  return rate / unit;
+  const updated = typeof json?.lastUpdate === "string" ? new Date(json.lastUpdate) : null;
+  const rateDate = updated && !Number.isNaN(updated.getTime()) ? toIsraelDate(updated) : null;
+  return { rate: rate / unit, rateDate };
 };
 
-/** Test seam: override the network fetcher. */
+/** Test seam: override the network fetcher (and drop cached answers). */
 export function __setRateFetcher(f: RateFetcher) {
   fetcher = f;
+  cache.clear();
 }
 
-const cache = new Map<string, number>();
+export interface RateQuote {
+  /** ₪ per 1 unit. */
+  rate: number;
+  /** The date the upstream says the rate is for, null when unknown. */
+  rateDate: string | null;
+  /**
+   * True when the document date is in the past and the source only had the
+   * current rate: the number is NOT that day's representative rate, and the
+   * editor tells the user to check it.
+   */
+  fallback: boolean;
+}
+
+/** How long one upstream answer is reused. The current rate changes once a business day. */
+const CACHE_TTL_MS = 15 * 60 * 1000;
+const cache = new Map<string, { value: FetchedRate; at: number }>();
 
 /**
- * ₪ per 1 unit of `currency` on `dateISO`. ILS → 1 (no network). On any
- * failure returns null so the caller falls back to manual entry. Cached by
- * (currency, date); BoI daily rates are immutable for past dates.
+ * The representative rate to use for a document dated `dateISO`, with a label
+ * saying whether it really is that date's rate. ILS → 1 (no network). On any
+ * failure returns null so the caller falls back to manual entry.
  */
-export async function getRate(currency: string, dateISO: string): Promise<number | null> {
-  if (currency === "ILS") return 1;
-  const key = `${currency}:${dateISO}`;
-  if (cache.has(key)) return cache.get(key)!;
-  try {
-    const rate = await fetcher(currency, dateISO);
-    cache.set(key, rate);
-    return rate;
-  } catch {
-    return null;
+export async function getRateQuote(
+  currency: string,
+  dateISO: string,
+  today: string = todayInIsrael(),
+  now: number = Date.now(),
+): Promise<RateQuote | null> {
+  if (currency === "ILS") return { rate: 1, rateDate: dateISO, fallback: false };
+  let value: FetchedRate;
+  const hit = cache.get(currency);
+  if (hit && now - hit.at < CACHE_TTL_MS) {
+    value = hit.value;
+  } else {
+    try {
+      const got = await fetcher(currency, dateISO);
+      value = typeof got === "number" ? { rate: got, rateDate: null } : got;
+      if (!Number.isFinite(value.rate) || value.rate <= 0) return null;
+      cache.set(currency, { value, at: now });
+    } catch {
+      return null;
+    }
   }
+  // A document dated today or later takes the latest published rate, which is
+  // what this source returns. An earlier date needs that day's rate, which it
+  // cannot give, unless the upstream's own date happens to be that day.
+  const fallback = dateISO < today && value.rateDate !== dateISO;
+  return { rate: value.rate, rateDate: value.rateDate, fallback };
+}
+
+/** ₪ per 1 unit of `currency` for a document dated `dateISO`, or null. See getRateQuote. */
+export async function getRate(currency: string, dateISO: string): Promise<number | null> {
+  return (await getRateQuote(currency, dateISO))?.rate ?? null;
 }

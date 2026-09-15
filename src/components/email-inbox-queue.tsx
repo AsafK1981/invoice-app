@@ -30,6 +30,8 @@ import {
   type EmailInboxApproval,
 } from "@/lib/email-inbox-client";
 import type { Expense } from "@/lib/types";
+import { useBusiness } from "@/lib/business-store";
+import { expenseVatForBusinessType } from "@/lib/vat";
 
 /**
  * The /expenses queue for invoices that arrived by mail.
@@ -47,6 +49,11 @@ import type { Expense } from "@/lib/types";
  */
 export function EmailInboxQueue({ history }: { history?: Expense[] }) {
   const { items: all, ready, available } = useEmailInbox();
+  // Needed before any one-click approve: an עוסק פטור books the gross amount
+  // with VAT 0, whatever VAT figure the scanner read (the server enforces it
+  // too). Null until the business row loads, which holds the approve buttons.
+  const { business, ready: businessReady } = useBusiness();
+  const businessType = businessReady ? business.businessType : null;
   // Optimistic hide: an approved / rejected card disappears on click, before
   // the refetch lands, so the list never feels stuck.
   const [hidden, setHidden] = useState<Set<string>>(new Set());
@@ -105,6 +112,7 @@ export function EmailInboxQueue({ history }: { history?: Expense[] }) {
           item={item}
           onDone={() => hide(item.id)}
           onEdit={() => openEditor(item)}
+          businessType={businessType}
         />
       ))}
 
@@ -172,10 +180,13 @@ function PendingCard({
   item,
   onDone,
   onEdit,
+  businessType,
 }: {
   item: EmailInboxItem;
   onDone: () => void;
   onEdit: () => void;
+  /** null while the business is still loading. */
+  businessType: string | null;
 }) {
   const [busy, setBusy] = useState<"approve" | "reject" | null>(null);
   const [confirmReject, setConfirmReject] = useState(false);
@@ -184,13 +195,15 @@ function PendingCard({
   const scan = item.scan || {};
   const supplier = (scan.vendor || "").trim();
   const amount = typeof scan.amount === "number" ? scan.amount : null;
-  const vat = typeof scan.vatAmount === "number" ? scan.vatAmount : 0;
+  const scannedVat = typeof scan.vatAmount === "number" ? scan.vatAmount : 0;
+  const vat = businessType === null ? 0 : expenseVatForBusinessType(scannedVat, businessType);
   const date = scan.date || "";
   const category = normalizeCategory(scan.category);
   const unread = scan.unreadFields ?? [];
   // Everything the tax books need. Missing any of the three means the scanner
   // left it blank on purpose, so there is nothing honest to one-click approve.
-  const complete = supplier !== "" && amount !== null && amount > 0 && /^\d{4}-\d{2}-\d{2}$/.test(date);
+  const complete =
+    businessType !== null && supplier !== "" && amount !== null && amount > 0 && /^\d{4}-\d{2}-\d{2}$/.test(date);
 
   async function approve() {
     if (!complete || amount === null) return;
