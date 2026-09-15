@@ -1,7 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-// @ts-expect-error plain .mjs helper without type declarations
 import { coveredMonths, findNotice, findPostponements, parseNoticeTable, targetYear, tsSnippet, validateRows } from "../scripts/lib/ita-calendar.mjs";
 import { OFFICIAL_DEADLINES } from "@/lib/ita/filing-calendar";
 
