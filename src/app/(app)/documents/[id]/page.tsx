@@ -44,7 +44,8 @@ import { CONSENT_SOURCE_LABELS } from "@/lib/consent";
 import { signingEligibility } from "@/lib/signing/eligibility";
 import { cancellationRoute } from "@/lib/document-cancel";
 import { useDocumentSignature } from "@/lib/signature-store";
-import { DOCUMENT_TYPE_LABELS, PAYMENT_METHOD_LABELS, type InvoiceDocument } from "@/lib/types";
+import { DOCUMENT_TYPE_LABELS,
+  DOCUMENT_TYPE_LABELS_DEFINITE, PAYMENT_METHOD_LABELS, type InvoiceDocument } from "@/lib/types";
 import { docStrings } from "@/lib/document-strings";
 import { formatDocTotal } from "@/lib/currencies";
 import { whatsappShareText } from "@/lib/document-share-text";
@@ -774,15 +775,18 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
               <span className="hidden sm:inline">מחק טיוטה</span>
             </button>
           )}
-          <button
-            onClick={handleCopyLink}
-            className="hidden sm:inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-white border border-orange-200 text-stone-800 hover:bg-orange-50"
-            title="העתק קישור לשיתוף"
-          >
-            <LinkIcon className="w-4 h-4" />
-            <span className="hidden sm:inline">העתק קישור</span>
-          </button>
-          {!showNextSteps && (<>
+          {/* A cancelled document is not delivered: no share link, no send. */}
+          {doc.status !== "cancelled" && (
+            <button
+              onClick={handleCopyLink}
+              className="hidden sm:inline-flex items-center gap-2 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold bg-white border border-orange-200 text-stone-800 hover:bg-orange-50"
+              title="העתק קישור לשיתוף"
+            >
+              <LinkIcon className="w-4 h-4" />
+              <span className="hidden sm:inline">העתק קישור</span>
+            </button>
+          )}
+          {!showNextSteps && doc.status !== "cancelled" && (<>
           {/* Under the allocation gate the send buttons stay CLICKABLE on
               purpose: handleWhatsApp/handleResend refuse and route the user
               to the allocation card (toast + scroll + gold ring), which
@@ -1386,8 +1390,8 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
             {sourceQuote && (
               <div className="mt-2 text-xs text-rose-900">
                 <p>
-                  {DOCUMENT_TYPE_LABELS[sourceQuote.type]} #{sourceQuote.number} עדיין מסומן כשולם וכמומר למסמך הזה,
-                  ולכן אי אפשר להמיר אותו שוב.
+                  המסמך שהומר למסמך הזה ({DOCUMENT_TYPE_LABELS[sourceQuote.type]} #{sourceQuote.number}) עדיין מסומן
+                  כשולם, ולכן אי אפשר להמיר אותו שוב.
                 </p>
                 <button
                   type="button"
@@ -1396,7 +1400,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                   className="mt-1.5 inline-flex items-center gap-1.5 px-3 py-1.5 min-h-[36px] rounded-lg text-xs font-semibold bg-white border border-rose-300 text-rose-800 hover:bg-rose-100 disabled:opacity-60"
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
-                  החזר את {DOCUMENT_TYPE_LABELS[sourceQuote.type]} #{sourceQuote.number} למצב פתוח
+                  החזר את {DOCUMENT_TYPE_LABELS_DEFINITE[sourceQuote.type]} #{sourceQuote.number} למצב פתוח
                 </button>
               </div>
             )}

@@ -154,7 +154,7 @@ export default function ClientStatementPage({
             {client.taxId && (
               <p>
                 <span className="text-stone-500">ח.פ / ת.ז:</span>{" "}
-                <span className="font-mono">{client.taxId}</span>
+                <span className="tabular-nums">{client.taxId}</span>
               </p>
             )}
             {client.address && (
@@ -165,7 +165,7 @@ export default function ClientStatementPage({
             {client.phone && (
               <p>
                 <span className="text-stone-500">טלפון:</span>{" "}
-                <span className="font-mono" dir="ltr">{client.phone}</span>
+                <span className="tabular-nums" dir="ltr">{client.phone}</span>
               </p>
             )}
             {client.email && (
@@ -202,14 +202,14 @@ export default function ClientStatementPage({
                   <tr key={doc.id} className="even:bg-stone-50/60">
                     <td className="px-3 py-1.5 border border-stone-200 whitespace-nowrap">{formatDate(doc.date)}</td>
                     <td className="px-3 py-1.5 border border-stone-200">{DOCUMENT_TYPE_LABELS[doc.type]}</td>
-                    <td className="px-3 py-1.5 border border-stone-200 font-mono">{doc.number}</td>
+                    <td className="px-3 py-1.5 border border-stone-200 tabular-nums">{doc.number}</td>
                     <td className="px-3 py-1.5 border border-stone-200">
                       {doc.type === "credit_note" ? "זיכוי" : doc.status === "paid" ? "שולם" : "ממתין"}
                       {doc.paidAt && doc.status === "paid" && (
                         <span className="text-xs text-stone-500"> ({formatDate(doc.paidAt.slice(0, 10))})</span>
                       )}
                     </td>
-                    <td className="px-3 py-1.5 border border-stone-200 text-left font-mono">
+                    <td className="px-3 py-1.5 border border-stone-200 text-left tabular-nums">
                       {formatCurrency(signed)}
                     </td>
                   </tr>

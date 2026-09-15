@@ -410,6 +410,19 @@ export const DOCUMENT_TYPE_BADGE_COLORS: Record<DocumentType, string> = {
   credit_note: "bg-rose-100 text-rose-800",
 };
 
+/**
+ * The same names in their definite form, for a sentence that needs "את ...":
+ * "החזר את הצעת המחיר #12", never "החזר את הצעת מחיר #12".
+ */
+export const DOCUMENT_TYPE_LABELS_DEFINITE: Record<DocumentType, string> = {
+  receipt: "הקבלה",
+  quote: "הצעת המחיר",
+  proforma: "חשבון העסקה",
+  tax_invoice: "חשבונית המס",
+  tax_invoice_receipt: "חשבונית המס/קבלה",
+  credit_note: "חשבונית הזיכוי",
+};
+
 export const DOCUMENT_STATUS_LABELS: Record<DocumentStatus, string> = {
   draft: "טיוטה",
   sent: "נשלח",
