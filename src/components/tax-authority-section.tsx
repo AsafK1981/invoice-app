@@ -17,6 +17,7 @@ import { supabase } from "@/lib/supabase";
 import { formatDate, shekel } from "@/lib/format";
 import { canIssueTaxInvoicesByType } from "@/lib/vat";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { taxAuthorityConnectErrorMessage } from "@/lib/tax-authority-connect-errors";
 
 /**
  * Settings card for "חשבונית ישראל", Israel Tax Authority allocation
@@ -101,8 +102,8 @@ export function TaxAuthoritySection() {
     if (flag === "connected") {
       setToast({ kind: "success", text: "התחברת בהצלחה לרשות המסים." });
     } else if (flag === "error") {
-      const reason = search.get("reason") || "שגיאה";
-      setToast({ kind: "error", text: `החיבור נכשל: ${reason}` });
+      // Only known short codes map to text; the raw param is never shown.
+      setToast({ kind: "error", text: taxAuthorityConnectErrorMessage(search.get("reason")) });
     }
   }, [search]);
 

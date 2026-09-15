@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { randomBytes } from "node:crypto";
 import { buildAuthorizeUrl, isTaxAuthorityConfigured } from "@/lib/tax-authority";
+import { newOAuthNonce } from "@/lib/oauth-browser-binding";
+import {
+  TAX_AUTHORITY_OAUTH_NONCE_COOKIE,
+  taxAuthorityNonceCookieOptions,
+  taxAuthorityStateFromNonce,
+} from "@/lib/tax-authority-oauth";
 import { canIssueTaxInvoicesByType } from "@/lib/vat";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -13,6 +18,12 @@ const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
  * Returns a JSON { url } the client navigates to. Stores a one-time
  * state token in tax_authority_oauth_states; the /callback route
  * verifies it before exchanging the code for tokens.
+ *
+ * The state is derived from a random nonce that goes into an HttpOnly
+ * cookie on this very response (a same-origin fetch, so the browser stores
+ * it before it navigates to gov.il). The callback only proceeds when the
+ * browser brings that cookie back, which binds the attempt to the browser
+ * that started it. See src/lib/tax-authority-oauth.ts.
  */
 export async function POST(req: NextRequest) {
   if (!isTaxAuthorityConfigured()) {
@@ -68,7 +79,8 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const state = randomBytes(24).toString("hex");
+  const nonce = newOAuthNonce();
+  const state = taxAuthorityStateFromNonce(nonce);
   const { error: stateErr } = await sb.from("tax_authority_oauth_states").insert({
     state,
     business_id: biz.id,
@@ -78,5 +90,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "שגיאה ביצירת state" }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true, url: buildAuthorizeUrl(state) });
+  const res = NextResponse.json({ ok: true, url: buildAuthorizeUrl(state) });
+  res.headers.set("Cache-Control", "no-store");
+  res.cookies.set(TAX_AUTHORITY_OAUTH_NONCE_COOKIE, nonce, taxAuthorityNonceCookieOptions());
+  return res;
 }

@@ -54,6 +54,11 @@ const ITA_BASE =
 
 const CALLBACK_URL = `${APP_ORIGIN}/api/tax-authority/callback`;
 
+/** Origin of the redirect_uri registered with שע"מ (NOT necessarily the canonical site origin). */
+export function taxAuthorityCallbackOrigin(): string {
+  return new URL(APP_ORIGIN).origin;
+}
+
 /**
  * Israeli-egress proxy. gov.il geo-blocks non-Israeli source IPs and Vercel
  * has no Israel region, so server-to-server calls (token exchange/refresh +
