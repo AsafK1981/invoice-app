@@ -2,9 +2,13 @@ import { describe, it, expect } from "vitest";
 import {
   buildPeriodicFiling,
   defaultFilingPeriod,
+  filingDeadlines,
   filingPeriodEnded,
   filingRange,
   isFilingPeriod,
+  shiftFilingPeriod,
+  switchFilingMode,
+  vatReportModeFor,
 } from "@/lib/periodic-filing";
 import { buildPcn874 } from "@/lib/ita/pcn874";
 import { computeAdvance } from "@/lib/ita/income-tax-advances";
@@ -18,7 +22,7 @@ function doc(over: Partial<InvoiceDocument> = {}): InvoiceDocument {
     date: "2026-07-10",
     clientId: "c1",
     clientName: "לקוח",
-    clientTaxId: "512345678",
+    clientTaxId: "513333336",
     status: "paid",
     items: [],
     subtotal: 1000,
@@ -36,7 +40,7 @@ function expense(over: Partial<Expense> = {}): Expense {
     supplier: "ספק",
     amount: 236,
     vatAmount: 36,
-    supplierTaxId: "512345678",
+    supplierTaxId: "513333336",
     reference: "77",
     ...over,
   };
@@ -100,10 +104,11 @@ describe("buildPeriodicFiling", () => {
     expect(f.range.label).toBe("יול׳-אוג׳ 2026");
     expect(f.ended).toBe(true);
     expect(f.income.rows.map((r) => r.number)).toEqual([1, 2, 3]);
-    expect(f.income.totals).toEqual({ count: 3, net: 2500, vat: 450, gross: 2950 });
+    expect(f.income.vat).toEqual({ count: 3, net: 2500, vat: 450, gross: 2950 });
+    expect(f.income.turnover).toEqual({ count: 2, net: 500, vat: 90, gross: 590 });
     expect(f.expenses.rows).toHaveLength(2);
     expect(f.expenses.totals.vat).toBe(216);
-    expect(f.dueDate).toBe("2026-09-15");
+    expect(f.deadlines).toEqual({ regular: "2026-09-15", online: "2026-09-19", detailed: "2026-09-23" });
   });
 
   it("marks which rows feed the VAT return and which feed the advance", () => {
@@ -155,7 +160,99 @@ describe("buildPeriodicFiling", () => {
     const usd = doc({ date: "2026-07-12", number: 9, currency: "USD", exchangeRate: 3.7, subtotal: 100, vat: 0, total: 100, subtotalIls: 370, vatIls: 0, totalIls: 370, zeroRated: true });
     const f = buildPeriodicFiling({ business: authorized, documents: [usd], expenses: [], period: "2026-07" })!;
     expect(f.income.rows[0].gross).toBe(370);
-    expect(f.income.totals.gross).toBe(370);
+    expect(f.income.vat.gross).toBe(370);
+  });
+  // ---- council findings, 2026-09-15 ----
+
+  it("an invoice converted into a receipt stays in the VAT rows; the receipt carries the turnover", () => {
+    const invoice = doc({ id: "inv", date: "2026-07-10", number: 11, status: "paid", convertedToId: "rcp", subtotal: 1000, vat: 180, total: 1180 });
+    const receipt = doc({ id: "rcp", date: "2026-07-20", number: 12, type: "receipt", status: "paid", subtotal: 1180, vat: 0, total: 1180 });
+    const f = buildPeriodicFiling({ business: authorized, documents: [invoice, receipt], expenses: [], period: "2026-07", today: july })!;
+    expect(f.income.rows.map((r) => [r.number, r.inVat, r.inTurnover])).toEqual([[11, true, false], [12, false, true]]);
+    // The VAT rows add up to the VAT card, whatever the receipt carries.
+    expect(f.income.vat.vat).toBe(f.vat!.outputVat);
+    expect(f.income.vat.net).toBe(f.vat!.taxableSales);
+  });
+
+  it("a receipt that carries VAT never leaks into the VAT totals", () => {
+    const receipt = doc({ date: "2026-07-20", number: 12, type: "receipt", status: "paid", subtotal: 1000, vat: 180, total: 1180 });
+    const f = buildPeriodicFiling({ business: authorized, documents: [receipt], expenses: [], period: "2026-07", today: july })!;
+    expect(f.vat!.outputVat).toBe(0);
+    expect(f.income.vat).toEqual({ count: 0, net: 0, vat: 0, gross: 0 });
+    expect(f.income.rows[0]).toMatchObject({ inVat: false, inTurnover: true });
+  });
+
+  it("input VAT left out for a missing allocation number is reported, not silently different", () => {
+    const big = expense({ date: "2026-07-15", amount: 11800, vatAmount: 1800, isEquipment: true, allocationNumber: "" });
+    const f = buildPeriodicFiling({ business: authorized, documents: [], expenses: [big], period: "2026-07", today: july })!;
+    expect(f.vat!.equipmentInputVat).toBe(0);
+    expect(f.excludedInputVat).toBe(1800);
+    expect(f.pcn!.warnings.some((w) => w.code === "supplier_allocation_missing")).toBe(true);
+    // The expense table still shows what was typed.
+    expect(f.expenses.totals.equipmentVat).toBe(1800);
+    const withAllocation = buildPeriodicFiling({ business: authorized, documents: [], expenses: [{ ...big, allocationNumber: "123456789" }], period: "2026-07", today: july })!;
+    expect(withAllocation.vat!.equipmentInputVat).toBe(1800);
+    expect(withAllocation.excludedInputVat).toBe(0);
+  });
+
+  it("keeps the PCN874 checks so a foreign-currency document without shekel amounts is flagged", () => {
+    const usd = doc({ date: "2026-07-12", number: 9, currency: "USD", exchangeRate: 3.7, subtotal: 1000, vat: 180, total: 1180 });
+    const f = buildPeriodicFiling({ business: authorized, documents: [usd], expenses: [], period: "2026-07", today: july })!;
+    expect(f.pcn!.warnings.some((w) => w.level === "error" && w.code === "foreign_currency_missing_ils")).toBe(true);
+  });
+
+  it("counts expenses whose category says ציוד but are not marked as equipment", () => {
+    const f = buildPeriodicFiling({
+      business: authorized,
+      documents: [],
+      expenses: [expense({ category: "ציוד", isEquipment: false }), expense({ category: "ציוד", isEquipment: true }), expense({ category: "משרד" })],
+      period: "2026-07",
+      today: july,
+    })!;
+    expect(f.equipmentCategoryUnmarked).toBe(1);
+    expect(buildPeriodicFiling({ business: exempt, documents: [], expenses: [expense({ category: "ציוד" })], period: "2026-07" })!.equipmentCategoryUnmarked).toBe(0);
+  });
+});
+
+describe("filing period helpers", () => {
+  it("refuses anything that is not a real month or bi-month", () => {
+    for (const bad of ["abc", "2026-13", "2026-00", "2026-B7", "2026-B0", "2026-7", "2026-Q3", "2026", "all", "2026-01-01..2026-02-01", ""]) {
+      expect(isFilingPeriod(bad), bad).toBe(false);
+      expect(filingRange(bad), bad).toBeNull();
+    }
+  });
+
+  it("switching to month from an ended bi-month lands on its last ended month", () => {
+    expect(switchFilingMode("2026-B4", "month", july)).toBe("2026-08");
+    // Current bi-month in mid-September: nothing ended yet, so its first month.
+    expect(switchFilingMode("2026-B5", "month", july)).toBe("2026-09");
+    // Sep-Oct during November: October.
+    expect(switchFilingMode("2026-B5", "month", new Date(2026, 10, 3))).toBe("2026-10");
+    expect(switchFilingMode("2026-08", "bimonth", july)).toBe("2026-B4");
+    expect(switchFilingMode("2026-07", "bimonth", july)).toBe("2026-B4");
+    expect(switchFilingMode("2026-08", "month", july)).toBe("2026-08");
+  });
+
+  it("steps across year boundaries", () => {
+    expect(shiftFilingPeriod("2026-B1", -1)).toBe("2025-B6");
+    expect(shiftFilingPeriod("2025-B6", 1)).toBe("2026-B1");
+    expect(shiftFilingPeriod("2026-01", -1)).toBe("2025-12");
+    expect(shiftFilingPeriod("2025-12", 1)).toBe("2026-01");
+  });
+
+  it("links to /reports/vat only when that report can show the same period", () => {
+    expect(vatReportModeFor("2026-B4", july)).toBe("last_2m");
+    expect(vatReportModeFor("2026-B5", july)).toBe("this_2m");
+    expect(vatReportModeFor("2026-08", july)).toBe("last_month");
+    expect(vatReportModeFor("2026-09", july)).toBe("this_month");
+    expect(vatReportModeFor("2026-07", july)).toBeNull();
+    expect(vatReportModeFor("2026-B3", july)).toBeNull();
+    expect(vatReportModeFor("2025-B6", new Date(2026, 0, 10))).toBe("last_2m");
+    expect(vatReportModeFor("2025-12", new Date(2026, 0, 10))).toBe("last_month");
+  });
+
+  it("deadlines roll into the next year after December", () => {
+    expect(filingDeadlines("2026-12-31")).toEqual({ regular: "2027-01-15", online: "2027-01-19", detailed: "2027-01-23" });
   });
 });
 

@@ -63,19 +63,25 @@ interface Props extends Context {
    * headline says so instead of "ready".
    */
   advisory?: boolean;
+  /**
+   * What the blocking items stand before, in the headline ("נשארו 2 דברים
+   * לפני ___"). Reports with a file say ההורדה; the periodic report, which
+   * has no file and only figures to type, says הדיווח.
+   */
+  before?: string;
 }
 
 /** The single "what's left" panel shared by the filing reports. */
-export function FilingFixPanel({ model, advisory = false, ...context }: Props) {
+export function FilingFixPanel({ model, advisory = false, before = "ההורדה", ...context }: Props) {
   const [notesOpen, setNotesOpen] = useState(false);
   const count = model.blocking.length;
   const affecting = advisory ? model.actions.length : 0;
   const headline = model.periodOnly
     ? "את הקובץ המפורט מורידים לתקופת דיווח"
     : count === 1
-      ? "נשאר דבר אחד לפני ההורדה"
+      ? `נשאר דבר אחד לפני ${before}`
       : count > 1
-        ? `נשארו ${count} דברים לפני ההורדה`
+        ? `נשארו ${count} דברים לפני ${before}`
         : affecting === 1
           ? "דבר אחד משפיע על הסכומים בדוח"
           : affecting > 1
