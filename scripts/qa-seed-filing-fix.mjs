@@ -18,8 +18,9 @@
 import fs from "node:fs";
 import { randomUUID } from "node:crypto";
 import { supabase } from "./admin.mjs";
+import { qaSeedMode } from "./lib/qa-seed-mode.mjs";
 
-const mode = process.argv.includes("clean") ? "clean" : "seed";
+const mode = qaSeedMode(process.argv.slice(2));
 const keys = JSON.parse(fs.readFileSync("C:/Users/asafk/agents/lynkeus/state/keys.json", "utf8"));
 const SNAPSHOT = new URL("../.qa-filing-fix-snapshot.json", import.meta.url);
 const TAG = "qa-filing-fix";
@@ -32,7 +33,12 @@ const { error: removeError } = await supabase.from("expenses").delete().eq("busi
 if (removeError) throw removeError;
 
 if (mode === "clean") {
-  if (fs.existsSync(SNAPSHOT)) {
+  // Without the snapshot nothing can be restored: say so and fail, never report a clean that did not happen.
+  if (!fs.existsSync(SNAPSHOT)) {
+    console.error("clean: no snapshot file, so nothing was restored (business type, business number and filled values). Check the QA business by hand.");
+    process.exit(1);
+  }
+  {
     const snap = JSON.parse(fs.readFileSync(SNAPSHOT, "utf8"));
     const { error } = await supabase.from("businesses").update({ business_type: snap.business_type, tax_id: snap.tax_id }).eq("id", biz.id);
     if (error) throw error;
