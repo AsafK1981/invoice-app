@@ -93,6 +93,8 @@ export async function fetchDocuments(): Promise<InvoiceDocument[] | undefined> {
     .select("*, document_items(*)", { count: "exact" })
     .eq("business_id", bid)
     .order("date", { ascending: false })
+    // Same-day rows newest first, then id so pages can never overlap.
+    .order("created_at", { ascending: false })
     .order("id", { ascending: true })
     .order("sort_order", { foreignTable: "document_items" })
     .range(from, to) as unknown as PromiseLike<RowPage>, STORE_LOAD_MESSAGES.documents);

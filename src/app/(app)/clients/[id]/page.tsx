@@ -20,8 +20,8 @@ import { useClients, recordClientConsent, revokeClientConsent } from "@/lib/clie
 import { CONSENT_SOURCE_LABELS, consentStatus } from "@/lib/consent";
 import { documentsForClient } from "@/lib/client-picker";
 import { useDocuments } from "@/lib/document-store";
-import { computeClientAccount } from "@/lib/aging";
-import { StoreLoadError } from "@/components/store-load-error";
+import { computeClientAccount, isOpenReceivable } from "@/lib/aging";
+import { StoreLoadError, StoreRefreshBanner } from "@/components/store-load-error";
 import { DocumentsTable } from "@/components/documents-table";
 import { formatCurrencyWhole, formatDate } from "@/lib/format";
 
@@ -43,14 +43,18 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
     // negative) reduce billed.
     const { billed, paid } = computeClientAccount(mine);
     const last = mine.length > 0 ? mine.map((d) => d.date).sort().at(-1) : null;
-    const open = mine.filter(
-      (d) => d.status === "sent" && (d.type === "quote" || d.type === "proforma" || d.type === "tax_invoice"),
-    ).length;
+    // Same rule as the balance above (lib/aging.ts): an open quote is not a
+    // debt and a converted document is replaced by its successor.
+    const open = mine.filter(isOpenReceivable).length;
     return { docs: mine, totalBilled: billed, totalPaid: paid, lastDocDate: last ?? null, openCount: open };
   }, [client, documents, clients]);
 
-  if (clientsError || docsError) {
-    return <StoreLoadError sources={[{ error: clientsError, retry: retryClients }, { error: docsError, retry: retryDocs }]} />;
+  const loadSources = [
+    { error: clientsError, retry: retryClients, ready: clientsReady },
+    { error: docsError, retry: retryDocs, ready: docsReady },
+  ];
+  if ((clientsError && !clientsReady) || (docsError && !docsReady)) {
+    return <StoreLoadError sources={loadSources} />;
   }
 
   if (!clientsReady || !docsReady) {
@@ -76,6 +80,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
 
   return (
     <div className="space-y-6">
+      <StoreRefreshBanner sources={loadSources} />
       <div className="flex items-center justify-between flex-wrap gap-3">
         <Link
           href="/clients"

@@ -38,7 +38,7 @@ import { DashboardChart } from "@/components/dashboard-chart";
 import { TopClients } from "@/components/top-clients";
 import { QuoteAging } from "@/components/quote-aging";
 import { OnboardingChecklist } from "@/components/onboarding-checklist";
-import { StoreLoadError, failedStore } from "@/components/store-load-error";
+import { StoreLoadError, StoreRefreshBanner, blockingStoreFailure } from "@/components/store-load-error";
 import { ExemptCeilingTracker } from "@/components/exempt-ceiling-tracker";
 import { NextFilingCard } from "@/components/next-filing-card";
 import { RecurringDueAlert } from "@/components/recurring-due-alert";
@@ -112,17 +112,18 @@ function calcDelta(curr: number, prev: number): { pct: number | null; mode: "up"
 
 export default function DashboardPage() {
   const { documents, ready, error: docsError, retry: retryDocs } = useDocuments();
-  const { items: expenses, error: expError, retry: retryExp } = useExpenses();
-  const { items: clients, error: clientsError, retry: retryClients } = useClients();
+  const { items: expenses, ready: expReady, error: expError, retry: retryExp } = useExpenses();
+  const { items: clients, ready: clientsReady, error: clientsError, retry: retryClients } = useClients();
   // A failed load must not look like an empty business: no "בואו נתחיל"
   // hero, no zero KPIs. Everything built from the stores is replaced by the
   // error and its retry button until the load succeeds.
+  // A failed REFRESH keeps the last good rows under an inline banner.
   const loadSources = [
-    { error: docsError, retry: retryDocs },
-    { error: expError, retry: retryExp },
-    { error: clientsError, retry: retryClients },
+    { error: docsError, retry: retryDocs, ready },
+    { error: expError, retry: retryExp, ready: expReady },
+    { error: clientsError, retry: retryClients, ready: clientsReady },
   ];
-  const loadFailed = failedStore(loadSources) !== null;
+  const loadFailed = blockingStoreFailure(loadSources) !== null;
   const { items: products } = useProducts();
   const { business } = useBusiness();
   const [range, setRange] = useState<RangeChoice>("1m");
@@ -345,6 +346,7 @@ export default function DashboardPage() {
         <StoreLoadError sources={loadSources} />
       ) : (
       <>
+      <StoreRefreshBanner sources={loadSources} />
 
       <OnboardingChecklist
         business={business}

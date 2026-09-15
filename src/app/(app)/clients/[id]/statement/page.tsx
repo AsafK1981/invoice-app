@@ -8,7 +8,7 @@ import { useClients } from "@/lib/client-store";
 import { documentsForClient } from "@/lib/client-picker";
 import { useDocuments } from "@/lib/document-store";
 import { computeClientAccount } from "@/lib/aging";
-import { StoreLoadError } from "@/components/store-load-error";
+import { StoreLoadError, StoreRefreshBanner } from "@/components/store-load-error";
 import { useBusiness } from "@/lib/business-store";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { todayInIsrael } from "@/lib/date";
@@ -55,8 +55,12 @@ export default function ClientStatementPage({
     };
   }, [client, documents, clients]);
 
-  if (clientsError || docsError) {
-    return <StoreLoadError sources={[{ error: clientsError, retry: retryClients }, { error: docsError, retry: retryDocs }]} />;
+  const loadSources = [
+    { error: clientsError, retry: retryClients, ready: clientsReady },
+    { error: docsError, retry: retryDocs, ready: docsReady },
+  ];
+  if ((clientsError && !clientsReady) || (docsError && !docsReady)) {
+    return <StoreLoadError sources={loadSources} />;
   }
 
   if (!clientsReady || !docsReady || !bizReady) {
@@ -78,6 +82,7 @@ export default function ClientStatementPage({
 
   return (
     <div className="space-y-6">
+      <StoreRefreshBanner sources={loadSources} />
       <style jsx global>{`
         @media print {
           @page {

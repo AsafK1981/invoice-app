@@ -29,6 +29,26 @@ export async function loadAllPages(
   messages: PagedLoadMessages,
   signal?: AbortSignal,
 ): Promise<Record<string, unknown>[]> {
+  // A row added or removed while a multi-page load runs (a cron-created
+  // expense, a document issued in another tab) moves the count. That is not a
+  // failure, so the load starts over from page 0; only a count that keeps
+  // moving through three attempts is reported.
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await loadAllPagesOnce(page, messages, signal);
+    } catch (err) {
+      if (attempt >= 3 || !(err instanceof CountChangedError)) throw err instanceof CountChangedError ? new Error(messages.changed) : err;
+    }
+  }
+}
+
+class CountChangedError extends Error {}
+
+async function loadAllPagesOnce(
+  page: (from: number, to: number) => PromiseLike<RowPage>,
+  messages: PagedLoadMessages,
+  signal?: AbortSignal,
+): Promise<Record<string, unknown>[]> {
   const rows: Record<string, unknown>[] = [];
   const ids = new Set<string>();
   let expected: number | null = null;
@@ -37,7 +57,7 @@ export async function loadAllPages(
     const { data, error, count } = await page(rows.length, rows.length + PAGE_SIZE - 1);
     signal?.throwIfAborted();
     if (error || !data || count === null) throw new Error(messages.failed);
-    if (expected !== null && expected !== count) throw new Error(messages.changed);
+    if (expected !== null && expected !== count) throw new CountChangedError(messages.changed);
     expected = count;
     for (const row of data as Record<string, unknown>[]) {
       if (typeof row.id !== "string" || ids.has(row.id)) throw new Error(messages.unverified);

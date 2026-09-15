@@ -55,6 +55,8 @@ export async function fetchExpenses(): Promise<Expense[] | undefined> {
     .select("*", { count: "exact" })
     .eq("business_id", bid)
     .order("date", { ascending: false })
+    // Same-day rows newest first, then id so pages can never overlap.
+    .order("created_at", { ascending: false })
     .order("id", { ascending: true })
     .range(from, to) as unknown as PromiseLike<RowPage>, STORE_LOAD_MESSAGES.expenses);
   return rows.map(mapRow);

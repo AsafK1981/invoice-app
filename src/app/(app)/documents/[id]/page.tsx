@@ -23,6 +23,7 @@ import {
   Ban,
   X,
 } from "lucide-react";
+import { StoreLoadError } from "@/components/store-load-error";
 import { useDocument, useDocuments, deleteDocument, cancelDocument, updateDocumentStatus, markDocumentEmailed, markDocumentIssued } from "@/lib/document-store";
 import { publicDocumentUrl } from "@/lib/public-url";
 import { DocumentAttachmentsSection } from "@/components/document-attachments-section";
@@ -54,7 +55,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
   const { id } = use(params);
   const router = useRouter();
   const { document: doc, ready } = useDocument(id);
-  const { documents: allDocuments } = useDocuments();
+  const { documents: allDocuments, error: docsLoadError, retry: retryDocsLoad } = useDocuments();
   const { items: clients } = useClients();
   const { business } = useBusiness();
 
@@ -154,6 +155,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
   }, [ready, doc, id, searchParams]);
 
   if (!ready) {
+    if (docsLoadError) return <StoreLoadError sources={[{ error: docsLoadError, retry: retryDocsLoad, ready }]} />;
     return <div className="text-center py-16 text-stone-500">טוען...</div>;
   }
 
