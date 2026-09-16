@@ -3625,6 +3625,42 @@ html .text-\[13px\] { font-size: 14px; }
   html:has(.app-install-prompt) .assistant-launcher { visibility: hidden; }
 }
 
+/* Mobile "extended FAB" (2026-09-16). At the top of a page the launcher is
+   the labelled pill; once the page is scrolled (useLauncherCollapsed in
+   assistant-widget.tsx sets data-collapsed) it shrinks to a round 48x48 icon
+   so it stops covering hints and fields, and grows back near the top. Only
+   below lg: the desktop pill never changes. The label span shrinks to zero
+   width rather than unmounting, so it is one button whose aria-label names
+   it in both states. The collapsed padding is (3rem - 22px mark) / 2 so the
+   width always equals the h-12 height (48px at a 16px root) and the button is
+   a true circle at every root size, large-text mode included. */
+@media (max-width: 1023.98px) {
+  .assistant-launcher {
+    min-width: 3rem;
+    transition: box-shadow 150ms ease, padding 200ms ease, gap 200ms ease;
+  }
+  .assistant-launcher-label {
+    display: inline-block;
+    max-width: 8rem;
+    overflow: hidden;
+    transition: max-width 200ms ease, opacity 200ms ease;
+  }
+  .assistant-launcher[data-collapsed="true"] {
+    padding-inline: calc((3rem - 22px) / 2);
+    gap: 0;
+  }
+  .assistant-launcher[data-collapsed="true"] .assistant-launcher-label {
+    max-width: 0;
+    opacity: 0;
+  }
+}
+@media (max-width: 1023.98px) and (prefers-reduced-motion: reduce) {
+  .assistant-launcher,
+  .assistant-launcher-label {
+    transition: none;
+  }
+}
+
 /* Periodic nudge (Asaf, 2026-08-18: "I don't notice it"). Every 30s the pill
    hops twice and a ring blooms out of it, ~1.6s total, then it sits still
    again. Uses `translate`/`rotate` (not `transform`) so it never fights the

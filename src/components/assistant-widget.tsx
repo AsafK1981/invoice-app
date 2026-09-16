@@ -318,11 +318,50 @@ function usePanelSize() {
   return { desktop, size, setSize, maximized, setMaximized, persist };
 }
 
+/** Scrolled past this many px: the mobile launcher collapses to its icon.
+ *  Measured on the receipt editor at 390px: the number-field hint reaches the
+ *  pill after ~73px of scroll, so a later trigger would still cover it. */
+const LAUNCHER_COLLAPSE_AT = 56;
+/** Back above this many px: the label returns. The gap stops flicker when a
+ *  page settles right on the threshold. */
+const LAUNCHER_EXPAND_AT = 24;
+
+/**
+ * Whether the closed launcher should show as the round icon. The signed-in
+ * shell scrolls the WINDOW (<main> has no height cap or overflow, see
+ * app/(app)/layout.tsx), so that is what we watch. Passive listener, one read
+ * per animation frame. Starts expanded; the CSS only honours the collapsed
+ * state below `lg`, so desktop never changes.
+ */
+function useLauncherCollapsed(active: boolean) {
+  const [collapsed, setCollapsed] = useState(false);
+  useEffect(() => {
+    if (!active) return;
+    let frame = 0;
+    const read = () => {
+      frame = 0;
+      const y = window.scrollY;
+      setCollapsed((prev) => (prev ? y > LAUNCHER_EXPAND_AT : y > LAUNCHER_COLLAPSE_AT));
+    };
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(read);
+    };
+    read();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (frame) cancelAnimationFrame(frame);
+    };
+  }, [active]);
+  return collapsed;
+}
+
 export function AssistantWidget() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const { desktop, size, setSize, maximized, setMaximized, persist } = usePanelSize();
   const panelRef = useRef<HTMLDivElement>(null);
+  const launcherCollapsed = useLauncherCollapsed(!open);
   const [mobileViewport, setMobileViewport] = useState<{ height: number; bottom: number } | null>(null);
   useEffect(() => {
     const viewport = window.visualViewport;
@@ -745,16 +784,22 @@ export function AssistantWidget() {
 
   if (!open) {
     // A bare sparkle circle does not say "assistant" to anyone who has not
-    // been told. The launcher is a labelled pill: a chat glyph, which reads as
-    // "talk to something", plus the words. The label stays visible at every
-    // width - hiding it on mobile would put the ambiguity back exactly where
-    // most first-time users are.
-    // A compact labelled button stays available while scrolling. The existing
-    // occasional nudge respects prefers-reduced-motion.
+    // been told, so the launcher is a labelled pill: the brand mark plus the
+    // words. On desktop the label is always there. Below `lg` it follows the
+    // "extended FAB" pattern: the full pill shows while the page is at the top,
+    // where a first-time user discovers it, and it shrinks to a round 48px
+    // icon once the page is scrolled, because a pill parked over the content
+    // covered hints and fields while reading (e.g. the editor's number-field
+    // hint). Scrolling back near the top brings the label back. It is one
+    // button either way: the label span collapses (see .assistant-launcher
+    // [data-collapsed] in app-skin.css) and aria-label names it in both
+    // states. The occasional nudge and the collapse both respect
+    // prefers-reduced-motion.
     return (
       <button
         onClick={() => setOpen(true)}
         aria-label="פתח את העוזר החכם"
+        data-collapsed={launcherCollapsed ? "true" : undefined}
         className="assistant-launcher no-print fixed left-4 right-auto z-40 h-12 pl-4 pr-3 lg:h-14 lg:pl-5 lg:pr-4 rounded-full bg-gradient-to-br from-orange-500 to-orange-700 text-white shadow-lg shadow-orange-300/60 flex items-center gap-2 hover:shadow-xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-orange-700 transition-shadow print:hidden"
       >
         {/* Attention ring: expands and fades once per nudge cycle (see
@@ -766,7 +811,7 @@ export function AssistantWidget() {
           <BrandMark size={24} className="hidden lg:block" />
           <Sparkles className="w-3 h-3 lg:w-4 lg:h-4 absolute -top-1 -left-1.5 lg:-top-1.5 lg:-left-2" />
         </span>
-        <span className="text-sm lg:text-base font-semibold whitespace-nowrap">עוזר חכם</span>
+        <span className="assistant-launcher-label text-sm lg:text-base font-semibold whitespace-nowrap">עוזר חכם</span>
       </button>
     );
   }

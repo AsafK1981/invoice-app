@@ -7,6 +7,7 @@ import { todayInIsrael } from "@/lib/date";
 import { parseAmount } from "@/lib/import-mapping";
 import { mapHeaders } from "@/lib/import-headers";
 import { bumpDocumentCounters } from "@/lib/document-counters";
+import { mapImportedClientRow } from "@/lib/import-clients";
 import {
   mapDocumentRow,
   createSkipAccumulator,
@@ -53,6 +54,8 @@ type ImportSummary = {
   /** Rows whose document-type cell wasn't recognized; imported as receipt but flagged for review. */
   unmappedType?: number;
   unmappedTypeSamples?: string[];
+  /** Clients whose תנאי תשלום text was present but not recognised (imported without terms). */
+  termsUnrecognized?: number;
   errors: string[];
 };
 
@@ -204,27 +207,34 @@ async function importClients(sb: SB, businessId: string, rows: ImportRow[], impo
   const seen = new Set((existing || []).map((c) => String(c.name).toLowerCase().trim()));
 
   const toInsert: Array<Record<string, string | null>> = [];
+  let termsUnrecognized = 0;
   for (const row of rows) {
-    const name = pick(row, "שם", "name");
-    if (!name) {
+    // The same row mapping as the two in-app client importers, so the admin
+    // console reads the same columns (תנאי תשלום included) the same way. The
+    // id is a placeholder: this path lets the database assign it.
+    const mapped = mapImportedClientRow(row, { id: "", createdAt: "" });
+    if (!mapped) {
       out.skipped++;
       continue;
     }
-    const key = name.toLowerCase();
+    const { client } = mapped;
+    const key = client.name.toLowerCase();
     if (seen.has(key)) {
       out.skipped++;
       continue;
     }
     seen.add(key);
+    if (mapped.termsUnrecognized) termsUnrecognized++;
     toInsert.push({
       business_id: businessId,
       import_batch_id: importBatchId,
-      name,
-      tax_id: pick(row, "ח.פ / ת.ז", "ח.פ", "ת.ז", "tax_id") || null,
-      address: pick(row, "כתובת", "address") || null,
-      phone: pick(row, "טלפון", "phone") || null,
-      email: pick(row, "אימייל", "email") || null,
-      notes: pick(row, "הערות", "notes") || null,
+      name: client.name,
+      tax_id: client.taxId || null,
+      address: client.address || null,
+      phone: client.phone || null,
+      email: client.email || null,
+      notes: client.notes || null,
+      payment_terms: client.paymentTerms || null,
     });
   }
 
@@ -234,6 +244,7 @@ async function importClients(sb: SB, businessId: string, rows: ImportRow[], impo
       out.errors.push(error.message);
     } else {
       out.imported = toInsert.length;
+      if (termsUnrecognized > 0) out.termsUnrecognized = termsUnrecognized;
     }
   }
   return out;

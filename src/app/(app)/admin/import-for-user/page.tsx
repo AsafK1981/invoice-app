@@ -22,6 +22,7 @@ import { parseCsvFile } from "@/lib/import-decode";
 import { mapHeaders } from "@/lib/import-headers";
 import { analyzeRows } from "@/lib/import-analyze";
 import { ImportAnalysisPanel } from "@/components/import-analysis-panel";
+import { unrecognizedTermsNote } from "@/lib/import-clients";
 
 interface AppUser {
   id: string;
@@ -77,6 +78,7 @@ export default function AdminImportForUserPage() {
   const [result, setResult] = useState<{
     imported: number;
     skipped: number;
+    termsUnrecognized?: number;
     errors: string[];
     targetBusinessName?: string;
   } | null>(null);
@@ -164,6 +166,7 @@ export default function AdminImportForUserPage() {
       setResult({
         imported: data.imported,
         skipped: data.skipped,
+        termsUnrecognized: data.termsUnrecognized,
         errors: data.errors || [],
         targetBusinessName: data.targetBusinessName,
       });
@@ -444,6 +447,9 @@ export default function AdminImportForUserPage() {
               <p className="text-amber-700">
                 <strong>{result.skipped}</strong> שורות דולגו (כפילות / חסרים שדות / נתונים לא תקינים)
               </p>
+            )}
+            {unrecognizedTermsNote(result.termsUnrecognized ?? 0) && (
+              <p className="text-amber-700">{unrecognizedTermsNote(result.termsUnrecognized ?? 0)}</p>
             )}
             {result.errors.length > 0 && (
               <div className="mt-2">

@@ -67,3 +67,26 @@ describe("import route batch provenance", () => {
     expect(state.tables[entity][0].import_batch_id).toBeTruthy();
   });
 });
+
+describe("admin client import: payment terms", () => {
+  it("stores recognised terms, counts unrecognised ones and leaves the rest without terms", async () => {
+    state.tables.clients = [];
+    const body = await (await post("clients", [
+      { "שם": "A", "תנאי תשלום": "שוטף + 30" },
+      { "שם": "B", "תנאי תשלום": "30" },
+      { "שם": "C" },
+      { name: "D", payment_terms: "net 45" },
+    ])).json();
+    expect(body.imported).toBe(4);
+    expect(body.termsUnrecognized).toBe(1);
+    const terms = Object.fromEntries(state.tables.clients.map((c) => [c.name, c.payment_terms]));
+    expect(terms).toEqual({ A: "eom_30", B: null, C: null, D: "net_45" });
+  });
+
+  it("reports no unrecognised count when every stated term was read", async () => {
+    state.tables.clients = [];
+    const body = await (await post("clients", [{ "שם": "E", "תנאי תשלום": "מיידי" }])).json();
+    expect(body.termsUnrecognized).toBeUndefined();
+    expect(state.tables.clients[0].payment_terms).toBe("immediate");
+  });
+});
