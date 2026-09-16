@@ -26,6 +26,7 @@ import {
 import { StoreLoadError } from "@/components/store-load-error";
 import { useDocument, useDocuments, deleteDocument, cancelDocument, updateDocumentStatus, markDocumentEmailed, markDocumentIssued } from "@/lib/document-store";
 import { publicDocumentUrl } from "@/lib/public-url";
+import { reversedConversion } from "@/lib/conversion-reversal";
 import { DocumentAttachmentsSection } from "@/components/document-attachments-section";
 import { DocumentTimeline } from "@/components/document-timeline";
 import { AllocationNumberSection } from "@/components/allocation-number-section";
@@ -204,6 +205,11 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
   const convertedDoc = doc.convertedToId
     ? allDocuments.find((d) => d.id === doc.convertedToId)
     : null;
+  // Converted, and the document it became was then fully reversed by credit
+  // notes. This document stays closed on purpose; the notice below says so and
+  // offers the duplicate route instead. src/lib/conversion-reversal.ts carries
+  // the reasoning and the measurement behind that choice.
+  const reversal = convertedDoc ? reversedConversion(doc, allDocuments) : null;
   // The quote/proforma this receipt was created FROM (if it was a conversion),
   // shown as a "← נוצר מהצעה #N" link.
   const sourceQuote = !isConvertible
@@ -1375,6 +1381,58 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
           ) : (
             <>טרם התקבלה. הלקוח יכול לאשר בדף המסמך הציבורי (ההורדה נרשמת כהסכמה), או שתרשום הסכמה שניתנה בכתב בכרטיס הלקוח.</>
           )}
+        </div>
+      )}
+
+      {/* Converted, then the successor was fully credited. Unlike a CANCELLED
+          successor (handled below, where reopening the source is right because
+          a cancelled document leaves the client account), a credited successor
+          stays in the books next to its credit note and the two net to zero.
+          Reopening this document would therefore add its full amount back as a
+          debt that nothing can ever net, and the client portal would show the
+          refunded customer that balance. So it stays closed, and re-billing
+          goes through a duplicate. */}
+      {reversal && doc.status !== "cancelled" && (
+        <div className="no-print card-soft p-4 max-w-[210mm] mx-auto flex items-start gap-3 border-amber-200 bg-amber-50">
+          <RefreshCw className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
+          <div className="text-sm text-amber-900">
+            <p className="font-semibold">
+              המסמך הזה הומר, והמסמך שנוצר ממנו בוטל בחשבונית זיכוי
+            </p>
+            {/* Every sentence here is phrased so it does not depend on the
+                gender of the document label: חשבון עסקה is masculine while
+                הצעת מחיר and חשבונית are feminine, and the labels are
+                interpolated. "המסמך" and "חשבונית זיכוי" carry the agreement
+                instead. */}
+            <p className="text-xs mt-0.5 text-amber-800">
+              על {DOCUMENT_TYPE_LABELS[reversal.successor.type]} #{reversal.successor.number}{" "}
+              {reversal.credits.length === 1
+                ? `הוצאה חשבונית זיכוי #${reversal.credits[0].number} על מלוא הסכום`
+                : `הוצאו ${reversal.credits.length} חשבוניות זיכוי שמכסות את מלוא הסכום`}
+              , כלומר הכסף חזר ללקוח. המסמך הזה נשאר סגור בכוונה: אם הוא היה נפתח מחדש, הוא היה מופיע שוב
+              כחוב פתוח בגיול, בתזרים ובכרטסת, והלקוח היה רואה את החוב הזה בפורטל ומקבל עליו תזכורת תשלום.
+            </p>
+            <p className="text-xs mt-1.5 text-amber-800">
+              כדי לחייב שוב על אותה עבודה, שכפלו את המסמך הזה. השכפול יוצר מסמך חדש עם אותם פרטים, ואותו
+              אפשר להמיר כרגיל.
+            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={handleDuplicate}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 min-h-[36px] rounded-lg text-xs font-semibold bg-white border border-amber-300 text-amber-900 hover:bg-amber-100"
+              >
+                <Copy className="w-3.5 h-3.5" />
+                שכפל למסמך חדש
+              </button>
+              <Link
+                href={`/documents/${reversal.credits[0].id}`}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 min-h-[36px] rounded-lg text-xs font-semibold bg-white border border-amber-300 text-amber-900 hover:bg-amber-100"
+              >
+                פתח את חשבונית הזיכוי
+              </Link>
+            </div>
+          </div>
         </div>
       )}
 
