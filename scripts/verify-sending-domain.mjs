@@ -51,10 +51,26 @@ if (!found) {
   process.exit(1);
 }
 
-// Ask Resend to re-check DNS before reporting, so a run right after the
-// records go live reflects reality instead of the last cached result.
-await api(`/domains/${found.id}/verify`, { method: "POST" });
-const { body: domain } = await api(`/domains/${found.id}`);
+// Ask Resend to re-check DNS, then WAIT for the answer. Verification is
+// asynchronous: reading the status straight after the POST always returns
+// "pending", and this script used to report that as "records still to
+// publish". From 2026-08-20 to 2026-09-16 the records were in fact live the
+// whole time and the domain sat unverified for a month because every run said
+// otherwise. Checked on 2026-09-16: it flipped to verified about 35 seconds
+// after the trigger.
+const trigger = await api(`/domains/${found.id}/verify`, { method: "POST" });
+if (trigger.status >= 400) {
+  console.error(`Resend refused the verify request (${trigger.status}):`, trigger.body);
+  process.exit(1);
+}
+let domain;
+for (let waited = 0; ; waited += 10) {
+  ({ body: domain } = await api(`/domains/${found.id}`));
+  if (domain.status !== "pending" || waited >= 180) break;
+  process.stdout.write(waited === 0 ? "waiting for Resend to check DNS" : ".");
+  await new Promise((r) => setTimeout(r, 10_000));
+}
+console.log("");
 
 console.log(`domain:  ${domain.name}`);
 console.log(`status:  ${domain.status}`);
@@ -67,7 +83,10 @@ if (!pending.length && domain.status === "verified") {
   process.exit(0);
 }
 
-console.log("Records still to publish (host names are relative to the zone):");
+// "not verified" is not the same as "not published": say which one it is by
+// asking public DNS, instead of telling someone to publish records that are
+// already live.
+console.log(`Not verified yet (Resend status: ${domain.status}). Records Resend has not accepted:`);
 for (const r of pending) {
   const host = r.name === "" || r.name === "@" ? "@" : r.name;
   console.log("");
@@ -76,6 +95,25 @@ for (const r of pending) {
   if (r.priority != null) console.log(`  priority: ${r.priority}`);
   console.log(`  value:    ${r.value}`);
   console.log(`  status:   ${r.status}`);
+  console.log(`  public DNS: ${await publicDnsHas(r) ? "PUBLISHED (matches)" : "missing or different"}`);
 }
 console.log("");
-console.log("Publish these, wait for propagation, then run this script again.");
+console.log(
+  "Records marked PUBLISHED are live; just run this script again later. " +
+    "Publish only the ones marked missing.",
+);
+
+/** Whether Google's public resolver already returns this record's value. */
+async function publicDnsHas(record) {
+  const fqdn = record.name ? `${record.name}.${DOMAIN}` : DOMAIN;
+  try {
+    const res = await fetch(`https://dns.google/resolve?name=${fqdn}&type=${record.type}`, {
+      headers: { accept: "application/dns-json" },
+    });
+    const body = await res.json();
+    const want = String(record.value).replace(/"/g, "").trim();
+    return (body.Answer || []).some((a) => String(a.data).replace(/"/g, "").includes(want));
+  } catch {
+    return false;
+  }
+}
