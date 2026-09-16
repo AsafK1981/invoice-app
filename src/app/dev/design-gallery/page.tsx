@@ -7,7 +7,7 @@ import {
   LAYOUT_KEYS,
   type LayoutKey,
 } from "@/lib/document-themes";
-import type { Business, DocumentItem } from "@/lib/types";
+import { DOCUMENT_TYPE_LABELS, type Business, type DocumentItem, type DocumentType } from "@/lib/types";
 
 /**
  * DEV-ONLY design gallery: every profession template rendered on the real
@@ -15,7 +15,9 @@ import type { Business, DocumentItem } from "@/lib/types";
  * layout/CSS change can be eyeballed across all templates in one page and
  * screenshotted by QA tooling. 404s in production - it exists for the
  * design loop, not for users. Query: ?t=<templateId> renders one template
- * only; ?layout=<LayoutKey> forces that structure on every template.
+ * only; ?layout=<LayoutKey> forces that structure on every template;
+ * ?type=<DocumentType> renders that document type; ?due=YYYY-MM-DD sets the
+ * "לתשלום עד" date (printed only on the types that may carry one).
  */
 
 const BIZ: Business = {
@@ -43,7 +45,7 @@ export const dynamic = "force-dynamic";
 export default async function DesignGalleryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ t?: string; layout?: string; fluid?: string; font?: string; accent?: string; pattern?: string }>;
+  searchParams: Promise<{ t?: string; layout?: string; fluid?: string; font?: string; accent?: string; pattern?: string; type?: string; due?: string }>;
 }) {
   if (process.env.NODE_ENV === "production") notFound();
   const sp = await searchParams;
@@ -51,6 +53,12 @@ export default async function DesignGalleryPage({
   const forcedLayout = LAYOUT_KEYS.includes(sp.layout as LayoutKey)
     ? (sp.layout as LayoutKey)
     : undefined;
+
+  const docType: DocumentType =
+    sp.type && Object.prototype.hasOwnProperty.call(DOCUMENT_TYPE_LABELS, sp.type)
+      ? (sp.type as DocumentType)
+      : "tax_invoice_receipt";
+  const dueDate = sp.due && /^\d{4}-\d{2}-\d{2}$/.test(sp.due) ? sp.due : undefined;
 
   const templates = DOCUMENT_TEMPLATES.filter((t) => !only || t.id === only);
   // ?fluid=1 renders the sheet the way the public /view page does on a
@@ -109,9 +117,10 @@ export default async function DesignGalleryPage({
                   taxId: "514236987",
                   address: "רח' ויצמן 22, רמת גן",
                 }}
-                documentType="tax_invoice_receipt"
+                documentType={docType}
                 number={118}
                 date="2026-08-18"
+                dueDate={dueDate}
                 subject="הופעה - אירוע חברה, יולי 2026"
                 items={ITEMS}
                 subtotal={SUBTOTAL}

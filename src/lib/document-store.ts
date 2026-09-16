@@ -6,7 +6,7 @@ import { getBusinessId, onBusinessReady } from "./business-init";
 import { createSharedStore } from "./shared-store";
 import { loadAllPages, type RowPage } from "./report-rows";
 import { STORE_LOAD_MESSAGES } from "./store-load";
-import { DEFAULT_NEXT_NUMBER, DOCUMENT_STATUS_LABELS, DOCUMENT_TYPE_LABELS, type DocumentType, type InvoiceDocument, type DocumentItem } from "./types";
+import { allowsDueDate, DEFAULT_NEXT_NUMBER, DOCUMENT_STATUS_LABELS, DOCUMENT_TYPE_LABELS, type DocumentType, type InvoiceDocument, type DocumentItem } from "./types";
 import { logAudit } from "./audit-log";
 import { cancellationRoute } from "./document-cancel";
 import { filingBusinessNumberSave } from "./business-number-hint";
@@ -68,7 +68,19 @@ export function mapDocRow(row: Record<string, unknown>, items: DocumentItem[]): 
     totalIls: row.total_ils != null ? Number(row.total_ils) : undefined,
     zeroRated: Boolean(row.zero_rated),
     language: row.language === "en" ? "en" : "he",
+    dueDate: (row.due_date as string) || undefined,
   };
+}
+
+/**
+ * The "לתשלום עד" argument for create_document_atomic: sent only for a type
+ * that may state one (allowsDueDate) and only when it is set. Omitted
+ * otherwise, so a document without a due date never depends on the database
+ * having the due-date parameter at all.
+ */
+export function dueDateRpcArg(doc: Pick<InvoiceDocument, "type" | "dueDate">): { p_due_date?: string } {
+  const due = doc.dueDate?.trim();
+  return due && allowsDueDate(doc.type) ? { p_due_date: due } : {};
 }
 
 function mapItemRow(row: Record<string, unknown>): DocumentItem {
@@ -239,6 +251,7 @@ export async function createDocument(
     p_payment_details: doc.paymentDetails ?? null,
     p_payment_reference: doc.paymentReference ?? null,
     p_language: doc.language === "en" ? "en" : "he",
+    ...dueDateRpcArg(doc),
     // Only sent on a convert, so a plain create keeps working against a
     // database that does not have the 33-arg function yet.
     ...(opts.convertSourceId ? { p_source_document_id: opts.convertSourceId } : {}),

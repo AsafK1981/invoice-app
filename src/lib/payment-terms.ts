@@ -21,7 +21,7 @@ export type PaymentTerms =
   | "immediate"   // מיידי
   | "net_15" | "net_30" | "net_45" | "net_60"  // N days from the invoice date
   | "eom"         // שוטף - end of the invoice month
-  | "eom_30" | "eom_60" | "eom_90";            // שוטף + N
+  | "eom_30" | "eom_45" | "eom_60" | "eom_90"; // שוטף + N
 
 export const PAYMENT_TERMS_LABELS: Record<PaymentTerms, string> = {
   immediate: "מיידי",
@@ -31,6 +31,7 @@ export const PAYMENT_TERMS_LABELS: Record<PaymentTerms, string> = {
   net_60: "60 יום מהחשבונית",
   eom: "שוטף",
   eom_30: "שוטף + 30",
+  eom_45: "שוטף + 45",
   eom_60: "שוטף + 60",
   eom_90: "שוטף + 90",
 };
@@ -43,6 +44,7 @@ export const PAYMENT_TERMS_ORDER: PaymentTerms[] = [
   "immediate",
   "eom",
   "eom_30",
+  "eom_45",
   "eom_60",
   "eom_90",
   "net_15",
@@ -64,6 +66,7 @@ const NET_DAYS: Partial<Record<PaymentTerms, number>> = {
   net_45: 45,
   net_60: 60,
   eom_30: 30,
+  eom_45: 45,
   eom_60: 60,
   eom_90: 90,
 };
@@ -77,6 +80,14 @@ function endOfMonth(iso: string): string {
   return singleMonthRange(new Date(y, m - 1, 1), 0).end;
 }
 
+/**
+ * שוטף + 45: the payment period חוק מוסר תשלומים לספקים, סעיף 3(ז) applies
+ * when a business customer and its supplier agreed on nothing. The editor
+ * offers it as a one-click suggestion for a client without agreed terms; it
+ * is never applied on its own.
+ */
+export const STATUTORY_DEFAULT_TERMS: PaymentTerms = "eom_45";
+
 /** The date a document issued on `issueDate` is expected to be paid. */
 export function dueDateFor(issueDate: string, terms: PaymentTerms): string {
   if (terms === "immediate") return issueDate;
@@ -85,6 +96,39 @@ export function dueDateFor(issueDate: string, terms: PaymentTerms): string {
   // invoice itself. That difference is the whole point of this module.
   const anchor = terms.startsWith("eom") ? endOfMonth(issueDate) : issueDate;
   return days === 0 ? anchor : addDays(anchor, days);
+}
+
+/**
+ * Where a document editor's "לתשלום עד" value came from. "terms" (the
+ * client's agreed terms) and "statutory" (the one-click שוטף + 45 suggestion)
+ * are rules, so they follow the document date. "manual" is the user's own
+ * value, a deliberately cleared field included, and is never overwritten.
+ */
+export type DueDateSource = "terms" | "statutory" | "manual";
+
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * The due date the editor should show after the document date or the client
+ * changed. Agreed terms win over the statutory suggestion, because שוטף + 45
+ * is only the default for when nothing was agreed. With neither, the field is
+ * empty: a date nobody agreed to is never guessed onto a document.
+ */
+export function resolveEditorDueDate(input: {
+  current: string;
+  source: DueDateSource | null;
+  issueDate: string;
+  clientTerms?: PaymentTerms;
+}): { dueDate: string; source: DueDateSource | null } {
+  const { current, source, issueDate, clientTerms } = input;
+  if (source === "manual") return { dueDate: current, source };
+  // A half-typed document date is not a date to count from; leave it be.
+  if (!ISO_DATE.test(issueDate)) return { dueDate: current, source };
+  if (clientTerms) return { dueDate: dueDateFor(issueDate, clientTerms), source: "terms" };
+  if (source === "statutory") {
+    return { dueDate: dueDateFor(issueDate, STATUTORY_DEFAULT_TERMS), source };
+  }
+  return { dueDate: "", source: null };
 }
 
 /** Whole days from the issue date to the expected payment date. */

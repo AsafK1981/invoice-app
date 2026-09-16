@@ -310,6 +310,9 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
           // The document's own language drives its rendering AND this page's
           // chrome; a legacy row without the column reads as Hebrew.
           language: docRow.language === "en" ? "en" : "he",
+          // "לתשלום עד": the customer's copy must state it exactly as the
+          // owner's does. NULL (or a pre-migration row) prints nothing.
+          dueDate: docRow.due_date || undefined,
         });
 
         if (data.business) {

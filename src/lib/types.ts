@@ -289,12 +289,29 @@ export interface InvoiceDocument {
    * way; see src/lib/document-strings.ts.
    */
   language?: "he" | "en";
+  /** "לתשלום עד" - the agreed payment date stated on the document. Optional
+   *  information, not a mandatory particular; NULL ⇒ nothing is printed. */
+  dueDate?: string;
   /**
    * Set when the document came in through a data import (another system's
    * numbers). The VAT report routes its data errors to support instead of
    * offering a credit note, which would double-report someone else's typo.
    */
   importBatchId?: string;
+}
+
+/**
+ * The document types that may state a "לתשלום עד" date: money owed and not
+ * yet collected. A receipt or חשבונית מס/קבלה records money already received,
+ * a credit note is a reversal, and a quote's date would mean "offer valid
+ * until" - a different concept. The same pair is what the cash-flow forecast
+ * treats as open money.
+ */
+export const DUE_DATE_DOCUMENT_TYPES: readonly DocumentType[] = ["tax_invoice", "proforma"];
+
+/** Whether a document of this type may carry a due date at all. */
+export function allowsDueDate(type: DocumentType): boolean {
+  return DUE_DATE_DOCUMENT_TYPES.includes(type);
 }
 
 /**

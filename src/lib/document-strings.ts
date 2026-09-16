@@ -70,6 +70,12 @@ export interface DocStrings {
   noClient: string;
   /** מספר הקצאה (חשבונית ישראל) card caption. */
   allocationLabel: string;
+  /**
+   * "לתשלום עד", printed under the document date when the document states a
+   * due date. The wording is morning / Green Invoice's, which customers know.
+   * Information only, not a mandatory particular.
+   */
+  dueDateLabel: string;
   subjectLabel: string;
   itemsLabel: string;
   thDescription: string;
@@ -125,6 +131,7 @@ const HE: DocStrings = {
   clientTaxId: "ח.פ / ת.ז",
   noClient: "לקוח לא נבחר",
   allocationLabel: "מספר הקצאה · חשבונית ישראל",
+  dueDateLabel: "לתשלום עד",
   subjectLabel: "בגין",
   itemsLabel: "פירוט",
   thDescription: "תיאור",
@@ -191,6 +198,7 @@ const EN: DocStrings = {
   clientTaxId: "Tax ID",
   noClient: "No customer selected",
   allocationLabel: "Allocation number · Israel Invoice",
+  dueDateLabel: "Payment due by",
   subjectLabel: "Re",
   itemsLabel: "Details",
   thDescription: "Description",

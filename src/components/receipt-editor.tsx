@@ -64,6 +64,13 @@ import { Expander } from "@/components/expander";
 import { BusinessFormModal } from "@/components/business-form-modal";
 import { useTaxAuthorityStatus } from "@/lib/use-tax-authority-status";
 import { getClientDefaults } from "@/lib/client-defaults";
+import {
+  dueDateFor,
+  PAYMENT_TERMS_LABELS,
+  resolveEditorDueDate,
+  STATUTORY_DEFAULT_TERMS,
+  type DueDateSource,
+} from "@/lib/payment-terms";
 import { getRecurringPrefill } from "@/lib/recurring-prefill";
 import { linkIssuedDocument } from "@/lib/proposal-store";
 import { documentsForClient, findMatchingClient, filterClientsByQuery } from "@/lib/client-picker";
@@ -78,6 +85,7 @@ import {
   type InvoiceDocument,
   PAYMENT_METHOD_LABELS,
   DOCUMENT_TYPE_LABELS,
+  allowsDueDate,
 } from "@/lib/types";
 import { DocumentPreview, type PreviewClient } from "./document-preview";
 import { FormField } from "./ui/form-field";
@@ -193,6 +201,13 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   const [date, setDate] = useState<string>(today);
   const [subject, setSubject] = useState<string>("");
   const [validUntil, setValidUntil] = useState<string>("");
+  // "לתשלום עד", on a tax invoice / pro forma only. `dueDateSource` says
+  // whether the value follows a rule (the client's agreed terms, or the
+  // one-click statutory suggestion) or is the user's own; a value of their own,
+  // a cleared field included, is never overwritten. See resolveEditorDueDate.
+  const showDueDate = allowsDueDate(documentType);
+  const [dueDate, setDueDate] = useState<string>("");
+  const [dueDateSource, setDueDateSource] = useState<DueDateSource | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("bank_transfer");
   const [notes, setNotes] = useState<string>(business.defaultDocNotes || "");
   const [items, setItems] = useState<EditorItem[]>([
@@ -366,6 +381,17 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
     }
   }, [clientId, clientDefaults.language]);
 
+  // The due date follows the client's agreed תנאי תשלום (or the statutory
+  // suggestion the user clicked) the moment the client or the document date
+  // changes. A client without terms gets an empty field, never a guess.
+  const clientTerms = adhocMode ? undefined : selectedClient?.paymentTerms;
+  useEffect(() => {
+    if (!showDueDate) return;
+    const next = resolveEditorDueDate({ current: dueDate, source: dueDateSource, issueDate: date, clientTerms });
+    if (next.dueDate !== dueDate) setDueDate(next.dueDate);
+    if (next.source !== dueDateSource) setDueDateSource(next.source);
+  }, [showDueDate, date, clientTerms, dueDateSource]);
+
   // Collapse the "לקוח קיים" picker to its compact selected-row state
   // whenever a clientId appears - whether from a user picking a row, or
   // asynchronously from a prefill/convert/draft-resume effect running after
@@ -471,6 +497,8 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
       setDate(d.date);
       setSubject(d.subject);
       setValidUntil(d.validUntil);
+      setDueDate(d.dueDate ?? "");
+      setDueDateSource(d.dueDateSource ?? null);
       setPaymentMethod(d.paymentMethod);
       setNotes(d.notes);
       setVatMode(d.vatMode);
@@ -585,6 +613,8 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
       date,
       subject,
       validUntil,
+      dueDate,
+      dueDateSource: dueDateSource ?? undefined,
       paymentMethod,
       notes,
       vatMode,
@@ -621,6 +651,8 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
     date,
     subject,
     validUntil,
+    dueDate,
+    dueDateSource,
     paymentMethod,
     notes,
     vatMode,
@@ -651,6 +683,8 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
       date,
       subject,
       validUntil,
+      dueDate,
+      dueDateSource: dueDateSource ?? undefined,
       paymentMethod,
       notes,
       vatMode,
@@ -692,6 +726,8 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
     date,
     subject,
     validUntil,
+    dueDate,
+    dueDateSource,
     paymentMethod,
     notes,
     vatMode,
@@ -746,6 +782,8 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
     setDate(today);
     setSubject("");
     setValidUntil("");
+    setDueDate("");
+    setDueDateSource(null);
     setPaymentMethod("bank_transfer");
     setNotes("");
     setVatMode("exclusive");
@@ -1039,6 +1077,8 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
       setDate(p.date || today);
       setSubject(p.subject || "");
       setValidUntil(p.validUntil || "");
+      setDueDate(p.dueDate || "");
+      setDueDateSource(p.dueDateSource ?? null);
       setPaymentMethod(p.paymentMethod);
       setNotes(p.notes || "");
       setVatMode(p.vatMode);
@@ -1315,12 +1355,17 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   // total_ils = 0, and 1 (failed lookup) reports dollars as shekels. Same check
   // as the PCN874 / uniform structure preflights. Quiet while a lookup runs.
   const rateBlock = rateLoading ? null : exchangeRateBlockReason(currency, rate);
+  // A payment date before the document's own date is nonsense: blocked, with
+  // the reason next to the save button (and inline under the field, via min).
+  const effectiveDueDate = showDueDate ? dueDate : "";
+  const dueDateValid = !effectiveDueDate || !date || effectiveDueDate >= date;
   const canSave =
     clientReady &&
     items.every((i) => itemDescription(i) && i.quantity > 0 && i.unitPrice >= 0) &&
     creditRefValid &&
     discountValid &&
     withholdingValid &&
+    dueDateValid &&
     !rateBlock;
   // One place for "why the buttons are off": the desktop bar, the mobile
   // card, the mobile dock and the allocation card all read these.
@@ -1348,7 +1393,9 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
           ? "יש לתקן את סכום ההנחה"
           : !withholdingValid
             ? "יש לתקן את סכום ניכוי המס במקור"
-            : rateBlock
+            : !dueDateValid
+              ? "תאריך \"לתשלום עד\" לא יכול להיות לפני תאריך המסמך"
+              : rateBlock
               ? rateBlock
               : "כל פריט חייב תיאור (או נושא למסמך, שיועתק אליו), כמות חיובית ומחיר";
 
@@ -1421,6 +1468,8 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
         date,
         subject,
         validUntil,
+        dueDate,
+        dueDateSource: dueDateSource ?? undefined,
         paymentMethod,
         notes,
         vatMode,
@@ -1587,6 +1636,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
         // free one at issue time (see numberToSend).
         number: numberToSend(docNumber, docNumberTouched) ?? undefined,
         date,
+        dueDate: effectiveDueDate || undefined,
         clientId: effectiveClientId,
         clientName,
         clientTaxId: (adhocMode ? adhocTaxId.trim() : selectedClient?.taxId) || undefined,
@@ -1784,6 +1834,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
     documentType,
     number: parseInt(docNumber, 10) || null,
     date,
+    dueDate: effectiveDueDate || undefined,
     subject: subject || undefined,
     items: previewItems,
     subtotal,
@@ -2325,6 +2376,63 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                     חשבונית זיכוי חייבת להפנות לחשבונית המס המקורית שאותה היא מזכה. ההפניה תודפס על המסמך.
                   </p>
                 </div>
+              </FormField>
+            </div>
+          )}
+
+          {showDueDate && (
+            <div className="mt-3">
+              <FormField label="לתשלום עד (אופציונלי)">
+                <div className="flex flex-wrap items-start gap-2">
+                  <div className="w-[8.75rem] shrink-0">
+                    <IsraeliDateInput
+                      value={dueDate}
+                      min={date || undefined}
+                      aria-label="לתשלום עד"
+                      onChange={(e) => {
+                        setDueDate(e.target.value);
+                        setDueDateSource("manual");
+                      }}
+                      className="input-warm"
+                    />
+                  </div>
+                  {dueDate ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDueDate("");
+                        setDueDateSource("manual");
+                      }}
+                      className="inline-flex items-center min-h-[36px] text-xs text-stone-600 underline underline-offset-2 hover:text-stone-900"
+                    >
+                      הסרת התאריך
+                    </button>
+                  ) : (
+                    !clientTerms && (
+                      <button
+                        type="button"
+                        disabled={!date}
+                        onClick={() => {
+                          setDueDate(dueDateFor(date, STATUTORY_DEFAULT_TERMS));
+                          setDueDateSource("statutory");
+                        }}
+                        className="inline-flex items-center justify-center min-h-[36px] px-3 text-sm font-medium text-stone-700 bg-white border border-stone-200 hover:bg-stone-50 rounded-xl disabled:opacity-50"
+                      >
+                        שוטף + 45 (ברירת המחדל בחוק)
+                      </button>
+                    )
+                  )}
+                </div>
+                {dueDate && dueDateSource === "terms" && clientTerms && (
+                  <p className="text-xs text-stone-600 mt-1">
+                    לפי תנאי התשלום של הלקוח: {PAYMENT_TERMS_LABELS[clientTerms]}
+                  </p>
+                )}
+                {dueDate && dueDateSource === "statutory" && (
+                  <p className="text-xs text-stone-600 mt-1">
+                    לפי {PAYMENT_TERMS_LABELS[STATUTORY_DEFAULT_TERMS]}
+                  </p>
+                )}
               </FormField>
             </div>
           )}

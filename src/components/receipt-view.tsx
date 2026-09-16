@@ -105,6 +105,7 @@ export function ReceiptView({
         documentType={doc.type}
         number={doc.number}
         date={doc.date}
+        dueDate={doc.dueDate}
         subject={doc.subject}
         items={doc.items}
         subtotal={doc.subtotal}

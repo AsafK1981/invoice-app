@@ -7,6 +7,7 @@ import { Ltr } from "@/components/ui/ltr";
 import { CANONICAL_HOST, CANONICAL_ORIGIN } from "@/lib/public-url";
 import { docStrings, statutoryMark, type DocLang, type DocStrings } from "@/lib/document-strings";
 import {
+  allowsDueDate,
   type Business,
   type DocumentItem,
   type DocumentType,
@@ -69,6 +70,12 @@ interface Props {
   documentType: DocumentType;
   number: number | null;
   date: string;
+  /**
+   * "לתשלום עד" (YYYY-MM-DD). Printed under the document date, and only when
+   * set on a type that may carry one (allowsDueDate). Absent, nothing renders:
+   * no placeholder, no empty line.
+   */
+  dueDate?: string;
   subject?: string;
   items: DocumentItem[];
   subtotal: number;
@@ -163,6 +170,7 @@ export function DocumentBody({
   documentType,
   number,
   date,
+  dueDate,
   subject,
   items,
   subtotal,
@@ -201,6 +209,7 @@ export function DocumentBody({
 
   const numberStr = number != null ? String(number).padStart(4, "0") : s.autoNumber;
   const dateStr = date ? formatDate(date, language) : "-";
+  const dueDateStr = dueDate && allowsDueDate(documentType) ? formatDate(dueDate, language) : "";
   const businessName = business.name || (placeholders ? "-" : "");
   const showItemsEmptyState =
     placeholders && (items.length === 0 || items.every((i) => !i.description));
@@ -312,6 +321,13 @@ export function DocumentBody({
           </div>
           <div className="doc-num doc-serif doc-mono">{numberStr}</div>
           <div className="doc-date doc-tab">{dateStr}</div>
+          {/* Same line style as the date above it: the customer reads when the
+              document was issued and when it is due in one glance. */}
+          {dueDateStr && (
+            <div className="doc-date doc-tab">
+              {s.dueDateLabel} {dueDateStr}
+            </div>
+          )}
         </div>
       </div>
 

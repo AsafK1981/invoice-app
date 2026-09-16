@@ -23,6 +23,8 @@ interface Props {
   documentType: DocumentType;
   number?: number | null;
   date: string;
+  /** "לתשלום עד" (YYYY-MM-DD); the sheet prints it only when set. */
+  dueDate?: string;
   subject?: string;
   items: DocumentItem[];
   subtotal: number;
@@ -152,6 +154,7 @@ export function DocumentPreview(props: Props) {
       documentType={props.documentType}
       number={props.number ?? null}
       date={props.date}
+      dueDate={props.dueDate}
       subject={props.subject}
       items={props.items}
       subtotal={props.subtotal}

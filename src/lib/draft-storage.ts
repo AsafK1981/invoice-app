@@ -1,5 +1,6 @@
 import type { DocumentType, PaymentDetails, PaymentMethod } from "./types";
 import type { VatMode } from "./vat";
+import type { DueDateSource } from "./payment-terms";
 
 export interface DraftItem {
   id: string;
@@ -31,6 +32,11 @@ export interface EditorDraft {
    *  as withholdingTouched). */
   language?: "he" | "en";
   languageTouched?: boolean;
+  /** "לתשלום עד" (YYYY-MM-DD, "" = none) and where it came from, so a resumed
+   *  draft keeps a hand-typed date and still recomputes an automatic one.
+   *  Optional: drafts saved before 2026-09-16 have neither. */
+  dueDate?: string;
+  dueDateSource?: DueDateSource;
   items: DraftItem[];
   // הנחה / ניכוי מס במקור / פירוט אמצעי תשלום, all optional (backward compatible
   // with drafts saved before these features). Raw editor inputs are stored so a

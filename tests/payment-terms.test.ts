@@ -5,6 +5,7 @@ import {
   daysToPayFor,
   dueDateFor,
   isPaymentTerms,
+  STATUTORY_DEFAULT_TERMS,
   type PaymentTerms,
 } from "@/lib/payment-terms";
 
@@ -18,16 +19,17 @@ import {
 describe("the table itself", () => {
   it("labels every code and offers every code in the select order", () => {
     const codes = Object.keys(PAYMENT_TERMS_LABELS) as PaymentTerms[];
-    expect(codes).toHaveLength(9);
+    expect(codes).toHaveLength(10);
     expect([...PAYMENT_TERMS_ORDER].sort()).toEqual([...codes].sort());
     expect(PAYMENT_TERMS_ORDER.every((t) => PAYMENT_TERMS_LABELS[t].length > 0)).toBe(true);
   });
 
   it("puts the שוטף family first - it is what Israeli freelancers agree to", () => {
-    expect(PAYMENT_TERMS_ORDER.slice(0, 5)).toEqual([
+    expect(PAYMENT_TERMS_ORDER.slice(0, 6)).toEqual([
       "immediate",
       "eom",
       "eom_30",
+      "eom_45",
       "eom_60",
       "eom_90",
     ]);
@@ -35,7 +37,7 @@ describe("the table itself", () => {
 });
 
 describe("isPaymentTerms", () => {
-  it("accepts the nine codes and nothing else", () => {
+  it("accepts the ten codes and nothing else", () => {
     for (const t of PAYMENT_TERMS_ORDER) expect(isPaymentTerms(t)).toBe(true);
     expect(isPaymentTerms("net_90")).toBe(false);
     expect(isPaymentTerms("")).toBe(false);
@@ -57,6 +59,7 @@ describe("dueDateFor", () => {
     expect(dueDateFor(issued, "net_60")).toBe("2026-05-09");
     expect(dueDateFor(issued, "eom")).toBe("2026-03-31");
     expect(dueDateFor(issued, "eom_30")).toBe("2026-04-30");
+    expect(dueDateFor(issued, "eom_45")).toBe("2026-05-15");
     expect(dueDateFor(issued, "eom_60")).toBe("2026-05-30");
     expect(dueDateFor(issued, "eom_90")).toBe("2026-06-29");
   });
@@ -69,6 +72,21 @@ describe("dueDateFor", () => {
     // net_30, by contrast, moves with the invoice.
     expect(dueDateFor("2026-03-01", "net_30")).toBe("2026-03-31");
     expect(dueDateFor("2026-03-28", "net_30")).toBe("2026-04-27");
+  });
+
+  // שוטף + 45 is the statutory default of חוק מוסר תשלומים לספקים 3(ז): the
+  // end of the invoice month, then 45 days - never 45 days from the invoice.
+  it("dates שוטף + 45 from the end of the invoice month, across month and year ends", () => {
+    expect(PAYMENT_TERMS_LABELS.eom_45).toBe("שוטף + 45");
+    expect(STATUTORY_DEFAULT_TERMS).toBe("eom_45");
+    expect(dueDateFor("2026-03-01", "eom_45")).toBe("2026-05-15");
+    expect(dueDateFor("2026-03-31", "eom_45")).toBe("2026-05-15");
+    expect(dueDateFor("2026-01-20", "eom_45")).toBe("2026-03-17");
+    expect(dueDateFor("2028-01-20", "eom_45")).toBe("2028-03-16");
+    expect(dueDateFor("2026-11-05", "eom_45")).toBe("2027-01-14");
+    expect(dueDateFor("2026-12-31", "eom_45")).toBe("2027-02-14");
+    expect(daysToPayFor("2026-03-31", "eom_45")).toBe(45);
+    expect(isPaymentTerms("eom_45")).toBe(true);
   });
 
   it("gets February right in a common year and in a leap year", () => {
