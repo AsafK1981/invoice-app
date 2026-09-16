@@ -1,18 +1,34 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { AlertTriangle, ChevronDown, ChevronUp, FileText } from "lucide-react";
 import { formatCurrencyWhole, formatDate, hebrewCount } from "@/lib/format";
 import { DOCUMENT_TYPE_LABELS, type InvoiceDocument } from "@/lib/types";
 import { useClients } from "@/lib/client-store";
-import { AGING_BUCKET_LABELS as BUCKET_LABELS, computeAging, daysOverdue, type AgingRow } from "@/lib/aging";
+import {
+  AGING_BASIS_LABELS,
+  AGING_BUCKET_LABELS,
+  AGING_DUE_BUCKET_LABELS,
+  AGING_NOT_YET_DUE_LABEL,
+  agingDueDate,
+  computeAging,
+  daysOverdue,
+  daysPastDue,
+  isOpenReceivable,
+  type AgingBasis,
+  type AgingRow,
+} from "@/lib/aging";
 
 interface Props {
   documents: InvoiceDocument[];
   /** On its own /reports/aging page the page header already carries the title; keep only the totals line. */
   headless?: boolean;
 }
+
+const BASIS_STORAGE_KEY = "aging-report-basis";
+const BASES: AgingBasis[] = ["due", "issue"];
+const TWO_UP = { gridTemplateColumns: "repeat(2, minmax(0, 1fr))" };
 
 const BUCKET_TONES = [
   "text-stone-700",
@@ -23,9 +39,48 @@ const BUCKET_TONES = [
 
 export function AgingReport({ documents, headless = false }: Props) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  // The viewer's explicit choice, or null to follow the default below.
+  const [chosenBasis, setChosenBasis] = useState<AgingBasis | null>(null);
   const { items: clients } = useClients();
 
-  const { rows, totals } = useMemo(() => computeAging(documents, clients), [documents, clients]);
+  // Default to the due basis only when some open document actually states a
+  // due date. Without one, every column under the due basis would read "ימי
+  // איחור" over documents that are merely aged from issue - a fresh invoice
+  // would look late. So a business that never set a due date keeps exactly
+  // the view it always had.
+  const hasDatedOpenDoc = useMemo(
+    () => documents.some((d) => isOpenReceivable(d) && agingDueDate(d) !== null),
+    [documents],
+  );
+  const basis: AgingBasis = chosenBasis ?? (hasDatedOpenDoc ? "due" : "issue");
+
+  // Restore the viewer's basis after mount (not in the initializer - the page
+  // is server-rendered first). Storage can throw (private mode, blocked
+  // cookies); the report then simply opens on the default.
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(BASIS_STORAGE_KEY);
+      if (saved === "due" || saved === "issue") setChosenBasis(saved);
+    } catch {
+      /* storage unavailable - keep the default */
+    }
+  }, []);
+
+  const pickBasis = (next: AgingBasis) => {
+    setChosenBasis(next);
+    try {
+      localStorage.setItem(BASIS_STORAGE_KEY, next);
+    } catch {
+      /* storage unavailable - the choice just won't persist */
+    }
+  };
+
+  const { rows, totals, undatedCount } = useMemo(
+    () => computeAging(documents, clients, basis),
+    [documents, clients, basis],
+  );
+  const byDue = basis === "due";
+  const bucketLabels = byDue ? AGING_DUE_BUCKET_LABELS : AGING_BUCKET_LABELS;
 
   if (rows.length === 0) {
     return (
@@ -62,12 +117,22 @@ export function AgingReport({ documents, headless = false }: Props) {
             <h2 className="font-semibold text-stone-900">חובות פתוחים</h2>
             <span
               className="text-xs text-stone-500"
-              title="כמה ימים עברו מאז הפקת המסמך, מה שמכונה בעולם החשבונאות 'גיול חובות'."
+              title={
+                byDue
+                  ? "כמה ימים עברו מאז מועד התשלום שצוין על המסמך, מה שמכונה בעולם החשבונאות 'גיול חובות'."
+                  : "כמה ימים עברו מאז הפקת המסמך, מה שמכונה בעולם החשבונאות 'גיול חובות'."
+              }
             >
               לפי ותק החוב
             </span>
           </div>
         )}
+        <div className="dash-range rpt-modes" style={TWO_UP} role="group" aria-label="בסיס חישוב הוותק">
+          {BASES.map((b) => (
+            <button key={b} type="button" aria-pressed={basis === b} onClick={() => pickBasis(b)}
+              className={`dash-range-btn${basis === b ? " is-active" : ""}`}>{AGING_BASIS_LABELS[b]}</button>
+          ))}
+        </div>
         <p className="text-xs text-stone-600">
           {hebrewCount(rows.length, "לקוח אחד", "לקוחות")} · סך פתוח{" "}
           <span className="font-bold text-stone-900" dir="ltr">
@@ -80,7 +145,12 @@ export function AgingReport({ documents, headless = false }: Props) {
         <thead className="text-xs text-stone-700 bg-orange-50/50">
           <tr>
             <th scope="col" className="text-right px-6 py-3 font-semibold">לקוח</th>
-            {BUCKET_LABELS.map((label, i) => (
+            {byDue && (
+              <th scope="col" className="hidden sm:table-cell text-left px-3 py-3 font-semibold text-stone-600">
+                {AGING_NOT_YET_DUE_LABEL}
+              </th>
+            )}
+            {bucketLabels.map((label, i) => (
               <th scope="col" key={i} className={`hidden sm:table-cell text-left px-3 py-3 font-semibold ${BUCKET_TONES[i]}`}>
                 {label}
               </th>
@@ -97,6 +167,7 @@ export function AgingReport({ documents, headless = false }: Props) {
               <FragmentRow
                 key={key}
                 row={row}
+                basis={basis}
                 isOpen={isOpen}
                 onToggle={() => toggle(key)}
               />
@@ -104,6 +175,11 @@ export function AgingReport({ documents, headless = false }: Props) {
           })}
           <tr className="border-t-2 border-orange-200 bg-orange-50/40 font-bold">
             <td className="px-6 py-3 text-sm text-stone-900">סה״כ</td>
+            {byDue && (
+              <td className="hidden sm:table-cell px-3 py-3 text-sm text-left tabular-nums text-stone-600">
+                {totals.notYetDue > 0 ? formatCurrencyWhole(totals.notYetDue) : "-"}
+              </td>
+            )}
             {totals.buckets.map((v, i) => (
               <td key={i} className={`hidden sm:table-cell px-3 py-3 text-sm text-left tabular-nums ${BUCKET_TONES[i]}`}>
                 {v > 0 ? formatCurrencyWhole(v) : "-"}
@@ -117,16 +193,32 @@ export function AgingReport({ documents, headless = false }: Props) {
         </tbody>
       </table>
       </div>
+      {byDue && undatedCount > 0 && (
+        <p className="px-6 py-3 border-t border-orange-100 text-xs text-stone-600">
+          מסמכים שלא צוין עליהם מועד תשלום נספרים לפי תאריך ההפקה.
+        </p>
+      )}
     </div>
   );
 }
 
+/** The per-document age hint under a client row. */
+function ageHint(d: InvoiceDocument, basis: AgingBasis): string {
+  const pastDue = basis === "due" ? daysPastDue(d) : null;
+  if (pastDue === null) return hebrewCount(daysOverdue(d), "יום אחד", "ימים");
+  if (pastDue > 0) return hebrewCount(pastDue, "יום איחור אחד", "ימי איחור");
+  if (pastDue === 0) return "לתשלום היום";
+  return `בעוד ${hebrewCount(-pastDue, "יום אחד", "ימים")}`;
+}
+
 function FragmentRow({
   row,
+  basis,
   isOpen,
   onToggle,
 }: {
   row: AgingRow;
+  basis: AgingBasis;
   isOpen: boolean;
   onToggle: () => void;
 }) {
@@ -142,6 +234,11 @@ function FragmentRow({
             row.clientName
           )}
         </td>
+        {basis === "due" && (
+          <td className="hidden sm:table-cell px-3 py-3 text-sm text-left tabular-nums text-stone-600">
+            {row.notYetDue > 0 ? formatCurrencyWhole(row.notYetDue) : "-"}
+          </td>
+        )}
         {row.buckets.map((v, i) => (
           <td key={i} className={`hidden sm:table-cell px-3 py-3 text-sm text-left tabular-nums ${BUCKET_TONES[i]}`}>
             {v > 0 ? formatCurrencyWhole(v) : "-"}
@@ -163,7 +260,7 @@ function FragmentRow({
       </tr>
       {isOpen && (
         <tr className="bg-stone-50/40">
-          <td colSpan={6} className="px-6 py-3">
+          <td colSpan={basis === "due" ? 7 : 6} className="px-6 py-3">
             <ul className="space-y-1.5">
               {row.docs
                 .slice()
@@ -180,7 +277,7 @@ function FragmentRow({
                       </span>
                       <span className="text-stone-500">· {formatDate(d.date)}</span>
                       <span className="text-stone-500">
-                        ({hebrewCount(daysOverdue(d), "יום אחד", "ימים")})
+                        ({ageHint(d, basis)})
                       </span>
                     </Link>
                     <span className="tabular-nums font-semibold text-stone-900" dir="ltr">

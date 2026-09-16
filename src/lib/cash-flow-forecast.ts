@@ -1,15 +1,17 @@
 /**
  * "כמה כסף ייכנס ויצא בשלושת החודשים הקרובים" - computed, never guessed.
  *
- * Money in is dated in two tiers. First, what was actually AGREED: a client
- * can carry תנאי תשלום (payment-terms.ts), and "שוטף + 30" is a rule about the
- * end of the invoice month, not a number of days after it - no amount of
- * history can express that, and a new client has no history at all. Second,
- * for every client without agreed terms, what was actually OBSERVED: `paidAt`
- * says how long they took last time, and the median of their own gaps is the
- * best available predictor of the next one. Only when both are missing does
- * the forecast fall back to 30 days. Whichever tiers were used are said out
- * loud in `assumptions`.
+ * Money in is dated in tiers, first match wins. First, what is PRINTED on the
+ * document: an open invoice that states a "לתשלום עד" (dueDate) is dated by
+ * it. Second, what was AGREED: a client can carry תנאי תשלום
+ * (payment-terms.ts), and "שוטף + 30" is a rule about the end of the invoice
+ * month, not a number of days after it - no amount of history can express
+ * that, and a new client has no history at all. Third, what was actually
+ * OBSERVED: `paidAt` says how long the client took last time, and the median
+ * of their own gaps is the best available predictor of the next one. Only
+ * when all three are missing does the forecast fall back to 30 days. A
+ * detected recurring cadence has no document yet, so it starts at the second
+ * tier. Whichever tiers were used are said out loud in `assumptions`.
  *
  * Everything else in here is already-known money, not a prediction: detected
  * recurring cadences (recurring-patterns.ts), the trailing expense average,
@@ -32,15 +34,16 @@ import {
   type RecurringSourceDoc,
 } from "./recurring-patterns";
 import { dueDateFor, type PaymentTerms } from "./payment-terms";
+import { usableDueDate } from "./dunning-copy";
 import { advanceDueDate, computeAdvance, roundShekelHalfUp } from "./ita/income-tax-advances";
 import { biMonthlyRange, singleMonthRange } from "./ita/vat-periods";
 import { round2, VAT_RATES } from "./vat";
 import {
   DOCUMENT_TYPE_LABELS,
+  DUE_DATE_DOCUMENT_TYPES,
   isCountableRevenue,
   type Business,
   type Client,
-  type DocumentType,
   type Expense,
   type InvoiceDocument,
 } from "./types";
@@ -60,8 +63,6 @@ const EXPENSE_DAY_OF_MONTH = 15;
 /** Bi-monthly VAT periods checked around today when looking for due dates. */
 const VAT_PERIOD_OFFSETS = [-2, -1, 0, 1, 2];
 
-/** Documents that are money on the way in but not yet collected. */
-const OPEN_TYPES: DocumentType[] = ["tax_invoice", "proforma"];
 
 export type ForecastKind =
   | "open_invoice"
@@ -302,6 +303,7 @@ export function forecastCashFlow(inputs: ForecastInputs): ForecastResult {
 
   const payHistory = buildPayHistory(documents, clients);
   const agreedTerms = buildAgreedTerms(clients);
+  let usedDocumentDueDate = false;
   let usedAgreedTerms = false;
   let usedMedianDays = false;
   let usedFallbackDays = false;
@@ -316,11 +318,19 @@ export function forecastCashFlow(inputs: ForecastInputs): ForecastResult {
   }
 
   /**
-   * When a document issued on `issueDate` is expected to be paid: the agreed
-   * terms when this client has any, otherwise the observed median (and, with
-   * no history either, the 30-day fallback inside {@link daysToPay}).
+   * When a document issued on `issueDate` is expected to be paid: the due
+   * date printed on it when it states one, otherwise the agreed terms when
+   * this client has any, otherwise the observed median (and, with no history
+   * either, the 30-day fallback inside {@link daysToPay}). Only the tier that
+   * actually dated the document is flagged, so each assumption sentence
+   * speaks for documents it really covers.
    */
-  function expectedPaymentDate(clientKey: string, issueDate: string): string {
+  function expectedPaymentDate(clientKey: string, issueDate: string, dueDate?: string): string {
+    const printed = usableDueDate(dueDate);
+    if (printed) {
+      usedDocumentDueDate = true;
+      return printed;
+    }
     const terms = agreedTerms.get(clientKey);
     if (terms) {
       usedAgreedTerms = true;
@@ -353,10 +363,11 @@ export function forecastCashFlow(inputs: ForecastInputs): ForecastResult {
   let openInvoiceCount = 0;
   for (const d of documents) {
     if (d.status !== "sent" || d.convertedToId) continue;
-    if (!OPEN_TYPES.includes(d.type)) continue;
+    // The document types that can state a due date are exactly the open-money ones.
+    if (!DUE_DATE_DOCUMENT_TYPES.includes(d.type)) continue;
     const amount = round2(Math.max(0, (d.totalIls ?? d.total) + (creditByOriginal.get(d.id) ?? 0)));
     if (amount <= 0) continue;
-    const date = notBefore(expectedPaymentDate(clientKeyOf(d, clients), d.date));
+    const date = notBefore(expectedPaymentDate(clientKeyOf(d, clients), d.date, d.dueDate));
     if (!inWindow(date)) continue;
     openInvoiceCount += 1;
     lines.push({
@@ -399,8 +410,8 @@ export function forecastCashFlow(inputs: ForecastInputs): ForecastResult {
       // Already issued for that month by hand: the money is an open invoice
       // above, and counting the cadence too would bill the owner twice.
       if (alreadyBilledForPeriod(sourceDocs, pattern, period)) continue;
-      // The cadence's own issue date for that month, dated by the same two
-      // tiers as an open invoice.
+      // The cadence's own issue date for that month, dated like an open
+      // invoice minus the first tier (nothing is printed yet).
       const date = notBefore(expectedPaymentDate(key, dayInPeriod(period, pattern.dayOfMonth)));
       if (!inWindow(date)) continue;
       recurringCount += 1;
@@ -567,6 +578,9 @@ export function forecastCashFlow(inputs: ForecastInputs): ForecastResult {
 
   /* ---------- assemble ---------- */
 
+  if (usedDocumentDueDate) {
+    assumptions.push("מסמכים שצוין עליהם מועד תשלום מתוארכים לפי התאריך שעל המסמך.");
+  }
   if (usedAgreedTerms) {
     assumptions.push(
       "מסמכים של לקוחות שהוגדרו להם תנאי תשלום מתוארכים לפי התנאים שסוכמו.",

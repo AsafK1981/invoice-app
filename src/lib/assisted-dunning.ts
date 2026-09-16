@@ -1,5 +1,6 @@
 // Assisted WhatsApp collections: the planning half of the daily pass that
-// nudges the OWNER when an open receivable hits day 3 / 14 / 30.
+// nudges the OWNER when an open receivable hits day 3 / 14 / 30 (days past its
+// stated due date when it has one, otherwise days since issue).
 //
 // The app never messages the client here. It writes one notification per
 // (document, stage) saying "a reminder is ready", the owner opens the
@@ -10,7 +11,7 @@
 // decision - which documents, which stage, what was already prepared - is
 // unit-testable; the route only feeds it rows and writes what comes back.
 
-import { daysSinceIssue, dunningStageFor, type DunningStage } from "./dunning-copy";
+import { daysLate, dunningStageFor, type DunningStage } from "./dunning-copy";
 import { isOpenReceivable } from "./dunning-plan";
 import { DOCUMENT_TYPE_LABELS, type DocumentType } from "./types";
 import { waDigits } from "./whatsapp-link";
@@ -26,6 +27,8 @@ export interface AssistedDocRow {
   client_name: string;
   number: number;
   date: string;
+  /** "לתשלום עד", YYYY-MM-DD, or null when the document states none. */
+  due_date?: string | null;
   total: number;
   type: string;
   status: string;
@@ -89,7 +92,7 @@ export function planAssistedReminders(
     if (!isOpenReceivable(doc)) continue;
     if (!doc.client_id) continue;
 
-    const days = daysSinceIssue(doc.date, today);
+    const days = daysLate({ date: doc.date, dueDate: doc.due_date }, today);
     const stage = dunningStageFor(days);
     if (!stage) continue;
     if (alreadyPrepared.has(`${doc.id}:${stage}`)) continue;

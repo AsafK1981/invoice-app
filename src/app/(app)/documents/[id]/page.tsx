@@ -46,12 +46,12 @@ import { signingEligibility } from "@/lib/signing/eligibility";
 import { cancellationRoute } from "@/lib/document-cancel";
 import { useDocumentSignature } from "@/lib/signature-store";
 import { DOCUMENT_TYPE_LABELS,
-  DOCUMENT_TYPE_LABELS_DEFINITE, PAYMENT_METHOD_LABELS, type InvoiceDocument } from "@/lib/types";
+  DOCUMENT_TYPE_LABELS_DEFINITE, PAYMENT_METHOD_LABELS, allowsDueDate, type InvoiceDocument } from "@/lib/types";
 import { docStrings } from "@/lib/document-strings";
 import { formatDocTotal } from "@/lib/currencies";
 import { whatsappShareText } from "@/lib/document-share-text";
 import { waDigits, whatsappLink } from "@/lib/whatsapp-link";
-import { daysSinceIssue, dunningStageFor, whatsappReminderText } from "@/lib/dunning-copy";
+import { daysLate, dunningStageFor, usableDueDate, whatsappReminderText } from "@/lib/dunning-copy";
 
 export default function DocumentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -491,7 +491,8 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
   // "תזכורת בוואטסאפ": the same 3 / 14 / 30 wording the dunning email uses,
   // opened in the owner's own WhatsApp with the message ready. The app sends
   // nothing here - the owner presses send, from their number, to a client who
-  // knows them. Before day 3 the tone is neutral (nothing is late yet).
+  // knows them. Before day 3 the tone is neutral (nothing is late yet). Days
+  // count past the document's own due date when it states one.
   function handleWhatsAppReminder() {
     if (!doc) return;
     if (requiresAllocationNumber(doc, customerTaxId) && !doc.allocationNumber) {
@@ -503,7 +504,8 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
       setToast({ kind: "error", text: "ללקוח אין מספר טלפון" });
       return;
     }
-    const days = daysSinceIssue(doc.date);
+    const dueDate = allowsDueDate(doc.type) ? usableDueDate(doc.dueDate) : null;
+    const days = daysLate({ date: doc.date, dueDate });
     const message = whatsappReminderText({
       businessName: business.name,
       clientName: doc.clientName,
@@ -512,6 +514,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
       currency: doc.currency,
       docType: doc.type,
       date: formatDate(doc.date),
+      dueDate: dueDate ? formatDate(dueDate) : null,
       days,
       stage: dunningStageFor(days),
       viewUrl: publicUrl,

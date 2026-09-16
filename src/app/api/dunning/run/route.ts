@@ -30,6 +30,8 @@ interface DocRow {
   client_name: string;
   number: number;
   date: string;
+  /** "לתשלום עד"; lateness counts from it when set (see daysLate). */
+  due_date: string | null;
   total: number;
   currency: string | null;
   type: string;
@@ -223,7 +225,7 @@ export async function POST(req: NextRequest) {
 
     const { data: docs } = await admin
       .from("documents")
-      .select("id, business_id, client_id, client_name, number, date, total, currency, type, status, paid_at, converted_to_id")
+      .select("id, business_id, client_id, client_name, number, date, due_date, total, currency, type, status, paid_at, converted_to_id")
       .eq("business_id", biz.id)
       // Receivables only, the same rule both passes apply row by row below
       // (isOpenReceivable). Quotes used to be selected here and got a
@@ -289,6 +291,7 @@ export async function POST(req: NextRequest) {
         total: doc.total,
         currency: doc.currency,
         date: doc.date,
+        dueDate: doc.due_date,
         days,
       });
       const viewUrl = `${APP_URL}/view/${doc.id}`;

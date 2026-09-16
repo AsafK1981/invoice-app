@@ -1,17 +1,30 @@
-import type { Client, InvoiceDocument } from "./types";
+import { allowsDueDate, type Client, type InvoiceDocument } from "./types";
 import { normalizeName, resolveDocumentClientId } from "./client-picker";
+import { daysPastDate, usableDueDate } from "./dunning-copy";
 import { round2 } from "./vat";
 
 /**
  * Open-receivables ("aging") math, shared by the reports overview card and
  * the full <AgingReport> table so the two never disagree on a shekel.
+ *
+ * Two bases. "issue" ages every document by its issue date, which is what
+ * this module always did and still does for any caller that passes no basis.
+ * "due" ages a document that states a "לתשלום עד" by that date instead (as
+ * Xero and QuickBooks do): one not yet due sits in `notYetDue`, outside the
+ * four lateness buckets, and one without a due date falls back to its issue
+ * date exactly as under "issue".
  */
+
+export type AgingBasis = "due" | "issue";
 
 export interface AgingRow {
   clientId: string;
   clientName: string;
-  /** 0-30, 31-60, 61-90, 90+ days since issue */
+  /** 0-30, 31-60, 61-90, 90+ days since issue (under the "due" basis: days
+   *  past the due date, for documents that state one). */
   buckets: [number, number, number, number];
+  /** Open amount not yet due (due basis only; always 0 under "issue"). Part of `total`. */
+  notYetDue: number;
   total: number;
   docs: InvoiceDocument[];
   /** What is still open on each document, by id: its total net of the credit notes issued against it. */
@@ -20,11 +33,39 @@ export interface AgingRow {
 
 export interface AgingTotals {
   buckets: [number, number, number, number];
+  /** Sum of the rows' notYetDue. Part of `grand`. */
+  notYetDue: number;
   grand: number;
   docCount: number;
 }
 
 export const AGING_BUCKET_LABELS = ["0-30 ימים", "31-60 ימים", "61-90 ימים", "מעל 90 ימים"];
+
+/** The same four buckets under the "due" basis, counted past the due date. */
+export const AGING_DUE_BUCKET_LABELS = ["1-30 ימי איחור", "31-60 ימי איחור", "61-90 ימי איחור", "מעל 90 ימי איחור"];
+
+export const AGING_NOT_YET_DUE_LABEL = "טרם הגיע מועד התשלום";
+
+export const AGING_BASIS_LABELS: Record<AgingBasis, string> = {
+  due: "לפי מועד תשלום",
+  issue: "לפי תאריך הפקה",
+};
+
+/** The stated due date of a document the "due" basis honours, or null. */
+export function agingDueDate(doc: InvoiceDocument): string | null {
+  return allowsDueDate(doc.type) ? usableDueDate(doc.dueDate) : null;
+}
+
+/**
+ * Where a document stands under the "due" basis. `daysPastDue` is negative
+ * while the due date is ahead and 0 on the day itself; only a positive value
+ * is late. `null` when the document states no due date (it is then aged by
+ * {@link daysOverdue}).
+ */
+export function daysPastDue(doc: InvoiceDocument, now = new Date()): number | null {
+  const due = agingDueDate(doc);
+  return due === null ? null : daysPastDate(due, now);
+}
 
 /**
  * Days since the document was issued (the freelancer's proxy for "due").
@@ -154,7 +195,12 @@ export function computeClientAccount(documents: InvoiceDocument[]): ClientAccoun
 export function computeAging(
   documents: InvoiceDocument[],
   clients: Client[],
-): { rows: AgingRow[]; totals: AgingTotals } {
+  basis: AgingBasis = "issue",
+  now = new Date(),
+): { rows: AgingRow[]; totals: AgingTotals; undatedCount: number } {
+  // Documents aged by their issue date under the "due" basis because they
+  // state no due date; the report notes them under the table.
+  let undatedCount = 0;
   const byClient = new Map<string, AgingRow>();
   const credits = creditsByOriginal(documents);
   for (const d of documents) {
@@ -162,7 +208,11 @@ export function computeAging(
     // Credited in part: only the rest is owed. Credited in full: nothing is.
     const amount = round2(Math.max(0, (d.totalIls ?? d.total) + (credits.get(d.id) ?? 0)));
     if (amount <= 0) continue;
-    const b = bucketIndex(daysOverdue(d));
+    const pastDue = basis === "due" ? daysPastDue(d, now) : null;
+    if (basis === "due" && pastDue === null) undatedCount++;
+    // Not late yet (due today or later): owed, but in no lateness bucket.
+    const notYetDue = pastDue !== null && pastDue <= 0;
+    const b = bucketIndex(pastDue ?? daysOverdue(d, now));
     // Same attribution rule as the client pages: an unlinked document
     // (client_id null) is grouped under the one saved client it names,
     // otherwise under its normalized free-text name.
@@ -174,23 +224,26 @@ export function computeAging(
         clientId: resolvedId || d.clientId,
         clientName: d.clientName,
         buckets: [0, 0, 0, 0],
+        notYetDue: 0,
         total: 0,
         docs: [],
         openAmounts: {},
       };
       byClient.set(key, row);
     }
-    row.buckets[b] += amount;
+    if (notYetDue) row.notYetDue += amount;
+    else row.buckets[b] += amount;
     row.total += amount;
     row.docs.push(d);
     row.openAmounts[d.id] = amount;
   }
   const rows = Array.from(byClient.values()).sort((a, b) => b.total - a.total);
-  const totals: AgingTotals = { buckets: [0, 0, 0, 0], grand: 0, docCount: 0 };
+  const totals: AgingTotals = { buckets: [0, 0, 0, 0], notYetDue: 0, grand: 0, docCount: 0 };
   for (const r of rows) {
     for (let i = 0; i < 4; i++) totals.buckets[i] += r.buckets[i];
+    totals.notYetDue += r.notYetDue;
     totals.grand += r.total;
     totals.docCount += r.docs.length;
   }
-  return { rows, totals };
+  return { rows, totals, undatedCount };
 }

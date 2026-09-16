@@ -4,9 +4,13 @@
 // its own looser filter and reminded clients about QUOTES as if they were
 // unpaid tax invoices; one rule here keeps the two from drifting again.
 //
+// Lateness is counted from the document's own "לתשלום עד" when it states one,
+// and from the issue date otherwise (daysLate). A document whose due date has
+// not passed by 3 days has no stage and is simply skipped.
+//
 // Pure: no Supabase, no clock beyond the `today` argument.
 
-import { daysSinceIssue, dunningStageFor, type DunningStage } from "./dunning-copy";
+import { daysLate, dunningStageFor, type DunningStage } from "./dunning-copy";
 
 /** Only real receivables get chased. A quote is not money owed yet. */
 export const RECEIVABLE_TYPES = ["tax_invoice", "proforma"] as const;
@@ -38,6 +42,8 @@ export interface EmailPlanDoc extends ReceivableCandidate {
   id: string;
   client_id: string | null;
   date: string;
+  /** "לתשלום עד", YYYY-MM-DD, or null when the document states none. */
+  due_date?: string | null;
 }
 
 export interface EmailPlanLogRow {
@@ -55,10 +61,11 @@ export interface EmailReminderPlan<D extends EmailPlanDoc> {
 
 export interface EmailPlanResult<D extends EmailPlanDoc> {
   queue: EmailReminderPlan<D>[];
-  /** Documents skipped for any reason (not receivable, no stage, already
-   *  emailed, or no client email). */
+  /** Documents skipped for any reason (not receivable, no stage - which
+   *  includes not yet 3 days past a stated due date - already emailed, or no
+   *  client email). */
   skipped: number;
-  /** The subset of skipped documents that were due but had no client email,
+  /** The subset of skipped documents that had reached a stage but had no client email,
    *  surfaced in the run details. */
   noEmail: Array<{ doc: D; stage: DunningStage }>;
 }
@@ -87,7 +94,7 @@ export function planDunningEmails<D extends EmailPlanDoc>(
       skipped++;
       continue;
     }
-    const days = daysSinceIssue(doc.date, today);
+    const days = daysLate({ date: doc.date, dueDate: doc.due_date }, today);
     const stage = dunningStageFor(days);
     if (!stage || seen.has(`${doc.id}:${stage}`)) {
       skipped++;
