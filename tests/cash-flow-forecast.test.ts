@@ -167,6 +167,90 @@ describe("open invoices", () => {
   });
 });
 
+describe("תנאי תשלום", () => {
+  /** Three payments 20 days after issue, so the median tier says 20 days. */
+  const twentyDayHistory = [
+    doc({ date: "2026-01-01", paidAt: "2026-01-21" }),
+    doc({ date: "2026-02-01", paidAt: "2026-02-21" }),
+    doc({ date: "2026-03-01", paidAt: "2026-03-21" }),
+  ];
+  const openInvoice = doc({
+    id: "open",
+    type: "tax_invoice",
+    date: "2026-09-01",
+    status: "sent",
+    total: 1000,
+  });
+
+  it("dates by the agreed terms, not by what the client actually did before", () => {
+    const result = run({
+      documents: [...twentyDayHistory, openInvoice],
+      clients: [{ id: "c1", name: "לקוח א", paymentTerms: "eom_30" }],
+    });
+    // The median would have said 21.09; שוטף + 30 says the end of September
+    // plus 30 days.
+    expect(linesOf(result, "open_invoice")[0].date).toBe("2026-10-30");
+    expect(linesOf(result, "open_invoice")[0].confidence).toBe("certain");
+    expect(result.assumptions).toContain(
+      "מסמכים של לקוחות שהוגדרו להם תנאי תשלום מתוארכים לפי התנאים שסוכמו.",
+    );
+    expect(result.assumptions.some((a) => a.includes("חציון ימי התשלום"))).toBe(false);
+    expect(result.assumptions.some((a) => a.includes(`${DEFAULT_DAYS_TO_PAY} ימים`))).toBe(false);
+  });
+
+  it("still uses the median for a client with no agreed terms", () => {
+    const result = run({
+      documents: [...twentyDayHistory, openInvoice],
+      clients: [{ id: "c1", name: "לקוח א" }],
+    });
+    expect(linesOf(result, "open_invoice")[0].date).toBe("2026-09-21");
+    expect(result.assumptions.some((a) => a.includes("חציון ימי התשלום"))).toBe(true);
+    expect(result.assumptions.some((a) => a.includes("תנאי תשלום מתוארכים"))).toBe(false);
+  });
+
+  it("dates a brand new client by their terms instead of the 30-day fallback", () => {
+    const result = run({
+      documents: [doc({ id: "new", type: "tax_invoice", date: "2026-09-01", status: "sent", clientId: "c7", clientName: "לקוח חדש", total: 500 })],
+      clients: [{ id: "c7", name: "לקוח חדש", paymentTerms: "net_15" }],
+    });
+    // 30 days would have been 01.10; the agreed 15 days is 16.09.
+    expect(linesOf(result, "open_invoice")[0].date).toBe("2026-09-16");
+    expect(result.assumptions.some((a) => a.includes(`${DEFAULT_DAYS_TO_PAY} ימים`))).toBe(false);
+  });
+
+  it("applies the agreed terms to a detected recurring cadence too", () => {
+    const result = run({
+      documents: rentHistory(),
+      clients: [{ id: "c9", name: "שוכר", paymentTerms: "eom" }],
+    });
+    // The cadence issues on the 1st; שוטף pays at the end of that month.
+    expect(linesOf(result, "recurring_income").map((l) => l.date)).toEqual([
+      "2026-09-30",
+      "2026-10-31",
+      "2026-11-30",
+    ]);
+  });
+
+  it("names every tier it actually used, and only those", () => {
+    const result = run({
+      documents: [
+        ...twentyDayHistory,
+        openInvoice,
+        doc({ id: "noterms", type: "tax_invoice", date: "2026-09-02", status: "sent", clientId: "c3", clientName: "לקוח ג", total: 300 }),
+      ],
+      clients: [
+        { id: "c1", name: "לקוח א", paymentTerms: "eom_30" },
+        { id: "c3", name: "לקוח ג" },
+      ],
+    });
+    // c1 by agreed terms, c3 by the 30-day fallback (no history, no terms);
+    // no median was used by anyone, so that sentence must not appear.
+    expect(result.assumptions.some((a) => a.includes("תנאי תשלום מתוארכים"))).toBe(true);
+    expect(result.assumptions.some((a) => a.includes(`${DEFAULT_DAYS_TO_PAY} ימים`))).toBe(true);
+    expect(result.assumptions.some((a) => a.includes("חציון ימי התשלום"))).toBe(false);
+  });
+});
+
 describe("credit notes", () => {
   it("reduces the open invoice it reverses, without negating an already-negative total", () => {
     const invoice = doc({ id: "inv", type: "tax_invoice", date: "2026-09-01", status: "sent", total: 5900 });

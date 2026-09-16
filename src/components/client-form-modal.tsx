@@ -7,6 +7,11 @@ import { FormField } from "@/components/ui/form-field";
 import { clientStore } from "@/lib/client-store";
 import { parseEmails, joinEmails, isValidEmail } from "@/lib/emails";
 import { todayInIsrael } from "@/lib/date";
+import {
+  PAYMENT_TERMS_LABELS,
+  PAYMENT_TERMS_ORDER,
+  isPaymentTerms,
+} from "@/lib/payment-terms";
 import type { Client } from "@/lib/types";
 import { BusinessNumberHintText } from "@/components/business-number-hint";
 import { businessNumberForSave } from "@/lib/business-number-hint";
@@ -35,6 +40,9 @@ export function ClientFormModal({ open, onClose, client }: Props) {
     address: "",
     phone: "",
     notes: "",
+    // "" = לפי היסטוריית התשלומים, which is the default and a real answer:
+    // the forecast then estimates from how this client has actually paid.
+    paymentTerms: "",
   });
   const [emails, setEmails] = useState<string[]>([""]);
   const [saving, setSaving] = useState(false);
@@ -53,11 +61,12 @@ export function ClientFormModal({ open, onClose, client }: Props) {
         address: client.address || "",
         phone: client.phone || "",
         notes: client.notes || "",
+        paymentTerms: client.paymentTerms || "",
       });
       const parsed = parseEmails(client.email);
       setEmails(parsed.length > 0 ? parsed : [""]);
     } else {
-      setForm({ name: "", taxId: "", address: "", phone: "", notes: "" });
+      setForm({ name: "", taxId: "", address: "", phone: "", notes: "", paymentTerms: "" });
       setEmails([""]);
     }
   }, [open, client]);
@@ -93,6 +102,7 @@ export function ClientFormModal({ open, onClose, client }: Props) {
       email: cleanEmails.length > 0 ? joinEmails(cleanEmails) : undefined,
       notes: form.notes.trim() || undefined,
       createdAt: client?.createdAt ?? todayInIsrael(),
+      paymentTerms: isPaymentTerms(form.paymentTerms) ? form.paymentTerms : undefined,
     };
     setSaveError(null);
     setSaving(true);
@@ -252,6 +262,24 @@ export function ClientFormModal({ open, onClose, client }: Props) {
             autoComplete="street-address"
             className="input-warm"
           />
+        </FormField>
+
+        <FormField
+          label="תנאי תשלום"
+          hint="ללא בחירה, תחזית התזרים תאמוד את מועד התשלום לפי הדרך שבה הלקוח שילם בעבר."
+        >
+          <select
+            value={form.paymentTerms}
+            onChange={(e) => update("paymentTerms", e.target.value)}
+            className="input-warm"
+          >
+            <option value="">לפי היסטוריית התשלומים</option>
+            {PAYMENT_TERMS_ORDER.map((t) => (
+              <option key={t} value={t}>
+                {PAYMENT_TERMS_LABELS[t]}
+              </option>
+            ))}
+          </select>
         </FormField>
 
         <FormField label="הערות">

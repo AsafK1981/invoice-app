@@ -1,13 +1,15 @@
 /**
  * "כמה כסף ייכנס ויצא בשלושת החודשים הקרובים" - computed, never guessed.
  *
- * There is no due-date field and no payment-terms field anywhere in the app,
- * so the timing of an open invoice cannot be read off the document. What the
- * app does have is `paidAt`, and that is enough: how long a given client took
- * to pay, in the past, is the best available predictor of how long they will
- * take next time. The median of that client's own history dates the money;
- * with no history the forecast falls back to 30 days and says so out loud in
- * `assumptions`.
+ * Money in is dated in two tiers. First, what was actually AGREED: a client
+ * can carry תנאי תשלום (payment-terms.ts), and "שוטף + 30" is a rule about the
+ * end of the invoice month, not a number of days after it - no amount of
+ * history can express that, and a new client has no history at all. Second,
+ * for every client without agreed terms, what was actually OBSERVED: `paidAt`
+ * says how long they took last time, and the median of their own gaps is the
+ * best available predictor of the next one. Only when both are missing does
+ * the forecast fall back to 30 days. Whichever tiers were used are said out
+ * loud in `assumptions`.
  *
  * Everything else in here is already-known money, not a prediction: detected
  * recurring cadences (recurring-patterns.ts), the trailing expense average,
@@ -29,6 +31,7 @@ import {
   periodMinusMonths,
   type RecurringSourceDoc,
 } from "./recurring-patterns";
+import { dueDateFor, type PaymentTerms } from "./payment-terms";
 import { advanceDueDate, computeAdvance, roundShekelHalfUp } from "./ita/income-tax-advances";
 import { biMonthlyRange, singleMonthRange } from "./ita/vat-periods";
 import { round2, VAT_RATES } from "./vat";
@@ -107,7 +110,7 @@ export interface ForecastResult {
 export type ForecastBusiness = Pick<Business, "businessType"> &
   Partial<Pick<Business, "incomeTaxAdvanceRate">>;
 
-export type ForecastClient = Pick<Client, "id" | "name" | "taxId">;
+export type ForecastClient = Pick<Client, "id" | "name" | "taxId" | "paymentTerms">;
 
 export interface ForecastInputs {
   documents: InvoiceDocument[];
@@ -235,6 +238,20 @@ export function expectedDaysToPay(
   return days && days.length > 0 ? lowerMedian(days) : fallback;
 }
 
+/**
+ * The agreed תנאי תשלום of every client that has any, keyed the same way
+ * {@link forecastCashFlow} groups documents. Only saved clients can carry
+ * terms, so a document that stayed on a `__no_client__:` key never matches -
+ * it falls to the observed-history tier, which is exactly right.
+ */
+function buildAgreedTerms(clients: ForecastClient[]): Map<string, PaymentTerms> {
+  const map = new Map<string, PaymentTerms>();
+  for (const c of clients) {
+    if (c.paymentTerms) map.set(c.id, c.paymentTerms);
+  }
+  return map;
+}
+
 /* ------------------------------------------------------------------ */
 /* recurring source shape                                              */
 /* ------------------------------------------------------------------ */
@@ -284,12 +301,32 @@ export function forecastCashFlow(inputs: ForecastInputs): ForecastResult {
   const assumptions: string[] = [];
 
   const payHistory = buildPayHistory(documents, clients);
+  const agreedTerms = buildAgreedTerms(clients);
+  let usedAgreedTerms = false;
+  let usedMedianDays = false;
   let usedFallbackDays = false;
   function daysToPay(clientKey: string): number {
     const days = payHistory.get(clientKey);
-    if (days && days.length > 0) return lowerMedian(days);
+    if (days && days.length > 0) {
+      usedMedianDays = true;
+      return lowerMedian(days);
+    }
     usedFallbackDays = true;
     return DEFAULT_DAYS_TO_PAY;
+  }
+
+  /**
+   * When a document issued on `issueDate` is expected to be paid: the agreed
+   * terms when this client has any, otherwise the observed median (and, with
+   * no history either, the 30-day fallback inside {@link daysToPay}).
+   */
+  function expectedPaymentDate(clientKey: string, issueDate: string): string {
+    const terms = agreedTerms.get(clientKey);
+    if (terms) {
+      usedAgreedTerms = true;
+      return dueDateFor(issueDate, terms);
+    }
+    return addDays(issueDate, daysToPay(clientKey));
   }
 
   /* ---------- open invoices ---------- */
@@ -319,7 +356,7 @@ export function forecastCashFlow(inputs: ForecastInputs): ForecastResult {
     if (!OPEN_TYPES.includes(d.type)) continue;
     const amount = round2(Math.max(0, (d.totalIls ?? d.total) + (creditByOriginal.get(d.id) ?? 0)));
     if (amount <= 0) continue;
-    const date = notBefore(addDays(d.date, daysToPay(clientKeyOf(d, clients))));
+    const date = notBefore(expectedPaymentDate(clientKeyOf(d, clients), d.date));
     if (!inWindow(date)) continue;
     openInvoiceCount += 1;
     lines.push({
@@ -358,12 +395,13 @@ export function forecastCashFlow(inputs: ForecastInputs): ForecastResult {
       { clientId: pattern.clientId || "", clientName: pattern.clientName },
       clients,
     );
-    const days = daysToPay(key);
     for (const period of periods) {
       // Already issued for that month by hand: the money is an open invoice
       // above, and counting the cadence too would bill the owner twice.
       if (alreadyBilledForPeriod(sourceDocs, pattern, period)) continue;
-      const date = notBefore(addDays(dayInPeriod(period, pattern.dayOfMonth), days));
+      // The cadence's own issue date for that month, dated by the same two
+      // tiers as an open invoice.
+      const date = notBefore(expectedPaymentDate(key, dayInPeriod(period, pattern.dayOfMonth)));
       if (!inWindow(date)) continue;
       recurringCount += 1;
       lines.push({
@@ -529,10 +567,18 @@ export function forecastCashFlow(inputs: ForecastInputs): ForecastResult {
 
   /* ---------- assemble ---------- */
 
-  if (openInvoiceCount > 0) {
+  if (usedAgreedTerms) {
     assumptions.push(
-      "מועד התשלום של כל מסמך פתוח נאמד לפי חציון ימי התשלום של אותו לקוח בעבר. מסמך שכבר עבר את מועדו מוצג בחודש הנוכחי.",
+      "מסמכים של לקוחות שהוגדרו להם תנאי תשלום מתוארכים לפי התנאים שסוכמו.",
     );
+  }
+  if (usedMedianDays) {
+    assumptions.push(
+      "ללקוחות שלא הוגדרו להם תנאי תשלום, מועד התשלום נאמד לפי חציון ימי התשלום של אותו לקוח בעבר.",
+    );
+  }
+  if (openInvoiceCount > 0) {
+    assumptions.push("מסמך פתוח שכבר עבר את מועד התשלום הצפוי שלו מוצג בחודש הנוכחי.");
   }
   if (usedFallbackDays) {
     assumptions.push(

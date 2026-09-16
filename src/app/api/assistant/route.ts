@@ -10,6 +10,7 @@ import type { Business, DocumentItem, Expense, InvoiceDocument } from "@/lib/typ
 import { summarizeIncome } from "@/lib/income-summary";
 import { summarizeExpenses } from "@/lib/expense-summary";
 import { forecastCashFlow } from "@/lib/cash-flow-forecast";
+import { isPaymentTerms } from "@/lib/payment-terms";
 import { monthsBackStart } from "@/lib/recurring-patterns";
 import { isDeadEndReply } from "@/lib/assistant-reply";
 import type { DocumentType } from "@/lib/types";
@@ -556,7 +557,9 @@ async function runTool(
       .gte("date", itemsSince);
     const { data: clientRows } = await admin
       .from("clients")
-      .select("id, name, tax_id")
+      // payment_terms too: the forecast dates a client's open money by the
+      // agreed terms when they have any (src/lib/payment-terms.ts).
+      .select("id, name, tax_id, payment_terms")
       .eq("business_id", businessId)
       .limit(1000);
 
@@ -604,6 +607,7 @@ async function runTool(
         id: String(c.id),
         name: (c.name as string) || "",
         taxId: (c.tax_id as string) || undefined,
+        paymentTerms: isPaymentTerms(c.payment_terms) ? c.payment_terms : undefined,
       })),
       business: {
         businessType: (bizRow.business_type as Business["businessType"]) || "exempt",

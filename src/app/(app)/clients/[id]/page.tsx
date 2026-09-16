@@ -11,6 +11,7 @@ import {
   StickyNote,
   TrendingUp,
   CalendarDays,
+  CalendarClock,
   Plus,
   Pencil,
   BookOpen,
@@ -18,6 +19,7 @@ import {
 } from "lucide-react";
 import { useClients, recordClientConsent, revokeClientConsent } from "@/lib/client-store";
 import { CONSENT_SOURCE_LABELS, consentStatus } from "@/lib/consent";
+import { PAYMENT_TERMS_LABELS } from "@/lib/payment-terms";
 import { documentsForClient } from "@/lib/client-picker";
 import { useDocuments } from "@/lib/document-store";
 import { computeClientAccount, isOpenReceivable } from "@/lib/aging";
@@ -148,6 +150,14 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                 <span className="inline-flex items-center gap-1.5 text-stone-700">
                   <MapPin className="w-3.5 h-3.5 text-stone-500" />
                   <span>{client.address}</span>
+                </span>
+              )}
+              {/* Only when agreed. No terms is not "מיידי" - it means the
+                  forecast estimates from this client's payment history. */}
+              {client.paymentTerms && (
+                <span className="inline-flex items-center gap-1.5 text-stone-700">
+                  <CalendarClock className="w-3.5 h-3.5 text-stone-500" />
+                  <span>תנאי תשלום: {PAYMENT_TERMS_LABELS[client.paymentTerms]}</span>
                 </span>
               )}
             </div>

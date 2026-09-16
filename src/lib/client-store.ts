@@ -9,6 +9,7 @@ import { STORE_LOAD_MESSAGES } from "./store-load";
 import { logAudit } from "./audit-log";
 import { todayInIsrael } from "./date";
 import { searchTerms, ilikeOrClause } from "./ilike-search";
+import { isPaymentTerms } from "./payment-terms";
 import type { Client, ConsentSource } from "./types";
 
 const CHANGE_EVENT = "invoice-app:clients-changed";
@@ -36,6 +37,10 @@ function mapRow(row: Record<string, unknown>): Client {
     computerizedConsentAt: (row.computerized_consent_at as string) || undefined,
     computerizedConsentSource: (row.computerized_consent_source as ConsentSource) || undefined,
     computerizedConsentRevokedAt: (row.computerized_consent_revoked_at as string) || undefined,
+    // Guarded, not cast: a row written before the column's CHECK existed (or
+    // by a future code path) must leave the forecast on its history fallback,
+    // not hand it a code it cannot date.
+    paymentTerms: isPaymentTerms(row.payment_terms) ? row.payment_terms : undefined,
   };
 }
 
@@ -218,6 +223,7 @@ export const clientStore = {
           phone: client.phone || null,
           email: client.email || null,
           notes: client.notes || null,
+          payment_terms: client.paymentTerms || null,
         })
         .eq("id", client.id)
         .select("id");
@@ -236,6 +242,7 @@ export const clientStore = {
         phone: client.phone || null,
         email: client.email || null,
         notes: client.notes || null,
+        payment_terms: client.paymentTerms || null,
       });
       if (error) throw new Error(error.message);
     }

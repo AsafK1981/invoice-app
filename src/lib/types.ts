@@ -1,6 +1,8 @@
-// The only import here, and a type-only one: Business.pushKinds is a subset of
-// the notification kinds, and duplicating that union would let the two drift.
+// Type-only imports, and only where duplicating a union would let two
+// definitions drift: Business.pushKinds is a subset of the notification kinds,
+// and Client.paymentTerms is exactly the set payment-terms.ts can date.
 import type { NotificationKind } from "./notifications";
+import type { PaymentTerms } from "./payment-terms";
 
 export type DocumentType =
   | "receipt"
@@ -149,6 +151,9 @@ export interface Client {
   /** Set when the client withdrew the consent; documents after this date are
    *  not computerized documents until a new consent is recorded. */
   computerizedConsentRevokedAt?: string;
+  /** תנאי תשלום מוסכמים. undefined ⇒ the cash-flow forecast falls back to the
+   *  client's median historical days-to-pay. */
+  paymentTerms?: PaymentTerms;
 }
 
 export interface Product {
