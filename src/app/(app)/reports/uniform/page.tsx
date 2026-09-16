@@ -117,7 +117,7 @@ export default function UniformStructurePage() {
               <FileArchive className="w-5 h-5 text-white" />
             </span>
             <span className="min-w-0 break-words" data-report-title="מבנה אחיד">
-              מבנה אחיד (Open Format)
+              מבנה אחיד <span dir="ltr" className="whitespace-nowrap">(Open Format)</span>
             </span>
           </h1>
           <p className="text-sm text-stone-600 mt-2 mr-14">
