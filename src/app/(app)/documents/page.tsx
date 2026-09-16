@@ -11,7 +11,7 @@ import { BankImportModal } from "@/components/bank-import-modal";
 import { formatCurrencyWhole } from "@/lib/format";
 import { StoreLoadError } from "@/components/store-load-error";
 import { countsAsIncome } from "@/lib/revenue";
-import { computeClientAccount } from "@/lib/aging";
+import { computeClientAccount, isOpenReceivable } from "@/lib/aging";
 
 export default function DocumentsPage() {
   const { documents, error: loadError, retry } = useDocuments();
@@ -27,15 +27,13 @@ export default function DocumentsPage() {
   // action row and the tabs so the printed pages carry the sheet alone.
   const [printing, setPrinting] = useState(false);
 
-  const unpaidDocuments = useMemo(
-    () =>
-      documents.filter(
-        (d) =>
-          (d.type === "tax_invoice" || d.type === "quote" || d.type === "proforma") &&
-          (d.status === "sent" || d.status === "draft"),
-      ),
-    [documents],
-  );
+  // What a bank line may be matched against: the same "still waiting for
+  // money" rule the aging report and "פתוח לגבייה" use, so the importer can
+  // never settle something that is not a debt. It used to offer price quotes
+  // (an offer, not a charge), drafts (not issued at all), and documents
+  // already converted into a successor - so a bank line could be spent on a
+  // quote while the tax invoice made from it stayed unpaid.
+  const unpaidDocuments = useMemo(() => documents.filter(isOpenReceivable), [documents]);
 
   // The same two rules every other screen uses, so this header can never
   // disagree with the dashboard or "פתוח לגבייה": paid = income by the approved
