@@ -68,6 +68,9 @@ const browser = await puppeteer.launch({
   headless: "new",
   userDataDir: path.join(OUT, `profile-${process.pid}`),
   args: ["--no-first-run", "--disable-extensions"],
+  // A cold `next dev` can block the renderer for minutes on first compile of a
+  // route, which times out CDP calls long before any assertion is reached.
+  protocolTimeout: 300_000,
 });
 
 try {
@@ -128,11 +131,13 @@ try {
   await page.evaluate((key, value) => localStorage.setItem(key, value), storageKey, JSON.stringify(auth.session));
 
   // ---------- uniform structure ----------
+  // מבנה אחיד is its own report page since 2026-09-16 (it used to be a button
+  // on /reports that silently injected a panel at the top of that page).
   async function openUniform(viewport) {
     await page.setViewport(viewport);
-    await page.goto(`${BASE}/reports`, { waitUntil: "domcontentloaded", timeout: 240_000 });
-    const card = await page.waitForFunction(() => [...document.querySelectorAll("button.rpt-rc")].find((b) => b.textContent.includes("OPENFORMAT")), { timeout: 240_000 });
-    await card.asElement().click();
+    await page.goto(`${BASE}/reports/uniform`, { waitUntil: "domcontentloaded", timeout: 240_000 });
+    const run = await page.waitForFunction(() => [...document.querySelectorAll("button")].find((b) => b.textContent.includes("בדוק והורד")), { timeout: 240_000 });
+    await run.asElement().click();
     await page.waitForSelector(UNIFORM, { timeout: 240_000 });
     await settle(viewport, "#uniform-preflight");
   }

@@ -1108,7 +1108,9 @@ html .rpt-menu-cap {
   letter-spacing: 0.03em;
   color: var(--gold-text);
 }
-html .rpt-menu button {
+/* Rows are buttons (an export that runs here) or links (an export that has its
+   own page, like מבנה אחיד). They must look identical either way. */
+html .rpt-menu button, html .rpt-menu a {
   display: flex;
   align-items: center;
   gap: 0.55rem;
@@ -1120,12 +1122,13 @@ html .rpt-menu button {
   font-weight: 600;
   color: var(--ink);
   text-align: start;
+  text-decoration: none;
   transition: background-color 0.15s ease;
 }
-html .rpt-menu button svg { width: 0.95rem; height: 0.95rem; color: var(--gold-text); flex: none; }
-html .rpt-menu button span { flex: 1; }
+html .rpt-menu button svg, html .rpt-menu a svg { width: 0.95rem; height: 0.95rem; color: var(--gold-text); flex: none; }
+html .rpt-menu button span, html .rpt-menu a span { flex: 1; }
 html .rpt-menu button small { font-size: 0.72rem; font-weight: 700; color: var(--muted); }
-html .rpt-menu button:hover:not(:disabled) { background: var(--goldtint); }
+html .rpt-menu button:hover:not(:disabled), html .rpt-menu a:hover { background: var(--goldtint); }
 html .rpt-menu button:disabled { opacity: 0.45; cursor: default; }
 
 /* Icon tiles: quiet sand square, gold-text glyph (the app's .icotile) */

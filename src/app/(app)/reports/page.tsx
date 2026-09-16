@@ -17,11 +17,8 @@ import { useBusiness } from "@/lib/business-store";
 import { useClients } from "@/lib/client-store";
 import { formatCurrencyWhole, hebrewCount } from "@/lib/format";
 import { exportDocuments, exportExpenses, exportMonthlySummary } from "@/lib/csv-export";
-import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/ui/toast";
-import { friendlyError } from "@/lib/error-message";
 import { DownloadPdfButton } from "@/components/download-pdf-button";
-import { UniformStructureReport, parseUniformReport, type UniformReportData } from "@/components/uniform-structure-report";
 import { computeAging, AGING_BUCKET_LABELS } from "@/lib/aging";
 import {
   type Period, HEBREW_MONTHS_SHORT,
@@ -31,9 +28,6 @@ import {
 } from "@/lib/report-period";
 import { PeriodPicker } from "@/components/period-picker";
 import { ReportsBarChart, type BarDatum } from "@/components/reports-bar-chart";
-import { FilingFixPanel } from "@/components/filing-fix-panel";
-import { buildUniformFixModel } from "@/lib/uniform-fix-items";
-import { uniformCanDownload, type UniformIssue } from "@/lib/uniform-structure/issues";
 import type { InvoiceDocument, Expense } from "@/lib/types";
 
 type MonthTotals = { income: number; expenses: number; docs: number };
@@ -70,12 +64,6 @@ export default function ReportsPage() {
   const { business } = useBusiness();
   const showToast = useToast();
   const [period, setPeriod] = useState<Period>(() => String(new Date().getFullYear()));
-  /** The 2.6 + 5.4 printouts of the last מבנה אחיד export, shown right after the ZIP lands. */
-  const [uniformReport, setUniformReport] = useState<UniformReportData | null>(null);
-  const [uniformCheck, setUniformCheck] = useState<{ year: number; sample: boolean; issues: UniformIssue[] } | null>(null);
-  const [uniformBusy, setUniformBusy] = useState(false);
-  const uniformModel = useMemo(() => (uniformCheck ? buildUniformFixModel(uniformCheck.issues) : null), [uniformCheck]);
-
   const year = periodYear(period);
   /** File-name tag for the exports: "2026-08", or "2026-01-05_2026-03-10" for a range. */
   const fileTag = period.replace("..", "_");
@@ -195,53 +183,6 @@ export default function ReportsPage() {
 
   const exportYear = year ?? new Date().getFullYear();
 
-  /**
-   * `recheck`: run the check again (after an inline fix) and keep the current
-   * panel on screen until the new result lands, instead of clearing it.
-   */
-  async function downloadUniformStructure(sample = false, download = false, recheck = false) {
-    if (uniformBusy) return;
-    setMenuOpen(false);
-    setUniformBusy(true);
-    const checkedYear = exportYear;
-    if (!download && !recheck) setUniformCheck(null);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) throw new Error("פג תוקף ההתחברות, התחבר מחדש");
-      const qs = `year=${checkedYear}${sample ? "&sample=true" : ""}${download ? "" : "&preflight=true"}`;
-      const res = await fetch(`/api/uniform-structure/export?${qs}`, {
-        headers: { authorization: `Bearer ${session.access_token}` },
-      });
-      if (!res.ok || !download) {
-        const result = await res.json();
-        if (res.status === 429) {
-          setUniformCheck({ year: checkedYear, sample, issues: [{ code: "rate_limited", level: "error", message: friendlyError(result, "יותר מדי בדיקות ברצף. המתן כמה דקות ונסה שוב.") }] });
-          return;
-        }
-        if (Array.isArray(result.issues)) {
-          const issues: UniformIssue[] = result.issues;
-          if (!res.ok && !issues.some((issue) => issue.level === "error")) issues.push({ code: "data_load_failed", level: "error", message: friendlyError(result, "הבדיקה נכשלה. נסו שוב.") });
-          setUniformCheck({ year: checkedYear, sample, issues });
-          if (!download && !recheck) requestAnimationFrame(() => document.getElementById("uniform-preflight")?.scrollIntoView({ block: "start", behavior: "smooth" }));
-        } else throw new Error(friendlyError(result, "בדיקת הקובץ נכשלה. נסו שוב."));
-        return;
-      }
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `OPENFRMT-${business.taxId}-${checkedYear}${sample ? "-SAMPLE" : ""}.zip`;
-      a.click();
-      URL.revokeObjectURL(url);
-      setUniformReport(parseUniformReport(res.headers.get("X-Uniform-Report")));
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "הבדיקה נכשלה. נסו שוב.";
-      setUniformCheck({ year: checkedYear, sample, issues: [{ code: "data_load_failed", level: "error", message }] });
-    } finally {
-      setUniformBusy(false);
-    }
-  }
-
   /* ---------- the report cards ---------- */
   const filesVat = business.businessType === "authorized" || business.businessType === "company";
   /** Header block of every Excel export from this page: who, and which period. */
@@ -300,8 +241,8 @@ export default function ReportsPage() {
       desc: "טיוטה של החלק העסקי בלבד, לצירוף לטופס 1219 או לרואה החשבון.",
     },
     {
-      icon: FileArchive, title: "מבנה אחיד (OPENFORMAT)", action: "בדיקה והורדה", onClick: () => downloadUniformStructure(false),
-      desc: `קבצי מבנה אחיד לשנת ${exportYear} לפי דרישת רשות המסים, לביקורת או לרואה החשבון.`,
+      icon: FileArchive, title: "מבנה אחיד (Open Format)", href: "/reports/uniform",
+      desc: "קובץ התקן של רשות המסים עם כל המסמכים והתנועות של השנה. מפיקים אותו כשמבקשים ממך בביקורת, כשרואה החשבון רוצה לייבא הכל, או כשעוברים לתוכנה אחרת. זה לא דיווח תקופתי.",
     },
     {
       icon: ListOrdered, title: "בדיקת רצף מספור", href: "/reports/sequence",
@@ -323,30 +264,7 @@ export default function ReportsPage() {
   const topDebtors = aging.rows.slice(0, 3);
 
   return (
-    <div className="space-y-6 rpt" data-print-hidden={uniformReport ? "true" : undefined}>
-      {(uniformBusy || uniformCheck?.year === exportYear) && <div id="uniform-preflight" className="card-soft p-4 space-y-3 no-print">
-        <h2 className="text-lg font-bold">בדיקה לפני הורדת מבנה אחיד לשנת {exportYear}</h2>
-        {uniformBusy && <p className="text-sm text-stone-600">טוען את כל הנתונים ובודק את הקובץ...</p>}
-        {uniformCheck && uniformModel && <>
-          <p className="text-sm text-stone-600 leading-relaxed">{uniformCheck.sample ? "קובץ דוגמה עם נתונים מלאכותיים לבדיקת תוכנה בלבד. אין להגישו כדיווח של העסק." : "קובץ מבנה אחיד מיועד לביקורת או להעברה לפי דרישה. הוא אינו דוח מע״מ תקופתי. הבדיקה המקומית אינה אישור קליטה או אישור רישום תוכנה של רשות המסים."}</p>
-          <FilingFixPanel
-            model={uniformModel}
-            businessId={business.id}
-            returnTo="/reports"
-            onSaved={() => downloadUniformStructure(uniformCheck.sample, false, true)}
-          />
-          <div className="flex flex-wrap gap-3">
-            <button type="button" data-testid="uniform-download" className="pgbtn pgbtn-primary disabled:opacity-50" disabled={uniformBusy || !uniformCanDownload(uniformCheck.issues)} onClick={() => downloadUniformStructure(uniformCheck.sample, true)}>הורד קובץ לאחר בדיקה</button>
-            <button type="button" className="pgbtn pgbtn-quiet disabled:opacity-50" disabled={uniformBusy} onClick={() => downloadUniformStructure(uniformCheck.sample, false, true)}>בדוק שוב</button>
-          </div>
-        </>}
-      </div>}
-      <UniformStructureReport
-        report={uniformReport}
-        onClose={() => setUniformReport(null)}
-        businessName={business.name}
-        taxId={business.taxId}
-      />
+    <div className="space-y-6 rpt">
       {/* ---------- header: title only; the period control lives with the numbers below ---------- */}
       <div className="rpt-head">
         <div>
@@ -412,17 +330,17 @@ export default function ReportsPage() {
                     <span>הטבלה החודשית ל-Excel</span>
                     <small>{tableRows.length}</small>
                   </button>
-                  <div className="rpt-menu-cap">לרשות המסים · {exportYear}</div>
-                  <button type="button" role="menuitem" onClick={() => downloadUniformStructure(false)}
-                    title="ייצוא קבצי מבנה אחיד (OPENFORMAT 1.31) מהנתונים האמיתיים, לביקורת">
+                  <div className="rpt-menu-cap">לרשות המסים</div>
+                  <Link href="/reports/uniform" role="menuitem" onClick={() => setMenuOpen(false)}
+                    title="בדיקה והפקה של קבצי מבנה אחיד (OPENFORMAT 1.31) מהנתונים האמיתיים, לביקורת">
                     <FileArchive aria-hidden="true" />
                     <span>מבנה אחיד</span>
-                  </button>
-                  <button type="button" role="menuitem" onClick={() => downloadUniformStructure(true)}
+                  </Link>
+                  <Link href="/reports/uniform?sample=1" role="menuitem" onClick={() => setMenuOpen(false)}
                     title="קבצי מבנה אחיד עם נתוני דוגמה סינתטיים, לסימולטור של רשות המסים">
                     <FileArchive aria-hidden="true" />
                     <span>מבנה אחיד: קובץ דוגמה</span>
-                  </button>
+                  </Link>
                 </div>
               )}
             </div>
