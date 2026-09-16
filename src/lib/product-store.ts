@@ -141,7 +141,11 @@ export const productStore = {
         price: product.price,
         unit: product.unit,
       });
-      if (error && options) throw error;
+      // Used to be `if (error && options) throw error`: on the manual path a
+      // failed INSERT was swallowed and the change event fired anyway, so the
+      // UI reported a saved product that was never written. Same silent data
+      // loss as expense-store had.
+      if (error) throw error;
     }
     window.dispatchEvent(new Event(CHANGE_EVENT));
   },

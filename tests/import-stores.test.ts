@@ -32,12 +32,16 @@ describe.each(cases)("%s import store", (name, save) => {
     await save({ importBatchId: "new-batch" }); await save();
     expect(state.writes.every(w => w.kind === "update" && !("import_batch_id" in w.row))).toBe(true);
   });
-  it("propagates import insert failure so callers cannot count it successful", async () => {
+  it("propagates insert failure on BOTH paths so callers cannot count it successful", async () => {
     state.error = true;
     await expect(save({ importBatchId: "batch" })).rejects.toThrow("write failed");
-    // A manual client save also throws now, so the client form can never
-    // show "saved" for a failed write.
-    if (name === "client") await expect(save()).rejects.toThrow("write failed");
-    else await expect(save()).resolves.toBeUndefined();
+    // The manual path throws too. It used to be `if (error && options) throw`,
+    // so only imports reported failures: a manual product or expense whose
+    // INSERT was refused still fired the change event and closed the form with
+    // a success toast, and the row was simply never written. Silent data loss,
+    // and the same class of fail-quiet bug as the businesses RLS incident
+    // (Sentry INVOICE-APP-J). clientStore was fixed for this earlier; product
+    // and expense were left behind until 2026-09-16.
+    await expect(save()).rejects.toThrow("write failed");
   });
 });

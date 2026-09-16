@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "./supabase";
 import { getBusinessId } from "./business-init";
+import { SESSION_LOST_MESSAGE, isSessionLost } from "./session-guard";
 import { sanitizeReminderDays } from "./reminder-schedule";
 import { normalizeDocumentDesign } from "./document-themes";
 import type { Business } from "./types";
@@ -21,12 +22,25 @@ const defaultBusiness: Business = {
 export function useBusiness() {
   const [business, setBusiness] = useState<Business>(defaultBusiness);
   const [ready, setReady] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetch = useCallback(async () => {
     const bid = getBusinessId();
     let query = supabase.from("businesses").select("*");
     if (bid) query = query.eq("id", bid);
-    const { data } = await query.limit(1).maybeSingle();
+    const { data, error: readError } = await query.limit(1).maybeSingle();
+
+    // A refused read is not an empty business. This used to drop the error
+    // and fall back to defaultBusiness - whose id is "" - while still
+    // reporting ready, so the onboarding form would happily enable "המשך"
+    // and then save against an id that matches no row. Keep whatever we had
+    // and say so instead.
+    if (readError) {
+      setError(isSessionLost(readError) ? SESSION_LOST_MESSAGE : readError.message);
+      setReady(true);
+      return;
+    }
+    setError(null);
 
     setBusiness(
       data
@@ -84,7 +98,7 @@ export function useBusiness() {
     return () => window.removeEventListener(CHANGE_EVENT, handler);
   }, [fetch]);
 
-  return { business, ready, refetch: fetch };
+  return { business, ready, error, refetch: fetch };
 }
 
 /**

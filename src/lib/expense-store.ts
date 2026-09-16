@@ -135,7 +135,11 @@ export const expenseStore = {
           : "manual",
         source_ref: expense.sourceRef || null,
       });
-      if (error && options) throw error;
+      // Used to be `if (error && options) throw error` - on the manual path
+      // (no options) a failed INSERT was swallowed and the change event fired
+      // anyway, so the form closed, the toast said saved, and the expense was
+      // never written. Silent data loss. An error is an error on every path.
+      if (error) throw error;
     }
     window.dispatchEvent(new Event(CHANGE_EVENT));
   },

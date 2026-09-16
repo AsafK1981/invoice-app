@@ -66,23 +66,22 @@ export default function GoogleCompletePage() {
         return;
       }
       track("sign_in_google");
-      // Same routing rule as the rest of the auth flows: a Google user may
-      // be brand new (no business yet) - send them to onboarding; returning
-      // users go straight to the dashboard. If the query itself fails,
-      // default to /dashboard: Google sign-ins are mostly returning users,
-      // and the dashboard renders an onboarding checklist for an
-      // incomplete/missing business anyway, so a wrong guess is a soft
-      // landing - while dumping an existing user into /onboarding is not.
-      const { data: biz, error: bizError } = await supabase
-        .from("businesses")
-        .select("id")
-        .limit(1);
-      const target = bizError
-        ? "/dashboard"
-        : biz && biz.length > 0
-          ? "/dashboard"
-          : "/onboarding";
-      router.replace(target);
+      // Always /dashboard - do NOT ask the database who this is first.
+      //
+      // This used to run `select("id").limit(1)` and send the user to
+      // /onboarding when it came back empty. Under row-level security an
+      // empty result is not proof of anything: a request that loses its
+      // access token is answered with zero rows and NO error, so a returning
+      // user with years of documents was routed into onboarding, where the
+      // business bootstrap then tried to create a second business and was
+      // refused by RLS (Sentry INVOICE-APP-J). The file's own comment already
+      // said dumping an existing user into /onboarding is not a soft landing.
+      //
+      // The query was also redundant: AppProviders redirects to /onboarding
+      // whenever user_metadata.onboarded is not true, so a genuinely new user
+      // still lands there - decided from the session itself, which cannot
+      // fail open.
+      router.replace("/dashboard");
       router.refresh();
     }
 
