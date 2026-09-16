@@ -41,7 +41,9 @@ try {
       ADD COLUMN round_total boolean DEFAULT false, ADD COLUMN withholding_rate numeric,
       ADD COLUMN withholding_amount numeric, ADD COLUMN discount_amount numeric,
       ADD COLUMN payment_details jsonb, ADD COLUMN payment_reference text,
-      ADD COLUMN emailed_at timestamptz, ADD COLUMN original_issued_at timestamptz;
+      ADD COLUMN emailed_at timestamptz, ADD COLUMN original_issued_at timestamptz,
+      -- 20260916-document-due-date.sql; the live immutability body reads it.
+      ADD COLUMN due_date date;
   `);
   await db.exec(await read('scripts/migrations/20260906-documents-language.sql'));
   await db.exec(await read('scripts/migrations/20260816-document-items-immutability.sql'));
@@ -61,6 +63,10 @@ try {
   // (The same default also grants anon/authenticated, which is exactly why the
   // migration REVOKEs those two explicitly - that part runs verbatim above.)
   await db.exec(`GRANT ALL ON public.document_signatures, public.business_signing_keys TO service_role`);
+  // Loaded LAST: it is the current live body of enforce_document_immutability
+  // (rebuilt from pg_proc on 2026-09-16), so every guard check below runs
+  // against what production actually has, not an older migration's copy.
+  await db.exec(await read('scripts/migrations/20260916-freeze-document-business.sql'));
   await db.exec(`
     INSERT INTO businesses (id,name,tax_id,user_id) VALUES
       ('${biz}','Synthetic A','000','${owner}'), ('${foreignBiz}','Synthetic B','001','${uuid(10)}');
@@ -214,6 +220,36 @@ try {
     await asRole('service_role', () => db.exec(`DELETE FROM documents WHERE id='${uuid(11)}'`));
     assert.equal((await rows(`SELECT 1 FROM document_signatures WHERE document_id='${uuid(11)}'`)).length, 0);
   });
+  // The composite FK above only stops a move when the document has a client.
+  // A CLIENTLESS issued document moved to another business of the SAME owner
+  // passes both the FK and the UPDATE policy; only the immutability guard
+  // stops it (20260916-freeze-document-business.sql).
+  await check('clientless issued document cannot move to another business of the same owner', async () => {
+    const ownSecond = uuid(20), issued = uuid(21);
+    await db.exec(`INSERT INTO businesses (id,name,tax_id,user_id) VALUES ('${ownSecond}','Synthetic A2','002','${owner}');
+      INSERT INTO documents (id,business_id,type,number,client_name,status)
+        VALUES ('${issued}','${biz}','receipt',61,'Synthetic','sent')`);
+    for (const role of ['authenticated', 'service_role']) {
+      await asRole(role, () => assert.rejects(
+        db.exec(`UPDATE documents SET business_id='${ownSecond}' WHERE id='${issued}'`),
+        /immutable: field business_id cannot be changed/));
+    }
+    assert.equal((await rows(`SELECT business_id FROM documents WHERE id='${issued}'`))[0].business_id, biz);
+  });
+  await check('a clientless DRAFT may still move between the same owner’s businesses', async () => {
+    const draft = uuid(22);
+    await db.exec(`INSERT INTO documents (id,business_id,type,number,client_name,status)
+      VALUES ('${draft}','${biz}','receipt',62,'Synthetic','draft')`);
+    await asRole('authenticated', () => db.exec(`UPDATE documents SET business_id='${uuid(20)}' WHERE id='${draft}'`));
+    assert.equal((await rows(`SELECT business_id FROM documents WHERE id='${draft}'`))[0].business_id, uuid(20));
+    // Leave the account-wipe check below a single business to wipe: the draft
+    // is deletable, and the now-empty second business goes with it.
+    await db.exec(`DELETE FROM documents WHERE id='${draft}'; DELETE FROM businesses WHERE id='${uuid(20)}'`);
+  });
+  await check('due_date on an issued document is still frozen (live body kept it)', () =>
+    asRole('authenticated', () => assert.rejects(
+      db.exec(`UPDATE documents SET due_date='2030-01-01' WHERE id='${uuid(21)}'`),
+      /immutable: field due_date cannot be changed/)));
   await check('account wipe works: service_role deletes documents explicitly, then the business', async () => {
     // Mirrors /api/delete-account and /api/danger/delete-all, which delete from
     // documents EXPLICITLY under service_role before touching businesses.
