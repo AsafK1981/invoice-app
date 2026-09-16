@@ -23,11 +23,12 @@ import {
   type RecurringTemplate,
 } from "@/lib/recurring-store";
 import { useConfirm } from "@/components/ui/confirm-dialog";
-import { useClients } from "@/lib/client-store";
+import { freshClients, useClients } from "@/lib/client-store";
 import { useBusiness } from "@/lib/business-store";
 import { createDocument } from "@/lib/document-store";
 import { getVatRate, computeAmounts, canIssueTaxInvoices, round2 } from "@/lib/vat";
 import { ilsEquivalents } from "@/lib/exchange-rate";
+import { oneClickDueDate } from "@/lib/payment-terms";
 import { todayInIsrael } from "@/lib/date";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { DOCUMENT_TYPE_LABELS, type InvoiceDocument } from "@/lib/types";
@@ -70,14 +71,20 @@ export default function RecurringPage() {
       const isPaidOnIssue =
         template.documentType === "receipt" ||
         template.documentType === "tax_invoice_receipt";
+      const date = todayInIsrael();
 
       const draft: Omit<InvoiceDocument, "number"> = {
         id: crypto.randomUUID(),
         type: template.documentType,
-        date: todayInIsrael(),
+        date,
         clientId: template.clientId,
         clientName: template.clientName,
         subject: template.subject,
+        // The client's agreed terms only; no terms, no date (payment-terms.ts).
+        dueDate: oneClickDueDate(
+          { type: template.documentType, date, clientId: template.clientId, clientName: template.clientName },
+          await freshClients(),
+        ),
         status: isPaidOnIssue ? "paid" : "sent",
         items: template.items.map((i) => {
           const netUnitPrice = round2(i.unitPrice * netUnitPriceFactor);

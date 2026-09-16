@@ -106,6 +106,8 @@ export function ReceiptView({
         number={doc.number}
         date={doc.date}
         dueDate={doc.dueDate}
+        // A stored document: the choice frozen on the row, never today's design.
+        dueDateLine={{ from: "document", hidden: doc.dueDateHidden === true }}
         subject={doc.subject}
         items={doc.items}
         subtotal={doc.subtotal}

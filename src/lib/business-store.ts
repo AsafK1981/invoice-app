@@ -64,6 +64,8 @@ export function useBusiness() {
             // Opt-out, not opt-in: the assisted pass only notifies the owner,
             // so anything but an explicit false is "on".
             dunningWhatsappEnabled: data.dunning_whatsapp_enabled !== false,
+            // Opt-in: this one emails the client, so only an explicit true is "on".
+            dunningPreDueEnabled: data.dunning_pre_due_enabled === true,
             monthlyReminderEnabled: data.monthly_reminder_enabled ?? false,
             monthlyReminderDays: Array.isArray(data.monthly_reminder_days)
               ? data.monthly_reminder_days
@@ -240,14 +242,21 @@ export async function saveDocumentDesign(
   await updateBusinessColumns(businessId, { document_design: normalizeDocumentDesign(design) });
 }
 
-/** Persist only the automatic client payment-reminder settings (email pass). */
+/**
+ * Persist only the automatic client payment-reminder settings (email pass).
+ * `preDueEnabled` is written only when given, so a caller that does not know
+ * about the pre-due switch can never reset it.
+ */
 export async function saveDunningSettings(
   businessId: string,
-  settings: { enabled: boolean; fromName?: string },
+  settings: { enabled: boolean; fromName?: string; preDueEnabled?: boolean },
 ): Promise<void> {
   await updateBusinessColumns(businessId, {
     dunning_enabled: settings.enabled,
     dunning_from_name: settings.fromName?.trim() || null,
+    ...(settings.preDueEnabled === undefined
+      ? {}
+      : { dunning_pre_due_enabled: settings.preDueEnabled }),
   });
 }
 

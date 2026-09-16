@@ -11,9 +11,11 @@ import {
   Stamp,
   Pencil,
   AlertCircle,
+  MessageCircle,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { formatIsraelDateTime } from "@/lib/date";
+import { dunningLogLabel } from "@/lib/dunning-log-label";
 import type { InvoiceDocument } from "@/lib/types";
 
 interface Props {
@@ -62,7 +64,7 @@ const ACTION_TO_EVENT: Record<
 
 export function DocumentTimeline({ document: doc }: Props) {
   const [auditEntries, setAuditEntries] = useState<Array<{ action: string; created_at: string; payload: Record<string, unknown> | null }>>([]);
-  const [dunningEntries, setDunningEntries] = useState<Array<{ day_bucket: number; sent_at: string; sent_to: string; success: boolean }>>([]);
+  const [dunningEntries, setDunningEntries] = useState<Array<{ day_bucket: number; sent_at: string; sent_to: string; success: boolean; channel: string | null }>>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -75,7 +77,7 @@ export function DocumentTimeline({ document: doc }: Props) {
           .order("created_at", { ascending: true }),
         supabase
           .from("dunning_log")
-          .select("day_bucket, sent_at, sent_to, success")
+          .select("day_bucket, sent_at, sent_to, success, channel")
           .eq("document_id", doc.id)
           .order("sent_at", { ascending: true }),
       ]);
@@ -166,14 +168,13 @@ export function DocumentTimeline({ document: doc }: Props) {
     }
 
     for (const d of dunningEntries) {
+      const label = dunningLogLabel(d);
       out.push({
         at: d.sent_at,
-        title: d.success
-          ? `נשלחה תזכורת תשלום (יום ${d.day_bucket})`
-          : `כשל בשליחת תזכורת (יום ${d.day_bucket})`,
+        title: label.title,
         body: `אל: ${d.sent_to}`,
-        icon: Mail,
-        color: d.success ? "amber" : "rose",
+        icon: label.kind === "whatsapp" ? MessageCircle : Mail,
+        color: label.kind === "whatsapp" ? "emerald" : label.kind === "email" ? "amber" : "rose",
       });
     }
 

@@ -5,6 +5,7 @@ import {
   daysToPayFor,
   dueDateFor,
   isPaymentTerms,
+  oneClickDueDate,
   STATUTORY_DEFAULT_TERMS,
   type PaymentTerms,
 } from "@/lib/payment-terms";
@@ -125,5 +126,59 @@ describe("daysToPayFor", () => {
     expect(daysToPayFor("2026-03-01", "eom_30")).toBe(60);
     expect(daysToPayFor("2026-03-31", "eom_30")).toBe(30);
     expect(daysToPayFor("2026-03-31", "eom")).toBe(0);
+  });
+});
+
+describe("oneClickDueDate (issuing without the editor)", () => {
+  const clients = [
+    { id: "c-terms", name: "לקוח עם תנאים", taxId: "515555555", paymentTerms: "eom_30" as const },
+    { id: "c-none", name: "לקוח בלי תנאים" },
+  ];
+  const doc = (over: Partial<Parameters<typeof oneClickDueDate>[0]>) => ({
+    type: "tax_invoice" as const,
+    date: "2026-03-10",
+    clientId: "c-terms",
+    clientName: "לקוח עם תנאים",
+    ...over,
+  });
+
+  it("dates a tax invoice and a pro forma by the client's agreed terms", () => {
+    expect(oneClickDueDate(doc({}), clients)).toBe("2026-04-30");
+    expect(oneClickDueDate(doc({ type: "proforma" }), clients)).toBe("2026-04-30");
+  });
+
+  it("never dates a type that may not state one", () => {
+    for (const type of ["receipt", "tax_invoice_receipt", "quote", "credit_note"] as const) {
+      expect(oneClickDueDate(doc({ type }), clients)).toBeUndefined();
+    }
+  });
+
+  it("leaves it empty without agreed terms - never the statutory שוטף + 45", () => {
+    expect(oneClickDueDate(doc({ clientId: "c-none", clientName: "לקוח בלי תנאים" }), clients)).toBeUndefined();
+    expect(oneClickDueDate(doc({ clientId: "", clientName: "לקוח חד פעמי" }), clients)).toBeUndefined();
+  });
+
+  it("leaves it empty for a linked client that no longer exists", () => {
+    expect(oneClickDueDate(doc({ clientId: "c-deleted" }), clients)).toBeUndefined();
+  });
+
+  it("resolves an unlinked document by the app-wide identity rule", () => {
+    expect(oneClickDueDate(doc({ clientId: "" }), clients)).toBe("2026-04-30");
+    expect(
+      oneClickDueDate(doc({ clientId: "", clientName: "שם אחר", clientTaxId: "515555555" }), clients),
+    ).toBe("2026-04-30");
+  });
+
+  it("an explicit link wins over a name match", () => {
+    expect(oneClickDueDate(doc({ clientId: "c-none" }), clients)).toBeUndefined();
+  });
+
+  it("an ambiguous unlinked name is attributed to nobody", () => {
+    const twins = [...clients, { id: "c-twin", name: "לקוח עם תנאים", paymentTerms: "net_15" as const }];
+    expect(oneClickDueDate(doc({ clientId: "" }), twins)).toBeUndefined();
+  });
+
+  it("does not count from a malformed document date", () => {
+    expect(oneClickDueDate(doc({ date: "2026-3-1" }), clients)).toBeUndefined();
   });
 });

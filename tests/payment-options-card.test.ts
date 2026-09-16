@@ -35,7 +35,7 @@ describe("recipient payment instructions", () => {
     const body = renderToStaticMarkup(createElement(DocumentBody, {
       business: biz, client: null, documentType: "proforma", number: 1,
       date: "2026-09-08", items: [], subtotal: total, vat: 0, vatRate: 0,
-      total, currency, language: "en",
+      total, currency, language: "en", dueDateLine: { from: "document", hidden: false },
     }));
     const isolated = `\u2066${expected}\u2069`;
     expect(card).toContain(isolated);

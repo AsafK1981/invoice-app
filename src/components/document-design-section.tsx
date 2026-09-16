@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Check, RotateCcw } from "lucide-react";
 import { useBusiness, saveBusinessLogo, saveDocumentDesign } from "@/lib/business-store";
-import { getVatRate, calculateVat, round2 } from "@/lib/vat";
+import { getVatRate, calculateVat, canIssueTaxInvoices, round2 } from "@/lib/vat";
+import { dueDateFor } from "@/lib/payment-terms";
 import {
   DOCUMENT_TEMPLATES,
   ACCENT_HEX,
@@ -143,8 +144,19 @@ export function DocumentDesignSection() {
     setDraft((d) => ({ ...d, logoPosition }));
   }
 
+  // Absent means printed; only an explicit false is stored (document-themes.ts).
+  function setShowDueDate(show: boolean) {
+    setDraft((d) => {
+      const { showDueDate: _dropped, ...rest } = d;
+      void _dropped;
+      return show ? rest : { ...rest, showDueDate: false };
+    });
+  }
+
   function resetToDefault() {
-    setDraft(DEFAULT_DESIGN);
+    // The due-date line is a content choice, not part of the look, so the
+    // "original design" reset keeps it.
+    setDraft((d) => (d.showDueDate === false ? { ...DEFAULT_DESIGN, showDueDate: false } : DEFAULT_DESIGN));
   }
 
   async function handleSave() {
@@ -168,6 +180,10 @@ export function DocumentDesignSection() {
   const vatRate = getVatRate(business);
   const vat = vatRate > 0 ? calculateVat(SAMPLE_SUBTOTAL, vatRate) : 0;
   const previewBusiness = { ...business, logoUrl: draftLogo, documentDesign: draft };
+  // A type that can state "לתשלום עד", so the toggle below shows on the
+  // preview: a tax invoice where the business may issue one, else a pro forma.
+  const previewType = canIssueTaxInvoices(business) ? "tax_invoice" : "proforma";
+  const previewDate = new Date().toISOString().slice(0, 10);
   // The font swatches render the user's OWN business name (the text the
   // handwriting fonts actually apply to), never a hardcoded person's name.
   // Before the user has filled in a name, fall back to a generic label.
@@ -393,6 +409,24 @@ export function DocumentDesignSection() {
           })}
         </div>
       </div>
+
+      {/* ── "לתשלום עד" line ── */}
+      <label className="flex items-start gap-3 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={draft.showDueDate !== false}
+          onChange={(e) => setShowDueDate(e.target.checked)}
+          className="w-5 h-5 mt-0.5 rounded text-orange-500 focus:ring-orange-500"
+        />
+        <span className="min-w-0">
+          <span className="block text-sm font-medium text-stone-900">
+            הצגת &quot;לתשלום עד&quot; על המסמך
+          </span>
+          <span className="block text-xs text-stone-600 mt-1 leading-relaxed">
+            כשהאפשרות כבויה התאריך לא יודפס על מסמכים חדשים, אבל ימשיך לשמש לתחזית התזרים, לדוח החובות ולתזכורות. מסמכים שכבר הופקו נשארים בדיוק כפי שהופקו.
+          </span>
+        </span>
+      </label>
     </div>
   );
 
@@ -401,8 +435,9 @@ export function DocumentDesignSection() {
       <DocumentPreview
         business={previewBusiness}
         client={SAMPLE_CLIENT}
-        documentType="tax_invoice_receipt"
-        date={new Date().toISOString().slice(0, 10)}
+        documentType={previewType}
+        date={previewDate}
+        dueDate={dueDateFor(previewDate, "eom_30")}
         subject="ליווי עסקי - רבעון נוכחי"
         items={SAMPLE_ITEMS}
         subtotal={SAMPLE_SUBTOTAL}

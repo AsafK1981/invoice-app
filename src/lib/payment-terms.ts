@@ -16,6 +16,8 @@
 
 import { addDays, daysInclusive } from "./report-period";
 import { singleMonthRange } from "./ita/vat-periods";
+import { allowsDueDate, type Client, type InvoiceDocument } from "./types";
+import { resolveDocumentClientId } from "./client-picker";
 
 export type PaymentTerms =
   | "immediate"   // מיידי
@@ -129,6 +131,26 @@ export function resolveEditorDueDate(input: {
     return { dueDate: dueDateFor(issueDate, STATUTORY_DEFAULT_TERMS), source };
   }
   return { dueDate: "", source: null };
+}
+
+/**
+ * "לתשלום עד" for a document issued WITHOUT the editor (the recurring page,
+ * an approved proposal card). Only a type that may state one, and only when
+ * the document's client - resolved by the app-wide identity rule, so an
+ * unlinked document naming a saved client counts - has agreed terms.
+ *
+ * No agreed terms means no date. The statutory שוטף + 45 is never applied
+ * here: in the editor it is a suggestion a person accepts, and a one-click
+ * issue has nobody to accept it.
+ */
+export function oneClickDueDate(
+  doc: Pick<InvoiceDocument, "type" | "date" | "clientId" | "clientName" | "clientTaxId">,
+  clients: Pick<Client, "id" | "name" | "taxId" | "paymentTerms">[],
+): string | undefined {
+  if (!allowsDueDate(doc.type) || !ISO_DATE.test(doc.date)) return undefined;
+  const clientId = resolveDocumentClientId(doc, clients);
+  const terms = clientId ? clients.find((c) => c.id === clientId)?.paymentTerms : undefined;
+  return isPaymentTerms(terms) ? dueDateFor(doc.date, terms) : undefined;
 }
 
 /** Whole days from the issue date to the expected payment date. */

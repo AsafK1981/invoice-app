@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   normalizeDocumentDesign,
+  printsDueDate,
   designToCssVars,
   suggestTemplateForBusinessType,
   DOCUMENT_TEMPLATES,
@@ -363,5 +364,34 @@ describe("ACCENT_HEX / DOCUMENT_TEMPLATES data integrity", () => {
   it("template ids are unique", () => {
     const ids = DOCUMENT_TEMPLATES.map((t) => t.id);
     expect(new Set(ids).size).toBe(ids.length);
+  });
+});
+
+describe("showDueDate (the printed \"לתשלום עד\" line)", () => {
+  it("keeps only a real boolean false", () => {
+    expect(normalizeDocumentDesign({ showDueDate: false })?.showDueDate).toBe(false);
+  });
+
+  it.each([true, "false", 0, null, "", {}])("treats %j as absent, not undefined", (value) => {
+    const d = normalizeDocumentDesign({ showDueDate: value });
+    expect(d).not.toHaveProperty("showDueDate");
+  });
+
+  it("is absent when the key is missing, so existing designs round-trip unchanged", () => {
+    expect(normalizeDocumentDesign({})).not.toHaveProperty("showDueDate");
+  });
+
+  it("survives a save and a reload (normalize -> JSON -> normalize)", () => {
+    const saved = normalizeDocumentDesign({ template: "general", showDueDate: false });
+    const reloaded = normalizeDocumentDesign(JSON.parse(JSON.stringify(saved)));
+    expect(reloaded).toEqual(saved);
+    expect(reloaded?.showDueDate).toBe(false);
+  });
+
+  it("printsDueDate hides only for false", () => {
+    expect(printsDueDate({ showDueDate: false })).toBe(false);
+    for (const raw of [null, undefined, {}, { showDueDate: true }, { showDueDate: "false" }, { showDueDate: 0 }, "junk"]) {
+      expect(printsDueDate(raw)).toBe(true);
+    }
   });
 });

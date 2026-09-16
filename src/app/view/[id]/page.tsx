@@ -313,6 +313,7 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
           // "לתשלום עד": the customer's copy must state it exactly as the
           // owner's does. NULL (or a pre-migration row) prints nothing.
           dueDate: docRow.due_date || undefined,
+          dueDateHidden: docRow.due_date_hidden === true,
         });
 
         if (data.business) {

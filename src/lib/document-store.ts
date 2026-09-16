@@ -69,6 +69,7 @@ export function mapDocRow(row: Record<string, unknown>, items: DocumentItem[]): 
     zeroRated: Boolean(row.zero_rated),
     language: row.language === "en" ? "en" : "he",
     dueDate: (row.due_date as string) || undefined,
+    dueDateHidden: row.due_date_hidden === true,
   };
 }
 

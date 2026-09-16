@@ -88,6 +88,7 @@ import {
   allowsDueDate,
 } from "@/lib/types";
 import { DocumentPreview, type PreviewClient } from "./document-preview";
+import { printsDueDate } from "@/lib/document-themes";
 import { FormField } from "./ui/form-field";
 import { BankSelect } from "./ui/bank-select";
 import { NumberInput } from "./number-input";
@@ -2432,6 +2433,9 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                   <p className="text-xs text-stone-600 mt-1">
                     לפי {PAYMENT_TERMS_LABELS[STATUTORY_DEFAULT_TERMS]}
                   </p>
+                )}
+                {!printsDueDate(business.documentDesign) && (
+                  <p className="text-xs text-stone-600 mt-1">לא יודפס על המסמך (לפי הגדרות העיצוב)</p>
                 )}
               </FormField>
             </div>

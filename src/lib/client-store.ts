@@ -76,6 +76,18 @@ export function useClients() {
   return { items: snapshot.data, ready: snapshot.ready, error: snapshot.error, retry: retryClients };
 }
 
+/**
+ * The client list a write may decide on, always read fresh. A one-click issue
+ * freezes a due date onto a document that can never change, so the shared
+ * snapshot is not good enough: a failed refetch keeps `ready: true` next to
+ * the previous rows (shared-store.ts), and another tab may have changed a
+ * client's terms. fetchClients throws on failure, which aborts the issue
+ * before anything is written.
+ */
+export async function freshClients(): Promise<Client[]> {
+  return (await fetchClients()) ?? [];
+}
+
 function retryClients() {
   void clientsStore.refetch();
 }

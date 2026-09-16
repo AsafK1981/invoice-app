@@ -6,8 +6,8 @@ import { netAfterWithholding } from "@/lib/withholding";
 import { Ltr } from "@/components/ui/ltr";
 import { CANONICAL_HOST, CANONICAL_ORIGIN } from "@/lib/public-url";
 import { docStrings, statutoryMark, type DocLang, type DocStrings } from "@/lib/document-strings";
+import { printsDueDateLine } from "@/lib/due-date-line";
 import {
-  allowsDueDate,
   type Business,
   type DocumentItem,
   type DocumentType,
@@ -76,6 +76,14 @@ interface Props {
    * no placeholder, no empty line.
    */
   dueDate?: string;
+  /**
+   * Who decides whether that line prints. Required, so every caller says
+   * which case it is: a sheet rendered from a stored documents row passes
+   * `{ from: "document", hidden: doc.dueDateHidden }` (frozen at insert, never
+   * the business's current design); a preview of a document not issued yet
+   * passes `{ from: "business-design" }`. See src/lib/due-date-line.ts.
+   */
+  dueDateLine: { from: "document"; hidden: boolean } | { from: "business-design" };
   subject?: string;
   items: DocumentItem[];
   subtotal: number;
@@ -171,6 +179,7 @@ export function DocumentBody({
   number,
   date,
   dueDate,
+  dueDateLine,
   subject,
   items,
   subtotal,
@@ -209,7 +218,17 @@ export function DocumentBody({
 
   const numberStr = number != null ? String(number).padStart(4, "0") : s.autoNumber;
   const dateStr = date ? formatDate(date, language) : "-";
-  const dueDateStr = dueDate && allowsDueDate(documentType) ? formatDate(dueDate, language) : "";
+  // Hiding the line never touches the date itself, which still drives the
+  // forecast, aging and reminders.
+  const printsDue = printsDueDateLine({
+    documentType,
+    dueDate,
+    source:
+      dueDateLine.from === "document"
+        ? dueDateLine
+        : { from: "business-design", design: business.documentDesign },
+  });
+  const dueDateStr = printsDue && dueDate ? formatDate(dueDate, language) : "";
   const businessName = business.name || (placeholders ? "-" : "");
   const showItemsEmptyState =
     placeholders && (items.length === 0 || items.every((i) => !i.description));

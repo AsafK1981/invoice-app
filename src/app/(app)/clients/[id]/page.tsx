@@ -24,13 +24,19 @@ import { documentsForClient } from "@/lib/client-picker";
 import { useDocuments } from "@/lib/document-store";
 import { computeClientAccount, isOpenReceivable } from "@/lib/aging";
 import { StoreLoadError, StoreRefreshBanner } from "@/components/store-load-error";
+import { ClientFormModal } from "@/components/client-form-modal";
 import { DocumentsTable } from "@/components/documents-table";
 import { formatCurrencyWhole, formatDate } from "@/lib/format";
+import type { Client } from "@/lib/types";
 
 export default function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { items: clients, ready: clientsReady, error: clientsError, retry: retryClients } = useClients();
   const { documents, ready: docsReady, error: docsError, retry: retryDocs } = useDocuments();
+  // A snapshot taken when the modal opens, as the clients list does: the live
+  // row changes identity when the save refreshes the store, and the modal
+  // would reset its "saved" state mid-animation.
+  const [editing, setEditing] = useState<Client | null>(null);
 
   const client = clients.find((c) => c.id === id) ?? null;
 
@@ -100,13 +106,14 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
             <BookOpen className="w-4 h-4 text-emerald-600" />
             כרטסת
           </Link>
-          <Link
-            href={`/clients?edit=${client.id}`}
+          <button
+            type="button"
+            onClick={() => setEditing(client)}
             className="inline-flex items-center gap-2 bg-white border border-stone-200 text-stone-800 px-4 py-2 rounded-xl text-sm font-semibold hover:bg-stone-50"
           >
             <Pencil className="w-4 h-4" />
             ערוך פרטים
-          </Link>
+          </button>
           <Link
             href={`/documents/new?clientId=${client.id}`}
             className="inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-orange-700 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:shadow-md hover:shadow-orange-200"
@@ -245,6 +252,8 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
           <DocumentsTable documents={docs} />
         )}
       </div>
+
+      <ClientFormModal open={editing !== null} onClose={() => setEditing(null)} client={editing} />
     </div>
   );
 }

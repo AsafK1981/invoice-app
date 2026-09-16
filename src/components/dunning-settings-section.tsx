@@ -8,13 +8,16 @@ import { useToast } from "@/components/ui/toast";
 interface Draft {
   enabled: boolean;
   fromName: string;
+  /** Friendly email before the due date. Kept while `enabled` is off, so
+   *  turning the email reminders back on restores the owner's choice. */
+  preDue: boolean;
 }
 
 export function DunningSettingsSection() {
   const { business, ready, refetch } = useBusiness();
   const showToast = useToast();
 
-  const [draft, setDraft] = useState<Draft>({ enabled: false, fromName: "" });
+  const [draft, setDraft] = useState<Draft>({ enabled: false, fromName: "", preDue: false });
   const [baseline, setBaseline] = useState<Draft>(draft);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -30,10 +33,11 @@ export function DunningSettingsSection() {
     const loaded: Draft = {
       enabled: business.dunningEnabled ?? false,
       fromName: business.dunningFromName ?? "",
+      preDue: business.dunningPreDueEnabled === true,
     };
     setDraft(loaded);
     setBaseline(loaded);
-  }, [ready, business.dunningEnabled, business.dunningFromName]);
+  }, [ready, business.dunningEnabled, business.dunningFromName, business.dunningPreDueEnabled]);
 
   useEffect(() => {
     if (!ready) return;
@@ -58,7 +62,10 @@ export function DunningSettingsSection() {
     }
   }
 
-  const dirty = draft.enabled !== baseline.enabled || draft.fromName !== baseline.fromName;
+  const dirty =
+    draft.enabled !== baseline.enabled ||
+    draft.fromName !== baseline.fromName ||
+    draft.preDue !== baseline.preDue;
 
   async function handleSave() {
     setErr(null);
@@ -67,6 +74,7 @@ export function DunningSettingsSection() {
       await saveDunningSettings(business.id, {
         enabled: draft.enabled,
         fromName: draft.fromName,
+        preDueEnabled: draft.preDue,
       });
       await refetch();
       setBaseline(draft);
@@ -130,6 +138,26 @@ export function DunningSettingsSection() {
             </p>
           </div>
         )}
+
+        <label
+          className={`flex items-start gap-3 ${draft.enabled ? "cursor-pointer" : "cursor-not-allowed opacity-60"}`}
+        >
+          <input
+            type="checkbox"
+            checked={draft.preDue}
+            disabled={!draft.enabled}
+            onChange={(e) => setDraft((d) => ({ ...d, preDue: e.target.checked }))}
+            className="w-5 h-5 mt-0.5 rounded text-orange-500 focus:ring-orange-500 disabled:opacity-50"
+          />
+          <span className="min-w-0">
+            <span className="block text-sm font-medium text-stone-900">
+              תזכורת ידידותית 5 ימים לפני מועד התשלום
+            </span>
+            <span className="block text-xs text-stone-600 mt-1 leading-relaxed">
+              נשלחת ללקוח במייל רק למסמכים שצוין עליהם מועד תשלום, ורק כשתזכורות המייל פעילות.
+            </span>
+          </span>
+        </label>
       </div>
 
       <div className="mt-5 pt-4 border-t border-stone-100">

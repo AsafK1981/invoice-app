@@ -155,6 +155,9 @@ export function DocumentPreview(props: Props) {
       number={props.number ?? null}
       date={props.date}
       dueDate={props.dueDate}
+      // Only ever a document not issued yet (editor, design page), so the
+      // business's current design decides, as the database will at insert.
+      dueDateLine={{ from: "business-design" }}
       subject={props.subject}
       items={props.items}
       subtotal={props.subtotal}

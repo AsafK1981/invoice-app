@@ -17,7 +17,8 @@ import { DOCUMENT_TYPE_LABELS, type Business, type DocumentItem, type DocumentTy
  * design loop, not for users. Query: ?t=<templateId> renders one template
  * only; ?layout=<LayoutKey> forces that structure on every template;
  * ?type=<DocumentType> renders that document type; ?due=YYYY-MM-DD sets the
- * "לתשלום עד" date (printed only on the types that may carry one).
+ * "לתשלום עד" date (printed only on the types that may carry one), and
+ * ?showdue=0 renders it with the owner's "hide the line" design setting.
  */
 
 const BIZ: Business = {
@@ -45,7 +46,7 @@ export const dynamic = "force-dynamic";
 export default async function DesignGalleryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ t?: string; layout?: string; fluid?: string; font?: string; accent?: string; pattern?: string; type?: string; due?: string }>;
+  searchParams: Promise<{ t?: string; layout?: string; fluid?: string; font?: string; accent?: string; pattern?: string; type?: string; due?: string; showdue?: string }>;
 }) {
   if (process.env.NODE_ENV === "production") notFound();
   const sp = await searchParams;
@@ -87,6 +88,7 @@ export default async function DesignGalleryPage({
           font: sp.font,
           accent: sp.accent,
           pattern: sp.pattern,
+          showDueDate: sp.showdue === "0" ? false : undefined,
         });
         const vars = designToCssVars(design);
         return (
@@ -111,7 +113,7 @@ export default async function DesignGalleryPage({
               data-logo-pos="right"
             >
               <DocumentBody
-                business={BIZ}
+                business={{ ...BIZ, documentDesign: design }}
                 client={{
                   name: "דנה כהן בע״מ",
                   taxId: "514236987",
@@ -121,6 +123,7 @@ export default async function DesignGalleryPage({
                 number={118}
                 date="2026-08-18"
                 dueDate={dueDate}
+                dueDateLine={{ from: "business-design" }}
                 subject="הופעה - אירוע חברה, יולי 2026"
                 items={ITEMS}
                 subtotal={SUBTOTAL}

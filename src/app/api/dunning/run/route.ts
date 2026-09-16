@@ -4,8 +4,13 @@ import nodemailer from "nodemailer";
 import { createClient } from "@supabase/supabase-js";
 import { createNotificationForBusiness } from "@/lib/notifications-server";
 import { CANONICAL_ORIGIN } from "@/lib/public-url";
-import { dunningEmailContent, type DunningEmailContent } from "@/lib/dunning-copy";
-import { RECEIVABLE_TYPES, planDunningEmails } from "@/lib/dunning-plan";
+import {
+  PRE_DUE_BUCKET,
+  dunningEmailContent,
+  preDueEmailContent,
+  type DunningEmailContent,
+} from "@/lib/dunning-copy";
+import { RECEIVABLE_TYPES, planDunningEmails, planPreDueEmails } from "@/lib/dunning-plan";
 import {
   WHATSAPP_ASSIST_CHANNEL,
   planAssistedReminders,
@@ -45,6 +50,8 @@ interface BusinessRow {
   name: string;
   dunning_enabled: boolean;
   dunning_whatsapp_enabled: boolean | null;
+  /** Friendly reminder before the due date; only acts with dunning_enabled. */
+  dunning_pre_due_enabled?: boolean | null;
   dunning_from_name: string | null;
   email: string | null;
   user_id: string;
@@ -146,7 +153,7 @@ export async function POST(req: NextRequest) {
   // so the query has to be an OR, not the old .eq on dunning_enabled.
   const { data: bizs } = await admin
     .from("businesses")
-    .select("id, name, dunning_enabled, dunning_whatsapp_enabled, dunning_from_name, email, user_id")
+    .select("id, name, dunning_enabled, dunning_whatsapp_enabled, dunning_pre_due_enabled, dunning_from_name, email, user_id")
     .or("dunning_enabled.eq.true,dunning_whatsapp_enabled.eq.true");
 
   if (!bizs || bizs.length === 0) {
@@ -280,20 +287,18 @@ export async function POST(req: NextRequest) {
       details.push({ doc: doc.id, bucket: stage, outcome: "no client email" });
     }
 
-    for (const { doc, stage: bucket, days, email: clientEmail } of emailPlan.queue) {
-      const fromName = biz.dunning_from_name || biz.name;
-      // Hebrew copy for every document. language='en' has no English
-      // collection wording yet; the amount is still in the document currency.
-      const content = dunningEmailContent({
-        stage: bucket,
-        docType: doc.type,
-        number: doc.number,
-        total: doc.total,
-        currency: doc.currency,
-        date: doc.date,
-        dueDate: doc.due_date,
-        days,
-      });
+    const fromName = biz.dunning_from_name || biz.name;
+
+    // One email, claimed in dunning_log before it is sent. Shared by the
+    // 3 / 14 / 30 stages and the friendly pre-due reminder (PRE_DUE_BUCKET),
+    // so both get exactly the same claim / release / confirm handling.
+    // Returns true only when the email went out.
+    const sendClaimedEmail = async (
+      doc: DocRow,
+      bucket: number,
+      clientEmail: string,
+      content: DunningEmailContent,
+    ): Promise<boolean> => {
       const viewUrl = `${APP_URL}/view/${doc.id}`;
       const html = buildHtml({ fromName, clientName: doc.client_name, content, viewUrl });
       const text = buildText({ fromName, clientName: doc.client_name, content, viewUrl });
@@ -322,7 +327,7 @@ export async function POST(req: NextRequest) {
         );
         errors++;
         details.push({ doc: doc.id, bucket, outcome: `error: dunning_log claim failed (${claimError.message})` });
-        continue;
+        return false;
       }
 
       try {
@@ -357,7 +362,7 @@ export async function POST(req: NextRequest) {
         }
         errors++;
         details.push({ doc: doc.id, bucket, outcome: `error: ${msg}` });
-        continue;
+        return false;
       }
 
       const { error: confirmError } = await admin
@@ -374,6 +379,26 @@ export async function POST(req: NextRequest) {
         );
       }
 
+      sent++;
+      details.push({ doc: doc.id, bucket, outcome: "sent" });
+      return true;
+    };
+
+    for (const { doc, stage: bucket, days, email: clientEmail } of emailPlan.queue) {
+      // Hebrew copy for every document. language='en' has no English
+      // collection wording yet; the amount is still in the document currency.
+      const content = dunningEmailContent({
+        stage: bucket,
+        docType: doc.type,
+        number: doc.number,
+        total: doc.total,
+        currency: doc.currency,
+        date: doc.date,
+        dueDate: doc.due_date,
+        days,
+      });
+      if (!(await sendClaimedEmail(doc, bucket, clientEmail, content))) continue;
+
       await createNotificationForBusiness({
         businessId: biz.id,
         kind: "dunning_sent",
@@ -382,8 +407,23 @@ export async function POST(req: NextRequest) {
         href: `/documents/${doc.id}`,
         documentId: doc.id,
       });
-      sent++;
-      details.push({ doc: doc.id, bucket, outcome: "sent" });
+    }
+
+    // Friendly reminder before the due date: opt-in on top of the email pass,
+    // email to the client only (no owner notification, no WhatsApp side).
+    // Independent of the stages above: its own bucket, its own dedupe.
+    if (emailPass && biz.dunning_pre_due_enabled === true) {
+      const preDue = planPreDueEmails(docs as DocRow[], emailByClient, existingLogs || []);
+      for (const { doc, email: clientEmail } of preDue) {
+        const content = preDueEmailContent({
+          docType: doc.type,
+          number: doc.number,
+          total: doc.total,
+          currency: doc.currency,
+          dueDate: doc.due_date,
+        });
+        await sendClaimedEmail(doc, PRE_DUE_BUCKET, clientEmail, content);
+      }
     }
 
     // Assisted pass: prepare, do not send. One notification per (document,

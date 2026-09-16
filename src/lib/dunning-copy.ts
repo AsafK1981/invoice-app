@@ -236,6 +236,88 @@ export interface DunningEmailContent {
   signoff: string;
 }
 
+/* ------------------------------------------------------------------ */
+/* the friendly reminder BEFORE the due date                           */
+/* ------------------------------------------------------------------ */
+
+/**
+ * `dunning_log.day_bucket` for the friendly reminder emailed before the due
+ * date. The 3 / 14 / 30 buckets are days late; this one is not a stage, and
+ * the table CHECK allows it since 20260916-dunning-pre-due.sql.
+ */
+export const PRE_DUE_BUCKET = -5;
+
+/** The reminder goes out when the due date is 1 to this many days away. */
+export const PRE_DUE_MAX_DAYS_BEFORE = 5;
+
+/** ...and only when the due date is at least this many days after issue, so
+ *  "payment is due soon" never lands a day or two after the invoice did. */
+export const PRE_DUE_MIN_TERM_DAYS = 7;
+
+export const PRE_DUE_SUBJECT = "תזכורת ידידותית: {doc} מספר {n}";
+
+export const PRE_DUE_TONE = {
+  intro: "רצינו להזכיר שמועד התשלום של {docFull} מספר {n} על סך {total} הוא ב-{dueDate}.",
+  cta: "כל פרטי התשלום נמצאים {inDoc}. אם כבר שילמתם, אפשר להתעלם מההודעה.",
+  signoff: "תודה רבה,",
+};
+
+/** Whole calendar days from `from` to `to`, both "YYYY-MM-DD", in UTC. */
+function calendarDaysBetween(from: string, to: string): number {
+  const [fy, fm, fd] = from.split("-").map(Number);
+  const [ty, tm, td] = to.split("-").map(Number);
+  return Math.floor((Date.UTC(ty, tm - 1, td) - Date.UTC(fy, fm - 1, fd)) / 86400000);
+}
+
+/**
+ * Days until the due date when today is a day for the friendly pre-due
+ * reminder, else null. Null for a document with no usable due date, a due
+ * date that is today, past, or more than PRE_DUE_MAX_DAYS_BEFORE days away,
+ * and a due date less than PRE_DUE_MIN_TERM_DAYS after the issue date. Same
+ * UTC calendar-day arithmetic as {@link daysPastDate}.
+ */
+export function preDueDaysUntil(
+  doc: { date: string; dueDate?: string | null },
+  now: Date = new Date(),
+): number | null {
+  const due = usableDueDate(doc.dueDate);
+  if (!due) return null;
+  const until = -daysPastDate(due, now);
+  if (!(until >= 1 && until <= PRE_DUE_MAX_DAYS_BEFORE)) return null;
+  const term = calendarDaysBetween(doc.date, due);
+  if (!(term >= PRE_DUE_MIN_TERM_DAYS)) return null;
+  return until;
+}
+
+/**
+ * The filled friendly pre-due email. Throws on a document without a usable
+ * due date: the caller must have checked {@link preDueDaysUntil} first, and a
+ * reminder naming no date must never be sent.
+ */
+export function preDueEmailContent(args: {
+  docType?: string | null;
+  number: number;
+  total: number;
+  currency?: string | null;
+  /** "לתשלום עד" as stored, "YYYY-MM-DD". */
+  dueDate: string | null | undefined;
+}): DunningEmailContent {
+  const dueDate = usableDueDate(args.dueDate);
+  if (!dueDate) throw new Error("preDueEmailContent needs a usable due date");
+  const vars = {
+    ...dunningDocVars(args.docType),
+    n: String(args.number),
+    total: formatDocTotal(args.total, args.currency),
+    dueDate: formatDate(dueDate),
+  };
+  return {
+    subject: fillDunningVars(PRE_DUE_SUBJECT, vars),
+    intro: fillDunningVars(PRE_DUE_TONE.intro, vars),
+    cta: fillDunningVars(PRE_DUE_TONE.cta, vars),
+    signoff: PRE_DUE_TONE.signoff,
+  };
+}
+
 /**
  * Everything wording-related in one stage's dunning email, already filled:
  * the noun matches the type, the total is in the document's own currency and

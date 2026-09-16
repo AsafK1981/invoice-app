@@ -71,6 +71,10 @@ export interface Business {
    *  own number with one tap, which is why it can default to on.
    *  Written only by saveDunningWhatsappEnabled(), never by saveBusiness(). */
   dunningWhatsappEnabled?: boolean;
+  /** Opt-in, default false: one friendly email to the client 1 to 5 days
+   *  before a document's own due date. Acts only while dunningEnabled is on.
+   *  Written by saveDunningSettings(), never by saveBusiness(). */
+  dunningPreDueEnabled?: boolean;
   /** When true, the hourly monthly-reminder cron may notify this business's
    *  owner a monthly nudge (open quotes/proformas, quiet retainer clients). */
   monthlyReminderEnabled?: boolean;
@@ -292,6 +296,12 @@ export interface InvoiceDocument {
   /** "לתשלום עד" - the agreed payment date stated on the document. Optional
    *  information, not a mandatory particular; NULL ⇒ nothing is printed. */
   dueDate?: string;
+  /**
+   * documents.due_date_hidden: whether THIS document prints its "לתשלום עד"
+   * line. Stamped by the database at insert from the business's design and
+   * frozen after issue; the app never sends it. See src/lib/due-date-line.ts.
+   */
+  dueDateHidden?: boolean;
   /**
    * Set when the document came in through a data import (another system's
    * numbers). The VAT report routes its data errors to support instead of

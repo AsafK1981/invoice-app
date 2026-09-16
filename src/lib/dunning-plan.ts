@@ -10,7 +10,13 @@
 //
 // Pure: no Supabase, no clock beyond the `today` argument.
 
-import { daysLate, dunningStageFor, type DunningStage } from "./dunning-copy";
+import {
+  PRE_DUE_BUCKET,
+  daysLate,
+  dunningStageFor,
+  preDueDaysUntil,
+  type DunningStage,
+} from "./dunning-copy";
 
 /** Only real receivables get chased. A quote is not money owed yet. */
 export const RECEIVABLE_TYPES = ["tax_invoice", "proforma"] as const;
@@ -109,4 +115,45 @@ export function planDunningEmails<D extends EmailPlanDoc>(
     queue.push({ doc, stage, days, email });
   }
   return { queue, skipped, noEmail };
+}
+
+export interface PreDueReminderPlan<D extends EmailPlanDoc> {
+  doc: D;
+  daysUntilDue: number;
+  email: string;
+}
+
+/**
+ * Decide which friendly pre-due emails today's run should send: open
+ * receivables whose due date is 1 to 5 days away (and at least 7 days after
+ * issue, see preDueDaysUntil), not already logged under PRE_DUE_BUCKET on the
+ * email channel, with a client email. Independent of the 3 / 14 / 30 plan:
+ * it reads only its own bucket and never changes what that plan decides.
+ *
+ * The caller runs it only when the business turned the setting on AND the
+ * email pass is active. A document without a client email is simply left
+ * out; the stage plan reports those once the document is actually late.
+ */
+export function planPreDueEmails<D extends EmailPlanDoc>(
+  docs: D[],
+  emailByClient: Map<string, string | null>,
+  logRows: EmailPlanLogRow[],
+  today: Date = new Date(),
+): PreDueReminderPlan<D>[] {
+  const seen = new Set(
+    logRows
+      .filter((l) => (l.channel ?? "email") === "email" && l.day_bucket === PRE_DUE_BUCKET)
+      .map((l) => l.document_id),
+  );
+  const out: PreDueReminderPlan<D>[] = [];
+  for (const doc of docs) {
+    if (!isOpenReceivable(doc)) continue;
+    if (seen.has(doc.id)) continue;
+    const daysUntilDue = preDueDaysUntil({ date: doc.date, dueDate: doc.due_date }, today);
+    if (daysUntilDue == null) continue;
+    const email = doc.client_id ? emailByClient.get(doc.client_id) : null;
+    if (!email) continue;
+    out.push({ doc, daysUntilDue, email });
+  }
+  return out;
 }

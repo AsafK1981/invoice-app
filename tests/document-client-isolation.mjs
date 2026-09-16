@@ -32,7 +32,8 @@ try {
     GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
     CREATE SCHEMA auth;
     CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS $$ SELECT '${owner}'::uuid $$;
-    ALTER TABLE businesses ADD COLUMN user_id uuid;
+    -- document_design: read by 20260916-document-due-date-hidden.sql's insert stamp.
+    ALTER TABLE businesses ADD COLUMN user_id uuid, ADD COLUMN document_design jsonb;
     ALTER TABLE documents
       ADD COLUMN currency text DEFAULT 'ILS', ADD COLUMN exchange_rate numeric DEFAULT 1,
       ADD COLUMN subtotal_ils numeric, ADD COLUMN vat_ils numeric, ADD COLUMN total_ils numeric,
@@ -67,6 +68,9 @@ try {
   // (rebuilt from pg_proc on 2026-09-16), so every guard check below runs
   // against what production actually has, not an older migration's copy.
   await db.exec(await read('scripts/migrations/20260916-freeze-document-business.sql'));
+  // ...and 20260916-document-due-date-hidden.sql rebuilt that body again (plus
+  // one guard), so it is the one loaded last now.
+  await db.exec(await read('scripts/migrations/20260916-document-due-date-hidden.sql'));
   await db.exec(`
     INSERT INTO businesses (id,name,tax_id,user_id) VALUES
       ('${biz}','Synthetic A','000','${owner}'), ('${foreignBiz}','Synthetic B','001','${uuid(10)}');
@@ -157,6 +161,10 @@ try {
     asRole('authenticated', () => assert.rejects(
       db.exec(`UPDATE documents SET language='en' WHERE id='${doc}'`),
       /immutable: field language cannot be changed/)));
+  await check('due_date_hidden on an issued document is frozen', () =>
+    asRole('authenticated', () => assert.rejects(
+      db.exec(`UPDATE documents SET due_date_hidden=true WHERE id='${doc}'`),
+      /immutable: field due_date_hidden cannot be changed/)));
   await check('client_id re-point on an issued document raises', async () => {
     await db.exec(`INSERT INTO clients (id,business_id,name) VALUES ('${uuid(8)}','${biz}','Synthetic other');
       INSERT INTO documents (id,business_id,client_id,type,number,client_name,status)

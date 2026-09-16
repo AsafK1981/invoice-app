@@ -14,12 +14,14 @@ import {
   type InvoiceProposal,
 } from "@/lib/proposal-store";
 import { useBusiness } from "@/lib/business-store";
+import { freshClients } from "@/lib/client-store";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { createDocument } from "@/lib/document-store";
 import { saveDraft, type EditorDraft } from "@/lib/draft-storage";
 import { DOC_TYPE_ROUTE } from "@/lib/draft-store";
 import { getVatRate, computeAmounts, round2 } from "@/lib/vat";
 import { ilsEquivalents } from "@/lib/exchange-rate";
+import { oneClickDueDate } from "@/lib/payment-terms";
 import { todayInIsrael } from "@/lib/date";
 import { formatCurrency } from "@/lib/format";
 import { DOCUMENT_TYPE_LABELS, type InvoiceDocument } from "@/lib/types";
@@ -103,14 +105,20 @@ function ProposalRow({ proposal }: { proposal: InvoiceProposal }) {
     );
     const isPaidOnIssue =
       source.documentType === "receipt" || source.documentType === "tax_invoice_receipt";
+    const date = todayInIsrael();
 
     const draft: Omit<InvoiceDocument, "number"> = {
       id: documentId,
       type: source.documentType,
-      date: todayInIsrael(),
+      date,
       clientId: source.clientId,
       clientName: source.clientName,
       subject: source.subject,
+      // The client's agreed terms only; no terms, no date (payment-terms.ts).
+      dueDate: oneClickDueDate(
+        { type: source.documentType, date, clientId: source.clientId, clientName: source.clientName },
+        await freshClients(),
+      ),
       notes: source.notes || undefined,
       status: isPaidOnIssue ? "paid" : "sent",
       items: source.items.map((i) => {

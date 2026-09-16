@@ -93,6 +93,15 @@ describe("column-scoped settings saves", () => {
     expect(state.calls[0].update).toEqual({ dunning_enabled: false, dunning_from_name: null });
   });
 
+  it("payment reminders write the pre-due switch only when it is given, even while email is off", async () => {
+    await saveDunningSettings("b1", { enabled: false, fromName: "x", preDueEnabled: true });
+    await saveDunningSettings("b1", { enabled: true, preDueEnabled: false });
+    expect(state.calls.map((c) => c.update)).toEqual([
+      { dunning_enabled: false, dunning_from_name: "x", dunning_pre_due_enabled: true },
+      { dunning_enabled: true, dunning_from_name: null, dunning_pre_due_enabled: false },
+    ]);
+  });
+
   it("monthly reminder writes only its four columns, sanitized, and never last_sent", async () => {
     await saveMonthlyReminderSettings("b1", { enabled: true, days: [15, 1, 1, 40], hour: 25, channels: [] });
     expect(state.calls[0].update).toEqual({

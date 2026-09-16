@@ -978,6 +978,15 @@ export interface DocumentDesign {
    * the picker has a home for it. Absent (not undefined) when unused.
    */
   brandColor?: string;
+  /**
+   * Whether "לתשלום עד" is printed on documents that state one. Printing it
+   * is optional by law (not a mandatory particular under סעיף 9(א) להוראות
+   * ניהול פנקסי חשבונות / תקנה 9א(א) לתקנות מע"מ). Absent (not undefined)
+   * means printed, today's behaviour; only `false` hides the line. Hiding
+   * never touches the stored date, which still drives the forecast, aging and
+   * reminders. The normalizer only ever emits `false`.
+   */
+  showDueDate?: boolean;
 }
 
 function isTemplateId(v: unknown): v is TemplateId {
@@ -1056,7 +1065,18 @@ export function normalizeDocumentDesign(raw: unknown): DocumentDesign | null {
   // Regex-gated, never verbatim: see the field's doc comment.
   const brandColor = normalizeBrandHex(r.brandColor);
   if (brandColor) design.brandColor = brandColor;
+  // Strict: only a real boolean false hides the line. "false", 0 or null are
+  // not an owner's choice, so they read as absent (printed).
+  if (r.showDueDate === false) design.showDueDate = false;
   return design;
+}
+
+/**
+ * Whether a sheet for this business prints its "לתשלום עד" line. Takes the
+ * raw, untrusted design value, so every renderer decides identically.
+ */
+export function printsDueDate(rawDesign: unknown): boolean {
+  return normalizeDocumentDesign(rawDesign)?.showDueDate !== false;
 }
 
 // ── The CSS boundary ─────────────────────────────────────────────────────
