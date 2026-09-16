@@ -179,7 +179,7 @@ export default function ObligationsPage() {
             חובות הגשה
           </h1>
           <p className="text-sm text-stone-700 mt-2 mr-14">
-            מה מגישים, מתי, איפה ואיך{ready ? `, מותאם ל${type === "company" ? "חברה" : filesVat(type) ? "עוסק מורשה" : "עוסק פטור"}` : ""}. לחצו על יום מסומן בלוח.
+            מי מגיש, מה, מתי, איפה ואיך{ready ? `, מותאם ל${type === "company" ? "חברה" : filesVat(type) ? "עוסק מורשה" : "עוסק פטור"}` : ""}. לחצו על יום מסומן בלוח.
           </p>
         </div>
         <button type="button" className="pgbtn pgbtn-quiet" aria-expanded={settingsOpen} onClick={() => setSettingsOpen((o) => !o)}>
@@ -404,8 +404,9 @@ function ObligationDetail({
           <span className="text-xs text-stone-700">בדיווח ותשלום באתר: עד {formatDate(occ.onlineDate)}</span>
         )}
       </div>
-      {info.appliesNote && <p className="mt-2 text-xs text-stone-600 leading-relaxed">{info.appliesNote}</p>}
       <dl className="mt-2 grid grid-cols-[3rem_minmax(0,1fr)] gap-x-2 gap-y-1.5 text-sm">
+        <dt className="font-bold text-stone-600">מי</dt>
+        <dd className="text-stone-800">{info.who}</dd>
         <dt className="font-bold text-stone-600">מה</dt>
         <dd className="text-stone-800">{info.what}</dd>
         <dt className="font-bold text-stone-600">מתי</dt>

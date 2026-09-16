@@ -149,6 +149,8 @@ export interface ObligationInfo {
   /** Two or three words for a calendar chip, where the full title would be cut. */
   short: string;
   cadenceText: string;
+  /** Who must do it: exempt dealer, authorized dealer, company. Always says where עוסק פטור stands. */
+  who: string;
   what: string;
   when: string;
   how: string;
@@ -158,8 +160,6 @@ export interface ObligationInfo {
   /** In-app report that prepares the figures, when one exists. */
   appHref?: string;
   appLabel?: string;
-  /** Who this applies to, shown when it is conditional. */
-  appliesNote?: string;
 }
 
 export const AUTHORITY_LABELS: Record<Authority, string> = {
@@ -175,6 +175,7 @@ export const OBLIGATIONS: Record<ObligationId, ObligationInfo> = {
     title: "דוח מע״מ תקופתי",
     short: "דוח מע״מ",
     cadenceText: "כל חודשיים, או כל חודש לעסק עם מחזור גבוה",
+    who: "עוסק מורשה וחברה. עוסק פטור לא מגיש דוח מע״מ תקופתי בכלל.",
     what: "שש ספרות: עסקאות חייבות ומס עסקאות, עסקאות פטורות או בשיעור אפס, מס תשומות ציוד, מס תשומות אחרות, והסכום לתשלום או להחזר.",
     when: "ב-15 בחודש שאחרי התקופה, ובדיווח ותשלום באתר עד ה-19. כשהמועד חל בסוף שבוע או בחג רשות המסים דוחה אותו, והתאריך כאן כבר כולל את הדחייה.",
     how: "נכנסים לשירות עם שם משתמש וסיסמה של האזור האישי ברשות המסים, או בכרטיס חכם, מקלידים את שש הספרות ומשלמים.",
@@ -189,6 +190,7 @@ export const OBLIGATIONS: Record<ObligationId, ObligationInfo> = {
     title: "דיווח מפורט למע״מ (PCN874)",
     short: "דיווח מפורט",
     cadenceText: "באותה תדירות של דוח המע״מ",
+    who: "רק עוסק מורשה או חברה שחייבים בדיווח מפורט. מ-2026 החובה חלה גם על עוסק יחיד עם מחזור שנתי מעל 500,000 ₪, בדקו מול רואה החשבון. עוסק פטור לא מגיש.",
     what: "קובץ עם פירוט החשבוניות של התקופה, מכירות ותשומות.",
     when: "ב-23 בחודש שאחרי התקופה, כולל הדחיות שרשות המסים קבעה.",
     how: "מורידים את קובץ PCN874 מהאפליקציה ומעלים אותו בשירות הדיווח המפורט.",
@@ -196,7 +198,6 @@ export const OBLIGATIONS: Record<ObligationId, ObligationInfo> = {
     whereUrl: "https://www.gov.il/he/service/detailed-vat-reporting",
     appHref: "/reports/vat",
     appLabel: "הורד את קובץ PCN874",
-    appliesNote: "רק לעסק שחייב בדיווח מפורט. מ-2026 החובה חלה גם על עוסק יחיד עם מחזור שנתי מעל 500,000 ₪. בדקו מול רואה החשבון.",
   },
   income_tax_advance: {
     id: "income_tax_advance",
@@ -204,6 +205,7 @@ export const OBLIGATIONS: Record<ObligationId, ObligationInfo> = {
     title: "מקדמות מס הכנסה",
     short: "מקדמות מס",
     cadenceText: "כל חודש או כל חודשיים, לפי פנקס המקדמות",
+    who: "כולם: עוסק פטור, עוסק מורשה וחברה. הפטור של עוסק פטור הוא ממע״מ, לא ממס הכנסה. מי שפקיד השומה עוד לא קבע לו מקדמות (למשל בשנה הראשונה) לא משלם עד שייקבעו.",
     what: "המחזור של התקופה לפני מע״מ, אחוז המקדמה מהפנקס, והסכום לתשלום אחרי קיזוז ניכוי במקור.",
     when: "ב-15 בחודש שאחרי התקופה, ובדיווח ותשלום באתר עד ה-19 בשעה 18:30. באותם מועדים שקבעה רשות המסים לדוחות המע״מ.",
     how: "בשירות התשלום המקוון של רשות המסים: מספר תיק, התקופה, המחזור והתשלום.",
@@ -218,12 +220,12 @@ export const OBLIGATIONS: Record<ObligationId, ObligationInfo> = {
     title: "דיווח ניכויים (טופס 102)",
     short: "ניכויים",
     cadenceText: "כל חודש",
+    who: "רק מי שמעסיק עובדים ומשלם להם שכר, בכל סוג עסק: עוסק פטור, עוסק מורשה או חברה. בלי עובדים אין מה להגיש.",
     what: "המשכורות ששולמו לעובדים והמס שנוכה מהן.",
     when: "ב-16 בחודש שאחרי, לפי המועדים שרשות המסים קבעה.",
     how: "בשירות הדיווח המקוון לניכויים של רשות המסים, בדרך כלל דרך תוכנת השכר או רואה החשבון.",
     whereLabel: "לוח מועדי הדיווח של רשות המסים",
     whereUrl: OFFICIAL_CALENDAR_URL,
-    appliesNote: "רק אם יש לך עובדים.",
   },
   exempt_declaration: {
     id: "exempt_declaration",
@@ -231,6 +233,7 @@ export const OBLIGATIONS: Record<ObligationId, ObligationInfo> = {
     title: "הצהרת עוסק פטור שנתית",
     short: "הצהרת פטור",
     cadenceText: "פעם בשנה",
+    who: "עוסק פטור בלבד. עוסק מורשה וחברה מדווחים על המחזור בדוחות המע״מ התקופתיים ולא מגישים הצהרה כזו.",
     what: "מספר אחד: מחזור העסקאות של השנה שהסתיימה.",
     when: "עד 31 בינואר, על השנה הקודמת. מועד שחל בשבת או בחג עובר ליום העסקים הבא.",
     how: "נכנסים לשירות הצהרת עוסק פטור עם שם המשתמש של האזור האישי ברשות המסים ומקלידים את המחזור.",
@@ -245,6 +248,7 @@ export const OBLIGATIONS: Record<ObligationId, ObligationInfo> = {
     title: "דוח שנתי למס הכנסה (1301)",
     short: "דוח שנתי",
     cadenceText: "פעם בשנה",
+    who: "כל עצמאי: עוסק פטור ועוסק מורשה. חברה מגישה במקום זה דוח 1214 ודוחות כספיים דרך רואה החשבון.",
     what: "כל ההכנסות וההוצאות של השנה, עם דוח רווח והפסד, זיכויים וניכויים.",
     when: "לפי החוק עד 30 באפריל שאחרי שנת המס. רשות המסים מפרסמת כמעט כל שנה דחייה: את הדוח לשנת 2025 היה אפשר להגיש באופן מקוון עד 30.6.2026.",
     how: "מילוי הדוח המקוון באזור האישי, או הגשה דרך רואה חשבון.",
@@ -259,6 +263,7 @@ export const OBLIGATIONS: Record<ObligationId, ObligationInfo> = {
     title: "מקדמות ביטוח לאומי",
     short: "ביטוח לאומי",
     cadenceText: "כל חודש",
+    who: "כל עצמאי: עוסק פטור ועוסק מורשה. בחברה בעלי החברה משלמים דרך תלוש השכר, לא כאן.",
     what: "המקדמה החודשית לביטוח לאומי ולביטוח בריאות, לפי ההכנסה שדיווחת.",
     when: "עד 15 בחודש על החודש הקודם. בהוראת קבע החיוב יורד ב-22 בחודש.",
     how: "הוראת קבע או תשלום באתר ביטוח לאומי. כשההכנסה משתנה, מעדכנים את המקדמות באזור האישי.",
@@ -271,12 +276,12 @@ export const OBLIGATIONS: Record<ObligationId, ObligationInfo> = {
     title: "הפקדה לפנסיה חובה לעצמאים",
     short: "פנסיה חובה",
     cadenceText: "פעם בשנה",
+    who: "כל עצמאי, עוסק פטור או עוסק מורשה, בגיל 21 עד 60 שנולד אחרי 1961 ופועל לפחות חצי שנה. בחברה ההפקדה נעשית דרך תלוש השכר.",
     what: "הפקדה לקופת פנסיה לפי ההכנסה של השנה.",
     when: "עד 31 בדצמבר של אותה שנה.",
     how: "הפקדה ישירה לקרן הפנסיה או דרך סוכן הביטוח.",
     whereLabel: "פנסיה חובה לעצמאים (כל זכות)",
     whereUrl: "https://www.kolzchut.org.il/he/%D7%A4%D7%A0%D7%A1%D7%99%D7%94_%D7%97%D7%95%D7%91%D7%94_%D7%9C%D7%A2%D7%A6%D7%9E%D7%90%D7%99%D7%9D",
-    appliesNote: "לעצמאים בני 21 עד 60 שנולדו אחרי 1961 ופועלים לפחות חצי שנה.",
   },
 };
 

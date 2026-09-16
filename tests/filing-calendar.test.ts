@@ -74,11 +74,17 @@ describe("which obligations apply", () => {
     expect(applicableObligations("exempt", { ...prefs, detailedReporter: true })).not.toContain("vat_detailed");
   });
 
-  it("every obligation has an https official link, all four explanations and no long dashes", () => {
+  it("every obligation has an https official link, all five explanations and no long dashes", () => {
     for (const o of Object.values(OBLIGATIONS)) {
       expect(o.whereUrl, o.id).toMatch(/^https:\/\//);
-      for (const field of [o.title, o.what, o.when, o.how, o.whereLabel]) expect(field.length, o.id).toBeGreaterThan(3);
-      expect(LONG_DASHES.test(`${o.title}${o.what}${o.when}${o.how}${o.appliesNote ?? ""}`), o.id).toBe(false);
+      for (const field of [o.title, o.who, o.what, o.when, o.how, o.whereLabel]) expect(field.length, o.id).toBeGreaterThan(3);
+      expect(LONG_DASHES.test(`${o.title}${o.who}${o.what}${o.when}${o.how}`), o.id).toBe(false);
+    }
+  });
+
+  it("every 'who' line says where an exempt dealer stands", () => {
+    for (const o of Object.values(OBLIGATIONS)) {
+      expect(o.who, o.id).toMatch(/עוסק פטור|כל עצמאי|כולם/);
     }
   });
 });
