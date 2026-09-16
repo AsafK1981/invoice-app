@@ -315,7 +315,7 @@ export async function createDocument(
 
 export async function deleteDocument(id: string) {
   // Snapshot the doc for audit context BEFORE deleting
-  const { data: snap } = await supabase
+  const { data: snap, error: snapError } = await supabase
     .from("documents")
     .select("type, number, client_name, client_id, status, emailed_at")
     .eq("id", id)
@@ -329,7 +329,18 @@ export async function deleteDocument(id: string) {
   // or not: reversing it is a credit note, never a delete. (The previous rule
   // keyed on emailed_at, which let an issued-but-unsent document be removed
   // and tore a hole in the numbering sequence.)
-  if (snap && snap.status !== "draft") {
+  //
+  // The gate FAILS CLOSED, like the one in updateDocumentNumber. It used to
+  // read `if (snap && ...)`, so a status we could not read skipped the legal
+  // check entirely and went on to attempt the DELETE - and an empty read
+  // proves nothing here, since RLS answers a request that lost its access
+  // token with zero rows and no error. Not knowing whether a document was
+  // issued is a reason to refuse to delete it.
+  if (snapError) throw new Error(snapError.message);
+  if (!snap) {
+    throw new Error("לא הצלחנו לקרוא את המסמך, ולכן לא מחקנו אותו. רענן את הדף ונסה שוב.");
+  }
+  if (snap.status !== "draft") {
     throw new Error(
       "מסמך שקיבל מספר אינו ניתן למחיקה. לביטולו סמן אותו כמבוטל, או הפק חשבונית זיכוי אם הוא כבר נמסר ללקוח",
     );
@@ -592,14 +603,26 @@ export async function updateDocumentNumber(id: string, newNumber: number) {
     throw new Error("יש להזין מספר שלם חיובי");
   }
   // Snapshot the prior number/type/status for the audit trail before mutating.
-  const { data: before } = await supabase
+  const { data: before, error: beforeError } = await supabase
     .from("documents")
     .select("type, number, status")
     .eq("id", id)
     .maybeSingle();
   // Immutability: an issued document's number is final (Israeli law). Only a
   // draft's number may be changed before it's issued.
-  if (before && before.status !== "draft") {
+  //
+  // This gate FAILS CLOSED. It used to read `if (before && ...)`, so a read
+  // that came back empty skipped the legal check altogether and went on to
+  // attempt the UPDATE - and under RLS an empty read proves nothing: a request
+  // that loses its access token is answered with zero rows and no error (see
+  // src/lib/session-guard.ts). The DB trigger enforce_document_immutability was
+  // the only thing left standing between that path and renumbering an issued
+  // document. Not knowing the status is a reason to refuse, not to proceed.
+  if (beforeError) throw new Error(beforeError.message);
+  if (!before) {
+    throw new Error("לא הצלחנו לקרוא את המסמך. רענן את הדף ונסה שוב.");
+  }
+  if (before.status !== "draft") {
     throw new Error(
       "לא ניתן לשנות מספר של מסמך שהופק. רק טיוטה ניתנת לעריכה.",
     );

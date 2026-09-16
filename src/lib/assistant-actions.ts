@@ -2,7 +2,7 @@ import { shekel } from "@/lib/format";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type Anthropic from "@anthropic-ai/sdk";
 import { randomUUID } from "node:crypto";
-import { normalizeName } from "@/lib/client-picker";
+import { nameMatchPattern, normalizeName } from "@/lib/client-picker";
 import { searchTerms } from "@/lib/ilike-search";
 import { todayInIsrael } from "@/lib/date";
 import { DOCUMENT_TYPE_LABELS, DOCUMENT_STATUS_LABELS } from "@/lib/types";
@@ -551,8 +551,19 @@ export async function runActionTool(
     const clientName = str(input.name, 200);
     if (!clientName) return { content: "חסר שם לקוח. שאל את המשתמש." };
     const wanted = normalizeName(clientName);
-    const { data: all } = await admin.from("clients").select("id, name").eq("business_id", businessId).limit(1000);
-    const dup = (all ?? []).find((c) => normalizeName(c.name as string) === wanted);
+    // Narrowed in the database (see nameMatchPattern) rather than by scanning
+    // the first 1000 clients: past that cap the check silently passed and the
+    // assistant created a duplicate. The error is checked for the same reason
+    // - "the lookup failed" must not read as "the name is free".
+    const { data: candidates, error: dupError } = await admin
+      .from("clients")
+      .select("id, name")
+      .eq("business_id", businessId)
+      .ilike("name", nameMatchPattern(clientName));
+    if (dupError) {
+      return { content: "לא הצלחתי לבדוק אם הלקוח כבר קיים, ולכן לא יצרתי אותו. נסה שוב." };
+    }
+    const dup = (candidates ?? []).find((c) => normalizeName(c.name as string) === wanted);
     if (dup) {
       return {
         content: JSON.stringify({
@@ -672,8 +683,18 @@ export async function runActionTool(
     if (!productName) return { content: "חסר שם מוצר. שאל את המשתמש." };
     if (price === undefined || price < 0) return { content: "חסר מחיר תקין. שאל את המשתמש." };
     const wanted = normalizeName(productName);
-    const { data: all } = await admin.from("products").select("id, name, price, unit").eq("business_id", businessId).limit(1000);
-    const dup = (all ?? []).find((p) => normalizeName(p.name as string) === wanted);
+    // Same as add_client above: narrowed in the database so the 1000-row cap
+    // cannot hide an existing product, and a failed lookup refuses instead of
+    // creating a duplicate.
+    const { data: candidates, error: dupError } = await admin
+      .from("products")
+      .select("id, name, price, unit")
+      .eq("business_id", businessId)
+      .ilike("name", nameMatchPattern(productName));
+    if (dupError) {
+      return { content: "לא הצלחתי לבדוק אם המוצר כבר קיים, ולכן לא יצרתי אותו. נסה שוב." };
+    }
+    const dup = (candidates ?? []).find((p) => normalizeName(p.name as string) === wanted);
     if (dup) {
       return {
         content: JSON.stringify({

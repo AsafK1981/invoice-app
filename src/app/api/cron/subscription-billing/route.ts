@@ -171,13 +171,26 @@ export async function GET(req: Request) {
     // If a successful charge for this exact period is already logged (a crash
     // between the charge-log write and the period advance), don't charge again,
     // just finish the advancement so the row leaves the due window.
-    const { data: existingLog } = await admin
+    const { data: existingLog, error: logError } = await admin
       .from("subscription_charge_log")
       .select("id, success")
       .eq("user_id", userId)
       .eq("period_start", periodStart)
       .eq("success", true)
       .maybeSingle();
+
+    // Fail CLOSED. This read is the only thing standing between a retry and a
+    // second charge on the same card for the same period, and the log row is
+    // written AFTER the money moves. Dropping the error turned "I could not
+    // check" into "nothing was charged", so one transient database blip during
+    // the nightly run would have taken the customer's money twice. Skipping a
+    // user for one night costs nothing: the row stays in the due window and
+    // the next run picks it up.
+    if (logError) {
+      skipped++;
+      details.push({ user: userId, outcome: `skipped: charge-log unreadable (${logError.message})` });
+      continue;
+    }
 
     if (existingLog) {
       await advancePeriod(admin, row, tier, interval, periodStart);

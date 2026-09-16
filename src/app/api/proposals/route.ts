@@ -213,7 +213,12 @@ export async function POST(req: NextRequest) {
   // matcher as the dashboard, so the two never disagree. When it matches, the
   // (business, source, period) row is recorded as resolved against that
   // document, and the caller gets a 409 it can tell apart from a rejection.
-  const { data: issuedRows } = await supabase
+  // The error is checked, not dropped. `(issuedRows || [])` turned a failed
+  // read into "nothing was issued this period", which is the one answer that
+  // makes the automation plant a card for work the owner has already invoiced.
+  // Refusing to create the proposal is the safe direction: it reappears on the
+  // next run, whereas a duplicate card invites a duplicate document.
+  const { data: issuedRows, error: issuedError } = await supabase
     .from("documents")
     .select(`${ISSUED_CANDIDATE_COLUMNS}, number`)
     .eq("business_id", businessId)
@@ -221,6 +226,12 @@ export async function POST(req: NextRequest) {
     .gte("date", periodStart(period))
     .order("date", { ascending: true })
     .limit(500);
+  if (issuedError) {
+    return NextResponse.json(
+      { error: "לא הצלחנו לבדוק אילו מסמכים כבר הופקו בתקופה הזו, ולכן לא נוצרה הצעה." },
+      { status: 503 },
+    );
+  }
   const issuedMatch = findIssuedMatch(
     { documentType, clientId: safeClientId, clientName, subject, total: parsed.total, period },
     ((issuedRows || []) as Record<string, unknown>[]).map(toIssuedCandidate),

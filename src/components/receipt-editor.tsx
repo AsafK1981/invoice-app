@@ -886,12 +886,39 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   useEffect(() => {
     if (!fromDocId) return;
     (async () => {
-      const { data: srcDoc } = await supabase
+      const { data: srcDoc, error: srcError } = await supabase
         .from("documents")
         .select("*")
         .eq("id", fromDocId)
         .maybeSingle();
-      if (!srcDoc) return;
+      // A read that failed is not a document that is missing. Silently
+      // prefilling nothing left the user staring at a blank convert form with
+      // no idea why; for a conversion it is also the wrong thing to do, since
+      // the blocks below (already converted / cancelled / draft) are decided
+      // from this very row.
+      if (srcError) {
+        if (isConvert) {
+          setConvertBlocked({
+            block: { kind: "load_failed" },
+            message: conversionBlockMessage({ kind: "load_failed" }),
+          });
+        }
+        return;
+      }
+      // A convert whose source genuinely is not there is blocked here, not
+      // silently ignored. Returning left the user on a blank editor with no
+      // explanation, and the refusal only surfaced later, at issue time
+      // (handleSubmit re-checks and raises the same not_found). Telling them
+      // up front costs nothing and the block already disables save.
+      if (!srcDoc) {
+        if (isConvert) {
+          setConvertBlocked({
+            block: { kind: "not_found" },
+            message: conversionBlockMessage({ kind: "not_found" }),
+          });
+        }
+        return;
+      }
       // Sanity: srcDoc must belong to the currently-active business.
       // RLS already prevents cross-tenant reads, but if the user
       // switched business mid-flow (between clicking "Convert" and the
@@ -913,11 +940,26 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
         }
       }
 
-      const { data: srcItems } = await supabase
+      const { data: srcItems, error: itemsError } = await supabase
         .from("document_items")
         .select("*")
         .eq("document_id", fromDocId)
         .order("sort_order");
+
+      // `(srcItems || [])` used to swallow this: a failed read became an empty
+      // line-item list, and the editor went on to prefill a conversion of a
+      // real invoice with NO lines on it, carrying the source's client and
+      // context. Every document here is a tax document; an empty one that
+      // looks deliberate is worse than no prefill at all.
+      if (itemsError) {
+        if (isConvert) {
+          setConvertBlocked({
+            block: { kind: "load_failed" },
+            message: conversionBlockMessage({ kind: "load_failed" }),
+          });
+        }
+        return;
+      }
 
       const prefill = buildSourcePrefill(srcDoc as SourceDocRow, (srcItems || []) as SourceItemRow[], {
         targetType: documentType,

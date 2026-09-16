@@ -9,8 +9,13 @@ vi.mock("@/lib/client-store", () => ({ clientStore: { save: async (row: unknown,
 vi.mock("@/lib/product-store", () => ({ productStore: { save: async (row: unknown, opts: unknown) => { state.saves.push({ row, opts }); } } }));
 vi.mock("@/lib/expense-store", () => ({ expenseStore: { save: async (row: unknown, opts: unknown) => { state.saves.push({ row, opts }); } } }));
 vi.mock("@/lib/business-init", () => ({ getBusinessId: () => "business" }));
-vi.mock("@/lib/supabase", () => ({ supabase: { from: (table: string) => {
+vi.mock("@/lib/supabase", () => ({ supabase: { rpc: async () => ({ error: null }), from: (table: string) => {
+  // `limit` is part of the chain since the import paths stopped using
+  // maybeSingle for name lookups (two clients may legitimately share a name),
+  // and `rpc` because the counter bump is now one atomic statement in the
+  // database (see src/lib/document-counters.ts).
   const q: any = { select: () => q, eq: () => q, ilike: () => q, maybeSingle: () => q, update: () => q,
+    limit: () => q, lt: () => q, order: () => q,
     insert: (row: unknown) => { state.inserts.push({ table, row }); return q; },
     then: (resolve: (v: unknown) => void) => Promise.resolve(resolve({ data: null, error: null })),
   }; return q;

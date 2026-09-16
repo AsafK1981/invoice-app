@@ -6,6 +6,7 @@ import { checkRate } from "@/lib/rate-limit";
 import { todayInIsrael } from "@/lib/date";
 import { parseAmount } from "@/lib/import-mapping";
 import { mapHeaders } from "@/lib/import-headers";
+import { bumpDocumentCounters } from "@/lib/document-counters";
 import {
   mapDocumentRow,
   createSkipAccumulator,
@@ -190,7 +191,16 @@ function pick(row: ImportRow, ...keys: string[]): string {
 async function importClients(sb: SB, businessId: string, rows: ImportRow[], importBatchId: string): Promise<ImportSummary> {
   const out: ImportSummary = { imported: 0, skipped: 0, errors: [] };
   // Fetch existing client names so we can dedupe by case-insensitive name.
-  const { data: existing } = await sb.from("clients").select("name").eq("business_id", businessId);
+  // The error is checked: `(existing || [])` turned a failed read into "this
+  // business has no clients", and the whole file was then imported as new,
+  // duplicating every client that was already there.
+  const { data: existing, error: existingError } = await sb
+    .from("clients")
+    .select("name")
+    .eq("business_id", businessId);
+  if (existingError) {
+    throw new Error(`לא הצלחנו לקרוא את הלקוחות הקיימים, והייבוא נעצר: ${existingError.message}`);
+  }
   const seen = new Set((existing || []).map((c) => String(c.name).toLowerCase().trim()));
 
   const toInsert: Array<Record<string, string | null>> = [];
@@ -231,7 +241,15 @@ async function importClients(sb: SB, businessId: string, rows: ImportRow[], impo
 
 async function importProducts(sb: SB, businessId: string, rows: ImportRow[], importBatchId: string): Promise<ImportSummary> {
   const out: ImportSummary = { imported: 0, skipped: 0, errors: [] };
-  const { data: existing } = await sb.from("products").select("name").eq("business_id", businessId);
+  // Checked for the same reason as importClients above: a failed read read as
+  // "no products yet" duplicates the entire catalogue.
+  const { data: existing, error: existingError } = await sb
+    .from("products")
+    .select("name")
+    .eq("business_id", businessId);
+  if (existingError) {
+    throw new Error(`לא הצלחנו לקרוא את המוצרים הקיימים, והייבוא נעצר: ${existingError.message}`);
+  }
   const seen = new Set((existing || []).map((p) => String(p.name).toLowerCase().trim()));
 
   const toInsert: Array<Record<string, string | number | null>> = [];
@@ -307,8 +325,17 @@ async function importDocuments(sb: SB, businessId: string, rows: ImportRow[], im
   // the same internal fields as an Invoice4U one.
   const headersMap = mapHeaders(Object.keys(rows[0] ?? {}));
 
-  // Cache clients by name → id (we'll create missing ones inline).
-  const { data: existingClients } = await sb.from("clients").select("id, name").eq("business_id", businessId);
+  // Cache clients by name → id (we'll create missing ones inline). The error
+  // is checked: an empty result read as "this business has no clients" makes
+  // the pass below create a fresh record for every client that already exists,
+  // splitting each one's history in two.
+  const { data: existingClients, error: clientsError } = await sb
+    .from("clients")
+    .select("id, name")
+    .eq("business_id", businessId);
+  if (clientsError) {
+    throw new Error(`לא הצלחנו לקרוא את רשימת הלקוחות, והייבוא נעצר: ${clientsError.message}`);
+  }
   const clientByName = new Map<string, string>();
   for (const c of existingClients || []) clientByName.set(String(c.name).toLowerCase().trim(), String(c.id));
 
@@ -416,29 +443,12 @@ async function importDocuments(sb: SB, businessId: string, rows: ImportRow[], im
   }
 
   // Bump document_counters so the next live doc gets max+1 (not a
-  // collision with one we just imported).
-  for (const [type, max] of maxByType) {
-    const { data: counter } = await sb
-      .from("document_counters")
-      .select("next_number")
-      .eq("business_id", businessId)
-      .eq("doc_type", type)
-      .maybeSingle();
-    const nextWanted = max + 1;
-    if (counter) {
-      if ((counter.next_number as number) < nextWanted) {
-        await sb
-          .from("document_counters")
-          .update({ next_number: nextWanted })
-          .eq("business_id", businessId)
-          .eq("doc_type", type);
-      }
-    } else {
-      await sb
-        .from("document_counters")
-        .insert({ business_id: businessId, doc_type: type, next_number: nextWanted });
-    }
-  }
+  // collision with one we just imported). Shares the helper with the two
+  // browser import paths: this route had its own copy of the same
+  // read-then-write, with all three errors dropped and the read failing open,
+  // so an import through the admin console could leave the counter behind a
+  // number it had just written.
+  await bumpDocumentCounters(sb, businessId, maxByType);
 
   out.skipped = skips.total + clientErrorSkips;
   out.skipSummary = skips.toSkipSummary();

@@ -249,6 +249,15 @@ export function buildSourcePrefill(
 
 export type ConversionBlock =
   | { kind: "not_found" }
+  /**
+   * The source could not be READ - distinct from not existing. An empty or
+   * failed read is not evidence the document is absent (under RLS a request
+   * that loses its access token is answered with zero rows and no error, see
+   * src/lib/session-guard.ts), and the editor must not go on to prefill a
+   * conversion from what it managed to load. Telling the user "not found"
+   * there would be a lie, and one that invites them to try again forever.
+   */
+  | { kind: "load_failed" }
   | { kind: "draft" }
   | { kind: "cancelled" }
   | { kind: "already_converted"; convertedToId: string };
@@ -307,6 +316,8 @@ export function conversionBlockMessage(
       return `אי אפשר להמיר טיוטה (${label}). יש להפיק אותה קודם.`;
     case "not_found":
       return "המסמך המקורי לא נמצא, ולכן אי אפשר להמיר.";
+    case "load_failed":
+      return "לא הצלחנו לטעון את המסמך המקורי, ולכן אי אפשר להמיר אותו כרגע. רענן את הדף ונסה שוב.";
   }
 }
 

@@ -19,6 +19,8 @@ import { clientStore } from "@/lib/client-store";
 import { productStore } from "@/lib/product-store";
 import { expenseStore } from "@/lib/expense-store";
 import { getBusinessId } from "@/lib/business-init";
+import { bumpDocumentCounters } from "@/lib/document-counters";
+import { escapeLikeLiteral } from "@/lib/client-picker";
 import { todayInIsrael } from "@/lib/date";
 import { mapHeaders, isDocumentsHeaderSet } from "@/lib/import-headers";
 import {
@@ -352,6 +354,11 @@ export function BulkImportZone() {
       // Resolve document columns once via the shared cross-vendor alias layer.
       const headersMap = mapHeaders(file.headers);
 
+      // Same shape as csv-import-modal: the row loop may abort, but documents
+      // are inserted one at a time, so the counter bump below still has to run
+      // for whatever was already committed. The error is held, not dropped.
+      let loopError: unknown = null;
+      try {
       for (const row of file.rows) {
         const mapped = mapDocumentRow(row, headersMap, today);
         if (!mapped.ok) {
@@ -367,12 +374,27 @@ export function BulkImportZone() {
         // Find or create client (same pattern as csv-import-modal)
         let clientId: string | undefined = clientCache.get(clientName);
         if (!clientId) {
-          const { data: existing } = await supabase
+          // limit(1), not maybeSingle: nothing stops a business from having two
+          // clients with the same name, and maybeSingle reports that as an
+          // ERROR - which, now that the error is no longer dropped, would abort
+          // the whole import over a perfectly legal row. The name is also
+          // escaped, so a client called "100% טבעי" cannot turn its own % into
+          // an ILIKE wildcard and match the wrong record.
+          const { data: matches, error: matchError } = await supabase
             .from("clients")
             .select("id")
             .eq("business_id", businessId)
-            .ilike("name", clientName)
-            .maybeSingle();
+            .ilike("name", escapeLikeLiteral(clientName))
+            .limit(1);
+          // A failed lookup is not an absent client. Dropping the error here
+          // created a second record for a client who already existed, and the
+          // two halves of their history then never appeared together.
+          if (matchError) {
+            throw new Error(
+              `לא הצלחנו לחפש את הלקוח "${clientName}", והייבוא נעצר כדי לא ליצור לקוח כפול. נסה שוב (${matchError.message})`,
+            );
+          }
+          const existing = matches?.[0];
           if (existing) {
             clientId = existing.id;
           } else {
@@ -414,28 +436,26 @@ export function BulkImportZone() {
         imported++;
       }
 
-      // Bump counters so live docs don't collide with imported numbers
-      for (const [type, maxNum] of maxNumberByType) {
-        const { data: counterRow } = await supabase
-          .from("document_counters")
-          .select("next_number")
-          .eq("business_id", businessId)
-          .eq("doc_type", type)
-          .maybeSingle();
-        const target = maxNum + 1;
-        if (!counterRow) {
-          await supabase.from("document_counters").insert({
-            business_id: businessId,
-            doc_type: type,
-            next_number: target,
-          });
-        } else if (counterRow.next_number < target) {
-          await supabase
-            .from("document_counters")
-            .update({ next_number: target })
-            .eq("business_id", businessId)
-            .eq("doc_type", type);
-        }
+      } catch (err) {
+        loopError = err;
+      }
+
+      // Bump counters so live docs don't collide with imported numbers. Runs
+      // even when the loop aborted, for the documents it already wrote.
+      let bumpError: unknown = null;
+      try {
+        // Every type attempted, every failure reported - see bumpDocumentCounters.
+        await bumpDocumentCounters(supabase, businessId, maxNumberByType);
+      } catch (err) {
+        bumpError = err;
+      }
+      if (loopError || bumpError) {
+        throw new Error(
+          [loopError, bumpError]
+            .filter(Boolean)
+            .map((e) => (e instanceof Error ? e.message : String(e)))
+            .join(" · "),
+        );
       }
     }
     return { imported, skipped, unmappedType };

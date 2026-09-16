@@ -10,6 +10,7 @@ import { productStore } from "@/lib/product-store";
 import { expenseStore } from "@/lib/expense-store";
 import { supabase } from "@/lib/supabase";
 import { getBusinessId } from "@/lib/business-init";
+import { bumpDocumentCounters } from "@/lib/document-counters";
 import { todayInIsrael } from "@/lib/date";
 import { mapHeaders } from "@/lib/import-headers";
 import {
@@ -126,6 +127,13 @@ export function CsvImportModal({ open, onClose, entityType }: Props) {
           return;
         }
       }
+      // The row loop is allowed to abort (a refused duplicate check now
+      // throws), but documents are inserted one at a time, so by then some are
+      // already in the database. Whatever was written still has to be covered
+      // by the counter bump below - see the CRITICAL note there - so the error
+      // is held and rethrown after it, not instead of it.
+      let loopError: unknown = null;
+      try {
       for (const row of preview) {
         if (entityType === "clients") {
           const name = (row["שם"] || row["name"] || "").trim();
@@ -181,14 +189,23 @@ export function CsvImportModal({ open, onClose, entityType }: Props) {
           const { type, number, client_name: clientName, subtotal } = record;
           if (!typeMatched) unmappedTypes.add(mapped.typeRaw);
 
-          // Skip duplicates: same business, same type, same number
-          const { data: existing } = await supabase
+          // Skip duplicates: same business, same type, same number.
+          // The error is checked, not dropped: an empty result from a refused
+          // read is indistinguishable from "no such document", and treating it
+          // as the latter imports the same tax document twice. Better to stop
+          // the import with a message than to duplicate silently.
+          const { data: existing, error: dupError } = await supabase
             .from("documents")
             .select("id")
             .eq("business_id", businessId)
             .eq("type", type)
             .eq("number", number)
             .maybeSingle();
+          if (dupError) {
+            throw new Error(
+              `לא הצלחנו לבדוק אם ${type} מספר ${number} כבר קיים, והייבוא נעצר כדי לא לכפול מסמכים. נסה שוב (${dupError.message})`,
+            );
+          }
           if (existing) continue;
 
           // Find or create the client by name. Check the in-batch cache
@@ -196,12 +213,24 @@ export function CsvImportModal({ open, onClose, entityType }: Props) {
           // duplicate client records.
           let clientId: string | null = clientCache.get(clientName) ?? null;
           if (!clientId) {
-            const { data: matchClient } = await supabase
+            // limit(1), not maybeSingle: two clients may legitimately share a
+            // name, and maybeSingle calls that an error - which would now abort
+            // the whole import instead of just picking one.
+            const { data: matchClients, error: matchError } = await supabase
               .from("clients")
               .select("id")
               .eq("business_id", businessId)
               .eq("name", clientName)
-              .maybeSingle();
+              .limit(1);
+            // Same rule as the duplicate-document check above: a read that
+            // failed is not proof the client is missing, and acting on it
+            // splits one client's history across two records.
+            if (matchError) {
+              throw new Error(
+                `לא הצלחנו לחפש את הלקוח "${clientName}", והייבוא נעצר כדי לא ליצור לקוח כפול. נסה שוב (${matchError.message})`,
+              );
+            }
+            const matchClient = matchClients?.[0];
             if (matchClient) {
               clientId = matchClient.id;
             } else {
@@ -244,33 +273,31 @@ export function CsvImportModal({ open, onClose, entityType }: Props) {
           imported++;
         }
       }
+      } catch (err) {
+        loopError = err;
+      }
       // CRITICAL: after importing historical docs, bump document_counters
       // past the highest imported number per type. Without this, the next
       // create_document_atomic call would hand out a number we just imported,
-      // creating a silent duplicate.
+      // creating a silent duplicate. Runs even when the loop above aborted,
+      // because the documents it managed to write are already committed.
+      let bumpError: unknown = null;
       if (entityType === "documents" && importBusinessId && maxNumberByType.size > 0) {
-        for (const [type, maxNum] of maxNumberByType) {
-          const { data: counterRow } = await supabase
-            .from("document_counters")
-            .select("next_number")
-            .eq("business_id", importBusinessId)
-            .eq("doc_type", type)
-            .maybeSingle();
-          const target = maxNum + 1;
-          if (!counterRow) {
-            await supabase.from("document_counters").insert({
-              business_id: importBusinessId,
-              doc_type: type,
-              next_number: target,
-            });
-          } else if (counterRow.next_number < target) {
-            await supabase
-              .from("document_counters")
-              .update({ next_number: target })
-              .eq("business_id", importBusinessId)
-              .eq("doc_type", type);
-          }
+        try {
+          // Every type is attempted, and every failure is reported: one type
+          // failing must not leave the others un-bumped.
+          await bumpDocumentCounters(supabase, importBusinessId, maxNumberByType);
+        } catch (err) {
+          bumpError = err;
         }
+      }
+      if (loopError || bumpError) {
+        throw new Error(
+          [loopError, bumpError]
+            .filter(Boolean)
+            .map((e) => (e instanceof Error ? e.message : String(e)))
+            .join(" · "),
+        );
       }
 
       // Build the skip summary from the canonical per-reason labels so the

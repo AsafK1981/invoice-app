@@ -2,13 +2,15 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
 type Row = Record<string, any>;
-const state = vi.hoisted(() => ({ tables: {} as Record<string, Row[]>, selects: [] as { table: string; columns: string }[], failDocChunk: 0, docChunks: 0 }));
+const state = vi.hoisted(() => ({ tables: {} as Record<string, Row[]>, selects: [] as { table: string; columns: string }[], failDocChunk: 0, docChunks: 0, rpcs: [] as { fn: string; args: Record<string, unknown> }[] }));
 vi.hoisted(() => { process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service"; });
 vi.mock("@/lib/admin", () => ({ isAdminEmail: () => true }));
 vi.mock("@/lib/admin-access-log", () => ({ logAdminAccess: vi.fn() }));
 vi.mock("@/lib/rate-limit", () => ({ checkRate: () => ({ ok: true }) }));
 vi.mock("@supabase/supabase-js", () => ({ createClient: () => ({
   auth: { getUser: async () => ({ data: { user: { id: "admin", email: "admin@example.com" } } }), admin: { listUsers: async () => ({ data: { users: [] } }) } },
+  // bump_document_counter: one atomic GREATEST upsert, see src/lib/document-counters.ts.
+  rpc: async (fn: string, args: Record<string, unknown>) => { state.rpcs.push({ fn, args }); return { error: null }; },
   from(table: string) {
     let rows: Row[] | null = null, columns = "*", cap = Infinity, sort = "", ascending = false, single = false;
     const filters: ((r: Row) => boolean)[] = [];
@@ -19,6 +21,8 @@ vi.mock("@supabase/supabase-js", () => ({ createClient: () => ({
       eq(k: string, v: unknown) { filters.push(r => r[k] === v); return q; },
       is(k: string, v: unknown) { filters.push(r => (r[k] ?? null) === v); return q; },
       not(k: string) { filters.push(r => r[k] != null); return q; },
+      // Used by bumpDocumentCounter's conditional UPDATE (src/lib/document-counters.ts).
+      lt(k: string, v: any) { filters.push(r => r[k] < v); return q; },
       order(k: string, opts: { ascending: boolean }) { sort = k; ascending = opts.ascending; return q; },
       limit(n: number) { cap = n; return q; },
       maybeSingle() { single = true; return q; },

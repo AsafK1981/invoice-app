@@ -92,11 +92,19 @@ export const expenseStore = {
       return;
     }
 
-    const { data: existing } = await supabase
+    // maybeSingle + a checked error, same as clientStore.save: `.single()`
+    // reports a genuine "new expense" as an error, which forced the error
+    // field to be discarded and made a refused read look identical to a new
+    // row. The INSERT that followed then failed on the primary key with a raw
+    // Postgres message instead of saying what went wrong.
+    const { data: existing, error: lookupError } = await supabase
       .from("expenses")
       .select("id")
       .eq("id", expense.id)
-      .single();
+      .maybeSingle();
+    if (lookupError) {
+      throw new Error("לא הצלחנו לבדוק אם ההוצאה כבר קיימת. רענן את הדף ונסה שוב.");
+    }
 
     if (existing) {
       await supabase

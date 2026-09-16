@@ -115,11 +115,17 @@ export const productStore = {
       return;
     }
 
-    const { data: existing } = await supabase
+    // Checked, same as clientStore.save and expenseStore.save: a refused read
+    // is not a new product, and acting on it sends the write down the INSERT
+    // path to fail on the primary key.
+    const { data: existing, error: lookupError } = await supabase
       .from("products")
       .select("id")
       .eq("id", product.id)
       .maybeSingle();
+    if (lookupError) {
+      throw new Error("לא הצלחנו לבדוק אם המוצר כבר קיים. רענן את הדף ונסה שוב.");
+    }
 
     if (existing) {
       await supabase

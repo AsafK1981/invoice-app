@@ -28,6 +28,8 @@ export function DocumentNumberingSettings() {
     () => ({ ...DEFAULT_NEXT_NUMBER })
   );
   const [maxUsed, setMaxUsed] = useState<MaxByType>({});
+  /** Types whose highest-issued number could not be read (see load()). */
+  const [maxUnknown, setMaxUnknown] = useState<Set<DocumentType>>(new Set());
   const [editing, setEditing] = useState<DocumentType | null>(null);
   const [draftValue, setDraftValue] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
@@ -61,12 +63,24 @@ export function DocumentNumberingSettings() {
       });
       setCounters(next);
     }
+    // maxUsed drives the "you are about to reuse a number" confirmation below.
+    // A read that FAILED must not look like "no documents of this type exist",
+    // or the warning is silently skipped for exactly the business whose data we
+    // could not see. `unknown` is tracked separately from "none" so the save
+    // path can warn instead of pretending the check passed.
     const max: MaxByType = {};
+    const unknown = new Set<DocumentType>();
     maxResults.forEach((res, idx) => {
+      const type = TYPE_ORDER[idx];
+      if (res.error) {
+        unknown.add(type);
+        return;
+      }
       const row = res.data as { number: number } | null;
-      if (row?.number != null) max[TYPE_ORDER[idx]] = row.number;
+      if (row?.number != null) max[type] = row.number;
     });
     setMaxUsed(max);
+    setMaxUnknown(unknown);
   }
 
   useEffect(() => {
@@ -97,6 +111,20 @@ export function DocumentNumberingSettings() {
     // highest already-issued document of this type invites gaps / duplicates /
     // non-sequential numbering (a tax-audit red flag), so require an explicit
     // confirmation rather than saving silently.
+    // Could not read the highest issued number for this type: say so rather
+    // than saving as if the check had passed.
+    if (maxUnknown.has(type)) {
+      const ok = await confirm({
+        title: `להגדיר מספר הבא ל-${value}?`,
+        message:
+          `לא הצלחנו לבדוק עד איזה מספר כבר הופקו מסמכים מסוג ${DOCUMENT_TYPE_LABELS[type]}, ` +
+          `ולכן אי אפשר להזהיר מפני כפילות. מומלץ לרענן את הדף ולנסות שוב. להמשיך בכל זאת?`,
+        tone: "danger",
+        confirmLabel: "המשך בכל זאת",
+      });
+      if (!ok) return;
+    }
+
     const used = maxUsed[type];
     if (used !== undefined && value <= used) {
       const ok = await confirm({

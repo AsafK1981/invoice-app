@@ -81,10 +81,15 @@ else console.log("  ✓ Business updated");
 
 // 2. Add missing customers (skip if already exists by name)
 console.log("\n[2/4] Adding customers...");
-const { data: existingClients } = await supabase
+// Checked, not dropped: a failed read read as "no clients yet" would re-create
+// every customer this script has already imported.
+const { data: existingClients, error: existingClientsError } = await supabase
   .from("clients")
   .select("name")
   .eq("business_id", business.id);
+if (existingClientsError) {
+  throw new Error(`could not read existing clients: ${existingClientsError.message}`);
+}
 
 const existingNames = new Set((existingClients || []).map((c) => c.name));
 
@@ -103,22 +108,32 @@ for (const cust of CUSTOMERS) {
 
 // 3. Import documents
 console.log("\n[3/4] Importing documents...");
-const { data: clients } = await supabase
+// Checked: `(clients || [])` turned a failed read into an empty map, and every
+// document below would then have been imported with client_id = null, cut off
+// from the customer it belongs to.
+const { data: clients, error: clientsError } = await supabase
   .from("clients")
   .select("id, name")
   .eq("business_id", business.id);
+if (clientsError) throw new Error(`could not read clients: ${clientsError.message}`);
 
 const clientByName = new Map((clients || []).map((c) => [c.name, c.id]));
 
 for (const doc of DOCUMENTS) {
-  // Check if already exists
-  const { data: existing } = await supabase
+  // Check if already exists. The error is checked: reading a failure as "not
+  // there" makes the script import the same tax document a second time.
+  const { data: existing, error: existingDocError } = await supabase
     .from("documents")
     .select("id")
     .eq("business_id", business.id)
     .eq("number", doc.number)
     .eq("type", doc.type)
     .maybeSingle();
+  if (existingDocError) {
+    throw new Error(
+      `could not check whether ${doc.type} #${doc.number} already exists: ${existingDocError.message}`,
+    );
+  }
 
   if (existing) {
     console.log(`  - #${doc.number}: already exists, skipping`);
@@ -166,25 +181,20 @@ for (const doc of DOCUMENTS) {
 
 // 4. Update document counter so next receipt continues from 30038
 console.log("\n[4/4] Updating document counter...");
-const { data: existingCounter } = await supabase
-  .from("document_counters")
-  .select("*")
-  .eq("business_id", business.id)
-  .eq("doc_type", "receipt")
-  .maybeSingle();
-
-if (existingCounter) {
-  await supabase
-    .from("document_counters")
-    .update({ next_number: 30038 })
-    .eq("id", existingCounter.id);
-} else {
-  await supabase.from("document_counters").insert({
-    business_id: business.id,
-    doc_type: "receipt",
-    next_number: 30038,
-  });
-}
-console.log("  ✓ Next receipt number: 30038");
+// Only ever RAISES the counter. The original wrote 30038 unconditionally, so
+// re-running this script after the business had issued its way past 30038
+// would have set the counter BACKWARDS onto numbers already used. The import
+// itself is long done (2026-07-08) and should not be repeated, but a script
+// that can silently corrupt live numbering should not be left lying around.
+// Shares the atomic GREATEST upsert the three live import paths use - see
+// src/lib/document-counters.ts and the migration it names.
+const TARGET = 30038;
+const { error: bumpError } = await supabase.rpc("bump_document_counter", {
+  p_business_id: business.id,
+  p_doc_type: "receipt",
+  p_target: TARGET,
+});
+if (bumpError) throw new Error(`counter bump failed: ${bumpError.message}`);
+console.log(`  ✓ Next receipt number is at least ${TARGET}`);
 
 console.log("\n✅ Done!");

@@ -24,6 +24,57 @@ export function normalizeName(name: string | undefined | null): string {
 }
 
 /**
+ * An ILIKE pattern guaranteed to match every row that normalizeName() would
+ * call equal - and possibly a few more.
+ *
+ * It exists so a duplicate-name check can be done in the database instead of
+ * by pulling rows into memory and comparing them there. The callers that did
+ * the latter capped the fetch (`.limit(1000)`), which quietly turned "is this
+ * name taken?" into "is this name taken among the first thousand rows?" for
+ * any tenant past the cap, and created duplicates for everyone else on a read
+ * that failed.
+ *
+ * ILIKE is already case-insensitive, so only normalizeName's whitespace
+ * handling has to be expressed:
+ *
+ *   - collapsing:  each run of spaces becomes `%`, which matches a run of any
+ *                  length, and any whitespace character - a tab, a newline, a
+ *                  non-breaking space - that JavaScript's `\s` collapses but
+ *                  SQL would otherwise see as different bytes.
+ *   - trimming:    the pattern is wrapped in `%` at BOTH ENDS. The stored row
+ *                  is raw, not normalized, so "קפה נמר " with a trailing space
+ *                  (or a trailing U+00A0) is normalizeName-equal to "קפה נמר"
+ *                  while an unanchored pattern would not match it. Both
+ *                  council seats found this independently; the first draft
+ *                  omitted the edge wildcards, and the test that was supposed
+ *                  to prove the superset property compared against the
+ *                  NORMALIZED value and so could never have caught it.
+ *
+ * `%` and `_` inside the name are escaped first, so a name containing them
+ * cannot widen the match on its own.
+ *
+ * The pattern is a SUPERSET, never a subset. The caller MUST still compare
+ * with normalizeName() to reject the extra rows the edge wildcards pull in;
+ * that ordering is what keeps the semantics identical to the in-memory version
+ * while removing the row cap. Being too wide here is free. Being too narrow
+ * reintroduces the duplicate this exists to prevent.
+ */
+/**
+ * Escapes a value that is passed to ILIKE as a LITERAL rather than a pattern.
+ * Without it a customer called "100% טבעי" turns its own `%` into a wildcard.
+ */
+export function escapeLikeLiteral(value: string): string {
+  return value.replace(/([\\%_])/g, "\\$1");
+}
+
+export function nameMatchPattern(name: string | undefined | null): string {
+  const core = normalizeName(name)
+    .replace(/([\\%_])/g, "\\$1")
+    .replace(/ /g, "%");
+  return `%${core}%`;
+}
+
+/**
  * Does this document belong to this client? True when the document carries the
  * client's id, OR when it carries no client id at all (typed free-text before
  * the "new client saves the client" default existed, WhatsApp/assistant docs

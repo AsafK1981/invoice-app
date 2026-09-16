@@ -341,11 +341,15 @@ export async function dismissProposal(id: string, opts?: { mute?: boolean }): Pr
   };
 
   if (opts?.mute) {
-    const { data: row } = await supabase
+    // Checked, because `details` is REPLACED below, not merged server-side: a
+    // failed read would fall back to {} and the write would drop every other
+    // key the proposal was carrying.
+    const { data: row, error: readError } = await supabase
       .from("invoice_proposals")
       .select("details")
       .eq("id", id)
       .maybeSingle();
+    if (readError) throw new Error(readError.message);
     const existing =
       row?.details && typeof row.details === "object" && !Array.isArray(row.details)
         ? (row.details as Record<string, unknown>)

@@ -207,11 +207,21 @@ export const clientStore = {
       throw new Error("אין עסק פעיל - רענן את הדף ונסה שוב");
     }
 
-    const { data: existing } = await supabase
+    // maybeSingle, not single: `.single()` reports a genuine "no such client
+    // yet" as an error (PGRST116), which forced this call to discard the error
+    // field wholesale - and with it any real failure. A refused read then
+    // looked identical to a new client, so save() fell through to INSERT and
+    // the user got the raw unique-violation string from the primary key
+    // instead of being told what actually went wrong. maybeSingle separates
+    // "not there" (null, no error) from "could not tell" (error).
+    const { data: existing, error: lookupError } = await supabase
       .from("clients")
       .select("id")
       .eq("id", client.id)
-      .single();
+      .maybeSingle();
+    if (lookupError) {
+      throw new Error("לא הצלחנו לבדוק אם הלקוח כבר קיים. רענן את הדף ונסה שוב.");
+    }
 
     if (existing) {
       const { data: updated, error } = await supabase
