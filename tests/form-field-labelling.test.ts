@@ -13,6 +13,7 @@ import { describe, it, expect } from "vitest";
 import { createElement as h } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { FormField } from "../src/components/ui/form-field";
+import { PaymentTermsSelect } from "../src/components/payment-terms-select";
 
 // createElement's typing wants `children` inside props when the component's
 // Props declares it required, so positional children will not typecheck.
@@ -108,5 +109,27 @@ describe("FormField label association", () => {
     const m = html.match(/<input[^>]*aria-describedby="([^"]*)"/);
     expect(m).toBeTruthy();
     expect(html).toMatch(new RegExp(`<p[^>]*\\bid="${m![1]}"`));
+  });
+  it("wires a custom control that opts in with formFieldControl", () => {
+    // PaymentTermsSelect used to need its own aria-label, and the hint under
+    // it was never announced. It now forwards id / aria-describedby.
+    const html = renderToStaticMarkup(
+      field(
+        { label: "תנאי תשלום", hint: "ללא בחירה, התחזית אומדת לפי העבר." },
+        h(PaymentTermsSelect, { value: "", onChange: () => {} }),
+      ),
+    );
+    const target = labelTarget(html);
+    expect(target).toBeTruthy();
+    expect(controlId(html, "select")).toBe(target);
+    const m = html.match(/<select[^>]*aria-describedby="([^"]*)"/);
+    expect(m).toBeTruthy();
+    expect(html).toMatch(new RegExp(`<p[^>]*\\bid="${m![1]}"`));
+  });
+
+  it("still treats an ordinary custom component as opaque", () => {
+    const Opaque = () => h("select", {});
+    const html = renderToStaticMarkup(field({ label: "x" }, h(Opaque, {})));
+    expect(labelTarget(html)).toBeNull();
   });
 });

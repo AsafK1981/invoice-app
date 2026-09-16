@@ -7,11 +7,8 @@ import { FormField } from "@/components/ui/form-field";
 import { clientStore } from "@/lib/client-store";
 import { parseEmails, joinEmails, isValidEmail } from "@/lib/emails";
 import { todayInIsrael } from "@/lib/date";
-import {
-  PAYMENT_TERMS_LABELS,
-  PAYMENT_TERMS_ORDER,
-  isPaymentTerms,
-} from "@/lib/payment-terms";
+import { isPaymentTerms } from "@/lib/payment-terms";
+import { PaymentTermsSelect } from "@/components/payment-terms-select";
 import type { Client } from "@/lib/types";
 import { BusinessNumberHintText } from "@/components/business-number-hint";
 import { businessNumberForSave } from "@/lib/business-number-hint";
@@ -220,7 +217,7 @@ export function ClientFormModal({ open, onClose, client }: Props) {
                       placeholder={idx === 0 ? "primary@company.com" : "additional@company.com"}
                       aria-label={idx === 0 ? "אימייל ראשי" : `אימייל נוסף ${idx}`}
                       autoComplete="email"
-                      className={`input-warm pr-10 ${invalid ? "border-rose-400" : ""}`}
+                      className={`input-warm !pr-10 ${invalid ? "border-rose-400" : ""}`}
                     />
                   </div>
                   {(emails.length > 1 || email) && (
@@ -268,18 +265,10 @@ export function ClientFormModal({ open, onClose, client }: Props) {
           label="תנאי תשלום"
           hint="ללא בחירה, תחזית התזרים תאמוד את מועד התשלום לפי הדרך שבה הלקוח שילם בעבר."
         >
-          <select
-            value={form.paymentTerms}
-            onChange={(e) => update("paymentTerms", e.target.value)}
-            className="input-warm"
-          >
-            <option value="">לפי היסטוריית התשלומים</option>
-            {PAYMENT_TERMS_ORDER.map((t) => (
-              <option key={t} value={t}>
-                {PAYMENT_TERMS_LABELS[t]}
-              </option>
-            ))}
-          </select>
+          <PaymentTermsSelect
+            value={isPaymentTerms(form.paymentTerms) ? form.paymentTerms : ""}
+            onChange={(v) => update("paymentTerms", v)}
+          />
         </FormField>
 
         <FormField label="הערות">

@@ -37,7 +37,19 @@ interface Walk {
  * rendered output is not in `props.children` - so no control is found and we
  * deliberately emit NO htmlFor rather than a pointer at a wrapper. Those
  * components take their own id/aria-label.
+ *
+ * A custom component that renders exactly one native control and forwards
+ * `id`, `aria-describedby`, `required` and `aria-required` to it can opt in
+ * with a static `formFieldControl = true` (see PaymentTermsSelect); it is then
+ * wired like a native control, so the label and the hint both reach it.
  */
+type MaybeFormFieldControl = { formFieldControl?: boolean };
+
+function isControl(type: unknown): boolean {
+  if (typeof type === "string") return CONTROL_TAGS.has(type);
+  return typeof type === "function" && (type as MaybeFormFieldControl).formFieldControl === true;
+}
+
 function inject(node: React.ReactNode, walk: Walk): React.ReactNode {
   if (walk.hit || !isValidElement(node)) return node;
 
@@ -48,7 +60,7 @@ function inject(node: React.ReactNode, walk: Walk): React.ReactNode {
     required?: boolean;
   }>;
 
-  if (typeof el.type === "string" && CONTROL_TAGS.has(el.type)) {
+  if (isControl(el.type)) {
     walk.hit = true;
     const props: Record<string, unknown> = {};
     // Respect an id the caller set; we only fill the gap.

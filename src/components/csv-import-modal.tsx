@@ -19,7 +19,8 @@ import {
   createUnmappedTypeCollector,
 } from "@/lib/import-documents";
 import { parseCsvFile } from "@/lib/import-decode";
-import type { Client, Product, Expense } from "@/lib/types";
+import { mapImportedClientRow, unrecognizedTermsNote } from "@/lib/import-clients";
+import type { Product, Expense } from "@/lib/types";
 
 type EntityType = "clients" | "products" | "expenses" | "documents";
 
@@ -37,7 +38,7 @@ const labels: Record<EntityType, { title: string; icon: typeof Users; columns: s
   clients: {
     title: "ייבוא לקוחות",
     icon: Users,
-    columns: ["שם", "ח.פ / ת.ז", "כתובת", "טלפון", "אימייל", "הערות"],
+    columns: ["שם", "ח.פ / ת.ז", "כתובת", "טלפון", "אימייל", "הערות", "תנאי תשלום"],
   },
   products: {
     title: "ייבוא מוצרים",
@@ -63,6 +64,7 @@ export function CsvImportModal({ open, onClose, entityType }: Props) {
   const [importing, setImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [termsNote, setTermsNote] = useState<string | null>(null);
 
   const config = labels[entityType];
   const Icon = config.icon;
@@ -82,6 +84,7 @@ export function CsvImportModal({ open, onClose, entityType }: Props) {
     if (!file) return;
     setError(null);
     setSuccess(null);
+    setTermsNote(null);
 
     try {
       const { rows, headers: parsedHeaders } = await parseCsvFile(file);
@@ -97,10 +100,12 @@ export function CsvImportModal({ open, onClose, entityType }: Props) {
     setImporting(true);
     setError(null);
     setSuccess(null);
+    setTermsNote(null);
 
     try {
       const importBatchId = crypto.randomUUID();
       let imported = 0;
+      let termsUnrecognized = 0;
       const today = todayInIsrael();
       const skips = createSkipAccumulator();
       const unmappedTypes = createUnmappedTypeCollector();
@@ -136,19 +141,15 @@ export function CsvImportModal({ open, onClose, entityType }: Props) {
       try {
       for (const row of preview) {
         if (entityType === "clients") {
-          const name = (row["שם"] || row["name"] || "").trim();
-          if (!name) continue;
-          const client: Client = {
+          // Always a fresh id, so clientStore.save takes its INSERT path and
+          // can never overwrite an existing client's columns.
+          const mappedClient = mapImportedClientRow(row, {
             id: crypto.randomUUID(),
-            name,
-            taxId: (row["ח.פ / ת.ז"] || row["ח.פ"] || row["tax_id"] || "").trim() || undefined,
-            address: (row["כתובת"] || row["address"] || "").trim() || undefined,
-            phone: (row["טלפון"] || row["phone"] || "").trim() || undefined,
-            email: (row["אימייל"] || row["email"] || "").trim() || undefined,
-            notes: (row["הערות"] || row["notes"] || "").trim() || undefined,
             createdAt: todayInIsrael(),
-          };
-          await clientStore.save(client, { importBatchId });
+          });
+          if (!mappedClient) continue;
+          await clientStore.save(mappedClient.client, { importBatchId });
+          if (mappedClient.termsUnrecognized) termsUnrecognized++;
           imported++;
         } else if (entityType === "products") {
           const name = (row["שם"] || row["name"] || "").trim();
@@ -309,10 +310,14 @@ export function CsvImportModal({ open, onClose, entityType }: Props) {
       const typeWarn =
         unmappedTypes.count > 0 ? ` · ${unmappedTypes.count} עם סוג לא מזוהה (יובאו כקבלה)` : "";
       setSuccess(`יובאו ${imported} רשומות בהצלחה${skipSuffix}${typeWarn}`);
+      const note = unrecognizedTermsNote(termsUnrecognized);
+      setTermsNote(note);
       setPreview([]);
       setHeaders([]);
       if (fileInputRef.current) fileInputRef.current.value = "";
-      setTimeout(() => onClose(), 1500);
+      // A warning stays on screen until the user closes the dialog; a clean
+      // import closes itself as before.
+      if (!note) setTimeout(() => onClose(), 1500);
     } catch (err) {
       setError(err instanceof Error ? err.message : "שגיאה בייבוא");
     } finally {
@@ -378,7 +383,10 @@ export function CsvImportModal({ open, onClose, entityType }: Props) {
         {success && (
           <div role="status" className="flex items-start gap-2 text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 p-3 rounded-xl">
             <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5" />
-            <span>{success}</span>
+            <span>
+              {success}
+              {termsNote && <span className="block mt-1 text-amber-800">{termsNote}</span>}
+            </span>
           </div>
         )}
 

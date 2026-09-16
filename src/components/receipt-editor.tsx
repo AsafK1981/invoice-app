@@ -66,11 +66,14 @@ import { useTaxAuthorityStatus } from "@/lib/use-tax-authority-status";
 import { getClientDefaults } from "@/lib/client-defaults";
 import {
   dueDateFor,
+  isPaymentTerms,
   PAYMENT_TERMS_LABELS,
   resolveEditorDueDate,
   STATUTORY_DEFAULT_TERMS,
   type DueDateSource,
+  type PaymentTerms,
 } from "@/lib/payment-terms";
+import { PaymentTermsSelect } from "@/components/payment-terms-select";
 import { getRecurringPrefill } from "@/lib/recurring-prefill";
 import { linkIssuedDocument } from "@/lib/proposal-store";
 import { documentsForClient, findMatchingClient, filterClientsByQuery } from "@/lib/client-picker";
@@ -184,6 +187,8 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   // saved as a real client for next time. Defaults ON - calling the mode
   // "new client" implies it gets saved, per Asaf's framing.
   const [saveAsClient, setSaveAsClient] = useState<boolean>(true);
+  // תנאי תשלום for the client being quick-added; "" = none agreed.
+  const [adhocPaymentTerms, setAdhocPaymentTerms] = useState<PaymentTerms | "">("");
 
   // "לקוח קיים" (catalog) picker: search box + scrollable list, visible the
   // moment the mode is selected instead of hidden behind a native <select>
@@ -385,7 +390,11 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
   // The due date follows the client's agreed תנאי תשלום (or the statutory
   // suggestion the user clicked) the moment the client or the document date
   // changes. A client without terms gets an empty field, never a guess.
-  const clientTerms = adhocMode ? undefined : selectedClient?.paymentTerms;
+  // A quick-added client's terms drive the date the moment they are picked,
+  // exactly as a saved client's do. A one-off name (not saved) has none.
+  const clientTerms = adhocMode
+    ? (saveAsClient && adhocPaymentTerms) || undefined
+    : selectedClient?.paymentTerms;
   useEffect(() => {
     if (!showDueDate) return;
     const next = resolveEditorDueDate({ current: dueDate, source: dueDateSource, issueDate: date, clientTerms });
@@ -495,6 +504,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
       setAdhocName(d.adhocName);
       setAdhocTaxId(d.adhocTaxId);
       setAdhocEmail(d.adhocEmail);
+      setAdhocPaymentTerms(isPaymentTerms(d.adhocPaymentTerms) ? d.adhocPaymentTerms : "");
       setDate(d.date);
       setSubject(d.subject);
       setValidUntil(d.validUntil);
@@ -611,6 +621,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
       adhocName,
       adhocTaxId,
       adhocEmail,
+      adhocPaymentTerms: adhocPaymentTerms || undefined,
       date,
       subject,
       validUntil,
@@ -649,6 +660,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
     adhocName,
     adhocTaxId,
     adhocEmail,
+    adhocPaymentTerms,
     date,
     subject,
     validUntil,
@@ -681,6 +693,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
       adhocName,
       adhocTaxId,
       adhocEmail,
+      adhocPaymentTerms: adhocPaymentTerms || undefined,
       date,
       subject,
       validUntil,
@@ -724,6 +737,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
     adhocName,
     adhocTaxId,
     adhocEmail,
+    adhocPaymentTerms,
     date,
     subject,
     validUntil,
@@ -780,6 +794,9 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
     setAdhocName("");
     setAdhocTaxId("");
     setAdhocEmail("");
+    // Otherwise the discarded draft's terms would date the next document and
+    // be saved onto the next quick-added client.
+    setAdhocPaymentTerms("");
     setDate(today);
     setSubject("");
     setValidUntil("");
@@ -1075,6 +1092,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
       setAdhocName(p.adhocName || "");
       setAdhocTaxId(p.adhocTaxId || "");
       setAdhocEmail(p.adhocEmail || "");
+      setAdhocPaymentTerms(isPaymentTerms(p.adhocPaymentTerms) ? p.adhocPaymentTerms : "");
       setDate(p.date || today);
       setSubject(p.subject || "");
       setValidUntil(p.validUntil || "");
@@ -1466,6 +1484,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
         adhocName,
         adhocTaxId,
         adhocEmail,
+        adhocPaymentTerms: adhocPaymentTerms || undefined,
         date,
         subject,
         validUntil,
@@ -1583,6 +1602,7 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                 taxId,
                 email: adhocEmail.trim() || undefined,
                 createdAt: today,
+                paymentTerms: adhocPaymentTerms || undefined,
               };
               await clientStore.save(newClient);
               effectiveClientId = newClient.id;
@@ -2142,6 +2162,15 @@ export function ReceiptEditor({ business, clients, products, documentType = "rec
                 />
                 <span className="text-stone-700">שמור אותו ברשימת הלקוחות שלי</span>
               </label>
+              {saveAsClient && (
+                <label className="flex flex-col gap-1 md:col-span-2">
+                  <span className="text-xs font-semibold text-stone-700">תנאי תשלום</span>
+                  <PaymentTermsSelect
+                    value={adhocPaymentTerms}
+                    onChange={setAdhocPaymentTerms}
+                  />
+                </label>
+              )}
               <p className="text-xs text-stone-600 md:col-span-2">
                 {saveAsClient
                   ? "הלקוח יישמר ברשימת הלקוחות ותוכל לבחור בו בפעם הבאה."

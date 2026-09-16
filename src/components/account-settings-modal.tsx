@@ -176,7 +176,7 @@ export function AccountSettingsModal({ open, onClose }: Props) {
                   placeholder="••••••••"
                   minLength={6}
                   autoComplete="new-password"
-                  className="input-warm pl-3 pr-12"
+                  className="input-warm !pl-3 !pr-12"
                 />
               </div>
             </FormField>

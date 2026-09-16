@@ -34,7 +34,8 @@ import { parseCsvFile } from "@/lib/import-decode";
 import { looksLikeUniformStructure, parseUniformStructureFile } from "@/lib/uniform-structure/parse";
 import { analyzeRows, type AnalyzeResult } from "@/lib/import-analyze";
 import { ImportAnalysisPanel } from "@/components/import-analysis-panel";
-import type { Client, Product, Expense } from "@/lib/types";
+import { mapImportedClientRow, unrecognizedTermsNote } from "@/lib/import-clients";
+import type { Product, Expense } from "@/lib/types";
 
 /**
  * One-click bulk import. The user drops multiple CSV files OR a
@@ -56,6 +57,8 @@ interface EntityTotals {
   imported: number;
   skipped: number;
   unmappedType: number;
+  /** Clients imported without terms because the file's terms text was not recognised. */
+  termsUnrecognized: number;
   /** Per-reason labelled skip breakdown (documents only; empty otherwise). */
   skipSummary: SkipSummaryEntry[];
 }
@@ -231,10 +234,10 @@ export function BulkImportZone() {
     setError(null);
     const importBatchId = crypto.randomUUID();
     const totals: Record<EntityType, EntityTotals> = {
-      clients: { imported: 0, skipped: 0, unmappedType: 0, skipSummary: [] },
-      products: { imported: 0, skipped: 0, unmappedType: 0, skipSummary: [] },
-      expenses: { imported: 0, skipped: 0, unmappedType: 0, skipSummary: [] },
-      documents: { imported: 0, skipped: 0, unmappedType: 0, skipSummary: [] },
+      clients: { imported: 0, skipped: 0, unmappedType: 0, termsUnrecognized: 0, skipSummary: [] },
+      products: { imported: 0, skipped: 0, unmappedType: 0, termsUnrecognized: 0, skipSummary: [] },
+      expenses: { imported: 0, skipped: 0, unmappedType: 0, termsUnrecognized: 0, skipSummary: [] },
+      documents: { imported: 0, skipped: 0, unmappedType: 0, termsUnrecognized: 0, skipSummary: [] },
     };
     // One shared accumulator for every document file's skip reasons, so the
     // final breakdown uses the canonical labels from import-documents.
@@ -254,6 +257,7 @@ export function BulkImportZone() {
         totals[file.entity!].imported += result.imported;
         totals[file.entity!].skipped += result.skipped;
         totals[file.entity!].unmappedType += result.unmappedType;
+        totals[file.entity!].termsUnrecognized += result.termsUnrecognized;
       }
       totals.documents.skipSummary = docSkips.toSkipSummary();
       setProgress(null);
@@ -271,8 +275,10 @@ export function BulkImportZone() {
     file: DetectedFile,
     docSkips: SkipAccumulator,
     importBatchId: string,
-  ): Promise<{ imported: number; skipped: number; unmappedType: number }> {
+  ): Promise<{ imported: number; skipped: number; unmappedType: number; termsUnrecognized: number }> {
     let imported = 0;
+    // Client rows whose תנאי תשלום text was present but not recognised.
+    let termsUnrecognized = 0;
     let skipped = 0;
     // Rows whose document-type cell wasn't recognized: imported as receipt but
     // flagged so the count is surfaced (previously dropped on the floor here).
@@ -290,22 +296,18 @@ export function BulkImportZone() {
 
     if (file.entity === "clients") {
       for (const row of file.rows) {
-        const name = pick(row, "שם", "name");
-        if (!name) {
+        // Always a fresh id, so clientStore.save takes its INSERT path and
+        // can never overwrite an existing client's columns.
+        const mappedClient = mapImportedClientRow(row, {
+          id: crypto.randomUUID(),
+          createdAt: todayInIsrael(),
+        });
+        if (!mappedClient) {
           skipped++;
           continue;
         }
-        const client: Client = {
-          id: crypto.randomUUID(),
-          name,
-          taxId: pick(row, "ח.פ / ת.ז", "ח.פ", "ת.ז", "tax_id") || undefined,
-          address: pick(row, "כתובת", "address") || undefined,
-          phone: pick(row, "טלפון", "phone") || undefined,
-          email: pick(row, "אימייל", "email") || undefined,
-          notes: pick(row, "הערות", "notes") || undefined,
-          createdAt: todayInIsrael(),
-        };
-        await clientStore.save(client, { importBatchId });
+        await clientStore.save(mappedClient.client, { importBatchId });
+        if (mappedClient.termsUnrecognized) termsUnrecognized++;
         imported++;
       }
     } else if (file.entity === "products") {
@@ -458,7 +460,7 @@ export function BulkImportZone() {
         );
       }
     }
-    return { imported, skipped, unmappedType };
+    return { imported, skipped, unmappedType, termsUnrecognized };
   }
 
   const usable = detected.filter((d) => d.entity !== null);
@@ -677,6 +679,11 @@ export function BulkImportZone() {
               );
             })}
           </div>
+          {unrecognizedTermsNote(result.clients.termsUnrecognized) && (
+            <p className="mt-3 text-xs text-amber-800">
+              {unrecognizedTermsNote(result.clients.termsUnrecognized)}
+            </p>
+          )}
         </div>
       )}
     </div>

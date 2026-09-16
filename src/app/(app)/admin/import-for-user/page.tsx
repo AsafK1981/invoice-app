@@ -238,7 +238,7 @@ export default function AdminImportForUserPage() {
             placeholder="חיפוש לפי אימייל או שם עסק..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="input-warm pr-10 w-full"
+            className="input-warm !pr-10 w-full"
           />
         </div>
         <ul className="divide-y divide-orange-50 max-h-72 overflow-y-auto rounded-xl border border-orange-100">

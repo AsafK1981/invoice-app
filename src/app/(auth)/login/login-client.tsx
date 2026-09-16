@@ -355,7 +355,7 @@ function LoginForm() {
                   placeholder="you@example.com"
                   required
                   autoComplete="email"
-                  className="input-warm pr-10"
+                  className="input-warm !pr-10"
                 />
               </div>
             </div>
@@ -395,7 +395,7 @@ function LoginForm() {
                     required
                     minLength={6}
                     autoComplete={mode === "signup" ? "new-password" : "current-password"}
-                    className="input-warm pl-3 pr-12"
+                    className="input-warm !pl-3 !pr-12"
                   />
                 </div>
               </div>

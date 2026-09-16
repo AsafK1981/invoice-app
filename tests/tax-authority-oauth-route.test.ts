@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterAll } from "vitest";
 import { NextRequest } from "next/server";
 
 // The Tax Authority connect/callback pair against an in-memory Supabase and a
@@ -10,6 +10,34 @@ import { NextRequest } from "next/server";
 // every outcome.
 
 type Row = Record<string, unknown>;
+
+// A test worker process can run several files one after another, so
+// process.env outlives this file. Leaving NEXT_PUBLIC_SITE_ORIGIN set here changed
+// CANONICAL_ORIGIN for whichever file ran next in the same worker and broke the
+// dunning email HTML pins at random. Everything touched below is restored in
+// afterAll. (vi.hoisted runs before the module body, so the key list lives
+// inside it rather than in a const above.)
+const savedEnv = vi.hoisted(() => {
+  const keys = [
+    "NEXT_PUBLIC_SUPABASE_URL",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+    "SUPABASE_SERVICE_ROLE_KEY",
+    "TAX_AUTHORITY_CLIENT_ID",
+    "TAX_AUTHORITY_CLIENT_SECRET",
+    "TAX_AUTHORITY_SOFTWARE_NUMBER",
+    "NEXT_PUBLIC_SITE_ORIGIN",
+    "NEXT_PUBLIC_APP_URL",
+    "TAX_AUTHORITY_PROXY_BASE",
+  ];
+  return Object.fromEntries(keys.map((k) => [k, process.env[k]])) as Record<string, string | undefined>;
+});
+
+afterAll(() => {
+  for (const [k, v] of Object.entries(savedEnv)) {
+    if (v === undefined) delete process.env[k];
+    else process.env[k] = v;
+  }
+});
 
 const h = vi.hoisted(() => {
   process.env.NEXT_PUBLIC_SUPABASE_URL = "https://example.supabase.co";

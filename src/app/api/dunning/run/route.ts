@@ -37,6 +37,9 @@ interface DocRow {
   date: string;
   /** "לתשלום עד"; lateness counts from it when set (see daysLate). */
   due_date: string | null;
+  /** The client's copy does not print due_date: still the timing anchor, but
+   *  never named in an email, and no pre-due email at all. */
+  due_date_hidden: boolean | null;
   total: number;
   currency: string | null;
   type: string;
@@ -232,7 +235,7 @@ export async function POST(req: NextRequest) {
 
     const { data: docs } = await admin
       .from("documents")
-      .select("id, business_id, client_id, client_name, number, date, due_date, total, currency, type, status, paid_at, converted_to_id")
+      .select("id, business_id, client_id, client_name, number, date, due_date, due_date_hidden, total, currency, type, status, paid_at, converted_to_id")
       .eq("business_id", biz.id)
       // Receivables only, the same rule both passes apply row by row below
       // (isOpenReceivable). Quotes used to be selected here and got a
@@ -395,6 +398,7 @@ export async function POST(req: NextRequest) {
         currency: doc.currency,
         date: doc.date,
         dueDate: doc.due_date,
+        dueDateHidden: doc.due_date_hidden,
         days,
       });
       if (!(await sendClaimedEmail(doc, bucket, clientEmail, content))) continue;
@@ -421,6 +425,7 @@ export async function POST(req: NextRequest) {
           total: doc.total,
           currency: doc.currency,
           dueDate: doc.due_date,
+          dueDateHidden: doc.due_date_hidden,
         });
         await sendClaimedEmail(doc, PRE_DUE_BUCKET, clientEmail, content);
       }

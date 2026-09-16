@@ -118,6 +118,30 @@ export function usableDueDate(dueDate: string | null | undefined): string | null
 }
 
 /**
+ * What a reminder may do with a document's due date. Two separate questions:
+ *
+ *  * `anchor`: the date lateness is counted from. The usable due date, or null
+ *    for the issue-date schedule. Hiding the line never changes this: a
+ *    client is still not chased before the date the owner agreed with them.
+ *  * `wording`: what the client may be told. "named" only when the date is
+ *    printed on the client's copy; "unnamed" when the owner hid the line
+ *    (documents.due_date_hidden), so no reminder mentions a date the client
+ *    never saw; "none" when there is no usable due date at all.
+ */
+export type DueDateWording = "none" | "named" | "unnamed";
+
+export interface DueDateUse {
+  anchor: string | null;
+  wording: DueDateWording;
+}
+
+export function dueDateUse(dueDate: string | null | undefined, hidden?: boolean | null): DueDateUse {
+  const anchor = usableDueDate(dueDate);
+  if (!anchor) return { anchor: null, wording: "none" };
+  return { anchor, wording: hidden === true ? "unnamed" : "named" };
+}
+
+/**
  * How late a document is, in whole days, for the 3 / 14 / 30 stages: past its
  * due date when it states one, otherwise since it was issued (exactly
  * {@link daysSinceIssue}, as before due dates existed).
@@ -168,16 +192,35 @@ export const DUNNING_DUE_INTROS: Record<DunningStage, string> = {
 export const PRE_STAGE_DUE_INTRO = "שלחתי לך את {theDoc} מספר {n} על סך {total} מ-{date}, אשמח לתשלום עד {dueDate}.";
 
 /**
- * The wording for a stage. With `hasDueDate` false this is exactly the tone
- * it always was; with it true only the intro changes.
- *
- * `days` matters only before stage 3: "אשמח לתשלום עד {dueDate}" is true up
- * to and including the due date, but one or two days after it the date is
- * already behind the client, so the plain pre-stage wording is used instead.
+ * The intro for a document whose due date is HIDDEN on the client's copy
+ * (documents.due_date_hidden). Lateness still counts from that due date, so
+ * the issue-date intros ("ששלחנו ב-{date}. חלפו כבר {days} ימים") would state
+ * a false number of days, and the due-date intros above would tell the client
+ * a date their document never showed. These name neither. CTA, signoff and
+ * subject stay the stage's own. Before stage 3 the plain PRE_STAGE_TONE is
+ * used: it names only the issue date, which is printed on the document.
  */
-export function toneForStage(stage: DunningStage | null, hasDueDate = false, days = 0) {
+export const DUNNING_HIDDEN_DUE_INTROS: Record<DunningStage, string> = {
+  3: "רק רציתי לוודא שראיתם את {docFull} מספר {n} על סך {total}.",
+  14: "אנחנו עוקבים אחרי {doc} מספר {n} על סך {total} ולא ראינו את התשלום.",
+  30: "{doc} מספר {n} על סך {total} עדיין לא {paid}.",
+};
+
+/**
+ * The wording for a stage. With `wording` "none" this is exactly the tone it
+ * always was; otherwise only the intro changes.
+ *
+ * `days` matters only before stage 3 with a named date: "אשמח לתשלום עד
+ * {dueDate}" is true up to and including the due date, but one or two days
+ * after it the date is already behind the client, so the plain pre-stage
+ * wording is used instead.
+ */
+export function toneForStage(stage: DunningStage | null, wording: DueDateWording = "none", days = 0) {
   const tone = stage == null ? PRE_STAGE_TONE : DUNNING_TONES[stage];
-  if (!hasDueDate) return tone;
+  if (wording === "none") return tone;
+  if (wording === "unnamed") {
+    return stage == null ? tone : { ...tone, intro: DUNNING_HIDDEN_DUE_INTROS[stage] };
+  }
   if (stage == null && days > 0) return tone;
   return { ...tone, intro: stage == null ? PRE_STAGE_DUE_INTRO : DUNNING_DUE_INTROS[stage] };
 }
@@ -197,6 +240,9 @@ interface ReminderTextArgs {
   /** "לתשלום עד", already formatted like `date`. Empty or missing means the
    *  document states no due date and the issue-date wording is used. */
   dueDate?: string | null;
+  /** documents.due_date_hidden: the due date still sets `days` and `stage`,
+   *  but the text never names it (see DUNNING_HIDDEN_DUE_INTROS). */
+  dueDateHidden?: boolean | null;
   /** Days late: past the due date when there is one, else since issue. */
   days: number;
   /** `null` before day 3 - see PRE_STAGE_TONE. */
@@ -211,13 +257,15 @@ interface ReminderTextArgs {
  * link so the client can open the document without digging through mail.
  */
 export function whatsappReminderText(args: ReminderTextArgs): string {
-  const tone = toneForStage(args.stage, Boolean(args.dueDate), args.days);
+  // `dueDate` arrives already formatted, so only its presence is checked here.
+  const wording: DueDateWording = !args.dueDate ? "none" : args.dueDateHidden === true ? "unnamed" : "named";
+  const tone = toneForStage(args.stage, wording, args.days);
   const vars = {
     ...dunningDocVars(args.docType),
     n: String(args.number),
     total: formatDocTotal(args.total, args.currency),
     date: args.date,
-    dueDate: args.dueDate || "",
+    dueDate: wording === "named" ? args.dueDate || "" : "",
     days: String(args.days),
   };
   return (
@@ -275,13 +323,16 @@ function calendarDaysBetween(from: string, to: string): number {
  * date that is today, past, or more than PRE_DUE_MAX_DAYS_BEFORE days away,
  * and a due date less than PRE_DUE_MIN_TERM_DAYS after the issue date. Same
  * UTC calendar-day arithmetic as {@link daysPastDate}.
+ *
+ * Also null when the due date is hidden on the client's copy: the email's
+ * only content is that date, and it must not name one the client never saw.
  */
 export function preDueDaysUntil(
-  doc: { date: string; dueDate?: string | null },
+  doc: { date: string; dueDate?: string | null; dueDateHidden?: boolean | null },
   now: Date = new Date(),
 ): number | null {
-  const due = usableDueDate(doc.dueDate);
-  if (!due) return null;
+  const { anchor: due, wording } = dueDateUse(doc.dueDate, doc.dueDateHidden);
+  if (!due || wording !== "named") return null;
   const until = -daysPastDate(due, now);
   if (!(until >= 1 && until <= PRE_DUE_MAX_DAYS_BEFORE)) return null;
   const term = calendarDaysBetween(doc.date, due);
@@ -291,8 +342,9 @@ export function preDueDaysUntil(
 
 /**
  * The filled friendly pre-due email. Throws on a document without a usable
- * due date: the caller must have checked {@link preDueDaysUntil} first, and a
- * reminder naming no date must never be sent.
+ * due date, or whose due date is hidden on the client's copy: the caller must
+ * have checked {@link preDueDaysUntil} first, a reminder naming no date must
+ * never be sent, and neither may one naming a date the client never saw.
  */
 export function preDueEmailContent(args: {
   docType?: string | null;
@@ -301,9 +353,12 @@ export function preDueEmailContent(args: {
   currency?: string | null;
   /** "לתשלום עד" as stored, "YYYY-MM-DD". */
   dueDate: string | null | undefined;
+  /** documents.due_date_hidden. */
+  dueDateHidden?: boolean | null;
 }): DunningEmailContent {
-  const dueDate = usableDueDate(args.dueDate);
+  const { anchor: dueDate, wording } = dueDateUse(args.dueDate, args.dueDateHidden);
   if (!dueDate) throw new Error("preDueEmailContent needs a usable due date");
+  if (wording !== "named") throw new Error("preDueEmailContent must not name a hidden due date");
   const vars = {
     ...dunningDocVars(args.docType),
     n: String(args.number),
@@ -336,17 +391,20 @@ export function dunningEmailContent(args: {
   date: string;
   /** "לתשלום עד" as stored, "YYYY-MM-DD"; null or missing when none is stated. */
   dueDate?: string | null;
+  /** documents.due_date_hidden: true means the client's copy does not show
+   *  the due date, so the email does not name it (see dueDateUse). */
+  dueDateHidden?: boolean | null;
   /** Days late: past the due date when there is one, else since issue. */
   days: number;
 }): DunningEmailContent {
-  const dueDate = usableDueDate(args.dueDate);
-  const tone = toneForStage(args.stage, dueDate !== null);
+  const { anchor, wording } = dueDateUse(args.dueDate, args.dueDateHidden);
+  const tone = toneForStage(args.stage, wording);
   const vars = {
     ...dunningDocVars(args.docType),
     n: String(args.number),
     total: formatDocTotal(args.total, args.currency),
     date: formatDate(args.date),
-    dueDate: dueDate ? formatDate(dueDate) : "",
+    dueDate: anchor && wording === "named" ? formatDate(anchor) : "",
     days: String(args.days),
   };
   return {

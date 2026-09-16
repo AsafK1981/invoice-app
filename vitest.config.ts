@@ -8,13 +8,21 @@ export default defineConfig({
     },
   },
   test: {
-    // Vitest 4's worker-pool selection is environment-sensitive here: on the
-    // current Node 24 / Vitest 4.1.5 / Vite 8 combo BOTH `threads` and `forks`
-    // fail to locate the runner ("Vitest failed to find the runner") before any
-    // test runs, while the VM-isolated `vmForks` pool works. (Earlier
-    // environments needed `threads`, then `forks`.) Pin to `vmForks` so the
-    // default `npm test` / `npx vitest run` works without a --pool flag.
-    pool: "vmForks",
+    // `forks`, not `vmForks` (2026-09-16). Under vmForks a worker that ran one
+    // test file handed its evaluated modules to the next file it ran: two
+    // files that both import the dunning route shared one route instance, so
+    // the second file's vi.mock of supabase, its fake Date and the
+    // CANONICAL_ORIGIN it expected were silently the first file's. Whether two
+    // such files landed in the same worker depended on scheduling, so the
+    // pre-push run went red at random. Reproduce with
+    // `npx vitest run tests/dunning-route-due-date.test.ts tests/dunning-route-pre-due.test.ts --no-file-parallelism --pool=vmForks`
+    // (fails) versus the same with --pool=forks (passes); the whole suite also
+    // passes on forks with --no-file-parallelism, the worst case for leaks.
+    // An earlier note here said forks could not find its runner on Node 24 /
+    // Vitest 4.1.5; that no longer reproduces (likely the shared node_modules
+    // corruption of that period). If it comes back, fix node_modules rather
+    // than returning to vmForks.
+    pool: "forks",
     // Vitest's default is 5s per test, which this repo kept implicitly. That
     // is enough when the machine is idle (the whole suite runs in ~20s) but
     // not when several agents build and test at once: the pre-push run has

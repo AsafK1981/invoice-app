@@ -61,6 +61,58 @@ export function isPaymentTerms(value: unknown): value is PaymentTerms {
   return typeof value === "string" && Object.prototype.hasOwnProperty.call(PAYMENT_TERMS_LABELS, value);
 }
 
+const EOM_PLUS_DAYS = new Set([30, 45, 60, 90]);
+const NET_PLUS_DAYS = new Set([15, 30, 45, 60]);
+
+function normalizeTermsText(text: string): string {
+  return text.replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+const LABEL_TO_TERMS = new Map<string, PaymentTerms>(
+  (Object.entries(PAYMENT_TERMS_LABELS) as [PaymentTerms, string][]).map(([code, label]) => [
+    normalizeTermsText(label),
+    code,
+  ]),
+);
+
+/**
+ * תנאי תשלום typed by a person into an imported file, read as one of our
+ * codes. Recognises the codes themselves, the exact labels, and the common
+ * ways Israelis write the same terms ("שוטף+30", "net 30", "45 ימים", "eom 60").
+ * Anything else is undefined, never a guess: a wrong term dates money wrongly
+ * on every future document, while a missing one only leaves the forecast on
+ * the client's payment history. So "שוטף+120", "75 יום" and "חודשיים" are all
+ * undefined, and so is a bare "30": in an Israeli file it means שוטף + 30 at
+ * least as often as 30 days from the invoice, and the two fall due weeks
+ * apart.
+ */
+export function parsePaymentTerms(text: unknown): PaymentTerms | undefined {
+  if (typeof text !== "string") return undefined;
+  const t = normalizeTermsText(text);
+  if (!t) return undefined;
+  if (isPaymentTerms(t)) return t;
+  const byLabel = LABEL_TO_TERMS.get(t);
+  if (byLabel) return byLabel;
+  if (/^(מיידי|מידי|immediate|due on receipt)$/.test(t)) return "immediate";
+  if (/^(שוטף|eom)$/.test(t)) return "eom";
+
+  // A number with no leading zero: "030" is not something anyone means.
+  const N = "([1-9]\\d*)";
+  const eomPlus = t.match(new RegExp(`^(?:שוטף|eom)(?: ?\\+ ?| פלוס | )${N}$`));
+  if (eomPlus) {
+    const n = Number(eomPlus[1]);
+    return EOM_PLUS_DAYS.has(n) ? (`eom_${n}` as PaymentTerms) : undefined;
+  }
+  const net =
+    t.match(new RegExp(`^net ?${N}$`)) ??
+    t.match(new RegExp(`^${N} (?:יום|ימים|days)$`));
+  if (net) {
+    const n = Number(net[1]);
+    return NET_PLUS_DAYS.has(n) ? (`net_${n}` as PaymentTerms) : undefined;
+  }
+  return undefined;
+}
+
 /** Days added after the anchor date, per code. */
 const NET_DAYS: Partial<Record<PaymentTerms, number>> = {
   net_15: 15,

@@ -26,6 +26,8 @@ import {
   ACCENT_HEX,
   type TemplateId,
 } from "@/lib/document-themes";
+import { PaymentTermsSelect } from "@/components/payment-terms-select";
+import type { PaymentTerms } from "@/lib/payment-terms";
 import type { Business, Client } from "@/lib/types";
 
 type Step = "welcome" | "business" | "design" | "client" | "done";
@@ -56,6 +58,8 @@ export default function OnboardingPage() {
     taxId: "",
     email: "",
     phone: "",
+    // "" = לפי היסטוריית התשלומים, the same default as the client form.
+    paymentTerms: "" as PaymentTerms | "",
   });
 
   // First-time-setup prefill: if the business record has no email yet (i.e.
@@ -176,6 +180,7 @@ export default function OnboardingPage() {
         email: clientForm.email.trim() || undefined,
         phone: clientForm.phone.trim() || undefined,
         createdAt: todayInIsrael(),
+        paymentTerms: clientForm.paymentTerms || undefined,
       };
       await clientStore.save(client);
       setStep("done");
@@ -576,6 +581,15 @@ export default function OnboardingPage() {
                     placeholder="contact@company.com"
                     autoComplete="email"
                     className="input-warm"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-stone-700 mb-1 block" htmlFor="ob-payment-terms">תנאי תשלום</label>
+                  <PaymentTermsSelect
+                    id="ob-payment-terms"
+                    value={clientForm.paymentTerms}
+                    onChange={(v) => setClientForm({ ...clientForm, paymentTerms: v })}
                   />
                 </div>
               </div>

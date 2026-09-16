@@ -9,7 +9,7 @@ import { STORE_LOAD_MESSAGES } from "./store-load";
 import { logAudit } from "./audit-log";
 import { todayInIsrael } from "./date";
 import { searchTerms, ilikeOrClause } from "./ilike-search";
-import { isPaymentTerms } from "./payment-terms";
+import { isPaymentTerms, type PaymentTerms } from "./payment-terms";
 import type { Client, ConsentSource } from "./types";
 
 const CHANGE_EVENT = "invoice-app:clients-changed";
@@ -205,6 +205,79 @@ export async function revokeClientConsent(id: string): Promise<void> {
     payload: { via: "owner" },
   });
   window.dispatchEvent(new Event(CHANGE_EVENT));
+}
+
+/**
+ * How many of the business's clients have no agreed תנאי תשלום, counted by
+ * the server over the WHOLE book (the /clients grid only holds one page).
+ * Throws on failure, so a refused read never reads as "all set".
+ */
+export async function countClientsWithoutPaymentTerms(): Promise<number> {
+  const bid = getBusinessId();
+  if (!bid) return 0;
+  const { count, error } = await supabase
+    .from("clients")
+    .select("id", { count: "exact", head: true })
+    .eq("business_id", bid)
+    .is("payment_terms", null);
+  if (error) throw new Error(error.message);
+  return count ?? 0;
+}
+
+/** `countClientsWithoutPaymentTerms`, kept fresh on every clients change. 0 while unknown. */
+export function useClientsWithoutPaymentTermsCount(): number {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    let alive = true;
+    const load = () => {
+      countClientsWithoutPaymentTerms()
+        .then((n) => {
+          if (alive) setCount(n);
+        })
+        // Unknown is shown as "nothing to do": the button is an offer, not a
+        // status, and hiding it on a failed read is the quiet outcome.
+        .catch(() => {
+          if (alive) setCount(0);
+        });
+    };
+    onBusinessReady(load);
+    window.addEventListener(CHANGE_EVENT, load);
+    return () => {
+      alive = false;
+      window.removeEventListener(CHANGE_EVENT, load);
+    };
+  }, []);
+  return count;
+}
+
+/**
+ * Give every client of the business that has NO terms yet the same terms, in
+ * one scoped UPDATE of the payment_terms column only. A client that already
+ * has terms is excluded by the query itself (`is null`), not by a list read
+ * earlier, so a terms change made meanwhile in another tab is never
+ * overwritten. Never a loop over clientStore.save, which rewrites every
+ * column from a possibly stale object. Returns how many rows really changed,
+ * from the server's own count: returning the rows and counting them would cap
+ * at PostgREST's 1,000-row response limit on a large book.
+ */
+export async function setPaymentTermsForClientsWithoutTerms(terms: PaymentTerms): Promise<number> {
+  if (!isPaymentTerms(terms)) throw new Error("תנאי התשלום לא תקינים");
+  const bid = getBusinessId();
+  if (!bid) throw new Error("אין עסק פעיל - רענן את הדף ונסה שוב");
+  const { count, error } = await supabase
+    .from("clients")
+    .update({ payment_terms: terms }, { count: "exact" })
+    .eq("business_id", bid)
+    .is("payment_terms", null);
+  if (error) throw new Error(error.message);
+  const updated = count ?? 0;
+  logAudit({
+    action: "client.updated",
+    targetType: "client",
+    payload: { bulk: true, field: "payment_terms", terms, count: updated },
+  });
+  window.dispatchEvent(new Event(CHANGE_EVENT));
+  return updated;
 }
 
 export const clientStore = {

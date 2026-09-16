@@ -107,7 +107,7 @@ export default function ResetPasswordPage() {
                     required
                     minLength={6}
                     disabled={!sessionReady || !!error}
-                    className="input-warm pl-3 pr-12"
+                    className="input-warm !pl-3 !pr-12"
                   />
                 </div>
               </div>
@@ -126,7 +126,7 @@ export default function ResetPasswordPage() {
                     required
                     minLength={6}
                     disabled={!sessionReady || !!error}
-                    className="input-warm pr-12"
+                    className="input-warm !pr-12"
                   />
                 </div>
               </div>

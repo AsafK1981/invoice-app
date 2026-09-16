@@ -4,14 +4,12 @@ import { useEffect, useState } from "react";
 import { Bell, BellOff, AlertCircle, MessageCircle } from "lucide-react";
 import { useBusiness, saveDunningSettings, saveDunningWhatsappEnabled } from "@/lib/business-store";
 import { useToast } from "@/components/ui/toast";
-
-interface Draft {
-  enabled: boolean;
-  fromName: string;
-  /** Friendly email before the due date. Kept while `enabled` is off, so
-   *  turning the email reminders back on restores the owner's choice. */
-  preDue: boolean;
-}
+import {
+  canSaveDunningDraft,
+  dunningDraftFromBusiness,
+  isDunningDraftDirty,
+  type DunningSettingsDraft as Draft,
+} from "@/lib/dunning-settings-draft";
 
 export function DunningSettingsSection() {
   const { business, ready, refetch } = useBusiness();
@@ -30,11 +28,11 @@ export function DunningSettingsSection() {
 
   useEffect(() => {
     if (!ready) return;
-    const loaded: Draft = {
-      enabled: business.dunningEnabled ?? false,
-      fromName: business.dunningFromName ?? "",
-      preDue: business.dunningPreDueEnabled === true,
-    };
+    const loaded = dunningDraftFromBusiness({
+      dunningEnabled: business.dunningEnabled,
+      dunningFromName: business.dunningFromName,
+      dunningPreDueEnabled: business.dunningPreDueEnabled,
+    });
     setDraft(loaded);
     setBaseline(loaded);
   }, [ready, business.dunningEnabled, business.dunningFromName, business.dunningPreDueEnabled]);
@@ -62,12 +60,11 @@ export function DunningSettingsSection() {
     }
   }
 
-  const dirty =
-    draft.enabled !== baseline.enabled ||
-    draft.fromName !== baseline.fromName ||
-    draft.preDue !== baseline.preDue;
+  const dirty = isDunningDraftDirty(draft, baseline);
+  const canSave = canSaveDunningDraft({ draft, saved: baseline, saving });
 
   async function handleSave() {
+    if (!canSave) return;
     setErr(null);
     setSaving(true);
     try {
@@ -190,7 +187,7 @@ export function DunningSettingsSection() {
         <button
           type="button"
           onClick={handleSave}
-          disabled={saving || !dirty}
+          disabled={!canSave}
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-gradient-to-l from-orange-500 to-orange-700 hover:shadow-md hover:shadow-orange-200 disabled:from-stone-300 disabled:to-stone-300 disabled:shadow-none disabled:cursor-not-allowed transition-all"
         >
           {saving ? "שומר..." : "שמירה"}

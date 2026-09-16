@@ -17,12 +17,19 @@ import {
   Printer,
   Search,
   X,
+  CalendarClock,
 } from "lucide-react";
-import { useClients, useClientsPage, clientStore } from "@/lib/client-store";
+import {
+  useClients,
+  useClientsPage,
+  clientStore,
+  useClientsWithoutPaymentTermsCount,
+  setPaymentTermsForClientsWithoutTerms,
+} from "@/lib/client-store";
 import { buildStatsByClient } from "@/lib/client-stats";
 import { StoreLoadError } from "@/components/store-load-error";
 import { useDocuments } from "@/lib/document-store";
-import { formatCurrencyWhole, formatDate } from "@/lib/format";
+import { formatCurrencyWhole, formatDate, hebrewCount } from "@/lib/format";
 import { parseEmails } from "@/lib/emails";
 import { ClientFormModal } from "@/components/client-form-modal";
 import { CsvImportModal } from "@/components/csv-import-modal";
@@ -35,12 +42,21 @@ import { PrintSheet, usePrintSheet } from "@/components/print-sheet";
 import { DownloadPdfButton } from "@/components/download-pdf-button";
 import { useBusiness } from "@/lib/business-store";
 import { exportClients } from "@/lib/csv-export";
+import { Modal } from "@/components/ui/modal";
+import { PaymentTermsSelect } from "@/components/payment-terms-select";
+import type { PaymentTerms } from "@/lib/payment-terms";
 import type { Client } from "@/lib/types";
 
 // Search used to be matched in-memory here (matchesClient); it now happens
 // server-side in useClientsPage() (see client-store.ts) so a search over a
 // list bigger than one page still searches the WHOLE list, not just the
 // current page.
+
+/** "ל-5 לקוחות", and "ללקוח אחד" for one (the prefix fuses with a word, never with a numeral). */
+function toClientsPhrase(count: number): string {
+  const phrase = hebrewCount(count, "לקוח אחד", "לקוחות");
+  return count === 1 ? `ל${phrase}` : `ל-${phrase}`;
+}
 
 export default function ClientsPage() {
   // Full, unpaginated list: needed for the unfiltered "X לקוחות בספר" count,
@@ -59,6 +75,11 @@ export default function ClientsPage() {
   const confirm = useConfirm();
   const showToast = useToast();
   const { printing, print, downloadPdf, pdfBusy } = usePrintSheet();
+  // Clients with no agreed terms, counted server-side over the whole book.
+  const withoutTermsCount = useClientsWithoutPaymentTermsCount();
+  const [bulkTermsOpen, setBulkTermsOpen] = useState(false);
+  const [bulkTerms, setBulkTerms] = useState<PaymentTerms | "">("");
+  const [bulkTermsSaving, setBulkTermsSaving] = useState(false);
 
   const statsByClient = useMemo(() => buildStatsByClient(documents, clients), [documents, clients]);
 
@@ -104,6 +125,25 @@ export default function ClientsPage() {
   function openEdit(client: Client) {
     setEditing(client);
     setModalOpen(true);
+  }
+
+  function openBulkTerms() {
+    setBulkTerms("");
+    setBulkTermsOpen(true);
+  }
+
+  async function applyBulkTerms() {
+    if (!bulkTerms || bulkTermsSaving) return;
+    setBulkTermsSaving(true);
+    try {
+      const updated = await setPaymentTermsForClientsWithoutTerms(bulkTerms);
+      setBulkTermsOpen(false);
+      showToast(`תנאי התשלום הוגדרו ${toClientsPhrase(updated)}`, "success");
+    } catch {
+      showToast("תנאי התשלום לא נשמרו. בדקו את החיבור ונסו שוב.", "error");
+    } finally {
+      setBulkTermsSaving(false);
+    }
   }
 
   async function remove(client: Client) {
@@ -188,6 +228,17 @@ export default function ClientsPage() {
         </div>
       </div>
 
+      {withoutTermsCount > 0 && !clientsError && (
+        <button
+          type="button"
+          onClick={openBulkTerms}
+          className="inline-flex items-center gap-2 bg-white border-2 border-orange-200 text-stone-800 px-4 py-2.5 rounded-2xl text-sm font-semibold hover:bg-orange-50"
+        >
+          <CalendarClock className="w-4 h-4" />
+          הגדרת תנאי תשלום ללקוחות בלי תנאים
+        </button>
+      )}
+
       {clients.length > 0 && (
         <div className="relative max-w-md">
           <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none" />
@@ -197,7 +248,7 @@ export default function ClientsPage() {
             onChange={(e) => updateSearch(e.target.value)}
             placeholder="חיפוש: שם, ח.פ, אימייל, טלפון, הערות..."
             aria-label="חיפוש לקוחות"
-            className="input-warm pr-10 pl-9"
+            className="input-warm !pr-10 !pl-9"
           />
           {search && (
             <button
@@ -377,6 +428,47 @@ export default function ClientsPage() {
         onClose={() => setModalOpen(false)}
         client={editing}
       />
+
+      <Modal
+        open={bulkTermsOpen}
+        onClose={() => setBulkTermsOpen(false)}
+        title="הגדרת תנאי תשלום ללקוחות בלי תנאים"
+        icon={CalendarClock}
+        maxWidth="sm"
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={() => setBulkTermsOpen(false)}
+              className="px-4 py-2 rounded-xl text-sm font-semibold text-stone-700 hover:bg-white"
+            >
+              ביטול
+            </button>
+            <button
+              type="button"
+              onClick={applyBulkTerms}
+              disabled={!bulkTerms || bulkTermsSaving}
+              className="px-5 py-2 rounded-xl text-sm font-semibold text-white bg-gradient-to-l from-orange-500 to-orange-700 hover:shadow-md hover:shadow-orange-200 disabled:shadow-none"
+            >
+              {bulkTermsSaving ? "שומר..." : "שמירה"}
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <PaymentTermsSelect
+            value={bulkTerms}
+            onChange={setBulkTerms}
+            allowHistory={false}
+            aria-label="תנאי תשלום"
+          />
+          <p className="text-sm text-stone-700 leading-relaxed">
+            יוגדר {toClientsPhrase(withoutTermsCount)}{" "}
+            {withoutTermsCount === 1 ? "שעדיין אין לו תנאי תשלום." : "שעדיין אין להם תנאי תשלום."}{" "}
+            לקוחות שכבר הוגדרו להם תנאים לא ישתנו.
+          </p>
+        </div>
+      </Modal>
 
       <CsvImportModal
         open={importOpen}

@@ -50,6 +50,9 @@ export interface EmailPlanDoc extends ReceivableCandidate {
   date: string;
   /** "לתשלום עד", YYYY-MM-DD, or null when the document states none. */
   due_date?: string | null;
+  /** true when the due date is not printed on the client's copy. Timing is
+   *  unchanged; only what the client is told (and the pre-due email) is. */
+  due_date_hidden?: boolean | null;
 }
 
 export interface EmailPlanLogRow {
@@ -126,7 +129,8 @@ export interface PreDueReminderPlan<D extends EmailPlanDoc> {
 /**
  * Decide which friendly pre-due emails today's run should send: open
  * receivables whose due date is 1 to 5 days away (and at least 7 days after
- * issue, see preDueDaysUntil), not already logged under PRE_DUE_BUCKET on the
+ * issue, see preDueDaysUntil) and printed on the client's copy (a hidden due
+ * date is skipped outright), not already logged under PRE_DUE_BUCKET on the
  * email channel, with a client email. Independent of the 3 / 14 / 30 plan:
  * it reads only its own bucket and never changes what that plan decides.
  *
@@ -149,7 +153,10 @@ export function planPreDueEmails<D extends EmailPlanDoc>(
   for (const doc of docs) {
     if (!isOpenReceivable(doc)) continue;
     if (seen.has(doc.id)) continue;
-    const daysUntilDue = preDueDaysUntil({ date: doc.date, dueDate: doc.due_date }, today);
+    const daysUntilDue = preDueDaysUntil(
+      { date: doc.date, dueDate: doc.due_date, dueDateHidden: doc.due_date_hidden },
+      today,
+    );
     if (daysUntilDue == null) continue;
     const email = doc.client_id ? emailByClient.get(doc.client_id) : null;
     if (!email) continue;

@@ -3230,13 +3230,39 @@ html { scrollbar-color: rgba(169, 78, 22, 0.55) rgba(31, 35, 43, 0.08); }
 /* Disabled primary CTA. (WCAG exempts disabled controls, but a label you
    cannot read at all reads as "broken" rather than "not yet available".
    #6b6560 on #e9e8e5 is 5.0:1: muted, still readable.) */
+/* Specificity matters here, not just order: every rule it has to beat is
+   !important too, so the higher specificity wins whatever the order. The
+   fill rules above are `html .from-orange-500.to-orange-700:not(.bg-clip-text)`
+   (0,3,1) and their `:hover` (0,4,1), both above a bare
+   `html button:disabled.from-orange-500` (0,2,2). Until 2026-09-16 that
+   plain selector was all there was, so every disabled `to-orange-700` CTA
+   (the /reminders שמירה among them) kept the orange fill and looked
+   clickable, and every disabled `to-rose-500` CTA turned Burnt Orange on
+   hover. Each selector below mirrors the one it overrides plus
+   `button:disabled`, so it always outranks it. Disabled = grey fill, muted
+   ink, no shadow, no hover lift (translate / brightness), not-allowed cursor
+   (globals.css). */
 html button:disabled.from-orange-500,
-html button:disabled.bg-orange-500 {
+html button:disabled.from-orange-500:hover,
+html button:disabled.from-orange-500.to-rose-500,
+html button:disabled.from-orange-500.to-rose-500:hover,
+html button:disabled.from-orange-500.to-orange-700:not(.bg-clip-text),
+html button:disabled.from-orange-500.to-orange-700:not(.bg-clip-text):hover,
+html button:disabled.bg-orange-500,
+html button:disabled.bg-orange-500:hover,
+html button:disabled.bg-orange-600,
+html button:disabled.bg-orange-600:hover {
   background: #e9e8e5 !important;
   color: #6b6560 !important;
   box-shadow: none !important;
+  filter: none !important;
+  translate: none !important;
 }
-html button:disabled.from-orange-500 * { color: #6b6560 !important; }
+html button:disabled.from-orange-500 *,
+html button:disabled.from-orange-500.to-rose-500 *:not([class*="bg-"]),
+html button:disabled.from-orange-500.to-orange-700:not(.bg-clip-text) *:not([class*="bg-"]),
+html button:disabled.bg-orange-500 svg,
+html button:disabled.bg-orange-600 svg { color: #6b6560 !important; }
 
 /* =====================================================================
    DASHBOARD SCALE-UP: desktop only (layout/size only, no colour)

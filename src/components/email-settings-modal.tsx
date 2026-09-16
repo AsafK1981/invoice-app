@@ -161,7 +161,7 @@ export function EmailSettingsModal({ open, onClose }: Props) {
               onChange={(e) => setGmailAppPassword(e.target.value)}
               placeholder="xxxx xxxx xxxx xxxx"
               autoComplete="off"
-              className="input-warm pr-12"
+              className="input-warm !pr-12"
             />
           </div>
         </FormField>

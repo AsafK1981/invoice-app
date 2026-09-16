@@ -515,6 +515,8 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
       docType: doc.type,
       date: formatDate(doc.date),
       dueDate: dueDate ? formatDate(dueDate) : null,
+      // Hidden on the client's copy: still counts the days, never names the date.
+      dueDateHidden: doc.dueDateHidden === true,
       days,
       stage: dunningStageFor(days),
       viewUrl: publicUrl,

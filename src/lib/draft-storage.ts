@@ -1,6 +1,6 @@
 import type { DocumentType, PaymentDetails, PaymentMethod } from "./types";
 import type { VatMode } from "./vat";
-import type { DueDateSource } from "./payment-terms";
+import type { DueDateSource, PaymentTerms } from "./payment-terms";
 
 export interface DraftItem {
   id: string;
@@ -16,6 +16,9 @@ export interface EditorDraft {
   adhocName: string;
   adhocTaxId: string;
   adhocEmail: string;
+  /** תנאי תשלום picked for the client being quick-added, so a resumed draft
+   *  keeps its terms-driven due date. Optional: older drafts have none. */
+  adhocPaymentTerms?: PaymentTerms;
   date: string;
   subject: string;
   validUntil: string;
