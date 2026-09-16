@@ -61,8 +61,12 @@ declare global {
   }
 }
 
-/** Friendly Hebrew message for ?error= codes set by /api/auth/google-redirect. */
+/**
+ * Friendly Hebrew message for ?error= codes set by /api/auth/google-redirect
+ * and /api/auth/form-fallback.
+ */
 function googleErrorMessage(code: string | null): string | null {
+  if (code === "form_early") return "הדף עוד לא סיים להיטען. נסה שוב.";
   if (!code || !code.startsWith("google")) return null;
   return "ההתחברות עם Google לא הושלמה. נסה שוב.";
 }
@@ -327,7 +331,16 @@ function LoginForm() {
         )}
 
         <div className="card-soft p-8 animate-fade-in-up stagger-2">
-          <form onSubmit={handleSubmit} className="space-y-4">
+          {/* method/action only matter if the browser submits the form before
+              handleSubmit is attached: a POST to a route that never reads the
+              body, instead of a GET that puts the password in the URL. See
+              src/app/api/auth/form-fallback/route.ts. */}
+          <form
+            onSubmit={handleSubmit}
+            method="post"
+            action="/api/auth/form-fallback"
+            className="space-y-4"
+          >
             <div>
               <label htmlFor={emailId} className="text-xs font-semibold text-stone-700 mb-1 block">אימייל</label>
               <div className="relative">
