@@ -142,8 +142,8 @@ export default function UniformStructurePage() {
         <h2 className="text-lg font-bold text-stone-900">למי הקובץ הזה נועד</h2>
         <ul className="text-sm text-stone-700 leading-relaxed space-y-2 list-disc pr-5">
           <li>
-            הקובץ נדרש מכל עסק שמנהל את ספריו בתוכנה - <strong>גם {BUSINESS_TYPE_LABELS.exempt}</strong>.
-            סוג העסק לא משנה כאן.
+            הקובץ הוא חלק מחובת ניהול הפנקסים מול מס הכנסה כשהספרים מתנהלים בתוכנה,
+            כולל אצל <strong>{BUSINESS_TYPE_LABELS.exempt}</strong>. אם יש ספק אם זה חל עליך, כדאי לשאול את רואה החשבון.
           </li>
           <li>
             לא מגישים אותו ביוזמתך ולא בתאריך קבוע. מפיקים אותו כשמבקר מרשות המסים מבקש
