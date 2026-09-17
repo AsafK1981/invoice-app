@@ -5,6 +5,9 @@ import {
   normalizeBudgetLink,
   mapPolarOrders,
   roundMoney,
+  convertAmount,
+  safeUsdRate,
+  totalsInBothCurrencies,
   DEFAULT_USD_RATE,
   type BudgetEntry,
   type AutomaticIncome,
@@ -236,6 +239,132 @@ describe("summarizeBudget", () => {
     expect(s.incomeThisMonth.ILS).toBe(40);
     expect(s.automaticIncomeIls).toBe(roundMoney(40 + 19 * 3.5));
     expect(s.incomeThisMonthIls).toBe(roundMoney(40 + 19 * 3.5));
+  });
+});
+
+describe("convertAmount", () => {
+  it("converts USD to ILS at the given rate", () => {
+    expect(convertAmount(100, "USD", "ILS", 3.5)).toBe(350);
+    expect(convertAmount(2.7, "USD", "ILS", 3.038)).toBe(roundMoney(2.7 * 3.038));
+    expect(convertAmount(2.7, "USD", "ILS", 3.038)).toBe(8.2);
+  });
+
+  it("converts ILS to USD by dividing at the same rate", () => {
+    expect(convertAmount(350, "ILS", "USD", 3.5)).toBe(100);
+    expect(convertAmount(64.54, "ILS", "USD", 3.038)).toBe(21.24);
+  });
+
+  it("is the identity (bar rounding) when the currencies match", () => {
+    expect(convertAmount(64.54, "ILS", "ILS", 3.5)).toBe(64.54);
+    expect(convertAmount(2.7, "USD", "USD", 3.5)).toBe(2.7);
+    // No multiply-then-divide round trip: the amount comes back untouched.
+    expect(convertAmount(0.07, "ILS", "ILS", 3.038)).toBe(0.07);
+  });
+
+  it("round-trips a value back to itself at a clean rate", () => {
+    const ils = convertAmount(100, "USD", "ILS", 4);
+    expect(convertAmount(ils, "ILS", "USD", 4)).toBe(100);
+  });
+
+  it("falls back to the visible estimate on a rate that cannot be used", () => {
+    for (const bad of [0, -3, NaN, Infinity, undefined, null]) {
+      expect(safeUsdRate(bad)).toBe(DEFAULT_USD_RATE);
+      expect(convertAmount(10, "USD", "ILS", bad)).toBe(roundMoney(10 * DEFAULT_USD_RATE));
+      expect(convertAmount(10, "ILS", "USD", bad)).toBe(roundMoney(10 / DEFAULT_USD_RATE));
+    }
+  });
+
+  it("returns zero for an amount that is not a number", () => {
+    expect(convertAmount(NaN, "USD", "ILS", 3.5)).toBe(0);
+    expect(convertAmount(Infinity, "ILS", "USD", 3.5)).toBe(0);
+  });
+});
+
+describe("totalsInBothCurrencies", () => {
+  it("agrees with the summary in the ILS column and expresses the same money in USD", () => {
+    const summary = summarizeBudget(
+      [
+        entry({ id: "ils", amount: 64.54, currency: "ILS", recurrence: "monthly" }),
+        entry({ id: "usd", amount: 2.7, currency: "USD", recurrence: "monthly" }),
+      ],
+      [],
+      { today: TODAY, usdRate: 3.038 },
+    );
+    const totals = totalsInBothCurrencies(summary, { usdRate: 3.038 });
+
+    // The ILS column IS the summary figure, never a second derivation.
+    expect(totals.expenses.ILS).toBe(summary.monthlyRunRateIls);
+    expect(totals.expenses.ILS).toBe(roundMoney(64.54 + 2.7 * 3.038));
+    // The USD column is the whole run-rate, not just the USD-billed part.
+    expect(totals.expenses.USD).toBe(roundMoney(2.7 + 64.54 / 3.038));
+    expect(totals.expenses.USD).toBeGreaterThan(2.7);
+    expect(totals.usdRate).toBe(3.038);
+  });
+
+  it("counts a yearly row as a twelfth in both columns", () => {
+    const summary = summarizeBudget(
+      [entry({ id: "y", amount: 1200, currency: "USD", recurrence: "yearly" })],
+      [],
+      { today: TODAY, usdRate: 4 },
+    );
+    const totals = totalsInBothCurrencies(summary, { usdRate: 4 });
+    expect(totals.expenses.USD).toBe(100);
+    expect(totals.expenses.ILS).toBe(400);
+  });
+
+  it("leaves out inactive rows, null amounts and one-off charges", () => {
+    const summary = summarizeBudget(
+      [
+        entry({ id: "live", amount: 50, currency: "ILS" }),
+        entry({ id: "dead", amount: 900, currency: "ILS", active: false }),
+        entry({ id: "hole", amount: null, currency: "ILS" }),
+        entry({ id: "once", amount: 500, recurrence: "once", entry_date: "2026-09-20" }),
+      ],
+      [],
+      { today: TODAY, usdRate: 5 },
+    );
+    const totals = totalsInBothCurrencies(summary, { usdRate: 5 });
+    expect(totals.expenses.ILS).toBe(50);
+    expect(totals.expenses.USD).toBe(10);
+    expect(summary.missingAmountCount).toBe(1);
+  });
+
+  it("carries income and the net through both columns, sign intact", () => {
+    const summary = summarizeBudget(
+      [
+        entry({ id: "cost", amount: 40, currency: "ILS" }),
+        entry({ id: "in", kind: "income", amount: 10, currency: "USD", recurrence: "monthly" }),
+      ],
+      [],
+      { today: TODAY, usdRate: 4 },
+    );
+    const totals = totalsInBothCurrencies(summary, { usdRate: 4 });
+    expect(totals.income.ILS).toBe(40);
+    expect(totals.income.USD).toBe(10);
+    expect(totals.expenses.ILS).toBe(40);
+    expect(totals.expenses.USD).toBe(10);
+    expect(totals.net.ILS).toBe(0);
+    expect(totals.net.USD).toBe(0);
+
+    const losing = summarizeBudget(
+      [entry({ id: "cost", amount: 100, currency: "ILS" })],
+      [],
+      { today: TODAY, usdRate: 4 },
+    );
+    const lossTotals = totalsInBothCurrencies(losing, { usdRate: 4 });
+    expect(lossTotals.net.ILS).toBe(-100);
+    expect(lossTotals.net.USD).toBe(-25);
+  });
+
+  it("uses the fallback rate when the caller passes a bad one", () => {
+    const summary = summarizeBudget(
+      [entry({ id: "a", amount: 37, currency: "ILS" })],
+      [],
+      { today: TODAY, usdRate: 0 },
+    );
+    const totals = totalsInBothCurrencies(summary, { usdRate: 0 });
+    expect(totals.usdRate).toBe(DEFAULT_USD_RATE);
+    expect(totals.expenses.USD).toBe(roundMoney(37 / DEFAULT_USD_RATE));
   });
 });
 

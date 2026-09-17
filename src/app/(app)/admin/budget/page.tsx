@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import {
   Coins,
   Plus,
@@ -18,14 +19,17 @@ import {
   CalendarClock,
   Scale,
   RefreshCw,
+  LineChart,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { isAdminEmail } from "@/lib/admin";
-import { formatCurrency, formatCurrencyWhole, formatDate } from "@/lib/format";
+import { formatCurrencyWhole, formatDate } from "@/lib/format";
 import { formatMoney } from "@/lib/currencies";
 import { Modal } from "@/components/ui/modal";
 import {
   summarizeBudget,
+  totalsInBothCurrencies,
+  convertAmount,
   israelDayOf,
   AUTOMATIC_DISPLAY_LIMIT,
   DEFAULT_USD_RATE,
@@ -33,10 +37,26 @@ import {
   type AutomaticIncome,
   type BudgetCurrency,
   type BudgetEntry,
+  type BudgetTotals,
+  type PerCurrency,
   type BudgetKind,
   type BudgetRecurrence,
   type PolarStatus,
 } from "@/lib/admin-budget";
+import {
+  buildBudgetChart,
+  BUDGET_CHART_GRANULARITIES,
+  type BudgetChartGranularity,
+} from "@/lib/admin-budget-chart";
+
+// The dashboard's own line chart, so the two screens cannot drift apart. Loaded
+// lazily: it measures its container, which only exists in the browser.
+const MonthlyLineChart = dynamic(
+  () => import("@/components/dashboard-chart").then((mod) => mod.MonthlyLineChart),
+  { ssr: false, loading: () => <div className="h-[360px] rounded-xl bg-stone-100 animate-pulse" /> },
+) as typeof import("@/components/dashboard-chart").MonthlyLineChart;
+
+const CHART_GRANULARITY_STORAGE_KEY = "admin-budget-chart-granularity";
 
 /**
  * The operator's budget: what the app costs to run, what it earns.
@@ -153,6 +173,7 @@ export default function AdminBudgetPage() {
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [granularity, setGranularity] = useState<BudgetChartGranularity>("month");
 
   useEffect(() => {
     supabase.auth
@@ -170,6 +191,17 @@ export default function AdminBudgetPage() {
         setChecked(true);
         setLoading(false);
       });
+  }, []);
+
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(CHART_GRANULARITY_STORAGE_KEY);
+      if (BUDGET_CHART_GRANULARITIES.some((g) => g.key === saved)) {
+        setGranularity(saved as BudgetChartGranularity);
+      }
+    } catch {
+      // Storage unavailable: the month view is the default.
+    }
   }, []);
 
   useEffect(() => {
@@ -237,15 +269,44 @@ export default function AdminBudgetPage() {
     [entries, automatic, usdRate],
   );
 
+  // Every bottom-line figure in BOTH currencies, so no column on this page is a
+  // per-currency partial the reader has to add up in their head. Built from the
+  // same summary and the same rate, so the cards, the table footer and the
+  // totals block cannot disagree.
+  const totals = useMemo(() => totalsInBothCurrencies(summary, { usdRate }), [summary, usdRate]);
+
+  const chartPoints = useMemo(
+    () => buildBudgetChart(entries, automatic, granularity, { usdRate }),
+    [entries, automatic, granularity, usdRate],
+  );
+  const chartData = useMemo(
+    () => chartPoints.map((p) => ({ month: p.label, הכנסות: p.income, הוצאות: p.expense })),
+    [chartPoints],
+  );
+  const chartTotals = useMemo(() => {
+    const income = chartPoints.reduce((sum, p) => sum + p.income, 0);
+    const expense = chartPoints.reduce((sum, p) => sum + p.expense, 0);
+    return { income, expense, net: income - expense };
+  }, [chartPoints]);
+
   const expenses = useMemo(() => entries.filter((e) => e.kind === "expense"), [entries]);
   const manualIncome = useMemo(() => entries.filter((e) => e.kind === "income"), [entries]);
-  // The API returns a year of payments; the list shows the most recent ones so
+  // The API returns three years of payments; the list shows the most recent ones so
   // a busy month does not bury the manual rows under it. The summary still
   // counts every payment of the current month, not just the ones on screen.
   const automaticRecent = useMemo(
     () => automatic.slice(0, AUTOMATIC_DISPLAY_LIMIT),
     [automatic],
   );
+
+  function pickGranularity(key: BudgetChartGranularity) {
+    setGranularity(key);
+    try {
+      window.localStorage.setItem(CHART_GRANULARITY_STORAGE_KEY, key);
+    } catch {
+      // Storage unavailable: the choice still applies for this visit.
+    }
+  }
 
   function applyRate(text: string) {
     setRateText(text);
@@ -333,14 +394,19 @@ export default function AdminBudgetPage() {
   }
 
   async function handleToggle(entry: BudgetEntry) {
-    const res = await fetch(`/api/admin/budget/${entry.id}`, {
-      method: "PATCH",
-      headers: await authHeaders(),
-      body: JSON.stringify({ active: !entry.active }),
-    });
-    const data = await res.json();
-    if (data.ok) load();
-    else setToast({ kind: "error", text: data.error || "שגיאה" });
+    try {
+      const res = await fetch(`/api/admin/budget/${entry.id}`, {
+        method: "PATCH",
+        headers: await authHeaders(),
+        body: JSON.stringify({ active: !entry.active }),
+      });
+      const data = await res.json();
+      if (data.ok) load();
+      else setToast({ kind: "error", text: data.error || "שגיאה" });
+    } catch {
+      // Network down or a non-JSON error page: say so instead of doing nothing.
+      setToast({ kind: "error", text: "העדכון נכשל. בדוק את החיבור ונסה שוב" });
+    }
   }
 
   async function handleDelete(entry: BudgetEntry) {
@@ -349,16 +415,20 @@ export default function AdminBudgetPage() {
       return;
     }
     setConfirmDeleteId(null);
-    const res = await fetch(`/api/admin/budget/${entry.id}`, {
-      method: "DELETE",
-      headers: await authHeaders(),
-    });
-    const data = await res.json();
-    if (data.ok) {
-      setToast({ kind: "success", text: "הרשומה נמחקה" });
-      load();
-    } else {
-      setToast({ kind: "error", text: data.error || "שגיאה" });
+    try {
+      const res = await fetch(`/api/admin/budget/${entry.id}`, {
+        method: "DELETE",
+        headers: await authHeaders(),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setToast({ kind: "success", text: "הרשומה נמחקה" });
+        load();
+      } else {
+        setToast({ kind: "error", text: data.error || "שגיאה" });
+      }
+    } catch {
+      setToast({ kind: "error", text: "המחיקה נכשלה. בדוק את החיבור ונסה שוב" });
     }
   }
 
@@ -443,10 +513,14 @@ export default function AdminBudgetPage() {
 
       {/* Summary */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Each card: the whole figure in shekels, and the SAME whole figure in
+            dollars underneath. The sub-line used to read "₪120 + $38", two
+            halves of one number that the reader had to add up, which is the
+            confusion this page is here to remove. */}
         <SummaryCard
           label="הוצאה חודשית"
           value={formatCurrencyWhole(summary.monthlyRunRateIls)}
-          sub={`${formatCurrency(summary.monthlyRunRate.ILS)} + ${formatMoney(summary.monthlyRunRate.USD, "USD")}`}
+          sub={`≈ ${formatMoney(totals.expenses.USD, "USD")}`}
           icon={TrendingDown}
           gradient="from-rose-400 to-pink-500"
           bg="from-rose-50 to-pink-50"
@@ -454,7 +528,7 @@ export default function AdminBudgetPage() {
         <SummaryCard
           label="הכנסות החודש"
           value={formatCurrencyWhole(summary.incomeThisMonthIls)}
-          sub={`מתוכן ${formatCurrency(summary.automaticIncomeIls)} מתשלומי מנוי`}
+          sub={`≈ ${formatMoney(totals.income.USD, "USD")}`}
           icon={TrendingUp}
           gradient="from-emerald-400 to-teal-500"
           bg="from-emerald-50 to-teal-50"
@@ -462,7 +536,7 @@ export default function AdminBudgetPage() {
         <SummaryCard
           label="מאזן חודשי"
           value={formatCurrencyWhole(net)}
-          sub={net >= 0 ? "האפליקציה מכסה את עצמה" : "עדיין בהשקעה"}
+          sub={`≈ ${formatMoney(totals.net.USD, "USD")}`}
           icon={Scale}
           gradient={net >= 0 ? "from-emerald-400 to-teal-500" : "from-amber-400 to-orange-500"}
           bg={net >= 0 ? "from-emerald-50 to-teal-50" : "from-amber-50 to-orange-50"}
@@ -516,10 +590,48 @@ export default function AdminBudgetPage() {
         )}
         {summary.missingAmountCount > 0 && (
           <span className="mr-auto text-xs font-semibold px-2 py-1 rounded-lg bg-amber-100 text-amber-800">
-            {summary.missingAmountCount} רשומות חסרות סכום
+            {summary.missingAmountCount === 1
+              ? "רשומה אחת חסרת סכום"
+              : `${summary.missingAmountCount} רשומות חסרות סכום`}
           </span>
         )}
       </div>
+
+      {/* Income against expenses over time */}
+      <section className="card-soft p-5 min-w-0" aria-labelledby="budget-chart-title">
+        <div className="flex items-center gap-2 flex-wrap mb-3">
+          <LineChart className="w-4 h-4 text-stone-500" />
+          <h2 id="budget-chart-title" className="font-semibold text-stone-900">
+            הכנסות מול הוצאות
+          </h2>
+          <p className="text-xs text-stone-600 mr-auto" aria-live="polite">
+            בתקופה שבגרף: הכנסות{" "}
+            <span className="font-semibold text-stone-900">
+              {formatCurrencyWhole(chartTotals.income)}
+            </span>{" "}
+            · הוצאות{" "}
+            <span className="font-semibold text-stone-900">
+              {formatCurrencyWhole(chartTotals.expense)}
+            </span>{" "}
+            · מאזן{" "}
+            <span className="font-semibold text-stone-900">
+              {formatCurrencyWhole(chartTotals.net)}
+            </span>
+          </p>
+        </div>
+        <MonthlyLineChart
+          data={chartData}
+          range={granularity}
+          onRangeChange={pickGranularity}
+          ranges={BUDGET_CHART_GRANULARITIES}
+          soloStorageKey="admin-budget-chart-series"
+        />
+        {/* The two limits of the expense line, said where the line is read. */}
+        <p className="mt-2 text-[11px] text-stone-500">
+          הוצאות קבועות נפרסות על פני ימי החודש ומחושבות לפי המחירים של היום, גם לתקופות קודמות.
+          {summary.missingAmountCount > 0 && " ספקים בלי סכום לא נכללים בקו ההוצאות."}
+        </p>
+      </section>
 
       {/* Expenses */}
       <section className="card-soft overflow-hidden">
@@ -542,10 +654,17 @@ export default function AdminBudgetPage() {
                 <tr>
                   <th className="px-4 py-2 text-start font-medium">ספק</th>
                   <th className="px-4 py-2 text-start font-medium">בשביל מה</th>
-                  <th className="px-4 py-2 text-start font-medium">סכום</th>
+                  {/* One column per currency instead of one mixed column: a
+                      list where row 3 is dollars and row 4 is shekels cannot
+                      be read down. Every row now shows both. */}
+                  <th className="px-4 py-2 text-start font-medium whitespace-nowrap">בשקלים</th>
+                  <th className="px-4 py-2 text-start font-medium whitespace-nowrap">בדולרים</th>
                   <th className="px-4 py-2 text-start font-medium">תדירות</th>
                   <th className="px-4 py-2 text-start font-medium">חיוב הבא</th>
-                  <th className="px-4 py-2 text-start font-medium">תשלום</th>
+                  {/* A floor under this column: with two money columns added,
+                      the table squeezed "כרטיס אשראי (טעינת קרדיט מראש)" down
+                      to one word per line and made its row five lines tall. */}
+                  <th className="px-4 py-2 text-start font-medium min-w-[8rem]">תשלום</th>
                   <th className="px-4 py-2 text-start font-medium">פעולות</th>
                 </tr>
               </thead>
@@ -567,9 +686,27 @@ export default function AdminBudgetPage() {
                       {entry.link && <VendorLink link={entry.link} />}
                     </td>
                     <td className="px-4 py-3 text-stone-700">{entry.title}</td>
-                    <td className="px-4 py-3">
-                      <AmountCell entry={entry} onFill={() => openForm(formFromEntry(entry))} />
-                    </td>
+                    {amountKind(entry) === "amount" ? (
+                      <>
+                        <td className="px-4 py-3 text-start whitespace-nowrap">
+                          <MoneyIn entry={entry} to="ILS" usdRate={usdRate} />
+                        </td>
+                        <td className="px-4 py-3 text-start whitespace-nowrap">
+                          <MoneyIn entry={entry} to="USD" usdRate={usdRate} />
+                        </td>
+                      </>
+                    ) : (
+                      <>
+                        {/* A free tier or a price nobody has filled in is one
+                            fact, not two: the badge sits in the shekel column
+                            and the dollar column says nothing rather than
+                            repeating it. */}
+                        <td className="px-4 py-3">
+                          <AmountCell entry={entry} onFill={() => openForm(formFromEntry(entry))} />
+                        </td>
+                        <td className="px-4 py-3 text-stone-400 text-start">-</td>
+                      </>
+                    )}
                     {/* nowrap on both lines: "חודשי" over "לפי שימוש" was
                         breaking into three lines in a narrow column and made
                         every row three lines tall for no information. */}
@@ -595,6 +732,26 @@ export default function AdminBudgetPage() {
                   </tr>
                 ))}
               </tbody>
+              {/* The column sum, under the column. The card at the bottom of
+                  the page says the same thing for the whole budget; this is
+                  the one the eye wants while it is still reading the rows. */}
+              <tfoot className="border-t-2 border-orange-100 bg-orange-50/40">
+                <tr>
+                  <th className="px-4 py-3 text-start font-semibold text-stone-900" colSpan={2}>
+                    סך ההוצאות לחודש
+                  </th>
+                  <td className="px-4 py-3 text-start font-bold text-stone-900 tabular-nums whitespace-nowrap">
+                    {formatMoney(totals.expenses.ILS, "ILS")}
+                  </td>
+                  <td className="px-4 py-3 text-start font-semibold text-stone-500 tabular-nums whitespace-nowrap">
+                    ≈ {formatMoney(totals.expenses.USD, "USD")}
+                  </td>
+                  {/* Four, not three: the row has to span תדירות, חיוב הבא,
+                      תשלום and פעולות, and one short left a white notch in the
+                      tinted footer band. */}
+                  <td className="px-4 py-3" colSpan={4} />
+                </tr>
+              </tfoot>
             </table>
 
             {/* Mobile: one card per vendor. A seven-column table on a phone is
@@ -607,7 +764,14 @@ export default function AdminBudgetPage() {
                       <p className="font-semibold text-stone-900">{entry.party}</p>
                       <p className="text-xs text-stone-600">{entry.title}</p>
                     </div>
-                    <AmountCell entry={entry} onFill={() => openForm(formFromEntry(entry))} />
+                    {/* Both currencies on one line on a phone: two stacked
+                        columns in a 390px card would be two half-width columns
+                        of nothing. */}
+                    <MoneyPair
+                      entry={entry}
+                      usdRate={usdRate}
+                      onFill={() => openForm(formFromEntry(entry))}
+                    />
                   </div>
                   <p className="text-xs text-stone-600">
                     {RECURRENCE_LABELS[entry.recurrence]} · {entry.is_fixed ? "מחיר קבוע" : "לפי שימוש"}
@@ -660,6 +824,23 @@ export default function AdminBudgetPage() {
           <p className="p-5 text-sm text-stone-500 italic">אין הכנסות רשומות עדיין.</p>
         ) : (
           <ul className="divide-y divide-orange-50">
+            {/* The same two money columns the expenses table has, so a reader
+                scanning down the page compares like with like. Hidden on a
+                phone, where the values sit on one line inside each row. */}
+            <li className="px-5 py-2 bg-orange-50/50 text-xs text-stone-600 hidden md:flex items-center justify-between gap-3">
+              <span>מקור</span>
+              <span className="flex items-center gap-2">
+                <span className="flex items-center gap-4 flex-shrink-0">
+                  <span className={`${MONEY_COL_ILS} text-start`}>בשקלים</span>
+                  <span className={`${MONEY_COL_USD} text-start`}>בדולרים</span>
+                </span>
+                {/* Stands in for the row actions below, so the two column
+                    headings sit over their own numbers. Without it the header
+                    was short by the width of three icon buttons and pointed at
+                    the wrong columns. */}
+                <span className={INCOME_ACTIONS_SLOT} aria-hidden />
+              </span>
+            </li>
             {automaticRecent.map((row, i) => (
               <li key={`auto-${row.charged_at}-${i}`} className="px-5 py-3 flex items-center justify-between gap-3">
                 <div className="min-w-0">
@@ -679,9 +860,17 @@ export default function AdminBudgetPage() {
                     {row.provider && <> · {row.provider}</>}
                   </p>
                 </div>
-                <span className="font-semibold text-stone-900 flex-shrink-0">
-                  {formatMoney(row.amount, row.currency)}
-                </span>
+                <div className="flex items-center gap-2">
+                  <MoneyColumns
+                    amount={row.amount}
+                    currency={row.currency}
+                    usdRate={usdRate}
+                  />
+                  {/* An automatic payment has no actions - it is the billing
+                      record - but it still needs the slot, or its numbers
+                      would sit a hundred pixels off the manual rows'. */}
+                  <span className={INCOME_ACTIONS_SLOT} aria-hidden />
+                </div>
               </li>
             ))}
             {manualIncome.map((entry) => (
@@ -706,14 +895,24 @@ export default function AdminBudgetPage() {
                   </p>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <AmountCell entry={entry} onFill={() => openForm(formFromEntry(entry))} />
-                  <RowActions
-                    entry={entry}
-                    armed={confirmDeleteId === entry.id}
-                    onEdit={() => openForm(formFromEntry(entry))}
-                    onToggle={() => handleToggle(entry)}
-                    onDelete={() => handleDelete(entry)}
-                  />
+                  {amountKind(entry) === "amount" ? (
+                    <MoneyColumns
+                      amount={entry.amount as number}
+                      currency={entry.currency}
+                      usdRate={usdRate}
+                    />
+                  ) : (
+                    <AmountCell entry={entry} onFill={() => openForm(formFromEntry(entry))} />
+                  )}
+                  <div className="flex md:w-[6.5rem]">
+                    <RowActions
+                      entry={entry}
+                      armed={confirmDeleteId === entry.id}
+                      onEdit={() => openForm(formFromEntry(entry))}
+                      onToggle={() => handleToggle(entry)}
+                      onDelete={() => handleDelete(entry)}
+                    />
+                  </div>
                 </div>
               </li>
             ))}
@@ -729,6 +928,12 @@ export default function AdminBudgetPage() {
           </p>
         )}
       </section>
+
+      <TotalsCard
+        totals={totals}
+        rateLabel={rateLabel}
+        missingAmountCount={summary.missingAmountCount}
+      />
 
       <EntryDialog
         form={form}
@@ -776,6 +981,217 @@ function SummaryCard({
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * The three states a row's price can be in. Only "amount" has a number to
+ * convert; the other two are one fact that belongs in one cell.
+ */
+type AmountKind = "free" | "missing" | "amount";
+
+function amountKind(entry: BudgetEntry): AmountKind {
+  if (entry.is_free) return "free";
+  if (entry.amount === null) return "missing";
+  return "amount";
+}
+
+/**
+ * Widths for the two money columns in the income LIST, which has no table to
+ * align it. Shared by the header row and every row under it, so they line up.
+ */
+const MONEY_COL_ILS = "w-28";
+const MONEY_COL_USD = "w-24";
+
+/**
+ * The trailing slot in an income row: three w-8 buttons and two gap-1 gaps,
+ * 6.5rem. The header and the read-only automatic rows reserve the same width
+ * so every row's money columns land under the same headings. Desktop only -
+ * on a phone the list is one column and there is nothing to line up.
+ */
+const INCOME_ACTIONS_SLOT = "hidden md:block md:w-[6.5rem] flex-shrink-0";
+
+/**
+ * One money value in one currency.
+ *
+ * The currency the vendor actually bills in is rendered in full ink; the other
+ * one is muted and prefixed "≈", because it is an estimate that moves with the
+ * exchange rate and must never be mistaken for the real charge.
+ */
+function Money({
+  amount,
+  from,
+  to,
+  usdRate,
+}: {
+  amount: number;
+  from: BudgetCurrency;
+  to: BudgetCurrency;
+  usdRate: number;
+}) {
+  const original = from === to;
+  const value = original ? amount : convertAmount(amount, from, to, usdRate);
+  return original ? (
+    <span className="font-semibold text-stone-900 tabular-nums whitespace-nowrap">
+      {formatMoney(value, to)}
+    </span>
+  ) : (
+    <span className="text-stone-500 tabular-nums whitespace-nowrap">
+      ≈ {formatMoney(value, to)}
+    </span>
+  );
+}
+
+/** One table cell's worth of money, for a row that has an amount. */
+function MoneyIn({
+  entry,
+  to,
+  usdRate,
+}: {
+  entry: BudgetEntry;
+  to: BudgetCurrency;
+  usdRate: number;
+}) {
+  return (
+    <Money amount={entry.amount as number} from={entry.currency} to={to} usdRate={usdRate} />
+  );
+}
+
+/** Both currencies as two aligned columns, for the income list. */
+function MoneyColumns({
+  amount,
+  currency,
+  usdRate,
+}: {
+  amount: number;
+  currency: BudgetCurrency;
+  usdRate: number;
+}) {
+  return (
+    <span className="flex items-center gap-4 flex-shrink-0 text-sm">
+      <span className={`${MONEY_COL_ILS} text-start hidden md:block`}>
+        <Money amount={amount} from={currency} to="ILS" usdRate={usdRate} />
+      </span>
+      <span className={`${MONEY_COL_USD} text-start hidden md:block`}>
+        <Money amount={amount} from={currency} to="USD" usdRate={usdRate} />
+      </span>
+      {/* Phone: one line, the real charge first. */}
+      <span className="md:hidden flex items-center gap-1.5 text-sm">
+        <Money amount={amount} from={currency} to={currency} usdRate={usdRate} />
+        <span className="text-stone-400">·</span>
+        <Money
+          amount={amount}
+          from={currency}
+          to={currency === "ILS" ? "USD" : "ILS"}
+          usdRate={usdRate}
+        />
+      </span>
+    </span>
+  );
+}
+
+/**
+ * Both currencies on one line for the phone cards: the real charge, then the
+ * conversion. A row with no number shows its badge and nothing else.
+ */
+function MoneyPair({
+  entry,
+  usdRate,
+  onFill,
+}: {
+  entry: BudgetEntry;
+  usdRate: number;
+  onFill: () => void;
+}) {
+  if (amountKind(entry) !== "amount") {
+    return <AmountCell entry={entry} onFill={onFill} />;
+  }
+  const other: BudgetCurrency = entry.currency === "ILS" ? "USD" : "ILS";
+  return (
+    <span className="flex items-center gap-1.5 flex-shrink-0 text-sm">
+      <MoneyIn entry={entry} to={entry.currency} usdRate={usdRate} />
+      <span className="text-stone-400">·</span>
+      <MoneyIn entry={entry} to={other} usdRate={usdRate} />
+    </span>
+  );
+}
+
+/**
+ * The bottom line, both currencies side by side.
+ *
+ * Every cell is a WHOLE total expressed in that currency, not the part of the
+ * budget that happens to be billed in it: the point of the grid is that either
+ * column can be read on its own.
+ */
+function TotalsCard({
+  totals,
+  rateLabel,
+  missingAmountCount,
+}: {
+  totals: BudgetTotals;
+  rateLabel: string;
+  missingAmountCount: number;
+}) {
+  const rows: { label: string; value: PerCurrency; tone?: "net" }[] = [
+    { label: "הוצאות לחודש", value: totals.expenses },
+    { label: "הכנסות החודש", value: totals.income },
+    { label: "מאזן", value: totals.net, tone: "net" },
+  ];
+  const positive = totals.net.ILS >= 0;
+
+  return (
+    <section className="card-soft overflow-hidden" aria-labelledby="budget-totals-title">
+      <div className="px-5 py-3 border-b border-orange-100 flex items-center gap-2 flex-wrap">
+        <Scale className="w-4 h-4 text-stone-500" />
+        <h2 id="budget-totals-title" className="font-semibold text-stone-900">
+          סך הכול
+        </h2>
+      </div>
+      <table className="w-full text-sm">
+        <thead className="bg-orange-50/50 text-xs text-stone-600">
+          <tr>
+            {/* The row labels speak for themselves; a visible "שורה" header
+                over them is noise. Kept for a screen reader. */}
+            <th className="px-5 py-2 text-start font-medium">
+              <span className="sr-only">שורה</span>
+            </th>
+            <th className="px-5 py-2 text-start font-medium whitespace-nowrap">בשקלים</th>
+            <th className="px-5 py-2 text-start font-medium whitespace-nowrap">בדולרים</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-orange-50">
+          {rows.map((row) => {
+            const netInk = positive ? "text-emerald-700" : "text-rose-700";
+            const ink = row.tone === "net" ? netInk : "text-stone-900";
+            return (
+              <tr key={row.label} className={row.tone === "net" ? "bg-orange-50/30" : ""}>
+                <th className="px-5 py-3 text-start font-medium text-stone-700 whitespace-nowrap">
+                  {row.label}
+                </th>
+                <td className={`px-5 py-3 text-start font-bold tabular-nums whitespace-nowrap ${ink}`}>
+                  {formatMoney(row.value.ILS, "ILS")}
+                </td>
+                <td
+                  className={`px-5 py-3 text-start font-semibold tabular-nums whitespace-nowrap ${
+                    row.tone === "net" ? netInk : "text-stone-500"
+                  }`}
+                >
+                  ≈ {formatMoney(row.value.USD, "USD")}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+      <p className="px-5 py-3 text-[11px] text-stone-500 border-t border-orange-50">
+        המרה לפי {rateLabel} {totals.usdRate.toFixed(4)} ש&quot;ח לדולר · רשומות חד-פעמיות ורשומות לא
+        פעילות לא נספרות
+        {missingAmountCount > 0 &&
+          ` · ${
+            missingAmountCount === 1 ? "רשומה אחת בלי סכום" : `${missingAmountCount} רשומות בלי סכום`
+          } לא נספרת${missingAmountCount === 1 ? "" : "ות"}`}
+      </p>
+    </section>
   );
 }
 

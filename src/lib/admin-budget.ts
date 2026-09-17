@@ -133,6 +133,76 @@ export interface PerCurrency {
   USD: number;
 }
 
+/**
+ * A usable USD -> ILS rate. Anything non-finite, zero or negative falls back to
+ * the visible estimate rather than producing Infinity or a negative total: a
+ * budget that divides by a bad rate must degrade to "roughly", never to NaN.
+ */
+export function safeUsdRate(rate?: number | null): number {
+  return typeof rate === "number" && Number.isFinite(rate) && rate > 0 ? rate : DEFAULT_USD_RATE;
+}
+
+/**
+ * One amount moved between the two currencies this budget knows.
+ *
+ * Same currency in and out returns the amount rounded and nothing else: no
+ * multiply-then-divide round trip, which is where a cent goes missing.
+ * Rounding happens ONCE, through roundMoney, exactly like every other figure
+ * on this screen.
+ */
+export function convertAmount(
+  amount: number,
+  from: BudgetCurrency,
+  to: BudgetCurrency,
+  usdRate?: number | null,
+): number {
+  if (!Number.isFinite(amount)) return 0;
+  if (from === to) return roundMoney(amount);
+  const rate = safeUsdRate(usdRate);
+  return from === "USD" ? roundMoney(amount * rate) : roundMoney(amount / rate);
+}
+
+/**
+ * Each of the three bottom-line figures expressed in BOTH currencies, so the
+ * totals block can show a full number per column instead of a per-currency
+ * partial the reader has to add up themselves.
+ *
+ * The ILS column is taken verbatim from the summary (`monthlyRunRateIls`,
+ * `incomeThisMonthIls`, `netIls`) rather than recomputed, so the totals block
+ * and the summary cards can never disagree by a rounding step. The USD column
+ * is built from the summary's per-currency parts - the USD part as it stands
+ * plus the ILS part divided by the rate - for the same reason: converting the
+ * already-rounded ILS total would round a rounded number a second time.
+ *
+ * `options.usdRate` MUST be the rate the summary was built with. Pass the same
+ * object you passed to summarizeBudget.
+ */
+export interface BudgetTotals {
+  /** Full monthly expense run-rate, in each currency. */
+  expenses: PerCurrency;
+  /** Full income counted for this month, in each currency. */
+  income: PerCurrency;
+  /** income - expenses, in each currency. */
+  net: PerCurrency;
+  /** The rate actually used, after the fallback. */
+  usdRate: number;
+}
+
+export function totalsInBothCurrencies(
+  summary: BudgetSummary,
+  options: SummaryOptions = {},
+): BudgetTotals {
+  const usdRate = safeUsdRate(options.usdRate);
+  const expensesUsd = roundMoney(summary.monthlyRunRate.USD + summary.monthlyRunRate.ILS / usdRate);
+  const incomeUsd = roundMoney(summary.incomeThisMonth.USD + summary.incomeThisMonth.ILS / usdRate);
+  return {
+    expenses: { ILS: summary.monthlyRunRateIls, USD: expensesUsd },
+    income: { ILS: summary.incomeThisMonthIls, USD: incomeUsd },
+    net: { ILS: summary.netIls, USD: roundMoney(incomeUsd - expensesUsd) },
+    usdRate,
+  };
+}
+
 export interface BudgetSummary {
   /** sum(active monthly) + sum(active yearly)/12, per currency. */
   monthlyRunRate: PerCurrency;
