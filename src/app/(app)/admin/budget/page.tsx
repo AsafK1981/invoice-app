@@ -45,16 +45,17 @@ import {
 } from "@/lib/admin-budget";
 import {
   buildBudgetChart,
+  trimLeadingEmpty,
   BUDGET_CHART_GRANULARITIES,
   type BudgetChartGranularity,
 } from "@/lib/admin-budget-chart";
 
-// The dashboard's own line chart, so the two screens cannot drift apart. Loaded
+// Extruded green / rose bars, Asaf's pick for this page (2026-09-17). Loaded
 // lazily: it measures its container, which only exists in the browser.
-const MonthlyLineChart = dynamic(
-  () => import("@/components/dashboard-chart").then((mod) => mod.MonthlyLineChart),
-  { ssr: false, loading: () => <div className="h-[360px] rounded-xl bg-stone-100 animate-pulse" /> },
-) as typeof import("@/components/dashboard-chart").MonthlyLineChart;
+const BudgetBarChart = dynamic(
+  () => import("@/components/budget-bar-chart").then((mod) => mod.BudgetBarChart),
+  { ssr: false, loading: () => <div className="h-[380px] rounded-xl bg-stone-100 animate-pulse" /> },
+) as typeof import("@/components/budget-bar-chart").BudgetBarChart;
 
 const CHART_GRANULARITY_STORAGE_KEY = "admin-budget-chart-granularity";
 
@@ -276,11 +277,17 @@ export default function AdminBudgetPage() {
   const totals = useMemo(() => totalsInBothCurrencies(summary, { usdRate }), [summary, usdRate]);
 
   const chartPoints = useMemo(
-    () => buildBudgetChart(entries, automatic, granularity, { usdRate }),
+    // Years before the app existed are dropped entirely (a lone 2026 beats two
+    // blank years beside it); the finer views keep at least six buckets.
+    () =>
+      trimLeadingEmpty(
+        buildBudgetChart(entries, automatic, granularity, { usdRate }),
+        granularity === "year" ? 1 : 6,
+      ),
     [entries, automatic, granularity, usdRate],
   );
   const chartData = useMemo(
-    () => chartPoints.map((p) => ({ month: p.label, הכנסות: p.income, הוצאות: p.expense })),
+    () => chartPoints.map((p) => ({ label: p.label, income: p.income, expense: p.expense })),
     [chartPoints],
   );
   const chartTotals = useMemo(() => {
@@ -619,12 +626,11 @@ export default function AdminBudgetPage() {
             </span>
           </p>
         </div>
-        <MonthlyLineChart
+        <BudgetBarChart
           data={chartData}
           range={granularity}
           onRangeChange={pickGranularity}
           ranges={BUDGET_CHART_GRANULARITIES}
-          soloStorageKey="admin-budget-chart-series"
         />
         {/* The two limits of the expense line, said where the line is read. */}
         <p className="mt-2 text-[11px] text-stone-500">

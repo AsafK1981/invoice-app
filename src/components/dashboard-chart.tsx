@@ -215,7 +215,7 @@ export function DashboardChart({ documents, expenses }: Props) {
 /* ------------------------------------------------------------------ */
 
 /** Pick a "nice" y-axis ceiling + 4 equal ticks (top tick is headroom). */
-function niceScale(maxVal: number): { yMax: number; ticks: number[] } {
+export function niceScale(maxVal: number): { yMax: number; ticks: number[] } {
   if (!(maxVal > 0)) {
     return { yMax: 1000, ticks: [0, 250, 500, 750, 1000] };
   }
@@ -236,7 +236,7 @@ function niceScale(maxVal: number): { yMax: number; ticks: number[] } {
 }
 
 /** ₪ tick label for the right-side y-axis. */
-function tickLabel(v: number): string {
+export function tickLabel(v: number): string {
   if (v === 0) return shekel("0");
   // Ticks are multiples of a float step, so a small scale (a daily budget
   // accrual of a few shekels) produced "2.4000000000000004" on the axis.

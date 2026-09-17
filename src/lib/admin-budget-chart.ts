@@ -252,3 +252,19 @@ export function buildBudgetChart(
     };
   });
 }
+
+/**
+ * Drop the empty buckets at the START of a series, keeping at least `minKeep`.
+ *
+ * The month view reaches back twelve months, but the app is younger than that:
+ * half the chart was blank months before anything existed, squeezing the real
+ * bars into the other half. Only leading buckets go, never gaps in the middle
+ * (a quiet month between two busy ones is information), and totals are
+ * unaffected because a dropped bucket is zero by definition.
+ */
+export function trimLeadingEmpty(points: BudgetChartPoint[], minKeep = 6): BudgetChartPoint[] {
+  const firstWithData = points.findIndex((p) => p.income !== 0 || p.expense !== 0);
+  if (firstWithData <= 0) return points;
+  const start = Math.min(firstWithData, Math.max(0, points.length - minKeep));
+  return points.slice(start);
+}

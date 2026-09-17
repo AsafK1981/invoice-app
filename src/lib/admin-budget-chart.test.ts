@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildBudgetChart, BUDGET_EPOCH } from "./admin-budget-chart";
+import { buildBudgetChart, trimLeadingEmpty, BUDGET_EPOCH } from "./admin-budget-chart";
 import { summarizeBudget, type AutomaticIncome, type BudgetEntry } from "./admin-budget";
 
 function entry(over: Partial<BudgetEntry> = {}): BudgetEntry {
@@ -164,5 +164,23 @@ describe("buildBudgetChart income", () => {
     expect(month[11].income).toBe(340);
     expect(month[11].income).toBe(summary.incomeThisMonthIls);
     expect(month.find((p) => p.start === "2026-05-01")?.income).toBe(1199);
+  });
+});
+
+describe("trimLeadingEmpty", () => {
+  const month = buildBudgetChart([entry({ amount: 300 })], [], "month", OPTS);
+
+  it("drops the blank months before the app existed, keeps the rest", () => {
+    const trimmed = trimLeadingEmpty(month);
+    expect(trimmed[0].start).toBe(BUDGET_EPOCH);
+    expect(trimmed).toHaveLength(6);
+  });
+
+  it("never goes below minKeep, never touches a gap in the middle, leaves all-empty alone", () => {
+    expect(trimLeadingEmpty(month, 9)).toHaveLength(9);
+    const gap = month.map((p, i) => (i === 8 ? { ...p, expense: 0 } : p));
+    expect(trimLeadingEmpty(gap)).toHaveLength(6);
+    const empty = buildBudgetChart([], [], "month", OPTS);
+    expect(trimLeadingEmpty(empty)).toHaveLength(12);
   });
 });
