@@ -10,7 +10,7 @@ interface Props {
   expenses: Expense[];
 }
 
-type MonthDatum = { month: string; הכנסות: number; הוצאות: number };
+export type MonthDatum = { month: string; הכנסות: number; הוצאות: number };
 
 /* ------------------------------------------------------------------ */
 /* Time-range selection                                                */
@@ -238,7 +238,9 @@ function niceScale(maxVal: number): { yMax: number; ticks: number[] } {
 /** ₪ tick label for the right-side y-axis. */
 function tickLabel(v: number): string {
   if (v === 0) return shekel("0");
-  if (v < 1000) return shekel(String(v));
+  // Ticks are multiples of a float step, so a small scale (a daily budget
+  // accrual of a few shekels) produced "2.4000000000000004" on the axis.
+  if (v < 1000) return shekel(String(Number(v.toFixed(2))));
   const k = v / 1000;
   return shekel(Number.isInteger(k) ? `${k}k` : `${k.toFixed(1)}k`);
 }
@@ -293,14 +295,24 @@ function monotonePath(
   return { d, xs, ys };
 }
 
-function MonthlyLineChart({
+/**
+ * Exported so /admin/budget draws its income-against-expenses chart with the
+ * exact same marks instead of a second, drifting copy. `ranges` and
+ * `soloStorageKey` default to the dashboard's own, so the dashboard call site
+ * is unchanged.
+ */
+export function MonthlyLineChart<K extends string = RangeKey>({
   data,
   range,
   onRangeChange,
+  ranges = RANGES as unknown as { key: K; label: string }[],
+  soloStorageKey = SERIES_STORAGE_KEY,
 }: {
   data: MonthDatum[];
-  range: RangeKey;
-  onRangeChange: (key: RangeKey) => void;
+  range: K;
+  onRangeChange: (key: K) => void;
+  ranges?: { key: K; label: string }[];
+  soloStorageKey?: string;
 }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
@@ -311,15 +323,19 @@ function MonthlyLineChart({
   // line). Click the same pill again to bring both series back.
   const [solo, setSolo] = useState<"income" | "expense" | null>(null);
   useEffect(() => {
-    const saved = localStorage.getItem(SERIES_STORAGE_KEY);
-    if (saved === "income" || saved === "expense") setSolo(saved);
-  }, []);
+    try {
+      const saved = localStorage.getItem(soloStorageKey);
+      if (saved === "income" || saved === "expense") setSolo(saved);
+    } catch {
+      /* storage blocked - both series stay on */
+    }
+  }, [soloStorageKey]);
   const toggleSolo = (key: "income" | "expense") => {
     setSolo((prev) => {
       const next = prev === key ? null : key;
       try {
-        if (next) localStorage.setItem(SERIES_STORAGE_KEY, next);
-        else localStorage.removeItem(SERIES_STORAGE_KEY);
+        if (next) localStorage.setItem(soloStorageKey, next);
+        else localStorage.removeItem(soloStorageKey);
       } catch {
         /* private mode */
       }
@@ -371,7 +387,25 @@ function MonthlyLineChart({
   const labelEvery = Math.max(1, Math.ceil(n / 8));
   const showXLabel = (i: number) => (n - 1 - i) % labelEvery === 0;
   // Per-point ₪ value labels only when they won't collide with each other.
-  const showValueLabels = n <= 12;
+  // Twelve points fit a desktop card; on a phone the same twelve labels are
+  // ~20px apart and print over each other. 40px keeps the six-month phone
+  // view labelled (44px a point) and drops labels only where they collide.
+  const showValueLabels = n <= 12 && (n <= 1 || innerW / (n - 1) >= 40);
+
+  // The last point sits against the y-axis, so its value label can land on a
+  // tick label ("73" printed over "75"). The value is the information; the tick
+  // beside it gives way.
+  const lastLabelYs: number[] = [];
+  if (n > 0) {
+    // The dots themselves too: the hero dot is wide enough to cover a tick.
+    if (showIncome) lastLabelYs.push(inc.ys[n - 1] + 4);
+    if (showExpense) lastLabelYs.push(exp.ys[n - 1] + 4);
+    if (showIncome && kLabel(income[n - 1])) lastLabelYs.push(inc.ys[n - 1] - 13);
+    if (showExpense && showValueLabels && kLabel(expenses[n - 1])) {
+      lastLabelYs.push(Math.min(exp.ys[n - 1] + 16, h - padB + 6));
+    }
+  }
+  const tickCollides = (y: number) => lastLabelYs.some((ly) => Math.abs(y + 4 - ly) < 14);
 
   const areaFrom = (p: { d: string; xs: number[] }) =>
     `${p.d} L${p.xs[p.xs.length - 1].toFixed(2)},${baseY.toFixed(2)} L${p.xs[0].toFixed(2)},${baseY.toFixed(2)} Z`;
@@ -425,7 +459,7 @@ function MonthlyLineChart({
             border: "1px solid rgba(217, 106, 29, 0.42)",
           }}
         >
-          {RANGES.map((r) => {
+          {ranges.map((r) => {
             const active = r.key === range;
             return (
               <button
@@ -507,13 +541,16 @@ function MonthlyLineChart({
                     stroke="#E8DDD0"
                     strokeWidth={1}
                   />
-                  {v !== yMax && (
+                  {v !== yMax && !tickCollides(y) && (
                     <text
                       x={w - padR + 12}
                       y={y + 4}
                       fill="#9A9086"
                       fontSize={12}
-                      textAnchor="start"
+                      // The page is RTL, where "start" is the RIGHT edge of the
+                      // text: the label grew leftwards, back over the end of
+                      // the line. "end" pins its left edge, clear of the plot.
+                      textAnchor="end"
                     >
                       {tickLabel(v)}
                     </text>

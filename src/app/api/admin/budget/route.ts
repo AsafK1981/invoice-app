@@ -51,10 +51,10 @@ const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
  * and none of the name/address/tax-id a Polar order carries. Do not widen this.
  */
 
-/** How far back the automatic income list reaches. A budget screen needs the
- *  current month; a year of history makes the trend legible without turning
- *  the response into a full billing export. */
-const INCOME_MONTHS = 12;
+/** How far back the automatic income reaches. The cards need the current
+ *  month; the chart's year view needs whole past years to compare, so three
+ *  years. Both read caps below still apply and are still reported when hit. */
+const INCOME_MONTHS = 36;
 
 /** Hard stop on the Polar paging loop, so a huge account cannot hang the page. */
 const POLAR_MAX_PAGES = 10;
