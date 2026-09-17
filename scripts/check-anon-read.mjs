@@ -43,6 +43,7 @@ const TABLES = [
   "dunning_log",
   "notifications",
   "filing_preferences",
+  "admin_budget_entries",
 ];
 const leaks = [];
 

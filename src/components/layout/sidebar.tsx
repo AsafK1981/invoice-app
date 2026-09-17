@@ -22,6 +22,7 @@ import {
   Bug,
   MessageCircle,
   ShieldAlert,
+  Coins,
   Landmark,
   Bell,
   CalendarClock,
@@ -130,6 +131,30 @@ export function Sidebar() {
     return () => query.removeEventListener("change", onChange);
   }, []);
 
+  const shownItems: NavItem[] = [
+    ...navItems,
+    // חשבונית ישראל (allocation numbers) only applies to VAT-charging
+    // businesses. surface a dedicated, easy-to-find entry for them so
+    // connecting isn't buried inside the settings page.
+    ...(business?.businessType === "authorized" || business?.businessType === "company"
+      ? ([{ href: "/settings#tax-authority", label: "חשבונית ישראל", icon: Landmark }] as NavItem[])
+      : []),
+    ...(isAdmin
+      ? ([
+          { href: "/admin", label: "ניהול מערכת", icon: ShieldAlert, tone: "rose" },
+          // The operator's own books: what the app costs to run and what it
+          // earns. Admin-only, like the row above it.
+          // Coins, not Wallet: /expenses already owns the wallet icon, and two
+          // identical tiles in one sidebar read as the same destination.
+          { href: "/admin/budget", label: "תקציב", icon: Coins, tone: "emerald" },
+        ] as NavItem[])
+      : []),
+  ];
+  // One winner per path: the longest href that the current path is under.
+  const activeHref = shownItems
+    .filter((item) => pathname === item.href || pathname.startsWith(item.href + "/"))
+    .sort((a, b) => b.href.length - a.href.length)[0]?.href;
+
   const sidebarContent = (
     <>
       <div className="px-6 py-6 border-b border-orange-100/60">
@@ -189,20 +214,11 @@ export function Sidebar() {
           `animation` entirely. Primary nav must not be allowed to render
           invisible, so don't re-add stagger/slide-in here. */}
       <nav className="flex-1 p-3 space-y-1">
-        {[
-          ...navItems,
-          // חשבונית ישראל (allocation numbers) only applies to VAT-charging
-          // businesses. surface a dedicated, easy-to-find entry for them so
-          // connecting isn't buried inside the settings page.
-          ...(business?.businessType === "authorized" ||
-          business?.businessType === "company"
-            ? ([{ href: "/settings#tax-authority", label: "חשבונית ישראל", icon: Landmark }] as NavItem[])
-            : []),
-          ...(isAdmin
-            ? ([{ href: "/admin", label: "ניהול מערכת", icon: ShieldAlert, tone: "rose" }] as NavItem[])
-            : []),
-        ].map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+        {shownItems.map((item) => {
+          // The LONGEST matching href wins, not every prefix match: /admin and
+          // /admin/budget are both in this list, and a plain startsWith lit up
+          // both rows at once on the budget page.
+          const isActive = item.href === activeHref;
           const Icon = item.icon;
           const tone = item.tone;
           return (

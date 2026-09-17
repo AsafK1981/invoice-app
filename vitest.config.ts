@@ -36,6 +36,10 @@ export default defineConfig({
     environment: "node",
     globals: false,
     setupFiles: ["./vitest.setup.ts"],
-    include: ["tests/**/*.test.ts"],
+    // tests/ is where most suites live; a unit test may also sit next to the
+    // module it covers (src/lib/x.ts + src/lib/x.test.ts), which keeps a pure
+    // helper and its cases in one place. Both patterns run in the same
+    // command, so the pre-push hook cannot miss the co-located ones.
+    include: ["tests/**/*.test.ts", "src/**/*.test.ts"],
   },
 });

@@ -15,6 +15,7 @@ import {
   Gift,
   Upload,
   Activity,
+  Coins,
 } from "lucide-react";
 import { AdminHistoryChart } from "@/components/admin-history-chart";
 import { supabase } from "@/lib/supabase";
@@ -189,6 +190,13 @@ export default function AdminPage() {
           >
             <Gift className="w-4 h-4" />
             הזמנות בטא
+          </Link>
+          <Link
+            href="/admin/budget"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-gradient-to-l from-amber-500 to-orange-500 text-white hover:shadow-md hover:shadow-amber-200"
+          >
+            <Coins className="w-4 h-4" />
+            תקציב
           </Link>
           <Link
             href="/admin/import-for-user"
