@@ -31,13 +31,17 @@ vi.mock("@supabase/supabase-js", () => ({ createClient: () => ({
 }) }));
 import { GET } from "@/app/api/admin/stats/route";
 const request = () => new NextRequest("http://localhost/api/admin/stats", { headers: { authorization: "Bearer test" } });
-it("excludes imports from recent creation metrics, preserves totals and uses full aggregate counts over1000", async () => {
+it("excludes imports from recent creation metrics and uses full aggregate counts over1000", async () => {
   state.error = false; state.queries = [];
   const result = await (await GET(request())).json();
-  expect(result.documents.total).toBe(1813); expect(result.documents.last7d).toBe(1505); expect(result.documents.last30d).toBe(1505);
+  expect(result.documents.last30d).toBe(1505);
   expect(result.documents.dailyChart.at(-1).count).toBe(1505); expect(result.documents.byType30d).toEqual([{ type: "receipt", count: 1505, drafts: 2 }]);
-  const recent = state.queries.find(q => q.table === "documents" && q.filters.includes("created_at")); expect(recent?.filters).toContain("import_batch_id:null");
-  expect(state.queries.filter(q => q.columns.includes("created_at") && !q.filters.includes("import_batch_id:null"))).toEqual([]);
+  const chart = state.queries.find(q => q.table === "documents" && q.columns === "created_at"); expect(chart?.filters).toContain("import_batch_id:null");
+  // Exactly one read of `documents` may see imported rows: the per-owner one,
+  // which has to see them to tell "produced in the app" from "migrated in".
+  // Every OTHER read of created_at still filters them out at the database.
+  const unfiltered = state.queries.filter(q => q.columns.includes("created_at") && !q.filters.includes("import_batch_id:null"));
+  expect(unfiltered.map(q => q.columns)).toEqual(["business_id, created_at, import_batch_id"]);
 });
 it("does not silently display empty creation metrics when aggregation fails", async () => {
   state.error = true; expect((await GET(request())).status).toBe(500);

@@ -1,4 +1,5 @@
 import { clampDayToMonth } from "./reminder-schedule";
+import { lowerMedian } from "./median";
 import { normalizeName } from "./client-picker";
 import { HEBREW_MONTHS, documentSignature, rollTextForward } from "./recurring-prefill";
 import type { DocumentType } from "./types";
@@ -180,12 +181,6 @@ export function patternClientKey(clientId: string | null | undefined, clientName
   return clientId || normalizeName(clientName);
 }
 
-/** The lower median of a numeric list - deterministic, no averaging of days. */
-function medianDay(days: number[]): number {
-  const sorted = [...days].sort((a, b) => a - b);
-  return sorted[Math.floor((sorted.length - 1) / 2)];
-}
-
 /**
  * A document that can take part in a cadence at all.
  *
@@ -327,7 +322,7 @@ export function detectRecurringPatterns(
     }
     if (!monthly) continue;
 
-    const dayOfMonth = medianDay(points.map((p) => Number(p.date.slice(8, 10))));
+    const dayOfMonth = lowerMedian(points.map((p) => Number(p.date.slice(8, 10))));
     const targetDay = clampDayToMonth(targetYear, targetMonth, dayOfMonth);
     const targetDate = isoDate(targetYear, targetMonth, targetDay);
     // A window that opened on the last day of the previous month would belong

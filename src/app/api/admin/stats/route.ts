@@ -4,7 +4,8 @@ import { isAdminEmail } from "@/lib/admin";
 import { logAdminAccess } from "@/lib/admin-access-log";
 import { getAdminChartDay, type AdminDailyPoint } from "@/lib/admin-chart";
 import { countsForTurnover } from "@/lib/ita/income-tax-advances";
-import { isInternalBusinessId } from "@/lib/internal-accounts";
+import { resolveInternalAccounts } from "@/lib/internal-accounts";
+import { lowerMedian } from "@/lib/median";
 import type { InvoiceDocument } from "@/lib/types";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -12,8 +13,14 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 /**
- * Admin stats endpoint. Returns aggregate platform metrics across all
- * users: total signups, active in last 7d, total documents, etc.
+ * Admin stats endpoint. Returns aggregate platform metrics across all users.
+ *
+ * The `people` block is the one the dashboard leads with, and every figure in
+ * it EXCLUDES our own accounts (see src/lib/internal-accounts.ts). Six of the
+ * signups are the founder, his father's tax-testing business, the demo, the QA
+ * account, an old throwaway and the Lynkeus bot; counting them made the
+ * product look about a third busier than it is. `registered` keeps the raw
+ * total beside `real` so the two are never mistaken for each other.
  *
  * Auth: requires Bearer token belonging to a user whose email is in
  * the hardcoded admin allow-list (src/lib/admin.ts). The caller's
@@ -39,6 +46,12 @@ type TurnoverRow = {
   status: string;
   converted_to_id: string | null;
   business_id: string;
+  import_batch_id: string | null;
+};
+
+type DocOwnerRow = {
+  business_id: string;
+  created_at: string;
   import_batch_id: string | null;
 };
 
@@ -76,6 +89,8 @@ export async function GET(req: NextRequest) {
   const generatedAt = new Date().toISOString();
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  // Only used to say whether the last 30 days beat the 30 before them.
+  const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString();
 
   async function loadUsers(): Promise<User[]> {
     const users: User[] = [];
@@ -155,21 +170,13 @@ export async function GET(req: NextRequest) {
   try {
     const [
       allUsers,
-      docCountResult,
-      docCount7dResult,
-      clientCountResult,
-      expenseCountResult,
       turnoverDocs,
       docs30dResult,
       businessesResult,
-      distinctDocOwnersResult,
+      docOwnerRows,
       dailyChart,
     ] = await Promise.all([
       loadUsers(),
-      sb.from("documents").select("*", { count: "exact", head: true }),
-      sb.from("documents").select("*", { count: "exact", head: true }).is("import_batch_id", null).gte("created_at", sevenDaysAgo),
-      sb.from("clients").select("*", { count: "exact", head: true }),
-      sb.from("expenses").select("*", { count: "exact", head: true }),
       // Paid AND sent: a credit note is saved "sent" and still reduces turnover.
       loadAll<TurnoverRow>(
         "documents",
@@ -183,12 +190,14 @@ export async function GET(req: NextRequest) {
         .gte("day", thirtyDaysAgo.slice(0, 10)),
       // Onboarding: count businesses (proxy for "users who finished onboarding")
       loadAll<{ id: string; user_id: string }>("businesses", "id, user_id"),
-      // Distinct business_ids that have at least one document (engagement proxy)
-      loadAll<{ business_id: string }>("documents", "business_id"),
+      // Who produced what, and when. Three columns, all metadata: the owning
+      // business, the timestamp, and whether the row arrived through a bulk
+      // import. Never a number, a client or an amount.
+      loadAll<DocOwnerRow>("documents", "business_id, created_at, import_batch_id"),
       loadDocumentChart(),
     ]);
 
-    if (docs30dResult.error || docCount7dResult.error) {
+    if (docs30dResult.error) {
       return NextResponse.json({ ok: false, error: "Could not load document activity" }, { status: 500 });
     }
 
@@ -200,32 +209,93 @@ export async function GET(req: NextRequest) {
     const signupChart = Array.from(signupCounts, ([date, count]) => ({ date, count }))
       .sort((a, b) => a.date.localeCompare(b.date));
     const userCount = allUsers.length;
-    const activeUsers7d = allUsers.filter((u) => {
-      const last = u.last_sign_in_at;
-      return last && last >= sevenDaysAgo;
-    }).length;
-    const recentSignups = allUsers
-      .slice()
-      .sort((a, b) => (b.created_at || "").localeCompare(a.created_at || ""))
-      .map((u) => ({
+
+    // Our own accounts: the explicit business list (founder, father's
+    // tax-testing business, demo, QA) plus any `.internal` login. Their
+    // turnover is not customer usage and neither is their activity, so every
+    // "how is the product doing" figure below is computed WITHOUT them. The
+    // raw signup total stays available beside it, because "23 registered, 6
+    // of them mine" is itself a fact the operator needs.
+    const businessIdToUser: Record<string, string> = {};
+    const allBusinessOwners = new Set<string>();
+    for (const b of businessesResult) {
+      businessIdToUser[b.id] = b.user_id;
+      allBusinessOwners.add(b.user_id);
+    }
+    const { internalUserIds, internalBusinessIds } = resolveInternalAccounts({
+      users: allUsers,
+      businesses: businessesResult,
+    });
+
+    // Documents produced per account. Bulk imports are excluded on purpose:
+    // a migrated history of 300 old invoices is not 300 acts of using the
+    // product, and mixing the two made one imported account look like the
+    // heaviest user on the platform.
+    type UserDocStats = { total: number; last30d: number; last7d: number };
+    const docsByUser = new Map<string, UserDocStats>();
+    let importedByUserCount = 0;
+    for (const row of docOwnerRows) {
+      const userId = businessIdToUser[row.business_id];
+      if (!userId) continue;
+      if (row.import_batch_id) {
+        importedByUserCount++;
+        continue;
+      }
+      const bucket = docsByUser.get(userId) ?? { total: 0, last30d: 0, last7d: 0 };
+      bucket.total++;
+      if (row.created_at >= thirtyDaysAgo) bucket.last30d++;
+      if (row.created_at >= sevenDaysAgo) bucket.last7d++;
+      docsByUser.set(userId, bucket);
+    }
+    const NO_DOCS: UserDocStats = { total: 0, last30d: 0, last7d: 0 };
+
+    // One pass over the real accounts for every headline figure. They were
+    // nine separate traversals, each re-reading the same map entry.
+    let activeUsers7d = 0;
+    let activeUsers30d = 0;
+    let signups30d = 0;
+    let signupsPrev30d = 0;
+    let realUsersWithBusiness = 0;
+    let producers30d = 0;
+    let producers7d = 0;
+    let produced30d = 0;
+    let realUserCount = 0;
+    const producerCounts: number[] = [];
+    for (const u of allUsers) {
+      if (internalUserIds.has(u.id)) continue;
+      realUserCount++;
+      if (u.last_sign_in_at && u.last_sign_in_at >= sevenDaysAgo) activeUsers7d++;
+      if (u.last_sign_in_at && u.last_sign_in_at >= thirtyDaysAgo) activeUsers30d++;
+      if (u.created_at >= thirtyDaysAgo) signups30d++;
+      else if (u.created_at >= sixtyDaysAgo) signupsPrev30d++;
+      if (allBusinessOwners.has(u.id)) realUsersWithBusiness++;
+      const docs = docsByUser.get(u.id) ?? NO_DOCS;
+      if (docs.total > 0) producerCounts.push(docs.total);
+      if (docs.last30d > 0) producers30d++;
+      if (docs.last7d > 0) producers7d++;
+      produced30d += docs.last30d;
+    }
+    const producedTotal = producerCounts.reduce((sum, n) => sum + n, 0);
+    const medianPerProducer = producerCounts.length === 0 ? 0 : lowerMedian(producerCounts);
+    const topProducer = producerCounts.reduce((max, n) => (n > max ? n : max), 0);
+
+    // One row per account. The page sorts and filters it client-side, so there
+    // is no order to establish here. Counts and timestamps only: no client
+    // names, no subjects, no amounts.
+    const recentSignups = allUsers.map((u) => {
+      const docs = docsByUser.get(u.id) ?? NO_DOCS;
+      return {
         id: u.id,
         email: u.email,
         provider: (u.app_metadata?.provider as string) || "email",
         created_at: u.created_at,
         last_sign_in_at: u.last_sign_in_at,
-      }));
-
-    // Our own businesses: the explicit list (founder, father's tax-testing
-    // business, demo, QA) plus any business owned by a `.internal` login.
-    // Their turnover is not customer usage.
-    const internalUserIds = new Set(
-      allUsers.filter((u) => u.email?.endsWith(".internal")).map((u) => u.id),
-    );
-    const internalBusinessIds = new Set(
-      businessesResult
-        .filter((b) => internalUserIds.has(b.user_id) || isInternalBusinessId(b.id))
-        .map((b) => b.id),
-    );
+        internal: internalUserIds.has(u.id),
+        hasBusiness: allBusinessOwners.has(u.id),
+        documents: docs.total,
+        documents30d: docs.last30d,
+      };
+    });
 
     // Cross-tenant turnover, split into what was created in the app and what
     // was imported from another vendor. Until 2026-09-14 this was one plain
@@ -252,22 +322,6 @@ export async function GET(req: NextRequest) {
       else inAppTurnover += net;
     }
 
-    // Onboarding funnel:
-    //   signed_up         = userCount
-    //   created_business  = users with at least one row in `businesses`
-    //   created_first_doc = users with at least one document
-    const businesses = businessesResult;
-    const usersWithBusiness = new Set(businesses.map((b) => b.user_id));
-    const businessIdToUser: Record<string, string> = {};
-    for (const b of businesses) {
-      businessIdToUser[b.id] = b.user_id;
-    }
-    const usersWithDoc = new Set(
-      distinctDocOwnersResult
-        .map((r) => businessIdToUser[r.business_id as string])
-        .filter(Boolean),
-    );
-
     // Documents in the last 30 days, counted by type. Sorted by count so the
     // dashboard's list leads with what the platform is actually used for.
     const byTypeCounts: Record<string, { count: number; drafts: number }> = {};
@@ -285,28 +339,37 @@ export async function GET(req: NextRequest) {
       ok: true,
       generatedAt,
       users: {
-        total: userCount,
-        activeLast7d: activeUsers7d,
         recentSignups,
         dailyChart: signupChart,
       },
-      onboarding: {
-        signedUp: userCount,
-        createdBusiness: usersWithBusiness.size,
-        createdFirstDoc: usersWithDoc.size,
+      // The product's own scoreboard. Every figure here excludes our accounts,
+      // and the onboarding funnel reads the same three fields rather than
+      // shipping its own copy of them.
+      people: {
+        registered: userCount,
+        internal: internalUserIds.size,
+        real: realUserCount,
+        activeLast7d: activeUsers7d,
+        activeLast30d: activeUsers30d,
+        signupsLast30d: signups30d,
+        signupsPrev30d,
+        withBusiness: realUsersWithBusiness,
+        producers: producerCounts.length,
+        producers30d,
+        producers7d,
+        producedTotal,
+        produced30d,
+        avgPerProducer: producerCounts.length === 0
+          ? 0
+          : Math.round((producedTotal / producerCounts.length) * 10) / 10,
+        medianPerProducer,
+        topProducer,
+        importedDocuments: importedByUserCount,
       },
       documents: {
-        total: docCountResult.count ?? 0,
-        last7d: docCount7dResult.count ?? 0,
         last30d: byType30d.reduce((sum, row) => sum + row.count, 0),
         byType30d,
         dailyChart,
-      },
-      clients: {
-        total: clientCountResult.count ?? 0,
-      },
-      expenses: {
-        total: expenseCountResult.count ?? 0,
       },
       revenue: {
         inAppTurnover,

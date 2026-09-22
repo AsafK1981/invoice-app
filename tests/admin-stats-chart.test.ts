@@ -150,7 +150,7 @@ describe("admin chart history API", () => {
     expect(body.users.dailyChart).toEqual([
       { date: "2026-01-01", count: 1000 }, { date: "2026-09-13", count: 2 },
     ]);
-    expect(body.users.total).toBe(1002);
+    expect(body.people.registered).toBe(1002);
     expect(state.documentOffsets).toContain(1000);
     expect(state.userPages).toContain(2);
     expect(state.documentSelects.every((value) => value === "created_at")).toBe(true);

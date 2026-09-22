@@ -27,6 +27,7 @@
 import { normalizeName, resolveDocumentClientId } from "./client-picker";
 import { addDays, daysInclusive, monthLabel } from "./report-period";
 import { clampDayToMonth } from "./reminder-schedule";
+import { lowerMedian } from "./median";
 import {
   alreadyBilledForPeriod,
   detectRecurringPatterns,
@@ -167,16 +168,6 @@ function daysBetween(a: string, b: string): number {
   const [by, bm, bd] = b.split("-").map(Number);
   if (!ay || !am || !ad || !by || !bm || !bd) return 0;
   return Math.round((Date.UTC(by, bm - 1, bd) - Date.UTC(ay, am - 1, ad)) / 86_400_000);
-}
-
-/**
- * The lower median - `medianDay` in recurring-patterns picks the same element,
- * and for the same reason: an averaged half-day is not a payment habit, and
- * two runs of the report must never disagree by rounding.
- */
-function lowerMedian(values: number[]): number {
-  const sorted = [...values].sort((a, b) => a - b);
-  return sorted[Math.floor((sorted.length - 1) / 2)];
 }
 
 /* ------------------------------------------------------------------ */

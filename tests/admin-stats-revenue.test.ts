@@ -60,8 +60,14 @@ vi.mock("@supabase/supabase-js", () => ({
         range: (first: number, end: number) => { offset = first; last = end; return query; },
         then: (resolve: (result: unknown) => unknown) => {
           const page = <T,>(rows: T[]) => rows.slice(offset, last + 1);
-          if (table === "documents" && columns.includes("import_batch_id")) {
+          // Two reads of `documents` select import_batch_id now: the turnover
+          // one (subtotals) and the per-owner one (business_id + created_at).
+          // Only the first is what paidOffsets is asserting about.
+          if (table === "documents" && columns.includes("subtotal")) {
             state.paidOffsets.push(offset);
+            return Promise.resolve(resolve({ data: page(state.paidDocs), error: null }));
+          }
+          if (table === "documents" && columns.includes("business_id")) {
             return Promise.resolve(resolve({ data: page(state.paidDocs), error: null }));
           }
           if (table === "businesses" && columns === "id, user_id") {

@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Users,
+  UserPlus,
   FileText,
-  Wallet,
+  BarChart3,
   TrendingUp,
   ShieldAlert,
   RefreshCw,
@@ -20,27 +21,59 @@ import {
 import { AdminHistoryChart } from "@/components/admin-history-chart";
 import { supabase } from "@/lib/supabase";
 import { isAdminEmail } from "@/lib/admin";
-import { formatCurrency, formatCurrencyWhole, formatDate, formatTimeAgo } from "@/lib/format";
+import { formatCurrency, formatDate, formatTimeAgo } from "@/lib/format";
 import { DOCUMENT_TYPE_LABELS, type DocumentType } from "@/lib/types";
 import { ActivityFeed } from "@/components/admin-activity-feed";
+
+/**
+ * One account, as the operator sees it: identity, dates and counts. Nothing a
+ * customer typed. Do not add client names, subjects or amounts to this row.
+ */
+interface AdminUserRow {
+  id: string;
+  email?: string;
+  provider: string;
+  created_at: string;
+  last_sign_in_at?: string;
+  /** Ours (founder / father / demo / QA / bot), not a customer. */
+  internal: boolean;
+  hasBusiness: boolean;
+  /** Documents this account produced in the app. Bulk imports excluded. */
+  documents: number;
+  documents30d: number;
+}
 
 interface Stats {
   generatedAt: string;
   users: {
-    total: number;
-    activeLast7d: number;
     dailyChart: Array<{ date: string; count: number }>;
-    recentSignups: Array<{
-      id: string;
-      email?: string;
-      provider: string;
-      created_at: string;
-      last_sign_in_at?: string;
-    }>;
+    recentSignups: AdminUserRow[];
+  };
+  /**
+   * The product scoreboard. Every number here EXCLUDES our own accounts
+   * (founder, father's tax-testing business, demo, QA, the Lynkeus bot), which
+   * is the whole point: `registered` counts everyone, `real` counts customers.
+   */
+  people: {
+    registered: number;
+    internal: number;
+    real: number;
+    activeLast7d: number;
+    activeLast30d: number;
+    signupsLast30d: number;
+    signupsPrev30d: number;
+    withBusiness: number;
+    producers: number;
+    producers30d: number;
+    producers7d: number;
+    producedTotal: number;
+    produced30d: number;
+    avgPerProducer: number;
+    medianPerProducer: number;
+    topProducer: number;
+    importedDocuments: number;
   };
   documents: {
-    total: number;
-    last7d: number;
     last30d: number;
     /**
      * Counts by type over the last 30 days. This replaced a "last 20 documents"
@@ -50,14 +83,7 @@ interface Stats {
     byType30d: Array<{ type: DocumentType; count: number; drafts: number }>;
     dailyChart: Array<{ date: string; count: number }>;
   };
-  clients: { total: number };
-  expenses: { total: number };
   revenue: { inAppTurnover: number; importedTurnover: number };
-  onboarding?: {
-    signedUp: number;
-    createdBusiness: number;
-    createdFirstDoc: number;
-  };
 }
 
 interface Health {
@@ -180,7 +206,7 @@ export default function AdminPage() {
             פאנל ניהול
           </h1>
           <p className="text-sm text-stone-700 mt-2 mr-14">
-            סטטיסטיקות אגרגטיביות על כל המשתמשים והנתונים במערכת
+            מי נרשם, מי חוזר, ומה הם מפיקים. החשבונות שלי ושל ה-QA לא נספרים.
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -302,23 +328,71 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* Top stat cards */}
+          {/* Colour follows the brand ramps remapped in globals.css, not the
+              Tailwind names: violet/purple resolve to charcoal (a neutral
+              fact), amber/orange to the brand accent (the growth number, the
+              one orange touch in this row), emerald to the positive state.
+              Do not reach for sky or fuchsia here - they are charcoal too,
+              and three names for one colour only mislead the next reader.
+
+              People: how many customers there are and how many are alive.
+              Every figure excludes our own accounts; the raw signup total is
+              shown as the smaller line so the two are never confused. This
+              replaced a "clients / expenses" card that counted rows inside
+              customers' address books - platform data volume, which answered
+              no question the operator actually has. */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <StatCard
-              label="משתמשים רשומים"
-              value={String(stats.users.total)}
-              sub={`${stats.users.activeLast7d} פעילים השבוע`}
+              label="משתמשים אמיתיים"
+              value={String(stats.people.real)}
+              sub={`${stats.people.registered} רשומים, מהם ${stats.people.internal} חשבונות שלי`}
               icon={Users}
               gradient="from-violet-400 to-purple-500"
               bg="from-violet-50 to-purple-50"
             />
             <StatCard
-              label="סה״כ מסמכים"
-              value={String(stats.documents.total)}
-              sub={`+${stats.documents.last7d} השבוע`}
+              label="נכנסו ב-7 ימים"
+              value={String(stats.people.activeLast7d)}
+              sub={`${stats.people.activeLast30d} נכנסו ב-30 יום`}
+              icon={Activity}
+              gradient="from-violet-400 to-purple-500"
+              bg="from-violet-50 to-purple-50"
+            />
+            <StatCard
+              label="נרשמו ב-30 יום"
+              value={String(stats.people.signupsLast30d)}
+              sub={signupTrend(stats.people.signupsPrev30d)}
+              icon={UserPlus}
+              gradient="from-amber-400 to-orange-500"
+              bg="from-amber-50 to-orange-50"
+            />
+            <StatCard
+              label="משתמשים שמפיקים"
+              value={String(stats.people.producers)}
+              sub={`${stats.people.producers30d} הפיקו החודש, ${stats.people.producers7d} השבוע`}
+              icon={FileText}
+              gradient="from-emerald-400 to-teal-500"
+              bg="from-emerald-50 to-teal-50"
+            />
+          </div>
+
+          {/* Volume: what all those people actually made. */}
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+            <StatCard
+              label="מסמכים שהפיקו לקוחות"
+              value={String(stats.people.producedTotal)}
+              sub={`${stats.people.produced30d} הופקו החודש · ${stats.people.importedDocuments} יובאו מתוכנה אחרת`}
               icon={FileText}
               gradient="from-orange-500 to-orange-700"
               bg="from-orange-50 to-orange-100"
+            />
+            <StatCard
+              label="מסמכים למשתמש"
+              value={String(stats.people.avgPerProducer)}
+              sub={`חציון ${stats.people.medianPerProducer}, הכי פעיל ${stats.people.topProducer}`}
+              icon={BarChart3}
+              gradient="from-violet-400 to-purple-500"
+              bg="from-violet-50 to-purple-50"
             />
             <StatCard
               label="מחזור שנוצר באפליקציה"
@@ -328,14 +402,6 @@ export default function AdminPage() {
               gradient="from-emerald-400 to-teal-500"
               bg="from-emerald-50 to-teal-50"
               ltr
-            />
-            <StatCard
-              label="לקוחות / הוצאות"
-              value={`${stats.clients.total} / ${stats.expenses.total}`}
-              sub="סה״כ לקוחות / הוצאות"
-              icon={Wallet}
-              gradient="from-amber-400 to-orange-500"
-              bg="from-amber-50 to-orange-50"
             />
           </div>
 
@@ -370,54 +436,22 @@ export default function AdminPage() {
             <ActivityFeed state={activity} onLoadMore={activityPager.loadMore} onRetry={activityPager.retry} />
           </div>
 
-          {/* Recent signups */}
-          <div className="card-soft overflow-hidden">
-            <div className="px-5 py-3 border-b border-orange-100 flex items-center gap-2">
-              <Users className="w-4 h-4 text-orange-500" />
-              <h2 className="font-semibold text-stone-900">הרשמות אחרונות</h2>
-              {/* נספח ה' (ה): the software house customer book, printable. */}
-              <button
-                type="button"
-                onClick={() => void downloadCustomerBook()}
-                className="mr-auto text-xs text-stone-600 underline hover:text-stone-900"
-                title="ספר לקוחות של בית התוכנה (הוראות ניהול ספרים, נספח ה' (ה))"
-              >
-                ספר לקוחות (CSV)
-              </button>
-            </div>
-            {stats.users.recentSignups.length === 0 ? (
-              <p className="p-5 text-sm text-stone-500 italic">אין הרשמות עדיין</p>
-            ) : (
-              <ul className="divide-y divide-orange-50 max-h-[32rem] overflow-y-auto" tabIndex={0} aria-label="הרשמות אחרונות">
-                {stats.users.recentSignups.map((u) => (
-                  <li key={u.id} className="px-5 py-3 flex items-center justify-between gap-3 hover:bg-orange-50/40">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-stone-900 truncate" dir="ltr">
-                        {u.email || "(no email)"}
-                      </p>
-                      <p className="text-xs text-stone-600">
-                        {u.provider} · נרשם {formatDate(u.created_at.slice(0, 10))}
-                        {u.last_sign_in_at && (
-                          <> · התחבר לאחרונה {formatDate(u.last_sign_in_at.slice(0, 10))}</>
-                        )}
-                      </p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+          {/* One account per row: who signed up, whether they came back, and
+              how much they actually produced. Replaced a signup list that
+              showed only dates, which could not answer "who is using this". */}
+          <UsersTable rows={stats.users.recentSignups} internalCount={stats.people.internal} />
 
           {/* Onboarding funnel */}
-          {stats.onboarding && (
-            <div className="card-soft p-5">
+          <div className="card-soft p-5">
               <div className="flex items-center gap-2 mb-4">
                 <TrendingDown className="w-4 h-4 text-orange-500" />
                 <h2 className="font-semibold text-stone-900">משפך הצטרפות</h2>
+                <span className="text-xs text-stone-500 mr-auto">
+                  בלי החשבונות שלי
+                </span>
               </div>
-              <FunnelBars onboarding={stats.onboarding} />
-            </div>
-          )}
+            <FunnelBars people={stats.people} />
+          </div>
 
           {/* Documents by type, last 30 days. Counts only, on purpose: this
               card replaced a "last 20 documents" list that named each client
@@ -441,6 +475,168 @@ export default function AdminPage() {
         </>
       ) : null}
     </div>
+  );
+}
+
+type SortKey = "signup" | "documents" | "lastSeen";
+
+/** Rebuilding this on every render and every sort click bought nothing. */
+const USER_SORTS: ReadonlyArray<{ key: SortKey; label: string }> = [
+  { key: "documents", label: "לפי מסמכים" },
+  { key: "signup", label: "לפי הרשמה" },
+  { key: "lastSeen", label: "לפי כניסה" },
+];
+
+/**
+ * The shared picker turns into a five-column grid under 640px, which squeezed
+ * three Hebrew labels until the last one ran into the border. Wrapping instead
+ * of gridding keeps every label whole at any width.
+ */
+const SORT_GROUP = { display: "inline-flex", flexWrap: "wrap" } as const;
+
+/**
+ * The previous 30 days, spelled out, so the headline number has something to
+ * be measured against. Stated as a plain comparison rather than a delta or a
+ * percentage: with single-digit signups a "+1300%" would be noise, and zero
+ * prior signups has no percentage at all.
+ */
+function signupTrend(previous: number): string {
+  if (previous === 0) return "אף הרשמה ב-30 יום שלפני";
+  return `לעומת ${previous} ב-30 יום שלפני`;
+}
+
+/**
+ * Every account in one sortable table: identity, whether they came back, and
+ * how many documents they produced. Counts and dates only.
+ *
+ * Our own accounts are hidden by default and counted in the header, so the
+ * table answers "how are my customers doing" without the founder, the QA bot
+ * and the demo account padding every column.
+ */
+function UsersTable({ rows, internalCount }: { rows: AdminUserRow[]; internalCount: number }) {
+  const [sort, setSort] = useState<SortKey>("documents");
+  const [showInternal, setShowInternal] = useState(false);
+
+  // The page re-renders on every refresh and health poll; without this the
+  // whole list is filtered and sorted again each time for nothing.
+  const visible = useMemo(
+    () =>
+      rows
+        .filter((r) => showInternal || !r.internal)
+        .sort((a, b) => {
+          if (sort === "documents") return b.documents - a.documents;
+          if (sort === "lastSeen") return (b.last_sign_in_at || "").localeCompare(a.last_sign_in_at || "");
+          return (b.created_at || "").localeCompare(a.created_at || "");
+        }),
+    [rows, sort, showInternal],
+  );
+
+  return (
+    <div className="card-soft overflow-hidden">
+      <div className="px-5 py-3 border-b border-orange-100 flex items-center gap-x-3 gap-y-2 flex-wrap">
+        <Users className="w-4 h-4 text-orange-500 flex-shrink-0" />
+        <h2 className="font-semibold text-stone-900">משתמשים</h2>
+        <span className="text-xs text-stone-500">{visible.length} שורות</span>
+        <div className="flex items-center gap-2 mr-auto flex-wrap">
+          {/* The app's segmented picker (.dash-range + .rpt-modes), the same
+              control /reports, /expenses, /obligations and the aging report
+              use. The inline style is how the other call sites opt out of the
+              five-up mobile grid the CSS assumes. */}
+          <div className="dash-range rpt-modes" style={SORT_GROUP} role="group" aria-label="מיון המשתמשים">
+            {USER_SORTS.map((option) => (
+              <button
+                key={option.key}
+                type="button"
+                onClick={() => setSort(option.key)}
+                aria-pressed={sort === option.key}
+                className={`dash-range-btn${sort === option.key ? " is-active" : ""}`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+          {internalCount > 0 && (
+            <label className="flex items-center gap-1.5 py-2 text-xs text-stone-600 hover:text-stone-900 cursor-pointer transition-colors">
+              <input
+                type="checkbox"
+                checked={showInternal}
+                onChange={(e) => setShowInternal(e.target.checked)}
+                className="w-4 h-4 rounded accent-orange-600"
+              />
+              הצג גם את {internalCount} החשבונות שלי
+            </label>
+          )}
+          {/* נספח ה' (ה): the software house customer book, printable. */}
+          <button
+            type="button"
+            onClick={() => void downloadCustomerBook()}
+            className="text-xs text-stone-600 underline hover:text-stone-900"
+            title="ספר לקוחות של בית התוכנה (הוראות ניהול ספרים, נספח ה' (ה))"
+          >
+            ספר לקוחות (CSV)
+          </button>
+        </div>
+      </div>
+      {visible.length === 0 ? (
+        <p className="p-5 text-sm text-stone-500 italic">אין הרשמות עדיין</p>
+      ) : (
+        <div className="max-h-[32rem] overflow-y-auto" tabIndex={0} aria-label="משתמשים">
+          <table className="w-full text-sm">
+            <thead className="sticky top-0 z-10 bg-stone-50 text-xs text-stone-600 shadow-[0_1px_0_0_var(--color-orange-100)]">
+              <tr>
+                <th scope="col" className="text-right font-medium px-5 py-2">חשבון</th>
+                <th scope="col" className="text-center font-medium px-2 py-2">מסמכים</th>
+                <th scope="col" className="text-center font-medium px-2 py-2 hidden sm:table-cell">ב-30 יום</th>
+                <th scope="col" className="text-right font-medium px-2 py-2 hidden md:table-cell">נרשם</th>
+                <th scope="col" className="text-right font-medium px-5 py-2 hidden md:table-cell">כניסה אחרונה</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-orange-50">
+              {visible.map((u) => <UserRow key={u.id} user={u} />)}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** One account. Split out so the signup date is formatted once per row. */
+function UserRow({ user }: { user: AdminUserRow }) {
+  const signedUp = formatDate(user.created_at.slice(0, 10));
+  return (
+    <tr className="hover:bg-orange-50/40">
+      <td className="px-5 py-3 max-w-0">
+        <p className="font-medium text-stone-900 truncate" dir="ltr" title={user.email || ""}>
+          {user.email || "(no email)"}
+        </p>
+        <p className="text-xs text-stone-600 truncate">
+          {user.provider}
+          {user.internal && <span className="text-stone-500"> · חשבון שלי</span>}
+          {!user.internal && !user.hasBusiness && (
+            <span className="text-rose-700"> · לא השלים פרטי עסק</span>
+          )}
+          {!user.internal && user.hasBusiness && user.documents === 0 && (
+            <span className="text-amber-700"> · עוד לא הפיק מסמך</span>
+          )}
+          {/* The dates hidden on narrow screens still have to be readable
+              there, so they repeat under the address. */}
+          <span className="md:hidden">{` · נרשם ${signedUp}`}</span>
+        </p>
+      </td>
+      <td className="px-2 py-3 text-center font-semibold text-stone-900 tabular-nums">
+        {user.documents}
+      </td>
+      <td className="px-2 py-3 text-center text-stone-700 tabular-nums hidden sm:table-cell">
+        {user.documents30d}
+      </td>
+      <td className="px-2 py-3 text-stone-700 whitespace-nowrap hidden md:table-cell">
+        {signedUp}
+      </td>
+      <td className="px-5 py-3 text-stone-700 whitespace-nowrap hidden md:table-cell">
+        {user.last_sign_in_at ? formatTimeAgo(user.last_sign_in_at) : "לא נכנס"}
+      </td>
+    </tr>
   );
 }
 
@@ -481,22 +677,18 @@ function StatCard({
   );
 }
 
-function FunnelBars({
-  onboarding,
-}: {
-  onboarding: { signedUp: number; createdBusiness: number; createdFirstDoc: number };
-}) {
-  const max = Math.max(onboarding.signedUp, 1);
+function FunnelBars({ people }: { people: Stats["people"] }) {
+  const max = Math.max(people.real, 1);
   const stages: Array<{ label: string; count: number; gradient: string }> = [
-    { label: "נרשמו", count: onboarding.signedUp, gradient: "from-orange-500 to-orange-700" },
+    { label: "נרשמו", count: people.real, gradient: "from-orange-500 to-orange-700" },
     {
       label: "השלימו פרטי עסק",
-      count: onboarding.createdBusiness,
+      count: people.withBusiness,
       gradient: "from-amber-400 to-orange-500",
     },
     {
       label: "הפיקו מסמך ראשון",
-      count: onboarding.createdFirstDoc,
+      count: people.producers,
       gradient: "from-emerald-400 to-teal-500",
     },
   ];
