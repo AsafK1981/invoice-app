@@ -2,14 +2,20 @@ import { formatCurrency } from "@/lib/format";
 import { NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 import { cronAuthError, cronAdminClient } from "@/lib/cron";
-import { chargeToken, getPlanPrice, isGrowConfigured } from "@/lib/grow";
+import { chargeToken as growChargeToken, isGrowConfigured, GrowApiError } from "@/lib/grow";
+import {
+  chargeToken as tranzilaChargeToken,
+  isTranzilaConfigured,
+  TranzilaApiError,
+} from "@/lib/tranzila";
 import { calculateNextDue } from "@/lib/recurring-store";
 import { issueSelfInvoice } from "@/lib/documents-server";
 import { getPlan, type PlanTier, type BillingInterval } from "@/lib/plans";
 import { CANONICAL_ORIGIN } from "@/lib/public-url";
 
 /**
- * Recurring subscription-billing + dunning cron (Grow / Meshulam).
+ * Recurring subscription-billing + dunning cron (self-managed processors:
+ * Grow / Meshulam, and since 2026-09-23 Tranzila).
  *
  * Runs daily (vercel.json → "0 7 * * *"). ONE route owns both renewal and the
  * failed-charge dunning escalation, per the plan (squishy-knitting-valiant.md
@@ -17,10 +23,15 @@ import { CANONICAL_ORIGIN } from "@/lib/public-url";
  *
  *   A. Auth (cronAuthError) + load due rows from the `subscriptions` work-queue.
  *   B. Per row:
+ *      0. Provider agreement: the ROW's provider must equal the ACTIVE
+ *         provider. Both gates must agree, so a stale row left behind by a
+ *         previous processor can never be charged by the current one.
  *      1. Idempotency recovery: if this period is already logged as charged
  *         (a crash between charge-log and period-advance), just advance & reset.
+ *      1b. Cancellation: a row flagged cancel_at_period_end (or a user whose
+ *         app_metadata says so) is CLOSED at this boundary, never charged.
  *      2. past_due gating: only retry on day 1 / 3 / 5 relative to first_failed_at.
- *      3. Charge the saved Grow token via chargeToken().
+ *      3. Charge the saved token via the provider's own chargeToken().
  *      4. On SUCCESS: write charge log (idempotency marker), advance
  *         current_period_end via calculateNextDue(), re-fetch-before-write the
  *         user's app_metadata, reset the subscription row, issue a self-invoice.
@@ -34,12 +45,17 @@ import { CANONICAL_ORIGIN } from "@/lib/public-url";
  */
 
 /**
- * This cron only has a job to do when Grow is the live processor. Production
- * currently runs Polar (PAYMENT_PROVIDER unset or "polar"), where renewals are
- * Polar's business and this route must not touch anyone's subscription. Mirror
- * of the gating in the billing routes.
+ * This cron only has a job to do when a SELF-MANAGED processor is live.
+ * Production currently runs Polar (PAYMENT_PROVIDER unset or "polar"), where
+ * renewals are Polar's business and this route must not touch anyone's
+ * subscription. Mirror of the gating in the billing routes.
  */
-const PAYMENT_PROVIDER = process.env.PAYMENT_PROVIDER === "grow" ? "grow" : "polar";
+const PAYMENT_PROVIDER =
+  process.env.PAYMENT_PROVIDER === "grow"
+    ? "grow"
+    : process.env.PAYMENT_PROVIDER === "tranzila"
+      ? "tranzila"
+      : "polar";
 
 const GMAIL_USER = process.env.GMAIL_USER || "";
 const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD || "";
@@ -60,12 +76,37 @@ interface SubscriptionRow {
   interval: string;
   provider: string;
   provider_token: string | null;
+  /** Tranzila token charges REQUIRE the expiry; the token does not carry it.
+   * Null on any Grow-era row, and on a Tranzila row whose capture did not
+   * return one - which is a data gap, not a decline. */
+  card_exp_month: number | null;
+  card_exp_year: number | null;
+  /** Set by /api/billing/cancel. A row with this set is closed at the period
+   * boundary instead of being charged. */
+  cancel_at_period_end: boolean | null;
   current_period_end: string; // "YYYY-MM-DD"
   status: "active" | "past_due" | "canceled";
   retry_count: number;
   first_failed_at: string | null;
   last_charge_at: string | null;
 }
+
+/**
+ * Outcome of one charge attempt, with the distinction the dunning ladder
+ * depends on:
+ *   - "decline"   the processor said no. The card is the problem. May dun.
+ *   - "transport" WE could not complete the call (network error, missing
+ *                 credentials, a thrown bug). The customer's card is not the
+ *                 problem, so this must NEVER dun: dunning emails a paying
+ *                 subscriber that their payment failed and downgrades them
+ *                 after 5 days, over a gap on our side that they cannot fix.
+ * Before 2026-09-23 every throw was coerced into `success = false`, i.e. into
+ * a decline, which is exactly that bug.
+ */
+type ChargeAttempt =
+  | { kind: "success"; transactionId?: string }
+  | { kind: "decline"; reason: string }
+  | { kind: "transport"; reason: string };
 
 /** Whole calendar days between a timestamp/date and today, UTC (same math as
  * dunning/run's daysSince, tolerant of both "YYYY-MM-DD" and full ISO input). */
@@ -101,22 +142,41 @@ function normalizeInterval(v: string): BillingInterval | null {
   return v === "year" || v === "month" ? v : null;
 }
 
+/**
+ * Price in NIS, read straight from PLANS. Provider-neutral on purpose: grow.ts
+ * and tranzila.ts each export their own getPlanPrice() reading the same PLANS
+ * table, and importing one processor's copy to bill the other's customer is
+ * the kind of thing that looks harmless until the two disagree.
+ */
+function planPrice(tier: PlanTier, interval: BillingInterval): number {
+  const plan = getPlan(tier);
+  return interval === "year" ? plan.priceYearly : plan.priceMonthly;
+}
+
 export async function GET(req: Request) {
   const unauth = cronAuthError(req);
   if (unauth) return unauth;
 
   // ── HARD ABORT before any work is selected ────────────────────────────────
-  // Two ways this route could do damage while Grow is not actually live:
-  //   1. PAYMENT_PROVIDER != "grow": Polar owns renewals; charging here would
-  //      double-bill or fight Polar's webhook over the same app_metadata.
-  //   2. Grow credentials missing: chargeToken() throws, and the catch around
-  //      it (deliberately, for transient network errors) coerces the throw into
-  //      success=false, i.e. a CARD DECLINE. That feeds the dunning ladder and
-  //      auto-downgrades paying customers over a config gap they cannot fix.
+  // Two ways this route could do damage while no self-managed processor is
+  // actually live:
+  //   1. PAYMENT_PROVIDER is "polar" (the default): Polar owns renewals;
+  //      charging here would double-bill or fight Polar's webhook over the
+  //      same app_metadata.
+  //   2. The live processor's credentials are missing: chargeToken() throws.
+  //      (Since 2026-09-23 a throw is classified as "transport" and skipped
+  //      rather than treated as a decline, but there is still no reason to
+  //      walk the whole queue only to skip every row.)
   // So we bail out here, BEFORE the `subscriptions` query, with a 200 so the
   // Vercel cron doesn't alarm on a state that is entirely expected.
-  if (PAYMENT_PROVIDER !== "grow" || !isGrowConfigured()) {
-    return NextResponse.json({ ok: true, skipped: "grow not configured" });
+  const providerConfigured =
+    PAYMENT_PROVIDER === "grow"
+      ? isGrowConfigured()
+      : PAYMENT_PROVIDER === "tranzila"
+        ? isTranzilaConfigured()
+        : false;
+  if (!providerConfigured) {
+    return NextResponse.json({ ok: true, skipped: `${PAYMENT_PROVIDER} not configured` });
   }
 
   const admin = cronAdminClient();
@@ -126,7 +186,7 @@ export async function GET(req: Request) {
   const { data: rows, error } = await admin
     .from("subscriptions")
     .select(
-      "id, user_id, business_id, tier, interval, provider, provider_token, current_period_end, status, retry_count, first_failed_at, last_charge_at",
+      "id, user_id, business_id, tier, interval, provider, provider_token, card_exp_month, card_exp_year, cancel_at_period_end, current_period_end, status, retry_count, first_failed_at, last_charge_at",
     )
     .in("status", ["active", "past_due"])
     .lte("current_period_end", today);
@@ -153,6 +213,23 @@ export async function GET(req: Request) {
 
   for (const row of rows as SubscriptionRow[]) {
     const userId = row.user_id;
+
+    // ── B0. The row's provider must BE the live provider ─────────────────────
+    // Two independent gates that must agree: the env says which processor is
+    // live, the row says which processor holds this card. A row left behind by
+    // a previous processor (or written by a concurrent migration) is skipped,
+    // never charged by whoever happens to be live now - its token belongs to a
+    // different vault, and "charge an unknown token" is the one experiment that
+    // costs a customer real money.
+    if (row.provider !== PAYMENT_PROVIDER) {
+      skipped++;
+      details.push({
+        user: userId,
+        outcome: `SKIPPED: row provider "${row.provider}" != active provider "${PAYMENT_PROVIDER}"`,
+      });
+      continue;
+    }
+
     const tier = normalizeTier(row.tier);
     const interval = normalizeInterval(row.interval);
     if (!tier || !interval) {
@@ -199,6 +276,23 @@ export async function GET(req: Request) {
       continue;
     }
 
+    // ── B1b. Cancellation actually stops the next charge ─────────────────────
+    // /api/billing/cancel sets subscriptions.cancel_at_period_end AND
+    // app_metadata.plan_cancel_at_period_end; either one is enough to stop the
+    // money here. The user kept full access up to this boundary - that is what
+    // "cancel at period end" promised - and now the subscription closes without
+    // a charge, without an email and without touching the dunning ladder.
+    //
+    // This check is the ENTIRE reason the flag exists. Before 2026-09-23
+    // nothing read it, and the cancel route's own comment wrongly claimed this
+    // code did; a cancelled subscriber would have been charged forever.
+    if (await cancellationPending(admin, row)) {
+      await downgrade(admin, row);
+      downgraded++;
+      details.push({ user: userId, outcome: "cancelled at period end - closed, not charged" });
+      continue;
+    }
+
     // ── B2. past_due day-bucket gating ────────────────────────────────────────
     // Only retry on the scheduled escalation days; don't hammer a declined card
     // every single day. retry_count is the 1-based index of the next retry.
@@ -234,39 +328,76 @@ export async function GET(req: Request) {
       continue;
     }
 
-    const amount = getPlanPrice(tier, interval);
+    // A Tranzila token additionally needs the card EXPIRY, which the token
+    // itself does not carry (Tranzila support, 2026-09-23). A row holding a
+    // token but no expiry is the same class of problem as a row holding no
+    // token: OUR data gap. It takes the same loud-skip branch and must NEVER
+    // enter the dunning ladder, which would email a paying customer that their
+    // payment failed and downgrade them after 5 days over a field we failed to
+    // capture.
+    if (
+      PAYMENT_PROVIDER === "tranzila" &&
+      (row.card_exp_month == null || row.card_exp_year == null)
+    ) {
+      skipped++;
+      details.push({
+        user: userId,
+        outcome: "SKIPPED: token without card expiry (data gap, needs manual review)",
+      });
+      console.error(
+        "[subscription-billing] Tranzila subscription has a token but no card expiry, cannot charge",
+        { userId, subscriptionId: row.id },
+      );
+      continue;
+    }
+
+    const amount = planPrice(tier, interval);
     const planName = getPlan(tier).name;
     const description = `מנוי ${planName}: חיוב ${interval === "year" ? "שנתי" : "חודשי"}`;
 
-    let success = false;
-    let transactionId: string | undefined;
-    try {
-      const res = await chargeToken({
-        token: row.provider_token,
-        sum: amount,
-        description,
+    const attempt = await chargeOne(row, amount, description);
+
+    // A transport/config failure is NOT a decline. Skip loudly and leave the
+    // row due, so the next nightly run retries it, with no dunning email, no
+    // retry_count bump and no downgrade clock started.
+    if (attempt.kind === "transport") {
+      skipped++;
+      details.push({ user: userId, outcome: `SKIPPED: charge unreachable (${attempt.reason})` });
+      console.error("[subscription-billing] [ALERT] charge attempt failed in transit", {
+        userId,
+        subscriptionId: row.id,
+        provider: row.provider,
+        reason: attempt.reason,
       });
-      success = res.success;
-      transactionId = res.transactionId;
-    } catch (err) {
-      // Network/transport error talking to Grow; treat as a transient failure.
-      console.warn("[subscription-billing] chargeToken threw", err);
-      success = false;
+      continue;
     }
 
-    if (!success) {
+    if (attempt.kind === "decline") {
       const wasFinal = await recordFailure(admin, transporter, row, tier, interval);
       failed++;
       if (wasFinal) downgraded++;
-      details.push({ user: userId, outcome: wasFinal ? "final failure → downgraded" : "charge failed" });
+      details.push({
+        user: userId,
+        outcome: wasFinal ? "final failure → downgraded" : `charge declined (${attempt.reason})`,
+      });
       continue;
     }
+
+    const transactionId = attempt.transactionId;
 
     // ── B4. SUCCESS ───────────────────────────────────────────────────────────
     // Write the idempotency marker FIRST (right after the money moved), then
     // advance the period + reset the row + metadata, then the self-invoice.
     // A UNIQUE(user_id, period_start) conflict here means a concurrent run
     // already charged; treat as done and still finish the advancement.
+    //
+    // KNOWN RESIDUAL RISK (council, 2026-09-23), documented not solved: this
+    // row is written AFTER the money moved, and neither processor is sent an
+    // idempotency key, so a crash or timeout in the gap leaves a real charge
+    // with no local record - invisible here, visible only in the processor's
+    // own report. The partial UNIQUE index on
+    // subscription_charge_log (provider, transaction_id) closes the opposite
+    // direction: one processor transaction can never be credited twice.
     const { error: logErr } = await admin.from("subscription_charge_log").insert({
       user_id: userId,
       period_start: periodStart,
@@ -329,6 +460,75 @@ export async function GET(req: Request) {
 
 type Admin = ReturnType<typeof cronAdminClient>;
 type Transporter = ReturnType<typeof nodemailer.createTransport>;
+
+/**
+ * Dispatch one charge to the processor that holds this row's token. The caller
+ * has already checked that row.provider === PAYMENT_PROVIDER and that the
+ * token (and, for Tranzila, the expiry) is present.
+ *
+ * Every throw becomes "transport", never "decline" - see ChargeAttempt. That
+ * covers the explicitly-typed errors (TranzilaApiError, GrowApiError: network
+ * failure or missing credentials) AND any unexpected bug, because a bug in our
+ * code is even less the customer's fault than a network blip. The cost of
+ * mis-classifying a real decline as transport is one extra day before dunning
+ * starts; the cost of the reverse is emailing a paying customer that their
+ * card failed and cancelling them.
+ */
+async function chargeOne(
+  row: SubscriptionRow,
+  amount: number,
+  description: string,
+): Promise<ChargeAttempt> {
+  const token = row.provider_token as string;
+  try {
+    if (row.provider === "tranzila") {
+      const res = await tranzilaChargeToken({
+        token,
+        sum: amount,
+        expireMonth: row.card_exp_month as number,
+        expireYear: row.card_exp_year as number,
+        description,
+      });
+      if (res.success) return { kind: "success", transactionId: res.transactionId ?? undefined };
+      // Tranzila reports a decline INSIDE a 200 (error_code / processor code),
+      // so reaching here means the processor genuinely said no. Never include
+      // the token or any card data in the reason.
+      return {
+        kind: "decline",
+        reason: `error_code=${res.errorCode ?? "?"} processor=${res.processorResponseCode ?? "?"}`,
+      };
+    }
+
+    const res = await growChargeToken({ token, sum: amount, description });
+    if (res.success) return { kind: "success", transactionId: res.transactionId };
+    return { kind: "decline", reason: "grow reported failure" };
+  } catch (err) {
+    const reason =
+      err instanceof TranzilaApiError || err instanceof GrowApiError
+        ? `${err.name}: ${err.message}`
+        : err instanceof Error
+          ? `unexpected: ${err.message}`
+          : "unexpected non-error throw";
+    return { kind: "transport", reason };
+  }
+}
+
+/**
+ * Has this subscriber asked to stop? True if EITHER the scheduler row or the
+ * user's app_metadata says so. Two sources because /api/billing/cancel writes
+ * both and neither is guaranteed present: a legacy subscriber may have no
+ * queue row at all, and a queue row can outlive a metadata write.
+ *
+ * Reads app_metadata only when the row does not already answer the question,
+ * so the common (not cancelled) path still costs one auth lookup per DUE row -
+ * a handful of rows a night, next to a card charge each.
+ */
+async function cancellationPending(admin: Admin, row: SubscriptionRow): Promise<boolean> {
+  if (row.cancel_at_period_end === true) return true;
+  const { data } = await admin.auth.admin.getUserById(row.user_id);
+  const meta = (data?.user?.app_metadata || {}) as Record<string, unknown>;
+  return meta.plan_cancel_at_period_end === true;
+}
 
 /**
  * Advance the subscription to its next period and re-activate it. Re-fetches the
@@ -482,7 +682,7 @@ async function sendFailureEmail(
   if (!to) return;
 
   const planName = getPlan(tier).name;
-  const amount = getPlanPrice(tier, interval);
+  const amount = planPrice(tier, interval);
   const billingUrl = `${APP_URL}/billing`;
   const subject = "התשלום לא עבר, המנוי הושהה";
 

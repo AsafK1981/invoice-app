@@ -14,6 +14,7 @@ import {
   getPlanPrice as getTranzilaPlanPrice,
   TOKEN_VALIDATION_AMOUNT as TRANZILA_TOKEN_VALIDATION_AMOUNT,
 } from "@/lib/tranzila";
+import { mintCheckoutNonce, CHECKOUT_NONCE_PARAM } from "@/lib/tranzila-activation";
 import { TRIAL_DAYS, type PlanTier, type BillingInterval } from "@/lib/plans";
 import { CANONICAL_ORIGIN } from "@/lib/public-url";
 
@@ -245,10 +246,10 @@ async function handleGrowCheckout({
 // ─────────────────────────────────────────────────────────────────────────
 // Tranzila (opt-in, only reached when PAYMENT_PROVIDER=tranzila)
 //
-// NOT a tested integration - see docs/payments/tranzila-integration.md.
-// Simpler shape than the Grow branch above: token capture happens entirely
-// on Tranzila's own hosted page (no server-side create-session call from us
-// first), so this handler only builds the redirect URL.
+// Token capture happens entirely on Tranzila's own hosted page (no
+// server-side create-session call from us first), so this handler's job is:
+// mint a single-use checkout intent, then build the redirect URL that carries
+// that intent's nonce on the SERVER leg only.
 // ─────────────────────────────────────────────────────────────────────────
 async function handleTranzilaCheckout({
   user,
@@ -277,13 +278,56 @@ async function handleTranzilaCheckout({
     ? TRANZILA_TOKEN_VALIDATION_AMOUNT
     : getTranzilaPlanPrice(tier, interval);
 
-  const successUrl = `${origin}/billing?success=1`;
-  const failUrl = `${origin}/billing?canceled=1`;
+  // ── The per-checkout single-use intent ──────────────────────────────────
+  // DirectNG results carry no signature and Tranzila documents no
+  // transaction-query endpoint, so this row is what later proves that a result
+  // POST belongs to a checkout WE started, for THIS user, at THIS price. See
+  // src/lib/tranzila-activation.ts for the full reasoning.
+  //
+  // FAIL CLOSED: if the intent cannot be written, do not send the customer to
+  // a payment page whose result we would then be unable to authenticate. A
+  // 503 costs one retried click; an unauthenticatable capture costs a real
+  // charge we cannot safely act on.
+  const nonce = mintCheckoutNonce();
+  const admin = createClient(supabaseUrl, serviceKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  const { error: intentErr } = await admin.from("payment_checkout_intents").insert({
+    nonce,
+    user_id: user.id,
+    provider: "tranzila",
+    tier,
+    interval,
+    expected_amount: chargeSum,
+    token_only: isTrial,
+    status: "pending",
+  });
+  if (intentErr) {
+    console.error("[tranzila-checkout] could not mint checkout intent", intentErr.message);
+    return NextResponse.json(
+      { ok: false, error: "Checkout is temporarily unavailable" },
+      { status: 503 },
+    );
+  }
+
+  // Browser-facing legs: NO secret and NO nonce - the customer sees these.
+  // They point at our own callback route rather than /billing because DirectNG
+  // POSTs the result, and /billing is a React page with no POST handler (that
+  // POST would land on a 405). The callback renders nothing to write and
+  // redirects the customer onward to /billing.
+  const successUrl = `${origin}/api/tranzila/callback`;
+  const failUrl = `${origin}/api/tranzila/callback?status=failed`;
+
+  // Server-to-server leg: THIS is where the nonce goes. Built on APP_ORIGIN
+  // (our own canonical host), never on the request's origin, because this URL
+  // is called by Tranzila's servers and must not be steerable by a caller.
+  const notifyUrl = `${APP_ORIGIN}/api/tranzila/notify?${CHECKOUT_NONCE_PARAM}=${encodeURIComponent(nonce)}`;
 
   const url = buildHostedPaymentUrl({
     sum: chargeSum,
     successUrl,
     failUrl,
+    notifyUrl,
     fullName: (user.user_metadata?.full_name as string | undefined) || user.email || "Customer",
     email: user.email || "",
     phone: (user.user_metadata?.phone as string | undefined) || "",
@@ -293,10 +337,9 @@ async function handleTranzilaCheckout({
     tokenOnly: isTrial,
   });
 
-  // The 30-day trial (TRIAL_DAYS) and the actual plan activation both happen
-  // once the token comes back from the hosted page - NOT built yet (see
-  // docs/payments/tranzila-integration.md item 4). This route's scope ends at
-  // "build the redirect URL."
+  // The 30-day trial (TRIAL_DAYS) and the plan activation both happen in
+  // /api/tranzila/notify, from the intent row minted above - never from the
+  // result payload's own claims about who is buying what.
   void TRIAL_DAYS;
 
   return NextResponse.json({ ok: true, url });
