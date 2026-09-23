@@ -19,6 +19,7 @@ import {
   Coins,
 } from "lucide-react";
 import { AdminHistoryChart } from "@/components/admin-history-chart";
+import { GOAL, goalStatus, isoDay } from "@/lib/admin-goal";
 import { supabase } from "@/lib/supabase";
 import { isAdminEmail } from "@/lib/admin";
 import { formatCurrency, formatDate, formatTimeAgo } from "@/lib/format";
@@ -72,6 +73,13 @@ interface Stats {
     medianPerProducer: number;
     topProducer: number;
     importedDocuments: number;
+  };
+  /** Feeds the goal banner. Real accounts only; see the stats route. */
+  subscribers: {
+    paying: number;
+    trialing: number;
+    betaGrants: number;
+    grossMonthlyIls: number;
   };
   documents: {
     last30d: number;
@@ -253,6 +261,8 @@ export default function AdminPage() {
         <div className="text-center py-16 text-stone-500">טוען נתונים...</div>
       ) : stats ? (
         <>
+          <GoalBanner subscribers={stats.subscribers} />
+
           {/* System status: real per-component health from /api/health */}
           {health ? (
             <div
@@ -500,6 +510,115 @@ const SORT_GROUP = { display: "inline-flex", flexWrap: "wrap" } as const;
  * percentage: with single-digit signups a "+1300%" would be noise, and zero
  * prior signups has no percentage at all.
  */
+/**
+ * The business goal, in the operator's face every time the panel opens
+ * (Asaf, 2026-09-23): the finish line, where the app stands today, and the
+ * next monthly milestone with its date. Numbers and the path come from
+ * src/lib/admin-goal.ts; this only lays them out. Charcoal so it reads as a
+ * different kind of card from the stat tiles below, with the progress bar
+ * as the row's one orange touch.
+ */
+function GoalBanner({ subscribers }: { subscribers: Stats["subscribers"] }) {
+  const status = goalStatus(subscribers.paying, subscribers.grossMonthlyIls, isoDay(new Date()));
+  const notPaying = [
+    subscribers.trialing > 0 ? `${subscribers.trialing} בניסיון` : null,
+    subscribers.betaGrants > 0 ? `${subscribers.betaGrants} בהטבת בטא` : null,
+  ].filter(Boolean);
+  const onTrack = status.aheadBy >= 0;
+  // Percent of the bar the path expects today, so the gap is visible on the
+  // bar itself and not only in the sentence under it.
+  const expectedPct = Math.min(100, (status.expectedToday / GOAL.subscribers) * 100);
+  const barPct = Math.max(status.percentOfGoal, subscribers.paying > 0 ? 0.6 : 0);
+
+  return (
+    <section
+      aria-label="היעד"
+      className="rounded-3xl bg-stone-900 text-white p-5 sm:p-6 shadow-lg shadow-stone-300/40"
+    >
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 sm:gap-4">
+        <div>
+          <p className="text-xs font-semibold text-orange-300 tracking-wide">היעד</p>
+          <p className="text-3xl sm:text-4xl font-bold mt-1 tabular-nums">
+            {GOAL.subscribers.toLocaleString("he-IL")}
+            <span className="text-base font-semibold text-stone-300 mr-2">מנויים משלמים</span>
+          </p>
+          <p className="text-sm text-stone-300 mt-1">
+            {formatCurrency(GOAL.grossMonthlyIls)} ברוטו לחודש · עד {formatDate(GOAL.deadline)}
+          </p>
+        </div>
+        <div className="sm:border-r sm:border-stone-700 sm:pr-4">
+          <p className="text-xs font-semibold text-stone-400 tracking-wide">היום</p>
+          <p className="text-3xl sm:text-4xl font-bold mt-1 tabular-nums">
+            {subscribers.paying.toLocaleString("he-IL")}
+            <span className="text-base font-semibold text-stone-300 mr-2">משלמים</span>
+          </p>
+          <p className="text-sm text-stone-300 mt-1">
+            {formatCurrency(subscribers.grossMonthlyIls)} ברוטו לחודש
+            {notPaying.length > 0 ? ` · ועוד ${notPaying.join(", ")}` : ""}
+          </p>
+        </div>
+        <div className="sm:border-r sm:border-stone-700 sm:pr-4">
+          <p className="text-xs font-semibold text-stone-400 tracking-wide">
+            עד {formatDate(status.milestone.date)}
+          </p>
+          <p className="text-3xl sm:text-4xl font-bold mt-1 tabular-nums">
+            {status.milestone.target.toLocaleString("he-IL")}
+            <span className="text-base font-semibold text-stone-300 mr-2">משלמים</span>
+          </p>
+          <p className="text-sm text-stone-300 mt-1">
+            {status.milestone.toGo === 0
+              ? "אבן הדרך הושגה"
+              : `עוד ${status.milestone.toGo} מנויים ב-${status.milestone.daysLeft} ימים`}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-5">
+        <div
+          className="relative h-3 rounded-full bg-stone-700 overflow-hidden"
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={GOAL.subscribers}
+          aria-valuenow={subscribers.paying}
+        >
+          <div
+            className="absolute inset-y-0 right-0 rounded-full bg-gradient-to-l from-orange-400 to-orange-600"
+            style={{ width: `${barPct}%` }}
+          />
+          {/* Where the path says today should be. */}
+          <div
+            className="absolute inset-y-0 w-0.5 bg-white/80"
+            style={{ right: `${expectedPct}%` }}
+            title={`לפי התוכנית: ${status.expectedToday} היום`}
+          />
+        </div>
+        <div className="flex items-center justify-between flex-wrap gap-2 mt-2 text-xs text-stone-300">
+          <span>
+            {status.percentOfGoal}% מהיעד ·{" "}
+            {status.expectedToday === 0 ? (
+              <>הספירה מתחילה ב-{formatDate(GOAL.startedOn)}</>
+            ) : (
+              <>
+                לפי התוכנית היום צריך {status.expectedToday},{" "}
+                <span className={onTrack ? "text-emerald-300" : "text-orange-300"}>
+                  {status.aheadBy === 0
+                    ? "בדיוק על הקו"
+                    : onTrack
+                      ? `מקדים ב-${status.aheadBy}`
+                      : `מאחר ב-${-status.aheadBy}`}
+                </span>
+              </>
+            )}
+          </span>
+          <span>
+            הקצב הנדרש עכשיו: {status.paceNext30d} חדשים ב-30 יום · נשארו {status.monthsToDeadline} חודשים
+          </span>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function signupTrend(previous: number): string {
   if (previous === 0) return "אף הרשמה ב-30 יום שלפני";
   return `לעומת ${previous} ב-30 יום שלפני`;

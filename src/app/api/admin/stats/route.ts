@@ -6,6 +6,7 @@ import { getAdminChartDay, type AdminDailyPoint } from "@/lib/admin-chart";
 import { countsForTurnover } from "@/lib/ita/income-tax-advances";
 import { resolveInternalAccounts } from "@/lib/internal-accounts";
 import { lowerMedian } from "@/lib/median";
+import { PLANS, getPlanStatus } from "@/lib/plans";
 import type { InvoiceDocument } from "@/lib/types";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -260,10 +261,29 @@ export async function GET(req: NextRequest) {
     let producers7d = 0;
     let produced30d = 0;
     let realUserCount = 0;
+    // The goal widget's numbers. A paying subscriber is a real account whose
+    // plan (app_metadata only, see getPlanStatus) is a paid tier, active, not
+    // a beta grant and past its trial. Trials and grants are counted apart so
+    // the widget can say "and N more on trial" without inflating the goal.
+    // Gross income is the tier's monthly list price; a yearly subscriber pays
+    // ~17% less than that, close enough for a progress bar.
+    let payingSubscribers = 0;
+    let trialingSubscribers = 0;
+    let betaGrants = 0;
+    let grossMonthlyIls = 0;
     const producerCounts: number[] = [];
     for (const u of allUsers) {
       if (internalUserIds.has(u.id)) continue;
       realUserCount++;
+      const plan = getPlanStatus(u);
+      if (plan.tier !== "free" && plan.active) {
+        if (u.app_metadata?.plan_beta_grant === true) betaGrants++;
+        else if (plan.trialing) trialingSubscribers++;
+        else {
+          payingSubscribers++;
+          grossMonthlyIls += PLANS[plan.tier].priceMonthly;
+        }
+      }
       if (u.last_sign_in_at && u.last_sign_in_at >= sevenDaysAgo) activeUsers7d++;
       if (u.last_sign_in_at && u.last_sign_in_at >= thirtyDaysAgo) activeUsers30d++;
       if (u.created_at >= thirtyDaysAgo) signups30d++;
@@ -365,6 +385,12 @@ export async function GET(req: NextRequest) {
         medianPerProducer,
         topProducer,
         importedDocuments: importedByUserCount,
+      },
+      subscribers: {
+        paying: payingSubscribers,
+        trialing: trialingSubscribers,
+        betaGrants,
+        grossMonthlyIls,
       },
       documents: {
         last30d: byType30d.reduce((sum, row) => sum + row.count, 0),
