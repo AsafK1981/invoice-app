@@ -11,7 +11,7 @@ import { UNIFORM_SOFTWARE } from "@/lib/uniform-structure/software";
  * the public registry lookup so the customer can check for themselves.
  *
  * Until the certificate arrives it says so plainly (the number is "" in
- * UNIFORM_SOFTWARE and the 00000000 in every מבנה אחיד file agrees).
+ * UNIFORM_SOFTWARE; the files carry FIRST_REGISTRATION_PLACEHOLDER meanwhile).
  *
  * Env, both optional and public:
  *   NEXT_PUBLIC_SOFTWARE_REGISTRY_CERT_URL   the certificate PDF/image

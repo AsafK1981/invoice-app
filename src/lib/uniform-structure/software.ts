@@ -9,9 +9,8 @@
  *   re-registering.
  * - `version` 1.1 is the "מהדורה חדשה" רישום תוכנות asked for on 2026-09-06
  *   after the 20/05/2026 application (version 1.0) was auto-cancelled.
- * - `registrationNumber` stays "" (written as 00000000, field 1006) until
- *   the certificate arrives; רישום תוכנות confirmed 2026-09-07 that zeros are
- *   the correct value for a first registration.
+ * - `registrationNumber` stays "" until the certificate arrives. Field 1006
+ *   is then written as FIRST_REGISTRATION_PLACEHOLDER, see below.
  */
 export const UNIFORM_SOFTWARE = {
   name: "MySuperFriendlyInvoiceApp",
@@ -20,3 +19,15 @@ export const UNIFORM_SOFTWARE = {
   vendorTaxId: "049040686",
   registrationNumber: "",
 } as const;
+
+/**
+ * What A000 field 1006 carries while no certificate exists. רישום תוכנות said
+ * on 2026-09-07 to write zeros, but the ITA simulator rejects a zeroed 1006
+ * ("ערך השדה לא ולידי / השדה מאופס") and marks the whole run לקוי, which the
+ * clerk then refused on 2026-09-23 ("עלי לקבל תוצאה תקינה"). Her own sample of
+ * a valid first-registration run shows 00000001, and a run with 00000001
+ * passed every check (input 230920261700). Replace with the real number by
+ * setting UNIFORM_SOFTWARE.registrationNumber; this constant is never used
+ * once that is set.
+ */
+export const FIRST_REGISTRATION_PLACEHOLDER = "00000001";

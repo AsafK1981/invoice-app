@@ -27,6 +27,12 @@ describe("A000 bookkeeping fields", () => {
     const exempt = buildA000({ ...meta, business: { ...business, businessType: "exempt" } }, counts);
     expect([field(exempt, 185, 185), field(exempt, 186, 186)]).toEqual(["1", "0"]);
   });
+
+  it("writes the first-registration placeholder in 1006 until a certificate number exists, never zeros", () => {
+    // The simulator rejects a zeroed 1006 and רישום תוכנות refused the לקוי report (2026-09-23).
+    expect(field(buildA000(meta, counts), 57, 64)).toBe("00000001");
+    expect(field(buildA000({ ...meta, softwareRegistrationNumber: "12345678" }, counts), 57, 64)).toBe("12345678");
+  });
 });
 
 describe("C100 amounts and numbers", () => {

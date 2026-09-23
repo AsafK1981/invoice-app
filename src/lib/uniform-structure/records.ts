@@ -15,6 +15,7 @@
 //   400 = קבלה
 //   800 = הוצאה / חשבונית רכש (synthetic, for expense journal entries)
 
+import { FIRST_REGISTRATION_PLACEHOLDER } from "./software";
 import {
   buildLine,
   formatAmount,
@@ -95,10 +96,10 @@ export function buildA000(meta: FileMeta, counts: RecordCounts): string {
     padStr(meta.business.taxId, 9), // 1003: VAT (9), pos 25-33
     primaryIdFor(meta.business), // 1004: primary identifier (15), pos 34-48
     "&OF1.31&", // 1005: system constant (8), pos 49-56
-    // Numeric 9(8). Zeros until רשות המסים issues the certificate number:
-    // blanks fail the simulator's INI check, and the registration run itself
-    // happens before a number exists.
-    padNum(meta.softwareRegistrationNumber || 0, 8), // 1006: software reg # (8), pos 57-64
+    // Numeric 9(8). Until רשות המסים issues the certificate number the field
+    // carries the first-registration placeholder: blanks AND zeros both fail
+    // the simulator's INI check (see software.ts).
+    padNum(meta.softwareRegistrationNumber || FIRST_REGISTRATION_PLACEHOLDER, 8), // 1006: software reg # (8), pos 57-64
     padStr(meta.softwareName, 20), // 1007: software name (20), pos 65-84
     padStr(meta.softwareVersion, 20), // 1008: software version (20), pos 85-104
     padStr(meta.softwareVendorTaxId, 9), // 1009: vendor VAT (9), pos 105-113

@@ -16,10 +16,10 @@
 //   https://secapp.taxes.gov.il/TmbakmmsmlNew/frmCheckFiles.aspx
 // (charset "Windows (ANSI) ISO-8859-8-I", no login needed). The simulator
 // needs 2000+ records and a BKMVDATA under 4 MB. Field 1006 (registration
-// number) is 00000000 until the certificate is issued; רישום תוכנות confirmed
-// (2026-09-07) that this is the right value for a first registration and that
-// the one INI finding it causes is expected - note "רישום לראשונה" on the
-// defect report.
+// number) carries FIRST_REGISTRATION_PLACEHOLDER (00000001) until the
+// certificate is issued: zeros make the simulator mark the run לקוי, and
+// רישום תוכנות rejected a לקוי report on 2026-09-23. With the placeholder the
+// run comes back תקינה (input 230920261700).
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
