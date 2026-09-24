@@ -140,7 +140,7 @@ html {
   --dc-t-receipt: #3c5e2c;  /* green ink, pairs with the green row tint */
   --dc-t-tax-receipt: #4A7536;
   --dc-t-quote: #9A5A0A;    /* gold, pairs with the gold row tint */
-  --dc-t-proforma: #3A3B40;
+  --dc-t-proforma: #2f5288;  /* slate blue, pairs with the blue row tint */
   --dc-t-tax: #A94E16;      /* burnt orange, pairs with the orange row tint */
   --dc-t-credit: #8E2E2E;   /* muted red, pairs with the red row tint */
 
@@ -149,11 +149,11 @@ html {
      status pill and the ink stay the loudest things on the row. The edge
      bar (see .dc-row) in the matching --dc-t-* colour makes the type
      unmistakable. Re-tuned into the orange / charcoal family 2026-09-07. */
-  --dc-tint-receipt: #eef4e8;      /* green */
-  --dc-tint-tax-receipt: #E6F0DF;  /* green, one step warmer */
+  --dc-tint-receipt: #e3f2dd;      /* green */
+  --dc-tint-tax-receipt: #e9f1da;  /* green, one step warmer */
   --dc-tint-tax: #fbeadb;          /* orange */
   --dc-tint-quote: #FDF5E4;        /* gold */
-  --dc-tint-proforma: #F0EFED;     /* grey */
+  --dc-tint-proforma: #dde8f7;     /* slate blue - a clear step away from the receipt green (2026-09-24) */
   --dc-tint-credit: #FBEDEB;       /* muted red */
 
   /* --- document cards: neutral furniture --- */
