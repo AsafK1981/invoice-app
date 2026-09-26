@@ -74,7 +74,14 @@ export const POST_RELATED: Record<string, RelatedTargets> = {
   // "Which of the three documents do I issue" - the same reader as the
   // receipt page and the allocation-number pages, wired into that cluster.
   "kabala-hashbonit-mas-hevdel": {
-    posts: ["kabala-osek-patur", "mispar-haktzaa-eich-mekablim", "osek-patur-madrich-2026"],
+    posts: ["hashbonit-iska-osek-patur", "kabala-osek-patur", "mispar-haktzaa-eich-mekablim"],
+    vs: ["greeninvoice"],
+  },
+
+  // Template-intent page (filled חשבונית עסקה specimen). Sits next to the
+  // receipt page and the document-comparison page in the same cluster.
+  "hashbonit-iska-osek-patur": {
+    posts: ["kabala-hashbonit-mas-hevdel", "kabala-osek-patur", "osek-patur-madrich-2026"],
     vs: ["greeninvoice"],
   },
 

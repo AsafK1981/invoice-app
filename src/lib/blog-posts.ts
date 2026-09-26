@@ -154,6 +154,19 @@ export const BLOG_POSTS: BlogPost[] = [
     date: "2026-09-26",
     published: true,
   },
+  {
+    // Targets "חשבונית עסקה עוסק פטור דוגמא" - a real GSC query (21 impr, pos
+    // 37, coverage:none as of the 26.09 export) with TEMPLATE intent, so the
+    // page leads with a filled specimen the reader can copy. Distinct from the
+    // kabala-hashbonit-mas-hevdel comparison page; cross-linked, not competing.
+    slug: "hashbonit-iska-osek-patur",
+    title:
+      "חשבונית עסקה (חשבון עסקה) לעוסק פטור: מה זה, דוגמה ממולאת, ומתי משתמשים",
+    description:
+      "חשבונית עסקה לעוסק פטור: דוגמה ממולאת להעתקה, מה ההבדל מקבלה ומחשבונית מס, מתי מוציאים אותה, והאם צריך מספר הקצאה. מדריך פשוט עם דוגמה.",
+    date: "2026-09-26",
+    published: true,
+  },
 ];
 
 /** Newest first. */
