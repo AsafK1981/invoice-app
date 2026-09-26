@@ -42,11 +42,19 @@ export const POST_RELATED: Record<string, RelatedTargets> = {
   },
 
   "maavar-osek-patur-le-osek-morshe-2026": {
-    posts: ["osek-patur-madrich-2026", "mispar-haktzaa-eich-mekablim"],
+    posts: ["tikrat-osek-patur-2026", "osek-patur-madrich-2026", "mispar-haktzaa-eich-mekablim"],
     vs: ["sumit"],
   },
   "osek-patur-madrich-2026": {
-    posts: ["maavar-osek-patur-le-osek-morshe-2026", "kabala-osek-patur"],
+    posts: ["tikrat-osek-patur-2026", "maavar-osek-patur-le-osek-morshe-2026", "kabala-osek-patur"],
+  },
+
+  // The ceiling page and the transition page are the same anxious reader at
+  // two moments (approaching the ceiling / crossing it) - tightly linked
+  // both ways now that the ceiling page is published.
+  "tikrat-osek-patur-2026": {
+    posts: ["maavar-osek-patur-le-osek-morshe-2026", "osek-patur-madrich-2026"],
+    vs: ["greeninvoice"],
   },
   "hashbonit-digitalit-chinam-2026": {
     posts: ["osek-patur-madrich-2026", "kabala-osek-patur"],
@@ -59,7 +67,14 @@ export const POST_RELATED: Record<string, RelatedTargets> = {
   // reader onward to the עוסק מורשה transition, which is the next thing that
   // happens to anyone who outgrows a receipt pad.
   "kabala-osek-patur": {
-    posts: ["osek-patur-madrich-2026", "hashbonit-zikuy"],
+    posts: ["kabala-hashbonit-mas-hevdel", "osek-patur-madrich-2026", "hashbonit-zikuy"],
+    vs: ["greeninvoice"],
+  },
+
+  // "Which of the three documents do I issue" - the same reader as the
+  // receipt page and the allocation-number pages, wired into that cluster.
+  "kabala-hashbonit-mas-hevdel": {
+    posts: ["kabala-osek-patur", "mispar-haktzaa-eich-mekablim", "osek-patur-madrich-2026"],
     vs: ["greeninvoice"],
   },
 

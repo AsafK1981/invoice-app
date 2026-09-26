@@ -126,6 +126,34 @@ export const BLOG_POSTS: BlogPost[] = [
     date: "2026-08-24",
     published: true,
   },
+  {
+    // Targets "תקרת עוסק פטור 2026" / "כמה מותר להרוויח עוסק פטור" - a high,
+    // recurring standalone search. The ceiling figure (₪122,833) was only
+    // ever mentioned in passing inside the maavar + madrich guides; this is
+    // its own dedicated page. Natural, honest tie-in to the app's real-time
+    // ceiling-alert feature. Complements, does not cannibalize, the maavar
+    // (transition) page - different primary keyword, cross-linked.
+    slug: "tikrat-osek-patur-2026",
+    title:
+      "תקרת עוסק פטור 2026: כמה מותר להרוויח, מה נספר בתקרה, ומה קורה ברגע שחוצים",
+    description:
+      "תקרת עוסק פטור 2026 היא ₪122,833. מדריך פשוט: מה נספר בתקרה (מחזור, לא רווח), מה קורה ברגע שחוצים, ואיך לעקוב בזמן אמת כדי לא לחצות בטעות.",
+    date: "2026-09-26",
+    published: true,
+  },
+  {
+    // Targets "ההבדל בין קבלה לחשבונית מס" / "חשבונית מס קבלה מה זה" - a very
+    // common, recurring confusion with no dedicated page before this. Clear
+    // product fit: the app issues every document type and steers the user to
+    // the right one. Cross-links the receipt + allocation-number cluster.
+    slug: "kabala-hashbonit-mas-hevdel",
+    title:
+      "קבלה, חשבונית מס, או חשבונית מס-קבלה? ההבדל המלא ומתי מוציאים כל אחד",
+    description:
+      "מה ההבדל בין קבלה, חשבונית מס וחשבונית מס-קבלה? מדריך פשוט: איזה מסמך מוציא עוסק פטור, איזה עוסק מורשה, מתי מוציאים כל אחד, ומתי צריך מספר הקצאה.",
+    date: "2026-09-26",
+    published: true,
+  },
 ];
 
 /** Newest first. */

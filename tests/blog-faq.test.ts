@@ -21,6 +21,8 @@ const POSTS_WITH_FAQ = [
   "maavar-osek-patur-le-osek-morshe-2026",
   "kabala-osek-patur",
   "hashbonit-zikuy",
+  "tikrat-osek-patur-2026",
+  "kabala-hashbonit-mas-hevdel",
 ];
 
 describe("parseFaq on real post content", () => {
