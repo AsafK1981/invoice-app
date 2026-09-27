@@ -1,5 +1,6 @@
 // The amount a filing-deadline reminder carries: the VAT net due (or refund),
-// the income-tax advance, or the owner's fixed Bituach Leumi advance. Pure (no
+// the income-tax advance, the owner's fixed Bituach Leumi advance, or the
+// mandatory pension minimum on the year's taxable profit. Pure (no
 // React, no Supabase) so the reminder cron and the tests share it.
 //
 // The VAT and advance figures come from buildPeriodicFiling, the exact
@@ -17,12 +18,14 @@ import type { FilingSettings } from "./filing-settings";
 import type { Period } from "./report-period";
 import { buildPeriodicFiling } from "./periodic-filing";
 import { formatCurrencyWhole } from "./format";
+import { yearToDateTaxBase } from "./tax-projection";
+import { mandatoryPension } from "./pension";
 
 export type ReminderAmount =
-  | { status: "pay"; amount: number; source: "vat" | "advance" | "btl"; detail?: string }
+  | { status: "pay"; amount: number; source: "vat" | "advance" | "btl" | "pension"; detail?: string }
   | { status: "refund"; amount: number; source: "vat" }
   /** `offsetInFull`: an advance came out, but withholding at source covers all of it (`amount` = that advance). */
-  | { status: "zero"; source: "vat" | "advance"; amount?: number; offsetInFull?: true }
+  | { status: "zero"; source: "vat" | "advance" | "pension"; amount?: number; offsetInFull?: true }
   | { status: "missing"; source: "vat" | "advance" | "btl"; reason: "no_rate" | "no_btl_amount" | "blocked" | "unavailable" };
 
 const PERIOD_IDS = new Set<ObligationOccurrence["id"]>(["vat_periodic", "income_tax_advance", "btl_advance"]);
@@ -34,7 +37,7 @@ export function periodOfOccurrence(o: ObligationOccurrence): Period | null {
   return o.key.startsWith(prefix) ? o.key.slice(prefix.length) : null;
 }
 
-/** null = this obligation has no amount concept (annual report, pension, withholding, ...). */
+/** null = this obligation has no amount concept (annual report, withholding, ...). */
 export function resolveReminderAmount(args: {
   occurrence: ObligationOccurrence;
   business: Pick<Business, "taxId" | "businessType" | "incomeTaxAdvanceRate">;
@@ -51,6 +54,18 @@ export function resolveReminderAmount(args: {
     const btl = settings.btlMonthlyAdvance;
     if (btl === undefined || !Number.isFinite(btl) || btl <= 0) return { status: "missing", source: "btl", reason: "no_btl_amount" };
     return { status: "pay", amount: btl, source: "btl" };
+  }
+
+  if (id === "pension_deposit") {
+    // The mandatory minimum on the year's taxable profit so far (income minus
+    // expenses, never turnover), the same base the tax projection uses.
+    const year = Number(occurrence.key.slice("pension_deposit:".length));
+    if (!Number.isInteger(year)) return null;
+    const { ytdIncome, ytdExpenses } = yearToDateTaxBase(args.documents, args.expenses, year, business.businessType);
+    const profit = ytdIncome - ytdExpenses;
+    const { total } = mandatoryPension(profit, year);
+    if (total > 0) return { status: "pay", amount: total, source: "pension", detail: formatCurrencyWhole(profit) };
+    return { status: "zero", source: "pension" };
   }
 
   if (id !== "vat_periodic" && id !== "income_tax_advance") return null;

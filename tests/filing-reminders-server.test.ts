@@ -220,4 +220,23 @@ describe("remindBusiness", () => {
     expect(calls).toEqual([]);
     expect(send).not.toHaveBeenCalled();
   });
+
+  it("a pension reminder loads the whole year and carries the mandatory minimum", async () => {
+    const { admin, calls } = stubAdmin(handlerWith());
+    const { sent, send } = recorder();
+    const out = await remindBusiness({ admin, row: prefRow(), business, today: "2026-12-29", send });
+
+    expect(out).toEqual({ planned: 1, sent: 1, withAmount: 1, failedClaim: false, failedSends: 0 });
+    const docs = calls.filter((c) => c.table === "documents");
+    expect(docs).toHaveLength(1); // one load
+    expect(docs[0].ops).toContainEqual({ method: "gte", args: ["date", "2026-01-01"] });
+    expect(docs[0].ops).toContainEqual({ method: "lte", args: ["date", "2026-12-31"] });
+    const exps = calls.find((c) => c.table === "expenses")!;
+    expect(exps.ops).toContainEqual({ method: "gte", args: ["date", "2026-01-01"] });
+    expect(exps.ops).toContainEqual({ method: "lte", args: ["date", "2026-12-31"] });
+    // 3,000 pre-VAT income - 200 net expenses = 2,800; 4.45% = 124.6.
+    expect(sent[0].href).toBe("/reports/pension");
+    expect(sent[0].body).toContain(`המינימום להפקדה עד 31.12.2026 הוא ${formatCurrencyWhole(125)}`);
+    expect(sent[0].body).toContain(`לפי הרווח החייב באפליקציה עד היום (${formatCurrencyWhole(2_800)})`);
+  });
 });

@@ -1,5 +1,5 @@
 // The filing-deadline reminder for ONE business: claim -> load the period's
-// rows (only when a VAT or advance reminder is due) -> resolve the amounts ->
+// rows (only when a VAT, advance or pension reminder is due) -> resolve the amounts ->
 // build the text -> send -> release what failed. Server-only (service_role
 // client passed in), no Next.js imports, so the daily cron
 // (src/app/api/cron/filing-reminders/route.ts) is a thin loop and a script can
@@ -44,7 +44,8 @@ const ROW_MESSAGES: PagedLoadMessages = {
   incomplete: "לא כל השורות נטענו.",
 };
 
-const needsRows = (item: PlannedReminder) => item.occurrence.id === "vat_periodic" || item.occurrence.id === "income_tax_advance";
+const needsRows = (item: PlannedReminder) =>
+  item.occurrence.id === "vat_periodic" || item.occurrence.id === "income_tax_advance" || item.occurrence.id === "pension_deposit";
 
 /** A figure the owner can act on (pay / refund / zero), as opposed to a missing one. */
 const carriesFigure = (a: ReminderAmount | null) => !!a && a.status !== "missing";
@@ -104,8 +105,9 @@ export async function remindBusiness(args: {
     return outcome;
   }
 
-  // Rows for the VAT / advance figures: one load over the union of the
-  // planned periods, and only when such a reminder is due.
+  // Rows for the VAT / advance / pension figures: one load over the union of
+  // the planned periods (the whole year for the pension deposit), and only
+  // when such a reminder is due.
   let rows: { documents: InvoiceDocument[]; expenses: Expense[] } | null = null;
   const rowItems = plan.filter(needsRows);
   if (rowItems.length > 0) {
@@ -159,18 +161,28 @@ export async function remindBusiness(args: {
   return outcome;
 }
 
-/** The date span covering every planned VAT / advance period, or null if one of them is not a filing period. */
+/** The date span covering every planned VAT / advance period and pension year, or null if one of them cannot be read. */
 function unionRange(items: PlannedReminder[]): { start: string; end: string } | null {
   let start = "";
   let end = "";
   for (const item of items) {
-    const period = periodOfOccurrence(item.occurrence);
-    const range = period ? filingRange(period) : null;
+    const range = item.occurrence.id === "pension_deposit" ? pensionYearRange(item.occurrence.key) : filingRangeOf(item);
     if (!range) return null;
     if (!start || range.start < start) start = range.start;
     if (!end || range.end > end) end = range.end;
   }
   return start && end ? { start, end } : null;
+}
+
+function filingRangeOf(item: PlannedReminder): { start: string; end: string } | null {
+  const period = periodOfOccurrence(item.occurrence);
+  return period ? filingRange(period) : null;
+}
+
+/** "pension_deposit:2026" -> 1 January to 31 December 2026: the deposit is on the whole year's profit. */
+function pensionYearRange(key: string): { start: string; end: string } | null {
+  const year = key.slice("pension_deposit:".length);
+  return /^\d{4}$/.test(year) ? { start: `${year}-01-01`, end: `${year}-12-31` } : null;
 }
 
 /**

@@ -143,3 +143,35 @@ describe("reminderText", () => {
     }
   });
 });
+
+describe("reminderText: mandatory pension", () => {
+  const pension = planFilingReminders({ ...base, today: "2026-12-29" }).find((p) => p.occurrence.id === "pension_deposit")!.occurrence;
+
+  it("is planned for 31.12 and links to the pension calculator", () => {
+    expect(pension.key).toBe("pension_deposit:2026");
+    expect(pension.date).toBe("2026-12-31");
+    expect(reminderText(pension, "2026-12-29", null).href).toBe("/reports/pension");
+    expect(reminderText(pension, "2026-12-29", { status: "zero", source: "pension" }).href).toBe("/reports/pension");
+  });
+
+  it("states the minimum, the profit it came from and who it applies to", () => {
+    const t = reminderText(pension, "2026-12-29", { status: "pay", amount: 8_368, source: "pension", detail: formatCurrencyWhole(120_000) });
+    expect(t.body).toBe(
+      `אם אתה בגיל 21 עד 60 ורשום כעצמאי יותר מחצי שנה, המינימום להפקדה עד 31.12.2026 הוא ${formatCurrencyWhole(8_368)}, לפי הרווח החייב באפליקציה עד היום (${formatCurrencyWhole(120_000)}). בדף פנסיה וקרן השתלמות יש גם הקרנה לשנה מלאה והטבות המס.`,
+    );
+  });
+
+  it("with no taxable profit says there is nothing mandatory", () => {
+    expect(reminderText(pension, "2026-12-29", { status: "zero", source: "pension" }).body).toBe(
+      "לפי הנתונים באפליקציה אין השנה רווח חייב, ולכן אין חובת הפקדה. אם יש הכנסות שלא באפליקציה, בדוק בדף פנסיה וקרן השתלמות.",
+    );
+  });
+
+  it("never uses a long dash", () => {
+    const long = new RegExp(`[${String.fromCharCode(0x2013)}${String.fromCharCode(0x2014)}]`);
+    for (const a of [{ status: "pay", amount: 1, source: "pension", detail: "x" }, { status: "zero", source: "pension" }] as const) {
+      const t = reminderText(pension, "2026-12-29", a);
+      expect(`${t.title}${t.body}`).not.toMatch(long);
+    }
+  });
+});

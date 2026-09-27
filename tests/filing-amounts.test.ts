@@ -162,8 +162,31 @@ describe("resolveReminderAmount: Bituach Leumi and the rest", () => {
   });
 
   it("has no amount concept for the other obligations", () => {
-    for (const key of ["annual_report:2026", "pension_deposit:2026", "withholding:2026-08", "vat_detailed:2026-B4", "exempt_declaration:2026"]) {
+    for (const key of ["annual_report:2026", "withholding:2026-08", "vat_detailed:2026-B4", "exempt_declaration:2026"]) {
       expect(resolveReminderAmount({ ...base, occurrence: occ(key), documents: [doc()] }), key).toBeNull();
     }
+  });
+});
+
+describe("resolveReminderAmount: mandatory pension", () => {
+  const pension = occ("pension_deposit:2026");
+
+  it("pays the mandatory minimum on the year's taxable profit so far", () => {
+    // 120,000 pre-VAT income this year, 20,000 net expenses; last year's sale does not count.
+    const documents = [doc({ subtotal: 140_000, vat: 25_200, total: 165_200 }), doc({ date: "2025-12-20", number: 2, subtotal: 50_000, vat: 9_000, total: 59_000 })];
+    const expenses = [expense({ amount: 23_600, vatAmount: 3_600 })];
+    const a = resolveReminderAmount({ ...base, occurrence: pension, documents, expenses });
+    expect(a).toEqual({ status: "pay", amount: 8_368, source: "pension", detail: formatCurrencyWhole(120_000) });
+  });
+
+  it("uses gross amounts for an exempt dealer, like the tax projection", () => {
+    const exempt = { ...authorized, businessType: "exempt" as const };
+    const a = resolveReminderAmount({ ...base, business: exempt, occurrence: pension, documents: [doc({ subtotal: 50_000, vat: 0, total: 50_000 })] });
+    expect(a).toEqual({ status: "pay", amount: 2_225, source: "pension", detail: formatCurrencyWhole(50_000) });
+  });
+
+  it("no profit, or a loss, means nothing to deposit", () => {
+    expect(resolveReminderAmount({ ...base, occurrence: pension })).toEqual({ status: "zero", source: "pension" });
+    expect(resolveReminderAmount({ ...base, occurrence: pension, documents: [doc()], expenses: [expense({ amount: 5_900, vatAmount: 900 })] })).toEqual({ status: "zero", source: "pension" });
   });
 });

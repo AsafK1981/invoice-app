@@ -49,7 +49,8 @@ export function planFilingReminders(input: ReminderInput): PlannedReminder[] {
  * The notification text for one deadline, with the amount when the cron
  * resolved one (src/lib/filing-amounts.ts). A null amount gives the plain
  * deadline text. The VAT report and the advance link to the periodic filing
- * report of that period, where the same figures are shown in full.
+ * report of that period, where the same figures are shown in full; the
+ * pension deposit links to the pension calculator.
  */
 export function reminderText(o: ObligationOccurrence, today: string, amount: ReminderAmount | null): { title: string; body: string; href: string } {
   const info = OBLIGATIONS[o.id];
@@ -58,7 +59,10 @@ export function reminderText(o: ObligationOccurrence, today: string, amount: Rem
   const plain = `המועד האחרון הוא ${D}.${online} בלוח חובות ההגשה יש את כל הפרטים, וסימון "הגשתי" מפסיק את התזכורות.`;
   const title = `${info.title} · ${o.periodLabel}: ${relativeDayLabel(o.date, today)}`;
   const tag = periodOfOccurrence(o);
-  const href = tag && (o.id === "vat_periodic" || o.id === "income_tax_advance") ? `/reports/periodic?period=${tag}` : "/obligations";
+  const href =
+    o.id === "pension_deposit" ? "/reports/pension"
+    : tag && (o.id === "vat_periodic" || o.id === "income_tax_advance") ? `/reports/periodic?period=${tag}`
+    : "/obligations";
   return { title, body: reminderBody(amount, D, online, plain), href };
 }
 
@@ -69,12 +73,16 @@ function reminderBody(amount: ReminderAmount | null, D: string, online: string, 
       const amt = formatCurrencyWhole(amount.amount);
       if (amount.source === "vat") return `לתשלום ${amt} עד ${D}, לפי המסמכים וההוצאות באפליקציה.${online}`;
       if (amount.source === "advance") return `מקדמה של ${amt} לתשלום עד ${D}${amount.detail ? ` (${amount.detail})` : ""}.${online}`;
+      if (amount.source === "pension")
+        return `אם אתה בגיל 21 עד 60 ורשום כעצמאי יותר מחצי שנה, המינימום להפקדה עד ${D} הוא ${amt}, לפי הרווח החייב באפליקציה עד היום${amount.detail ? ` (${amount.detail})` : ""}. בדף פנסיה וקרן השתלמות יש גם הקרנה לשנה מלאה והטבות המס.`;
       return `${amt} לתשלום עד ${D}, לפי הסכום שהזנת בלוח חובות ההגשה.`;
     }
     case "refund":
       return `החזר של ${formatCurrencyWhole(amount.amount)} מגיע לך לפי הדוח. המועד האחרון להגשה הוא ${D}.${online}`;
     case "zero":
       if (amount.source === "vat") return `אין מה לשלם הפעם, אבל צריך להגיש דוח אפס עד ${D}.${online}`;
+      if (amount.source === "pension")
+        return "לפי הנתונים באפליקציה אין השנה רווח חייב, ולכן אין חובת הפקדה. אם יש הכנסות שלא באפליקציה, בדוק בדף פנסיה וקרן השתלמות.";
       if (amount.offsetInFull && amount.amount !== undefined)
         return `המקדמה לתקופה הזו (${formatCurrencyWhole(amount.amount)}) מכוסה במלואה בניכוי במקור, אין מה לשלם. המועד להגשה הוא ${D}.${online}`;
       return `לא יצאה מקדמה לתקופה הזו (אין מחזור). המועד להגשה הוא ${D}.${online}`;

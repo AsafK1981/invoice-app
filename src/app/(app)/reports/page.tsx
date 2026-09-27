@@ -6,7 +6,7 @@ import {
   CalendarCheck,
   TrendingUp, TrendingDown, Wallet, Clock, Download, ChevronDown,
   FileText, ClipboardList, Calculator, BookOpen, FileSpreadsheet, Landmark, FileArchive,
-  SlidersHorizontal, Receipt, ArrowLeft, Minus, Printer, Percent, ListOrdered, UserSearch,
+  SlidersHorizontal, Receipt, ArrowLeft, Minus, Printer, Percent, ListOrdered, UserSearch, PiggyBank,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useDocuments } from "@/lib/document-store";
@@ -225,6 +225,13 @@ export default function ReportsPage() {
       icon: Calculator, title: "צפי מס שנתי", href: "/reports/tax-projection",
       desc: "כמה מס הכנסה וביטוח לאומי צפויים לסוף השנה, וכמה כדאי לשמור בצד.",
     },
+    // Mandatory pension is for the self-employed; in a company it goes through payroll.
+    ...(business.businessType !== "company"
+      ? [{
+          icon: PiggyBank, title: "פנסיה וקרן השתלמות", href: "/reports/pension",
+          desc: "כמה חובה להפקיד השנה, כמה כדאי בשביל הטבות המס, וכמה לקרן השתלמות.",
+        } as ReportCardSpec]
+      : []),
     {
       icon: TrendingUp, title: "תחזית תזרים", href: "/reports/cash-flow",
       desc: "מה צפוי להיכנס ולצאת ב-3 החודשים הקרובים.",
