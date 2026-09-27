@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -11,30 +11,35 @@ import {
   writeConsent,
 } from "@/lib/analytics-consent";
 import {
-  denyConsentInPlace,
+  deleteGaCookies,
   gaPageView,
   getGtmId,
-  grantConsentInPlace,
   isGtmLoaded,
   loadGtm,
+  setGlobalPageFields,
 } from "@/lib/ga";
 import "./consent-banner.css";
 
 /**
  * Consent banner + Google Tag Manager loader (2026-09-27). Mounted once in the
- * root layout so it survives client-side navigation.
+ * root layout so it survives client-side navigation and sees EVERY route.
  *
  * BASIC consent mode, on purpose: until the visitor presses "accept", not a
  * single request goes to Google - no script, no cookieless ping. A stored
  * accept loads GTM silently on the next visit; a stored decline loads
  * nothing and shows nothing. See src/lib/analytics-consent.ts for the
- * storage and the route ALLOWLIST (marketing pages, /login, /onboarding) and src/lib/ga.ts
- * for why every push carries its own sanitized page_location.
+ * storage, the route ALLOWLIST (marketing pages, /login, /onboarding) and
+ * the safe page fields, and src/lib/ga.ts for how they are applied.
  *
  * Page views are sent by hand (`fi_page_view`) on every pathname change to an
  * allowlisted route, because GA4's automatic history-change page views are
  * OFF in the container: once GTM is in the window it stays there when the
  * user walks into the app, and those routes must never be reported.
+ *
+ * Withdrawal (2026-09-27 review): declining after an accept, or pressing
+ * "הגדרות עוגיות", deletes the GA cookies and, if GTM is resident in this
+ * window, reloads the page. A script cannot be unloaded, and GTM must never
+ * sit in memory in a denied state.
  */
 
 type Choice = "unknown" | "none" | "accepted" | "declined";
@@ -47,7 +52,6 @@ export function ConsentGtm() {
   // banner only ever appears after hydration (no SSR/CSR mismatch).
   const [choice, setChoice] = useState<Choice>("unknown");
   const lastPageView = useRef<string | null>(null);
-  const lastTitle = useRef<string | null>(null);
 
   useEffect(() => {
     if (!gtmId) return;
@@ -55,57 +59,38 @@ export function ConsentGtm() {
     setChoice(stored ? (stored.analytics ? "accepted" : "declined") : "none");
   }, [gtmId]);
 
-  // Load GTM (once) and send the manual page view for this path.
+  // On EVERY route (allowlisted or not), before paint and before any passive
+  // effect can push an event: re-point gtag's global page fields at this
+  // route's safe values. This is what keeps gtag's automatic hits from
+  // reading an app URL/title/referrer after the user navigates into the app.
+  // A no-op until GTM has loaded.
+  useLayoutEffect(() => {
+    if (!gtmId) return;
+    setGlobalPageFields();
+  }, [gtmId, pathname]);
+
+  // Load GTM (once) and send the manual page view for this path. The title
+  // is a static label derived from the path (see safePageFields), so there is
+  // nothing to wait for.
   useEffect(() => {
     if (!gtmId || !allowed || choice !== "accepted") return;
     loadGtm(gtmId);
     if (lastPageView.current === pathname) return; // StrictMode double run
     lastPageView.current = pathname;
-    // On a client-side navigation Next streams the new route's <title> in
-    // AFTER this effect runs (measured 2026-09-27: title was "" at a 0ms
-    // timeout), and GA4 would record the previous page's title or none. So
-    // wait for the title to change, capped so a page that shares its
-    // predecessor's title still gets its page view.
-    const previousTitle = lastTitle.current;
-    let sent = false;
-    const send = () => {
-      if (sent) return;
-      sent = true;
-      observer?.disconnect();
-      window.clearTimeout(cap);
-      lastTitle.current = document.title;
-      gaPageView();
-    };
-    const settled = () => !!document.title && document.title !== previousTitle;
-    let observer: MutationObserver | null = null;
-    const cap = window.setTimeout(send, 1500);
-    if (settled()) {
-      send();
-    } else {
-      observer = new MutationObserver(() => {
-        if (settled()) send();
-      });
-      observer.observe(document.head, {
-        childList: true,
-        subtree: true,
-        characterData: true,
-      });
-    }
-    return () => {
-      observer?.disconnect();
-      window.clearTimeout(cap);
-      // Torn down before sending (fast re-render, StrictMode): let the next
-      // run of this effect send it instead of skipping it as a duplicate.
-      if (!sent) lastPageView.current = null;
-    };
+    gaPageView();
   }, [gtmId, allowed, choice, pathname]);
 
-  // Footer "cookie settings": forget the choice and ask again.
+  // Footer "cookie settings": withdraw, then ask again.
   useEffect(() => {
     if (!gtmId) return;
     const onReset = () => {
       clearConsent();
-      denyConsentInPlace();
+      deleteGaCookies();
+      if (isGtmLoaded()) {
+        // A fresh page with no stored choice shows the banner by itself.
+        window.location.reload();
+        return;
+      }
       lastPageView.current = null;
       setChoice("none");
     };
@@ -115,17 +100,14 @@ export function ConsentGtm() {
 
   const accept = useCallback(() => {
     writeConsent(true);
-    // Accepting again after a reset in the same window: GTM is already in
-    // memory with consent denied, so re-grant it; loadGtm will no-op.
-    grantConsentInPlace();
     setChoice("accepted");
   }, []);
 
   const decline = useCallback(() => {
     writeConsent(false);
-    // A script cannot be unloaded. If GTM ran in this window (the visitor
-    // accepted earlier and changed their mind), a reload is the only way to
-    // really get it out of the page.
+    // Cookies left by an earlier accept go too, whether or not GTM is in
+    // this window right now.
+    deleteGaCookies();
     if (isGtmLoaded()) {
       window.location.reload();
       return;

@@ -108,49 +108,138 @@ const EXACT_PATHS = new Set<string>([
 // /vs/<competitor>). Kept to exactly these two on purpose.
 const PREFIX_PATHS = ["/blog/", "/vs/"];
 
+/** Trailing slashes off ("/pricing/" -> "/pricing"), root stays "/". */
+function normalizePath(pathname: string): string {
+  return pathname.length > 1 && pathname.endsWith("/")
+    ? pathname.replace(/\/+$/, "") || "/"
+    : pathname;
+}
+
 /**
  * Whether Google Tag Manager may run (and page views may be sent) on this
  * pathname. Trailing slashes are ignored; query strings must not be passed.
  */
 export function isAnalyticsPath(pathname: string | null | undefined): boolean {
   if (!pathname || typeof pathname !== "string") return false;
-  const path =
-    pathname.length > 1 && pathname.endsWith("/")
-      ? pathname.replace(/\/+$/, "") || "/"
-      : pathname;
+  const path = normalizePath(pathname);
   if (EXACT_PATHS.has(path)) return true;
   return PREFIX_PATHS.some(
     (prefix) => path.startsWith(prefix) && path.length > prefix.length,
   );
 }
 
+// ---------------------------------------------------------------------------
+// What a page may tell Google about itself
+// ---------------------------------------------------------------------------
+//
+// Revised 2026-09-27 after a 4-seat review of the first cut. Google is never
+// handed a value read live from the browser: GTM, once loaded, survives
+// client-side navigation into the app, and gtag's own automatic hits
+// (session_start, user_engagement, first_visit) would otherwise read
+// document.location / title / referrer on whatever app page the user is on.
+// These three builders are the only source of those fields.
+
 // Query parameters that may travel to Google with a page URL. Campaign tags
 // are the entire point (GA4 attributes a session from page_location's utm_*),
 // everything else is dropped: /login?next=... and similar must not leak
 // internal paths or anything a user typed.
-const FORWARDED_PARAMS = [
+const CAMPAIGN_PARAMS = [
   "utm_source",
   "utm_medium",
   "utm_campaign",
   "utm_term",
   "utm_content",
-  "gclid",
-  "gbraid",
-  "wbraid",
 ];
+// Ad click ids. Opaque by design, so the digit-run rule below does not apply.
+const CLICK_ID_PARAMS = ["gclid", "gbraid", "wbraid"];
 
-/** origin + pathname + only the campaign parameters above. No hash. */
+const MAX_PARAM_LENGTH = 100;
+
+/**
+ * Whether a campaign parameter value is safe to forward. A utm tag is
+ * whoever-built-the-link's free text; a link pasted from an email or a CRM
+ * can carry an address or a phone/ID number in it. '@' = likely an email,
+ * 5+ consecutive digits = likely a phone, ת.ז or account number.
+ */
+function isSafeParamValue(key: string, value: string): boolean {
+  if (!value || value.length > MAX_PARAM_LENGTH) return false;
+  if (value.includes("@")) return false;
+  if (!CLICK_ID_PARAMS.includes(key) && /\d{5,}/.test(value)) return false;
+  return true;
+}
+
+/** origin + pathname + only the safe campaign parameters above. No hash. */
 export function sanitizePageLocation(href: string): string {
   try {
     const url = new URL(href);
     const kept = new URLSearchParams();
-    for (const key of FORWARDED_PARAMS) {
+    for (const key of [...CAMPAIGN_PARAMS, ...CLICK_ID_PARAMS]) {
       const value = url.searchParams.get(key);
-      if (value) kept.set(key, value);
+      if (value && isSafeParamValue(key, value)) kept.set(key, value);
     }
     const qs = kept.toString();
     return `${url.origin}${url.pathname}${qs ? `?${qs}` : ""}`;
   } catch {
     return "";
   }
+}
+
+/**
+ * The referrer, reduced to "https://<host>/" for an external site and to ""
+ * for our own origin. Same-origin must be empty, not just trimmed: a
+ * customer opening /view/<document-uuid> and clicking its CTA lands on
+ * /product with that full URL as the referrer.
+ */
+export function sanitizeReferrer(referrer: string, currentOrigin: string): string {
+  try {
+    if (!referrer) return "";
+    const ref = new URL(referrer);
+    if (ref.protocol !== "https:" && ref.protocol !== "http:") return "";
+    let own = "";
+    try {
+      own = new URL(currentOrigin).host;
+    } catch {
+      // unknown origin: treat nothing as same-origin, still host-only
+    }
+    if (!ref.host || ref.host === own) return "";
+    return `https://${ref.host}/`;
+  } catch {
+    return "";
+  }
+}
+
+export interface SafePageFields {
+  page_location: string;
+  page_title: string;
+  page_referrer: string;
+}
+
+/**
+ * The page_location / page_title / page_referrer Google may see for the
+ * current page. Off the allowlist every page is the same anonymous "/app".
+ * The title is a static label (the path), NEVER document.title: app pages set
+ * titles from customer data (the client statement page uses the client's
+ * name), and on a client-side navigation the title lags the route, so a
+ * stale one could ride along even on an allowlisted page.
+ */
+export function safePageFields(
+  href: string,
+  referrer: string,
+): SafePageFields {
+  let url: URL | null = null;
+  try {
+    url = new URL(href);
+  } catch {
+    url = null;
+  }
+  const origin = url?.origin ?? "";
+  const page_referrer = sanitizeReferrer(referrer, origin);
+  if (url && isAnalyticsPath(url.pathname)) {
+    return {
+      page_location: sanitizePageLocation(url.href),
+      page_title: normalizePath(url.pathname),
+      page_referrer,
+    };
+  }
+  return { page_location: `${origin}/app`, page_title: "app", page_referrer };
 }

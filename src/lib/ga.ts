@@ -2,24 +2,26 @@
 //
 // Everything here is a no-op unless BOTH hold: NEXT_PUBLIC_GTM_ID is set and
 // the visitor explicitly accepted analytics (src/lib/analytics-consent.ts).
-// Nothing in this file may ever throw into a caller: analytics is best effort, a signup
-// or a document save is not.
+// Nothing in this file may ever throw into a caller: analytics is best
+// effort, a signup or a document save is not.
 //
-// Why page_location / page_title are always overridden: with client-side
-// navigation, a GTM container loaded on the homepage stays in the window when
-// the user walks into the app. GA4 tags read document.location and
-// document.title by default, and app URLs + titles can carry customer data
-// (e.g. the client statement page sets the title to the client's name). So
-// every push made from here carries its own sanitized location, and any event
-// fired on a route outside the allowlist is reported as a generic "/app".
-// The container must map these dataLayer keys onto the GA4 tag (and keep
-// GA4's automatic page_view + history-change tracking OFF); see the report
-// that shipped with this change.
+// What Google may learn about a page is decided in ONE place,
+// safePageFields() in analytics-consent.ts, and applied twice:
+//   - as gtag('set', ...) globals, refreshed by ConsentGtm on every route
+//     change (all routes, not only allowlisted ones), so gtag's own automatic
+//     hits (session_start, user_engagement, first_visit) can never read a
+//     live app URL, title or referrer - GTM survives client-side navigation
+//     into the app once loaded;
+//   - explicitly on every dataLayer push from here, so no event carries a
+//     stale value either. Off the allowlist every page is an anonymous "/app".
+// The container must keep GA4's automatic page_view + history-change
+// tracking OFF and map page_location/page_title/page_referrer onto its tags.
 
 import {
   hasAnalyticsConsent,
   isAnalyticsPath,
-  sanitizePageLocation,
+  safePageFields,
+  type SafePageFields,
 } from "./analytics-consent";
 
 export type GaParams = Record<string, string | number | boolean>;
@@ -63,13 +65,15 @@ function currentPath(): string {
   }
 }
 
-/** Location/title fields every push carries (see the header comment). */
-function locationFields(): { page_location: string; page_title?: string } {
-  const loc = window.location;
-  if (isAnalyticsPath(loc.pathname)) {
-    return { page_location: sanitizePageLocation(loc.href) };
+/** The safe page fields for wherever the browser is right now. */
+export function currentPageFields(): SafePageFields {
+  let referrer = "";
+  try {
+    referrer = document.referrer || "";
+  } catch {
+    referrer = "";
   }
-  return { page_location: `${loc.origin}/app`, page_title: "app" };
+  return safePageFields(window.location.href, referrer);
 }
 
 /**
@@ -81,9 +85,9 @@ export function gaEvent(name: string, params?: GaParams): void {
   try {
     if (typeof window === "undefined") return;
     if (!hasAnalyticsConsent()) return;
-    // Spread first, location last: a caller can never override the
-    // sanitized location with a real app URL.
-    const payload = { event: name, ...(params ?? {}), ...locationFields() };
+    // Spread first, page fields last: a caller can never override the
+    // sanitized location/title/referrer with real app values.
+    const payload = { event: name, ...(params ?? {}), ...currentPageFields() };
     if (Array.isArray(window.dataLayer)) {
       window.dataLayer.push(payload);
       return;
@@ -101,11 +105,9 @@ export function gaEvent(name: string, params?: GaParams): void {
 /** Manual page view for an allowlisted path (GA4 auto page_view is off). */
 export function gaPageView(): void {
   try {
-    if (!isAnalyticsPath(currentPath())) return;
-    gaEvent("fi_page_view", {
-      page_path: currentPath(),
-      page_title: document.title || "",
-    });
+    const path = currentPath();
+    if (!isAnalyticsPath(path)) return;
+    gaEvent("fi_page_view", { page_path: path });
   } catch {
     // see gaEvent
   }
@@ -119,16 +121,33 @@ function gtag(..._args: unknown[]): void {
   (window.dataLayer = window.dataLayer || []).push(arguments);
 }
 
-const CONSENT_TYPES = [
-  "ad_storage",
-  "analytics_storage",
-  "ad_user_data",
-  "ad_personalization",
-] as const;
-
-function consentState(value: "granted" | "denied"): Record<string, string> {
-  return Object.fromEntries(CONSENT_TYPES.map((k) => [k, value]));
+/**
+ * Refresh gtag's global page fields for the current route. Called by
+ * ConsentGtm on mount and on every pathname change (in a layout effect, so
+ * before paint and before any passive effect can fire an event), and by
+ * loadGtm before the script is injected. Does nothing if GTM never loaded:
+ * it must not create a dataLayer on its own.
+ */
+export function setGlobalPageFields(): void {
+  try {
+    if (typeof window === "undefined" || !Array.isArray(window.dataLayer)) return;
+    gtag("set", currentPageFields());
+  } catch {
+    // see gaEvent
+  }
 }
+
+// Consent scope: analytics ONLY. The ad_* signals stay denied in the default
+// AND in the update - the banner asks about Google Analytics, nothing more,
+// and the privacy policy promises no advertising cookies. Granting them here
+// would let a future ads tag in the container act on this consent.
+const CONSENT_DEFAULT = {
+  ad_storage: "denied",
+  analytics_storage: "denied",
+  ad_user_data: "denied",
+  ad_personalization: "denied",
+} as const;
+const CONSENT_ACCEPTED = { ...CONSENT_DEFAULT, analytics_storage: "granted" } as const;
 
 function gtmScriptSelector(id: string): string {
   return `script[data-fi-gtm="${id}"]`;
@@ -145,15 +164,16 @@ export function isGtmLoaded(): boolean {
 /**
  * Bootstrap Consent Mode v2 and inject gtm.js, once per window. Only ever
  * called after an explicit accept, on an allowlisted path. Order matters:
- * consent default (all denied) -> consent update (granted) -> gtm.start ->
- * any queued events -> the script tag.
+ * consent default (all denied) -> consent update (analytics only) -> safe
+ * page globals -> gtm.start -> any queued events -> the script tag.
  */
 export function loadGtm(id: string): void {
   try {
     if (document.querySelector(gtmScriptSelector(id))) return;
     window.dataLayer = window.dataLayer || [];
-    gtag("consent", "default", consentState("denied"));
-    gtag("consent", "update", consentState("granted"));
+    gtag("consent", "default", { ...CONSENT_DEFAULT });
+    gtag("consent", "update", { ...CONSENT_ACCEPTED });
+    setGlobalPageFields();
     window.dataLayer.push({ "gtm.start": Date.now(), event: "gtm.js" });
     const queued = pending;
     pending = [];
@@ -169,27 +189,40 @@ export function loadGtm(id: string): void {
   }
 }
 
-/**
- * The visitor reopened the cookie settings: stop sending immediately. GTM
- * stays in memory until the next full load (a script cannot be unloaded),
- * but with consent denied and our own gate closed nothing new goes out.
- */
-export function denyConsentInPlace(): void {
-  try {
-    if (!Array.isArray(window.dataLayer)) return;
-    gtag("consent", "update", consentState("denied"));
-  } catch {
-    // see gaEvent
-  }
-}
+// ---------------------------------------------------------------------------
+// Withdrawal
+// ---------------------------------------------------------------------------
 
-/** Re-grant after the visitor accepted again without a reload. */
-export function grantConsentInPlace(): void {
+/**
+ * Delete GA4's cookies (_ga and every _ga_<container>) after the visitor
+ * withdraws consent. GA sets them on the registrable domain
+ * (.friendlyinvoice.co.il), and a cookie can only be removed with the same
+ * domain attribute, so every candidate is tried: host-only, then each parent
+ * suffix of the hostname. A browser silently ignores the ones that do not
+ * apply (including a public suffix like co.il), which is what makes the
+ * brute force safe without a public-suffix list.
+ */
+export function deleteGaCookies(): void {
   try {
-    if (!Array.isArray(window.dataLayer)) return;
-    gtag("consent", "update", consentState("granted"));
+    const names = document.cookie
+      .split(";")
+      .map((c) => c.split("=")[0]?.trim() ?? "")
+      .filter((n) => n === "_ga" || n.startsWith("_ga_"));
+    if (names.length === 0) return;
+    const labels = window.location.hostname.split(".");
+    const domains: string[] = [];
+    for (let i = 0; i < labels.length - 1; i++) {
+      domains.push(labels.slice(i).join("."));
+    }
+    const expired = "expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
+    for (const name of names) {
+      document.cookie = `${name}=; ${expired}`;
+      for (const domain of domains) {
+        document.cookie = `${name}=; ${expired}; domain=.${domain}`;
+      }
+    }
   } catch {
-    // see gaEvent
+    // best effort
   }
 }
 

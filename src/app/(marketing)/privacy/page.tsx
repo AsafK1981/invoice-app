@@ -51,6 +51,15 @@ export const metadata = pageMetadata({
  * at this scale, and said explicitly NOT to add a line claiming either - there
  * is no duty to publish a negative. Re-ask if the user count passes low
  * hundreds.
+ *
+ * 2026-09-27, gated again for consent-gated Google Analytics / GTM: §3 no
+ * longer says "no tracking cookies" (untrue once GA4 runs after an accept),
+ * §4 names Google Analytics and Tag Manager, §10 describes what GA receives,
+ * retention, US processing, the account-level sharing settings and how to
+ * change the choice. The text is the gate-approved wording verbatim; the
+ * code facts it states (analytics_storage only, no page URLs inside the
+ * app, withdrawal) are enforced in src/lib/ga.ts and
+ * src/components/analytics/consent-gtm.tsx and pinned by tests/ga.test.ts.
  */
 export default function V2PrivacyPage() {
   return (
@@ -107,11 +116,19 @@ export default function V2PrivacyPage() {
             <section>
               <h2>3. מה אנחנו לא עושים במידע</h2>
               <p>
-                המידע משמש אך ורק להפעלת השירות עבורך. אנחנו לא מוכרים ולא
-                משכירים את המידע שלך, ולא מעבירים אותו לצדדים שלישיים למטרות
-                שיווק. אין באתר עוגיות מעקב או פרסום. בנוסף נאספות סטטיסטיקות
-                שימוש אנונימיות ומצרפיות (ללא עוגיות וללא זיהוי אישי, באמצעות
-                Vercel Analytics) לשיפור השירות.
+                המידע שאתה מזין באפליקציה (פרטי חשבון, לקוחות, מסמכים) משמש
+                להפעלת השירות עבורך בלבד. איננו מוכרים ואיננו משכירים את המידע
+                הזה, ואיננו משתפים אותו עם צדדים שלישיים לצורך פרסום ממוקד.
+              </p>
+              <p>
+                בנוסף נאספות סטטיסטיקות שימוש אנונימיות ומצרפיות באמצעות Vercel
+                Analytics (ללא עוגיות, ללא זיהוי אישי) לשיפור השירות.
+              </p>
+              <p>
+                באתר השיווקי ובעמודי ההרשמה וההגדרה הראשונית, אם אישרת זאת
+                בבאנר העוגיות, אנחנו משתמשים גם ב-Google Analytics כדי להבין
+                מאיפה מגיעים אלינו משתמשים ואילו עמודים עוזרים להרשמה, כמפורט
+                בסעיף 10.
               </p>
             </section>
 
@@ -122,7 +139,9 @@ export default function V2PrivacyPage() {
                 מקבל רק את המידע הדרוש לתפקידו: Supabase (מסד נתונים ואימות,
                 שרתים באיחוד האירופי/בריטניה), Vercel (אירוח), Google (התחברות
                 OAuth; ואם חיברת את תיבת הדואר שלך לאיתור הוצאות - גם הרשאת
-                קריאה לתיבת ה-Gmail שלך, ראה סעיף 4א), Resend ו-Gmail (שליחת
+                קריאה לתיבת ה-Gmail שלך, ראה סעיף 4א; ו-Google Analytics
+                ו-Google Tag Manager, רק אם אישרת עוגיות בבאנר העוגיות - ראה
+                סעיף 10), Resend ו-Gmail (שליחת
                 אימיילים), Anthropic (עיבוד סריקות הוצאות, הודעות העוזר החכם,
                 וקובץ ספר מותג שהעלית לעיצוב המסמכים), Groq (תמלול הודעות קוליות
                 שנשלחות לבוט הוואטסאפ, אם בחרת להשתמש בו), Meta (ערוץ הוואטסאפ,
@@ -245,7 +264,40 @@ export default function V2PrivacyPage() {
               <h2>10. עוגיות ואחסון מקומי</h2>
               <p>
                 האפליקציה משתמשת באחסון מקומי (localStorage) ובעוגיות הדרושות
-                להתחברות בלבד. איננו משתמשים בעוגיות מעקב או פרסום.
+                להתחברות ולהפעלת השירות.
+              </p>
+              <p>
+                בנוסף, באתר השיווקי, בעמוד ההרשמה וההתחברות ובעמוד ההגדרה
+                הראשונית אנחנו משתמשים ב-Google Analytics (באמצעות Google Tag
+                Manager), כדי להבין מאיפה מגיעים אלינו ואילו עמודים עוזרים
+                לאנשים להירשם. Google Analytics נטען רק אם לחצת &quot;מאשר/ת&quot;
+                בבאנר העוגיות. אם בחרת &quot;רק הכרחיות&quot;, הוא לא נטען כלל.
+              </p>
+              <p>
+                כשהוא פעיל, Google Analytics שומר עוגיות בדפדפן שלך ומקבל מידע
+                כמו העמוד שבו ביקרת, מאיפה הגעת, סוג המכשיר והדפדפן, מיקום משוער
+                (ברמת עיר או מדינה) ואירועים כמו השלמת הרשמה, הגדרה ראשונית או
+                יצירת מסמך ראשון. בתוך האפליקציה עצמה לא נמדדים עמודים, ונשלחים
+                רק האירועים האלה, בלי כתובת העמוד ובלי תוכנו. איננו שולחים
+                ל-Google את שמך, את כתובת האימייל שלך, פרטי לקוחות, סכומים או
+                תוכן מסמכים.
+              </p>
+              <p>
+                Google מקבל גם את כתובת ה-IP שממנה גלשת, כדי להעריך את המיקום
+                המשוער כמתואר לעיל. לפי הצהרת Google, כתובת ה-IP איננה נשמרת
+                במוצר Google Analytics 4.
+              </p>
+              <p>
+                המידע נשמר ב-Google Analytics עד 14 חודשים ומעובד בשרתי Google
+                בארה&quot;ב. ברמת חשבון ה-Google Analytics כיבינו שיתוף נתונים עם
+                Google לשיפור מוצריה ולמידול. השארנו פעילה את האפשרות שצוות
+                התמיכה הטכנית של Google יוכל לגשת לחשבון לצורך פתרון תקלות, ואת
+                ההמלצות העסקיות המבוססות על נתוני האתר. איננו משתמשים בעוגיות
+                פרסום.
+              </p>
+              <p>
+                אפשר לשנות את הבחירה בכל עת בקישור &quot;הגדרות עוגיות&quot;
+                בתחתית האתר.
               </p>
             </section>
 

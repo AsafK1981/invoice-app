@@ -7,7 +7,9 @@ import {
   hasAnalyticsConsent,
   isAnalyticsPath,
   readConsent,
+  safePageFields,
   sanitizePageLocation,
+  sanitizeReferrer,
   writeConsent,
 } from "@/lib/analytics-consent";
 
@@ -183,5 +185,76 @@ describe("sanitizePageLocation", () => {
 
   it("returns an empty string for garbage instead of throwing", () => {
     expect(sanitizePageLocation("not a url")).toBe("");
+  });
+});
+
+describe("campaign parameter scrubbing", () => {
+  const base = "https://friendlyinvoice.co.il/product";
+  it.each([
+    ["an email in a utm", "?utm_source=fb&utm_campaign=dana%40gmail.com", "?utm_source=fb"],
+    ["a phone number in a utm", "?utm_term=0549000684&utm_medium=cpc", "?utm_medium=cpc"],
+    ["an id number in a utm", "?utm_content=id123456789", ""],
+    ["an over-long utm", `?utm_campaign=${"a".repeat(101)}`, ""],
+    ["a short digit run, which is fine", "?utm_campaign=sept2026", "?utm_campaign=sept2026"],
+  ])("drops %s", (_label, query, kept) => {
+    expect(sanitizePageLocation(base + query)).toBe(base + kept);
+  });
+
+  it("keeps long digit runs in opaque click ids", () => {
+    expect(sanitizePageLocation(`${base}?gclid=Cj0KCQ1234567890abc`)).toBe(
+      `${base}?gclid=Cj0KCQ1234567890abc`,
+    );
+  });
+
+  it("still drops an '@' or an over-long value in a click id", () => {
+    expect(sanitizePageLocation(`${base}?gclid=a%40b`)).toBe(base);
+    expect(sanitizePageLocation(`${base}?wbraid=${"x".repeat(101)}`)).toBe(base);
+  });
+});
+
+describe("sanitizeReferrer", () => {
+  const origin = "https://friendlyinvoice.co.il";
+  it("reduces an external referrer to https://<host>/", () => {
+    expect(sanitizeReferrer("https://l.facebook.com/l.php?u=https%3A%2F%2Fx", origin)).toBe(
+      "https://l.facebook.com/",
+    );
+    expect(sanitizeReferrer("http://example.org/a/b?c=d#e", origin)).toBe("https://example.org/");
+  });
+
+  it("empties a same-origin referrer, e.g. the /view/<uuid> CTA into /product", () => {
+    expect(
+      sanitizeReferrer(`${origin}/view/3f1c2d4e-0000-4000-8000-000000000000`, origin),
+    ).toBe("");
+  });
+
+  it("empties missing, malformed and non-http referrers", () => {
+    expect(sanitizeReferrer("", origin)).toBe("");
+    expect(sanitizeReferrer("not a url", origin)).toBe("");
+    expect(sanitizeReferrer("android-app://com.google.android.gm/", origin)).toBe("");
+  });
+});
+
+describe("safePageFields", () => {
+  it("allowlisted: sanitized location, the path as title", () => {
+    expect(
+      safePageFields("https://friendlyinvoice.co.il/vs/sumit/?next=x&utm_source=fb", ""),
+    ).toEqual({
+      page_location: "https://friendlyinvoice.co.il/vs/sumit/?utm_source=fb",
+      page_title: "/vs/sumit",
+      page_referrer: "",
+    });
+  });
+
+  it("off the allowlist: the anonymous /app, never the real path", () => {
+    expect(
+      safePageFields(
+        "https://friendlyinvoice.co.il/clients/abc/statement?x=1",
+        "https://friendlyinvoice.co.il/view/abc",
+      ),
+    ).toEqual({
+      page_location: "https://friendlyinvoice.co.il/app",
+      page_title: "app",
+      page_referrer: "",
+    });
   });
 });
