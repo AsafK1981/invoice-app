@@ -1,0 +1,123 @@
+/* Consent banner + footer "cookie settings" button (2026-09-27).
+   Self-contained on purpose: the banner is mounted in the ROOT layout and
+   also appears on /login and /onboarding, which do not load the marketing
+   stylesheets, so it cannot lean on `.v2-theme` tokens. Colour values are
+   copied by value from v2.css / marketing-light.css (ink #1F232B, muted
+   #6B6560, line #E8DDD0, burnt-orange accent text #A94E16, CTA orange
+   #D96A1D) so it reads as part of the same site. */
+
+.fi-consent {
+  position: fixed;
+  z-index: 60; /* above the install prompt (z-50) and assistant (z-40) */
+  inset-inline: 12px;
+  bottom: 12px;
+  max-width: 760px;
+  margin-inline: auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  padding: 12px 16px;
+  background: #ffffff;
+  color: #1F232B;
+  border: 1px solid #E8DDD0;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(31, 35, 43, 0.14);
+  font-size: 14px;
+  line-height: 1.55;
+  direction: rtl;
+  text-align: right;
+}
+
+.fi-consent-text {
+  flex: 1 1 320px;
+  margin: 0;
+}
+
+.fi-consent-link {
+  color: #A94E16;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  white-space: nowrap;
+}
+
+.fi-consent-actions {
+  display: flex;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+/* Both buttons share ONE style: equal weight is the point (no nudging). */
+.fi-consent-btn {
+  min-height: 44px;
+  min-width: 112px;
+  padding: 0 16px;
+  border: 1.5px solid #D96A1D;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #A94E16;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+.fi-consent-btn:hover {
+  background: #FBEFE4;
+}
+
+.fi-consent-link:focus-visible,
+.fi-consent-btn:focus-visible,
+.fi-cookie-settings:focus-visible {
+  outline: 3px solid #D96A1D;
+  outline-offset: 2px;
+}
+
+/* Narrow phones: text on top, the two buttons split the row evenly so each
+   stays a full 44px target and neither looks primary. Tighter padding keeps
+   the whole bar short enough not to bury the hero CTA while it is open. */
+@media (max-width: 479.98px) {
+  .fi-consent {
+    inset-inline: 8px;
+    bottom: 8px;
+    padding: 10px 12px;
+    font-size: 13.5px;
+  }
+  .fi-consent-text {
+    flex-basis: 100%;
+  }
+  .fi-consent-actions {
+    flex: 1 1 100%;
+  }
+  .fi-consent-btn {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+}
+
+/* Footer link-button: typography of `.v2-footer-links a` /
+   `.ml-footer-links a` (13.5px/600, cream 78% on charcoal), minus the
+   default button chrome. */
+.fi-cookie-settings {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: rgba(247, 242, 235, 0.78);
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+.fi-cookie-settings:hover {
+  color: #F2A33C;
+}
+
+@media print {
+  .fi-consent {
+    display: none;
+  }
+}

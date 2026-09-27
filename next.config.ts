@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 
-// Content-Security-Policy — defense-in-depth against XSS. Verified in a real
+// Content-Security-Policy - defense-in-depth against XSS. Verified in a real
 // browser via Report-Only mode first (only violation was recharts/d3 string
 // evaluation, hence 'unsafe-eval'; our own code contains zero eval). Now
 // enforcing. Allowed origins reflect what the app actually loads: Vercel
@@ -13,13 +13,19 @@ import { withSentryConfig } from "@sentry/nextjs";
 // is self-hosted as of 2026-08-14 - see the comments in src/app/layout.tsx
 // and src/app/opengraph-image.tsx. Don't re-add fonts.googleapis.com /
 // fonts.gstatic.com here without also reintroducing a runtime font fetch.
+// Google Tag Manager + GA4 (2026-09-27): www.googletagmanager.com serves
+// gtm.js (script) and GA4 beacons go to *.google-analytics.com /
+// *.analytics.google.com (connect). They are only ever used after a visitor
+// accepts analytics cookies, and only on allowlisted public routes - see
+// src/lib/analytics-consent.ts and src/components/analytics/consent-gtm.tsx.
+// img-src already allows https: for GA's pixel fallback.
 const csp = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com https://accounts.google.com/gsi/client",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com https://accounts.google.com/gsi/client https://www.googletagmanager.com",
   "style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style",
   "font-src 'self' data:",
   "img-src 'self' data: blob: https:",
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://va.vercel-scripts.com https://vitals.vercel-insights.com https://*.sentry.io https://*.ingest.sentry.io https://accounts.google.com/gsi/",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://va.vercel-scripts.com https://vitals.vercel-insights.com https://*.sentry.io https://*.ingest.sentry.io https://accounts.google.com/gsi/ https://www.googletagmanager.com https://*.google-analytics.com https://*.analytics.google.com",
   "frame-src https://accounts.google.com/gsi/",
   "frame-ancestors 'none'",
   "base-uri 'self'",
@@ -33,7 +39,7 @@ const securityHeaders = [
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   // microphone=(self): the assistant widget's speech-to-text mic (Web Speech
   // API) runs same-origin; an empty allowlist made the browser hard-deny the
-  // mic with no prompt. Camera and geolocation stay fully denied — nothing
+  // mic with no prompt. Camera and geolocation stay fully denied - nothing
   // uses them, and frame-ancestors 'none' means no embedder can inherit the
   // self-scoped grant.
   { key: "Permissions-Policy", value: "camera=(), microphone=(self), geolocation=()" },
@@ -49,7 +55,7 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ["puppeteer-core", "@sparticuz/chromium"],
   // @sparticuz/chromium loads its brotli-compressed binaries (bin/chromium.br,
   // etc.) dynamically at runtime, so @vercel/nft's static file tracer never
-  // copies them into the serverless function — the JS is externalized but the
+  // copies them into the serverless function - the JS is externalized but the
   // bin/ blobs are missing, causing a 500 ("input directory .../bin does not
   // exist") on Vercel. Force-include them for the PDF route. Only one route
   // lives under /api/documents (the pdf route), so this broad glob is precise
@@ -101,7 +107,7 @@ const nextConfig: NextConfig = {
         permanent: true,
       },
       // The app now lives on its own domain (friendlyinvoice.co.il), but the
-      // original *.vercel.app deployment still served every page with a 200 —
+      // original *.vercel.app deployment still served every page with a 200 -
       // i.e. the whole site existed twice as far as a crawler is concerned.
       // The canonical tags already pointed at the real domain, which mitigates
       // it, but a 308 is the unambiguous signal and consolidates link equity

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useOptionalUser } from "@/lib/public-auth";
+import { CookieSettingsButton } from "@/components/analytics/cookie-settings-button";
 import { BrandLockup } from "@/components/brand-mark";
 
 /**
@@ -34,6 +35,8 @@ export default function FooterLight() {
           <Link href="/privacy">פרטיות</Link>
           <Link href="/security">אבטחת מידע</Link>
           <Link href="/accessibility">נגישות</Link>
+          {/* Reopens the consent banner; renders nothing without a GTM id. */}
+          <CookieSettingsButton />
         </nav>
         {/* Mirrors FooterV2: see the note there for why no מספר עוסק yet.
             Hidden on /accountants and /from-accountant (Asaf, 2026-09-27: no

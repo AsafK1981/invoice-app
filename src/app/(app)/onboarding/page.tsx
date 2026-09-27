@@ -13,6 +13,7 @@ import {
   Palette,
 } from "lucide-react";
 import { track } from "@vercel/analytics";
+import { gaEvent, markSignupSent, wasSignupSent } from "@/lib/ga";
 import { useBusiness, saveBusiness, saveDocumentDesign } from "@/lib/business-store";
 import { onboardingFormFromBusiness, reseedOnboardingForm } from "@/lib/onboarding-form";
 import { useToast } from "@/components/ui/toast";
@@ -38,6 +39,32 @@ export default function OnboardingPage() {
   const [step, setStep] = useState<Step>("welcome");
   const [saving, setSaving] = useState(false);
   const showToast = useToast();
+
+  // GA4 sign_up for Google sign-ins (2026-09-27). /auth/google-complete
+  // cannot tell a new account from a returning one, so the first arrival at
+  // onboarding stands in for "signed up". Once per browser (the email path
+  // sets the same flag at its form), and skipped for an already-onboarded
+  // user who reopens this page. getSession() reads the local session, no
+  // network call. gaEvent itself is consent-gated.
+  useEffect(() => {
+    if (wasSignupSent()) return;
+    let cancelled = false;
+    supabase.auth
+      .getSession()
+      .then(({ data: { session } }) => {
+        if (cancelled || !session?.user) return;
+        if (session.user.user_metadata?.onboarded === true) return;
+        if (wasSignupSent()) return;
+        markSignupSent();
+        gaEvent("sign_up", { method: "onboarding" });
+      })
+      .catch(() => {
+        // analytics only; nothing to recover
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const [bizForm, setBizForm] = useState(() => onboardingFormFromBusiness(business));
   const initialBizForm = useRef(bizForm);
@@ -208,6 +235,7 @@ export default function OnboardingPage() {
       // deliberately swallowed - the navigation below matters more
     }
     track("onboarding_complete");
+    gaEvent("onboarding_complete");
     router.push(target === "new-doc" ? "/documents/new" : "/dashboard");
   }
 

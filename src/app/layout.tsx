@@ -4,6 +4,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { SwRegister } from "@/components/sw-register";
 import { AttributionCapture } from "@/components/attribution-capture";
+import { ConsentGtm } from "@/components/analytics/consent-gtm";
 import { CANONICAL_ORIGIN } from "@/lib/public-url";
 import "./globals.css";
 // THE app skin, the warm light shell every user sees. Unconditional since
@@ -352,6 +353,11 @@ export default function RootLayout({
         {children}
         <SwRegister />
         <AttributionCapture />
+        {/* Consent-gated GTM/GA4 (2026-09-27). Renders nothing unless
+            NEXT_PUBLIC_GTM_ID is set AND the route is on the allowlist in
+            src/lib/analytics-consent.ts; loads nothing from Google before
+            an accept. */}
+        <ConsentGtm />
         <Analytics />
         <SpeedInsights />
       </body>

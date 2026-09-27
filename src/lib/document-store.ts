@@ -11,6 +11,7 @@ import { logAudit } from "./audit-log";
 import { cancellationRoute } from "./document-cancel";
 import { filingBusinessNumberSave } from "./business-number-hint";
 import { track } from "@vercel/analytics";
+import { gaEvent } from "./ga";
 import { conversionBlockFromRpcError, conversionBlockMessage, type ConversionBlock } from "./document-prefill";
 
 const CHANGE_EVENT = "invoice-app:documents-changed";
@@ -297,6 +298,9 @@ export async function createDocument(
   track("document_created", { type: doc.type });
   if (wasFirstDocument) {
     track("first_document_created", { type: doc.type });
+    // Consent-gated GA4 twin. Fires on an app route, so gaEvent reports it
+    // with a generic "/app" location. doc_type only, never amounts/names.
+    gaEvent("first_document_created", { doc_type: doc.type });
   }
   if (lastKnownDocumentCount !== null) {
     lastKnownDocumentCount += 1;

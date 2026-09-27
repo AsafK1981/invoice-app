@@ -7,6 +7,7 @@ import { Mail, LogIn, UserPlus, Eye, EyeOff, ArrowRight, Check } from "lucide-re
 import { supabase } from "@/lib/supabase";
 import { track } from "@vercel/analytics";
 import { readAttribution } from "@/lib/attribution";
+import { gaEvent, markSignupSent } from "@/lib/ga";
 import { GOOGLE_OAUTH_CLIENT_ID } from "@/lib/google-oauth-client-id";
 
 type Mode = "login" | "signup" | "forgot";
@@ -220,6 +221,11 @@ function LoginForm() {
         setError(signUpError.message);
       } else {
         track("sign_up", attribution);
+        // GA4 twin of the Vercel event (consent-gated, no-op otherwise). The
+        // flag stops /onboarding from counting this same person again, since
+        // it fires sign_up for Google sign-ins it cannot tell apart.
+        gaEvent("sign_up", { method: "email" });
+        markSignupSent();
         // Deferred email verification: whether signUp() itself hands back a
         // session (some GoTrue configs sign the caller in immediately when
         // unverified sign-ins are allowed) is not guaranteed the same way
