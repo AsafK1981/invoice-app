@@ -133,3 +133,89 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* "Send to your clients" card (ShareWithClients.tsx). */
+.acc-share {
+  padding: 40px 0 0;
+}
+
+.acc-share-card {
+  max-width: 860px;
+  margin: 0 auto;
+  background: var(--ml-card);
+  border: 1px solid var(--ml-line-soft);
+  border-radius: 20px;
+  box-shadow: var(--ml-shadow-sm);
+  padding: 28px 32px 30px;
+}
+
+.acc-share-head h2 {
+  font-size: clamp(20px, 2.4vw, 24px);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--ml-ink-head);
+  margin: 0 0 6px;
+}
+
+.acc-share-head p {
+  color: var(--ml-muted);
+  margin: 0 0 18px;
+}
+
+.acc-share-text {
+  background: var(--ml-cream);
+  border: 1px solid var(--ml-line);
+  border-radius: 14px;
+  padding: 16px 18px;
+  margin: 0 0 18px;
+  line-height: 1.75;
+  color: var(--ml-ink);
+  font-size: 15.5px;
+}
+
+.acc-share-link {
+  display: inline-block;
+  margin-top: 4px;
+  color: var(--ml-gold-ink);
+  font-weight: 600;
+  word-break: break-all;
+}
+
+.acc-share-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.acc-share-actions .ml-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.acc-share-actions .ml-btn svg {
+  width: 17px;
+  height: 17px;
+}
+
+.acc-share-live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  .acc-share {
+    padding-top: 28px;
+  }
+  .acc-share-card {
+    padding: 22px 18px 22px;
+  }
+  .acc-share-actions .ml-btn {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+}

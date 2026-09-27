@@ -27,6 +27,7 @@ import { graph, faqPage } from "@/lib/jsonld";
 import { LtrText } from "@/components/ui/ltr";
 import { pageMetadata } from "@/lib/page-metadata";
 import "../marketing-light.css";
+import ShareWithClients from "./ShareWithClients";
 import "./accountants.css";
 
 export const metadata = pageMetadata({
@@ -326,6 +327,12 @@ export default function AccountantsPage() {
               into the in-app directory (/find-accountant,
               src/lib/partner-accountants.ts). Reuses the homepage spotlight
               card; the band itself lives in accountants.css. */}
+          <section className="acc-share" aria-labelledby="acc-share-title">
+            <div className="ml-wrap">
+              <ShareWithClients />
+            </div>
+          </section>
+
           <section className="acc-partner" aria-labelledby="acc-partner-title">
             <div className="ml-wrap">
               <div className="ml-spot-list">
