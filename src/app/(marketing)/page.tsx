@@ -272,16 +272,15 @@ export default function MarketingLanding() {
                   part of your workday") over the compliance-pain framing.
                   The 2026/allocation specificity moved down into the lede
                   so the regulatory hook is still above the fold. */}
+              {/* 2026-09-27 (Asaf): the H1 is now the brand slogan from the
+                  06.09 rebrand - the same line the logo lockup, the OG image
+                  and the JSON-LD slogan already carry. Explicit {" "} before
+                  the <br>: a space leading a multi-line text child is
+                  silently dropped (it once shipped "קלביום" glued). */}
               <h1 className="ml-hero-h1">
-                להוציא חשבונית הפך{" "}
+                התנהלות פשוטה{" "}
                 <br />
-                {/* Explicit {" "} after the span - same transform trap as
-                    the allocation note below: a space leading a multi-line
-                    text child is silently dropped, which shipped
-                    "קלביום" glued together on the first build. */}
-                <span className="ml-grad-text">לחלק הכי קל</span>
-                {" "}
-                ביום העבודה&nbsp;שלכם
+                <span className="ml-grad-text">לעסק מצליח</span>
               </h1>
               <p className="ml-lede">
                 עומדים בכל הדרישות החדשות של רשות המסים, בלי להתאמץ: מספר

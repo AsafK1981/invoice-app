@@ -199,16 +199,13 @@ describe("marketing pages: joined heading text", () => {
   });
 
   it("landing H1 reads as one sentence across its <br>", async () => {
-    // Repositioned 2026-08-07: led with aesthetics, then the compliance
-    // mandate; re-led 2026-08-10 (Hormozi round) with the dream-outcome
-    // flip Asaf picked. The point of this assertion is unchanged - the
-    // halves either side of the <br> and the gradient <span> must join
-    // into one readable sentence (the span border already glued
-    // "קלביום" once). The   is the real nbsp that keeps "שלכם"
-    // from orphaning on its own line on mobile; decodeEntities in this
-    // file normalizes that nbsp to the plain space asserted here.
+    // Repositioned 2026-08-07, re-led 2026-08-10 (Hormozi round), and on
+    // 2026-09-27 replaced by the brand slogan from the 06.09 rebrand
+    // (Asaf). The point is unchanged: the halves either side of the <br>
+    // and the gradient <span> must join into one readable sentence (the
+    // span border already glued "קלביום" once).
     expect(await h1Of("/")).toBe(
-      "להוציא חשבונית הפך לחלק הכי קל ביום העבודה שלכם",
+      "התנהלות פשוטה לעסק מצליח",
     );
   });
 
