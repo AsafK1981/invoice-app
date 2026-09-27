@@ -18,7 +18,7 @@ export { DEFAULT_FILING_SETTINGS, mapFilingRow, type FilingSettings, type Filing
 
 const CHANGE_EVENT = "invoice-app:filing-preferences-changed";
 
-const COLUMNS = "business_id,vat_cadence,advance_cadence,detailed_reporter,has_employees,reminders_enabled,reminder_days_before,filed";
+const COLUMNS = "business_id,vat_cadence,advance_cadence,detailed_reporter,has_employees,reminders_enabled,reminder_days_before,btl_monthly_advance,filed";
 
 async function loadRow(businessId: string): Promise<Record<string, unknown> | null> {
   const { data, error } = await supabase.from("filing_preferences").select(COLUMNS).eq("business_id", businessId).maybeSingle();
@@ -26,7 +26,10 @@ async function loadRow(businessId: string): Promise<Record<string, unknown> | nu
   return (data as Record<string, unknown> | null) ?? null;
 }
 
-function toColumns(patch: Partial<FilingSettings>): Record<string, unknown> {
+/** A settings patch; `btlMonthlyAdvance: null` clears the stored amount. */
+export type FilingSettingsPatch = Omit<Partial<FilingSettings>, "btlMonthlyAdvance"> & { btlMonthlyAdvance?: number | null };
+
+function toColumns(patch: FilingSettingsPatch): Record<string, unknown> {
   const cols: Record<string, unknown> = {};
   if (patch.vatCadence) cols.vat_cadence = patch.vatCadence;
   if (patch.advanceCadence) cols.advance_cadence = patch.advanceCadence;
@@ -34,6 +37,7 @@ function toColumns(patch: Partial<FilingSettings>): Record<string, unknown> {
   if (patch.hasEmployees !== undefined) cols.has_employees = patch.hasEmployees;
   if (patch.remindersEnabled !== undefined) cols.reminders_enabled = patch.remindersEnabled;
   if (patch.reminderDaysBefore !== undefined) cols.reminder_days_before = patch.reminderDaysBefore;
+  if (patch.btlMonthlyAdvance !== undefined) cols.btl_monthly_advance = patch.btlMonthlyAdvance;
   return cols;
 }
 
@@ -42,7 +46,7 @@ function toColumns(patch: Partial<FilingSettings>): Record<string, unknown> {
  * first save creates the row and a save racing another tab (or the reminder
  * cron's insert) updates instead of failing on the primary key.
  */
-export async function saveFilingSettings(businessId: string, patch: Partial<FilingSettings>): Promise<void> {
+export async function saveFilingSettings(businessId: string, patch: FilingSettingsPatch): Promise<void> {
   const cols = toColumns(patch);
   if (Object.keys(cols).length === 0) return;
   const { error } = await supabase.from("filing_preferences").upsert({ business_id: businessId, ...cols }, { onConflict: "business_id" });

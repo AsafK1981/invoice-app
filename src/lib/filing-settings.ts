@@ -7,6 +7,12 @@ import { DEFAULT_FILING_PREFERENCES, type Cadence, type FilingPreferences } from
 export interface FilingSettings extends FilingPreferences {
   remindersEnabled: boolean;
   reminderDaysBefore: number;
+  /**
+   * The owner's fixed monthly Bituach Leumi advance, whole shekels, as printed
+   * in the payment booklet. Undefined when never entered; the reminder then
+   * says the date without a figure.
+   */
+  btlMonthlyAdvance?: number;
 }
 
 export const DEFAULT_FILING_SETTINGS: FilingSettings = {
@@ -29,6 +35,10 @@ export const stringMap = (v: unknown): Record<string, string> => {
   return out;
 };
 
+// 0 means "not entered": an owner who owes nothing would not type 0.
+const wholeShekels = (v: unknown): number | undefined =>
+  typeof v === "number" && Number.isInteger(v) && v > 0 ? v : undefined;
+
 export function mapFilingRow(row: Record<string, unknown> | null): FilingState {
   if (!row) return { settings: DEFAULT_FILING_SETTINGS, filed: {} };
   const days = Number(row.reminder_days_before);
@@ -40,6 +50,7 @@ export function mapFilingRow(row: Record<string, unknown> | null): FilingState {
       hasEmployees: row.has_employees === true,
       remindersEnabled: row.reminders_enabled !== false,
       reminderDaysBefore: Number.isInteger(days) && days >= 1 && days <= 14 ? days : 3,
+      btlMonthlyAdvance: wholeShekels(row.btl_monthly_advance),
     },
     filed: stringMap(row.filed),
   };

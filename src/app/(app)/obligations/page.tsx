@@ -19,7 +19,7 @@ import {
   type Cadence,
   type ObligationOccurrence,
 } from "@/lib/ita/filing-calendar";
-import { ensureFilingRow, saveFilingSettings, setDeadlineFiled, useFilingPreferences, type FilingSettings } from "@/lib/filing-preferences-store";
+import { ensureFilingRow, saveFilingSettings, setDeadlineFiled, useFilingPreferences, type FilingSettings, type FilingSettingsPatch } from "@/lib/filing-preferences-store";
 
 const MONTHS = ["ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יוני", "יולי", "אוגוסט", "ספטמבר", "אוקטובר", "נובמבר", "דצמבר"];
 const DAYS = ["א׳", "ב׳", "ג׳", "ד׳", "ה׳", "ו׳", "ש׳"];
@@ -155,7 +155,7 @@ export default function ObligationsPage() {
     });
   }, [state]);
 
-  async function saveSetting(patch: Partial<FilingSettings>) {
+  async function saveSetting(patch: FilingSettingsPatch) {
     try {
       await saveFilingSettings(business.id, patch);
     } catch {
@@ -206,7 +206,7 @@ export default function ObligationsPage() {
             </button>
           </p>
 
-          {settingsOpen && <SettingsCard settings={settings} vat={filesVat(type)} onChange={saveSetting} />}
+          {settingsOpen && <SettingsCard settings={settings} vat={filesVat(type)} btl={type !== "company"} onChange={saveSetting} />}
 
           {next && (
             <button
@@ -437,7 +437,7 @@ function ObligationDetail({
   );
 }
 
-function SettingsCard({ settings, vat, onChange }: { settings: FilingSettings; vat: boolean; onChange: (patch: Partial<FilingSettings>) => void }) {
+function SettingsCard({ settings, vat, btl, onChange }: { settings: FilingSettings; vat: boolean; btl: boolean; onChange: (patch: FilingSettingsPatch) => void }) {
   return (
     <section aria-label="הגדרות חובות הגשה" className="rounded-2xl border border-stone-200 bg-white p-4 space-y-4">
       <p className="text-sm text-stone-700">כך הלוח יודע אילו מועדים להציג. אפשר לשנות בכל רגע.</p>
@@ -447,12 +447,13 @@ function SettingsCard({ settings, vat, onChange }: { settings: FilingSettings; v
         )}
         <CadenceField label="מקדמות מס הכנסה" hint="התדירות מופיעה בפנקס המקדמות." value={settings.advanceCadence} onChange={(v) => onChange({ advanceCadence: v })} />
       </div>
+      {btl && <BtlAdvanceField value={settings.btlMonthlyAdvance} onChange={(v) => onChange({ btlMonthlyAdvance: v })} />}
       <div className="flex flex-col gap-1">
         {vat && (
           <Toggle label="אני חייב בדיווח מפורט למע״מ (PCN874)" checked={settings.detailedReporter} onChange={(v) => onChange({ detailedReporter: v })} />
         )}
         <Toggle label="יש לי עובדים (דיווח ניכויים חודשי)" checked={settings.hasEmployees} onChange={(v) => onChange({ hasEmployees: v })} />
-        <Toggle label="תזכורת לפני כל מועד (התראה באפליקציה)" checked={settings.remindersEnabled} onChange={(v) => onChange({ remindersEnabled: v })} />
+        <Toggle label="תזכורת לפני כל מועד, עם הסכום לתשלום (התראה באפליקציה)" checked={settings.remindersEnabled} onChange={(v) => onChange({ remindersEnabled: v })} />
       </div>
       {settings.remindersEnabled && (
         <label className="flex flex-wrap items-center gap-2 text-sm text-stone-800">
@@ -468,6 +469,60 @@ function SettingsCard({ settings, vat, onChange }: { settings: FilingSettings; v
         </label>
       )}
     </section>
+  );
+}
+
+/**
+ * The owner's fixed monthly Bituach Leumi advance, whole shekels. Saved on
+ * blur only when it changed. Only an intentionally empty field (or 0, which
+ * means "not entered") clears the stored amount; anything else that is not a
+ * whole number up to 1,000,000 shows an inline error and puts the stored
+ * value back.
+ */
+function BtlAdvanceField({ value, onChange }: { value: number | undefined; onChange: (v: number | null) => void }) {
+  const [error, setError] = useState("");
+  const [resetKey, setResetKey] = useState(0);
+  const reject = () => {
+    setError("מספר שלם בלבד, עד 1,000,000");
+    setResetKey((k) => k + 1);
+  };
+  return (
+    <label className="block text-sm text-stone-800">
+      <span className="font-bold text-stone-900">מקדמת ביטוח לאומי חודשית (מהפנקס)</span>
+      <input
+        key={`${value ?? "empty"}:${resetKey}`}
+        type="number"
+        inputMode="numeric"
+        min={0}
+        step={1}
+        className="input-warm py-2 px-3 text-sm min-h-[2.75rem] mt-1.5 block"
+        style={{ width: "100%", maxWidth: "12rem" }}
+        placeholder="למשל 1024"
+        defaultValue={value ?? ""}
+        aria-invalid={error ? true : undefined}
+        onBlur={(e) => {
+          const input = e.currentTarget;
+          // Text the browser cannot read as a number arrives as "": never clear on that.
+          if (input.validity.badInput) return reject();
+          const raw = input.value.trim();
+          if (raw === "") {
+            setError("");
+            if (value !== undefined) onChange(null);
+            return;
+          }
+          const n = Number(raw);
+          if (!Number.isInteger(n) || n < 0 || n > 1_000_000) return reject();
+          setError("");
+          if (n === 0) {
+            if (value !== undefined) onChange(null);
+            return;
+          }
+          if (n !== value) onChange(n);
+        }}
+      />
+      {error && <span className="block text-xs text-rose-700 mt-1" role="alert">{error}</span>}
+      <span className="block text-xs text-stone-600 mt-1">הסכום הקבוע שביטוח לאומי קבע לך. משמש רק כדי שהתזכורת לפני ה-15 תגיד כמה לשלם.</span>
+    </label>
   );
 }
 
