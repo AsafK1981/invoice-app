@@ -31,8 +31,10 @@ import {
   Import,
   Palette,
   Type,
+  UserSearch,
 } from "lucide-react";
 import { useBusiness } from "@/lib/business-store";
+import { hasPartnerAccountants } from "@/lib/partner-accountants";
 import {
   TEXT_SIZE_EVENT,
   applyStoredTextSize,
@@ -68,6 +70,11 @@ const navItems: NavItem[] = [
   { href: "/notifications", label: "התראות", icon: Bell, tone: "orange" },
   { href: "/reminders", label: "תזכורות", icon: CalendarClock, tone: "orange" },
   { href: "/reports", label: "דו״חות", icon: TrendingUp, tone: "emerald" },
+  // Listed accountants (src/lib/partner-accountants.ts). Hidden until the
+  // first one is added, so an empty directory never shows up in the nav.
+  ...(hasPartnerAccountants()
+    ? ([{ href: "/find-accountant", label: "מציאת רואה חשבון", icon: UserSearch, tone: "emerald" }] as NavItem[])
+    : []),
   // Every filing deadline (VAT, advances, national insurance, annual report)
   // on one calendar with what, where and how (Asaf, 2026-09-15).
   { href: "/obligations", label: "חובות הגשה", icon: CalendarCheck, tone: "emerald" },

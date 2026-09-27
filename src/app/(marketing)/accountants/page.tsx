@@ -17,6 +17,7 @@ import {
   Receipt,
   TrendingUp,
   UserRound,
+  UserSearch,
 } from "lucide-react";
 import HeaderLight from "../components/HeaderLight";
 import FooterLight from "../components/FooterLight";
@@ -174,6 +175,10 @@ const FAQ: { q: string; a: string }[] = [
     a: "כן. נרשמים בחינם, בלי כרטיס אשראי, ורואים בדיוק את מה שהלקוח רואה: הוצאת מסמכים, מספרי הקצאה והדוחות.",
   },
   {
+    q: "מה אני מרוויח מלהמליץ?",
+    a: "הופעה ברשימת רואי החשבון שבתוך האפליקציה, שמשתמשים רואים כשהם מחפשים רואה חשבון. ובנוסף, לקוחות שמגיעים אליכם עם מסמכים תקינים ודוחות מוכנים.",
+  },
+  {
     q: "אני יכול להיכנס לחשבון של הלקוח?",
     a: "כרגע לא. הלקוח מפיק את הדוחות ואת קובץ המבנה האחיד ושולח לכם אותם.",
   },
@@ -314,6 +319,30 @@ export default function AccountantsPage() {
                   <p>דוחות מוכנים וקובץ מבנה אחיד, בלי לרדוף אחרי קבלות בסוף השנה.</p>
                 </li>
               </ol>
+            </div>
+          </section>
+
+          {/* The accountant's side of the deal: recommending the app gets them
+              into the in-app directory (/find-accountant,
+              src/lib/partner-accountants.ts). Reuses the homepage spotlight
+              card; the band itself lives in accountants.css. */}
+          <section className="acc-partner" aria-labelledby="acc-partner-title">
+            <div className="ml-wrap">
+              <div className="ml-spot-list">
+                <article className="ml-spot-card is-flagship">
+                  <div className="ml-spot-icon" aria-hidden="true">
+                    <UserSearch />
+                  </div>
+                  <div className="ml-spot-copy">
+                    <h3 id="acc-partner-title">ממליצים עלינו? אנחנו ממליצים עליכם</h3>
+                    <p>
+                      רואי חשבון שממליצים על חשבונית ידידותית מופיעים בתוך האפליקציה,
+                      ברשימה שהמשתמשים רואים כשהם מחפשים רואה חשבון. כך הלקוחות הבאים
+                      שלכם יכולים להגיע אליכם מאיתנו.
+                    </p>
+                  </div>
+                </article>
+              </div>
             </div>
           </section>
 

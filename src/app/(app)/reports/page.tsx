@@ -6,7 +6,7 @@ import {
   CalendarCheck,
   TrendingUp, TrendingDown, Wallet, Clock, Download, ChevronDown,
   FileText, ClipboardList, Calculator, BookOpen, FileSpreadsheet, Landmark, FileArchive,
-  SlidersHorizontal, Receipt, ArrowLeft, Minus, Printer, Percent, ListOrdered,
+  SlidersHorizontal, Receipt, ArrowLeft, Minus, Printer, Percent, ListOrdered, UserSearch,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useDocuments } from "@/lib/document-store";
@@ -18,6 +18,7 @@ import { useClients } from "@/lib/client-store";
 import { formatCurrencyWhole, hebrewCount } from "@/lib/format";
 import { exportDocuments, exportExpenses, exportMonthlySummary } from "@/lib/csv-export";
 import { useToast } from "@/components/ui/toast";
+import { hasPartnerAccountants } from "@/lib/partner-accountants";
 import { DownloadPdfButton } from "@/components/download-pdf-button";
 import { computeAging, AGING_BUCKET_LABELS } from "@/lib/aging";
 import {
@@ -252,6 +253,13 @@ export default function ReportsPage() {
       icon: SlidersHorizontal, title: "דוח מותאם", href: "/reports/custom",
       desc: "בחר מסננים חופשיים - תאריך, לקוח, סוג, סטטוס - והפק כל חתך.",
     },
+    // Listed accountants; the card only exists once the list has an entry.
+    ...(hasPartnerAccountants()
+      ? [{
+          icon: UserSearch, title: "צריכים רואה חשבון?", href: "/find-accountant",
+          desc: "רואי חשבון שעובדים עם המערכת ויכולים לקבל ממנה ישירות את הדוחות וקובץ המבנה האחיד.",
+        } as ReportCardSpec]
+      : []),
   ];
 
   if (docsError || expError || clientsError) return <StoreLoadError sources={[{ error: docsError, retry: retryDocs }, { error: expError, retry: retryExp }, { error: clientsError, retry: retryClients }]} />;

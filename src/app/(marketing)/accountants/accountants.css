@@ -105,3 +105,31 @@
     margin-bottom: 0;
   }
 }
+
+/* "ממליצים עלינו? אנחנו ממליצים עליכם" - one homepage spotlight card
+   (.ml-spot-card.is-flagship) between the steps and the reports grid. The
+   homepage .ml-spot band pulls itself up under the trust cards with a
+   negative margin, which would collide with the steps here, so this section
+   only borrows the card and sets its own spacing. */
+.acc-partner {
+  padding: 40px 0 8px;
+}
+
+.acc-partner .ml-spot-list {
+  max-width: 860px;
+}
+
+/* The homepage breaks spotlight copy on authored newlines; this body is one
+   JSX paragraph, so let it flow at every width. */
+.acc-partner .ml-spot-copy p {
+  white-space: normal;
+}
+
+@media (max-width: 760px) {
+  .acc-partner {
+    padding: 28px 0 0;
+  }
+  .acc-partner .ml-spot-card {
+    grid-template-columns: 1fr;
+  }
+}
