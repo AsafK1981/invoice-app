@@ -43,6 +43,7 @@ export default function FooterV2() {
           <Link href="/blog">מגזין</Link>
           <Link href="/vs">השוואות</Link>
           <Link href="/pricing">מחירים</Link>
+          <Link href="/accountants">לרואי חשבון</Link>
           <Link href="/terms">תנאי שימוש</Link>
           <Link href="/privacy">פרטיות</Link>
           <Link href="/security">אבטחת מידע</Link>
