@@ -82,12 +82,12 @@ export function BrandMark({ size = 32, className, title, badge = true }: BrandMa
  * Font size of "Friendly Invoice" as a fraction of the Hebrew name's font
  * size. Measured 2026-09-27 on the live fonts: at an equal font size the
  * Hebrew name (Heebo 700) runs 773 units wide and the Latin signature
- * (Playfair Display 500, 0.01em tracking) 748, so equal width is 1.034.
- * Asaf's call: the signature sits a touch inside the Hebrew line, about
- * 95% of its width, never narrower than that (the old 0.76 read as a
- * shrunken afterthought). 0.95 x 1.034 = 0.98.
+ * (Playfair Display 600, 0.02em tracking, see `.brand-latin`) 772, so
+ * equal width is 1.0. Asaf's call: the signature sits centred a touch
+ * inside the Hebrew line, about 95% of its width, never narrower than
+ * that (the old 0.76 read as a shrunken afterthought).
  */
-const LATIN_TO_HEBREW = 0.98;
+const LATIN_TO_HEBREW = 0.95;
 
 type BrandLockupProps = {
   /** Mark size in px; the wordmark scales with it. */
@@ -103,9 +103,9 @@ type BrandLockupProps = {
  * The primary logo from the brand book: the mark at the reading START (the
  * right side on an RTL page), vertically centred against two text lines.
  * "חשבונית ידידותית" is the PRIMARY name (Heebo 700, charcoal) and
- * "Friendly Invoice" is the SECONDARY English signature under it (Playfair
- * Display 500 via `.brand-latin`, in Primary Orange so it lifts off the
- * charcoal Hebrew above it). Sizes derive from `size` so every lockup in the
+ * "Friendly Invoice" is the SECONDARY English signature centred under it
+ * (Playfair Display 600 via `.brand-latin`, in Primary Orange so it lifts
+ * off the charcoal Hebrew above it). Sizes derive from `size` so every lockup in the
  * product keeps the same proportions, including the clear space between the
  * mark and the text.
  */
@@ -129,11 +129,19 @@ export function BrandLockup({ size = 32, tagline = false, className, tone = "lig
           textAlign: "right",
         }}
       >
-        <span className="brand-wordmark" style={{ fontSize: hebrew, color: dark ? "#FFFFFF" : BRAND.charcoal }}>
-          {BRAND.name}
-        </span>
-        <span className="brand-latin" dir="ltr" style={{ fontSize: latin, color: BRAND.orange, textAlign: "right" }}>
-          {BRAND.latin}
+        {/* Name + signature share a column of the Hebrew's width so the
+            (narrower) signature centres under the Hebrew itself, with the
+            same small margin on both sides, even when a wider tagline sits
+            below. */}
+        <span
+          style={{ display: "inline-flex", flexDirection: "column", gap: Math.round(size * 0.1), alignSelf: "flex-start" }}
+        >
+          <span className="brand-wordmark" style={{ fontSize: hebrew, color: dark ? "#FFFFFF" : BRAND.charcoal }}>
+            {BRAND.name}
+          </span>
+          <span className="brand-latin" dir="ltr" style={{ fontSize: latin, color: BRAND.orange, textAlign: "center" }}>
+            {BRAND.latin}
+          </span>
         </span>
         {tagline ? (
           <span

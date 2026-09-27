@@ -267,9 +267,13 @@
 /* Brand lockup text (see src/components/brand-mark.tsx). */
 .brand-latin {
   font-family: var(--font-playfair), "Playfair Display", Georgia, serif;
-  font-weight: 500;
+  /* 600, not 500: at lockup sizes (11-17px) Playfair's hairline crossbar on
+     the "e" vanished and "c"/"e" in "Invoice" read as the same glyph
+     (Asaf, 2026-09-27). The heavier weight keeps the crossbar on screen;
+     the extra tracking lets the letters breathe at that weight. */
+  font-weight: 600;
   font-style: normal;
-  letter-spacing: 0.01em;
+  letter-spacing: 0.02em;
   line-height: 1;
   white-space: nowrap;
 }
