@@ -1,16 +1,53 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
 import { Globe, Mail, MapPin, Phone, UserSearch } from "lucide-react";
-import { PARTNER_ACCOUNTANTS, type PartnerAccountant } from "@/lib/partner-accountants";
+import { PARTNER_ACCOUNTANTS, rankPartnerAccountants, type PartnerAccountant } from "@/lib/partner-accountants";
+import { supabase } from "@/lib/supabase";
 
 /**
  * /find-accountant - accountants who agreed to be listed (see
  * src/lib/partner-accountants.ts for the listing rules).
+ *
+ * Order: the accountant whose personal link (/from-accountant?ref=) brought
+ * the most ACTIVE businesses (issued at least one document) comes first; ties
+ * and no-data fall back to who joined earlier. The order comes from
+ * /api/partner-accountants/referrals (signed-in only; slugs in rank order,
+ * never counts); the list still renders in join order if that call fails.
  *
  * The sidebar item and the reports-page card only appear once the list has an
  * entry; until then this page is reachable by direct URL only and shows a calm
  * "coming soon" state. The (app) layout keeps it behind login.
  */
 export default function FindAccountantPage() {
-  const list = PARTNER_ACCOUNTANTS;
+  const [order, setOrder] = useState<string[] | null>(null);
+  useEffect(() => {
+    if (PARTNER_ACCOUNTANTS.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+        const res = await fetch("/api/partner-accountants/referrals", {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        const json = (await res.json()) as { ok: boolean; order?: string[] };
+        if (!cancelled && json.ok && Array.isArray(json.order)) setOrder(json.order);
+      } catch {
+        // Ranking is a nicety; the list renders in join order without it.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  const list = useMemo(() => {
+    if (!order) return rankPartnerAccountants(PARTNER_ACCOUNTANTS, {});
+    const rank = new Map(order.map((slug, i) => [slug, i]));
+    return [...PARTNER_ACCOUNTANTS].sort(
+      (a, b) => (rank.get(a.slug) ?? Number.MAX_SAFE_INTEGER) - (rank.get(b.slug) ?? Number.MAX_SAFE_INTEGER),
+    );
+  }, [order]);
 
   return (
     <div className="space-y-5">

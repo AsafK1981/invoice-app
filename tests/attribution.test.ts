@@ -1,5 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { captureAttribution, readAttribution } from "@/lib/attribution";
+import {
+  captureAttribution,
+  captureReferral,
+  clearReferral,
+  normalizeReferralSlug,
+  readAttribution,
+  readReferral,
+} from "@/lib/attribution";
 
 // The suite runs on the `node` environment with no jsdom (see
 // vitest.config.ts), so window/document are stubbed here the same way
@@ -113,5 +120,72 @@ describe("first-touch attribution", () => {
     storage.setItem(KEY, "{not json");
     expect(() => readAttribution()).not.toThrow();
     expect(readAttribution()).toEqual({});
+  });
+});
+
+describe("accountant referral (/from-accountant?ref=)", () => {
+  it("remembers a valid slug and hands it to signup metadata", () => {
+    land("https://friendlyinvoice.co.il/from-accountant?ref=hscpa");
+    captureReferral();
+    expect(readReferral()).toBe("hscpa");
+    expect(readAttribution()).toMatchObject({ signup_ref: "hscpa" });
+  });
+
+  it("keeps the first accountant when a second link arrives later", () => {
+    land("https://friendlyinvoice.co.il/from-accountant?ref=hscpa");
+    captureReferral();
+    land("https://friendlyinvoice.co.il/from-accountant?ref=oritax");
+    captureReferral();
+    expect(readReferral()).toBe("hscpa");
+  });
+
+  it("ignores a slug the DB CHECK would reject, so a bad link cannot poison the row", () => {
+    land("https://friendlyinvoice.co.il/from-accountant?ref=Not%20A%20Slug!");
+    captureReferral();
+    expect(readReferral()).toBeNull();
+    expect(readAttribution()).toEqual({});
+  });
+
+  it("normalizes case and whitespace, rejects everything else", () => {
+    expect(normalizeReferralSlug(" HSCPA ")).toBe("hscpa");
+    expect(normalizeReferralSlug("keren-veber")).toBe("keren-veber");
+    expect(normalizeReferralSlug("-lead")).toBeNull();
+    expect(normalizeReferralSlug("a")).toBeNull();
+    expect(normalizeReferralSlug("x".repeat(33))).toBeNull();
+    expect(normalizeReferralSlug(null)).toBeNull();
+  });
+
+  it("ignores ?ref= on any page other than /from-accountant, so a generic ref cannot block a real one", () => {
+    land("https://friendlyinvoice.co.il/pricing?ref=facebook");
+    captureReferral();
+    expect(readReferral()).toBeNull();
+    land("https://friendlyinvoice.co.il/from-accountant/?ref=hscpa");
+    captureReferral();
+    expect(readReferral()).toBe("hscpa");
+  });
+
+  it("overwrites a malformed stored value instead of letting it block a real referral", () => {
+    storage.setItem("fi_ref_v1", "{not json");
+    land("https://friendlyinvoice.co.il/from-accountant?ref=hscpa");
+    captureReferral();
+    expect(readReferral()).toBe("hscpa");
+  });
+
+  it("forgets the referral once cleared, so the next signup on this browser starts clean", () => {
+    land("https://friendlyinvoice.co.il/from-accountant?ref=hscpa");
+    captureReferral();
+    clearReferral();
+    expect(readReferral()).toBeNull();
+    expect(readAttribution()).toEqual({});
+  });
+
+  it("is a no-op without a ref and survives blocked storage", () => {
+    land("https://friendlyinvoice.co.il/from-accountant");
+    captureReferral();
+    expect(readReferral()).toBeNull();
+    storage = makeStorage(true);
+    land("https://friendlyinvoice.co.il/from-accountant?ref=hscpa");
+    expect(() => captureReferral()).not.toThrow();
+    expect(readReferral()).toBeNull();
   });
 });

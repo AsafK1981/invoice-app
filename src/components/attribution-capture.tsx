@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { captureAttribution } from "@/lib/attribution";
+import { captureAttribution, captureReferral } from "@/lib/attribution";
 
 /**
  * Records the visitor's first touch (see src/lib/attribution.ts). Mounted in
@@ -11,6 +11,7 @@ import { captureAttribution } from "@/lib/attribution";
 export function AttributionCapture() {
   useEffect(() => {
     captureAttribution();
+    captureReferral();
   }, []);
   return null;
 }

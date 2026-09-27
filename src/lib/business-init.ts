@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "./supabase";
 import { SESSION_LOST_MESSAGE, isSessionLost } from "./session-guard";
+import { clearReferral, readReferral } from "./attribution";
 import type { Business } from "./types";
 
 const BUSINESS_ID_KEY = "invoice-app-business-id";
@@ -189,12 +190,17 @@ async function initBusiness(): Promise<string> {
       tax_id: defaultBusiness.taxId,
       address: defaultBusiness.address,
       user_id: userId,
+      // The accountant whose personal link brought this person, if any (see
+      // captureReferral). Set here, on the row, because Google sign-ups carry
+      // no user_metadata; the DB freezes it after this insert.
+      referred_by: readReferral(),
     })
     .select("id")
     .single();
 
   if (created) {
     localStorage.setItem(BUSINESS_ID_KEY, created.id);
+    clearReferral();
     return created.id;
   }
 

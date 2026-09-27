@@ -20,6 +20,21 @@
 
 const KEY = "fi_attr_v1";
 
+// Accountant referral (2026-09-27). Separate from first-touch attribution on
+// purpose: an accountant's personal link (/from-accountant?ref=<slug>) must be
+// remembered even when the visitor's FIRST touch was something else weeks
+// earlier, and it is what ranks the in-app accountant directory, so it needs
+// its own key and its own "first ref wins" rule.
+const REF_KEY = "fi_ref_v1";
+
+/** The shape a referral slug must have; the DB CHECK on businesses.referred_by matches it. */
+export const REFERRAL_SLUG = /^[a-z0-9][a-z0-9-]{1,31}$/;
+
+export function normalizeReferralSlug(raw: string | null | undefined): string | null {
+  const slug = (raw ?? "").trim().toLowerCase();
+  return REFERRAL_SLUG.test(slug) ? slug : null;
+}
+
 export interface Attribution {
   /** utm_source, or "referral" when only a referrer was present. */
   source?: string;
@@ -85,15 +100,68 @@ export function captureAttribution(): void {
   }
 }
 
+/** The only page whose `?ref=` means "an accountant sent me". */
+const REFERRAL_LANDING = "/from-accountant";
+
+/**
+ * Remember which accountant's link brought this visitor. Runs on every page
+ * load but writes only on /from-accountant with a valid `?ref=` (a generic
+ * `?ref=facebook` on another page must not block a real accountant later),
+ * and the first one recorded stays.
+ */
+export function captureReferral(): void {
+  try {
+    if (typeof window === "undefined") return;
+    const path = window.location.pathname.replace(/\/+$/, "");
+    if (path !== REFERRAL_LANDING) return;
+    const ref = normalizeReferralSlug(new URLSearchParams(window.location.search).get("ref"));
+    if (!ref) return;
+    if (readReferral()) return; // first VALID referral wins; junk in the key does not block
+    window.localStorage.setItem(REF_KEY, JSON.stringify({ ref, at: new Date().toISOString() }));
+  } catch {
+    // Storage unavailable or blocked. Best effort, like attribution.
+  }
+}
+
+/**
+ * Forget the referral once it has been written to a business row, so a second
+ * person signing up on the same browser is not attributed to the first
+ * visitor's accountant. Never throws.
+ */
+export function clearReferral(): void {
+  try {
+    window.localStorage.removeItem(REF_KEY);
+  } catch {
+    // Nothing to clear, or storage blocked.
+  }
+}
+
+/** The remembered accountant slug, or null. Never throws. */
+export function readReferral(): string | null {
+  try {
+    const raw = window.localStorage.getItem(REF_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { ref?: unknown };
+    return normalizeReferralSlug(typeof parsed.ref === "string" ? parsed.ref : null);
+  } catch {
+    return null;
+  }
+}
+
 /**
  * The recorded first touch, as a flat object safe to hand to Supabase
  * user_metadata or an analytics event. Returns {} when nothing is known,
- * so callers can spread it unconditionally.
+ * so callers can spread it unconditionally. Carries the accountant referral
+ * too, so "who came through which accountant" is one SQL query on
+ * user_metadata as well as on businesses.referred_by.
  */
 export function readAttribution(): Record<string, string> {
   const a = read();
-  if (!a) return {};
+  const ref = readReferral();
+  if (!a && !ref) return {};
   const out: Record<string, string> = {};
+  if (ref) out.signup_ref = ref;
+  if (!a) return out;
   if (a.source) out.signup_source = a.source;
   if (a.medium) out.signup_medium = a.medium;
   if (a.campaign) out.signup_campaign = a.campaign;

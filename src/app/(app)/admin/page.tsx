@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Users,
+  UserSearch,
   UserPlus,
   FileText,
   BarChart3,
@@ -25,6 +26,7 @@ import { isAdminEmail } from "@/lib/admin";
 import { formatCurrency, formatDate, formatTimeAgo } from "@/lib/format";
 import { DOCUMENT_TYPE_LABELS, type DocumentType } from "@/lib/types";
 import { ActivityFeed } from "@/components/admin-activity-feed";
+import { PARTNER_ACCOUNTANTS } from "@/lib/partner-accountants";
 
 /**
  * One account, as the operator sees it: identity, dates and counts. Nothing a
@@ -92,6 +94,8 @@ interface Stats {
     dailyChart: Array<{ date: string; count: number }>;
   };
   revenue: { inAppTurnover: number; importedTurnover: number };
+  /** Businesses per accountant referral slug (/from-accountant?ref=), ours excluded. */
+  referrals: Array<{ ref: string; businesses: number; active: number; firstAt: string; lastAt: string }>;
 }
 
 interface Health {
@@ -463,6 +467,11 @@ export default function AdminPage() {
             <FunnelBars people={stats.people} />
           </div>
 
+          {/* Accountant referrals: which personal link brought how many
+              businesses. A slug that is not yet in PARTNER_ACCOUNTANTS is the
+              cue to email that accountant for their listing details. */}
+          <ReferralsCard rows={stats.referrals ?? []} />
+
           {/* Documents by type, last 30 days. Counts only, on purpose: this
               card replaced a "last 20 documents" list that named each client
               and amount. The operator needs volume, not contents. */}
@@ -756,6 +765,55 @@ function UserRow({ user }: { user: AdminUserRow }) {
         {user.last_sign_in_at ? formatTimeAgo(user.last_sign_in_at) : "לא נכנס"}
       </td>
     </tr>
+  );
+}
+
+function ReferralsCard({ rows }: { rows: Stats["referrals"] }) {
+  const listed = new Set(PARTNER_ACCOUNTANTS.map((a) => a.slug));
+  return (
+    <div className="card-soft overflow-hidden">
+      <div className="px-5 py-3 border-b border-orange-100 flex items-center gap-2 flex-wrap">
+        <UserSearch className="w-4 h-4 text-orange-500" />
+        <h2 className="font-semibold text-stone-900">הפניות מרואי חשבון</h2>
+        <span className="text-xs text-stone-500 mr-auto">
+          לפי הקישור האישי (from-accountant?ref=), בלי החשבונות שלי. הרשימה באפליקציה ממוינת לפי "הוציאו מסמך"
+        </span>
+      </div>
+      {rows.length === 0 ? (
+        <p className="p-5 text-sm text-stone-500 italic">עדיין לא הגיע אף עסק דרך קישור של רואה חשבון</p>
+      ) : (
+        <table className="w-full text-sm">
+          <thead className="text-xs text-stone-500">
+            <tr>
+              <th className="text-right px-5 py-2 font-medium">קישור</th>
+              <th className="text-right px-3 py-2 font-medium">נרשמו</th>
+              <th className="text-right px-3 py-2 font-medium">הוציאו מסמך</th>
+              <th className="text-right px-3 py-2 font-medium">ראשון</th>
+              <th className="text-right px-3 py-2 font-medium">אחרון</th>
+              <th className="text-right px-5 py-2 font-medium">ברשימה</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.ref} className="border-t border-orange-50">
+                <td className="px-5 py-2 font-mono text-stone-900" dir="ltr">{r.ref}</td>
+                <td className="px-3 py-2 text-stone-700">{r.businesses}</td>
+                <td className="px-3 py-2 font-semibold text-stone-900">{r.active}</td>
+                <td className="px-3 py-2 text-stone-600">{formatDate(r.firstAt)}</td>
+                <td className="px-3 py-2 text-stone-600">{formatDate(r.lastAt)}</td>
+                <td className="px-5 py-2">
+                  {listed.has(r.ref) ? (
+                    <span className="text-emerald-700 font-semibold">כן</span>
+                  ) : (
+                    <span className="text-orange-700 font-semibold">עדיין לא, לשלוח מייל לפרטי הפרסום</span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
   );
 }
 

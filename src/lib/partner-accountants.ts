@@ -40,3 +40,20 @@ export const PARTNER_ACCOUNTANTS: PartnerAccountant[] = [];
 export function hasPartnerAccountants(): boolean {
   return PARTNER_ACCOUNTANTS.length > 0;
 }
+
+/**
+ * Directory order: most referred businesses first (counts keyed by slug, from
+ * businesses.referred_by), then earlier `joinedOn`, then name. Pure, so the
+ * page and the tests share it.
+ */
+export function rankPartnerAccountants(
+  list: readonly PartnerAccountant[],
+  counts: Record<string, number>,
+): PartnerAccountant[] {
+  return [...list].sort(
+    (a, b) =>
+      (counts[b.slug] ?? 0) - (counts[a.slug] ?? 0) ||
+      a.joinedOn.localeCompare(b.joinedOn) ||
+      a.name.localeCompare(b.name, "he"),
+  );
+}

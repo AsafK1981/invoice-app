@@ -190,7 +190,10 @@ export async function GET(req: NextRequest) {
         .select("day, type, document_count, document_count_30d, draft_count_30d")
         .gte("day", thirtyDaysAgo.slice(0, 10)),
       // Onboarding: count businesses (proxy for "users who finished onboarding")
-      loadAll<{ id: string; user_id: string }>("businesses", "id, user_id"),
+      loadAll<{ id: string; user_id: string; referred_by: string | null; created_at: string }>(
+        "businesses",
+        "id, user_id, referred_by, created_at",
+      ),
       // Who produced what, and when. Three columns, all metadata: the owning
       // business, the timestamp, and whether the row arrived through a bulk
       // import. Never a number, a client or an amount.
@@ -227,6 +230,31 @@ export async function GET(req: NextRequest) {
       users: allUsers,
       businesses: businessesResult,
     });
+
+    // Accountant referrals: businesses per slug from /from-accountant?ref=,
+    // and how many of them went on to produce a document in the app (the
+    // figure the directory ranks by). Slug + counts + first/last date, nothing
+    // about the businesses themselves. Our own accounts are skipped so a test
+    // signup cannot promote a slug.
+    const producingBusinesses = new Set<string>();
+    for (const row of docOwnerRows) {
+      if (!row.import_batch_id) producingBusinesses.add(row.business_id);
+    }
+    const referralMap = new Map<string, { businesses: number; active: number; firstAt: string; lastAt: string }>();
+    for (const b of businessesResult) {
+      if (!b.referred_by || internalBusinessIds.has(b.id)) continue;
+      const active = producingBusinesses.has(b.id) ? 1 : 0;
+      const cur = referralMap.get(b.referred_by);
+      if (!cur) referralMap.set(b.referred_by, { businesses: 1, active, firstAt: b.created_at, lastAt: b.created_at });
+      else {
+        cur.businesses++;
+        cur.active += active;
+        if (b.created_at < cur.firstAt) cur.firstAt = b.created_at;
+        if (b.created_at > cur.lastAt) cur.lastAt = b.created_at;
+      }
+    }
+    const referrals = Array.from(referralMap, ([ref, v]) => ({ ref, ...v }))
+      .sort((a, b) => b.active - a.active || b.businesses - a.businesses || a.firstAt.localeCompare(b.firstAt));
 
     // Documents produced per account. Bulk imports are excluded on purpose:
     // a migrated history of 300 old invoices is not 300 acts of using the
@@ -386,6 +414,7 @@ export async function GET(req: NextRequest) {
         topProducer,
         importedDocuments: importedByUserCount,
       },
+      referrals,
       subscribers: {
         paying: payingSubscribers,
         trialing: trialingSubscribers,

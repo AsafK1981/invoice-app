@@ -50,3 +50,20 @@ describe("PARTNER_ACCOUNTANTS", () => {
     expect(hasPartnerAccountants()).toBe(PARTNER_ACCOUNTANTS.length > 0);
   });
 });
+
+import { rankPartnerAccountants, type PartnerAccountant } from "@/lib/partner-accountants";
+
+describe("rankPartnerAccountants", () => {
+  const mk = (slug: string, joinedOn: string): PartnerAccountant => ({
+    slug, name: slug, city: "x", serves: [], joinedOn,
+  });
+  it("puts the accountant with the most referred businesses first, then the earlier joiner", () => {
+    const list = [mk("a", "2026-09-01"), mk("b", "2026-09-10"), mk("c", "2026-08-01")];
+    const ranked = rankPartnerAccountants(list, { b: 3, a: 1 });
+    expect(ranked.map((x) => x.slug)).toEqual(["b", "a", "c"]);
+  });
+  it("falls back to join order when there are no counts", () => {
+    const list = [mk("a", "2026-09-01"), mk("c", "2026-08-01")];
+    expect(rankPartnerAccountants(list, {}).map((x) => x.slug)).toEqual(["c", "a"]);
+  });
+});
