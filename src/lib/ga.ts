@@ -202,6 +202,21 @@ export function loadGtm(id: string): void {
  * apply (including a public suffix like co.il), which is what makes the
  * brute force safe without a public-suffix list.
  */
+/**
+ * Tell a resident GTM that analytics consent is gone BEFORE deleting its
+ * cookies. Without this, gtag rewrites _ga_<id> in its pagehide flush during
+ * the reload that follows a withdrawal (seen on a preview deploy 2026-09-27),
+ * so the cookie outlives the delete. A no-op when GTM never loaded.
+ */
+export function denyAnalyticsInPlace(): void {
+  try {
+    if (!isGtmLoaded() || !window.dataLayer) return;
+    gtag("consent", "update", { ...CONSENT_DEFAULT });
+  } catch {
+    // best effort
+  }
+}
+
 export function deleteGaCookies(): void {
   try {
     const names = document.cookie

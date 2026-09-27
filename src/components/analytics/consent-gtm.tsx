@@ -12,6 +12,7 @@ import {
 } from "@/lib/analytics-consent";
 import {
   deleteGaCookies,
+  denyAnalyticsInPlace,
   gaPageView,
   getGtmId,
   isGtmLoaded,
@@ -56,6 +57,9 @@ export function ConsentGtm() {
   useEffect(() => {
     if (!gtmId) return;
     const stored = readConsent();
+    // Sweep leftovers on every load without an accept: a withdrawal's own
+    // reload can let gtag re-write _ga_<id> after the first delete.
+    if (!stored?.analytics) deleteGaCookies();
     setChoice(stored ? (stored.analytics ? "accepted" : "declined") : "none");
   }, [gtmId]);
 
@@ -85,6 +89,7 @@ export function ConsentGtm() {
     if (!gtmId) return;
     const onReset = () => {
       clearConsent();
+      denyAnalyticsInPlace();
       deleteGaCookies();
       if (isGtmLoaded()) {
         // A fresh page with no stored choice shows the banner by itself.
@@ -107,6 +112,7 @@ export function ConsentGtm() {
     writeConsent(false);
     // Cookies left by an earlier accept go too, whether or not GTM is in
     // this window right now.
+    denyAnalyticsInPlace();
     deleteGaCookies();
     if (isGtmLoaded()) {
       window.location.reload();
