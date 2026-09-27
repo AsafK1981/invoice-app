@@ -10,11 +10,12 @@ import { Check, Copy, Mail, MessageCircle } from "lucide-react";
  * the text filled in - nothing is sent by us, and this is not the app's
  * (not yet live) WhatsApp channel.
  *
- * utm_source=accountant lets Vercel Analytics count signups that came
- * through an accountant.
+ * The link lands on /from-accountant, a one-screen page for a client who
+ * arrives warm; its own path is what Vercel Analytics counts as
+ * accountant-referred traffic.
  */
 
-const LINK = "https://friendlyinvoice.co.il/?utm_source=accountant";
+const LINK = "https://friendlyinvoice.co.il/from-accountant";
 
 const MESSAGE =
   "היי, כדי שיהיה לך פשוט להוציא קבלות וחשבוניות כמו שצריך, אני ממליץ על האפליקציה הזו. " +

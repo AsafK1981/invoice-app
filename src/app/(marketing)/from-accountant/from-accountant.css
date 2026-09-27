@@ -1,0 +1,82 @@
+/* /from-accountant - one-screen referral landing. Only the benefit list and
+   spacing live here; everything else is marketing-light as-is. */
+
+.fa-hero {
+  min-height: calc(100dvh - 140px);
+  display: flex;
+  align-items: center;
+}
+
+.fa-points {
+  list-style: none;
+  margin: 8px auto 30px;
+  padding: 0;
+  max-width: 520px;
+  display: grid;
+  gap: 14px;
+  text-align: start;
+}
+
+.fa-points li {
+  display: grid;
+  grid-template-columns: 30px 1fr;
+  gap: 12px;
+  align-items: start;
+  background: var(--ml-card);
+  border: 1px solid var(--ml-line-soft);
+  border-radius: 14px;
+  padding: 14px 16px;
+  box-shadow: var(--ml-shadow-sm);
+}
+
+.fa-tick {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: var(--ml-gold-tint);
+  border: 1px solid var(--ml-gold-tint-line);
+  color: var(--ml-gold-ink);
+}
+
+.fa-tick svg {
+  width: 16px;
+  height: 16px;
+}
+
+.fa-points strong {
+  display: block;
+  color: var(--ml-ink-head);
+  font-weight: 700;
+  font-size: 16px;
+  margin-bottom: 2px;
+}
+
+.fa-point-body {
+  display: block;
+  color: var(--ml-muted);
+  font-size: 14.5px;
+  line-height: 1.6;
+}
+
+.fa-more {
+  margin-top: 22px;
+  font-size: 14.5px;
+  color: var(--ml-muted);
+}
+
+.fa-more a {
+  color: var(--ml-gold-ink);
+  font-weight: 600;
+  text-underline-offset: 3px;
+}
+
+@media (max-width: 760px) {
+  .fa-hero {
+    min-height: auto;
+  }
+  .fa-points {
+    margin-bottom: 24px;
+  }
+}
