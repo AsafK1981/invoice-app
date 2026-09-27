@@ -75,23 +75,6 @@
   margin: 0;
 }
 
-/* Secondary hero action: a quiet text link beside the primary button, so
-   the hero keeps exactly one filled CTA. */
-.acc-hero-alt {
-  color: var(--ml-ink);
-  font-weight: 600;
-  text-decoration: underline;
-  text-decoration-color: var(--ml-gold-tint-line);
-  text-underline-offset: 4px;
-  transition: text-decoration-color 0.2s ease, color 0.2s ease;
-}
-
-.acc-hero-alt:hover,
-.acc-hero-alt:focus-visible {
-  color: var(--ml-gold-ink);
-  text-decoration-color: currentColor;
-}
-
 /* The homepage stacks many sections between the grid and the FAQ, so its
    paddings are sized for that. Here the FAQ follows the grid directly and
    the two paddings added up to a ~150px hole. */

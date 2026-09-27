@@ -1,7 +1,11 @@
 import type { CSSProperties, ReactNode } from "react";
 import Link from "next/link";
 import {
+  ArrowLeftRight,
+  BellRing,
   BookOpen,
+  Camera,
+  Coins,
   Download,
   FileCheck,
   FileSpreadsheet,
@@ -9,15 +13,17 @@ import {
   Gauge,
   Gift,
   Hash,
+  MessageSquareText,
   Receipt,
   TrendingUp,
+  UserRound,
 } from "lucide-react";
 import HeaderLight from "../components/HeaderLight";
 import FooterLight from "../components/FooterLight";
 import JsonLd from "../components/JsonLd";
 import SignupLink from "../components/SignupLink";
 import { graph, faqPage } from "@/lib/jsonld";
-import { Ltr, LtrText } from "@/components/ui/ltr";
+import { LtrText } from "@/components/ui/ltr";
 import { pageMetadata } from "@/lib/page-metadata";
 import "../marketing-light.css";
 import "./accountants.css";
@@ -34,34 +40,34 @@ export const metadata = pageMetadata({
  * /accountants - where an accountant lands from the outreach pilot, and what
  * accountants find when they search for a tool to recommend to small clients.
  *
- * Built on the homepage design system (marketing-light.css) on purpose: the
- * first version used the /security legal-document layout and read as a long
- * bulleted list (Asaf, 2026-09-27: "not laid out nicely, make it friendlier,
- * more attractive, more comfortable").
+ * Built on the homepage design system (marketing-light.css). Asaf's calls,
+ * 2026-09-27:
+ *   - v1 used the /security document layout and read as a long list -> rebuilt.
+ *   - No demo / "let's talk" offer anywhere: he does not want calls. The page
+ *     sends accountants to sign up and look for themselves instead.
+ *   - No personal name or email on this page (FooterLight hides its operator
+ *     line on this path only).
+ *   - More benefits, starting with "no credit card, check it yourself".
  *
- * Same rule as /security: every sentence is a shipped fact. Sources:
- *   document types      src/lib/document-store.ts
- *   allocation numbers  src/lib/ita/*
- *   ceiling alert       advantages.tsx
- *   reports             advantages.tsx "reports" card + src/app/(app)/reports/*
- *   1301 / capital      src/lib/csv-export.ts - DRAFTS for the accountant,
- *                       not filled forms. Keep the words עזר / טיוטה.
+ * Every sentence is a shipped fact. Sources:
+ *   benefits            src/app/(marketing)/advantages.tsx (the WhatsApp card
+ *                       is deliberately NOT used - the channel is not live)
+ *   reports             advantages.tsx "reports" + src/app/(app)/reports/*
+ *   1301 / capital      src/lib/csv-export.ts - DRAFTS, keep עזר / טיוטה
  *   uniform structure   src/lib/uniform-structure + /api/uniform-structure/export
  *   locked documents    /security
  * There is NO accountant login into a client's account (/portal is for the
  * business's own customers). Do not claim one until it ships.
  */
 
-const DEMO_MAIL = `mailto:asafkotlar@gmail.com?subject=${encodeURIComponent(
-  "הדגמה של חשבונית ידידותית לרואי חשבון",
-)}`;
+type Card = { tone: string; icon: ReactNode; title: string; body: string; flagship?: boolean };
 
 const CLIENT_CARDS: { tone: string; icon: ReactNode; k: string; body: string }[] = [
   {
     tone: "amber",
     icon: <Gift aria-hidden="true" />,
-    k: "חינמי בתקופת ההשקה",
-    body: "בלי כרטיס אשראי ובלי התחייבות, כך שאין ללקוח שום חסם להתחיל.",
+    k: "בלי כרטיס אשראי",
+    body: "חינמי בתקופת ההשקה ובלי התחייבות. אפשר להיכנס ולבדוק הכול בעצמכם, עוד לפני שממליצים.",
   },
   {
     tone: "sky",
@@ -79,11 +85,11 @@ const CLIENT_CARDS: { tone: string; icon: ReactNode; k: string; body: string }[]
     tone: "violet",
     icon: <Gauge aria-hidden="true" />,
     k: "התראת תקרת עוסק פטור",
-    body: "הלקוח רואה בזמן אמת כמה נשאר לו עד התקרה, ומקבל התראה לפני שהוא חוצה אותה.",
+    body: "הלקוח רואה בכל רגע כמה נשאר לו עד התקרה השנתית, כולל חשבוניות זיכוי.",
   },
 ];
 
-const REPORTS: { tone: string; icon: ReactNode; title: string; body: string; flagship?: boolean }[] = [
+const REPORTS: Card[] = [
   {
     tone: "indigo",
     icon: <FileSpreadsheet aria-hidden="true" />,
@@ -123,10 +129,53 @@ const REPORTS: { tone: string; icon: ReactNode; title: string; body: string; fla
   },
 ];
 
+const MORE_BENEFITS: Card[] = [
+  {
+    tone: "indigo",
+    icon: <MessageSquareText aria-hidden="true" />,
+    title: "עוזר AI בעברית",
+    body: "הלקוח שואל בשפה חופשית, מוצא מסמכים ומקבל טיוטות מוכנות לאישור. לא בטוח איך עושים משהו? העוזר מסביר צעד אחר צעד.",
+  },
+  {
+    tone: "amber",
+    icon: <Camera aria-hidden="true" />,
+    title: "סריקת הוצאות בצילום",
+    body: "מצלמים קבלה והמערכת ממלאת ספק, סכום, מע״מ ותאריך. גם צילום מסך של ביט או העברה בנקאית.",
+  },
+  {
+    tone: "rose",
+    icon: <BellRing aria-hidden="true" />,
+    title: "תזכורות אוטומטיות",
+    body: "תזכורת חודשית להוציא מסמכים, ותזכורות תשלום ללקוחות שמאחרים, במייל ובאפליקציה.",
+  },
+  {
+    tone: "green",
+    icon: <ArrowLeftRight aria-hidden="true" />,
+    title: "מעבר קל מכל תוכנה",
+    body: "ייבוא היסטוריה מ-Excel ומהתוכנות המוכרות, עם אשפי מעבר, בלי לאבד אף מסמך.",
+  },
+  {
+    tone: "sky",
+    icon: <UserRound aria-hidden="true" />,
+    title: "אזור אישי ללקוחות שלו",
+    body: "הלקוחות של העסק רואים את כל המסמכים שלהם במקום אחד, כולל מה שולם ומה ממתין.",
+  },
+  {
+    tone: "orange",
+    icon: <Coins aria-hidden="true" />,
+    title: "חשבוניות בדולר ובאירו",
+    body: "השער היציג של בנק ישראל נמשך לבד, והסכום בשקלים נשמר בשביל הדוחות והמע״מ.",
+  },
+];
+
 const FAQ: { q: string; a: string }[] = [
   {
+    q: "אפשר לבדוק את המערכת בעצמנו?",
+    a: "כן. נרשמים בחינם, בלי כרטיס אשראי, ורואים בדיוק את מה שהלקוח רואה: הוצאת מסמכים, מספרי הקצאה והדוחות.",
+  },
+  {
     q: "אני יכול להיכנס לחשבון של הלקוח?",
-    a: "כרגע לא. הלקוח מפיק את הדוחות ואת קובץ המבנה האחיד ושולח לכם אותם. אם גישה ישירה חשובה לכם, ספרו לנו - זה בדיוק סוג המשוב שקובע מה נבנה הלאה.",
+    a: "כרגע לא. הלקוח מפיק את הדוחות ואת קובץ המבנה האחיד ושולח לכם אותם.",
   },
   {
     q: "מה הקאץ׳?",
@@ -134,7 +183,7 @@ const FAQ: { q: string; a: string }[] = [
   },
   {
     q: "הלקוח כבר עובד עם תוכנה אחרת.",
-    a: "אין סיבה להחליף מה שעובד. הכלי מתאים במיוחד לעוסקים קטנים שמרגישים שהתוכנה הנוכחית יקרה או מסובכת בשבילם.",
+    a: "אין סיבה להחליף מה שעובד. הכלי מתאים במיוחד לעוסקים קטנים שמרגישים שהתוכנה הנוכחית יקרה או מסובכת בשבילם, ויש אשפי מעבר שמייבאים את ההיסטוריה.",
   },
   {
     q: "מה קורה עם מסמך שכבר נשלח?",
@@ -159,6 +208,30 @@ function CheckIcon() {
     >
       <path d="M3 8.5l3 3 7-7" />
     </svg>
+  );
+}
+
+function CardGrid({ items }: { items: Card[] }) {
+  return (
+    <div className="ml-adv-grid">
+      {items.map((r, index) => (
+        <article
+          className={`ml-adv-card${r.flagship ? " is-flagship" : ""} ml-adv-card--${r.tone}`}
+          key={r.title}
+          style={{ "--i": index } as CSSProperties}
+        >
+          <div className={`ml-adv-icon ml-adv-icon--${r.tone}`} aria-hidden="true">
+            {r.icon}
+          </div>
+          <h3>
+            <LtrText text={r.title} />
+          </h3>
+          <p>
+            <LtrText text={r.body} />
+          </p>
+        </article>
+      ))}
+    </div>
   );
 }
 
@@ -187,15 +260,15 @@ export default function AccountantsPage() {
               </p>
               <div className="ml-hero-actions">
                 <SignupLink className="ml-btn ml-btn-primary ml-btn-lg">
-                  נסו את המערכת בחינם
+                  היכנסו ובדקו בעצמכם
                 </SignupLink>
-                <a className="acc-hero-alt" href={DEMO_MAIL}>
-                  או תאמו הדגמה של 10 דקות
-                </a>
+                <span className="ml-hero-note">
+                  חינם בתקופת ההשקה, בלי כרטיס אשראי
+                </span>
               </div>
               <ul className="ml-trust-row">
                 <li>
-                  <CheckIcon /> חינם בתקופת ההשקה
+                  <CheckIcon /> בלי כרטיס אשראי
                 </li>
                 <li>
                   <CheckIcon /> מספרי הקצאה אוטומטיים
@@ -251,26 +324,18 @@ export default function AccountantsPage() {
                 <h2>הדוחות שאתם צריכים, מוכנים</h2>
                 <p>הלקוח מפיק ושולח אותם בלחיצה, במקום ערימת קבלות.</p>
               </div>
+              <CardGrid items={REPORTS} />
+            </div>
+          </section>
 
-              <div className="ml-adv-grid">
-                {REPORTS.map((r, index) => (
-                  <article
-                    className={`ml-adv-card${r.flagship ? " is-flagship" : ""} ml-adv-card--${r.tone}`}
-                    key={r.title}
-                    style={{ "--i": index } as CSSProperties}
-                  >
-                    <div className={`ml-adv-icon ml-adv-icon--${r.tone}`} aria-hidden="true">
-                      {r.icon}
-                    </div>
-                    <h3>
-                      <LtrText text={r.title} />
-                    </h3>
-                    <p>
-                      <LtrText text={r.body} />
-                    </p>
-                  </article>
-                ))}
+          <section className="ml-advantages acc-more" id="benefits">
+            <div className="ml-wrap">
+              <div className="ml-adv-head">
+                <span className="ml-adv-tag">ומה עוד הלקוח מקבל</span>
+                <h2>כלי שהלקוח באמת ירצה להשתמש בו</h2>
+                <p>לקוח שנהנה מהכלי מוציא מסמכים בזמן, וזה מה שמגיע אליכם בסוף.</p>
               </div>
+              <CardGrid items={MORE_BENEFITS} />
             </div>
           </section>
 
@@ -311,15 +376,15 @@ export default function AccountantsPage() {
 
           <section className="ml-midcta">
             <div className="ml-wrap ml-midcta-in">
-              <p className="ml-midcta-slogan">רוצים לראות לפני שממליצים?</p>
+              <p className="ml-midcta-slogan">הכי פשוט: לראות בעיניים.</p>
               <p className="ml-midcta-t">
-                כתבו לי ואראה לכם את המערכת בעשר דקות, או פשוט נסו אותה בעצמכם.
+                נרשמים בחינם ובודקים בדיוק את מה שהלקוח יקבל.
               </p>
-              <a className="ml-btn ml-btn-primary ml-btn-sm" href={DEMO_MAIL}>
-                תאמו הדגמה
-              </a>
+              <SignupLink className="ml-btn ml-btn-primary ml-btn-sm">
+                היכנסו ובדקו בעצמכם
+              </SignupLink>
               <span className="ml-midcta-note">
-                אסף קוטלר · <Ltr>asafkotlar@gmail.com</Ltr>
+                בלי כרטיס אשראי · בלי התחייבות
               </span>
             </div>
           </section>

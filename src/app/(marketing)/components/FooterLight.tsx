@@ -35,11 +35,16 @@ export default function FooterLight() {
           <Link href="/security">אבטחת מידע</Link>
           <Link href="/accessibility">נגישות</Link>
         </nav>
-        {/* Mirrors FooterV2: see the note there for why no מספר עוסק yet. */}
-        <span className="ml-footer-who">
-          מופעל על ידי אסף קוטלר ·{" "}
-          <a href="mailto:asafkotlar@gmail.com">asafkotlar@gmail.com</a>
-        </span>
+        {/* Mirrors FooterV2: see the note there for why no מספר עוסק yet.
+            Hidden on /accountants only (Asaf, 2026-09-27: no personal name or
+            email on the accountants page). Every other page keeps the
+            operator line - dropping it sitewide is a separate decision. */}
+        {pathname !== "/accountants" ? (
+          <span className="ml-footer-who">
+            מופעל על ידי אסף קוטלר ·{" "}
+            <a href="mailto:asafkotlar@gmail.com">asafkotlar@gmail.com</a>
+          </span>
+        ) : null}
         <span className="ml-footer-copy">נבנה באהבה לעסקים עצמאיים בישראל</span>
       </div>
     </footer>
