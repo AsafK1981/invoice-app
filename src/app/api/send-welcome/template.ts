@@ -69,7 +69,7 @@ export function buildWelcomeHtml(): string {
   const lockup = `<table ${TABLE} align="center">
     <tr><td align="center" style="padding-bottom:10px;"><img src="${logo}" width="56" height="56" alt="" style="display:block;border-radius:14px;"></td></tr>
     <tr><td align="center" style="font-family:${FONT};font-size:19px;font-weight:700;color:${INK};line-height:1.1;">חשבונית ידידותית</td></tr>
-    <tr><td align="center" dir="ltr" style="font-family:${SERIF};font-size:14px;color:${ORANGE};line-height:1.3;padding-top:2px;">Friendly Invoice</td></tr>
+    <tr><td align="center" dir="ltr" style="font-family:${SERIF};font-size:18.5px;color:${ORANGE};line-height:1.2;padding-top:2px;">Friendly Invoice</td></tr>
   </table>`;
 
   const note = `<table ${TABLE} width="100%"><tr>

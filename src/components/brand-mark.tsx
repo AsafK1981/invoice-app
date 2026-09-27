@@ -78,6 +78,17 @@ export function BrandMark({ size = 32, className, title, badge = true }: BrandMa
   );
 }
 
+/**
+ * Font size of "Friendly Invoice" as a fraction of the Hebrew name's font
+ * size. Measured 2026-09-27 on the live fonts: at an equal font size the
+ * Hebrew name (Heebo 700) runs 773 units wide and the Latin signature
+ * (Playfair Display 500, 0.01em tracking) 748, so equal width is 1.034.
+ * Asaf's call: the signature sits a touch inside the Hebrew line, about
+ * 95% of its width, never narrower than that (the old 0.76 read as a
+ * shrunken afterthought). 0.95 x 1.034 = 0.98.
+ */
+const LATIN_TO_HEBREW = 0.98;
+
 type BrandLockupProps = {
   /** Mark size in px; the wordmark scales with it. */
   size?: number;
@@ -100,7 +111,7 @@ type BrandLockupProps = {
  */
 export function BrandLockup({ size = 32, tagline = false, className, tone = "light" }: BrandLockupProps) {
   const hebrew = Math.round(size * 0.5);
-  const latin = Math.round(size * 0.38);
+  const latin = +(hebrew * LATIN_TO_HEBREW).toFixed(2);
   const dark = tone === "dark";
   return (
     <span
