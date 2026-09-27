@@ -1,0 +1,124 @@
+/* /accountants - the only piece the homepage design system lacks: a short
+   "how it works" strip. Everything else on the page reuses marketing-light
+   classes as-is, so this file stays small and on the same tokens. */
+
+.acc-steps {
+  padding: 64px 0 24px;
+}
+
+.acc-steps-head {
+  text-align: center;
+  margin: 0 auto 28px;
+  max-width: 560px;
+}
+
+.acc-steps-head h2 {
+  font-size: clamp(24px, 3vw, 32px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--ml-ink-head);
+  margin: 0 0 8px;
+  text-wrap: balance;
+}
+
+.acc-steps-head p {
+  color: var(--ml-muted);
+  margin: 0;
+}
+
+.acc-steps-list {
+  list-style: none;
+  margin: 0 auto;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  counter-reset: acc-step;
+}
+
+.acc-step {
+  position: relative;
+  background: var(--ml-card);
+  border: 1px solid var(--ml-line-soft);
+  border-radius: 18px;
+  padding: 22px 22px 24px;
+  box-shadow: var(--ml-shadow-sm);
+  counter-increment: acc-step;
+}
+
+.acc-step::before {
+  content: counter(acc-step);
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--ml-gold-tint);
+  border: 1px solid var(--ml-gold-tint-line);
+  color: var(--ml-gold-ink);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 14px;
+}
+
+.acc-step h3 {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--ml-ink-head);
+  margin: 0 0 6px;
+}
+
+.acc-step p {
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--ml-muted);
+  margin: 0;
+}
+
+/* Secondary hero action: a quiet text link beside the primary button, so
+   the hero keeps exactly one filled CTA. */
+.acc-hero-alt {
+  color: var(--ml-ink);
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: var(--ml-gold-tint-line);
+  text-underline-offset: 4px;
+  transition: text-decoration-color 0.2s ease, color 0.2s ease;
+}
+
+.acc-hero-alt:hover,
+.acc-hero-alt:focus-visible {
+  color: var(--ml-gold-ink);
+  text-decoration-color: currentColor;
+}
+
+/* The homepage stacks many sections between the grid and the FAQ, so its
+   paddings are sized for that. Here the FAQ follows the grid directly and
+   the two paddings added up to a ~150px hole. */
+.acc-main .ml-advantages {
+  padding-bottom: 32px;
+}
+
+.acc-main .ml-faq {
+  padding-top: 24px;
+}
+
+@media (max-width: 760px) {
+  .acc-steps {
+    padding: 40px 0 8px;
+  }
+  .acc-steps-list {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .acc-step {
+    display: grid;
+    grid-template-columns: 34px 1fr;
+    column-gap: 14px;
+    padding: 18px;
+  }
+  .acc-step::before {
+    grid-row: span 2;
+    margin-bottom: 0;
+  }
+}
