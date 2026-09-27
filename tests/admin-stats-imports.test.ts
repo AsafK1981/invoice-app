@@ -39,8 +39,10 @@ it("excludes imports from recent creation metrics and uses full aggregate counts
   const chart = state.queries.find(q => q.table === "documents" && q.columns === "created_at"); expect(chart?.filters).toContain("import_batch_id:null");
   // Exactly one read of `documents` may see imported rows: the per-owner one,
   // which has to see them to tell "produced in the app" from "migrated in".
-  // Every OTHER read of created_at still filters them out at the database.
-  const unfiltered = state.queries.filter(q => q.columns.includes("created_at") && !q.filters.includes("import_batch_id:null"));
+  // Every OTHER read of created_at on `documents` still filters them out at
+  // the database. (`businesses` also reads created_at, for the accountant
+  // referral card; it has no import_batch_id and is not a creation metric.)
+  const unfiltered = state.queries.filter(q => q.table === "documents" && q.columns.includes("created_at") && !q.filters.includes("import_batch_id:null"));
   expect(unfiltered.map(q => q.columns)).toEqual(["business_id, created_at, import_batch_id"]);
 });
 it("does not silently display empty creation metrics when aggregation fails", async () => {

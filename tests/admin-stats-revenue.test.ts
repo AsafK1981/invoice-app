@@ -70,7 +70,7 @@ vi.mock("@supabase/supabase-js", () => ({
           if (table === "documents" && columns.includes("business_id")) {
             return Promise.resolve(resolve({ data: page(state.paidDocs), error: null }));
           }
-          if (table === "businesses" && columns === "id, user_id") {
+          if (table === "businesses" && columns.startsWith("id, user_id")) {
             return Promise.resolve(resolve({ data: page(state.businesses), error: null }));
           }
           return Promise.resolve(resolve({ data: head ? null : [], count: 0, error: null }));
