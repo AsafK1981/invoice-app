@@ -132,7 +132,8 @@ export function ConsentGtm() {
     >
       <p className="fi-consent-text">
         אנחנו משתמשים בעוגיות של Google Analytics כדי להבין איך מגיעים אלינו
-        ולשפר את האתר. רק אם תאשר/י.{" "}
+        ולשפר את האתר (כולל מדידת האפקטיביות של המודעות שלנו). רק אם
+        תאשר/י.{" "}
         <Link href="/privacy" className="fi-consent-link">
           מדיניות פרטיות
         </Link>
