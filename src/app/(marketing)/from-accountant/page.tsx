@@ -71,7 +71,17 @@ export default function FromAccountantPage() {
         <main id="main-content">
           <section className="ml-hero fa-hero">
             <div className="ml-wrap ml-hero-in">
-              <span className="ml-eyebrow">רואה החשבון שלך המליץ עלינו</span>
+              {/* The referral line is the one thing the visitor already
+                  trusts, so it gets the room: a larger pill with the brand
+                  check that pops in on load (Asaf, 2026-09-27: "יותר בולט,
+                  יותר גדול, שיקפוץ"). Motion lives in from-accountant.css
+                  behind prefers-reduced-motion. */}
+              <span className="ml-eyebrow fa-eyebrow">
+                <span className="fa-eyebrow-icon" aria-hidden="true">
+                  <CheckIcon />
+                </span>
+                רואה החשבון שלך המליץ עלינו
+              </span>
               <h1 className="ml-hero-h1">
                 להוציא קבלות וחשבוניות,{" "}
                 <br />
