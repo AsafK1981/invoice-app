@@ -18,15 +18,15 @@ import "./video.css";
  * No personal name/email/phone here (FooterLight hides its operator line on
  * this path).
  */
-const VIDEO_SRC = "/video/friendly-invoice-promo.mp4";
-const POSTER_SRC = "/video/friendly-invoice-promo-poster.jpg";
+const VIDEO_SRC = "/video/friendly-invoice-promo-v2.mp4";
+const POSTER_SRC = "/video/friendly-invoice-promo-v2-poster.jpg";
 
 const base = pageMetadata({
   path: "/video",
   title: "ככה מוציאים חשבונית ב-20 שניות",
   ogTitle: "ככה מוציאים חשבונית ב-20 שניות | חשבונית ידידותית",
   description:
-    "סרטון קצר: חשבונית חדשה, מספר הקצאה אוטומטי ושליחה ללקוח בוואטסאפ. חודשיים ראשונים חינם.",
+    "סרטון קצר: חשבונית חדשה, מספר הקצאה אוטומטי ושליחה ללקוח בוואטסאפ. חודש ראשון חינם.",
 });
 
 export const metadata: Metadata = {
@@ -76,7 +76,7 @@ export default function VideoPage() {
 
             <div className="ml-hero-actions vid-actions">
               <SignupLink className="ml-btn ml-btn-primary ml-btn-lg">
-                להתחיל - חודשיים ראשונים חינם
+                להתחיל - חודש ראשון חינם
               </SignupLink>
               <span className="ml-hero-note">בלי כרטיס אשראי</span>
             </div>
