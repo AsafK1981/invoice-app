@@ -2817,6 +2817,232 @@
    ~460-520px, which is the reading measure, so the paragraph fills its card
    instead of leaving half of it black.
    ------------------------------------------------------------ */
+/* ============================================================
+   /pricing (2026-09-28): one plan table + a compact "מה כלול" strip.
+   Asaf: "לסדר אותו לטבלה אחת שמראה את אותם פרמטרים... לכל תוכנית" and
+   "תקטין את כל האייקונים... שאפשר יהיה ללחוץ עליהם כדי לפתוח ולקרוא".
+   The table replaces the two .v2-price-card columns; the strip replaces the
+   twelve full .v2-adv-card cards with 34px tiles that open ONE shared panel.
+   Colours and radii are the tokens the cards used, so nothing reads new.
+   ============================================================ */
+.v2-theme .v2-plan-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--v2-line-soft);
+  border-radius: var(--v2-r-lg);
+  background: var(--v2-card);
+  box-shadow: var(--v2-sh-rest), var(--v2-sh-inset);
+}
+.v2-theme .v2-plan-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--v2-fs-body);
+}
+.v2-theme .v2-plan-table th,
+.v2-theme .v2-plan-table td {
+  padding: 11px 16px;
+  text-align: center;
+  vertical-align: middle;
+  border-top: 1px solid var(--v2-line-soft);
+}
+.v2-theme .v2-plan-table th[scope="row"] {
+  text-align: start;
+  font-weight: 500;
+  color: var(--v2-ink);
+  width: 40%;
+}
+.v2-theme .v2-plan-table thead th {
+  border-top: 0;
+  vertical-align: bottom;
+  padding-top: 20px;
+  padding-bottom: 14px;
+}
+.v2-theme .v2-plan-table thead .name {
+  display: block;
+  font-family: var(--font-inter), var(--font-heebo), system-ui, sans-serif;
+  font-weight: 700;
+  font-size: var(--v2-fs-h3);
+  color: var(--v2-ink);
+  line-height: 1.2;
+}
+.v2-theme .v2-plan-table thead .price {
+  display: block;
+  margin-top: 3px;
+  font-size: var(--v2-fs-meta);
+  color: var(--v2-muted);
+  font-variant-numeric: tabular-nums;
+}
+/* Pro column: the same faint orange wash .v2-price-card.win wears. */
+.v2-theme .v2-plan-table .win { background: rgba(217, 106, 29, 0.05); }
+.v2-theme .v2-plan-table thead .win .name { color: var(--v2-g1); }
+/* "ללא הגבלה" pill above the Pro name: the flat gold .badge pill, but in
+   flow (a table header cannot host an absolutely positioned pill). */
+.v2-theme .v2-plan-table thead .pill {
+  display: inline-flex;
+  margin-bottom: 6px;
+  font-size: var(--v2-fs-micro);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--v2-g1);
+  padding: 3px 10px;
+  border-radius: var(--v2-r-pill);
+  background: var(--v2-gold-tint);
+  border: 1px solid var(--v2-gold-tint-line);
+}
+.v2-theme .v2-plan-table .yes,
+.v2-theme .v2-plan-table .no {
+  display: inline-flex;
+  vertical-align: middle;
+}
+.v2-theme .v2-plan-table .yes svg { width: 18px; height: 18px; color: var(--v2-yes); }
+.v2-theme .v2-plan-table .no svg { width: 16px; height: 16px; color: #C9C1B6; }
+.v2-theme .v2-plan-table .val {
+  font-weight: 700;
+  color: var(--v2-ink);
+  font-variant-numeric: tabular-nums;
+}
+.v2-theme .v2-plan-table tr.trial th,
+.v2-theme .v2-plan-table tr.trial td { border-top: 2px solid var(--v2-line); }
+.v2-theme .v2-plan-table tr.trial .val { color: var(--v2-g1); }
+.v2-theme .v2-plan-foot {
+  margin-top: var(--v2-sp-2);
+  text-align: center;
+  font-size: var(--v2-fs-meta);
+  color: var(--v2-muted);
+}
+
+/* ---- "מה כלול" strip ---- */
+.v2-theme .v2-inc-hint {
+  text-align: center;
+  font-size: var(--v2-fs-meta);
+  color: var(--v2-muted);
+  margin-bottom: var(--v2-sp-2);
+}
+/* Three-up on a phone, four-up from 720px, six-up at the desktop tier (see
+   the min-width: 1000px block): twelve tiles = two rows on desktop. */
+.v2-theme .v2-inc-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.v2-theme .v2-inc-tile {
+  appearance: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  min-height: 92px;
+  padding: 12px 8px 10px;
+  border-radius: var(--v2-r-md);
+  border: 1px solid var(--v2-line-soft);
+  background: var(--v2-card);
+  box-shadow: var(--v2-sh-rest), var(--v2-sh-inset);
+  color: var(--v2-ink);
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color 160ms ease-out, border-color 160ms ease-out,
+    transform 160ms ease-out;
+}
+.v2-theme .v2-inc-tile .v2-adv-icon {
+  width: 34px;
+  height: 34px;
+  margin: 0;
+  border-radius: var(--v2-r-sm);
+  box-shadow: none;
+}
+.v2-theme .v2-inc-tile .v2-adv-icon svg { width: 17px; height: 17px; }
+.v2-theme .v2-inc-tile .lbl {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.v2-theme .v2-inc-tile .v2-adv-soon { margin: 0; padding: 1px 7px; font-size: 10px; }
+.v2-theme .v2-inc-tile.is-open,
+.v2-theme .v2-inc-tile:focus-visible {
+  border-color: var(--v2-gold-tint-line);
+  background: var(--v2-gold-tint);
+}
+.v2-theme .v2-inc-tile:focus-visible { outline: 2px solid var(--v2-g1); outline-offset: 2px; }
+@media (hover: hover) {
+  .v2-theme .v2-inc-tile:hover {
+    border-color: var(--v2-gold-tint-line);
+    background: #FFF8F2;
+    transform: translateY(-2px);
+  }
+}
+/* The flagship tile outside a .v2-adv-card: same gradient as
+   `.v2-adv-card.is-flagship .v2-adv-icon`. */
+.v2-theme .v2-adv-icon.is-flagship {
+  background: var(--v2-cta-grad);
+  color: #ffffff;
+}
+.v2-theme .v2-inc-panel {
+  position: relative;
+  margin-top: 12px;
+  padding: var(--v2-sp-3);
+  padding-inline-end: 52px;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  border-radius: var(--v2-r-lg);
+  border: 1px solid var(--v2-gold-tint-line);
+  background: #FFF8F2;
+}
+.v2-theme .v2-inc-panel[hidden] { display: none; }
+.v2-theme .v2-inc-panel .v2-adv-icon { flex: none; margin: 0; }
+.v2-theme .v2-inc-panel .txt { min-width: 0; }
+.v2-theme .v2-inc-panel h3 {
+  font-family: var(--font-inter), var(--font-heebo), system-ui, sans-serif;
+  font-weight: 700;
+  font-size: var(--v2-fs-h3);
+  color: var(--v2-ink);
+  margin-bottom: 6px;
+}
+.v2-theme .v2-inc-panel p {
+  font-size: var(--v2-fs-body);
+  line-height: 1.7;
+  color: var(--v2-muted);
+}
+.v2-theme .v2-inc-panel .close {
+  position: absolute;
+  top: 12px;
+  inset-inline-end: 12px;
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--v2-r-pill);
+  border: 1px solid var(--v2-gold-tint-line);
+  background: var(--v2-card);
+  color: var(--v2-muted);
+  cursor: pointer;
+}
+.v2-theme .v2-inc-panel .close svg { width: 16px; height: 16px; }
+.v2-theme .v2-inc-panel .close:focus-visible { outline: 2px solid var(--v2-g1); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  .v2-theme .v2-inc-tile:hover { transform: none; }
+}
+
+@media (min-width: 720px) {
+  .v2-theme .v2-inc-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+@media (max-width: 520px) {
+  .v2-theme .v2-plan-table { font-size: 13px; }
+  .v2-theme .v2-plan-table th,
+  .v2-theme .v2-plan-table td { padding: 9px 5px; }
+  .v2-theme .v2-plan-table th[scope="row"] { width: 31%; font-size: 12.5px; padding-inline-start: 10px; }
+  .v2-theme .v2-plan-table .val { font-size: 12.5px; }
+  .v2-theme .v2-plan-table thead .name { font-size: 14px; }
+  .v2-theme .v2-plan-table thead .price { font-size: 12px; }
+  .v2-theme .v2-plan-table thead .pill { letter-spacing: 0.08em; padding: 2px 7px; }
+  .v2-theme .v2-inc-tile { min-height: 84px; padding: 10px 6px 8px; }
+  .v2-theme .v2-inc-tile .lbl { font-size: 12px; }
+  .v2-theme .v2-inc-panel { padding: 18px; padding-inline-end: 48px; gap: 12px; }
+}
+
 @media (min-width: 1000px) {
   .v2-theme { --v2-header-h: 90px; }
 
@@ -2931,6 +3157,9 @@
      brief asks for exactly two states, phone and desktop. */
   .v2-theme .v2-adv-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .v2-theme .v2-inc-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
   }
 
   /* ---- /vs/<competitor>: the two remaining wide-container blocks ---- */

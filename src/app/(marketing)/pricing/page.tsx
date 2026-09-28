@@ -1,6 +1,6 @@
 import { shekel } from "@/lib/format";
 import Link from "next/link";
-import { ArrowRight, ArrowLeft, Check } from "lucide-react";
+import { ArrowRight, ArrowLeft, Check, Minus } from "lucide-react";
 import { Ltr, LtrText } from "@/components/ui/ltr";
 import { pageMetadata } from "@/lib/page-metadata";
 import {
@@ -15,7 +15,9 @@ import FooterV2 from "../components/FooterV2";
 import JsonLd from "../components/JsonLd";
 import RelatedLinks from "../components/RelatedLinks";
 import SignupLink from "../components/SignupLink";
-import { PRICING_ADVANTAGES } from "../advantages";
+import IncludedFeatures from "../components/IncludedFeatures";
+import { PRICING_INCLUDED } from "../advantages";
+import { PLANS } from "@/lib/plans";
 
 export const metadata = pageMetadata({
   path: "/pricing",
@@ -60,11 +62,65 @@ const PRICING_FAQ_ITEMS: { q: string; a: string }[] = [
  * ../advantages.tsx, the same array the homepage grid and spotlight band
  * render (2026-08-24, Asaf: "למה פה זה בלי צבעים ובדף הראשי זה עם צבעים...
  * אני צריך שזה יראה בדיוק אותו דבר באותן צבעים ובאותם אייקונים ושזה ירשום
- * אותו דבר"). This page previously re-typed nine titles by hand with its own
- * flat gold icons and no body copy; that is what drifted. Nothing here picks
- * icons, colors or wording any more - PRICING_ADVANTAGES only names which
- * nine cards appear and in what order.
+ * אותו דבר"). Since 2026-09-28 they render as a compact strip of small
+ * tiles (IncludedFeatures) that open one shared panel with the full card
+ * copy; PRICING_INCLUDED only names which twelve appear, in what order, and
+ * the short tile label of each.
  */
+
+type CellValue = string | boolean;
+
+/**
+ * The comparison table's rows. `launch` is what the launch period gives
+ * today (every Pro feature, free, no card), `basic`/`pro` read the tiers'
+ * limits from src/lib/plans.ts. `true`/`false` render as a check / a muted
+ * minus; strings render as-is.
+ */
+const PLAN_ROWS: {
+  label: string;
+  launch: CellValue;
+  basic: CellValue;
+  pro: CellValue;
+  trial?: true;
+}[] = (() => {
+  const b = PLANS.free.limits;
+  const p = PLANS.pro.limits;
+  const count = (n: number | null) => (n === null ? "ללא הגבלה" : `עד ${n}`);
+  return [
+    { label: "מסמכים בחודש", launch: "ללא הגבלה", basic: count(b.documentsPerMonth), pro: count(p.documentsPerMonth) },
+    { label: "לקוחות", launch: "ללא הגבלה", basic: count(b.clients), pro: count(p.clients) },
+    { label: "שליחת מסמכים במייל דרך המערכת", launch: true, basic: true, pro: true },
+    { label: "PDF להדפסה והורדה", launch: true, basic: true, pro: true },
+    { label: "גיבוי ענן אוטומטי", launch: true, basic: true, pro: true },
+    { label: "שליחה מ-Gmail האישי שלכם", launch: true, basic: b.customGmail, pro: p.customGmail },
+    { label: "ייבוא וייצוא לאקסל / CSV", launch: true, basic: b.csvImport && b.csvExport, pro: p.csvImport && p.csvExport },
+    { label: "מסך ראשי עם גרפים מלאים", launch: true, basic: b.charts, pro: p.charts },
+    { label: "לוגו עסקי על המסמכים", launch: true, basic: b.customLogo, pro: p.customLogo },
+    { label: "כמה אימיילים לכל לקוח", launch: true, basic: b.multipleEmailRecipients, pro: p.multipleEmailRecipients },
+    { label: "כרטיס אשראי", launch: "לא צריך", basic: "בהרשמה למסלול", pro: "בהרשמה למסלול" },
+    { label: "למצטרפים בהשקה", launch: "הכול חינם", basic: "חודש ראשון חינם", pro: "חודש ראשון חינם", trial: true },
+  ];
+})();
+
+function Cell({ v }: { v: CellValue }) {
+  if (v === true)
+    return (
+      <span className="yes" aria-label="כלול">
+        <Check strokeWidth={2.5} />
+      </span>
+    );
+  if (v === false)
+    return (
+      <span className="no" aria-label="לא כלול">
+        <Minus strokeWidth={2.5} />
+      </span>
+    );
+  return (
+    <span className="val">
+      <LtrText text={v} />
+    </span>
+  );
+}
 
 /**
  * /pricing - a dedicated pricing page, replacing the "מחירים" nav links'
@@ -152,70 +208,65 @@ export default function PricingPage() {
           </div>
         </section>
 
-        {/* Plan cards: reuses .v2-price-grid/.v2-price-card verbatim, the
-            same primitive ComparisonViewV2 uses for the "us" column. */}
+        {/* One comparison table instead of two plan cards (2026-09-28, Asaf:
+            "לסדר אותו לטבלה אחת שמראה את אותם פרמטרים... לכל תוכנית"). Every
+            row is the same parameter across three columns: what the launch
+            period gives today (everything, free), then בסיסי and Pro as they
+            will apply later. Limits and feature flags are read from
+            src/lib/plans.ts so the table cannot drift from /billing. */}
         <section className="v2-cmp-sec">
           <div className="v2-cmp-h">
-            <h2>המסלולים שיהיו בתוקף בהמשך</h2>
+            <h2>מה מקבלים בכל מסלול</h2>
             <span className="ln" />
           </div>
 
-          <div className="v2-price-grid">
-            <div className="v2-price-card">
-              <h3>בסיסי</h3>
-              <ul>
-                <li>
-                  <span className="plan">מחיר</span>
-                  <span className="val">{shekel("15")} לחודש</span>
-                </li>
-                <li>
-                  <span className="plan">מסמכים</span>
-                  <span className="val">עד 30 בחודש</span>
-                </li>
-                <li>
-                  <span className="plan">לקוחות</span>
-                  <span className="val">עד 10</span>
-                </li>
-                <li className="trial">
-                  <span className="plan">למצטרפים בהשקה</span>
-                  <span className="val">חודש ראשון חינם</span>
-                </li>
-              </ul>
-            </div>
-
-            <div className="v2-price-card win">
-              <span className="badge">ללא הגבלה</span>
-              <h3>
-                <Ltr>Pro</Ltr>
-              </h3>
-              <ul>
-                <li>
-                  <span className="plan">מחיר</span>
-                  <span className="val">{shekel("25")} לחודש</span>
-                </li>
-                {/* Same three rows as בסיסי above, in the same order, so the
-                    two cards read as one table and the only difference the eye
-                    has to catch is 30 -> ללא הגבלה and 10 -> ללא הגבלה. The
-                    "כמה עסקים באותו חשבון" row that used to sit here was
-                    removed 2026-08-24 (Asaf: "תעיף מיד את העסקים... אני לא
-                    מעוניין בזה"); it was also the only row with no counterpart
-                    in the בסיסי card, which is what made the two cards look
-                    misaligned. */}
-                <li>
-                  <span className="plan">מסמכים</span>
-                  <span className="val">ללא הגבלה</span>
-                </li>
-                <li>
-                  <span className="plan">לקוחות</span>
-                  <span className="val">ללא הגבלה</span>
-                </li>
-                <li className="trial">
-                  <span className="plan">למצטרפים בהשקה</span>
-                  <span className="val">חודש ראשון חינם</span>
-                </li>
-              </ul>
-            </div>
+          <div className="v2-plan-table-wrap">
+            <table className="v2-plan-table">
+              <thead>
+                <tr>
+                  <th scope="col">
+                    <span className="sr-only">פרמטר</span>
+                  </th>
+                  <th scope="col">
+                    <span className="name">עכשיו, בהשקה</span>
+                    <span className="price">חינם</span>
+                  </th>
+                  <th scope="col">
+                    <span className="name">{PLANS.free.name}</span>
+                    <span className="price">{shekel(String(PLANS.free.priceMonthly))} לחודש</span>
+                  </th>
+                  <th scope="col" className="win">
+                    <span className="pill">ללא הגבלה</span>
+                    <span className="name">
+                      <Ltr>{PLANS.pro.name}</Ltr>
+                    </span>
+                    <span className="price">{shekel(String(PLANS.pro.priceMonthly))} לחודש</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {PLAN_ROWS.map((row) => (
+                  <tr key={row.label} className={row.trial ? "trial" : undefined}>
+                    <th scope="row">
+                      <LtrText text={row.label} />
+                    </th>
+                    <td>
+                      <Cell v={row.launch} />
+                    </td>
+                    <td>
+                      <Cell v={row.basic} />
+                    </td>
+                    <td className="win">
+                      <Cell v={row.pro} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
+          <p className="v2-plan-foot">
+            כשנתחיל לגבות נעדכן מראש. ביטול בכל עת, בלי התחייבות.
+          </p>
         </section>
 
         {/* What's included, drawn from real features - see FEATURES comment
@@ -226,28 +277,7 @@ export default function PricingPage() {
             <span className="ln" />
           </div>
 
-          <div className="v2-adv-grid">
-            {PRICING_ADVANTAGES.map((f) => (
-              <div
-                className={`v2-adv-card${f.flagship ? " is-flagship" : ""}${f.tone ? ` v2-adv-card--${f.tone}` : ""}`}
-                key={f.key}
-              >
-                <div
-                  className={`v2-adv-icon${f.tone ? ` v2-adv-icon--${f.tone}` : ""}`}
-                  aria-hidden="true"
-                >
-                  {f.icon}
-                </div>
-                <h3>
-                  <LtrText text={f.title} />
-                  {f.soon ? <span className="v2-adv-soon">בקרוב</span> : null}
-                </h3>
-                <p>
-                  <LtrText text={f.body} />
-                </p>
-              </div>
-            ))}
-          </div>
+          <IncludedFeatures items={PRICING_INCLUDED} />
         </section>
 
         {/* Pricing-specific FAQ */}

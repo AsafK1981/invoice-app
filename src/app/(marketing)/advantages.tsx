@@ -336,3 +336,28 @@ export const PRICING_ADVANTAGES: Advantage[] = PRICING_KEYS.map((k) => {
   if (!found) throw new Error(`PRICING_KEYS references unknown advantage "${k}"`);
   return found;
 });
+
+/**
+ * Two-to-three-word tile labels for /pricing's compact "מה כלול" strip
+ * (2026-09-28). The full `title` still appears when a tile is opened; these
+ * only have to fit under a 34px icon in a six-up row.
+ */
+const PRICING_SHORT: Record<(typeof PRICING_KEYS)[number], string> = {
+  allocation: "מספרי הקצאה",
+  ai: "עוזר AI",
+  reminders: "תזכורות חכמות",
+  whatsapp: "וואטסאפ",
+  recurring: "לקוחות קבועים",
+  ocr: "סריקת הוצאות",
+  ceiling: "תקרת עוסק פטור",
+  reports: "דו״חות לרו״ח",
+  a11y: "טקסט גדול",
+  currency: "דולר ואירו",
+  migration: "מעבר מכל תוכנה",
+  channels: "שליחה בכל ערוץ",
+};
+
+export const PRICING_INCLUDED = PRICING_ADVANTAGES.map((a) => ({
+  ...a,
+  short: PRICING_SHORT[a.key as (typeof PRICING_KEYS)[number]],
+}));
