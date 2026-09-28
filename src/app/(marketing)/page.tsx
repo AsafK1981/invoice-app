@@ -41,7 +41,7 @@ import EntranceMotion from "./components/EntranceMotion";
 const FAQ_ITEMS: { q: string; a: string }[] = [
   {
     q: "מה קורה כשתקופת ההשקה נגמרת?",
-    a: "שום חיוב לא קורה אוטומטית. כדי לעבור למסלול בתשלום צריך להירשם ולאשר את הפרטים בעצמכם דרך עמוד החיוב, ומי שהצטרף בתקופת ההשקה מקבל את החודש הראשון בתשלום חינם.",
+    a: "שום חיוב לא קורה אוטומטית. כדי לעבור למסלול בתשלום צריך להירשם ולאשר את הפרטים בעצמכם דרך עמוד החיוב, ומי שהצטרף בתקופת ההשקה מקבל את החודשיים הראשונים בתשלום חינם.",
   },
   {
     q: "האם צריך כרטיס אשראי כדי להתחיל?",
@@ -337,8 +337,8 @@ export default function MarketingLanding() {
                   number - so the pills went back on 08-16. The claim itself
                   is future-tense and is the one deliberate not-yet-shipped
                   item here.
-                - free month: matches the official sitewide offer (launch
-                  period fully free, first paid month free later) - keep in
+                - free months: matches the official sitewide offer (launch
+                  period fully free, first two paid months free later) - keep in
                   sync with the pricing page FAQ if it changes.
                 - migration: the import wizards (Invoice4U, Morning, iCount,
                   Excel) are shipped, self-serve features.
@@ -353,10 +353,10 @@ export default function MarketingLanding() {
                 <span className="ml-trust-icon">
                   <Gift aria-hidden="true" />
                 </span>
-                <span className="ml-trust-k">חודש ראשון חינם</span>
+                <span className="ml-trust-k">חודשיים ראשונים חינם</span>
                 <p>
                   בתקופת ההשקה הכול חינם, בלי כרטיס אשראי - וגם כשהתשלום
-                  ייכנס, החודש הראשון במתנה. מבטלים בכל רגע, בלי התחייבות.
+                  ייכנס, החודשיים הראשונים במתנה. מבטלים בכל רגע, בלי התחייבות.
                 </p>
               </div>
               <div className="ml-trust-card ml-trust-card--sky">
@@ -531,7 +531,7 @@ export default function MarketingLanding() {
                   <Ltr>Pro</Ltr> ללא הגבלה · <b>{shekel("25")} לחודש</b>
                 </span>
               </div>
-              <p className="ml-price-later">למצטרפים בהשקה - חודש ראשון חינם</p>
+              <p className="ml-price-later">למצטרפים בהשקה - חודשיים ראשונים חינם</p>
               <SignupLink
                 className="ml-btn ml-btn-primary ml-btn-lg"
               >

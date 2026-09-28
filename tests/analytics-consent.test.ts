@@ -105,6 +105,7 @@ describe("analytics route allowlist", () => {
     "/blog/some-post",
     "/vs",
     "/vs/greeninvoice",
+    "/video",
     "/privacy",
     "/login",
     "/onboarding",

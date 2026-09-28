@@ -39,10 +39,13 @@ export default function FooterLight() {
           <CookieSettingsButton />
         </nav>
         {/* Mirrors FooterV2: see the note there for why no מספר עוסק yet.
-            Hidden on /accountants and /from-accountant (Asaf, 2026-09-27: no
-            personal name or email on those pages). Every other page keeps the
-            operator line - dropping it sitewide is a separate decision. */}
-        {pathname !== "/accountants" && pathname !== "/from-accountant" ? (
+            Hidden on /accountants, /from-accountant (Asaf, 2026-09-27) and
+            /video (2026-09-28): no personal name or email on those pages.
+            Every other page keeps the operator line - dropping it sitewide is
+            a separate decision. */}
+        {pathname !== "/accountants" &&
+        pathname !== "/from-accountant" &&
+        pathname !== "/video" ? (
           <span className="ml-footer-who">
             מופעל על ידי אסף קוטלר ·{" "}
             <a href="mailto:asafkotlar@gmail.com">asafkotlar@gmail.com</a>

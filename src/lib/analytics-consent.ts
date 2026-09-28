@@ -99,6 +99,7 @@ const EXACT_PATHS = new Set<string>([
   "/security",
   "/status",
   "/terms",
+  "/video",
   "/vs",
   "/login",
   "/onboarding",
