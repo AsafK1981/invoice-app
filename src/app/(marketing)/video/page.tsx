@@ -18,7 +18,7 @@ import "./video.css";
  * No personal name/email/phone here (FooterLight hides its operator line on
  * this path).
  */
-const VIDEO_SRC = "/video/friendly-invoice-promo-v2.mp4";
+const VIDEO_SRC = "/video/friendly-invoice-promo-v3.mp4";
 const POSTER_SRC = "/video/friendly-invoice-promo-v2-poster.jpg";
 
 const base = pageMetadata({
