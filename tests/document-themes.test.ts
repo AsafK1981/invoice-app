@@ -329,13 +329,15 @@ describe("ACCENT_HEX / DOCUMENT_TEMPLATES data integrity", () => {
     expect(normalizeDocumentDesign({ template: "entertainer" })?.layout).toBe("stage");
   });
 
-  it("display-only (handwriting) fonts switch only the name/number; the body stays on the template font", () => {
-    const d = normalizeDocumentDesign({ template: "general", font: "amatic" })!;
-    const vars = designToCssVars(d);
-    expect(vars["--d-font"]).toBe(FONT_OPTIONS.heebo.family);
-    expect(vars["--d-font-serif"]).toBe(FONT_OPTIONS.amatic.family);
-    expect(vars["--d-name-scale"]).toBe("1.35");
-    // a normal font override still applies uniformly
+  // The display-only (handwriting) font mechanism (a font that switches only
+  // the name/number, with an optional name-scale) is exercised by
+  // FontOption.displayOnly / .nameScale in document-themes.ts, but the two
+  // fonts that used it - Playpen and Amatic - were removed 2026-09-29 (visual
+  // QA caught their Hebrew subsets rendering wrong/duplicated glyphs
+  // repeatedly). No current font is displayOnly, so there is nothing left to
+  // exercise this path with; a normal font override (below) still covers the
+  // ordinary case.
+  it("a normal font override applies uniformly to body and name/number", () => {
     const plain = designToCssVars(normalizeDocumentDesign({ template: "general", font: "plex" })!);
     expect(plain["--d-font"]).toBe(FONT_OPTIONS.plex.family);
     expect(plain["--d-font-serif"]).toBe(FONT_OPTIONS.plex.family);

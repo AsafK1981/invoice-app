@@ -170,27 +170,12 @@ const miriamLibre = localFont({
 // 2026-08-18: five more document-font choices (Asaf asked for handwriting,
 // a minimalist face and a hi-tech face). Same self-hosted, preload:false
 // pattern; only referenced through document-paper.css vars.
-const playpen = localFont({
-  src: [
-    { path: "./fonts/playpen-sans-hebrew/PlaypenSansHebrew-Variable-Hebrew.woff2" },
-    { path: "./fonts/playpen-sans-hebrew/PlaypenSansHebrew-Variable-Latin.woff2" },
-  ],
-  weight: "100 800",
-  variable: "--font-playpen",
-  display: "swap",
-  preload: false,
-});
-const amatic = localFont({
-  src: [
-    { path: "./fonts/amatic-sc/AmaticSC-Regular-Hebrew.woff2", weight: "400" },
-    { path: "./fonts/amatic-sc/AmaticSC-Regular-Latin.woff2", weight: "400" },
-    { path: "./fonts/amatic-sc/AmaticSC-Bold-Hebrew.woff2", weight: "700" },
-    { path: "./fonts/amatic-sc/AmaticSC-Bold-Latin.woff2", weight: "700" },
-  ],
-  variable: "--font-amatic",
-  display: "swap",
-  preload: false,
-});
+// Two of the five (Playpen, Amatic) were removed 2026-09-29: visual QA
+// (Lynkeus) caught their self-hosted Hebrew subsets rendering the business
+// name with wrong/duplicated glyphs, repeatedly, on the design-preview
+// screen. A production check found zero businesses had either selected, so
+// the options were dropped rather than shipping a guessed replacement font
+// file - see the FontOption.displayOnly comment in lib/document-themes.ts.
 const alef = localFont({
   src: [
     { path: "./fonts/alef/Alef-Regular-Hebrew.woff2", weight: "400" },
@@ -347,7 +332,7 @@ export default function RootLayout({
     <html
       lang="he"
       dir="rtl"
-      className={`h-full antialiased ${heebo.variable} ${heeboLatin.variable} ${inter.variable} ${interExtended.variable} ${interCurrency.variable} ${playfair.variable} ${frankRuhl.variable} ${assistant.variable} ${rubik.variable} ${miriamLibre.variable} ${playpen.variable} ${amatic.variable} ${alef.variable} ${plexHebrew.variable} ${varelaRound.variable}`}
+      className={`h-full antialiased ${heebo.variable} ${heeboLatin.variable} ${inter.variable} ${interExtended.variable} ${interCurrency.variable} ${playfair.variable} ${frankRuhl.variable} ${assistant.variable} ${rubik.variable} ${miriamLibre.variable} ${alef.variable} ${plexHebrew.variable} ${varelaRound.variable}`}
     >
       <body className="min-h-full flex flex-col font-sans text-stone-800">
         {children}

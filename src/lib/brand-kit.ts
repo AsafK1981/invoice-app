@@ -114,8 +114,13 @@ export function primaryBrandColor(kit: BrandKit): string | null {
   return byRole("primary") ?? byRole("accent") ?? byRole("secondary") ?? kit.colors.find((c) => c.role !== "neutral")?.hex ?? null;
 }
 
-// Brand faces the app cannot load, mapped to the nearest of its own ten.
+// Brand faces the app cannot load, mapped to the nearest of its own eight.
 // Order matters: first match wins, so the app's own faces come first.
+// Playpen and Amatic were removed from the app's own faces 2026-09-29 (their
+// Hebrew glyphs rendered wrong - see the removal note on FontOption in
+// document-themes.ts), so a brand kit naming either, or any other
+// handwritten/script face, now maps to "miriam" - the nearest of the
+// remaining eight to a decorative face, none of them being handwriting.
 const NAME_TO_KEY: [RegExp, FontKey][] = [
   [/heebo/, "heebo"],
   [/rubik/, "rubik"],
@@ -125,10 +130,8 @@ const NAME_TO_KEY: [RegExp, FontKey][] = [
   [/plex/, "plex"],
   [/frank/, "frank"],
   [/miriam/, "miriam"],
-  [/playpen/, "playpen"],
-  [/amatic/, "amatic"],
   [/mono|courier|consolas|jetbrains|fira code|menlo|space grotesk/, "plex"],
-  [/dancing|pacifico|caveat|kalam|satisfy|great vibes|handlee|indie flower|shadows into|brush|script|hand/, "playpen"],
+  [/playpen|amatic|dancing|pacifico|caveat|kalam|satisfy|great vibes|handlee|indie flower|shadows into|brush|script|hand/, "miriam"],
   [/times|georgia|garamond|playfair|merriweather|david|narkis|hadassah|lora|cormorant|baskerville|bodoni|didot|cardo|suez|shlomo|taamey|crimson|spectral|serif/, "frank"],
   [/poppins|nunito|quicksand|comfortaa|fredoka|baloo|secular|varela/, "varela"],
   [/montserrat|futura|gotham|proxima|avenir|raleway|josefin|circular|gilroy|sora|century gothic/, "alef"],
@@ -140,7 +143,7 @@ const STYLE_TO_KEY: Record<BrandFontStyle, FontKey> = {
   sans: "heebo",
   serif: "frank",
   rounded: "varela",
-  handwritten: "playpen",
+  handwritten: "miriam",
   mono: "plex",
   display: "rubik",
   unknown: "heebo",

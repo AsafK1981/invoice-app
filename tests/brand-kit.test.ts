@@ -95,7 +95,7 @@ describe("interpretRawBrandKit: trusts nothing from the model", () => {
   });
 });
 
-describe("font mapping onto the app's ten faces", () => {
+describe("font mapping onto the app's eight faces", () => {
   const f = (name: string, role: "heading" | "body" | "other" = "body", style: BrandKit["fonts"][number]["style"] = "unknown") => ({ name, role, style });
 
   it("exact app faces win, body before heading", () => {
@@ -108,7 +108,7 @@ describe("font mapping onto the app's ten faces", () => {
     expect(matchBrandFont([f("Open Sans")]).key).toBe("heebo");
     expect(matchBrandFont([f("Playfair Display")]).key).toBe("frank");
     expect(matchBrandFont([f("Poppins")]).key).toBe("varela");
-    expect(matchBrandFont([f("Dancing Script")]).key).toBe("playpen");
+    expect(matchBrandFont([f("Dancing Script")]).key).toBe("miriam");
     expect(matchBrandFont([f("JetBrains Mono")]).key).toBe("plex");
   });
 

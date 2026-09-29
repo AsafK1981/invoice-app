@@ -299,9 +299,7 @@ export type FontKey =
   | "miriam"
   | "alef"
   | "plex"
-  | "varela"
-  | "playpen"
-  | "amatic";
+  | "varela";
 
 export interface FontOption {
   family: string;
@@ -313,13 +311,19 @@ export interface FontOption {
    * the business name + document number in that face while the body of
    * the document (line items, amounts, legal text) stays in the template's
    * own readable font. An invoice fully set in a handwriting face is not a
-   * document a bookkeeper wants to read.
+   * document a bookkeeper wants to read. No current face uses this - the
+   * two that did (Playpen, Amatic) were removed 2026-09-29: their Hebrew
+   * subset files rendered the business name with wrong/duplicated glyphs
+   * (visual QA caught it repeatedly on the design-preview screen; a
+   * production count showed zero businesses had either selected, so the
+   * safe fix was to drop the broken options rather than guess at a
+   * replacement font file). Kept here for a future display-only face.
    */
   displayOnly?: boolean;
   /**
    * Optical scale for the business name / doc number when THIS face is
-   * the name font. Amatic SC has a tiny x-height and looks a size smaller
-   * than everything else at the same px value; 1 = no adjustment.
+   * the name font; 1 = no adjustment. A small-x-height face (the removed
+   * Amatic SC was one) can use this to look the same size as its neighbours.
    */
   nameScale?: number;
 }
@@ -364,20 +368,6 @@ export const FONT_OPTIONS: Record<FontKey, FontOption> = {
     family: 'var(--font-miriam), "Miriam Libre", Georgia, serif',
     label: "Miriam Libre",
     hint: "סריף עדין",
-  },
-  playpen: {
-    family: 'var(--font-playpen), "Playpen Sans Hebrew", cursive',
-    label: "Playpen",
-    hint: "כתב יד (שם ומספר בלבד)",
-    displayOnly: true,
-    nameScale: 1.05,
-  },
-  amatic: {
-    family: 'var(--font-amatic), "Amatic SC", cursive',
-    label: "Amatic",
-    hint: "כתב יד דק (שם ומספר בלבד)",
-    displayOnly: true,
-    nameScale: 1.35,
   },
 };
 

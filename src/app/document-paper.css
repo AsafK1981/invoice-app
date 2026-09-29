@@ -61,8 +61,9 @@
   /* The 4px top bar is the ONE orange touch on the paper (brand book): the
      rest of the default sheet is charcoal on cream. */
   --d-topbar-bg: linear-gradient(90deg, #d96a1d, #a94e16);
-  /* optical scale for the name/number face (Amatic SC needs ~1.35 to sit
-     at the same visual size as the sans faces); themes emit it. */
+  /* optical scale for the name/number face, for a small-x-height display
+     face that needs to sit at the same visual size as the sans faces;
+     themes emit it. */
   --d-name-scale: 1;
 
   position: relative;
