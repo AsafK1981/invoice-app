@@ -2818,99 +2818,263 @@
    instead of leaving half of it black.
    ------------------------------------------------------------ */
 /* ============================================================
-   /pricing (2026-09-28): one plan table + a compact "מה כלול" strip.
-   Asaf: "לסדר אותו לטבלה אחת שמראה את אותם פרמטרים... לכל תוכנית" and
-   "תקטין את כל האייקונים... שאפשר יהיה ללחוץ עליהם כדי לפתוח ולקרוא".
-   The table replaces the two .v2-price-card columns; the strip replaces the
-   twelve full .v2-adv-card cards with 34px tiles that open ONE shared panel.
-   Colours and radii are the tokens the cards used, so nothing reads new.
+   /pricing plans (2026-09-29): two plan cards on a shared spine.
+   Replaced the one-day-old .v2-plan-table (Asaf: "זה לא נראה יותר מדי
+   כמו טבלה... תעצב את זה יותר טוב"). Three renders were shown; he picked
+   the spine (each plan a white card with a big price, rows running across
+   the cards at one fixed height, no vertical rules) and cut the "launch is
+   free" column, since "חודש ראשון חינם" as a headline says the same thing.
+   Desktop: labels column + two cards, rows aligned by a FIXED row height
+   (52px) and a FIXED head height (172px) - that alignment IS the design,
+   so nothing here may grow with content. Phone: the labels column hides
+   and every row shows its own `.lbl`.
    ============================================================ */
-.v2-theme .v2-plan-table-wrap {
-  overflow-x: auto;
-  border: 1px solid var(--v2-line-soft);
-  border-radius: var(--v2-r-lg);
-  background: var(--v2-card);
-  box-shadow: var(--v2-sh-rest), var(--v2-sh-inset);
-}
-.v2-theme .v2-plan-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--v2-fs-body);
-}
-.v2-theme .v2-plan-table th,
-.v2-theme .v2-plan-table td {
-  padding: 11px 16px;
+.v2-theme .v2-plans-hero {
   text-align: center;
-  vertical-align: middle;
-  border-top: 1px solid var(--v2-line-soft);
+  margin-bottom: var(--v2-sp-4);
 }
-.v2-theme .v2-plan-table th[scope="row"] {
-  text-align: start;
+.v2-theme .v2-plans-hero .big {
+  font-family: var(--font-inter), var(--font-heebo), system-ui, sans-serif;
+  font-weight: 800;
+  font-size: clamp(30px, 3.6vw, 44px);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--v2-ink);
+}
+.v2-theme .v2-plans-hero .sub {
+  margin: 10px auto 0;
+  max-width: 52ch;
+  font-size: var(--v2-fs-body);
+  line-height: 1.65;
+  color: var(--v2-muted);
+}
+
+.v2-theme .v2-plans {
+  display: grid;
+  gap: var(--v2-sp-2);
+}
+/* Labels column: no card, just the parameter names sitting on the cream
+   field, each at the same row height as the cards' cells. */
+.v2-theme .v2-plans-labels { display: none; }
+.v2-theme .v2-plans-labels .head {
+  display: flex;
+  align-items: flex-end;
+  padding-bottom: 20px;
+}
+.v2-theme .v2-plans-labels .head span {
+  font-family: var(--font-inter), var(--font-heebo), system-ui, sans-serif;
+  font-size: var(--v2-fs-micro);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--v2-muted);
+}
+.v2-theme .v2-plans-labels .row {
+  display: flex;
+  align-items: center;
+  padding-inline-start: 4px;
+  font-size: var(--v2-fs-body);
   font-weight: 500;
   color: var(--v2-ink);
-  width: 40%;
+  border-top: 1px solid var(--v2-line);
 }
-.v2-theme .v2-plan-table thead th {
-  border-top: 0;
-  vertical-align: bottom;
-  padding-top: 20px;
-  padding-bottom: 14px;
+
+.v2-theme .v2-plan-card {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--v2-r-xl);
+  border: 1px solid var(--v2-line);
+  background: var(--v2-card);
+  box-shadow: var(--v2-sh-rest), var(--v2-sh-inset);
+  overflow: hidden;
+  transition: transform 0.16s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
-.v2-theme .v2-plan-table thead .name {
-  display: block;
-  font-family: var(--font-inter), var(--font-heebo), system-ui, sans-serif;
-  font-weight: 700;
-  font-size: var(--v2-fs-h3);
-  color: var(--v2-ink);
-  line-height: 1.2;
+/* Pro: the orange edge + a peach wash behind the head. No offset, no scale:
+   its rows must sit on exactly the same lines as the בסיסי card's. */
+.v2-theme .v2-plan-card.pro {
+  border-color: var(--v2-g2);
+  box-shadow: var(--v2-sh-hover), 0 0 0 1px rgba(217, 106, 29, 0.10);
 }
-.v2-theme .v2-plan-table thead .price {
-  display: block;
-  margin-top: 3px;
-  font-size: var(--v2-fs-meta);
-  color: var(--v2-muted);
-  font-variant-numeric: tabular-nums;
+@media (hover: hover) {
+  .v2-theme .v2-plan-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--v2-sh-hover), var(--v2-sh-edge);
+  }
+  .v2-theme .v2-plan-card.pro:hover {
+    box-shadow: 0 30px 56px -20px rgba(217, 106, 29, 0.30), 0 0 0 1px rgba(217, 106, 29, 0.14);
+  }
 }
-/* Pro column: the same faint orange wash .v2-price-card.win wears. */
-.v2-theme .v2-plan-table .win { background: rgba(217, 106, 29, 0.05); }
-.v2-theme .v2-plan-table thead .win .name { color: var(--v2-g1); }
-/* "ללא הגבלה" pill above the Pro name: the flat gold .badge pill, but in
-   flow (a table header cannot host an absolutely positioned pill). */
-.v2-theme .v2-plan-table thead .pill {
+@media (prefers-reduced-motion: reduce) {
+  .v2-theme .v2-plan-card:hover { transform: none; }
+}
+.v2-theme .v2-plan-card .head {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 28px 22px 20px;
+  text-align: center;
+}
+.v2-theme .v2-plan-card.pro .head {
+  background: linear-gradient(180deg, #FFF3E8 0%, rgba(255, 243, 232, 0) 100%);
+}
+.v2-theme .v2-plan-card .pill {
+  position: absolute;
+  top: 16px;
+  inset-inline: 0;
+  margin-inline: auto;
+  width: max-content;
   display: inline-flex;
-  margin-bottom: 6px;
   font-size: var(--v2-fs-micro);
   font-weight: 700;
   letter-spacing: 0.14em;
   color: var(--v2-g1);
-  padding: 3px 10px;
+  padding: 3px 11px;
   border-radius: var(--v2-r-pill);
   background: var(--v2-gold-tint);
   border: 1px solid var(--v2-gold-tint-line);
 }
-.v2-theme .v2-plan-table .yes,
-.v2-theme .v2-plan-table .no {
-  display: inline-flex;
-  vertical-align: middle;
+.v2-theme .v2-plan-card .name {
+  font-family: var(--font-inter), var(--font-heebo), system-ui, sans-serif;
+  font-weight: 700;
+  font-size: var(--v2-fs-h3);
+  color: var(--v2-ink);
 }
-.v2-theme .v2-plan-table .yes svg { width: 18px; height: 18px; color: var(--v2-yes); }
-.v2-theme .v2-plan-table .no svg { width: 16px; height: 16px; color: #C9C1B6; }
-.v2-theme .v2-plan-table .val {
+.v2-theme .v2-plan-card.pro .name { color: var(--v2-g1); }
+.v2-theme .v2-plan-card .price {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  font-family: var(--font-inter), var(--font-heebo), system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 36px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--v2-ink);
+  font-variant-numeric: tabular-nums;
+}
+.v2-theme .v2-plan-card .price small {
+  font-family: var(--font-heebo), system-ui, sans-serif;
+  font-size: var(--v2-fs-meta);
+  font-weight: 600;
+  letter-spacing: 0;
+  color: var(--v2-muted);
+}
+.v2-theme .v2-plan-card .desc {
+  font-size: var(--v2-fs-meta);
+  color: var(--v2-muted);
+}
+.v2-theme .v2-plan-card .row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 22px;
+  min-height: 52px;
+  border-top: 1px solid var(--v2-line-soft);
+  font-size: var(--v2-fs-body);
+}
+.v2-theme .v2-plan-card .row .lbl {
+  font-weight: 500;
+  color: var(--v2-ink);
+}
+.v2-theme .v2-plan-card .row .val {
   font-weight: 700;
   color: var(--v2-ink);
   font-variant-numeric: tabular-nums;
 }
-.v2-theme .v2-plan-table tr.trial th,
-.v2-theme .v2-plan-table tr.trial td { border-top: 2px solid var(--v2-line); }
-.v2-theme .v2-plan-table tr.trial .val { color: var(--v2-g1); }
-.v2-theme .v2-plan-foot {
-  margin-top: var(--v2-sp-2);
-  text-align: center;
-  font-size: var(--v2-fs-meta);
-  color: var(--v2-muted);
+.v2-theme .v2-plan-card .row .yes,
+.v2-theme .v2-plan-card .row .no {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--v2-r-pill);
+  flex: none;
+}
+.v2-theme .v2-plan-card .row .yes { background: #EEF4E8; color: #4A7536; }
+.v2-theme .v2-plan-card .row .yes svg { width: 14px; height: 14px; }
+.v2-theme .v2-plan-card .row .no { color: #C9C1B6; }
+.v2-theme .v2-plan-card .row .no svg { width: 14px; height: 14px; }
+.v2-theme .v2-plan-card .foot {
+  margin-top: auto;
+  padding: 20px 22px 22px;
+  border-top: 1px solid var(--v2-line-soft);
+}
+/* The per-card button: the site's CTA gradient on Pro, a quiet outline on
+   בסיסי. Same size and radius on both so the two feet line up. */
+.v2-theme .v2-plan-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 46px;
+  padding: 11px 16px;
+  border-radius: var(--v2-r-md);
+  font-weight: 700;
+  font-size: var(--v2-fs-body);
+  color: #ffffff;
+  background: var(--v2-cta-grad);
+  box-shadow: 0 10px 22px -12px rgba(217, 106, 29, 0.6);
+  transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s ease, background-color 0.2s ease;
+}
+.v2-theme .v2-plan-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.04);
+  box-shadow: 0 16px 30px -14px rgba(217, 106, 29, 0.7);
+}
+.v2-theme .v2-plan-btn.ghost {
+  color: var(--v2-ink);
+  background: var(--v2-card);
+  border: 1px solid var(--v2-line);
+  box-shadow: none;
+}
+.v2-theme .v2-plan-btn.ghost:hover {
+  border-color: var(--v2-g2);
+  color: var(--v2-g1);
+  background: rgba(217, 106, 29, 0.06);
+  box-shadow: none;
+}
+.v2-theme .v2-plan-btn:focus-visible { outline: 2px solid var(--v2-g1); outline-offset: 2px; }
+
+/* Spine layout from the tablet tier up: the labels column appears, the
+   cards drop their inline labels, and every row/head takes a FIXED height. */
+@media (min-width: 721px) {
+  .v2-theme .v2-plans {
+    grid-template-columns: minmax(0, 0.85fr) 1fr 1fr;
+    gap: 0 var(--v2-sp-3);
+    align-items: stretch;
+  }
+  .v2-theme .v2-plans-labels { display: flex; flex-direction: column; }
+  .v2-theme .v2-plans-labels .head,
+  .v2-theme .v2-plan-card .head { height: 172px; }
+  .v2-theme .v2-plans-labels .row,
+  .v2-theme .v2-plan-card .row { height: 52px; min-height: 0; }
+  .v2-theme .v2-plan-card .row { justify-content: center; }
+  .v2-theme .v2-plan-card .row .lbl {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+}
+@media (max-width: 520px) {
+  .v2-theme .v2-plan-card .head { padding: 26px 18px 18px; }
+  .v2-theme .v2-plan-card .row { padding: 0 18px; }
+  .v2-theme .v2-plan-card .foot { padding: 18px; }
+  .v2-theme .v2-plan-card .price { font-size: 32px; }
 }
 
-/* ---- "מה כלול" strip ---- */
+/* ============================================================
+   /pricing "מה כלול" strip (2026-09-28): the twelve .v2-adv-card cards as
+   34px tiles that open ONE shared panel (Asaf: "תקטין את כל האייקונים...
+   שאפשר יהיה ללחוץ עליהם כדי לפתוח ולקרוא"). Colours and radii are the
+   tokens the cards used, so nothing reads new.
+   ============================================================ */
 .v2-theme .v2-inc-hint {
   text-align: center;
   font-size: var(--v2-fs-meta);
@@ -3030,14 +3194,6 @@
   .v2-theme .v2-inc-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 @media (max-width: 520px) {
-  .v2-theme .v2-plan-table { font-size: 13px; }
-  .v2-theme .v2-plan-table th,
-  .v2-theme .v2-plan-table td { padding: 9px 5px; }
-  .v2-theme .v2-plan-table th[scope="row"] { width: 31%; font-size: 12.5px; padding-inline-start: 10px; }
-  .v2-theme .v2-plan-table .val { font-size: 12.5px; }
-  .v2-theme .v2-plan-table thead .name { font-size: 14px; }
-  .v2-theme .v2-plan-table thead .price { font-size: 12px; }
-  .v2-theme .v2-plan-table thead .pill { letter-spacing: 0.08em; padding: 2px 7px; }
   .v2-theme .v2-inc-tile { min-height: 84px; padding: 10px 6px 8px; }
   .v2-theme .v2-inc-tile .lbl { font-size: 12px; }
   .v2-theme .v2-inc-panel { padding: 18px; padding-inline-end: 48px; gap: 12px; }

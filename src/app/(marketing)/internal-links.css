@@ -49,6 +49,19 @@
   margin: 0 0 var(--v2-sp-2);
 }
 
+/* A lone card must never sit in one cell of the two-up grid with the other
+   cell empty (2026-09-29, /pricing had exactly that: "מין כזה ריבוע בצד
+   ימין... זה לא יפה"). One card spans the whole row instead. */
+.v2-theme .v2-related .v2-blog-card:only-child {
+  grid-column: 1 / -1;
+}
+/* Breathing room between the related block and the closing CTA that
+   follows it on /pricing and the comparison pages (2026-09-29: "אין רווח
+   בין הריבוע הזה למוכנים להתחיל"). */
+.v2-theme .v2-related + .v2-cmp-cta {
+  margin-top: var(--v2-sp-6);
+}
+
 /* ---------- "השוואות נוספות" ---------- */
 .v2-theme .v2-vs-siblings {
   margin-top: var(--v2-sp-5);

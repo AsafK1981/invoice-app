@@ -17,7 +17,7 @@ import RelatedLinks from "../components/RelatedLinks";
 import SignupLink from "../components/SignupLink";
 import IncludedFeatures from "../components/IncludedFeatures";
 import { PRICING_INCLUDED } from "../advantages";
-import { PLANS } from "@/lib/plans";
+import { PLANS, type PlanTier } from "@/lib/plans";
 
 export const metadata = pageMetadata({
   path: "/pricing",
@@ -71,54 +71,86 @@ const PRICING_FAQ_ITEMS: { q: string; a: string }[] = [
 type CellValue = string | boolean;
 
 /**
- * The comparison table's rows. `launch` is what the launch period gives
- * today (every Pro feature, free, no card), `basic`/`pro` read the tiers'
- * limits from src/lib/plans.ts. `true`/`false` render as a check / a muted
- * minus; strings render as-is.
+ * The plan comparison rows, one per parameter, read from src/lib/plans.ts so
+ * this section cannot drift from /billing. Only the two future tiers appear
+ * (2026-09-29, Asaf: the launch period makes EVERYTHING free, so a third
+ * "free" column said nothing; "חודש ראשון חינם" is the headline instead).
+ * `true`/`false` render as a check disc / a muted minus; strings as-is.
  */
-const PLAN_ROWS: {
-  label: string;
-  launch: CellValue;
-  basic: CellValue;
-  pro: CellValue;
-  trial?: true;
-}[] = (() => {
+const PLAN_ROWS: { label: string; free: CellValue; pro: CellValue }[] = (() => {
   const b = PLANS.free.limits;
   const p = PLANS.pro.limits;
   const count = (n: number | null) => (n === null ? "ללא הגבלה" : `עד ${n}`);
   return [
-    { label: "מסמכים בחודש", launch: "ללא הגבלה", basic: count(b.documentsPerMonth), pro: count(p.documentsPerMonth) },
-    { label: "לקוחות", launch: "ללא הגבלה", basic: count(b.clients), pro: count(p.clients) },
-    { label: "שליחת מסמכים במייל דרך המערכת", launch: true, basic: true, pro: true },
-    { label: "PDF להדפסה והורדה", launch: true, basic: true, pro: true },
-    { label: "גיבוי ענן אוטומטי", launch: true, basic: true, pro: true },
-    { label: "שליחה מ-Gmail האישי שלכם", launch: true, basic: b.customGmail, pro: p.customGmail },
-    { label: "ייבוא וייצוא לאקסל / CSV", launch: true, basic: b.csvImport && b.csvExport, pro: p.csvImport && p.csvExport },
-    { label: "מסך ראשי עם גרפים מלאים", launch: true, basic: b.charts, pro: p.charts },
-    { label: "לוגו עסקי על המסמכים", launch: true, basic: b.customLogo, pro: p.customLogo },
-    { label: "כמה אימיילים לכל לקוח", launch: true, basic: b.multipleEmailRecipients, pro: p.multipleEmailRecipients },
-    { label: "כרטיס אשראי", launch: "לא צריך", basic: "בהרשמה למסלול", pro: "בהרשמה למסלול" },
-    { label: "למצטרפים בהשקה", launch: "הכול חינם", basic: "חודש ראשון חינם", pro: "חודש ראשון חינם", trial: true },
+    { label: "מסמכים בחודש", free: count(b.documentsPerMonth), pro: count(p.documentsPerMonth) },
+    { label: "לקוחות", free: count(b.clients), pro: count(p.clients) },
+    { label: "שליחת מסמכים במייל", free: true, pro: true },
+    { label: "PDF להדפסה והורדה", free: true, pro: true },
+    { label: "גיבוי ענן אוטומטי", free: true, pro: true },
+    { label: "שליחה מ-Gmail האישי", free: b.customGmail, pro: p.customGmail },
+    { label: "ייבוא וייצוא לאקסל", free: b.csvImport && b.csvExport, pro: p.csvImport && p.csvExport },
+    { label: "מסך ראשי עם גרפים", free: b.charts, pro: p.charts },
+    { label: "לוגו עסקי על המסמכים", free: b.customLogo, pro: p.customLogo },
+    { label: "כמה אימיילים לכל לקוח", free: b.multipleEmailRecipients, pro: p.multipleEmailRecipients },
   ];
 })();
 
 function Cell({ v }: { v: CellValue }) {
   if (v === true)
     return (
-      <span className="yes" aria-label="כלול">
-        <Check strokeWidth={2.5} />
+      <span className="yes" role="img" aria-label="כלול">
+        <Check strokeWidth={3} />
       </span>
     );
   if (v === false)
     return (
-      <span className="no" aria-label="לא כלול">
-        <Minus strokeWidth={2.5} />
+      <span className="no" role="img" aria-label="לא כלול">
+        <Minus strokeWidth={3} />
       </span>
     );
   return (
     <span className="val">
       <LtrText text={v} />
     </span>
+  );
+}
+
+/**
+ * One plan column of the comparison. Its rows are the same PLAN_ROWS the
+ * labels column lists, at the same fixed height, so the two cards and the
+ * labels read as one spine on desktop; on a phone the labels column hides and
+ * each row shows its own `.lbl` instead.
+ */
+function PlanCard({ tier }: { tier: PlanTier }) {
+  const plan = PLANS[tier];
+  const pro = tier === "pro";
+  return (
+    <div className={`v2-plan-card${pro ? " pro" : ""}`}>
+      <div className="head">
+        {pro ? <span className="pill">ללא הגבלה</span> : null}
+        <span className="name">
+          <LtrText text={plan.name} />
+        </span>
+        <span className="price">
+          {shekel(String(plan.priceMonthly))}
+          <small>לחודש</small>
+        </span>
+        <span className="desc">{plan.description}</span>
+      </div>
+      {PLAN_ROWS.map((row) => (
+        <div className="row" key={row.label}>
+          <span className="lbl">
+            <LtrText text={row.label} />
+          </span>
+          <Cell v={row[tier]} />
+        </div>
+      ))}
+      <div className="foot">
+        <SignupLink className={`v2-plan-btn${pro ? "" : " ghost"}`}>
+          התחילו בחינם
+        </SignupLink>
+      </div>
+    </div>
   );
 }
 
@@ -208,65 +240,45 @@ export default function PricingPage() {
           </div>
         </section>
 
-        {/* One comparison table instead of two plan cards (2026-09-28, Asaf:
-            "לסדר אותו לטבלה אחת שמראה את אותם פרמטרים... לכל תוכנית"). Every
-            row is the same parameter across three columns: what the launch
-            period gives today (everything, free), then בסיסי and Pro as they
-            will apply later. Limits and feature flags are read from
-            src/lib/plans.ts so the table cannot drift from /billing. */}
+        {/* Plans: two cards on a shared spine (2026-09-29, Asaf picked
+            direction A of three renders and asked for two columns, not
+            three, with "חודש ראשון חינם" big on top). A labels column and the
+            two plan cards share one fixed row height, so every parameter
+            reads once, across, with no table chrome. */}
         <section className="v2-cmp-sec">
           <div className="v2-cmp-h">
-            <h2>מה מקבלים בכל מסלול</h2>
+            <h2>המסלולים</h2>
             <span className="ln" />
           </div>
 
-          <div className="v2-plan-table-wrap">
-            <table className="v2-plan-table">
-              <thead>
-                <tr>
-                  <th scope="col">
-                    <span className="sr-only">פרמטר</span>
-                  </th>
-                  <th scope="col">
-                    <span className="name">עכשיו, בהשקה</span>
-                    <span className="price">חינם</span>
-                  </th>
-                  <th scope="col">
-                    <span className="name">{PLANS.free.name}</span>
-                    <span className="price">{shekel(String(PLANS.free.priceMonthly))} לחודש</span>
-                  </th>
-                  <th scope="col" className="win">
-                    <span className="pill">ללא הגבלה</span>
-                    <span className="name">
-                      <Ltr>{PLANS.pro.name}</Ltr>
-                    </span>
-                    <span className="price">{shekel(String(PLANS.pro.priceMonthly))} לחודש</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {PLAN_ROWS.map((row) => (
-                  <tr key={row.label} className={row.trial ? "trial" : undefined}>
-                    <th scope="row">
-                      <LtrText text={row.label} />
-                    </th>
-                    <td>
-                      <Cell v={row.launch} />
-                    </td>
-                    <td>
-                      <Cell v={row.basic} />
-                    </td>
-                    <td className="win">
-                      <Cell v={row.pro} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="v2-plans-hero">
+            <p className="big">
+              חודש ראשון <span className="v2-gold">חינם</span>
+            </p>
+            <p className="sub">
+              למצטרפים בתקופת ההשקה, כשהמסלולים ייכנסו לתוקף. בלי כרטיס
+              אשראי, ביטול בכל עת.
+            </p>
           </div>
-          <p className="v2-plan-foot">
-            כשנתחיל לגבות נעדכן מראש. ביטול בכל עת, בלי התחייבות.
-          </p>
+
+          <div className="v2-plans">
+            <div className="v2-plans-labels" aria-hidden="true">
+              <div className="head">
+                <span>מה כלול</span>
+              </div>
+              {PLAN_ROWS.map((row) => (
+                <div className="row" key={row.label}>
+                  {/* One span: the row is a flex container, which drops the
+                      whitespace text nodes LtrText emits around Latin words. */}
+                  <span>
+                    <LtrText text={row.label} />
+                  </span>
+                </div>
+              ))}
+            </div>
+            <PlanCard tier="free" />
+            <PlanCard tier="pro" />
+          </div>
         </section>
 
         {/* What's included, drawn from real features - see FEATURES comment
@@ -297,8 +309,13 @@ export default function PricingPage() {
           </div>
         </section>
 
+        {/* Two cards, so the desktop two-up grid is symmetric (2026-09-29,
+            Asaf: one lone card in a two-column grid "לא נראה טוב"). */}
         <RelatedLinks
-          targets={{ posts: ["hashbonit-digitalit-chinam-2026"] }}
+          targets={{
+            posts: ["hashbonit-digitalit-chinam-2026"],
+            vs: ["greeninvoice"],
+          }}
           heading="כדאי לקרוא גם"
         />
 
