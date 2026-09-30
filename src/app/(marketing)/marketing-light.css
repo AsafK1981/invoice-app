@@ -2287,6 +2287,11 @@ h3 > .ml-badge-soon {
 .ml-footer-links a:hover {
   color: #F2A33C;
 }
+/* Facebook icon link, = `.v2-footer-social` on the other footer. */
+.ml-footer-links a.ml-footer-social {
+  justify-content: center;
+  min-width: 40px;
+}
 .ml-footer-copy {
   font-size: 12px;
   color: rgba(247, 242, 235, 0.55);

@@ -1386,6 +1386,12 @@
   transition: color 0.2s ease;
 }
 .v2-theme .v2-footer-links a:hover { color: #F2A33C; }
+/* Facebook icon link: inherits the link colour/hover above; the 40px box
+   keeps the tap target at the same height as the text links. */
+.v2-theme .v2-footer-links a.v2-footer-social {
+  justify-content: center;
+  min-width: 40px;
+}
 
 /* ============================================================
    Sub-pages: legal documents (terms / privacy) + system status.

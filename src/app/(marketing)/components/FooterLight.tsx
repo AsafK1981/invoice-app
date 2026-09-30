@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useOptionalUser } from "@/lib/public-auth";
 import { CookieSettingsButton } from "@/components/analytics/cookie-settings-button";
 import { BrandLockup } from "@/components/brand-mark";
+import { FacebookLink } from "@/components/facebook-link";
 
 /**
  * FooterLight, the warm/cream footer for the homepage only.
@@ -37,6 +38,7 @@ export default function FooterLight() {
           <Link href="/accessibility">נגישות</Link>
           {/* Reopens the consent banner; renders nothing without a GTM id. */}
           <CookieSettingsButton />
+          <FacebookLink className="ml-footer-social" />
         </nav>
         {/* Mirrors FooterV2: see the note there for why no מספר עוסק yet.
             Hidden on /accountants, /from-accountant (Asaf, 2026-09-27) and

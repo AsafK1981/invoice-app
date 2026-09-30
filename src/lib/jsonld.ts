@@ -1,4 +1,5 @@
 import { CANONICAL_ORIGIN, absoluteUrl } from "@/lib/public-url";
+import { FACEBOOK_PAGE_URL } from "@/lib/social";
 
 /**
  * Structured-data builders. One module so every page emits consistent,
@@ -36,6 +37,7 @@ export function organization(): JsonLdNode {
     url: CANONICAL_ORIGIN,
     logo: { "@type": "ImageObject", url: absoluteUrl("/logo-v2.svg") },
     slogan: "התנהלות פשוטה לעסק מצליח",
+    sameAs: [FACEBOOK_PAGE_URL],
   };
 }
 

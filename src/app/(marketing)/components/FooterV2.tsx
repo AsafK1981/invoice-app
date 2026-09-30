@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useOptionalUser } from "@/lib/public-auth";
 import { CookieSettingsButton } from "@/components/analytics/cookie-settings-button";
+import { FacebookLink } from "@/components/facebook-link";
 
 /**
  * FooterV2, the footer for /pricing, /vs, /blog, /terms, /privacy, /status,
@@ -51,6 +52,7 @@ export default function FooterV2() {
           <Link href="/accessibility">נגישות</Link>
           {/* Reopens the consent banner; renders nothing without a GTM id. */}
           <CookieSettingsButton />
+          <FacebookLink className="v2-footer-social" />
         </nav>
         {/* Operator identity. The site had none: no name, no contact route,
             nothing but nav links, while /privacy named אסף קוטלר as the
