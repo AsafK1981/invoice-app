@@ -19,7 +19,8 @@
 // opening band in the brand tint holds the stacked lockup (mark, Hebrew
 // name, "Friendly Invoice" in a serif) and the welcome line, closed by a
 // thin orange rule; the white body carries the headline at 25px, a
-// 440px reading measure, one orange CTA, the "give" box, a hairline and
+// 440px reading measure, one orange CTA (plus, since 2026-09-30, one
+// small text link to the promo video under it), the "give" box, a hairline and
 // the founder note with his photo. Email HTML rules: tables for layout,
 // inline styles only, fixed 600px width, no flex/grid, no <style> block.
 
@@ -47,6 +48,7 @@ const BODY =
   "בלי הגדרות ובלי טפסים. פותחים, כותבים למי ועל כמה, והקבלה או החשבונית יוצאת. את פרטי העסק, הלוגו והלקוחות אפשר להשלים מתי שנוח, ואת מספרי ההקצאה מרשות המסים המערכת מביאה לבד.";
 const CTA_LABEL = "להפיק את המסמך הראשון";
 const CTA_SUB = "לוקח דקה. באמת.";
+const VIDEO_LINK = "רוצים לראות איך זה נראה? סרטון של 20 שניות";
 const GIVE = "בתקופת ההשקה הכל פתוח וחינם, בלי כרטיס אשראי. אין מה להפסיד, רק לנסות.";
 const NOTE_GREETING = "היי, אני אסף.";
 const NOTE_BODY =
@@ -57,6 +59,9 @@ export function welcomeUrls() {
   return {
     /** Straight into the editor: the one action the email asks for. */
     firstDocument: `${CANONICAL_ORIGIN}/documents/new`,
+    /** The promo video's share page. A text link, never an embed: email
+     *  clients do not play video. */
+    video: `${CANONICAL_ORIGIN}/video`,
     avatar: `${CANONICAL_ORIGIN}/email/asaf.png`,
     logo: `${CANONICAL_ORIGIN}/logo-192.png`,
     site: CANONICAL_ORIGIN,
@@ -64,7 +69,7 @@ export function welcomeUrls() {
 }
 
 export function buildWelcomeHtml(): string {
-  const { firstDocument, avatar, logo, site } = welcomeUrls();
+  const { firstDocument, video, avatar, logo, site } = welcomeUrls();
 
   const lockup = `<table ${TABLE} align="center">
     <tr><td align="center" style="padding-bottom:10px;"><img src="${logo}" width="56" height="56" alt="" style="display:block;border-radius:14px;"></td></tr>
@@ -107,7 +112,8 @@ export function buildWelcomeHtml(): string {
           <h1 style="font-family:${FONT};font-size:25px;font-weight:700;color:${INK};line-height:1.3;margin:0 0 14px;">${HEADLINE}</h1>
           <p style="font-family:${FONT};font-size:16px;color:${INK};line-height:1.7;margin:0 auto 26px;max-width:440px;">${BODY}</p>
           <a href="${firstDocument}" style="display:inline-block;background:${ORANGE};color:#ffffff;text-decoration:none;padding:15px 34px;border-radius:12px;font-family:${FONT};font-weight:700;font-size:16px;">${CTA_LABEL}</a>
-          <p style="font-family:${FONT};font-size:13px;color:${MUTED};margin:12px 0 30px;">${CTA_SUB}</p>
+          <p style="font-family:${FONT};font-size:13px;color:${MUTED};margin:12px 0 10px;">${CTA_SUB}</p>
+          <p style="font-family:${FONT};font-size:13px;margin:0 0 30px;"><a href="${video}" style="color:${BURNT};text-decoration:underline;">${VIDEO_LINK}</a></p>
           <p style="font-family:${FONT};font-size:14px;color:${BURNT};line-height:1.6;margin:0;padding:14px 18px;background:${TINT};border-radius:10px;">${GIVE}</p>
           <div style="border-top:1px solid ${HAIRLINE};margin:30px 0 26px;"></div>
           ${note}
@@ -121,7 +127,7 @@ export function buildWelcomeHtml(): string {
 }
 
 export function buildWelcomeText(): string {
-  const { firstDocument } = welcomeUrls();
+  const { firstDocument, video } = welcomeUrls();
   return `${WELCOME_LINE}
 
 ${HEADLINE}
@@ -129,6 +135,8 @@ ${BODY}
 
 ${CTA_LABEL}: ${firstDocument}
 ${CTA_SUB}
+
+${VIDEO_LINK}: ${video}
 
 ${GIVE}
 

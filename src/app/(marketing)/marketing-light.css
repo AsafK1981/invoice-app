@@ -3228,3 +3228,52 @@ h3 > .ml-badge-soon {
     justify-content: space-between;
   }
 }
+
+/* ---- Promo video beside the dashboard mock (2026-09-30) ---------------
+   Phone: the video is the first (default) demo tab; the dashboard is the
+   last. Tablet: stacked under the mock. Desktop: side by side. The 300px
+   frame is 533px tall, which is the dashboard mock's measured height at
+   its 640px width (532px), so the two visuals and their captions line up.
+   Re-measure if either mock changes. */
+.ml-vid-wrap {
+  margin: 28px auto 0;
+  width: min(100%, 300px);
+}
+@media (min-width: 1024px) {
+  .ml-app-row {
+    display: grid;
+    grid-template-columns: minmax(0, 640px) auto;
+    justify-content: center;
+    align-items: start;
+    gap: 32px;
+  }
+  .ml-app-row .ml-browser-wrap {
+    width: 100%;
+    margin: 0;
+  }
+  .ml-vid-wrap {
+    margin: 0;
+  }
+}
+@supports selector(:has(a)) {
+  @media (max-width: 759.98px) {
+    .ml-vid-wrap {
+      margin-top: 0;
+    }
+    .ml-theme:has(#ml-tab-vid:checked) .ml-show-grid,
+    .ml-theme:has(#ml-tab-vid:checked) .ml-browser-wrap,
+    .ml-theme:has(#ml-tab-app:checked) .ml-vid-wrap {
+      display: none;
+    }
+    /* Four tabs now: tighter pills so the row fits a 390px phone. */
+    .ml-show-tab {
+      padding: 0 12px;
+    }
+  }
+  @media (max-width: 374.98px) {
+    .ml-show-tab {
+      padding: 0 8px;
+      font-size: 13px;
+    }
+  }
+}

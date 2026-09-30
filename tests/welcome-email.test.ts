@@ -33,9 +33,13 @@ describe("welcome email html", () => {
 
   it("asks for exactly one action: the first document, on the canonical origin", () => {
     expect(html).toContain(`href="${CANONICAL_ORIGIN}/documents/new"`);
-    // The footer site link is the only other anchor; no dashboard link, no list of tasks.
+    // The other anchors are the footer site link and (since 2026-09-30) one
+    // small text link to the promo video; no dashboard link, no list of tasks.
     const anchors = html.match(/<a\s/g) ?? [];
-    expect(anchors).toHaveLength(2);
+    expect(anchors).toHaveLength(3);
+    expect(html).toContain(`href="${CANONICAL_ORIGIN}/video"`);
+    // Still one button: only the first-document CTA is painted orange.
+    expect(html.match(/<a [^>]*background:/g) ?? []).toHaveLength(1);
     expect(html).not.toContain("/dashboard");
     expect(html).not.toContain("<ul");
   });
@@ -60,11 +64,16 @@ describe("welcome email html", () => {
 
   it("makes no claim the product does not back", () => {
     // Free launch period without a card, and automatic allocation numbers,
-    // are the two facts the email leans on. Nothing numeric beyond "a minute".
+    // are the two facts the email leans on. Nothing numeric beyond "a minute"
+    // and the promo video's length.
     expect(html).toContain("בלי כרטיס אשראי");
     expect(html).toContain("מספרי ההקצאה");
     // The text twin is the copy without markup (no hex colours, no pixel widths).
-    expect(text.replace(/https?:\S+/g, "")).not.toMatch(/\d/);
+    expect(
+      text.replace(/https?:\S+/g, "").replace("סרטון של 20 שניות", ""),
+    ).not.toMatch(/\d/);
+    // The offer is "first month free"; never a second free month.
+    expect(html).not.toContain("חודשיים");
   });
 
   it("never contains a long dash", () => {

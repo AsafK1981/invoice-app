@@ -5,6 +5,7 @@ import SignupLink from "../components/SignupLink";
 import { pageMetadata } from "@/lib/page-metadata";
 import { absoluteUrl } from "@/lib/public-url";
 import "../marketing-light.css";
+import "../components/promo-video.css";
 import "./video.css";
 
 /**

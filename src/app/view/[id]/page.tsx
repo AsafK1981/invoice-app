@@ -22,6 +22,7 @@ const VIEW_STRINGS: Record<DocLang, Record<string, string>> = {
     promoBody: "הפיקו חשבוניות וקבלות בעברית ובאנגלית, ונהלו את מסמכי העסק במקום אחד.",
     promoButton: "התחילו בחינם",
     promoHint: "ללא כרטיס אשראי",
+    promoVideo: "צפו בסרטון של 20 שניות",
     loading: "טוען מסמך...",
     notFound: "המסמך לא נמצא",
     notFoundHint: "הקישור אינו תקין או שהמסמך נמחק",
@@ -62,6 +63,7 @@ const VIEW_STRINGS: Record<DocLang, Record<string, string>> = {
     promoBody: "Create invoices and receipts in Hebrew and English, and manage your business documents in one place.",
     promoButton: "Start for free",
     promoHint: "No credit card required",
+    promoVideo: "Watch a 20-second video (Hebrew)",
     loading: "Loading document...",
     notFound: "Document not found",
     notFoundHint: "The link is invalid, or the document was deleted",
@@ -584,6 +586,17 @@ export default function PublicDocumentPage({ params }: { params: Promise<{ id: s
             </a>
             <p className="mt-2 text-[11px] text-stone-500">
               {t.promoHint}
+            </p>
+            {/* Secondary: the button already goes to the signup-optimised
+                landing, so the promo video is a small link beside it, not a
+                replacement. Same growth_loop attribution, own medium. */}
+            <p className="mt-2 text-xs">
+              <a
+                href="/video?utm_source=document&utm_medium=view_video&utm_campaign=growth_loop"
+                className="text-orange-700 underline underline-offset-2 hover:text-orange-800"
+              >
+                {t.promoVideo}
+              </a>
             </p>
           </div>
         </div>

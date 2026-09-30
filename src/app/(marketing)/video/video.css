@@ -34,24 +34,8 @@ h1.ml-hero-h1.vid-h1 {
   box-shadow: var(--ml-shadow-md);
 }
 
-.vid-player {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  background: #f8f1e7;
-}
-
-/* Fullscreen: a 9:16 video on a wide screen must fit, not fill. `cover`
-   cropped it to the screen width and upscaled it into a blurry close-up. */
-.vid-player:fullscreen {
-  object-fit: contain;
-  background: #000;
-}
-.vid-player:-webkit-full-screen {
-  object-fit: contain;
-  background: #000;
-}
+/* The player itself (.vid-player, incl. the fullscreen fit) lives in
+   ../components/promo-video.css, shared with the landing page. */
 
 .ml-hero-actions.vid-actions {
   margin-top: 22px;

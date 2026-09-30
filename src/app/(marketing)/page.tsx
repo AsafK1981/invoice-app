@@ -16,6 +16,7 @@ import { graph, organization, website, softwareApplication, faqPage } from "@/li
 import "./marketing-light.css";
 import SignupLink from "./components/SignupLink";
 import EntranceMotion from "./components/EntranceMotion";
+import PromoVideo from "./components/PromoVideo";
 
 /**
  * Landing-page FAQ. Every answer is a factual claim about THIS app, verified
@@ -589,14 +590,28 @@ export default function MarketingLanding() {
                     with its own heading hidden on mobile so the two
                     sections read as one. Desktop never sees the control
                     and renders everything, as before. Browsers without
-                    `:has()` also fall back to showing everything. */}
+                    `:has()` also fall back to showing everything.
+                    2026-09-30: the promo video is the first tab and the
+                    default. The page already ran ~7.5 phone screens, so the
+                    video could not be a section of its own there; as a tab
+                    it adds no length (it is shorter than the invoice mock
+                    it replaces as the default view). */}
                 <div className="ml-show-tabs" role="group" aria-label="בחירת הדגמה">
+                  <input
+                    type="radio"
+                    name="ml-show-tab"
+                    id="ml-tab-vid"
+                    className="ml-show-tab-in"
+                    defaultChecked
+                  />
+                  <label htmlFor="ml-tab-vid" className="ml-show-tab">
+                    סרטון
+                  </label>
                   <input
                     type="radio"
                     name="ml-show-tab"
                     id="ml-tab-doc"
                     className="ml-show-tab-in"
-                    defaultChecked
                   />
                   <label htmlFor="ml-tab-doc" className="ml-show-tab">
                     המסמך
@@ -989,6 +1004,11 @@ export default function MarketingLanding() {
                 </p>
               </div>
 
+              {/* Promo video beside the dashboard mock (2026-09-30). On
+                  desktop the two sit side by side, same height (the frame
+                  width in marketing-light.css is tuned to the mock's
+                  height); on a phone each is its own demo tab. */}
+              <div className="ml-app-row">
               <figure className="ml-browser-wrap">
                 <div
                   className="ml-browser"
@@ -1109,6 +1129,13 @@ export default function MarketingLanding() {
                   מסך הבית של המערכת. הנתונים להמחשה בלבד.
                 </figcaption>
               </figure>
+              <figure className="ml-vid-wrap">
+                <PromoVideo />
+                <figcaption className="ml-sheet-cap">
+                  ככה זה נראה, בסרטון של 20 שניות.
+                </figcaption>
+              </figure>
+              </div>
             </div>
           </section>
 
