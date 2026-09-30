@@ -3,6 +3,7 @@ import {
   captureAttribution,
   captureReferral,
   clearReferral,
+  takeReferralVisitToReport,
   normalizeReferralSlug,
   readAttribution,
   readReferral,
@@ -187,5 +188,33 @@ describe("accountant referral (/from-accountant?ref=)", () => {
     land("https://friendlyinvoice.co.il/from-accountant?ref=hscpa");
     expect(() => captureReferral()).not.toThrow();
     expect(readReferral()).toBeNull();
+  });
+});
+
+describe("referral link visit count", () => {
+  it("reports a slug once per browser, then stays quiet", () => {
+    land("https://friendlyinvoice.co.il/from-accountant?ref=hscpa");
+    expect(takeReferralVisitToReport()).toBe("hscpa");
+    expect(takeReferralVisitToReport()).toBeNull();
+  });
+
+  it("reports a second accountant's link too, even though the signup referral stays the first", () => {
+    land("https://friendlyinvoice.co.il/from-accountant?ref=hscpa");
+    captureReferral();
+    expect(takeReferralVisitToReport()).toBe("hscpa");
+    land("https://friendlyinvoice.co.il/from-accountant?ref=oritax");
+    captureReferral();
+    expect(takeReferralVisitToReport()).toBe("oritax");
+    expect(readReferral()).toBe("hscpa");
+  });
+
+  it("stays quiet off the landing page, without a valid slug, and when storage is blocked", () => {
+    land("https://friendlyinvoice.co.il/pricing?ref=hscpa");
+    expect(takeReferralVisitToReport()).toBeNull();
+    land("https://friendlyinvoice.co.il/from-accountant?ref=Not%20A%20Slug");
+    expect(takeReferralVisitToReport()).toBeNull();
+    storage = makeStorage(true);
+    land("https://friendlyinvoice.co.il/from-accountant?ref=hscpa");
+    expect(takeReferralVisitToReport()).toBeNull();
   });
 });

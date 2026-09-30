@@ -136,6 +136,33 @@ export function clearReferral(): void {
   }
 }
 
+const REF_PING_KEY = "fi_ref_ping_v1";
+
+/**
+ * The accountant slug whose visit should be reported to /api/referral-visit
+ * right now, or null. Returns a slug at most once per browser per slug, so
+ * the admin count reads as "people who opened the link", not page views, and
+ * a visitor who never signs up is still visible as interest. Independent of
+ * captureReferral on purpose: a second accountant's link does not replace the
+ * first one as the signup referral, but it was still opened. Never throws.
+ */
+export function takeReferralVisitToReport(): string | null {
+  try {
+    if (typeof window === "undefined") return null;
+    const path = window.location.pathname.replace(/\/+$/, "");
+    if (path !== REFERRAL_LANDING) return null;
+    const ref = normalizeReferralSlug(new URLSearchParams(window.location.search).get("ref"));
+    if (!ref) return null;
+    const seen = (window.localStorage.getItem(REF_PING_KEY) || "").split(",").filter(Boolean);
+    if (seen.includes(ref)) return null;
+    window.localStorage.setItem(REF_PING_KEY, [...seen, ref].slice(-20).join(","));
+    return ref;
+  } catch {
+    // Storage blocked: skip the count rather than report on every page load.
+    return null;
+  }
+}
+
 /** The remembered accountant slug, or null. Never throws. */
 export function readReferral(): string | null {
   try {

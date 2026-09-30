@@ -50,6 +50,20 @@ type TurnoverRow = {
   import_batch_id: string | null;
 };
 
+/** An accountant's request to be listed: their own publishable contact details. */
+type PartnerApplicationRow = {
+  id: string;
+  created_at: string;
+  name: string;
+  office: string | null;
+  city: string;
+  email: string;
+  phone: string | null;
+  website: string | null;
+  ref: string | null;
+  status: string;
+};
+
 type DocOwnerRow = {
   business_id: string;
   created_at: string;
@@ -176,6 +190,8 @@ export async function GET(req: NextRequest) {
       businessesResult,
       docOwnerRows,
       dailyChart,
+      referralVisitResult,
+      partnerApplicationRows,
     ] = await Promise.all([
       loadUsers(),
       // Paid AND sent: a credit note is saved "sent" and still reduces turnover.
@@ -199,6 +215,15 @@ export async function GET(req: NextRequest) {
       // import. Never a number, a client or an amount.
       loadAll<DocOwnerRow>("documents", "business_id, created_at, import_batch_id"),
       loadDocumentChart(),
+      // Accountant funnel: who opened a personal link (slug + time, nothing
+      // about the visitor) and who asked to be listed (their own publishable
+      // details). Both tables are operator metadata, service-role only.
+      // The per-slug view, not the raw rows: a flooded table stays one row per slug here.
+      sb.from("referral_visit_counts").select("ref, visits, first_at, last_at"),
+      loadAll<PartnerApplicationRow>(
+        "partner_applications",
+        "id, created_at, name, office, city, email, phone, website, ref, status",
+      ),
     ]);
 
     if (docs30dResult.error) {
@@ -240,21 +265,37 @@ export async function GET(req: NextRequest) {
     for (const row of docOwnerRows) {
       if (!row.import_batch_id) producingBusinesses.add(row.business_id);
     }
-    const referralMap = new Map<string, { businesses: number; active: number; firstAt: string; lastAt: string }>();
+    type ReferralAgg = { visits: number; businesses: number; active: number; firstAt: string; lastAt: string };
+    const referralMap = new Map<string, ReferralAgg>();
+    const touch = (ref: string, at: string): ReferralAgg => {
+      const cur = referralMap.get(ref);
+      if (!cur) {
+        const fresh = { visits: 0, businesses: 0, active: 0, firstAt: at, lastAt: at };
+        referralMap.set(ref, fresh);
+        return fresh;
+      }
+      if (at < cur.firstAt) cur.firstAt = at;
+      if (at > cur.lastAt) cur.lastAt = at;
+      return cur;
+    };
+    // A link that was opened but brought no signup yet is still a row: that
+    // accountant (or their client) showed interest and is worth a follow-up.
+    if (referralVisitResult.error) throw new Error("Unable to load referral visits");
+    for (const v of (referralVisitResult.data ?? []) as Array<{ ref: string; visits: number; first_at: string; last_at: string }>) {
+      touch(v.ref, v.first_at).visits += Number(v.visits) || 0;
+      touch(v.ref, v.last_at);
+    }
     for (const b of businessesResult) {
       if (!b.referred_by || internalBusinessIds.has(b.id)) continue;
-      const active = producingBusinesses.has(b.id) ? 1 : 0;
-      const cur = referralMap.get(b.referred_by);
-      if (!cur) referralMap.set(b.referred_by, { businesses: 1, active, firstAt: b.created_at, lastAt: b.created_at });
-      else {
-        cur.businesses++;
-        cur.active += active;
-        if (b.created_at < cur.firstAt) cur.firstAt = b.created_at;
-        if (b.created_at > cur.lastAt) cur.lastAt = b.created_at;
-      }
+      const agg = touch(b.referred_by, b.created_at);
+      agg.businesses++;
+      if (producingBusinesses.has(b.id)) agg.active++;
     }
     const referrals = Array.from(referralMap, ([ref, v]) => ({ ref, ...v }))
-      .sort((a, b) => b.active - a.active || b.businesses - a.businesses || a.firstAt.localeCompare(b.firstAt));
+      .sort((a, b) =>
+        b.active - a.active || b.businesses - a.businesses || b.visits - a.visits || a.firstAt.localeCompare(b.firstAt));
+    const partnerApplications = [...partnerApplicationRows]
+      .sort((a, b) => a.created_at.localeCompare(b.created_at));
 
     // Documents produced per account. Bulk imports are excluded on purpose:
     // a migrated history of 300 old invoices is not 300 acts of using the
@@ -415,6 +456,7 @@ export async function GET(req: NextRequest) {
         importedDocuments: importedByUserCount,
       },
       referrals,
+      partnerApplications,
       subscribers: {
         paying: payingSubscribers,
         trialing: trialingSubscribers,

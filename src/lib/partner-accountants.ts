@@ -31,6 +31,8 @@ export interface PartnerAccountant {
   phone?: string;
   email?: string;
   note?: string;
+  /** One of the first ten listed (FOUNDING_SLOTS in partner-apply.ts): shown with a badge. */
+  founding?: boolean;
   /** yyyy-mm-dd */
   joinedOn: string;
 }

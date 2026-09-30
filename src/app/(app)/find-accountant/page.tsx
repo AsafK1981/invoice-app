@@ -96,7 +96,14 @@ function AccountantCard({ a }: { a: PartnerAccountant }) {
   return (
     <article className="card-soft p-5 flex flex-col gap-3">
       <div>
-        <h2 className="text-lg font-bold text-stone-900">{a.name}</h2>
+        <h2 className="text-lg font-bold text-stone-900 flex items-center gap-2 flex-wrap">
+          {a.name}
+          {a.founding ? (
+            <span className="inline-flex items-center rounded-full border border-orange-200 bg-orange-50 px-2 py-0.5 text-xs font-bold text-orange-800">
+              שותף מייסד
+            </span>
+          ) : null}
+        </h2>
         {a.office && <p className="text-sm text-stone-700">{a.office}</p>}
         <p className="text-sm text-stone-600 flex items-center gap-1.5 mt-1">
           <MapPin className="w-4 h-4" aria-hidden="true" />

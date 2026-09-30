@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { captureAttribution, captureReferral } from "@/lib/attribution";
+import { captureAttribution, captureReferral, takeReferralVisitToReport } from "@/lib/attribution";
 
 /**
  * Records the visitor's first touch (see src/lib/attribution.ts). Mounted in
@@ -12,6 +12,17 @@ export function AttributionCapture() {
   useEffect(() => {
     captureAttribution();
     captureReferral();
+    // Count the visit to an accountant's personal link (once per browser).
+    // Fire and forget: the landing page must not depend on it.
+    const ref = takeReferralVisitToReport();
+    if (ref) {
+      fetch("/api/referral-visit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ref }),
+        keepalive: true,
+      }).catch(() => {});
+    }
   }, []);
   return null;
 }

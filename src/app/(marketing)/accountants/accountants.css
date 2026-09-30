@@ -219,3 +219,176 @@
     justify-content: center;
   }
 }
+
+/* "Join the directory" form (JoinDirectory.tsx). One card under the partner
+   spotlight, same width, white on the cream field. */
+.acc-join {
+  max-width: 860px;
+  margin: 18px auto 0;
+}
+
+.acc-join-card {
+  background: var(--ml-card);
+  border: 1px solid var(--ml-line-soft);
+  border-radius: 18px;
+  box-shadow: var(--ml-shadow-sm);
+  padding: 26px 28px 28px;
+  text-align: start;
+}
+
+.acc-join-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  margin-bottom: 6px;
+}
+
+.acc-join-head h3,
+.acc-join-done h3 {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 800;
+  color: var(--ml-ink-head);
+}
+
+.acc-join-left {
+  display: inline-flex;
+  align-items: center;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--ml-gold-ink);
+  background: var(--ml-gold-tint);
+  border: 1px solid var(--ml-gold-tint-line);
+  border-radius: 999px;
+  padding: 4px 12px;
+}
+
+.acc-join-sub {
+  margin: 0 0 18px;
+  color: var(--ml-muted);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.acc-join-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 16px;
+  margin-bottom: 16px;
+}
+
+.acc-join-field {
+  display: grid;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ml-ink);
+}
+
+.acc-join-field input {
+  width: 100%;
+  min-height: 46px;
+  padding: 10px 14px;
+  font: inherit;
+  font-weight: 400;
+  font-size: 16px;
+  color: var(--ml-ink);
+  background: #ffffff;
+  border: 1px solid var(--ml-line);
+  border-radius: 12px;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.acc-join-field input:hover {
+  border-color: var(--ml-gold-tint-line);
+}
+
+.acc-join-field input:focus-visible {
+  border-color: var(--ml-orange);
+  box-shadow: 0 0 0 3px rgba(217, 106, 29, 0.18);
+}
+
+.acc-join-hp {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.acc-join-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0 0 18px;
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--ml-ink);
+  cursor: pointer;
+}
+
+.acc-join-consent input {
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+  flex: none;
+  accent-color: var(--ml-orange);
+}
+
+.acc-join-error {
+  margin: 0 0 14px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #fdecec;
+  border: 1px solid #f5c2c2;
+  color: #8a1f1f;
+  font-size: 14.5px;
+}
+
+.acc-join-card .ml-btn[disabled] {
+  opacity: 0.7;
+  cursor: progress;
+}
+
+.acc-join-done {
+  text-align: center;
+}
+
+.acc-join-done p {
+  margin: 8px auto 0;
+  max-width: 520px;
+  color: var(--ml-ink);
+  line-height: 1.7;
+}
+
+.acc-join-done-icon {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  margin: 0 auto 12px;
+  border-radius: 999px;
+  background: var(--ml-grad);
+  color: #ffffff;
+}
+
+.acc-join-done-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+@media (max-width: 760px) {
+  .acc-join-card {
+    padding: 22px 18px 22px;
+  }
+  .acc-join-grid {
+    grid-template-columns: 1fr;
+  }
+  .acc-join-card .ml-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

@@ -95,7 +95,12 @@ interface Stats {
   };
   revenue: { inAppTurnover: number; importedTurnover: number };
   /** Businesses per accountant referral slug (/from-accountant?ref=), ours excluded. */
-  referrals: Array<{ ref: string; businesses: number; active: number; firstAt: string; lastAt: string }>;
+  referrals: Array<{ ref: string; visits: number; businesses: number; active: number; firstAt: string; lastAt: string }>;
+  /** Accountants who asked to be listed, oldest first (the first ten are founding partners). */
+  partnerApplications: Array<{
+    id: string; created_at: string; name: string; office: string | null; city: string;
+    email: string; phone: string | null; website: string | null; ref: string | null; status: string;
+  }>;
 }
 
 interface Health {
@@ -471,6 +476,7 @@ export default function AdminPage() {
               businesses. A slug that is not yet in PARTNER_ACCOUNTANTS is the
               cue to email that accountant for their listing details. */}
           <ReferralsCard rows={stats.referrals ?? []} />
+          <PartnerApplicationsCard rows={stats.partnerApplications ?? []} />
 
           {/* Documents by type, last 30 days. Counts only, on purpose: this
               card replaced a "last 20 documents" list that named each client
@@ -780,12 +786,13 @@ function ReferralsCard({ rows }: { rows: Stats["referrals"] }) {
         </span>
       </div>
       {rows.length === 0 ? (
-        <p className="p-5 text-sm text-stone-500 italic">עדיין לא הגיע אף עסק דרך קישור של רואה חשבון</p>
+        <p className="p-5 text-sm text-stone-500 italic">עדיין אף אחד לא פתח קישור של רואה חשבון</p>
       ) : (
         <table className="w-full text-sm">
           <thead className="text-xs text-stone-500">
             <tr>
               <th className="text-right px-5 py-2 font-medium">קישור</th>
+              <th className="text-right px-3 py-2 font-medium">פתחו את הקישור</th>
               <th className="text-right px-3 py-2 font-medium">נרשמו</th>
               <th className="text-right px-3 py-2 font-medium">הוציאו מסמך</th>
               <th className="text-right px-3 py-2 font-medium">ראשון</th>
@@ -797,6 +804,7 @@ function ReferralsCard({ rows }: { rows: Stats["referrals"] }) {
             {rows.map((r) => (
               <tr key={r.ref} className="border-t border-orange-50">
                 <td className="px-5 py-2 font-mono text-stone-900" dir="ltr">{r.ref}</td>
+                <td className="px-3 py-2 text-stone-700">{r.visits ?? 0}</td>
                 <td className="px-3 py-2 text-stone-700">{r.businesses}</td>
                 <td className="px-3 py-2 font-semibold text-stone-900">{r.active}</td>
                 <td className="px-3 py-2 text-stone-600">{formatDate(r.firstAt)}</td>
@@ -812,6 +820,58 @@ function ReferralsCard({ rows }: { rows: Stats["referrals"] }) {
             ))}
           </tbody>
         </table>
+      )}
+    </div>
+  );
+}
+
+function PartnerApplicationsCard({ rows }: { rows: Stats["partnerApplications"] }) {
+  return (
+    <div className="card-soft overflow-hidden">
+      <div className="px-5 py-3 border-b border-orange-100 flex items-center gap-2 flex-wrap">
+        <UserSearch className="w-4 h-4 text-orange-500" />
+        <h2 className="font-semibold text-stone-900">בקשות הצטרפות לרשימת רואי החשבון</h2>
+        <span className="text-xs text-stone-500 mr-auto">
+          מהטופס בעמוד לרואי חשבון. עשרת הראשונים הם שותפים מייסדים
+        </span>
+      </div>
+      {rows.length === 0 ? (
+        <p className="p-5 text-sm text-stone-500 italic">עדיין אין בקשות</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="text-xs text-stone-500">
+              <tr>
+                <th className="text-right px-5 py-2 font-medium">#</th>
+                <th className="text-right px-3 py-2 font-medium">שם</th>
+                <th className="text-right px-3 py-2 font-medium">משרד</th>
+                <th className="text-right px-3 py-2 font-medium">עיר</th>
+                <th className="text-right px-3 py-2 font-medium">מייל</th>
+                <th className="text-right px-3 py-2 font-medium">טלפון</th>
+                <th className="text-right px-3 py-2 font-medium">אתר</th>
+                <th className="text-right px-3 py-2 font-medium">התקבל</th>
+                <th className="text-right px-5 py-2 font-medium">סטטוס</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r, i) => (
+                <tr key={r.id} className="border-t border-orange-50">
+                  <td className="px-5 py-2 text-stone-500">{i + 1}</td>
+                  <td className="px-3 py-2 font-semibold text-stone-900">{r.name}</td>
+                  <td className="px-3 py-2 text-stone-700">{r.office ?? ""}</td>
+                  <td className="px-3 py-2 text-stone-700">{r.city}</td>
+                  <td className="px-3 py-2 text-stone-700" dir="ltr">{r.email}</td>
+                  <td className="px-3 py-2 text-stone-700" dir="ltr">{r.phone ?? ""}</td>
+                  <td className="px-3 py-2 text-stone-700" dir="ltr">{r.website ?? ""}</td>
+                  <td className="px-3 py-2 text-stone-600">{formatDate(r.created_at)}</td>
+                  <td className="px-5 py-2 text-stone-700">
+                    {r.status === "listed" ? "ברשימה" : r.status === "rejected" ? "נדחה" : "חדש"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );

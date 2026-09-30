@@ -27,6 +27,9 @@ import { graph, faqPage } from "@/lib/jsonld";
 import { LtrText } from "@/components/ui/ltr";
 import { pageMetadata } from "@/lib/page-metadata";
 import "../marketing-light.css";
+import { PARTNER_ACCOUNTANTS } from "@/lib/partner-accountants";
+import { FOUNDING_SLOTS } from "@/lib/partner-apply";
+import JoinDirectory from "./JoinDirectory";
 import ShareWithClients from "./ShareWithClients";
 import "./accountants.css";
 
@@ -177,7 +180,7 @@ const FAQ: { q: string; a: string }[] = [
   },
   {
     q: "מה אני מרוויח מלהמליץ?",
-    a: "הופעה ברשימת רואי החשבון שבתוך האפליקציה, שמשתמשים רואים כשהם מחפשים רואה חשבון. כל רואה חשבון מקבל קישור אישי; לקוח שנרשם דרכו ומוציא מסמכים נרשם לזכותו, וככל שיותר לקוחות פעילים מגיעים דרך הקישור, הוא גבוה יותר ברשימה. ובנוסף, לקוחות שמגיעים אליכם עם מסמכים תקינים ודוחות מוכנים.",
+    a: "הופעה ברשימת רואי החשבון שבתוך האפליקציה, שמשתמשים רואים כשהם מחפשים רואה חשבון. עשרת רואי החשבון הראשונים שמצטרפים נכנסים לרשימה כבר עכשיו, כשותפים מייסדים, בלי לחכות ללקוח ראשון. כל רואה חשבון מקבל קישור אישי; לקוח שנרשם דרכו ומוציא מסמכים נרשם לזכותו, וככל שיותר לקוחות פעילים מגיעים דרך הקישור, הוא גבוה יותר ברשימה. ובנוסף, לקוחות שמגיעים אליכם עם מסמכים תקינים ודוחות מוכנים.",
   },
   {
     q: "אני יכול להיכנס לחשבון של הלקוח?",
@@ -344,12 +347,20 @@ export default function AccountantsPage() {
                     <h3 id="acc-partner-title">ממליצים עלינו? אנחנו ממליצים עליכם</h3>
                     <p>
                       רואי חשבון שממליצים על חשבונית ידידותית מופיעים בתוך האפליקציה,
-                      ברשימה שהמשתמשים רואים כשהם מחפשים רואה חשבון. לכל רואה חשבון
-                      קישור אישי: לקוח שנרשם דרכו ומוציא מסמכים נרשם לזכותו, ומי שהביא
-                      יותר לקוחות פעילים מופיע גבוה יותר. כך הלקוחות הבאים שלכם יכולים להגיע אליכם מאיתנו.
+                      ברשימה שהמשתמשים רואים כשהם מחפשים רואה חשבון. עשרת הראשונים
+                      נכנסים לרשימה כבר עכשיו, כשותפים מייסדים, בלי לחכות ללקוח ראשון.
+                      אחר כך המיקום נקבע לפי הקישור האישי: מי שהביא יותר לקוחות פעילים
+                      מופיע גבוה יותר. כך הלקוחות הבאים שלכם יכולים להגיע אליכם מאיתנו.
                     </p>
                   </div>
                 </article>
+              </div>
+              {/* How an accountant says yes without a call or an email thread:
+                  the form stores their consent and the fields to publish. */}
+              <div className="acc-join" aria-labelledby="acc-join-title">
+                <JoinDirectory
+                  foundingLeft={Math.max(0, FOUNDING_SLOTS - PARTNER_ACCOUNTANTS.filter((a) => a.founding).length)}
+                />
               </div>
             </div>
           </section>
