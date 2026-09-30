@@ -4,4 +4,4 @@
  * the brand). One constant, so the two can never drift apart.
  */
 export const FACEBOOK_PAGE_URL =
-  "https://www.facebook.com/profile.php?id=61594783358025";
+  "https://www.facebook.com/friendlyinvoice";
