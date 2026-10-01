@@ -27,13 +27,13 @@ const PAGE = 1000;
 /**
  * Daily activation nudge (vercel.json, 07:00 UTC = 09:00-10:00 in Israel).
  *
- * Two emails to owners who signed up and never produced a document: #1 on
- * day 1, #2 from day 3. Selection rules live in src/lib/activation-nudge.ts.
+ * One email, once per user ever, to owners who signed up 24h-72h ago and
+ * never produced a document. Selection rules live in src/lib/activation-nudge.ts.
  *
  * OFF unless ACTIVATION_NUDGE_ENABLED is exactly "true". Off, the route only
  * reports who WOULD be emailed (counts + user ids) and sends nothing.
  *
- * Exactly once: the step's timestamp is CLAIMED in app_metadata before the
+ * Exactly once: the sent timestamp is CLAIMED in app_metadata before the
  * send; a failed send releases it so tomorrow can retry. A crash between
  * claim and send loses that one email rather than repeating it.
  *
@@ -51,16 +51,14 @@ export async function GET(req: Request) {
   }
 
   const candidates = selectActivationNudges({ ...snapshot, now: new Date() });
-  const ids = (step: 1 | 2) => candidates.filter((c) => c.step === step).map((c) => c.userId);
 
   if (process.env.ACTIVATION_NUDGE_ENABLED !== "true") {
-    const d1 = ids(1);
-    const d2 = ids(2);
-    console.log(`[activation-nudge] dry-run d1=${d1.length} d2=${d2.length}`);
+    const ids = candidates.map((c) => c.userId);
+    console.log(`[activation-nudge] dry-run count=${ids.length}`);
     return NextResponse.json({
       ok: true,
       dryRun: true,
-      wouldSend: { d1: { count: d1.length, ids: d1 }, d2: { count: d2.length, ids: d2 } },
+      wouldSend: { count: ids.length, ids },
     });
   }
 
@@ -98,7 +96,7 @@ async function sendOne(
   from: string,
   c: NudgeCandidate,
 ): Promise<"sent" | "failed"> {
-  const key = c.step === 1 ? NUDGE_META.d1 : NUDGE_META.d2;
+  const key = NUDGE_META.sent;
 
   // Claim first. app_metadata updates merge, so only this key changes.
   const claim = await admin.auth.admin.updateUserById(c.userId, {
@@ -114,9 +112,9 @@ async function sendOne(
     await transporter.sendMail({
       from: `"חשבונית ידידותית" <${from}>`,
       to: c.email,
-      subject: activationSubject(c.step),
-      html: buildActivationHtml(c.step, optoutUrl),
-      text: buildActivationText(c.step, optoutUrl),
+      subject: activationSubject(),
+      html: buildActivationHtml(optoutUrl),
+      text: buildActivationText(optoutUrl),
       headers: {
         "List-Unsubscribe": `<${optoutUrl}>`,
         "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
@@ -126,7 +124,7 @@ async function sendOne(
   } catch {
     // Release the claim (null removes the key) so tomorrow retries.
     await admin.auth.admin.updateUserById(c.userId, { app_metadata: { [key]: null } });
-    console.error(`[activation-nudge] send failed user=${c.userId} step=${c.step}`);
+    console.error(`[activation-nudge] send failed user=${c.userId}`);
     return "failed";
   }
 }

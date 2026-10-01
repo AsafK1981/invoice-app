@@ -1,10 +1,10 @@
-// One-off preview of the two activation emails, sent ONLY to the owner.
+// One-off preview of the activation email, sent ONLY to the owner.
 //
 //   npx tsx scripts/send-activation-preview.mjs
 //
-// Renders both templates (src/app/api/cron/activation-nudge/template.ts) for a
+// Renders the template (src/app/api/cron/activation-nudge/template.ts) for a
 // dummy user id and sends them through the same Gmail SMTP relay and FROM
-// line the app uses, with the subject prefixed "[תצוגה מקדימה 2] ". The
+// line the app uses, with the subject prefixed "[תצוגה מקדימה 3] ". The
 // recipient is hard-coded; any attempt to point it elsewhere is refused.
 // Run with tsx (not plain node): it imports the TypeScript templates.
 import { readFileSync } from "node:fs";
@@ -44,17 +44,15 @@ const transporter = nodemailer.createTransport({
 });
 
 const optoutUrl = tpl.activationOptoutUrl(DUMMY_USER_ID, activationOptoutToken(DUMMY_USER_ID));
-for (const step of [1, 2]) {
-  const info = await transporter.sendMail({
-    from: `"חשבונית ידידותית" <${GMAIL_USER}>`,
-    to: RECIPIENT,
-    subject: `[תצוגה מקדימה 2] ${tpl.activationSubject(step)}`,
-    html: tpl.buildActivationHtml(step, optoutUrl),
-    text: tpl.buildActivationText(step, optoutUrl),
-  });
-  if (info.rejected?.length) {
-    console.error(`email ${step} rejected`);
-    process.exit(1);
-  }
-  console.log(`email ${step}: accepted messageId=${info.messageId} response=${info.response}`);
+const info = await transporter.sendMail({
+  from: `"חשבונית ידידותית" <${GMAIL_USER}>`,
+  to: RECIPIENT,
+  subject: `[תצוגה מקדימה 3] ${tpl.activationSubject()}`,
+  html: tpl.buildActivationHtml(optoutUrl),
+  text: tpl.buildActivationText(optoutUrl),
+});
+if (info.rejected?.length) {
+  console.error("preview rejected");
+  process.exit(1);
 }
+console.log(`accepted messageId=${info.messageId} response=${info.response}`);

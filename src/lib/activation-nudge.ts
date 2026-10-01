@@ -3,16 +3,17 @@ import { resolveInternalAccounts, isInternalBusinessId } from "@/lib/internal-ac
 import { isAdminEmail } from "@/lib/admin";
 
 /**
- * Activation nudge: two lifecycle emails for owners who signed up and never
- * produced a document. Pure selection + opt-out token logic, kept free of
- * next/server and Supabase so the unit tests can drive it with plain objects.
- * The cron route (src/app/api/cron/activation-nudge/route.ts) loads the
- * snapshot, calls selectActivationNudges and does the sending.
+ * Activation nudge: ONE lifecycle email, ever, for owners who signed up and
+ * never produced a document. Pure selection + opt-out token logic, kept free
+ * of next/server and Supabase so the unit tests can drive it with plain
+ * objects. The cron route (src/app/api/cron/activation-nudge/route.ts) loads
+ * the snapshot, calls selectActivationNudges and does the sending.
  *
  * State lives in auth app_metadata (admin-only, unlike user_metadata which
- * the browser can rewrite), as three top-level timestamps:
- *   activation_nudge_d1_at      email #1 claimed/sent
- *   activation_nudge_d2_at      email #2 claimed/sent
+ * the browser can rewrite), as two top-level timestamps:
+ *   activation_nudge_d1_at      the email was claimed/sent (key name kept from
+ *                               the earlier two-email design, so anyone already
+ *                               marked is never emailed again)
  *   activation_nudge_optout_at  the owner clicked the opt-out link
  * GoTrue merges app_metadata on update, so writing one key never clobbers
  * plan_* or provider fields, and writing null removes the key (used to
@@ -20,24 +21,16 @@ import { isAdminEmail } from "@/lib/admin";
  */
 
 export const NUDGE_META = {
-  d1: "activation_nudge_d1_at",
-  d2: "activation_nudge_d2_at",
+  sent: "activation_nudge_d1_at",
   optout: "activation_nudge_optout_at",
 } as const;
 
 const HOUR = 60 * 60 * 1000;
-/** Email #1 goes out once the account is a day old ... */
-export const D1_MIN_AGE_MS = 24 * HOUR;
+/** The email goes out once the account is a day old ... */
+export const MIN_AGE_MS = 24 * HOUR;
 /** ... and only while it is younger than three days. Older zero-doc accounts
  *  (the backlog that pre-dates this feature) get nothing. */
-export const D1_MAX_AGE_MS = 72 * HOUR;
-/** Email #2 goes out from day three ... */
-export const D2_MIN_AGE_MS = 72 * HOUR;
-/** ... and never sooner than this after email #1, so a skipped cron day
- *  cannot put the two emails on consecutive days. */
-export const D2_MIN_GAP_MS = 36 * HOUR;
-
-export type NudgeStep = 1 | 2;
+export const MAX_AGE_MS = 72 * HOUR;
 
 export interface NudgeUser {
   id: string;
@@ -57,25 +50,17 @@ export interface NudgeBusiness {
 export interface NudgeCandidate {
   userId: string;
   email: string;
-  step: NudgeStep;
-}
-
-function metaTime(meta: Record<string, unknown> | null | undefined, key: string): number | null {
-  const v = meta?.[key];
-  if (typeof v !== "string" || !v) return null;
-  const t = Date.parse(v);
-  return Number.isFinite(t) ? t : null;
 }
 
 /**
- * Who gets which email right now. At most one entry per user, so a single
- * run can never send both emails to the same person.
+ * Who gets the email right now. At most one entry per user, and nobody who
+ * already holds the sent marker, so each user gets it at most once ever.
  *
  * Excluded: no or unconfirmed email, banned/deleted, the admin, `.internal`
  * logins, anyone holding ANY internal business (stricter than the metrics'
  * "every" rule: a lifecycle email to one of our own accounts is never
- * wanted), opted out, or owning a business with any document at all
- * (drafts included: a draft means they found the editor).
+ * wanted), opted out, already sent, or owning a business with any document
+ * at all (drafts included: a draft means they found the editor).
  */
 export function selectActivationNudges(input: {
   users: ReadonlyArray<NudgeUser>;
@@ -97,7 +82,9 @@ export function selectActivationNudges(input: {
   }
 
   const out: NudgeCandidate[] = [];
+  const seen = new Set<string>();
   for (const u of input.users) {
+    if (seen.has(u.id)) continue;
     const email = (u.email || "").trim();
     if (!email || !u.email_confirmed_at) continue;
     if (u.deleted_at) continue;
@@ -108,23 +95,15 @@ export function selectActivationNudges(input: {
 
     const meta = u.app_metadata ?? {};
     if (meta[NUDGE_META.optout]) continue;
+    if (meta[NUDGE_META.sent]) continue; // one email per user, ever
 
     const created = Date.parse(u.created_at);
     if (!Number.isFinite(created)) continue;
     const age = now - created;
-    if (age < D1_MIN_AGE_MS) continue;
+    if (age < MIN_AGE_MS || age >= MAX_AGE_MS) continue;
 
-    const d1 = metaTime(meta, NUDGE_META.d1);
-    const d2 = metaTime(meta, NUDGE_META.d2);
-    if (d2 !== null) continue; // both sent: never again
-
-    if (d1 === null) {
-      if (age < D1_MAX_AGE_MS) out.push({ userId: u.id, email, step: 1 });
-      continue;
-    }
-    if (age >= D2_MIN_AGE_MS && now - d1 >= D2_MIN_GAP_MS) {
-      out.push({ userId: u.id, email, step: 2 });
-    }
+    seen.add(u.id);
+    out.push({ userId: u.id, email });
   }
   return out;
 }

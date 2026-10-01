@@ -45,28 +45,23 @@ function run(users: NudgeUser[], businesses: NudgeBusiness[] = [], withDocs: str
 }
 
 describe("activation nudge selection", () => {
-  it("email #1 only inside the 24h-72h window", () => {
+  it("only inside the 24h-72h window", () => {
     const tooYoung = user(23);
-    const d1 = user(30);
+    const due = user(30);
     const tooOld = user(80);
-    const out = run([tooYoung, d1, tooOld]);
-    expect(out).toEqual([{ userId: d1.id, email: d1.email, step: 1 }]);
+    const out = run([tooYoung, due, tooOld]);
+    expect(out).toEqual([{ userId: due.id, email: due.email }]);
   });
 
-  it("email #2 from 72h, only after #1 was sent, and not right after it", () => {
-    const due = user(80, { app_metadata: { [NUDGE_META.d1]: ago(50) } });
-    const tooSoonAfterD1 = user(80, { app_metadata: { [NUDGE_META.d1]: ago(10) } });
-    const notYet72 = user(60, { app_metadata: { [NUDGE_META.d1]: ago(40) } });
-    const out = run([due, tooSoonAfterD1, notYet72]);
-    expect(out).toEqual([{ userId: due.id, email: due.email, step: 2 }]);
-  });
-
-  it("never more than two emails, never both in one run", () => {
-    const done = user(200, { app_metadata: { [NUDGE_META.d1]: ago(150), [NUDGE_META.d2]: ago(100) } });
-    const out = run([done]);
-    expect(out).toEqual([]);
+  it("one email per user, ever: anyone already marked is never re-sent", () => {
+    const sent = user(30, { app_metadata: { [NUDGE_META.sent]: ago(5) } });
+    const legacyBoth = user(60, {
+      app_metadata: { activation_nudge_d1_at: ago(40), activation_nudge_d2_at: ago(2) },
+    });
+    expect(run([sent, legacyBoth])).toEqual([]);
+    expect(NUDGE_META.sent).toBe("activation_nudge_d1_at");
     const fresh = user(30);
-    expect(run([fresh]).filter((c) => c.userId === fresh.id)).toHaveLength(1);
+    expect(run([fresh, fresh])).toHaveLength(1);
   });
 
   it("skips anyone whose business has any document", () => {
@@ -85,7 +80,7 @@ describe("activation nudge selection", () => {
 
   it("skips opted-out users", () => {
     const u = user(30, { app_metadata: { [NUDGE_META.optout]: ago(1) } });
-    const u2 = user(80, { app_metadata: { [NUDGE_META.d1]: ago(50), [NUDGE_META.optout]: ago(1) } });
+    const u2 = user(40, { app_metadata: { [NUDGE_META.optout]: ago(1) } });
     expect(run([u, u2])).toEqual([]);
   });
 
@@ -114,7 +109,7 @@ describe("activation nudge selection", () => {
 
   it("includes a user who never created a business", () => {
     const u = user(30);
-    expect(run([u], [])).toEqual([{ userId: u.id, email: u.email, step: 1 }]);
+    expect(run([u], [])).toEqual([{ userId: u.id, email: u.email }]);
   });
 });
 
@@ -134,49 +129,54 @@ describe("activation opt-out token", () => {
 
 const LONG_DASH = new RegExp(`[${String.fromCharCode(0x2013)}${String.fromCharCode(0x2014)}]`);
 
-describe("activation email templates", () => {
-  const optout = activationOptoutUrl("11111111-2222-4333-8444-555555555555", "x".repeat(32));
+const BANNED_DURATION_WORDS = ["לתמיד", "לנצח", "ללא הגבלת זמן", "קבוע", "forever", "permanent"];
 
-  it("email #1: copy, deep link with d1 utm, opt-out, preheader, images", () => {
-    const html = buildActivationHtml(1, optout);
-    expect(activationSubject(1)).toBe("בניתי את זה כי נמאס לי מטפסים");
+describe("activation email template", () => {
+  const optout = activationOptoutUrl("11111111-2222-4333-8444-555555555555", "x".repeat(32));
+  const html = buildActivationHtml(optout);
+  const text = buildActivationText(optout);
+  const subject = activationSubject();
+
+  it("subject, preheader, video card, FAQ and the single-campaign links", () => {
+    expect(subject).toBe("18 שניות, ואתם יודעים בדיוק איך זה עובד");
     expect(html).toMatch(/<html[^>]*lang="he"[^>]*dir="rtl"/);
-    expect(html).toContain(
-      `href="${CANONICAL_ORIGIN}/documents/new?utm_source=email&utm_medium=lifecycle&utm_campaign=activation_d1"`,
-    );
-    expect(html).toContain("להוציא את החשבונית הראשונה");
-    expect(html).toContain("החשבונית הראשונה שלכם לוקחת 20 שניות. הנה איך.");
+    expect(html).toContain("צילמתי חשבונית ראשונה מההתחלה ועד הסוף.");
     expect(html).toContain('style="display:none;max-height:0;overflow:hidden;opacity:0;"');
+    expect(html).toContain(
+      `href="${CANONICAL_ORIGIN}/video?utm_source=email&utm_medium=lifecycle&utm_campaign=activation"`,
+    );
+    expect(html).toContain(
+      `href="${CANONICAL_ORIGIN}/documents/new?utm_source=email&utm_medium=lifecycle&utm_campaign=activation"`,
+    );
+    expect(html + text).not.toMatch(/activation_d\d/);
+    expect(html).toContain(`src="${CANONICAL_ORIGIN}/email/video-thumb.jpg"`);
     expect(html).toContain(`src="${CANONICAL_ORIGIN}/email/asaf-240.jpg"`);
     expect(html).toContain(`src="${CANONICAL_ORIGIN}/logo-192.png"`);
+    expect(html).toContain("בניתי את חשבונית ידידותית");
+    expect(html).toContain("ושלוש השאלות שהכי שואלים אותי:");
     expect(html).toContain(`href="${optout}"`);
     expect(html).toContain("לא רוצה לקבל תזכורות כאלה");
-    const text = buildActivationText(1, optout);
-    expect(text).toContain("להוציא את החשבונית הראשונה: ");
+    expect(text).toContain("להוציא חשבונית ראשונה: ");
     expect(text).toContain(optout);
   });
 
-  it("email #2: video thumbnail link plus the d3 deep link", () => {
-    const html = buildActivationHtml(2, optout);
-    expect(activationSubject(2)).toBe("18 שניות, ואתם יודעים בדיוק איך זה עובד");
-    expect(html).toContain(
-      `href="${CANONICAL_ORIGIN}/video?utm_source=email&utm_medium=lifecycle&utm_campaign=activation_d3"`,
-    );
-    expect(html).toContain(
-      `href="${CANONICAL_ORIGIN}/documents/new?utm_source=email&utm_medium=lifecycle&utm_campaign=activation_d3"`,
-    );
-    expect(html).toContain(`src="${CANONICAL_ORIGIN}/email/video-thumb.jpg"`);
-    expect(html).toContain("ושלוש השאלות שהכי שואלים אותי:");
-    expect(html).toContain("צילמתי חשבונית ראשונה מההתחלה ועד הסוף.");
+  it("pricing answer is exactly the approved copy, in HTML and text", () => {
+    const pricing =
+      "עד 5 מסמכים בחודש זה חינם, בלי כרטיס אשראי. צריכים יותר? 15 ₪ לחודש, או 25 ₪ בלי הגבלה. ובתקופת ההשקה הכול פתוח בלי הגבלה.";
+    expect(html).toContain(pricing);
+    expect(text).toContain(pricing);
+  });
+
+  it("never promises a duration on the free tier (legal review ban)", () => {
+    const all = (html + text + subject).toLowerCase();
+    for (const word of BANNED_DURATION_WORDS) expect(all).not.toContain(word.toLowerCase());
   });
 
   it("no long dashes, no phone or email address, no <style>", () => {
-    for (const step of [1, 2] as const) {
-      const all = buildActivationHtml(step, optout) + buildActivationText(step, optout) + activationSubject(step);
-      expect(all).not.toMatch(LONG_DASH);
-      expect(all).not.toContain("asafkotlar");
-      expect(all).not.toMatch(/mailto:|tel:|05\d-?\d{3}-?\d{4}/);
-      expect(all).not.toContain("<style");
-    }
+    const all = html + text + subject;
+    expect(all).not.toMatch(LONG_DASH);
+    expect(all).not.toContain("asafkotlar");
+    expect(all).not.toMatch(/mailto:|tel:|05\d-?\d{3}-?\d{4}/);
+    expect(all).not.toContain("<style");
   });
 });
