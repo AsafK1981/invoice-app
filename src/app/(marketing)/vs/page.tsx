@@ -121,7 +121,7 @@ export default function V2VsIndex() {
             התחילו בחינם
           </SignupLink>
           <div className="v2-fine">
-            חינם לתמיד עד 5 מסמכים בחודש · ללא כרטיס אשראי · ביטול בכל עת
+            חינם עד 5 מסמכים בחודש · ללא כרטיס אשראי · ביטול בכל עת
           </div>
         </div>
       </main>

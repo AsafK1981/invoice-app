@@ -313,8 +313,8 @@ function LoginForm() {
         </div>
 
         {/* The launch-period promise, restated at the point of hesitation.
-            The landing page makes it three times ("חינם לתמיד עד 5 מסמכים
-            בחודש, בלי כרטיס אשראי") and the form used to drop it entirely, which is
+            The landing page makes it three times ("חינם עד 5 מסמכים בחודש,
+            בלי כרטיס אשראי") and the form used to drop it entirely, which is
             exactly where a visitor decides whether to type an email.
             Signup only - it would be noise for someone logging back in or
             resetting a password. Wording matches the homepage hero and the
@@ -323,7 +323,7 @@ function LoginForm() {
           <ul className="mb-5 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs font-semibold text-stone-600 animate-fade-in-up">
             <li className="flex items-center gap-1.5">
               <Check className="w-3.5 h-3.5 text-emerald-600" aria-hidden="true" />
-              חינם לתמיד עד 5 מסמכים בחודש
+              חינם עד 5 מסמכים בחודש
             </li>
             <li className="flex items-center gap-1.5">
               <Check className="w-3.5 h-3.5 text-emerald-600" aria-hidden="true" />

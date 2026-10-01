@@ -21,15 +21,14 @@ import { PLANS, STARTER_PLAN, type PlanTier } from "@/lib/plans";
 
 export const metadata = pageMetadata({
   path: "/pricing",
-  title: "מחירים - חינם לתמיד עד 5 מסמכים בחודש",
+  title: "מחירים - חינם עד 5 מסמכים בחודש",
   ogTitle: "מחירים | חשבונית ידידותית",
   description:
-    `חינם לתמיד עד 5 מסמכים בחודש, בלי כרטיס אשראי. מעבר לזה: מסלול בסיסי ב-${shekel("15")} לחודש (עד 30 מסמכים) או Pro ב-${shekel("25")} לחודש (ללא הגבלה). בתקופת ההשקה הכול פתוח בלי הגבלה, ולמצטרפים בהשקה החודש הראשון בתשלום חינם.`,
+    `חינם עד 5 מסמכים בחודש, בלי כרטיס אשראי. מעבר לזה: מסלול בסיסי ב-${shekel("15")} לחודש (עד 30 מסמכים) או Pro ב-${shekel("25")} לחודש (ללא הגבלה). בתקופת ההשקה הכול פתוח בלי הגבלה, ולמצטרפים בהשקה החודש הראשון בתשלום חינם.`,
   keywords: [
     "מחיר תוכנת חשבוניות",
     "כמה עולה תוכנת חשבוניות",
     "תוכנת חשבוניות בחינם",
-    "תוכנת חשבוניות חינם לתמיד",
     "מחיר חשבונית לעוסק פטור",
   ],
 });
@@ -46,7 +45,7 @@ export const metadata = pageMetadata({
 const PRICING_FAQ_ITEMS: { q: string; a: string }[] = [
   {
     q: "מה קורה כשתקופת ההשקה נגמרת?",
-    a: "שום חיוב לא קורה אוטומטית. מי שמוציא עד 5 מסמכים בחודש ממשיך בחינם, לתמיד. מי שצריך יותר בוחר מסלול בתשלום דרך עמוד החיוב, ומי שהצטרף בתקופת ההשקה מקבל את החודש הראשון בתשלום חינם.",
+    a: "שום חיוב לא קורה אוטומטית. מי שמוציא עד 5 מסמכים בחודש ממשיך במסלול החינמי. מי שצריך יותר בוחר מסלול בתשלום דרך עמוד החיוב, ומי שהצטרף בתקופת ההשקה מקבל את החודש הראשון בתשלום חינם.",
   },
   {
     q: "האם צריך כרטיס אשראי כדי להתחיל?",
@@ -77,7 +76,7 @@ type PlanColumn = "starter" | PlanTier;
 /**
  * The plan comparison rows, one per parameter, read from src/lib/plans.ts so
  * this section cannot drift from /billing. Three columns since 2026-10-01:
- * the permanent free tier (STARTER_PLAN, up to 5 documents a month) next to
+ * the free tier (STARTER_PLAN, up to 5 documents a month) next to
  * the two paid tiers. `true`/`false` render as a check disc / a muted minus;
  * strings as-is.
  */
@@ -151,7 +150,7 @@ function PlanCard({ tier }: { tier: PlanColumn }) {
         </span>
         <span className="price">
           {shekel(String(plan.priceMonthly))}
-          <small>{starter ? "לתמיד" : "לחודש"}</small>
+          <small>לחודש</small>
         </span>
         <span className="desc">{plan.description}</span>
       </div>
@@ -225,7 +224,7 @@ export default function PricingPage() {
             <span className="v2-gold">ובתקופת ההשקה הכול חינם</span>
           </h1>
           <p className="v2-lede">
-            עד 5 מסמכים בחודש המערכת חינם לתמיד. מי שמצטרף עכשיו, בתקופת
+            עד 5 מסמכים בחודש המערכת חינם. מי שמצטרף עכשיו, בתקופת
             ההשקה, מקבל את כל התכונות בלי הגבלה ובלי כרטיס אשראי - כולל חודש
             ראשון במתנה במסלול בתשלום, כשהוא ייכנס לתוקף.
           </p>
@@ -259,7 +258,7 @@ export default function PricingPage() {
         </section>
 
         {/* Plans: three cards on a shared spine (2026-09-29 direction A,
-            widened to three columns on 2026-10-01 for the permanent free
+            widened to three columns on 2026-10-01 for the free
             tier). A labels column and the plan cards share one fixed row
             height, so every parameter reads once, across, with no table
             chrome. */}
@@ -271,7 +270,7 @@ export default function PricingPage() {
 
           <div className="v2-plans-hero">
             <p className="big">
-              <span className="v2-gold">חינם לתמיד</span> עד 5 מסמכים בחודש
+              <span className="v2-gold">חינם</span> עד 5 מסמכים בחודש
             </p>
             <p className="sub">
               צריכים יותר? בסיסי או <Ltr>Pro</Ltr>, ולמצטרפים בתקופת ההשקה
@@ -341,7 +340,7 @@ export default function PricingPage() {
         <section className="v2-cmp-cta">
           <h2>מוכנים להתחיל? זה חינם</h2>
           <p>
-            עד 5 מסמכים בחודש חינם לתמיד, בלי כרטיס אשראי. בתקופת ההשקה הכול
+            עד 5 מסמכים בחודש חינם, בלי כרטיס אשראי. בתקופת ההשקה הכול
             פתוח: כל הפיצ׳רים של <Ltr>Pro</Ltr>. כשנתחיל לגבות נעדכן מראש, בלי
             הפתעות.
           </p>

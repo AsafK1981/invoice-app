@@ -200,7 +200,7 @@ export function ComparisonViewV2({ competitor }: { competitor: Competitor }) {
                 <li>
                   <span className="plan">חינם</span>
                   <span className="val">
-                    {formatPrice(0)} לתמיד · 5 מסמכים בחודש
+                    {formatPrice(0)} / חודש · 5 מסמכים
                   </span>
                 </li>
                 <li>
@@ -260,8 +260,8 @@ export function ComparisonViewV2({ competitor }: { competitor: Competitor }) {
             אם אתם מוציאים כמה עשרות מסמכים בחודש, אצל{" "}
             <LtrText text={competitor.name} /> זה כבר דורש מסלול ב-
             {formatPrice(midTier.priceMonthly)} ומעלה. אצלנו <Ltr>Pro</Ltr> ללא
-            הגבלה הוא {formatPrice(25)} בלבד, ועד 5 מסמכים בחודש המערכת חינם
-            לתמיד. כרגע, בתקופת ההשקה, הכול פתוח בלי הגבלה ובלי כרטיס אשראי.
+            הגבלה הוא {formatPrice(25)} בלבד, ועד 5 מסמכים בחודש המערכת חינם.
+            כרגע, בתקופת ההשקה, הכול פתוח בלי הגבלה ובלי כרטיס אשראי.
             המחירים בתשלום ייכנסו לתוקף בהמשך, ונעדכן מראש.
           </p>
         </section>
@@ -427,7 +427,7 @@ export function ComparisonViewV2({ competitor }: { competitor: Competitor }) {
         <section className="v2-cmp-cta">
           <h2>רוצה לנסות? זה חינם</h2>
           <p>
-            עד 5 מסמכים בחודש חינם לתמיד, בלי כרטיס אשראי. בתקופת ההשקה הכול
+            עד 5 מסמכים בחודש חינם, בלי כרטיס אשראי. בתקופת ההשקה הכול
             פתוח: כל הפיצ׳רים של <Ltr>Pro</Ltr>. כשנתחיל לגבות נעדכן מראש, בלי
             הפתעות.
           </p>

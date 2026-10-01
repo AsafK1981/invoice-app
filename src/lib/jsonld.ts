@@ -55,7 +55,7 @@ export function website(): JsonLdNode {
 
 /**
  * The app itself. `offers` lists the three plans of the pricing table, read
- * from src/lib/plans.ts: the permanent free tier at 0 (up to 5 documents a
+ * from src/lib/plans.ts: the free tier at 0 (up to 5 documents a
  * month), then Basic and Pro at their monthly list prices. The launch period
  * (everything open) is surfaced in on-page copy rather than in structured
  * pricing so the markup does not contradict the pricing table.
@@ -104,7 +104,7 @@ export function softwareApplication(): JsonLdNode {
         name: STARTER_PLAN.name,
         price: String(STARTER_PLAN.priceMonthly),
         priceCurrency: "ILS",
-        description: "חינם לתמיד, עד 5 מסמכים בחודש",
+        description: "חינם, עד 5 מסמכים בחודש",
       },
       ...[PLANS.free, PLANS.pro].map((plan) => ({
         "@type": "Offer",

@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { getPlanStatus, PLANS, STARTER_PLAN } from "@/lib/plans";
 
 /**
- * PlanStatus.starter: is this user on the permanent free tier ("חינם")?
+ * PlanStatus.starter: is this user on the free tier ("חינם")?
  *
  * Rule: no active paid entitlement, i.e. app_metadata.plan_active is not true
  * OR the beta grant expired. Each case below mirrors the app_metadata a real
@@ -118,7 +118,7 @@ describe("getPlanStatus().starter", () => {
 });
 
 describe("STARTER_PLAN", () => {
-  it("is free forever, 5 documents a month, otherwise Basic's limits", () => {
+  it("is free, 5 documents a month, otherwise Basic's limits", () => {
     expect(STARTER_PLAN.priceMonthly).toBe(0);
     expect(STARTER_PLAN.priceYearly).toBe(0);
     expect(STARTER_PLAN.limits.documentsPerMonth).toBe(5);

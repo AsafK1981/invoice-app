@@ -42,7 +42,7 @@ import PromoVideo from "./components/PromoVideo";
 const FAQ_ITEMS: { q: string; a: string }[] = [
   {
     q: "מה קורה כשתקופת ההשקה נגמרת?",
-    a: "שום חיוב לא קורה אוטומטית. מי שמוציא עד 5 מסמכים בחודש ממשיך בחינם, לתמיד. מי שצריך יותר בוחר מסלול בתשלום דרך עמוד החיוב, ומי שהצטרף בתקופת ההשקה מקבל את החודש הראשון בתשלום חינם.",
+    a: "שום חיוב לא קורה אוטומטית. מי שמוציא עד 5 מסמכים בחודש ממשיך במסלול החינמי. מי שצריך יותר בוחר מסלול בתשלום דרך עמוד החיוב, ומי שהצטרף בתקופת ההשקה מקבל את החודש הראשון בתשלום חינם.",
   },
   {
     q: "האם צריך כרטיס אשראי כדי להתחיל?",
@@ -294,7 +294,7 @@ export default function MarketingLanding() {
                   התחילו בחינם
                 </SignupLink>
                 <span className="ml-hero-note">
-                  חינם לתמיד עד 5 מסמכים בחודש, בלי כרטיס אשראי
+                  חינם עד 5 מסמכים בחודש, בלי כרטיס אשראי
                 </span>
               </div>
               <ul className="ml-trust-row">
@@ -338,8 +338,8 @@ export default function MarketingLanding() {
                   number - so the pills went back on 08-16. The claim itself
                   is future-tense and is the one deliberate not-yet-shipped
                   item here.
-                - free forever: matches the official sitewide offer (up to 5
-                  documents a month free forever, launch period fully open,
+                - free tier: matches the official sitewide offer (up to 5
+                  documents a month free, launch period fully open,
                   first paid month free later) - keep in sync with the
                   pricing page FAQ if it changes.
                 - migration: the import wizards (Invoice4U, Morning, iCount,
@@ -355,9 +355,9 @@ export default function MarketingLanding() {
                 <span className="ml-trust-icon">
                   <Gift aria-hidden="true" />
                 </span>
-                <span className="ml-trust-k">חינם לתמיד</span>
+                <span className="ml-trust-k">מסלול חינמי</span>
                 <p>
-                  עד 5 מסמכים בחודש המערכת חינם לתמיד. בתקופת ההשקה הכול
+                  עד 5 מסמכים בחודש המערכת חינם. בתקופת ההשקה הכול
                   פתוח בלי הגבלה, בלי כרטיס אשראי.
                 </p>
               </div>
@@ -506,7 +506,7 @@ export default function MarketingLanding() {
 
           <section className="ml-pricing" id="pricing">
             <div className="ml-wrap">
-              <h2>חינם לתמיד עד 5 מסמכים בחודש</h2>
+              <h2>חינם עד 5 מסמכים בחודש</h2>
               <p>ובתקופת ההשקה הכול פתוח, בלי הגבלה</p>
               {/* Restructured 2026-08-11 (Asaf): the old single paragraph
                   wrapped "Pro" onto its own line and read as one dense run.
@@ -529,7 +529,7 @@ export default function MarketingLanding() {
               <p className="ml-price-later">בהמשך, אלה יהיו המסלולים:</p>
               <div className="ml-price-plans">
                 <span className="ml-price-plan">
-                  חינם עד 5 מסמכים בחודש · <b>{shekel("0")} לתמיד</b>
+                  מסלול חינמי, עד 5 מסמכים · <b>{shekel("0")} לחודש</b>
                 </span>
                 <span className="ml-price-plan">
                   מסלול בסיסי · <b>{shekel("15")} לחודש</b>

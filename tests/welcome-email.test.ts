@@ -69,7 +69,7 @@ describe("welcome email html", () => {
     // STARTER_PLAN) and the promo video's length.
     expect(html).toContain("בלי כרטיס אשראי");
     expect(html).toContain("מספרי ההקצאה");
-    expect(html).toContain("עד 5 מסמכים בחודש חינם לתמיד");
+    expect(html).toContain("עד 5 מסמכים בחודש חינם");
     // The text twin is the copy without markup (no hex colours, no pixel widths).
     expect(
       text

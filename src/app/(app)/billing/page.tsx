@@ -273,7 +273,7 @@ export default function BillingPage() {
             <p className="font-bold">🎉 חינם עכשיו בתקופת ההשקה</p>
             <p className="text-emerald-800/90 mt-0.5">
               בתקופת ההשקה הכול פתוח בלי הגבלה, בלי חיוב ובלי כרטיס אשראי.
-              אחר כך עד 5 מסמכים בחודש נשארים חינם לתמיד, והמחירים של
+              אחר כך המסלול החינמי כולל עד 5 מסמכים בחודש, והמחירים של
               המסלולים בתשלום ייכנסו לתוקף. נעדכן מראש, בלי הפתעות.
             </p>
           </div>
@@ -378,7 +378,7 @@ export default function BillingPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        {/* The permanent free tier. Display only: there is nothing to check
+        {/* The free tier. Display only: there is nothing to check
             out, so no button, and no yearly-savings line (its price is 0). */}
         <div className="card-soft p-6 relative">
           {planStatus.starter && (
@@ -393,7 +393,7 @@ export default function BillingPage() {
             <span className="text-4xl font-bold text-stone-900">
               {formatCurrency(STARTER_PLAN.priceMonthly)}
             </span>
-            <span className="text-sm text-stone-600">לתמיד</span>
+            <span className="text-sm text-stone-600">לחודש</span>
           </div>
           <ul className="mt-6 space-y-2.5">
             {STARTER_PLAN.features.map((f) => (

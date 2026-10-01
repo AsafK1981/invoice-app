@@ -1,9 +1,9 @@
 /**
  * Pricing plans for MyFriendlyInvoiceApp.
  *
- * Three tiers (2026-10-01, a permanent free tier on top of Option A from
+ * Three tiers (2026-10-01, a free tier on top of Option A from
  * competitor research):
- *   - Free:  ₪0, forever  ·  5 docs a month · otherwise Basic's limits
+ *   - Free:  ₪0  ·  5 docs a month · otherwise Basic's limits
  *   - Basic: ₪15/mo  (₪149/yr)  ·  30 docs · 10 clients
  *   - Pro:   ₪25/mo  (₪250/yr)  ·  unlimited everything
  *
@@ -111,7 +111,7 @@ export const PLANS: Record<PlanTier, Plan> = {
 };
 
 /**
- * The permanent free tier, "חינם". Its own type, NOT a Plan: it has no stored
+ * The free tier, "חינם". Its own type, NOT a Plan: it has no stored
  * tier id, nothing to check out, and no yearly price to compute savings on.
  * Limits are Basic's except for the monthly document count.
  */
@@ -128,7 +128,7 @@ export const STARTER_PLAN: StarterPlan = {
   name: "חינם",
   priceMonthly: 0,
   priceYearly: 0,
-  description: "למי שמוציא מעט מסמכים",
+  description: "עד 5 מסמכים בחודש",
   features: [
     "עד 5 מסמכים בחודש",
     "עד 10 לקוחות",
@@ -169,7 +169,7 @@ export interface PlanStatus {
   betaExpired?: boolean;
   /**
    * True if the user holds no active paid entitlement and is therefore on the
-   * permanent free tier (STARTER_PLAN): app_metadata.plan_active is not true,
+   * free tier (STARTER_PLAN): app_metadata.plan_active is not true,
    * or their beta grant expired. Trials and unexpired beta grants are NOT
    * starter. Display only; `tier` and `active` keep their old meaning.
    */
