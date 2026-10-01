@@ -49,6 +49,7 @@ import { supabase } from "@/lib/supabase";
 import { AccountSettingsModal } from "@/components/account-settings-modal";
 import { BRAND, BrandLockup } from "@/components/brand-mark";
 import { CANONICAL_ORIGIN } from "@/lib/public-url";
+import { friendReferralCode } from "@/lib/attribution";
 import type { FeatureTone } from "@/lib/feature-tones";
 
 type NavItem = {
@@ -113,6 +114,32 @@ export function Sidebar() {
       .catch(() => setIsAdmin(false));
   }, []);
   const [accountOpen, setAccountOpen] = useState(false);
+
+  // How many people joined through this user's invite link. Null while
+  // loading or on any failure, and the line below only renders for a
+  // positive number, so a slow or broken request leaves the sidebar as it was.
+  // Keyed on business.id so it runs once the business row has arrived.
+  const [invitedJoined, setInvitedJoined] = useState<number | null>(null);
+  useEffect(() => {
+    if (!business.id) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+        const res = await fetch("/api/referrals/mine", {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        const json = (await res.json()) as { ok?: boolean; joined?: unknown };
+        if (!cancelled && json.ok && typeof json.joined === "number") setInvitedJoined(json.joined);
+      } catch {
+        // A count is a nicety; the invite link works without it.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [business.id]);
 
   // "טקסט גדול" (large-text mode). Cached choice applies on mount so a
   // returning user never sees a small-text flash; the business row, once it
@@ -290,10 +317,16 @@ export function Sidebar() {
         </a>
         {/* Referral link: pre-fills a WhatsApp message inviting a friend
             to try the app. No fixed recipient - the user picks who to
-            send it to from their own WhatsApp contacts. */}
+            send it to from their own WhatsApp contacts. The URL carries the
+            user's own invite code (friendReferralCode) once the business id
+            is known, so a signup through it is attributed to them; before
+            that it is the bare site address. */}
         <a
           href={(() => {
-            const text = `היי! אני משתמש באפליקציה חשבונית ידידותית להוצאת חשבוניות - פשוטה, מהירה וחינמית לעוסק פטור. נראה לי שיכול להתאים לך:\n${CANONICAL_ORIGIN}`;
+            const url = business.id
+              ? `${CANONICAL_ORIGIN}/?ref=${friendReferralCode(business.id)}`
+              : CANONICAL_ORIGIN;
+            const text = `היי! אני משתמש באפליקציה חשבונית ידידותית להוצאת חשבוניות - פשוטה, מהירה וחינמית לעוסק פטור. נראה לי שיכול להתאים לך:\n${url}`;
             return `https://wa.me/?text=${encodeURIComponent(text)}`;
           })()}
           target="_blank"
@@ -304,6 +337,11 @@ export function Sidebar() {
           <MessageCircle className="w-4 h-4" />
           הזמן חבר בוואטסאפ
         </a>
+        {/* Quiet, under the invite row, aligned with its label (px-3 + the
+            w-4 icon + gap-2 = ps-9). Nothing at zero or while loading. */}
+        {invitedJoined !== null && invitedJoined > 0 && (
+          <p className="ps-9 pe-3 pb-1 text-xs text-stone-500">הצטרפו דרכך: {invitedJoined}</p>
+        )}
         {/* The public landing page. "/" bounces a signed-in visitor straight
             to /dashboard, so this points at /product - the SAME marketing page
             at an address that never redirects. Without it a logged-in user has

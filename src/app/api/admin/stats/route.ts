@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, type User } from "@supabase/supabase-js";
 import { isAdminEmail } from "@/lib/admin";
+import { isFriendReferral } from "@/lib/attribution";
+import { countFriendReferrals } from "@/lib/friend-referrals";
 import { logAdminAccess } from "@/lib/admin-access-log";
 import { getAdminChartDay, type AdminDailyPoint } from "@/lib/admin-chart";
 import { countsForTurnover } from "@/lib/ita/income-tax-advances";
@@ -287,6 +289,9 @@ export async function GET(req: NextRequest) {
     }
     for (const b of businessesResult) {
       if (!b.referred_by || internalBusinessIds.has(b.id)) continue;
+      // Friend invite codes share the column but are not accountant links;
+      // they are totalled below instead of getting a per-code row.
+      if (isFriendReferral(b.referred_by)) continue;
       const agg = touch(b.referred_by, b.created_at);
       agg.businesses++;
       if (producingBusinesses.has(b.id)) agg.active++;
@@ -294,6 +299,12 @@ export async function GET(req: NextRequest) {
     const referrals = Array.from(referralMap, ([ref, v]) => ({ ref, ...v }))
       .sort((a, b) =>
         b.active - a.active || b.businesses - a.businesses || b.visits - a.visits || a.firstAt.localeCompare(b.firstAt));
+    // Friend invites (/?ref=f-...): one total for the whole platform, never
+    // per inviter, so the dashboard cannot be read as "who invited whom".
+    const friendReferrals = countFriendReferrals(businessesResult, {
+      activeIds: producingBusinesses,
+      isInternal: (id) => internalBusinessIds.has(id),
+    });
     const partnerApplications = [...partnerApplicationRows]
       .sort((a, b) => a.created_at.localeCompare(b.created_at));
 
@@ -456,6 +467,7 @@ export async function GET(req: NextRequest) {
         importedDocuments: importedByUserCount,
       },
       referrals,
+      friendReferrals,
       partnerApplications,
       subscribers: {
         paying: payingSubscribers,

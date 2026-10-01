@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { normalizeReferralSlug } from "@/lib/attribution";
+import { isFriendReferral, normalizeReferralSlug } from "@/lib/attribution";
 import { checkRate, clientIp } from "@/lib/rate-limit";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -34,7 +34,9 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json().catch(() => ({}));
     const ref = normalizeReferralSlug(typeof body?.ref === "string" ? body.ref : null);
-    if (!ref || !serviceKey) return done();
+    // Friend invite codes are never counted here; the browser does not send
+    // them, and a hand-made request must not either.
+    if (!ref || isFriendReferral(ref) || !serviceKey) return done();
 
     const sb = createClient(supabaseUrl, serviceKey, {
       auth: { autoRefreshToken: false, persistSession: false },

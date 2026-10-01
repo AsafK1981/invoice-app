@@ -96,6 +96,8 @@ interface Stats {
   revenue: { inAppTurnover: number; importedTurnover: number };
   /** Businesses per accountant referral slug (/from-accountant?ref=), ours excluded. */
   referrals: Array<{ ref: string; visits: number; businesses: number; active: number; firstAt: string; lastAt: string }>;
+  /** Platform total of signups through users' personal invite links (/?ref=f-...), ours excluded. */
+  friendReferrals?: { joined: number; active: number };
   /** Accountants who asked to be listed, oldest first (the first ten are founding partners). */
   partnerApplications: Array<{
     id: string; created_at: string; name: string; office: string | null; city: string;
@@ -475,7 +477,7 @@ export default function AdminPage() {
           {/* Accountant referrals: which personal link brought how many
               businesses. A slug that is not yet in PARTNER_ACCOUNTANTS is the
               cue to email that accountant for their listing details. */}
-          <ReferralsCard rows={stats.referrals ?? []} />
+          <ReferralsCard rows={stats.referrals ?? []} friends={stats.friendReferrals} />
           <PartnerApplicationsCard rows={stats.partnerApplications ?? []} />
 
           {/* Documents by type, last 30 days. Counts only, on purpose: this
@@ -774,7 +776,7 @@ function UserRow({ user }: { user: AdminUserRow }) {
   );
 }
 
-function ReferralsCard({ rows }: { rows: Stats["referrals"] }) {
+function ReferralsCard({ rows, friends }: { rows: Stats["referrals"]; friends?: Stats["friendReferrals"] }) {
   const listed = new Set(PARTNER_ACCOUNTANTS.map((a) => a.slug));
   return (
     <div className="card-soft overflow-hidden">
@@ -820,6 +822,13 @@ function ReferralsCard({ rows }: { rows: Stats["referrals"] }) {
             ))}
           </tbody>
         </table>
+      )}
+      {/* Friend invites share businesses.referred_by but are one platform
+          total, never a per-inviter row. */}
+      {friends && (
+        <p className="px-5 py-3 border-t border-orange-100 text-sm text-stone-700">
+          הזמנות של משתמשים לחברים (ref=f-): נרשמו {friends.joined}, הוציאו מסמך {friends.active}
+        </p>
       )}
     </div>
   );

@@ -35,6 +35,30 @@ export function normalizeReferralSlug(raw: string | null | undefined): string | 
   return REFERRAL_SLUG.test(slug) ? slug : null;
 }
 
+// Friend invites (2026-10-01). A user's personal invite link is
+// `/?ref=f-<10 hex>`, and the code lands in the same businesses.referred_by
+// column as an accountant slug: no migration, and the existing CHECK and
+// freeze trigger already guard it. The "f-" + exactly 10 hex shape is what
+// keeps the two kinds apart (tests/friend-referral.test.ts pins that no listed
+// accountant slug can take it).
+
+/** A friend invite code: "f-" plus the first 10 hex characters of the inviter's business id. */
+export const FRIEND_REFERRAL = /^f-[0-9a-f]{10}$/;
+
+/**
+ * The invite code for a business. Deterministic, so the sidebar can build the
+ * link from the id it already has and the server can recompute it from the
+ * caller's own business without storing anything. 40 bits of the UUID is
+ * plenty to keep two businesses from sharing a code at this scale.
+ */
+export function friendReferralCode(businessId: string): string {
+  return "f-" + businessId.replace(/-/g, "").toLowerCase().slice(0, 10);
+}
+
+export function isFriendReferral(ref: string | null | undefined): boolean {
+  return FRIEND_REFERRAL.test(ref ?? "");
+}
+
 export interface Attribution {
   /** utm_source, or "referral" when only a referrer was present. */
   source?: string;
@@ -104,18 +128,20 @@ export function captureAttribution(): void {
 const REFERRAL_LANDING = "/from-accountant";
 
 /**
- * Remember which accountant's link brought this visitor. Runs on every page
- * load but writes only on /from-accountant with a valid `?ref=` (a generic
- * `?ref=facebook` on another page must not block a real accountant later),
- * and the first one recorded stays.
+ * Remember which accountant's or friend's link brought this visitor. Runs on
+ * every page load. An accountant slug is taken only on /from-accountant (a
+ * generic `?ref=facebook` on another page must not block a real accountant
+ * later); a friend code is taken on any page, because the invite link lands
+ * on the home page and its narrow shape cannot be mistaken for a generic tag.
+ * Whichever valid one arrives first stays.
  */
 export function captureReferral(): void {
   try {
     if (typeof window === "undefined") return;
     const path = window.location.pathname.replace(/\/+$/, "");
-    if (path !== REFERRAL_LANDING) return;
     const ref = normalizeReferralSlug(new URLSearchParams(window.location.search).get("ref"));
     if (!ref) return;
+    if (path !== REFERRAL_LANDING && !isFriendReferral(ref)) return;
     if (readReferral()) return; // first VALID referral wins; junk in the key does not block
     window.localStorage.setItem(REF_KEY, JSON.stringify({ ref, at: new Date().toISOString() }));
   } catch {
@@ -152,7 +178,9 @@ export function takeReferralVisitToReport(): string | null {
     const path = window.location.pathname.replace(/\/+$/, "");
     if (path !== REFERRAL_LANDING) return null;
     const ref = normalizeReferralSlug(new URLSearchParams(window.location.search).get("ref"));
-    if (!ref) return null;
+    // Accountant links only: a friend code is a user's own id-derived code and
+    // has no business in the operator's per-link visit table.
+    if (!ref || isFriendReferral(ref)) return null;
     const seen = (window.localStorage.getItem(REF_PING_KEY) || "").split(",").filter(Boolean);
     if (seen.includes(ref)) return null;
     window.localStorage.setItem(REF_PING_KEY, [...seen, ref].slice(-20).join(","));
@@ -163,7 +191,7 @@ export function takeReferralVisitToReport(): string | null {
   }
 }
 
-/** The remembered accountant slug, or null. Never throws. */
+/** The remembered accountant slug or friend code, or null. Never throws. */
 export function readReferral(): string | null {
   try {
     const raw = window.localStorage.getItem(REF_KEY);
