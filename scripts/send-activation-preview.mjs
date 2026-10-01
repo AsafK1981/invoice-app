@@ -24,6 +24,11 @@ for (const line of readFileSync(new URL("../.env.local", import.meta.url), "utf8
   if (m && process.env[m[1]] === undefined) process.env[m[1]] = m[2].replace(/^"(.*)"$/, "$1");
 }
 
+// .env.local carries no NEXT_PUBLIC_SITE_ORIGIN, so CANONICAL_ORIGIN would
+// fall back to the old vercel.app host; render the links production sends.
+// (The first preview run, 01.10.2026, went out with the vercel.app links.)
+process.env.NEXT_PUBLIC_SITE_ORIGIN ||= "https://friendlyinvoice.co.il";
+
 const { GMAIL_USER, GMAIL_APP_PASSWORD } = process.env;
 if (!GMAIL_USER || !GMAIL_APP_PASSWORD) {
   console.error("GMAIL_USER / GMAIL_APP_PASSWORD missing from .env.local");
