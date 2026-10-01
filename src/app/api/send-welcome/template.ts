@@ -26,19 +26,19 @@
 
 import { CANONICAL_ORIGIN } from "@/lib/public-url";
 
-const FONT = "'Segoe UI',Heebo,Arial,Helvetica,sans-serif";
-const SERIF = "Georgia,'Times New Roman',serif";
-const TABLE = 'role="presentation" cellpadding="0" cellspacing="0" border="0"';
+export const FONT = "'Segoe UI',Heebo,Arial,Helvetica,sans-serif";
+export const SERIF = "Georgia,'Times New Roman',serif";
+export const TABLE = 'role="presentation" cellpadding="0" cellspacing="0" border="0"';
 
-const INK = "#1f232b";
-const MUTED = "#6b6560";
-const ORANGE = "#d96a1d";
-const BURNT = "#a94e16";
-const CREAM = "#f7f2eb";
-const SAND = "#e8ddd0";
-const HAIRLINE = "#efe6db";
-const TINT = "#fbeadb";
-const TINT_LINE = "#f3d2b4";
+export const INK = "#1f232b";
+export const MUTED = "#6b6560";
+export const ORANGE = "#d96a1d";
+export const BURNT = "#a94e16";
+export const CREAM = "#f7f2eb";
+export const SAND = "#e8ddd0";
+export const HAIRLINE = "#efe6db";
+export const TINT = "#fbeadb";
+export const TINT_LINE = "#f3d2b4";
 
 export const WELCOME_SUBJECT = "המסמך הראשון שלך יוצא תוך דקה";
 
@@ -68,14 +68,29 @@ export function welcomeUrls() {
   };
 }
 
-export function buildWelcomeHtml(): string {
-  const { firstDocument, video, avatar, logo, site } = welcomeUrls();
-
-  const lockup = `<table ${TABLE} align="center">
+/** The stacked brand lockup (mark, Hebrew name, serif "Friendly Invoice")
+ *  of the opening band. Shared with the activation emails. */
+export function brandLockupHtml(logo: string): string {
+  return `<table ${TABLE} align="center">
     <tr><td align="center" style="padding-bottom:10px;"><img src="${logo}" width="56" height="56" alt="" style="display:block;border-radius:14px;"></td></tr>
     <tr><td align="center" style="font-family:${FONT};font-size:19px;font-weight:700;color:${INK};line-height:1.1;">חשבונית ידידותית</td></tr>
     <tr><td align="center" dir="ltr" style="font-family:${SERIF};font-size:18px;font-weight:600;letter-spacing:0.02em;color:${ORANGE};line-height:1.2;padding-top:2px;">Friendly Invoice</td></tr>
   </table>`;
+}
+
+/** The dark footer strip with the brand and the site link. Shared with the
+ *  activation emails. */
+export function brandFooterHtml(site: string): string {
+  return `<table ${TABLE} width="100%" style="background:${INK};border-radius:0 0 16px 16px;"><tr>
+    <td style="padding:16px 28px;font-family:${FONT};font-size:12px;color:${CREAM};">חשבונית ידידותית &nbsp;<span dir="ltr" style="font-family:${SERIF};color:${ORANGE};">Friendly Invoice</span></td>
+    <td align="left" style="padding:16px 28px;font-family:${FONT};font-size:12px;"><a href="${site}" style="color:${CREAM};text-decoration:none;">friendlyinvoice.co.il</a></td>
+  </tr></table>`;
+}
+
+export function buildWelcomeHtml(): string {
+  const { firstDocument, video, avatar, logo, site } = welcomeUrls();
+
+  const lockup = brandLockupHtml(logo);
 
   const note = `<table ${TABLE} width="100%"><tr>
     <td width="64" valign="top" style="padding-left:16px;"><img src="${avatar}" width="64" height="64" alt="אסף" style="display:block;width:64px;height:64px;border-radius:50%;"></td>
@@ -86,10 +101,7 @@ export function buildWelcomeHtml(): string {
     </td>
   </tr></table>`;
 
-  const footer = `<table ${TABLE} width="100%" style="background:${INK};border-radius:0 0 16px 16px;"><tr>
-    <td style="padding:16px 28px;font-family:${FONT};font-size:12px;color:${CREAM};">חשבונית ידידותית &nbsp;<span dir="ltr" style="font-family:${SERIF};color:${ORANGE};">Friendly Invoice</span></td>
-    <td align="left" style="padding:16px 28px;font-family:${FONT};font-size:12px;"><a href="${site}" style="color:${CREAM};text-decoration:none;">friendlyinvoice.co.il</a></td>
-  </tr></table>`;
+  const footer = brandFooterHtml(site);
 
   return `<!DOCTYPE html>
 <html lang="he" dir="rtl" xmlns="http://www.w3.org/1999/xhtml">
