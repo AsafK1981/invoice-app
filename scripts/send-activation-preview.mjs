@@ -4,7 +4,7 @@
 //
 // Renders both templates (src/app/api/cron/activation-nudge/template.ts) for a
 // dummy user id and sends them through the same Gmail SMTP relay and FROM
-// line the app uses, with the subject prefixed "[תצוגה מקדימה] ". The
+// line the app uses, with the subject prefixed "[תצוגה מקדימה 2] ". The
 // recipient is hard-coded; any attempt to point it elsewhere is refused.
 // Run with tsx (not plain node): it imports the TypeScript templates.
 import { readFileSync } from "node:fs";
@@ -48,7 +48,7 @@ for (const step of [1, 2]) {
   const info = await transporter.sendMail({
     from: `"חשבונית ידידותית" <${GMAIL_USER}>`,
     to: RECIPIENT,
-    subject: `[תצוגה מקדימה] ${tpl.activationSubject(step)}`,
+    subject: `[תצוגה מקדימה 2] ${tpl.activationSubject(step)}`,
     html: tpl.buildActivationHtml(step, optoutUrl),
     text: tpl.buildActivationText(step, optoutUrl),
   });

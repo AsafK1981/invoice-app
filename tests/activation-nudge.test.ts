@@ -137,37 +137,45 @@ const LONG_DASH = new RegExp(`[${String.fromCharCode(0x2013)}${String.fromCharCo
 describe("activation email templates", () => {
   const optout = activationOptoutUrl("11111111-2222-4333-8444-555555555555", "x".repeat(32));
 
-  it("email #1: copy, deep link with d1 utm, opt-out", () => {
+  it("email #1: copy, deep link with d1 utm, opt-out, preheader, images", () => {
     const html = buildActivationHtml(1, optout);
-    expect(activationSubject(1)).toBe("החשבונית הראשונה שלך מחכה");
+    expect(activationSubject(1)).toBe("בניתי את זה כי נמאס לי מטפסים");
     expect(html).toMatch(/<html[^>]*lang="he"[^>]*dir="rtl"/);
     expect(html).toContain(
       `href="${CANONICAL_ORIGIN}/documents/new?utm_source=email&utm_medium=lifecycle&utm_campaign=activation_d1"`,
     );
-    expect(html).toContain("להוציא חשבונית עכשיו");
+    expect(html).toContain("להוציא את החשבונית הראשונה");
+    expect(html).toContain("החשבונית הראשונה שלכם לוקחת 20 שניות. הנה איך.");
+    expect(html).toContain('style="display:none;max-height:0;overflow:hidden;opacity:0;"');
+    expect(html).toContain(`src="${CANONICAL_ORIGIN}/email/asaf-240.jpg"`);
+    expect(html).toContain(`src="${CANONICAL_ORIGIN}/logo-192.png"`);
     expect(html).toContain(`href="${optout}"`);
     expect(html).toContain("לא רוצה לקבל תזכורות כאלה");
-    expect(html).toContain("צוות חשבונית ידידותית");
+    const text = buildActivationText(1, optout);
+    expect(text).toContain("להוציא את החשבונית הראשונה: ");
+    expect(text).toContain(optout);
   });
 
-  it("email #2: video CTA plus the d3 deep link", () => {
+  it("email #2: video thumbnail link plus the d3 deep link", () => {
     const html = buildActivationHtml(2, optout);
-    expect(activationSubject(2)).toBe("20 שניות, וזה מוכן");
+    expect(activationSubject(2)).toBe("18 שניות, ואתם יודעים בדיוק איך זה עובד");
     expect(html).toContain(
       `href="${CANONICAL_ORIGIN}/video?utm_source=email&utm_medium=lifecycle&utm_campaign=activation_d3"`,
     );
     expect(html).toContain(
       `href="${CANONICAL_ORIGIN}/documents/new?utm_source=email&utm_medium=lifecycle&utm_campaign=activation_d3"`,
     );
-    expect(html).toContain("או להוציא חשבונית ראשונה עכשיו");
+    expect(html).toContain(`src="${CANONICAL_ORIGIN}/email/video-thumb.jpg"`);
+    expect(html).toContain("ושלוש השאלות שהכי שואלים אותי:");
+    expect(html).toContain("צילמתי חשבונית ראשונה מההתחלה ועד הסוף.");
   });
 
-  it("no long dashes, no personal name or address, no <style>", () => {
+  it("no long dashes, no phone or email address, no <style>", () => {
     for (const step of [1, 2] as const) {
       const all = buildActivationHtml(step, optout) + buildActivationText(step, optout) + activationSubject(step);
       expect(all).not.toMatch(LONG_DASH);
-      expect(all).not.toContain("אסף");
       expect(all).not.toContain("asafkotlar");
+      expect(all).not.toMatch(/mailto:|tel:|05\d-?\d{3}-?\d{4}/);
       expect(all).not.toContain("<style");
     }
   });
