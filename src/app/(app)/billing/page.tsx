@@ -466,7 +466,11 @@ export default function BillingPage() {
                   </li>
                 ))}
               </ul>
-              {!isCurrent && (
+              {/* A starter user never had a Basic button: before the free tier
+                  existed, Basic read as their current plan. Keep it that way
+                  until charging goes live, so this card opens no new path
+                  into checkout while the page says nothing is charged. */}
+              {!isCurrent && !(tier === "free" && planStatus.starter) && (
                 <button
                   onClick={() => handleSubscribe(tier)}
                   disabled={actionLoading !== null}
