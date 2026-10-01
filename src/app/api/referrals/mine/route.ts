@@ -7,12 +7,11 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
-const ZERO = { ok: true, joined: 0, active: 0 } as const;
+const ZERO = { ok: true, joined: 0 } as const;
 
 /**
  * How many people joined through the caller's own invite link
- * (`/?ref=f-<code>`, see friendReferralCode), and how many of them issued a
- * document. Signed-in users only (Bearer token). The business, and so the
+ * (`/?ref=f-<code>`, see friendReferralCode). Signed-in users only (Bearer token). The business, and so the
  * code, is resolved HERE from the authenticated user id: an id or code sent by
  * the client is never trusted, so nobody can read another user's figures.
  * Counts only, no ids, names, emails or timestamps: the invited businesses
@@ -57,26 +56,10 @@ export async function GET(req: NextRequest) {
   const referred = (rows ?? []).filter((r) => r.id !== own.id);
   if (referred.length === 0) return NextResponse.json(ZERO);
 
-  // Which of them issued anything. Paged past PostgREST's silent 1,000-row
-  // cap; business_id is the only column read.
-  const activeIds = new Set<string>();
-  const PAGE = 1000;
-  for (let offset = 0; ; offset += PAGE) {
-    const { data: docs, error: docsError } = await sb
-      .from("documents")
-      .select("business_id")
-      .in("business_id", referred.map((r) => r.id))
-      .neq("status", "draft")
-      .is("import_batch_id", null)
-      .order("id", { ascending: true })
-      .range(offset, offset + PAGE - 1);
-    if (docsError) {
-      return NextResponse.json({ ok: false, error: "Unable to load referrals" }, { status: 500 });
-    }
-    for (const d of docs ?? []) activeIds.add(d.business_id);
-    if ((docs ?? []).length < PAGE) break;
-  }
-
-  const { joined, active } = countFriendReferrals(referred, { code, activeIds });
-  return NextResponse.json({ ok: true, joined, active });
+  // Whether an invitee went on to issue documents is deliberately NOT read
+  // here: with one invitee that is a fact about another tenant's usage, and
+  // the sidebar only shows how many joined (pre-deploy review, 2026-10-01).
+  // The admin total keeps that figure, where it is an aggregate.
+  const { joined } = countFriendReferrals(referred, { code, activeIds: new Set() });
+  return NextResponse.json({ ok: true, joined });
 }
