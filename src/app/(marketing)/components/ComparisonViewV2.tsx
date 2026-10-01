@@ -198,6 +198,12 @@ export function ComparisonViewV2({ competitor }: { competitor: Competitor }) {
               <h3 className="v2-gold">{APP_NAME}</h3>
               <ul>
                 <li>
+                  <span className="plan">חינם</span>
+                  <span className="val">
+                    {formatPrice(0)} לתמיד · 5 מסמכים בחודש
+                  </span>
+                </li>
+                <li>
                   <span className="plan">בסיסי</span>
                   <span className="val">
                     {formatPrice(15)} / חודש · 30 מסמכים
@@ -214,9 +220,9 @@ export function ComparisonViewV2({ competitor }: { competitor: Competitor }) {
                   <span className="val">~17% הנחה</span>
                 </li>
                 <li className="trial">
-                  <span className="plan">חינם עכשיו</span>
+                  <span className="plan">בתקופת ההשקה</span>
                   <span className="val">
-                    כל הפיצ׳רים בתקופת ההשקה · בלי כרטיס אשראי
+                    הכול פתוח בלי הגבלה · בלי כרטיס אשראי
                   </span>
                 </li>
               </ul>
@@ -254,9 +260,9 @@ export function ComparisonViewV2({ competitor }: { competitor: Competitor }) {
             אם אתם מוציאים כמה עשרות מסמכים בחודש, אצל{" "}
             <LtrText text={competitor.name} /> זה כבר דורש מסלול ב-
             {formatPrice(midTier.priceMonthly)} ומעלה. אצלנו <Ltr>Pro</Ltr> ללא
-            הגבלה הוא {formatPrice(25)} בלבד - וכרגע, בתקופת ההשקה, הכול
-            חינם, בלי כרטיס אשראי. המחירים האלה ייכנסו לתוקף בהמשך, ונעדכן
-            מראש.
+            הגבלה הוא {formatPrice(25)} בלבד, ועד 5 מסמכים בחודש המערכת חינם
+            לתמיד. כרגע, בתקופת ההשקה, הכול פתוח בלי הגבלה ובלי כרטיס אשראי.
+            המחירים בתשלום ייכנסו לתוקף בהמשך, ונעדכן מראש.
           </p>
         </section>
 
@@ -419,10 +425,11 @@ export function ComparisonViewV2({ competitor }: { competitor: Competitor }) {
         />
 
         <section className="v2-cmp-cta">
-          <h2>רוצה לנסות? זה חינם עכשיו</h2>
+          <h2>רוצה לנסות? זה חינם</h2>
           <p>
-            בתקופת ההשקה הכול פתוח: כל הפיצ׳רים של <Ltr>Pro</Ltr>, בלי כרטיס
-            אשראי. כשנתחיל לגבות נעדכן מראש, בלי הפתעות.
+            עד 5 מסמכים בחודש חינם לתמיד, בלי כרטיס אשראי. בתקופת ההשקה הכול
+            פתוח: כל הפיצ׳רים של <Ltr>Pro</Ltr>. כשנתחיל לגבות נעדכן מראש, בלי
+            הפתעות.
           </p>
           <div className="row">
             <SignupLink className="v2-cta">

@@ -17,18 +17,19 @@ import RelatedLinks from "../components/RelatedLinks";
 import SignupLink from "../components/SignupLink";
 import IncludedFeatures from "../components/IncludedFeatures";
 import { PRICING_INCLUDED } from "../advantages";
-import { PLANS, type PlanTier } from "@/lib/plans";
+import { PLANS, STARTER_PLAN, type PlanTier } from "@/lib/plans";
 
 export const metadata = pageMetadata({
   path: "/pricing",
-  title: `מחירים - חינם בהשקה, אחר כך ${shekel("15-25")} לחודש`,
+  title: "מחירים - חינם לתמיד עד 5 מסמכים בחודש",
   ogTitle: "מחירים | חשבונית ידידותית",
   description:
-    `בתקופת ההשקה הכול חינם, בלי כרטיס אשראי. בהמשך: מסלול בסיסי ב-${shekel("15")} לחודש (עד 30 מסמכים) או Pro ב-${shekel("25")} לחודש (ללא הגבלה), עם חודש ראשון חינם למצטרפים בהשקה.`,
+    `חינם לתמיד עד 5 מסמכים בחודש, בלי כרטיס אשראי. מעבר לזה: מסלול בסיסי ב-${shekel("15")} לחודש (עד 30 מסמכים) או Pro ב-${shekel("25")} לחודש (ללא הגבלה). בתקופת ההשקה הכול פתוח בלי הגבלה, ולמצטרפים בהשקה החודש הראשון בתשלום חינם.`,
   keywords: [
     "מחיר תוכנת חשבוניות",
     "כמה עולה תוכנת חשבוניות",
     "תוכנת חשבוניות בחינם",
+    "תוכנת חשבוניות חינם לתמיד",
     "מחיר חשבונית לעוסק פטור",
   ],
 });
@@ -45,7 +46,7 @@ export const metadata = pageMetadata({
 const PRICING_FAQ_ITEMS: { q: string; a: string }[] = [
   {
     q: "מה קורה כשתקופת ההשקה נגמרת?",
-    a: "שום חיוב לא קורה אוטומטית. כדי לעבור למסלול בתשלום צריך להירשם ולאשר את הפרטים בעצמכם דרך עמוד החיוב, ומי שהצטרף בתקופת ההשקה מקבל את החודש הראשון בתשלום חינם.",
+    a: "שום חיוב לא קורה אוטומטית. מי שמוציא עד 5 מסמכים בחודש ממשיך בחינם, לתמיד. מי שצריך יותר בוחר מסלול בתשלום דרך עמוד החיוב, ומי שהצטרף בתקופת ההשקה מקבל את החודש הראשון בתשלום חינם.",
   },
   {
     q: "האם צריך כרטיס אשראי כדי להתחיל?",
@@ -70,28 +71,43 @@ const PRICING_FAQ_ITEMS: { q: string; a: string }[] = [
 
 type CellValue = string | boolean;
 
+/** A comparison column: the display-only free tier or a chargeable tier. */
+type PlanColumn = "starter" | PlanTier;
+
 /**
  * The plan comparison rows, one per parameter, read from src/lib/plans.ts so
- * this section cannot drift from /billing. Only the two future tiers appear
- * (2026-09-29, Asaf: the launch period makes EVERYTHING free, so a third
- * "free" column said nothing; "חודש ראשון חינם" is the headline instead).
- * `true`/`false` render as a check disc / a muted minus; strings as-is.
+ * this section cannot drift from /billing. Three columns since 2026-10-01:
+ * the permanent free tier (STARTER_PLAN, up to 5 documents a month) next to
+ * the two paid tiers. `true`/`false` render as a check disc / a muted minus;
+ * strings as-is.
  */
-const PLAN_ROWS: { label: string; free: CellValue; pro: CellValue }[] = (() => {
+const PLAN_ROWS: ({ label: string } & Record<PlanColumn, CellValue>)[] = (() => {
+  const s = STARTER_PLAN.limits;
   const b = PLANS.free.limits;
   const p = PLANS.pro.limits;
   const count = (n: number | null) => (n === null ? "ללא הגבלה" : `עד ${n}`);
+  const all = { starter: true, free: true, pro: true };
+  const flag = (pick: (l: typeof b) => boolean) => ({
+    starter: pick(s),
+    free: pick(b),
+    pro: pick(p),
+  });
   return [
-    { label: "מסמכים בחודש", free: count(b.documentsPerMonth), pro: count(p.documentsPerMonth) },
-    { label: "לקוחות", free: count(b.clients), pro: count(p.clients) },
-    { label: "שליחת מסמכים במייל", free: true, pro: true },
-    { label: "PDF להדפסה והורדה", free: true, pro: true },
-    { label: "גיבוי ענן אוטומטי", free: true, pro: true },
-    { label: "שליחה מ-Gmail האישי", free: b.customGmail, pro: p.customGmail },
-    { label: "ייבוא וייצוא לאקסל", free: b.csvImport && b.csvExport, pro: p.csvImport && p.csvExport },
-    { label: "מסך ראשי עם גרפים", free: b.charts, pro: p.charts },
-    { label: "לוגו עסקי על המסמכים", free: b.customLogo, pro: p.customLogo },
-    { label: "כמה אימיילים לכל לקוח", free: b.multipleEmailRecipients, pro: p.multipleEmailRecipients },
+    {
+      label: "מסמכים בחודש",
+      starter: count(s.documentsPerMonth),
+      free: count(b.documentsPerMonth),
+      pro: count(p.documentsPerMonth),
+    },
+    { label: "לקוחות", starter: count(s.clients), free: count(b.clients), pro: count(p.clients) },
+    { label: "שליחת מסמכים במייל", ...all },
+    { label: "PDF להדפסה והורדה", ...all },
+    { label: "גיבוי ענן אוטומטי", ...all },
+    { label: "שליחה מ-Gmail האישי", ...flag((l) => l.customGmail) },
+    { label: "ייבוא וייצוא לאקסל", ...flag((l) => l.csvImport && l.csvExport) },
+    { label: "מסך ראשי עם גרפים", ...flag((l) => l.charts) },
+    { label: "לוגו עסקי על המסמכים", ...flag((l) => l.customLogo) },
+    { label: "כמה אימיילים לכל לקוח", ...flag((l) => l.multipleEmailRecipients) },
   ];
 })();
 
@@ -117,23 +133,25 @@ function Cell({ v }: { v: CellValue }) {
 
 /**
  * One plan column of the comparison. Its rows are the same PLAN_ROWS the
- * labels column lists, at the same fixed height, so the two cards and the
+ * labels column lists, at the same fixed height, so the three cards and the
  * labels read as one spine on desktop; on a phone the labels column hides and
  * each row shows its own `.lbl` instead.
  */
-function PlanCard({ tier }: { tier: PlanTier }) {
-  const plan = PLANS[tier];
+function PlanCard({ tier }: { tier: PlanColumn }) {
+  const plan = tier === "starter" ? STARTER_PLAN : PLANS[tier];
   const pro = tier === "pro";
+  const starter = tier === "starter";
   return (
     <div className={`v2-plan-card${pro ? " pro" : ""}`}>
       <div className="head">
         {pro ? <span className="pill">ללא הגבלה</span> : null}
+        {starter ? <span className="pill">בלי כרטיס אשראי</span> : null}
         <span className="name">
           <LtrText text={plan.name} />
         </span>
         <span className="price">
           {shekel(String(plan.priceMonthly))}
-          <small>לחודש</small>
+          <small>{starter ? "לתמיד" : "לחודש"}</small>
         </span>
         <span className="desc">{plan.description}</span>
       </div>
@@ -162,8 +180,8 @@ function PlanCard({ tier }: { tier: PlanTier }) {
  * Wired like /vs and /accessibility (HeaderV2 + FooterV2 + the shared
  * `.v2-cmp` wide container), not like the homepage's HeaderLight/ml-theme:
  * this is a secondary page, not the landing page, so it gets the site's
- * standard sub-page chrome. Every number on this page (15/25 ₪, 30 docs,
- * 10 clients, unlimited Pro) is read from src/lib/plans.ts, the same source
+ * standard sub-page chrome. Every number in the plan cards (0/15/25 ₪,
+ * 5/30 docs, 10 clients, unlimited Pro) is read from src/lib/plans.ts, the same source
  * ComparisonViewV2 and the homepage's pricing band already draw from.
  */
 export default function PricingPage() {
@@ -207,9 +225,9 @@ export default function PricingPage() {
             <span className="v2-gold">ובתקופת ההשקה הכול חינם</span>
           </h1>
           <p className="v2-lede">
-            מי שמצטרף עכשיו, בתקופת ההשקה, מקבל את כל התכונות בחינם ובלי
-            כרטיס אשראי - כולל חודש ראשון במתנה במסלול בתשלום, כשהוא ייכנס
-            לתוקף.
+            עד 5 מסמכים בחודש המערכת חינם לתמיד. מי שמצטרף עכשיו, בתקופת
+            ההשקה, מקבל את כל התכונות בלי הגבלה ובלי כרטיס אשראי - כולל חודש
+            ראשון במתנה במסלול בתשלום, כשהוא ייכנס לתוקף.
           </p>
         </div>
 
@@ -240,11 +258,11 @@ export default function PricingPage() {
           </div>
         </section>
 
-        {/* Plans: two cards on a shared spine (2026-09-29, Asaf picked
-            direction A of three renders and asked for two columns, not
-            three, with "חודש ראשון חינם" big on top). A labels column and the
-            two plan cards share one fixed row height, so every parameter
-            reads once, across, with no table chrome. */}
+        {/* Plans: three cards on a shared spine (2026-09-29 direction A,
+            widened to three columns on 2026-10-01 for the permanent free
+            tier). A labels column and the plan cards share one fixed row
+            height, so every parameter reads once, across, with no table
+            chrome. */}
         <section className="v2-cmp-sec">
           <div className="v2-cmp-h">
             <h2>המסלולים</h2>
@@ -253,11 +271,11 @@ export default function PricingPage() {
 
           <div className="v2-plans-hero">
             <p className="big">
-              חודש ראשון <span className="v2-gold">חינם</span>
+              <span className="v2-gold">חינם לתמיד</span> עד 5 מסמכים בחודש
             </p>
             <p className="sub">
-              למצטרפים בתקופת ההשקה, כשהמסלולים ייכנסו לתוקף. בלי כרטיס
-              אשראי, ביטול בכל עת.
+              צריכים יותר? בסיסי או <Ltr>Pro</Ltr>, ולמצטרפים בתקופת ההשקה
+              החודש הראשון בתשלום חינם, כשהמסלולים ייכנסו לתוקף. ביטול בכל עת.
             </p>
           </div>
 
@@ -276,6 +294,7 @@ export default function PricingPage() {
                 </div>
               ))}
             </div>
+            <PlanCard tier="starter" />
             <PlanCard tier="free" />
             <PlanCard tier="pro" />
           </div>
@@ -320,10 +339,11 @@ export default function PricingPage() {
         />
 
         <section className="v2-cmp-cta">
-          <h2>מוכנים להתחיל? זה חינם עכשיו</h2>
+          <h2>מוכנים להתחיל? זה חינם</h2>
           <p>
-            בתקופת ההשקה הכול פתוח: כל הפיצ׳רים של <Ltr>Pro</Ltr>, בלי כרטיס
-            אשראי. כשנתחיל לגבות נעדכן מראש, בלי הפתעות.
+            עד 5 מסמכים בחודש חינם לתמיד, בלי כרטיס אשראי. בתקופת ההשקה הכול
+            פתוח: כל הפיצ׳רים של <Ltr>Pro</Ltr>. כשנתחיל לגבות נעדכן מראש, בלי
+            הפתעות.
           </p>
           <div className="row">
             <SignupLink className="v2-cta">

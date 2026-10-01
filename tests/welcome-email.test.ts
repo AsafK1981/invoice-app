@@ -63,14 +63,19 @@ describe("welcome email html", () => {
   });
 
   it("makes no claim the product does not back", () => {
-    // Free launch period without a card, and automatic allocation numbers,
-    // are the two facts the email leans on. Nothing numeric beyond "a minute"
-    // and the promo video's length.
+    // The free tier and launch period without a card, and automatic
+    // allocation numbers, are the facts the email leans on. Nothing numeric
+    // beyond "a minute", the free tier's 5-document cap (src/lib/plans.ts
+    // STARTER_PLAN) and the promo video's length.
     expect(html).toContain("בלי כרטיס אשראי");
     expect(html).toContain("מספרי ההקצאה");
+    expect(html).toContain("עד 5 מסמכים בחודש חינם לתמיד");
     // The text twin is the copy without markup (no hex colours, no pixel widths).
     expect(
-      text.replace(/https?:\S+/g, "").replace("סרטון של 20 שניות", ""),
+      text
+        .replace(/https?:\S+/g, "")
+        .replace("סרטון של 20 שניות", "")
+        .replace("עד 5 מסמכים בחודש", ""),
     ).not.toMatch(/\d/);
     // The offer is "first month free"; never a second free month.
     expect(html).not.toContain("חודשיים");

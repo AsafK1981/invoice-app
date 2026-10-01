@@ -1,4 +1,5 @@
 import { CANONICAL_ORIGIN, absoluteUrl } from "@/lib/public-url";
+import { PLANS, STARTER_PLAN } from "@/lib/plans";
 import { FACEBOOK_PAGE_URL } from "@/lib/social";
 
 /**
@@ -53,9 +54,11 @@ export function website(): JsonLdNode {
 }
 
 /**
- * The app itself. Price is the standing list entry price (₪15/mo); the launch
- * period is currently free, which is surfaced in on-page copy rather than in
- * structured pricing so the markup does not contradict the pricing table.
+ * The app itself. `offers` lists the three plans of the pricing table, read
+ * from src/lib/plans.ts: the permanent free tier at 0 (up to 5 documents a
+ * month), then Basic and Pro at their monthly list prices. The launch period
+ * (everything open) is surfaced in on-page copy rather than in structured
+ * pricing so the markup does not contradict the pricing table.
  *
  * `featureList` mirrors the homepage's "כל מה שיש רק אצלנו" advantage grid
  * (src/app/(marketing)/page.tsx), EXCLUDING the WhatsApp channel.
@@ -95,7 +98,22 @@ export function softwareApplication(): JsonLdNode {
       "ייבוא היסטוריה מתוכנות חשבוניות אחרות",
       "שליחת מסמכים במייל ובקישור ציבורי",
     ],
-    offers: { "@type": "Offer", price: "15", priceCurrency: "ILS" },
+    offers: [
+      {
+        "@type": "Offer",
+        name: STARTER_PLAN.name,
+        price: String(STARTER_PLAN.priceMonthly),
+        priceCurrency: "ILS",
+        description: "חינם לתמיד, עד 5 מסמכים בחודש",
+      },
+      ...[PLANS.free, PLANS.pro].map((plan) => ({
+        "@type": "Offer",
+        name: plan.name,
+        price: String(plan.priceMonthly),
+        priceCurrency: "ILS",
+        description: "לחודש",
+      })),
+    ],
     publisher: { "@id": ORG_ID },
   };
 }

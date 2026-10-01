@@ -2830,8 +2830,10 @@
    the spine (each plan a white card with a big price, rows running across
    the cards at one fixed height, no vertical rules) and cut the "launch is
    free" column, since "חודש ראשון חינם" as a headline says the same thing.
-   Desktop: labels column + two cards, rows aligned by a FIXED row height
-   (52px) and a FIXED head height (172px) - that alignment IS the design,
+   2026-10-01: a third card for the permanent free tier (חינם, 5 docs a
+   month), which unlike the launch period is a real, lasting plan.
+   Desktop: labels column + three cards, rows aligned by a FIXED row height
+   (52px) and a FIXED head height (204px) - that alignment IS the design,
    so nothing here may grow with content. Phone: the labels column hides
    and every row shows its own `.lbl`.
    ============================================================ */
@@ -2926,10 +2928,9 @@
   background: linear-gradient(180deg, #FFF3E8 0%, rgba(255, 243, 232, 0) 100%);
 }
 .v2-theme .v2-plan-card .pill {
-  position: absolute;
-  top: 16px;
-  inset-inline: 0;
-  margin-inline: auto;
+  /* In the flow above the name, not absolute: an absolute pill sat on top of
+     the name whenever the description wrapped to two lines (narrow desktop)
+     or the head had no fixed height (stacked cards). */
   width: max-content;
   display: inline-flex;
   font-size: var(--v2-fs-micro);
@@ -3045,17 +3046,19 @@
 }
 .v2-theme .v2-plan-btn:focus-visible { outline: 2px solid var(--v2-g1); outline-offset: 2px; }
 
-/* Spine layout from the tablet tier up: the labels column appears, the
-   cards drop their inline labels, and every row/head takes a FIXED height. */
-@media (min-width: 721px) {
+/* Spine layout from the desktop tier up: the labels column appears, the
+   cards drop their inline labels, and every row/head takes a FIXED height.
+   1024px, not the tablet tier, since the third card (2026-10-01): at 768
+   four columns wrapped labels past the 52px rows and broke the buttons. */
+@media (min-width: 1024px) {
   .v2-theme .v2-plans {
-    grid-template-columns: minmax(0, 0.85fr) 1fr 1fr;
+    grid-template-columns: minmax(0, 0.85fr) 1fr 1fr 1fr;
     gap: 0 var(--v2-sp-3);
     align-items: stretch;
   }
   .v2-theme .v2-plans-labels { display: flex; flex-direction: column; }
   .v2-theme .v2-plans-labels .head,
-  .v2-theme .v2-plan-card .head { height: 172px; }
+  .v2-theme .v2-plan-card .head { height: 204px; }
   .v2-theme .v2-plans-labels .row,
   .v2-theme .v2-plan-card .row { height: 52px; min-height: 0; }
   .v2-theme .v2-plan-card .row { justify-content: center; }

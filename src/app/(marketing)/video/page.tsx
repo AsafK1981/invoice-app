@@ -27,7 +27,7 @@ const base = pageMetadata({
   title: "ככה מוציאים חשבונית ב-20 שניות",
   ogTitle: "ככה מוציאים חשבונית ב-20 שניות | חשבונית ידידותית",
   description:
-    "סרטון קצר: חשבונית חדשה, מספר הקצאה אוטומטי ושליחה ללקוח בוואטסאפ. חודש ראשון חינם.",
+    "סרטון קצר: חשבונית חדשה, מספר הקצאה אוטומטי ושליחה ללקוח בוואטסאפ. חינם לתמיד עד 5 מסמכים בחודש.",
 });
 
 export const metadata: Metadata = {
@@ -77,9 +77,11 @@ export default function VideoPage() {
 
             <div className="ml-hero-actions vid-actions">
               <SignupLink className="ml-btn ml-btn-primary ml-btn-lg">
-                להתחיל - חודש ראשון חינם
+                להתחיל בחינם
               </SignupLink>
-              <span className="ml-hero-note">בלי כרטיס אשראי</span>
+              <span className="ml-hero-note">
+                חינם לתמיד עד 5 מסמכים בחודש, בלי כרטיס אשראי
+              </span>
             </div>
           </div>
         </section>

@@ -1,9 +1,17 @@
 /**
  * Pricing plans for MyFriendlyInvoiceApp.
  *
- * Two tiers (Option A from competitor research):
+ * Three tiers (2026-10-01, a permanent free tier on top of Option A from
+ * competitor research):
+ *   - Free:  ₪0, forever  ·  5 docs a month · otherwise Basic's limits
  *   - Basic: ₪15/mo  (₪149/yr)  ·  30 docs · 10 clients
  *   - Pro:   ₪25/mo  (₪250/yr)  ·  unlimited everything
+ *
+ * Only Basic and Pro are chargeable, so only they live in PLANS / PlanTier.
+ * The free tier is display-only (STARTER_PLAN) and is never stored: a user is
+ * on it when they hold no active paid entitlement (see PlanStatus.starter).
+ * Nothing here enforces its 5-document cap; during the launch period
+ * everything stays open.
  *
  * Annual prices are chosen round-ish numbers below 12× the monthly rate,
  * landing at roughly a ~17% discount (Basic: ₪149 vs ₪180 = ~17% off;
@@ -102,6 +110,38 @@ export const PLANS: Record<PlanTier, Plan> = {
   },
 };
 
+/**
+ * The permanent free tier, "חינם". Its own type, NOT a Plan: it has no stored
+ * tier id, nothing to check out, and no yearly price to compute savings on.
+ * Limits are Basic's except for the monthly document count.
+ */
+export interface StarterPlan {
+  name: string;
+  priceMonthly: 0;
+  priceYearly: 0;
+  description: string;
+  features: string[];
+  limits: Plan["limits"];
+}
+
+export const STARTER_PLAN: StarterPlan = {
+  name: "חינם",
+  priceMonthly: 0,
+  priceYearly: 0,
+  description: "למי שמוציא מעט מסמכים",
+  features: [
+    "עד 5 מסמכים בחודש",
+    "עד 10 לקוחות",
+    "שליחת מסמכים במייל (דרך המערכת)",
+    "PDF להדפסה והורדה",
+    "גיבוי ענן אוטומטי",
+  ],
+  limits: {
+    ...PLANS.free.limits,
+    documentsPerMonth: 5,
+  },
+};
+
 export function getPlan(tier: PlanTier | undefined | null): Plan {
   return PLANS[tier ?? "free"];
 }
@@ -127,6 +167,13 @@ export interface PlanStatus {
   daysRemaining?: number | null;
   /** True if the user's beta grant expired: they revert to the free tier with basic limits. */
   betaExpired?: boolean;
+  /**
+   * True if the user holds no active paid entitlement and is therefore on the
+   * permanent free tier (STARTER_PLAN): app_metadata.plan_active is not true,
+   * or their beta grant expired. Trials and unexpired beta grants are NOT
+   * starter. Display only; `tier` and `active` keep their old meaning.
+   */
+  starter: boolean;
 }
 
 /**
@@ -203,5 +250,6 @@ export function getPlanStatus(
     betaInviteCode: meta.plan_invite_code as string | undefined,
     daysRemaining,
     betaExpired,
+    starter: meta.plan_active !== true || betaExpired,
   };
 }

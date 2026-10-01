@@ -17,6 +17,7 @@ import {
 import { supabase } from "@/lib/supabase";
 import {
   PLANS,
+  STARTER_PLAN,
   getPlanStatus,
   TRIAL_DAYS,
   type PlanStatus,
@@ -29,7 +30,11 @@ import { Ltr, LtrText } from "@/components/ui/ltr";
 
 export default function BillingPage() {
   const searchParams = useSearchParams();
-  const [planStatus, setPlanStatus] = useState<PlanStatus>({ tier: "free", active: true });
+  const [planStatus, setPlanStatus] = useState<PlanStatus>({
+    tier: "free",
+    active: true,
+    starter: true,
+  });
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<PlanTier | null>(null);
   // Default to yearly: GTM roadmap task 4.4, a single large annual charge best
@@ -253,7 +258,11 @@ export default function BillingPage() {
           חיוב ומסלולים
         </h1>
         <p className="text-sm text-stone-700 mt-2 mr-14">
-          {isPro ? "אתה מנוי על Pro" : "המסלול הנוכחי שלך: בסיסי"}
+          {isPro
+            ? "אתה מנוי על Pro"
+            : planStatus.starter
+              ? `המסלול הנוכחי שלך: ${STARTER_PLAN.name}`
+              : "המסלול הנוכחי שלך: בסיסי"}
         </p>
       </div>
 
@@ -263,8 +272,9 @@ export default function BillingPage() {
           <div>
             <p className="font-bold">🎉 חינם עכשיו בתקופת ההשקה</p>
             <p className="text-emerald-800/90 mt-0.5">
-              כל הפיצ׳רים פתוחים, בלי חיוב ובלי כרטיס אשראי. המחירים המוצגים
-              למטה ייכנסו לתוקף בהמשך, ונעדכן מראש, בלי הפתעות.
+              בתקופת ההשקה הכול פתוח בלי הגבלה, בלי חיוב ובלי כרטיס אשראי.
+              אחר כך עד 5 מסמכים בחודש נשארים חינם לתמיד, והמחירים של
+              המסלולים בתשלום ייכנסו לתוקף. נעדכן מראש, בלי הפתעות.
             </p>
           </div>
         </div>
@@ -367,10 +377,43 @@ export default function BillingPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        {/* The permanent free tier. Display only: there is nothing to check
+            out, so no button, and no yearly-savings line (its price is 0). */}
+        <div className="card-soft p-6 relative">
+          {planStatus.starter && (
+            <div className="absolute top-4 left-4 inline-flex items-center gap-1 bg-emerald-100 border border-emerald-200 text-emerald-700 text-xs font-bold px-2.5 py-1 rounded-full">
+              <CheckCircle2 className="w-3 h-3" />
+              המסלול שלך
+            </div>
+          )}
+          <h3 className="font-bold text-stone-900 text-xl">{STARTER_PLAN.name}</h3>
+          <p className="text-sm text-stone-700 mt-1">{STARTER_PLAN.description}</p>
+          <div className="mt-4 flex items-baseline gap-1">
+            <span className="text-4xl font-bold text-stone-900">
+              {formatCurrency(STARTER_PLAN.priceMonthly)}
+            </span>
+            <span className="text-sm text-stone-600">לתמיד</span>
+          </div>
+          <ul className="mt-6 space-y-2.5">
+            {STARTER_PLAN.features.map((f) => (
+              <li key={f} className="flex items-start gap-2 text-sm text-stone-800">
+                <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Check className="w-3 h-3 text-emerald-700" />
+                </div>
+                <span>
+                  <LtrText text={f} />
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
         {(["free", "pro"] as const).map((tier) => {
           const plan = PLANS[tier];
-          const isCurrent = planStatus.tier === tier && planStatus.active;
+          // A starter user's stored tier is "free" (= Basic) and reads as
+          // active, so Basic must not claim to be their plan.
+          const isCurrent =
+            !planStatus.starter && planStatus.tier === tier && planStatus.active;
           const isProCard = tier === "pro";
           const displayPrice = interval === "year" ? plan.priceYearly : plan.priceMonthly;
           const intervalLabel = interval === "year" ? "/ שנה" : "/ חודש";
